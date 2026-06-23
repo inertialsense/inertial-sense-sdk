@@ -884,13 +884,13 @@ static inline int is_finite(double v)   // Not NaN or INF
 #define C_EARTH_RADIUS_MEAN             6371000.0       // (m) Mean radius (used by the IUGG, WGS-84, etc.)
 
 // IMX Operational Limits
-#define INS_MAX_VELOCITY                500.0f          // (m/s) INS operation limit - velocity.  Limited by GPS.
+//#define INS_MAX_VELOCITY                500.0f          // (m/s) INS operation limit - velocity.  Limited by GPS.
 #define INS_MAX_LATITUDE                C_PIDIV2        // (rad) INS operation limit - latitude
 #define INS_MAX_LATITUDE_DEG            90.0            // (deg) INS operation limit - latitude
 #define INS_MAX_LONGITUDE               C_PI            // (rad) INS operation limit - longitude
 #define INS_MAX_LONGITUDE_DEG           180.0           // (deg) INS operation limit - longitude
-#define INS_MAX_ALTITUDE                50000.0         // (m)   INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
-#define INS_MAX_ECEF                    (INS_MAX_ALTITUDE+C_EARTH_RADIUS_EQUATORIAL)     // (m)   INS operation limit - ECEF
+//#define INS_MAX_ALTITUDE                50000.0         // (m)   INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
+//#define INS_MAX_ECEF                    (INS_MAX_ALTITUDE+C_EARTH_RADIUS_EQUATORIAL)     // (m)   INS operation limit - ECEF
 
 #define C_GPS_LEAP_SECONDS              18
 

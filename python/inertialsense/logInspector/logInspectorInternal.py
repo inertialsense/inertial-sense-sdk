@@ -139,7 +139,7 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('RTK Dbg 2 Lock', 'rtkDebug2Lock')
         self.addListItem('RTK Pos Misc', 'rtkPosMisc')
         self.addListItem('RTK Cmp Misc', 'rtkCmpMisc')
-        self.addListItem('GPS Raw Time', 'gpsRawTime')
+        self.addListItem('GNSS Raw Time', 'gnssRawTime')
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):
@@ -244,8 +244,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.LayoutVTests.addWidget(self.reprocess)
         # self.reprocess.stateChanged.connect(self.changeReprocess)
 
-    def createListGps(self):
-        super(logInspectorInternal, self).createListGps()
+    def createListGnss(self):
+        super(logInspectorInternal, self).createListGnss()
         self.addListItem('GNSS Ephemeris', 'gnssEphemeris')
         self.addListItem('GPX Debug Float', 'gpxDebugfArray')
         self.addListItem('GPX Debug Int', 'gpxDebugiArray')

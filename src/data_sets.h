@@ -29,134 +29,134 @@ extern "C" {
 
 
 // *****************************************************************************
-// ****** InertialSense binary message Data Identification Numbers (DIDs) ****** 
+// ****** InertialSense binary message Data Identification Numbers (DIDs) ******
 // ******                                                                 ******
 // ****** NEVER REORDER THESE VALUES!                                     ******
 // *****************************************************************************
 /** Data identifiers - these are unsigned int and #define because enum are signed according to C standard */
 typedef uint32_t eDataIDs;
 
-#define DID_NULL                        (eDataIDs)0  /** NULL (INVALID) */
-#define DID_DEV_INFO                    (eDataIDs)1  /** (dev_info_t) Device information */
+#define DID_NULL                        (eDataIDs)0     /** NULL (INVALID) */
+#define DID_DEV_INFO                    (eDataIDs)1     /** (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)
-#define DID_SYS_FAULT                   (eDataIDs)2  /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_PIMU                        (eDataIDs)3  /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
-#define DID_INS_1                       (eDataIDs)4  /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
-#define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
-#define DID_GNSS1_RCVR_POS              (eDataIDs)6  /** (gnss_pos_t) GPS 1 position data from GNSS receiver. */
-#define DID_SYS_CMD                     (eDataIDs)7  /** (system_command_t) System commands. Both the command and invCommand fields must be set at the same time for a command to take effect. */
-#define DID_NMEA_BCAST_PERIOD           (eDataIDs)8  /** (nmea_msgs_t) Set broadcast periods for NMEA messages */
-#define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
-#define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
-#define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
-#define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
-#define DID_GNSS1_POS                   (eDataIDs)13 /** (gnss_pos_t) GPS 1 position data.  This comes from DID_GNSS1_RCVR_POS or DID_GNSS1_RTK_POS, depending on whichever is more accurate. */
-#define DID_GNSS2_POS                   (eDataIDs)14 /** (gnss_pos_t) GPS 2 position data */
-#define DID_GNSS1_SAT                   (eDataIDs)15 /** (gnss_sat_t) GPS 1 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
-#define DID_GNSS2_SAT                   (eDataIDs)16 /** (gnss_sat_t) GPS 2 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
-#define DID_GNSS1_VERSION               (eDataIDs)17 /** (gnss_version_t) GPS 1 version info */
-#define DID_GNSS2_VERSION               (eDataIDs)18 /** (gnss_version_t) GPS 2 version info */
-#define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
-#define DID_IMUS                        (eDataIDs)20 /** (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
-#define DID_GNSS1_RTK_POS_REL           (eDataIDs)21 /** (gnss_rtk_rel_t) RTK precision position base to rover relative info. */
-#define DID_GNSS1_RTK_POS_MISC          (eDataIDs)22 /** (gnss_rtk_misc_t) RTK precision position related data. */
-#define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
-#define DID_SENSORS_UCAL                (eDataIDs)24 /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
-#define DID_SENSORS_TCAL                (eDataIDs)25 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
-#define DID_SENSORS_TC_BIAS             (eDataIDs)26 /** INTERNAL USE ONLY (sensors_t) */
-#define DID_GNSS2_TIMEPULSE             (eDataIDs)27 /** (gnss_timepulse_t) GNSS2 PPS time synchronization. */
-#define DID_SENSORS_ADC                 (eDataIDs)28 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
-#define DID_SCOMP                       (eDataIDs)29 /** INTERNAL USE ONLY (sensor_compensation_t) */
-#define DID_GNSS1_VEL                   (eDataIDs)30 /** (gnss_vel_t) GPS 1 velocity data */
-#define DID_GNSS2_VEL                   (eDataIDs)31 /** (gnss_vel_t) GPS 2 velocity data */
-#define DID_HDW_PARAMS                  (eDataIDs)32 /** INTERNAL USE ONLY (hdw_params_t) */
-#define DID_NVR_MANAGE_USERPAGE         (eDataIDs)33 /** INTERNAL USE ONLY (nvr_manage_t) */
-#define DID_NVR_USERPAGE_SN             (eDataIDs)34 /** INTERNAL USE ONLY (nvm_group_sn_t) */
-#define DID_NVR_USERPAGE_G0             (eDataIDs)35 /** INTERNAL USE ONLY (nvm_group_0_t) */
-#define DID_NVR_USERPAGE_G1             (eDataIDs)36 /** INTERNAL USE ONLY (nvm_group_1_t) */
-#define DID_DEBUG_STRING                (eDataIDs)37 /** INTERNAL USE ONLY (debug_string_t) */
-#define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
-#define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
-#define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_GNSS1_TIMEPULSE             (eDataIDs)41 /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
-#define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
-#define DID_UNUSED_43                   (eDataIDs)43 /** unused */
-#define DID_UNUSED_44                   (eDataIDs)44 /** unused */
-#define DID_GNSS1_SIG                   (eDataIDs)45 /** (gnss_sig_t) GPS 1 GNSS signal information. */
-#define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
-#define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
-#define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) INS Extended Kalman Filter (EKF) states */
-#define DID_INL2_COVARIANCE_LD          (eDataIDs)49 /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
-#define DID_INL2_STATUS                 (eDataIDs)50 /** (inl2_status_t) */
-#define DID_INL2_MISC                   (eDataIDs)51 /** (inl2_misc_t) */
-#define DID_MAGNETOMETER                (eDataIDs)52 /** (magnetometer_t) Magnetometer sensor output */
-#define DID_BAROMETER                   (eDataIDs)53 /** (barometer_t) Barometric pressure sensor data */
-#define DID_GNSS1_RTK_POS               (eDataIDs)54 /** (gnss_pos_t) GPS RTK position data */
-#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55 /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
-#define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56 /** INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMUS_UNCAL                  (eDataIDs)57 /** INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
-#define DID_IMU                         (eDataIDs)58 /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
-#define DID_INL2_MAG_OBS_INFO           (eDataIDs)59 /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
-#define DID_GNSS_BASE_RAW               (eDataIDs)60 /** (gnss_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
-#define DID_GNSS_RTK_OPT                (eDataIDs)61 /** (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
-#define DID_REFERENCE_PIMU              (eDataIDs)62 /** (pimu_t) Reference or truth IMU used for manufacturing calibration and testing */
-#define DID_MANUFACTURING_INFO          (eDataIDs)63 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
-#define DID_BIT                         (eDataIDs)64 /** (bit_t) System built-in self-test */
-#define DID_INS_3                       (eDataIDs)65 /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
-#define DID_INS_4                       (eDataIDs)66 /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */
-#define DID_INL2_NED_SIGMA              (eDataIDs)67 /** (inl2_ned_sigma_t) Standard deviation of INL2 EKF estimates in the NED frame. */
-#define DID_STROBE_IN_TIME              (eDataIDs)68 /** (strobe_in_time_t) Timestamp for input strobe. */
-#define DID_GNSS1_RAW                   (eDataIDs)69 /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
-#define DID_GNSS2_RAW                   (eDataIDs)70 /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
-#define DID_WHEEL_ENCODER               (eDataIDs)71 /** (wheel_encoder_t) Wheel encoder data to be fused with GPS-INS measurements, set DID_GROUND_VEHICLE for configuration before sending this message */
-#define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72 /** (diag_msg_t) Diagnostic message */
-#define DID_SURVEY_IN                   (eDataIDs)73 /** (survey_in_t) Survey in, used to determine position for RTK base station. Base correction output cannot run during a survey and will be automatically disabled if a survey is started. */
-#define DID_UNUSED_74                   (eDataIDs)74 /** unused */
-#define DID_PORT_MONITOR                (eDataIDs)75 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
-#define DID_RTK_STATE                   (eDataIDs)76 /** INTERNAL USE ONLY (rtk_state_t) */
-#define DID_RTK_PHASE_RESIDUAL          (eDataIDs)77 /** INTERNAL USE ONLY (rtk_residual_t) */
-#define DID_RTK_CODE_RESIDUAL           (eDataIDs)78 /** INTERNAL USE ONLY (rtk_residual_t) */
-#define DID_RTK_DEBUG                   (eDataIDs)79 /** INTERNAL USE ONLY (rtk_debug_t) */
-#define DID_EVB_STATUS                  (eDataIDs)80 /** (evb_status_t) EVB monitor and log control interface. */
-#define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
-#define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
-#define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-#define DID_GNSS2_SIG                   (eDataIDs)84 /** (gnss_sig_t) GPS 2 GNSS signal information. */
-#define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
-#define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
-#define DID_GROUND_VEHICLE              (eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
-#define DID_POSITION_MEASUREMENT        (eDataIDs)88 /** (pos_measurement_t) External position estimate */
-#define DID_RTK_DEBUG_2                 (eDataIDs)89 /** INTERNAL USE ONLY (rtk_debug_2_t) */
-#define DID_CAN_CONFIG                  (eDataIDs)90 /** (can_config_t) Addresses for CAN messages*/
-#define DID_GNSS2_RTK_CMP_REL           (eDataIDs)91 /** (gnss_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
-#define DID_GNSS2_RTK_CMP_MISC          (eDataIDs)92 /** (gnss_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
-#define DID_EVB_DEV_INFO                (eDataIDs)93 /** (dev_info_t) EVB device information */
-#define DID_INFIELD_CAL                 (eDataIDs)94 /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
-#define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
-#define DID_IMUS_RAW                    (eDataIDs)96 /** (imus_t) Multiple IMU data calibrated from DID_IMUS_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
-#define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMUS_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
-#define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
-#define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
-#define DID_CAL_TEMP_COMP_GYR           (eDataIDs)100 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
-#define DID_CAL_TEMP_COMP_ACC           (eDataIDs)101 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
-#define DID_CAL_TEMP_COMP_MAG           (eDataIDs)102 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
-#define DID_CAL_MOTION_GYR              (eDataIDs)103 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_CAL_MOTION_ACC              (eDataIDs)104 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_CAL_MOTION_MAG              (eDataIDs)105 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_SYS_FAULT                   (eDataIDs)2     /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
+#define DID_PIMU                        (eDataIDs)3     /** (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
+#define DID_INS_1                       (eDataIDs)4     /** (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
+#define DID_INS_2                       (eDataIDs)5     /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
+#define DID_GNSS1_RCVR_POS              (eDataIDs)6     /** (gnss_pos_t) GPS 1 position data from GNSS receiver. */
+#define DID_SYS_CMD                     (eDataIDs)7     /** (system_command_t) System commands. Both the command and invCommand fields must be set at the same time for a command to take effect. */
+#define DID_NMEA_BCAST_PERIOD           (eDataIDs)8     /** (nmea_msgs_t) Set broadcast periods for NMEA messages */
+#define DID_RMC                         (eDataIDs)9     /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
+#define DID_SYS_PARAMS                  (eDataIDs)10    /** (sys_params_t) System parameters / info */
+#define DID_SYS_SENSORS                 (eDataIDs)11    /** (sys_sensors_t) System sensor information */
+#define DID_FLASH_CONFIG                (eDataIDs)12    /** (nvm_flash_cfg_t) Flash memory configuration */
+#define DID_GNSS1_POS                   (eDataIDs)13    /** (gnss_pos_t) GPS 1 position data.  This comes from DID_GNSS1_RCVR_POS or DID_GNSS1_RTK_POS, depending on whichever is more accurate. */
+#define DID_GNSS2_POS                   (eDataIDs)14    /** (gnss_pos_t) GPS 2 position data */
+#define DID_GNSS1_SAT                   (eDataIDs)15    /** (gnss_sat_t) GPS 1 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
+#define DID_GNSS2_SAT                   (eDataIDs)16    /** (gnss_sat_t) GPS 2 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
+#define DID_GNSS1_VERSION               (eDataIDs)17    /** (gnss_version_t) GPS 1 version info */
+#define DID_GNSS2_VERSION               (eDataIDs)18    /** (gnss_version_t) GPS 2 version info */
+#define DID_MAG_CAL                     (eDataIDs)19    /** (mag_cal_t) Magnetometer calibration */
+#define DID_IMUS                        (eDataIDs)20    /** (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
+#define DID_GNSS1_RTK_POS_REL           (eDataIDs)21    /** (gnss_rtk_rel_t) RTK precision position base to rover relative info. */
+#define DID_GNSS1_RTK_POS_MISC          (eDataIDs)22    /** (gnss_rtk_misc_t) RTK precision position related data. */
+#define DID_FEATURE_BITS                (eDataIDs)23    /** INTERNAL USE ONLY (feature_bits_t) */
+#define DID_SENSORS_UCAL                (eDataIDs)24    /** INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
+#define DID_SENSORS_TCAL                (eDataIDs)25    /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
+#define DID_SENSORS_TC_BIAS             (eDataIDs)26    /** INTERNAL USE ONLY (sensors_t) */
+#define DID_GNSS2_TIMEPULSE             (eDataIDs)27    /** (gnss_timepulse_t) GNSS2 PPS time synchronization. */
+#define DID_SENSORS_ADC                 (eDataIDs)28    /** INTERNAL USE ONLY (sys_sensors_adc_t) */
+#define DID_SCOMP                       (eDataIDs)29    /** INTERNAL USE ONLY (sensor_compensation_t) */
+#define DID_GNSS1_VEL                   (eDataIDs)30    /** (gnss_vel_t) GPS 1 velocity data */
+#define DID_GNSS2_VEL                   (eDataIDs)31    /** (gnss_vel_t) GPS 2 velocity data */
+#define DID_HDW_PARAMS                  (eDataIDs)32    /** INTERNAL USE ONLY (hdw_params_t) */
+#define DID_NVR_MANAGE_USERPAGE         (eDataIDs)33    /** INTERNAL USE ONLY (nvr_manage_t) */
+#define DID_NVR_USERPAGE_SN             (eDataIDs)34    /** INTERNAL USE ONLY (nvm_group_sn_t) */
+#define DID_NVR_USERPAGE_G0             (eDataIDs)35    /** INTERNAL USE ONLY (nvm_group_0_t) */
+#define DID_NVR_USERPAGE_G1             (eDataIDs)36    /** INTERNAL USE ONLY (nvm_group_1_t) */
+#define DID_DEBUG_STRING                (eDataIDs)37    /** INTERNAL USE ONLY (debug_string_t) */
+#define DID_RTOS_INFO                   (eDataIDs)38    /** (rtos_info_t) RTOS information. */
+#define DID_DEBUG_ARRAY                 (eDataIDs)39    /** INTERNAL USE ONLY (debug_array_t) */
+#define DID_SENSORS_MCAL                (eDataIDs)40    /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
+#define DID_GNSS1_TIMEPULSE             (eDataIDs)41    /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
+#define DID_CAL_SC                      (eDataIDs)42    /** INTERNAL USE ONLY (sensor_cal_t) */
+#define DID_UNUSED_43                   (eDataIDs)43    /** unused */
+#define DID_UNUSED_44                   (eDataIDs)44    /** unused */
+#define DID_GNSS1_SIG                   (eDataIDs)45    /** (gnss_sig_t) GPS 1 GNSS signal information. */
+#define DID_SENSORS_ADC_SIGMA           (eDataIDs)46    /** INTERNAL USE ONLY (sys_sensors_adc_t) */
+#define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47    /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
+#define DID_INL2_STATES                 (eDataIDs)48    /** (inl2_states_t) INS Extended Kalman Filter (EKF) states */
+#define DID_INL2_COVARIANCE_LD          (eDataIDs)49    /** (INL2_COVARIANCE_LD_ARRAY_SIZE) */
+#define DID_INL2_STATUS                 (eDataIDs)50    /** (inl2_status_t) */
+#define DID_INL2_MISC                   (eDataIDs)51    /** (inl2_misc_t) */
+#define DID_MAGNETOMETER                (eDataIDs)52    /** (magnetometer_t) Magnetometer sensor output */
+#define DID_BAROMETER                   (eDataIDs)53    /** (barometer_t) Barometric pressure sensor data */
+#define DID_GNSS1_RTK_POS               (eDataIDs)54    /** (gnss_pos_t) GPS RTK position data */
+#define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55    /** (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
+#define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56    /** INTERNAL USE ONLY - Unit test for communications manager  */
+#define DID_IMUS_UNCAL                  (eDataIDs)57    /** INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
+#define DID_IMU                         (eDataIDs)58    /** (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
+#define DID_INL2_MAG_OBS_INFO           (eDataIDs)59    /** (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
+#define DID_GNSS_BASE_RAW               (eDataIDs)60    /** (gnss_raw_t) GPS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
+#define DID_GNSS_RTK_OPT                (eDataIDs)61    /** (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
+#define DID_REFERENCE_PIMU              (eDataIDs)62    /** (pimu_t) Reference or truth IMU used for manufacturing calibration and testing */
+#define DID_MANUFACTURING_INFO          (eDataIDs)63    /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
+#define DID_BIT                         (eDataIDs)64    /** (bit_t) System built-in self-test */
+#define DID_INS_3                       (eDataIDs)65    /** (ins_3_t) Inertial navigation data with quaternion NED to body rotation and ECEF position. */
+#define DID_INS_4                       (eDataIDs)66    /** (ins_4_t) INS output: quaternion rotation w/ respect to ECEF, ECEF position. */
+#define DID_INL2_NED_SIGMA              (eDataIDs)67    /** (inl2_ned_sigma_t) Standard deviation of INL2 EKF estimates in the NED frame. */
+#define DID_STROBE_IN_TIME              (eDataIDs)68    /** (strobe_in_time_t) Timestamp for input strobe. */
+#define DID_GNSS1_RAW                   (eDataIDs)69    /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
+#define DID_GNSS2_RAW                   (eDataIDs)70    /** (gnss_raw_t) GPS raw data for rover (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
+#define DID_WHEEL_ENCODER               (eDataIDs)71    /** (wheel_encoder_t) Wheel encoder data to be fused with GPS-INS measurements, set DID_GROUND_VEHICLE for configuration before sending this message */
+#define DID_DIAGNOSTIC_MESSAGE          (eDataIDs)72    /** (diag_msg_t) Diagnostic message */
+#define DID_SURVEY_IN                   (eDataIDs)73    /** (survey_in_t) Survey in, used to determine position for RTK base station. Base correction output cannot run during a survey and will be automatically disabled if a survey is started. */
+#define DID_UNUSED_74                   (eDataIDs)74    /** unused */
+#define DID_PORT_MONITOR                (eDataIDs)75    /** (port_monitor_t) Data rate and status monitoring for each communications port. */
+#define DID_RTK_STATE                   (eDataIDs)76    /** INTERNAL USE ONLY (rtk_state_t) */
+#define DID_RTK_PHASE_RESIDUAL          (eDataIDs)77    /** INTERNAL USE ONLY (rtk_residual_t) */
+#define DID_RTK_CODE_RESIDUAL           (eDataIDs)78    /** INTERNAL USE ONLY (rtk_residual_t) */
+#define DID_RTK_DEBUG                   (eDataIDs)79    /** INTERNAL USE ONLY (rtk_debug_t) */
+#define DID_EVB_STATUS                  (eDataIDs)80    /** (evb_status_t) EVB monitor and log control interface. */
+#define DID_EVB_FLASH_CFG               (eDataIDs)81    /** (evb_flash_cfg_t) EVB configuration. */
+#define DID_EVB_DEBUG_ARRAY             (eDataIDs)82    /** INTERNAL USE ONLY (debug_array_t) */
+#define DID_EVB_RTOS_INFO               (eDataIDs)83    /** (evb_rtos_info_t) EVB-2 RTOS information. */
+#define DID_GNSS2_SIG                   (eDataIDs)84    /** (gnss_sig_t) GPS 2 GNSS signal information. */
+#define DID_IMU_MAG                     (eDataIDs)85    /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
+#define DID_PIMU_MAG                    (eDataIDs)86    /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
+#define DID_GROUND_VEHICLE              (eDataIDs)87    /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
+#define DID_POSITION_MEASUREMENT        (eDataIDs)88    /** (pos_measurement_t) External position estimate */
+#define DID_RTK_DEBUG_2                 (eDataIDs)89    /** INTERNAL USE ONLY (rtk_debug_2_t) */
+#define DID_CAN_CONFIG                  (eDataIDs)90    /** (can_config_t) Addresses for CAN messages*/
+#define DID_GNSS2_RTK_CMP_REL           (eDataIDs)91    /** (gnss_rtk_rel_t) Dual GNSS RTK compassing / moving base to rover (GPS 1 to GPS 2) relative info. */
+#define DID_GNSS2_RTK_CMP_MISC          (eDataIDs)92    /** (gnss_rtk_misc_t) RTK Dual GNSS RTK compassing related data. */
+#define DID_EVB_DEV_INFO                (eDataIDs)93    /** (dev_info_t) EVB device information */
+#define DID_INFIELD_CAL                 (eDataIDs)94    /** (infield_cal_t) Measure and correct IMU calibration error.  Estimate INS rotation to align INS with vehicle. */
+#define DID_REFERENCE_IMU               (eDataIDs)95    /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
+#define DID_IMUS_RAW                    (eDataIDs)96    /** (imus_t) Multiple IMU data calibrated from DID_IMUS_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define DID_IMU_RAW                     (eDataIDs)97    /** (imu_t) IMU data averaged from DID_IMUS_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define DID_FIRMWARE_UPDATE             (eDataIDs)98    /** (firmware_payload_t) firmware update payload */
+#define DID_RUNTIME_PROFILER            (eDataIDs)99    /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
+#define DID_CAL_TEMP_COMP_GYR           (eDataIDs)100   /** INTERNAL USE ONLY (sensor_tcal_group_t) */
+#define DID_CAL_TEMP_COMP_ACC           (eDataIDs)101   /** INTERNAL USE ONLY (sensor_tcal_group_t) */
+#define DID_CAL_TEMP_COMP_MAG           (eDataIDs)102   /** INTERNAL USE ONLY (sensor_tcal_group_t) */
+#define DID_CAL_MOTION_GYR              (eDataIDs)103   /** INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_CAL_MOTION_ACC              (eDataIDs)104   /** INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_CAL_MOTION_MAG              (eDataIDs)105   /** INTERNAL USE ONLY (sensor_mcal_group_t) */
 
-#define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
+#define DID_EVENT                       (eDataIDs)119   /** INTERNAL USE ONLY (did_event_t)*/
 
-#define DID_GPX_FIRST                   (eDataIDs)120 /** First of GPX DIDs */
-#define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
-#define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
-#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gpx_rtos_info_t) GPX RTOs info */
-#define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
-#define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
-#define DID_GPX_BIT                     (eDataIDs)125 /** (gpx_bit_t) GPX BIT test */
-#define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
-#define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
-#define DID_GPX_SYS_FAULT               (eDataIDs)128 /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_GPX_LAST                              128 /** Last of GPX DIDs */
+#define DID_GPX_FIRST                   (eDataIDs)120   /** First of GPX DIDs */
+#define DID_GPX_DEV_INFO                (eDataIDs)120   /** (dev_info_t) GPX device information */
+#define DID_GPX_FLASH_CFG               (eDataIDs)121   /** (gpx_flash_cfg_t) GPX flash configuration */
+#define DID_GPX_RTOS_INFO               (eDataIDs)122   /** (gpx_rtos_info_t) GPX RTOs info */
+#define DID_GPX_STATUS                  (eDataIDs)123   /** (gpx_status_t) GPX status */
+#define DID_GPX_DEBUG_ARRAY             (eDataIDs)124   /** (debug_array_t) GPX debug */
+#define DID_GPX_BIT                     (eDataIDs)125   /** (gpx_bit_t) GPX BIT test */
+#define DID_GPX_RMC                     (eDataIDs)126   /** (rmc_t) GPX rmc  */
+#define DID_GPX_PORT_MONITOR            (eDataIDs)127   /** (port_monitor_t) Data rate and status monitoring for each communications port. */
+#define DID_GPX_SYS_FAULT               (eDataIDs)128   /** (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
+#define DID_GPX_LAST                    128             /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -167,7 +167,7 @@ typedef uint32_t eDataIDs;
 // 6] Test!
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
-#define DID_COUNT       (eDataIDs)132    // Used in SDK
+#define DID_COUNT       (eDataIDs)132   // Used in SDK
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT   256
@@ -186,18 +186,18 @@ typedef uint32_t eDataIDs;
 
 /** Communications Protocol Version. See release notes. */
 
-// Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols. 
-// #define PROTOCOL_VERSION_CHAR0   .   // Breaking changes (Packet)        (defined in ISComm.h) 
+// Increment w/ breaking changes (in ISComm.cpp) that prevent backwards compatibility with older protocols.
+// #define PROTOCOL_VERSION_CHAR0   .   // Breaking changes (Packet)        (defined in ISComm.h)
 #define PROTOCOL_VERSION_CHAR1      2   // Breaking changes (Payload)
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 // #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
-#define PROTOCOL_VERSION_CHAR3      0   // Non-breaking changes (Payload):  
+#define PROTOCOL_VERSION_CHAR3      0   // Non-breaking changes (Payload):
 
 /** Rtk rover receiver index */
-#define RECEIVER_INDEX_GNSS1             1 // DO NOT CHANGE
-#define RECEIVER_INDEX_EXTERNAL_BASE    2 // DO NOT CHANGE
-#define RECEIVER_INDEX_GNSS2             3 // DO NOT CHANGE
+#define RECEIVER_INDEX_GNSS1            1   // DO NOT CHANGE
+#define RECEIVER_INDEX_EXTERNAL_BASE    2   // DO NOT CHANGE
+#define RECEIVER_INDEX_GNSS2            3   // DO NOT CHANGE
 
 // Version 1.3 of sensor calibration format supports up to 3 IMUs and 2 mags, with separate orthonormalization and bias calibration for each device
 #define NUM_IMU_DEVICES_V1P3    3
@@ -214,106 +214,106 @@ typedef uint32_t eDataIDs;
 enum eInsStatusFlags
 {
     /** Heading estimate is usable but outside spec (COARSE) */
-    INS_STATUS_HDG_ALIGN_COARSE                 = (int)0x00000001,
+    INS_STATUS_HDG_ALIGN_COARSE                         = (int)0x00000001,
     /** Velocity estimate is usable but outside spec (COARSE) */
-    INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
+    INS_STATUS_VEL_ALIGN_COARSE                         = (int)0x00000002,
     /** Position estimate is usable but outside spec (COARSE) */
-    INS_STATUS_POS_ALIGN_COARSE                 = (int)0x00000004,
+    INS_STATUS_POS_ALIGN_COARSE                         = (int)0x00000004,
     /** Estimate is COARSE mask (usable but outside spec) */
-    INS_STATUS_ALIGN_COARSE_MASK                = (int)0x00000007,
+    INS_STATUS_ALIGN_COARSE_MASK                        = (int)0x00000007,
 
     /** Velocity aided by wheel sensor */
-    INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
+    INS_STATUS_WHEEL_AIDING_VEL                         = (int)0x00000008,
 
     /** Heading estimate is within spec (FINE).  `INS_STATUS_HDG_ALIGN_COARSE` and `INS_STATUS_HDG_ALIGN_FINE` flags indicate whether INS heading is aided by any heading sensor (including GPS or magnetometer).  More accurate heading sensors (i.e. GPS) are prioritized over less accurate sensors (i.e. magnetometers) and will fall back to the less accurate sensors when the more accurate sensors are not available.  A momentary blip in these alignment flags may occur during heading transition from higher to lower accuracy aiding sensors (i.e. GPS to magnetometer).  `INS_STATUS_HDG_ALIGN_FINE` and `INS_STATUS_HDG_ALIGN_COARSE` flags will not be set when no heading aiding is available.  */
-    INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
+    INS_STATUS_HDG_ALIGN_FINE                           = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
-    INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
+    INS_STATUS_VEL_ALIGN_FINE                           = (int)0x00000020,
     /** Position estimate is within spec (FINE) */
-    INS_STATUS_POS_ALIGN_FINE                   = (int)0x00000040,
+    INS_STATUS_POS_ALIGN_FINE                           = (int)0x00000040,
     /** Estimate is FINE mask */
-    INS_STATUS_ALIGN_FINE_MASK                  = (int)0x00000070,
+    INS_STATUS_ALIGN_FINE_MASK                          = (int)0x00000070,
 
     /** Heading aided by GPS */
-    INS_STATUS_GNSS_AIDING_HEADING               = (int)0x00000080,
+    INS_STATUS_GNSS_AIDING_HEADING                      = (int)0x00000080,
 
     /** Position aided by GPS position */
-    INS_STATUS_GNSS_AIDING_POS                   = (int)0x00000100,
+    INS_STATUS_GNSS_AIDING_POS                          = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
-    INS_STATUS_GNSS_UPDATE_IN_SOLUTION           = (int)0x00000200,
+    INS_STATUS_GNSS_UPDATE_IN_SOLUTION                  = (int)0x00000200,
     /** Reference IMU used in EKF */
-    INS_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00000400,
+    INS_STATUS_EKF_USING_REFERENCE_IMU                  = (int)0x00000400,
     /** Heading aided by magnetic heading */
-    INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
+    INS_STATUS_MAG_AIDING_HEADING                       = (int)0x00000800,
 
     /** Nav mode (set) = estimating velocity and position. AHRS mode (cleared) = NOT estimating velocity and position */
-    INS_STATUS_NAV_MODE                         = (int)0x00001000,
+    INS_STATUS_NAV_MODE                                 = (int)0x00001000,
 
     /** In dead reckoning mode.  The GPS is not aiding the solution while the position is being estimated.  */
-#define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && (((insStatus)&INS_STATUS_GNSS_AIDING_POS)==0)) 
+#define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && (((insStatus)&INS_STATUS_GNSS_AIDING_POS)==0))
 
     /** INS in stationary mode.  If initiated by zero velocity command, user should not move (keep system motionless) to assist on-board processing. */
-    INS_STATUS_STATIONARY_MODE                  = (int)0x00002000,    
+    INS_STATUS_STATIONARY_MODE                          = (int)0x00002000,
     /** Velocity aided by GPS velocity */
-    INS_STATUS_GNSS_AIDING_VEL                   = (int)0x00004000,
+    INS_STATUS_GNSS_AIDING_VEL                          = (int)0x00004000,
     /** Vehicle kinematic calibration is good */
-    INS_STATUS_KINEMATIC_CAL_GOOD               = (int)0x00008000,
+    INS_STATUS_KINEMATIC_CAL_GOOD                       = (int)0x00008000,
 
     /** INS/AHRS Solution Status */
-    INS_STATUS_SOLUTION_MASK                    = (int)0x000F0000,
-    INS_STATUS_SOLUTION_OFFSET                  = 16,
+    INS_STATUS_SOLUTION_MASK                            = (int)0x000F0000,
+    INS_STATUS_SOLUTION_OFFSET                          = 16,
 #define INS_STATUS_SOLUTION(insStatus)          (((insStatus)&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
 
-    INS_STATUS_SOLUTION_OFF                     = 0,    // System is off 
-    INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
-    INS_STATUS_SOLUTION_NAV                     = 3,    // System is in navigation mode and solution is good.
-    INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,    // System is in navigation mode but the attitude uncertainty has exceeded the threshold.
-    INS_STATUS_SOLUTION_AHRS                    = 5,    // System is in AHRS mode and solution is good.
-    INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,    // System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
-    INS_STATUS_SOLUTION_VRS                     = 7,    // System is in VRS mode (no earth relative heading) and roll and pitch are good.
-    INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE       = 8,    // System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_OFF                             = 0,  // System is off
+    INS_STATUS_SOLUTION_ALIGNING                        = 1,  // System is in alignment mode
+    INS_STATUS_SOLUTION_NAV                             = 3,  // System is in navigation mode and solution is good.
+    INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE               = 4,  // System is in navigation mode but the attitude uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_AHRS                            = 5,  // System is in AHRS mode and solution is good.
+    INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE              = 6,  // System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_VRS                             = 7,  // System is in VRS mode (no earth relative heading) and roll and pitch are good.
+    INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE               = 8,  // System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold.
 
     /** GPS compassing antenna offsets are not set in flashCfg. */
-    INS_STATUS_RTK_COMPASSING_BASELINE_UNSET    = (int)0x00100000,
+    INS_STATUS_RTK_COMPASSING_BASELINE_UNSET            = (int)0x00100000,
     /** GPS antenna baseline specified in flashCfg and measured by GPS do not match. */
-    INS_STATUS_RTK_COMPASSING_BASELINE_BAD      = (int)0x00200000,
-    INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
+    INS_STATUS_RTK_COMPASSING_BASELINE_BAD              = (int)0x00200000,
+    INS_STATUS_RTK_COMPASSING_MASK                      = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
 
     /** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
-    INS_STATUS_MAG_RECALIBRATING                = (int)0x00400000,
+    INS_STATUS_MAG_RECALIBRATING                        = (int)0x00400000,
     /** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
-    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL = (int)0x00800000,
+    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL    = (int)0x00800000,
 
     /** GPS navigation fix type (see eGnssNavFixStatus) */
-    INS_STATUS_GNSS_NAV_FIX_MASK                 = (int)0x03000000,
-    INS_STATUS_GNSS_NAV_FIX_OFFSET               = 24,
+    INS_STATUS_GNSS_NAV_FIX_MASK                        = (int)0x03000000,
+    INS_STATUS_GNSS_NAV_FIX_OFFSET                      = 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GNSS_NAV_FIX_MASK)>>INS_STATUS_GNSS_NAV_FIX_OFFSET)
 
     /** RTK compassing heading is accurate and aiding INS heading.  (RTK fix and hold status) */
-    INS_STATUS_RTK_COMPASSING_VALID             = (int)0x04000000,
+    INS_STATUS_RTK_COMPASSING_VALID                     = (int)0x04000000,
 
     /* NOTE: If you add or modify these INS_STATUS_RTK_ values, please update eInsStatusRtkBase in IS-src/python/src/ci_hdw/data_sets.py */
     /** RTK error: Observations invalid or not received  (i.e. RTK differential corrections) */
-    INS_STATUS_RTK_RAW_GNSS_DATA_ERROR           = (int)0x08000000,
+    INS_STATUS_RTK_RAW_GNSS_DATA_ERROR                  = (int)0x08000000,
     /** RTK error: Either base observations or antenna position have not been received */
-    INS_STATUS_RTK_ERR_BASE_DATA_MISSING        = (int)0x10000000,
+    INS_STATUS_RTK_ERR_BASE_DATA_MISSING                = (int)0x10000000,
     /** RTK error: base position moved when it should be stationary */
-    INS_STATUS_RTK_ERR_BASE_POSITION_MOVING     = (int)0x20000000,
+    INS_STATUS_RTK_ERR_BASE_POSITION_MOVING             = (int)0x20000000,
     /** RTK error: base position invalid or not surveyed */
-    INS_STATUS_RTK_ERR_BASE_POSITION_INVALID    = (int)0x30000000,
+    INS_STATUS_RTK_ERR_BASE_POSITION_INVALID            = (int)0x30000000,
     /** RTK error: NO base position received */
-    INS_STATUS_RTK_ERR_BASE_MASK                = (int)0x30000000,
+    INS_STATUS_RTK_ERR_BASE_MASK                        = (int)0x30000000,
     /** GPS base mask */
-    INS_STATUS_RTK_ERROR_MASK                   = (INS_STATUS_RTK_RAW_GNSS_DATA_ERROR|INS_STATUS_RTK_ERR_BASE_MASK),
-    
+    INS_STATUS_RTK_ERROR_MASK                           = (INS_STATUS_RTK_RAW_GNSS_DATA_ERROR|INS_STATUS_RTK_ERR_BASE_MASK),
+
     /** RTOS task ran longer than allotted period */
-    INS_STATUS_RTOS_TASK_PERIOD_OVERRUN         = (int)0x40000000,
+    INS_STATUS_RTOS_TASK_PERIOD_OVERRUN                 = (int)0x40000000,
     /** General fault (see sys_params_t.genFaultCode) */
-    INS_STATUS_GENERAL_FAULT                    = (int)0x80000000,
+    INS_STATUS_GENERAL_FAULT                            = (int)0x80000000,
 
     /** Bitmask of all insStatus errors */
-    INS_STATUS_ERROR_MASK                       =   INS_STATUS_GENERAL_FAULT | 
-                                                    INS_STATUS_RTK_COMPASSING_MASK | 
+    INS_STATUS_ERROR_MASK                               = INS_STATUS_GENERAL_FAULT |
+                                                    INS_STATUS_RTK_COMPASSING_MASK |
                                                     INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL |
                                                     INS_STATUS_RTK_ERROR_MASK |
                                                     INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
@@ -324,110 +324,110 @@ enum eInsStatusFlags
  *       in IS-src/python/src/ci_hdw/data_sets.py */
 enum eGnssNavFixStatus
 {
-    GNSS_NAV_FIX_NONE                            = (int)0x00000000,
-    GNSS_NAV_FIX_POSITIONING_3D                  = (int)0x00000001,
-    GNSS_NAV_FIX_POSITIONING_RTK_FLOAT           = (int)0x00000002,
-    GNSS_NAV_FIX_POSITIONING_RTK_FIX             = (int)0x00000003,        // Includes fix & hold
+    GNSS_NAV_FIX_NONE                   = (int)0x00000000,
+    GNSS_NAV_FIX_POSITIONING_3D         = (int)0x00000001,
+    GNSS_NAV_FIX_POSITIONING_RTK_FLOAT  = (int)0x00000002,
+    GNSS_NAV_FIX_POSITIONING_RTK_FIX    = (int)0x00000003,  // Includes fix & hold
 };
 
 /** Hardware status flags */
 enum eHdwStatusFlags
 {
     /** Gyro motion detected */
-    HDW_STATUS_MOTION_GYR                       = (int)0x00000001,
+    HDW_STATUS_MOTION_GYR                   = (int)0x00000001,
     /** Accelerometer motion detected */
-    HDW_STATUS_MOTION_ACC                       = (int)0x00000002,
+    HDW_STATUS_MOTION_ACC                   = (int)0x00000002,
     /** Unit is moving and NOT stationary */
-    HDW_STATUS_MOTION_MASK                      = (int)0x00000003,
+    HDW_STATUS_MOTION_MASK                  = (int)0x00000003,
     /** IMU gyro fault rejection. One of the redundant gyro sensors is divergent and being excluded. */
-    HDW_STATUS_IMU_FAULT_REJECT_GYR             = (int)0x00000004,
+    HDW_STATUS_IMU_FAULT_REJECT_GYR         = (int)0x00000004,
     /** IMU accelerometer fault rejection. One of the redundant accelerometer sensors is divergent and being excluded. */
-    HDW_STATUS_IMU_FAULT_REJECT_ACC             = (int)0x00000008,
+    HDW_STATUS_IMU_FAULT_REJECT_ACC         = (int)0x00000008,
     /** IMU fault rejection mask. One of the redundant IMU sensors is divergent and being excluded. */
-    HDW_STATUS_IMU_FAULT_REJECT_MASK            = (int)0x0000000C,
+    HDW_STATUS_IMU_FAULT_REJECT_MASK        = (int)0x0000000C,
 
     /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
-    HDW_STATUS_GNSS_SATELLITE_RX_VALID           = (int)0x00000010,
+    HDW_STATUS_GNSS_SATELLITE_RX_VALID      = (int)0x00000010,
     /** Event occurred on strobe input pin */
-    HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
+    HDW_STATUS_STROBE_IN_EVENT              = (int)0x00000020,
     /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
-    HDW_STATUS_GNSS_TIME_OF_WEEK_VALID           = (int)0x00000040,
+    HDW_STATUS_GNSS_TIME_OF_WEEK_VALID      = (int)0x00000040,
     /** Reference IMU data being received */
-    HDW_STATUS_REFERENCE_IMU_RX                 = (int)0x00000080,
+    HDW_STATUS_REFERENCE_IMU_RX             = (int)0x00000080,
 
     /** Sensor saturation on gyro */
-    HDW_STATUS_SATURATION_GYR                   = (int)0x00000100,
+    HDW_STATUS_SATURATION_GYR               = (int)0x00000100,
     /** Sensor saturation on accelerometer */
-    HDW_STATUS_SATURATION_ACC                   = (int)0x00000200,
+    HDW_STATUS_SATURATION_ACC               = (int)0x00000200,
     /** Sensor saturation on magnetometer */
-    HDW_STATUS_SATURATION_MAG                   = (int)0x00000400,
+    HDW_STATUS_SATURATION_MAG               = (int)0x00000400,
     /** Sensor saturation on barometric pressure */
-    HDW_STATUS_SATURATION_BARO                  = (int)0x00000800,
+    HDW_STATUS_SATURATION_BARO              = (int)0x00000800,
 
     /** Sensor saturation mask */
-    HDW_STATUS_IMU_SATURATION_MASK              = (int)(HDW_STATUS_SATURATION_GYR | HDW_STATUS_SATURATION_ACC),
+    HDW_STATUS_IMU_SATURATION_MASK          = (int)(HDW_STATUS_SATURATION_GYR | HDW_STATUS_SATURATION_ACC),
     /** Sensor saturation mask */
-    HDW_STATUS_SATURATION_MASK                  = (int)0x00000F00,
+    HDW_STATUS_SATURATION_MASK              = (int)0x00000F00,
     /** Sensor saturation offset */
-    HDW_STATUS_SATURATION_OFFSET                = 8,
+    HDW_STATUS_SATURATION_OFFSET            = 8,
 
     /** System Reset is required for proper function */
-    HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
+    HDW_STATUS_SYSTEM_RESET_REQUIRED        = (int)0x00001000,
     /** GPS PPS timepulse signal has noise and occurred too frequently */
-    HDW_STATUS_ERR_GNSS_PPS_NOISE                = (int)0x00002000,
+    HDW_STATUS_ERR_GNSS_PPS_NOISE           = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
-    HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
+    HDW_STATUS_MAG_RECAL_COMPLETE           = (int)0x00004000,
     /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
-    HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
+    HDW_STATUS_FLASH_WRITE_PENDING          = (int)0x00008000,
 
     /** Communications Tx buffer limited */
-    HDW_STATUS_ERR_COM_TX_LIMITED               = (int)0x00010000,
+    HDW_STATUS_ERR_COM_TX_LIMITED           = (int)0x00010000,
     /** Communications Rx buffer overrun */
-    HDW_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00020000,
+    HDW_STATUS_ERR_COM_RX_OVERRUN           = (int)0x00020000,
 
     /** GPS PPS timepulse signal has not been received or is in error */
-    HDW_STATUS_ERR_NO_GNSS_PPS                   = (int)0x00040000,
+    HDW_STATUS_ERR_NO_GNSS_PPS              = (int)0x00040000,
     /** Time synchronized by GPS PPS */
-    HDW_STATUS_GNSS_PPS_TIMESYNC                 = (int)0x00080000,
+    HDW_STATUS_GNSS_PPS_TIMESYNC            = (int)0x00080000,
 
     /** Communications parse error count */
-    HDW_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x00F00000,
-    HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 20,
+    HDW_STATUS_COM_PARSE_ERR_COUNT_MASK     = (int)0x00F00000,
+    HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET   = 20,
 #define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus & HDW_STATUS_COM_PARSE_ERR_COUNT_MASK) >> HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** (BIT) Built-in self-test running */
-    HDW_STATUS_BIT_RUNNING                      = (int)0x01000000,
+    HDW_STATUS_BIT_RUNNING                  = (int)0x01000000,
     /** (BIT) Built-in self-test passed */
-    HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
+    HDW_STATUS_BIT_PASSED                   = (int)0x02000000,
     /** (BIT) Built-in self-test failure */
-    HDW_STATUS_BIT_FAILED                       = (int)0x03000000,
+    HDW_STATUS_BIT_FAILED                   = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
-    HDW_STATUS_BIT_MASK                         = (int)0x03000000,
+    HDW_STATUS_BIT_MASK                     = (int)0x03000000,
 
     /** Temperature outside spec'd operating range */
-    HDW_STATUS_ERR_TEMPERATURE                  = (int)0x04000000,
-    
+    HDW_STATUS_ERR_TEMPERATURE              = (int)0x04000000,
+
     /** IMX pins G5-G8 are configure for SPI use */
-    HDW_STATUS_SPI_INTERFACE_ENABLED            = (int)0x08000000,
+    HDW_STATUS_SPI_INTERFACE_ENABLED        = (int)0x08000000,
 
     /** Cause of system reset */
-    HDW_STATUS_RESET_CAUSE_MASK                 = (int)0x70000000,
+    HDW_STATUS_RESET_CAUSE_MASK             = (int)0x70000000,
     /** Reset from backup mode (low-power state w/ CPU off) */
-    HDW_STATUS_RESET_CAUSE_BACKUP_MODE          = (int)0x10000000,
+    HDW_STATUS_RESET_CAUSE_BACKUP_MODE      = (int)0x10000000,
     /** Reset from watchdog fault */
-    HDW_STATUS_RESET_CAUSE_WATCHDOG_FAULT       = (int)0x20000000,
+    HDW_STATUS_RESET_CAUSE_WATCHDOG_FAULT   = (int)0x20000000,
     /** Reset from software */
-    HDW_STATUS_RESET_CAUSE_SOFT                 = (int)0x30000000,
+    HDW_STATUS_RESET_CAUSE_SOFT             = (int)0x30000000,
     /** Reset from hardware (NRST pin low) */
-    HDW_STATUS_RESET_CAUSE_HDW                  = (int)0x40000000,
+    HDW_STATUS_RESET_CAUSE_HDW              = (int)0x40000000,
 
     /** Critical System Fault, CPU error.  (see DID_SYS_FAULT.status, eSysFaultStatus) */
-    HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+    HDW_STATUS_FAULT_SYS_CRITICAL           = (int)0x80000000,
 
     /** Bitmask of all hdwStatus errors */
-    HDW_STATUS_ERROR_MASK                       =   HDW_STATUS_FAULT_SYS_CRITICAL | 
-                                                    HDW_STATUS_IMU_FAULT_REJECT_MASK | 
-                                                    HDW_STATUS_SATURATION_MASK | 
+    HDW_STATUS_ERROR_MASK                   = HDW_STATUS_FAULT_SYS_CRITICAL |
+                                                    HDW_STATUS_IMU_FAULT_REJECT_MASK |
+                                                    HDW_STATUS_SATURATION_MASK |
                                                     HDW_STATUS_ERR_GNSS_PPS_NOISE |
                                                     HDW_STATUS_ERR_COM_TX_LIMITED |
                                                     HDW_STATUS_ERR_COM_RX_OVERRUN |
@@ -442,87 +442,87 @@ enum eSysStatusFlags
     /** Allow IMX to drive Testbed-3 status LEDs */
     SYS_STATUS_TBED3_LEDS_ENABLED                   = (int)0x00000001,
 
-    SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004, // 0 = GNSS1 is the primary NMEA GNSS source 1 = GNSS2 is the primary NMEA GNSS source
+    SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004,  // 0 = GNSS1 is the primary NMEA GNSS source 1 = GNSS2 is the primary NMEA GNSS source
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,
 };
 
 // Used to validate GPS position (and velocity)
-#define GNSS_THRESH_SATS_USED        5
-#define GNSS_THRESH_P_DOP            3.0f
-#define GNSS_THRESH_H_ACC            10.0f
-#define GNSS_THRESH_V_ACC            20.0f
-#define GNSS_THRESH_S_ACC            2.0f
+#define GNSS_THRESH_SATS_USED   5
+#define GNSS_THRESH_P_DOP       3.0f
+#define GNSS_THRESH_H_ACC       10.0f
+#define GNSS_THRESH_V_ACC       20.0f
+#define GNSS_THRESH_S_ACC       2.0f
 
 /** GPS Status */
 enum eGnssStatus
 {
     // TODO: THIS FIELD WILL END OF LIFE IN PROTOCOL 3
     // PLEASE USE gnss_pos_t.satsUsed for all new development
-    GNSS_STATUS_NUM_SATS_USED_MASK                   = (int)0x000000FF,
+    GNSS_STATUS_NUM_SATS_USED_MASK                      = (int)0x000000FF,
 
     /** Fix */
-    GNSS_STATUS_FIX_NONE                             = (int)0x00000000,
-    GNSS_STATUS_FIX_DEAD_RECKONING_ONLY              = (int)0x00000100,
-    GNSS_STATUS_FIX_2D                               = (int)0x00000200,
-    GNSS_STATUS_FIX_3D                               = (int)0x00000300,
-    GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
-    GNSS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
-    GNSS_STATUS_FIX_REF_LLA                          = (int)0x00000600,
-    GNSS_STATUS_FIX_UNUSED2                          = (int)0x00000700,
-    GNSS_STATUS_FIX_DGPS                             = (int)0x00000800,
-    GNSS_STATUS_FIX_SBAS                             = (int)0x00000900,
-    GNSS_STATUS_FIX_RTK_SINGLE                       = (int)0x00000A00,
-    GNSS_STATUS_FIX_RTK_FLOAT                        = (int)0x00000B00,
-    GNSS_STATUS_FIX_RTK_FIX                          = (int)0x00000C00,
-    GNSS_STATUS_FIX_MASK                             = (int)0x00001F00,
-    GNSS_STATUS_FIX_BIT_OFFSET                       = (int)8,
+    GNSS_STATUS_FIX_NONE                                = (int)0x00000000,
+    GNSS_STATUS_FIX_DEAD_RECKONING_ONLY                 = (int)0x00000100,
+    GNSS_STATUS_FIX_2D                                  = (int)0x00000200,
+    GNSS_STATUS_FIX_3D                                  = (int)0x00000300,
+    GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK                  = (int)0x00000400,
+    GNSS_STATUS_FIX_TIME_ONLY                           = (int)0x00000500,
+    GNSS_STATUS_FIX_REF_LLA                             = (int)0x00000600,
+    GNSS_STATUS_FIX_UNUSED2                             = (int)0x00000700,
+    GNSS_STATUS_FIX_DGPS                                = (int)0x00000800,
+    GNSS_STATUS_FIX_SBAS                                = (int)0x00000900,
+    GNSS_STATUS_FIX_RTK_SINGLE                          = (int)0x00000A00,
+    GNSS_STATUS_FIX_RTK_FLOAT                           = (int)0x00000B00,
+    GNSS_STATUS_FIX_RTK_FIX                             = (int)0x00000C00,
+    GNSS_STATUS_FIX_MASK                                = (int)0x00001F00,
+    GNSS_STATUS_FIX_BIT_OFFSET                          = (int)8,
 
     /** Flags  */
-    GNSS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
-    GNSS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
-    GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
-    GNSS_STATUS_FLAGS_UNUSED_1                       = (int)0x00080000,
-    GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GNSS1 RTK precision positioning mode enabled
-    GNSS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
-    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GNSS2 RTK moving base mode enabled
-    GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR    = (int)0x00800000,      // GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
-    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING     = (int)0x01000000,      // GNSS1 RTK error: Either base observations or antenna position have not been received.
-    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING  = (int)0x02000000,      // GNSS1 RTK error: base position moved when it should be stationary
-    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID = (int)0x03000000,      // GNSS1 RTK error: base position is invalid or not surveyed well
-    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MASK    = (int)0x03000000,      // GNSS1 RTK error: base position error bitmask
-    GNSS_STATUS_FLAGS_ERROR_MASK                     = (GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR |
+    GNSS_STATUS_FLAGS_FIX_OK                            = (int)0x00010000,  // within limits (e.g. DOP & accuracy)
+    GNSS_STATUS_FLAGS_DGPS_USED                         = (int)0x00020000,  // Differential GPS (DGPS) used.
+    GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD                  = (int)0x00040000,  // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
+    GNSS_STATUS_FLAGS_UNUSED_1                          = (int)0x00080000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED        = (int)0x00100000,  // GNSS1 RTK precision positioning mode enabled
+    GNSS_STATUS_FLAGS_STATIC_MODE                       = (int)0x00200000,  // Static mode
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED         = (int)0x00400000,  // GNSS2 RTK moving base mode enabled
+    GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR      = (int)0x00800000,  // GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING       = (int)0x01000000,  // GNSS1 RTK error: Either base observations or antenna position have not been received.
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING    = (int)0x02000000,  // GNSS1 RTK error: base position moved when it should be stationary
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID   = (int)0x03000000,  // GNSS1 RTK error: base position is invalid or not surveyed well
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MASK      = (int)0x03000000,  // GNSS1 RTK error: base position error bitmask
+    GNSS_STATUS_FLAGS_ERROR_MASK                        = (GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR |
                                                        GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MASK),
-    GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID        = (int)0x04000000,      // GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities (i.e. < 6cm horizontal accuracy).  The carrier phase range solution with floating ambiguities occurs if GNSS_STATUS_FIX_RTK_FIX is set and GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID is not set (i.e. > 6cm horizontal accuracy).
-    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID         = (int)0x08000000,      // GNSS2 RTK moving base heading.  Indicates RTK compassing heading valid and available in DID_GNSS2_RTK_CMP_REL.
-    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD  = (int)0x00002000,
-    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET= (int)0x00004000,
-    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK          = (GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED|
+    GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID          = (int)0x04000000,  // GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities (i.e. < 6cm horizontal accuracy).  The carrier phase range solution with floating ambiguities occurs if GNSS_STATUS_FIX_RTK_FIX is set and GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID is not set (i.e. > 6cm horizontal accuracy).
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID           = (int)0x08000000,  // GNSS2 RTK moving base heading.  Indicates RTK compassing heading valid and available in DID_GNSS2_RTK_CMP_REL.
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD    = (int)0x00002000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET  = (int)0x00004000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK            = (GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED|
                                                        GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID|
                                                        GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD|
                                                        GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET),
-    GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
-    GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS.
+    GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                    = (int)0x00008000,  // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
+    GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                 = (int)0x10000000,  // Time is synchronized by GPS PPS.
 
-    GNSS_STATUS_FLAGS_MASK                           = (int)0x1FFFE000,    
-    GNSS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
+    GNSS_STATUS_FLAGS_MASK                              = (int)0x1FFFE000,
+    GNSS_STATUS_FLAGS_BIT_OFFSET                        = (int)16,
 
-    GNSS_STATUS_FLAGS_UNUSED_2                       = (int)0x20000000,
-    GNSS_STATUS_FLAGS_UNUSED_3                       = (int)0x40000000,
-    GNSS_STATUS_FLAGS_UNUSED_4                       = (int)0x80000000,
+    GNSS_STATUS_FLAGS_UNUSED_2                          = (int)0x20000000,
+    GNSS_STATUS_FLAGS_UNUSED_3                          = (int)0x40000000,
+    GNSS_STATUS_FLAGS_UNUSED_4                          = (int)0x80000000,
 };
 
 enum eGnssStatus2
 {
-    GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT      = (uint8_t) 0x01,
-    GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED             = (uint8_t) 0x02,
-    GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT    = (uint8_t) 0x04,
-    GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED           = (uint8_t) 0x08,
-    
-    GNSS_STATUS2_FLAGS_JAM_SPOOF_POSSIBLE_MASK       = (uint8_t) 0x05,
-    GNSS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK       = (uint8_t) 0x0A,
-    GNSS_STATUS2_FLAGS_JAM_SPOOF_MASK                = (uint8_t) 0x0F,
+    GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT     = (uint8_t) 0x01,
+    GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED            = (uint8_t) 0x02,
+    GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT   = (uint8_t) 0x04,
+    GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED          = (uint8_t) 0x08,
 
-    GNSS_STATUS2_FLAGS_UNUSED                        = 0xF0,
+    GNSS_STATUS2_FLAGS_JAM_SPOOF_POSSIBLE_MASK      = (uint8_t) 0x05,
+    GNSS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK      = (uint8_t) 0x0A,
+    GNSS_STATUS2_FLAGS_JAM_SPOOF_MASK               = (uint8_t) 0x0F,
+
+    GNSS_STATUS2_FLAGS_UNUSED                       = 0xF0,
 };
 
 PUSH_PACK_1
@@ -535,12 +535,12 @@ typedef struct PACKED
 
     /** Position in ECEF (earth-centered earth-fixed) frame in meters */
     double      ecef[3];
-    
+
     /** Heading with respect to NED frame (rad)*/
     float       psi;
-    
+
     /** The Upper Diagonal of accuracy covariance matrix*/
-    float       accuracyCovUD[6]; // Matrix accuracyCovUD Described below
+    float       accuracyCovUD[6];   // Matrix accuracyCovUD Described below
     // 0 1 2
     // _ 3 4
     // _ _ 5
@@ -564,42 +564,42 @@ typedef struct PACKED
  *      4 = GPX1
  */
 
-#define HDW_TYPE__MASK                         0xFC00       // 6 bits, bits 10-15
-#define HDW_TYPE__SHIFT                        10
-#define DECODE_HDW_TYPE(x)                     (((x) & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
+#define HDW_TYPE__MASK      0xFC00                                          // 6 bits, bits 10-15
+#define HDW_TYPE__SHIFT     10
+#define DECODE_HDW_TYPE(x)  (((x) & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
 // Use eIsHardwareType for hardware type
-#define HDW_MAJOR__MASK                        0x03C0       // 4 bits, bits 6-9 (max value of 16)
-#define HDW_MAJOR__SHIFT                       6
-#define DECODE_HDW_MAJOR(x)                    (((x) & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
+#define HDW_MAJOR__MASK     0x03C0                                          // 4 bits, bits 6-9 (max value of 16)
+#define HDW_MAJOR__SHIFT    6
+#define DECODE_HDW_MAJOR(x) (((x) & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
 
-#define HDW_MINOR__MASK                        0x003F       // 6 bits, bits 0-5 (max value of 63)
-#define HDW_MINOR__SHIFT                       0
-#define DECODE_HDW_MINOR(x)                    (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
+#define HDW_MINOR__MASK     0x003F                                          // 6 bits, bits 0-5 (max value of 63)
+#define HDW_MINOR__SHIFT    0
+#define DECODE_HDW_MINOR(x) (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
-#define ENCODE_HDW_ID(type, major, minor)      ((((uint8_t)(type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((uint8_t)(major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((uint8_t)(minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
-#define ENCODE_UNIQUE_ID(hdwId, serialNo)      (((uint64_t)hdwId << 48) | (uint64_t)serialNo)
-#define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)     (((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
-#define ENCODE_DEV_INFO_TO_UNIQUE_ID(devinfo)  (((uint64_t)(ENCODE_DEV_INFO_TO_HDW_ID(devinfo)) << 48) | (uint64_t)devinfo.serialNumber)
-#define DECODE_UNIQUE_ID_TO_HDW_ID(devId)      ((uint16_t)((devId >> 48) & 0xFFFF))
-#define DECODE_UNIQUE_ID_TO_SERIALNO(devId)    ((uint32_t)devId)
-#define DEV_INFO_MATCHES_HDW_ID(di, hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
+#define ENCODE_HDW_ID(type,                     major, minor)      ((((uint8_t)(type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((uint8_t)(major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((uint8_t)(minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
+#define ENCODE_UNIQUE_ID(hdwId,                 serialNo)      (((uint64_t)hdwId << 48) | (uint64_t)serialNo)
+#define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)      (((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK))
+#define ENCODE_DEV_INFO_TO_UNIQUE_ID(devinfo)   (((uint64_t)(ENCODE_DEV_INFO_TO_HDW_ID(devinfo)) << 48) | (uint64_t)devinfo.serialNumber)
+#define DECODE_UNIQUE_ID_TO_HDW_ID(devId)       ((uint16_t)((devId >> 48) & 0xFFFF))
+#define DECODE_UNIQUE_ID_TO_SERIALNO(devId)     ((uint32_t)devId)
+#define DEV_INFO_MATCHES_HDW_ID(di,             hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
 
-#define IS_HDW_TYPE_PERIPHERAL                 0x20        // non-peripherals are 0-31, peripherals are 32-63
+#define IS_HDW_TYPE_PERIPHERAL  0x20    // non-peripherals are 0-31, peripherals are 32-63
 enum eIsHardwareType
 {
-    IS_HARDWARE_TYPE_MIXED          = -1,   // Used for ci-hdw testing
-    IS_HARDWARE_TYPE_UNKNOWN        = 0,
-    IS_HARDWARE_TYPE_UINS           = 1,
-    IS_HARDWARE_TYPE_EVB            = 2,
-    IS_HARDWARE_TYPE_IMX            = 3,
-    IS_HARDWARE_TYPE_GPX            = 4,
-    IS_HDW_GNSS_UBLOX               = IS_HDW_TYPE_PERIPHERAL + 1,    // Ublox F9P
-    IS_HDW_GNSS_SONY                = IS_HDW_TYPE_PERIPHERAL + 2,    // Sony CXD5610
-    IS_HDW_GNSS_SEPTENTRIO          = IS_HDW_TYPE_PERIPHERAL + 3,    // Septentrio
-    IS_HDW_GNSS_STM_TESSIO          = IS_HDW_TYPE_PERIPHERAL + 4,    // STM Tessio
+    IS_HARDWARE_TYPE_MIXED      = -1,  // Used for ci-hdw testing
+    IS_HARDWARE_TYPE_UNKNOWN    = 0,
+    IS_HARDWARE_TYPE_UINS       = 1,
+    IS_HARDWARE_TYPE_EVB        = 2,
+    IS_HARDWARE_TYPE_IMX        = 3,
+    IS_HARDWARE_TYPE_GPX        = 4,
+    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  // Ublox F9P
+    IS_HDW_GNSS_SONY            = IS_HDW_TYPE_PERIPHERAL + 2,  // Sony CXD5610
+    IS_HDW_GNSS_SEPTENTRIO      = IS_HDW_TYPE_PERIPHERAL + 3,  // Septentrio
+    IS_HDW_GNSS_STM_TESSIO      = IS_HDW_TYPE_PERIPHERAL + 4,  // STM Tessio
 
-    IS_HARDWARE_TYPE_COUNT          = 5,     // Keep last non-peripheral
-    IS_HDW_GNSS_TYPE_COUNT          = 4      // Number of entries in g_isGnssHardwareNames (IS_HDW_GNSS_UBLOX..STM_TESSIO)
+    IS_HARDWARE_TYPE_COUNT      = 5,  // Keep last non-peripheral
+    IS_HDW_GNSS_TYPE_COUNT      = 4      // Number of entries in g_isGnssHardwareNames (IS_HDW_GNSS_UBLOX..STM_TESSIO)
 };
 
 typedef uint16_t is_hardware_t;
@@ -631,8 +631,8 @@ enum eHdwRunStates {
 };
 
 enum eBuildFlags {
-    BUILD_FLAGS_DEBUG = 0x1,
-    BUILD_FLAGS_DIRTY = 0x2,
+    BUILD_FLAGS_DEBUG   = 0x1,
+    BUILD_FLAGS_DIRTY   = 0x2,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -673,7 +673,7 @@ typedef struct PACKED
 
     /** Build type (0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, 's'=snapshot, '^'=dirty) */
     uint8_t         buildType;
-    
+
     /** Build date year - 2000 */
     uint8_t         buildYear;
     /** Build date month */
@@ -700,7 +700,7 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo);
 
 /**
  * @brief Convert NMEA talker string to ID (eNmeaMsgId).
- * 
+ *
  * @param a NMEA talker string
  * @param aSize Length of the talker string
  * @return int NMEA ID (eNmeaMsgId) on success or negative for failure. -1 for NMEA head not found, -2 for invalid length, -3 other error
@@ -709,21 +709,21 @@ int getNmeaMsgId(const void* msg, int msgSize);
 
 /**
  * @brief Convert NMEA ID (eNmeaMsgId) to talker string
- * 
+ *
  * @param msgId NMEA ID (eNmeaMsgId)
- * @param buf Talker id string output 
+ * @param buf Talker id string output
  * @param bufSize Max size of buffer talker string will be written to.  Must be 5 or larger.
  * @return int 0 on success, -1 on failure.
  */
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize);
 
 /**
- * @brief Get RTCM ID from 
- * 
- * @param buff 
- * @param pos 
- * @param len 
- * @return unsigned int 
+ * @brief Get RTCM ID from
+ *
+ * @param buff
+ * @param pos
+ * @param len
+ * @return unsigned int
  */
 unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
 
@@ -762,7 +762,7 @@ typedef struct PACKED
 {
     /** GPS number of weeks since January 6th, 1980 */
     uint32_t    week;
-    
+
     /** GPS time of week (since Sunday morning) in seconds */
     double      timeOfWeek;
 
@@ -791,7 +791,7 @@ typedef struct PACKED
 {
     /** GPS number of weeks since January 6th, 1980 */
     uint32_t    week;
-    
+
     /** GPS time of week (since Sunday morning) in seconds */
     double      timeOfWeek;
 
@@ -817,7 +817,7 @@ typedef struct PACKED
 {
     /** GPS number of weeks since January 6th, 1980 */
     uint32_t    week;
-    
+
     /** GPS time of week (since Sunday morning) in seconds */
     double      timeOfWeek;
 
@@ -846,7 +846,7 @@ typedef struct PACKED
 {
     /** GPS number of weeks since January 6th, 1980 */
     uint32_t    week;
-    
+
     /** GPS time of week (since Sunday morning) in seconds */
     double      timeOfWeek;
 
@@ -913,7 +913,7 @@ typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
-    
+
     /** Magnetometers in microtesla (uT) */
     float                   mag[3];
 } magnetometer_t;
@@ -924,7 +924,7 @@ typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
-    
+
     /** Barometric pressure in kilopascals (kPa) */
     float                   bar;
 
@@ -963,10 +963,10 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** imu - raw or pre-integrated depending on data id */
-    imu_t imu;
-    
+    imu_t           imu;
+
     /** mag */
-    magnetometer_t mag;
+    magnetometer_t  mag;
 } imu_mag_t;
 
 
@@ -974,68 +974,68 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** Preintegrated IMU */
-    pimu_t pimu;
-    
+    pimu_t          pimu;
+
     /** Magnetometer */
-    magnetometer_t mag;
+    magnetometer_t  mag;
 } pimu_mag_t;
 
 /** IMUs Status */
 enum eImusStatus
 {
     /** IMU sensor valid status */
-    IMUS_STATUS_GYR_X_OK                        = (int)0x00000001,
-    IMUS_STATUS_GYR_Y_OK                        = (int)0x00000002,
-    IMUS_STATUS_GYR_Z_OK                        = (int)0x00000004,
-    IMUS_STATUS_ACC_X_OK                        = (int)0x00000008,
-    IMUS_STATUS_ACC_Y_OK                        = (int)0x00000010,
-    IMUS_STATUS_ACC_Z_OK                        = (int)0x00000020,    
+    IMUS_STATUS_GYR_X_OK        = (int)0x00000001,
+    IMUS_STATUS_GYR_Y_OK        = (int)0x00000002,
+    IMUS_STATUS_GYR_Z_OK        = (int)0x00000004,
+    IMUS_STATUS_ACC_X_OK        = (int)0x00000008,
+    IMUS_STATUS_ACC_Y_OK        = (int)0x00000010,
+    IMUS_STATUS_ACC_Z_OK        = (int)0x00000020,
     /** Number of IMU OK bits */
-    IMUS_STATUS_IMU_OK_BITSIZE                  = 6,
+    IMUS_STATUS_IMU_OK_BITSIZE  = 6,
     /** IMU valid mask */
-    IMUS_STATUS_IMU_OK_MASK                     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK | IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,
+    IMUS_STATUS_IMU_OK_MASK     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK | IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,
     /** Gyro valid mask */
-    IMUS_STATUS_GYR_OK_MASK                     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK,
+    IMUS_STATUS_GYR_OK_MASK     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK,
     /** Accelerometer valid mask */
-    IMUS_STATUS_ACC_OK_MASK                     = IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,
-    
+    IMUS_STATUS_ACC_OK_MASK     = IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,
+
     /** Sensor saturation */
-    IMUS_STATUS_SATURATION_GYR                  = (int)0x40000000,
-    IMUS_STATUS_SATURATION_ACC                  = (int)0x80000000,
-    IMUS_STATUS_SATURATION_MASK                 = (int)0xC0000000,
+    IMUS_STATUS_SATURATION_GYR  = (int)0x40000000,
+    IMUS_STATUS_SATURATION_ACC  = (int)0x80000000,
+    IMUS_STATUS_SATURATION_MASK = (int)0xC0000000,
 };
 
 /** IMU Status */
 enum eImuStatus
 {
     /** IMU X gyro is valid */
-    IMU_STATUS_GYR_X_OK                         = (int)0x00000001,
+    IMU_STATUS_GYR_X_OK                 = (int)0x00000001,
     /** IMU Y gyro is valid */
-    IMU_STATUS_GYR_Y_OK                         = (int)0x00000002,
+    IMU_STATUS_GYR_Y_OK                 = (int)0x00000002,
     /** IMU Z gyro is valid */
-    IMU_STATUS_GYR_Z_OK                         = (int)0x00000004,
+    IMU_STATUS_GYR_Z_OK                 = (int)0x00000004,
     /** IMU X accelerometer is valid */
-    IMU_STATUS_ACC_X_OK                         = (int)0x00000008,
+    IMU_STATUS_ACC_X_OK                 = (int)0x00000008,
     /** IMU Y accelerometer is valid */
-    IMU_STATUS_ACC_Y_OK                         = (int)0x00000010,
+    IMU_STATUS_ACC_Y_OK                 = (int)0x00000010,
     /** IMU Z accelerometer is valid */
-    IMU_STATUS_ACC_Z_OK                         = (int)0x00000020,
+    IMU_STATUS_ACC_Z_OK                 = (int)0x00000020,
     /** Number of IMU OK bits */
-    IMU_STATUS_IMU_OK_BITSIZE                   = 6,
+    IMU_STATUS_IMU_OK_BITSIZE           = 6,
     /** IMU valid mask */
-    IMU_STATUS_IMU_OK_MASK                      = IMU_STATUS_GYR_X_OK | IMU_STATUS_GYR_Y_OK | IMU_STATUS_GYR_Z_OK | IMU_STATUS_ACC_X_OK | IMU_STATUS_ACC_Y_OK | IMU_STATUS_ACC_Z_OK,
+    IMU_STATUS_IMU_OK_MASK              = IMU_STATUS_GYR_X_OK | IMU_STATUS_GYR_Y_OK | IMU_STATUS_GYR_Z_OK | IMU_STATUS_ACC_X_OK | IMU_STATUS_ACC_Y_OK | IMU_STATUS_ACC_Z_OK,
     /** Gyro valid mask */
-    IMU_STATUS_GYR_OK_MASK                      = IMU_STATUS_GYR_X_OK | IMU_STATUS_GYR_Y_OK | IMU_STATUS_GYR_Z_OK,
+    IMU_STATUS_GYR_OK_MASK              = IMU_STATUS_GYR_X_OK | IMU_STATUS_GYR_Y_OK | IMU_STATUS_GYR_Z_OK,
     /** Accelerometer valid mask */
-    IMU_STATUS_ACC_OK_MASK                      = IMU_STATUS_ACC_X_OK | IMU_STATUS_ACC_Y_OK | IMU_STATUS_ACC_Z_OK,
+    IMU_STATUS_ACC_OK_MASK              = IMU_STATUS_ACC_X_OK | IMU_STATUS_ACC_Y_OK | IMU_STATUS_ACC_Z_OK,
 
     /** Sensor shock detected */
-    IMU_STATUS_SHOCK_PRESENT                    = (int)0x00000040,
+    IMU_STATUS_SHOCK_PRESENT            = (int)0x00000040,
 
     /** Magnetometer sample occurred */
-    IMU_STATUS_MAG_UPDATE                       = (int)0x00000100,
+    IMU_STATUS_MAG_UPDATE               = (int)0x00000100,
     /** Data was received at least once from Reference IMU */
-    IMU_STATUS_REFERENCE_IMU_PRESENT            = (int)0x00000200,
+    IMU_STATUS_REFERENCE_IMU_PRESENT    = (int)0x00000200,
     /** Reserved */
     // IMU_STATUS_RESERVED2                        = (int)0x00000400,
 
@@ -1045,14 +1045,14 @@ enum eImuStatus
 //     IMU_STATUS_SAMPLE_RATE_FAULT_HISTORY        = (int)0x00000200,
 
     /** IMU fault rejection is excluding one of the gyros from the combined IMU output */
-    IMU_STATUS_GYR_FAULT_REJECT                 = (int)0x01000000,
+    IMU_STATUS_GYR_FAULT_REJECT         = (int)0x01000000,
     /** IMU fault rejection is excluding one of the accelerometers from the combined IMU output */
-    IMU_STATUS_ACC_FAULT_REJECT                 = (int)0x02000000,
+    IMU_STATUS_ACC_FAULT_REJECT         = (int)0x02000000,
 
     /** Sensor saturation */
-    IMU_STATUS_SATURATION_GYR                   = (int)0x40000000,
-    IMU_STATUS_SATURATION_ACC                   = (int)0x80000000,
-    IMU_STATUS_SATURATION_MASK                  = (int)0xC0000000,
+    IMU_STATUS_SATURATION_GYR           = (int)0x40000000,
+    IMU_STATUS_SATURATION_ACC           = (int)0x80000000,
+    IMU_STATUS_SATURATION_MASK          = (int)0xC0000000,
 };
 
 /** (DID_GNSS1_POS, DID_GNSS1_RCVR_POS, DID_GNSS2_POS) GPS position data */
@@ -1069,7 +1069,7 @@ typedef struct PACKED
 
     /** Position in ECEF {x,y,z} (m) */
     double                  ecef[3];
-    
+
     /** Position - WGS84 latitude, longitude, height above ellipsoid (not MSL) (degrees, m) */
     double                  lla[3];
 
@@ -1090,7 +1090,7 @@ typedef struct PACKED
 
     /** Time sync offset between local time since boot up to GPS time of week in seconds.  Add this to IMU and sensor time to get GPS time of week in seconds. */
     double                  towOffset;
-    
+
     /** GPS leap second (GPS-UTC) offset. Receiver's best knowledge of the leap seconds offset from UTC to GPS time. Subtract from GPS time of week to get UTC time of week. (18 seconds as of December 31, 2016) */
     uint8_t                 leapS;
 
@@ -1110,16 +1110,16 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in milliseconds */
-    uint32_t                timeOfWeekMs;
+    uint32_t                    timeOfWeekMs;
 
     /** GPS Velocity.  Velocity is in ECEF {vx,vy,vz} (m/s) if status bit GNSS_STATUS_FLAGS_GNSS_NMEA_DATA (0x00008000) is NOT set.  Velocity is in local tangent plane with no vertical velocity {vNorth, vEast, 0} (m/s) if status bit GNSS_STATUS_FLAGS_GNSS_NMEA_DATA (0x00008000) is set. */
-    float                    vel[3];    
+    float                       vel[3];
 
     /** Speed accuracy in meters / second */
-    float                    sAcc;
-    
+    float                       sAcc;
+
     /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
-    uint32_t                status;
+    uint32_t                    status;
 } gnss_vel_t;
 
 
@@ -1149,40 +1149,40 @@ typedef struct PACKED
 enum eSatSvGnssId
 {
     SAT_SV_GNSS_ID_UNKNOWN  = 0,
-    SAT_SV_GNSS_ID_GNSS     = 0,    // (multi-constellation)
-    SAT_SV_GNSS_ID_GPS      = 1,    // GPS (USA)
-    SAT_SV_GNSS_ID_SBS      = 2,    // SBAS (multiple regional systems, see flash config for selection)
-    SAT_SV_GNSS_ID_GAL      = 3,    // Galileo (European Union)    
-    SAT_SV_GNSS_ID_BEI      = 4,    // BeiDou (China)
-    SAT_SV_GNSS_ID_QZS      = 5,    // QZSS (Japan)
-    SAT_SV_GNSS_ID_GLO      = 6,    // GLONASS (Russia)    
-    SAT_SV_GNSS_ID_IRN      = 7,    // IRNSS / NavIC (India)    
-    SAT_SV_GNSS_ID_IME      = 8,    // IMES (Japan's Indoor Messaging System)
-    SAT_SV_GNSS_ID_COUNT    = 9,    // Number of constellations
+    SAT_SV_GNSS_ID_GNSS     = 0,  // (multi-constellation)
+    SAT_SV_GNSS_ID_GPS      = 1,  // GPS (USA)
+    SAT_SV_GNSS_ID_SBS      = 2,  // SBAS (multiple regional systems, see flash config for selection)
+    SAT_SV_GNSS_ID_GAL      = 3,  // Galileo (European Union)
+    SAT_SV_GNSS_ID_BEI      = 4,  // BeiDou (China)
+    SAT_SV_GNSS_ID_QZS      = 5,  // QZSS (Japan)
+    SAT_SV_GNSS_ID_GLO      = 6,  // GLONASS (Russia)
+    SAT_SV_GNSS_ID_IRN      = 7,  // IRNSS / NavIC (India)
+    SAT_SV_GNSS_ID_IME      = 8,  // IMES (Japan's Indoor Messaging System)
+    SAT_SV_GNSS_ID_COUNT    = 9,  // Number of constellations
 };
 
 /** GPS Sat Status */
 enum eSatSvStatus
 {
-    SAT_SV_STATUS_SIGNAL_QUALITY_MASK               = 0x0007,   // see eSatSigQuality
-    SAT_SV_STATUS_USED_IN_SOLUTION                  = 0x0008,    // Used in the solution
-    SAT_SV_STATUS_USED_IN_SOLUTION_OFFSET           = 3,
-    SAT_SV_STATUS_HEALTH_UNKNOWN                    = 0x0000,    // 0 = unknown
-    SAT_SV_STATUS_HEALTH_GOOD                       = 0x0010,    // 1 = healthy
-    SAT_SV_STATUS_HEALTH_BAD                        = 0x0020,    // 2 = unhealthy
-    SAT_SV_STATUS_HEALTH_MASK                       = 0x0030,
-    SAT_SV_STATUS_HEALTH_OFFSET                     = 4,
+    SAT_SV_STATUS_SIGNAL_QUALITY_MASK       = 0x0007,  // see eSatSigQuality
+    SAT_SV_STATUS_USED_IN_SOLUTION          = 0x0008,  // Used in the solution
+    SAT_SV_STATUS_USED_IN_SOLUTION_OFFSET   = 3,
+    SAT_SV_STATUS_HEALTH_UNKNOWN            = 0x0000,  // 0 = unknown
+    SAT_SV_STATUS_HEALTH_GOOD               = 0x0010,  // 1 = healthy
+    SAT_SV_STATUS_HEALTH_BAD                = 0x0020,  // 2 = unhealthy
+    SAT_SV_STATUS_HEALTH_MASK               = 0x0030,
+    SAT_SV_STATUS_HEALTH_OFFSET             = 4,
 
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK           = 0x0300,    // 1=float, 2=fix
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET         = 8,
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,    
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,    
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK   = 0x0300,  // 1=float, 2=fix
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET = 8,
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT  = 1,
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX    = 2,
 
-    SAT_SV_STATUS_RTK_EPH_RTCM_PULSE                = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
-    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE             = 0x2000,   // Set when eph is added to RTK LIB for this SV 
-    SAT_SV_STATUS_RTK_EPH_PULSE_MASK                = SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE | SAT_SV_STATUS_RTK_EPH_RTCM_PULSE,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTCM_PULSE        = 0x1000,  // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE     = 0x2000,  // Set when eph is added to RTK LIB for this SV
+    SAT_SV_STATUS_RTK_EPH_PULSE_MASK        = SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE | SAT_SV_STATUS_RTK_EPH_RTCM_PULSE,  // Set when eph is Rx for this SV and cleared by next message send
 
-    SAT_SV_STATUS_RTK_EPH_SEND_PULSE                = 0x4000,   // Set when eph is Tx'd from device
+    SAT_SV_STATUS_RTK_EPH_SEND_PULSE        = 0x4000,  // Set when eph is Tx'd from device
 
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
@@ -1193,86 +1193,86 @@ enum eSatSvStatus
     // SAT_SV_STATUS_EPHAVAIL                          = 0x00000800,
     // SAT_SV_STATUS_ALMAVAIL                          = 0x00001000,
     // SAT_SV_STATUS_ANOAVAIL                          = 0x00002000,
-    // SAT_SV_STATUS_AOPAVAIL                          = 0x00004000,    
+    // SAT_SV_STATUS_AOPAVAIL                          = 0x00004000,
 };
 
 /** (DID_GNSS1_SAT, DID_GNSS2_SAT) GPS satellite information */
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in milliseconds */
-    uint32_t                timeOfWeekMs;                
+    uint32_t                    timeOfWeekMs;
     /** Number of satellites in the sky */
-    uint32_t                numSats;                    
+    uint32_t                    numSats;
     /** Satellite information list */
-    gnss_sat_sv_t            sat[MAX_NUM_SATELLITES];    
+    gnss_sat_sv_t               sat[MAX_NUM_SATELLITES];
 } gnss_sat_t;
 
 enum eSatSvSigId
 {
-    SAT_SV_SIG_ID_GPS_L1CA          = 0,
-    SAT_SV_SIG_ID_GPS_L2CL          = 3,
-    SAT_SV_SIG_ID_GPS_L2CM          = 4,
-    SAT_SV_SIG_ID_GPS_L5I           = 6,
-    SAT_SV_SIG_ID_GPS_L5Q           = 7,
-    SAT_SV_SIG_ID_GPS_L5            = SAT_SV_SIG_ID_GPS_L5Q,
+    SAT_SV_SIG_ID_GPS_L1CA      = 0,
+    SAT_SV_SIG_ID_GPS_L2CL      = 3,
+    SAT_SV_SIG_ID_GPS_L2CM      = 4,
+    SAT_SV_SIG_ID_GPS_L5I       = 6,
+    SAT_SV_SIG_ID_GPS_L5Q       = 7,
+    SAT_SV_SIG_ID_GPS_L5        = SAT_SV_SIG_ID_GPS_L5Q,
 
-    SAT_SV_SIG_ID_SBAS_L1CA         = 0,
-    SAT_SV_SIG_ID_SBAS_L2           = 1,
-    SAT_SV_SIG_ID_SBAS_L5           = 2,
+    SAT_SV_SIG_ID_SBAS_L1CA     = 0,
+    SAT_SV_SIG_ID_SBAS_L2       = 1,
+    SAT_SV_SIG_ID_SBAS_L5       = 2,
 
-    SAT_SV_SIG_ID_Galileo_E1C2      = 0,
-    SAT_SV_SIG_ID_Galileo_E1B2      = 1,
-    SAT_SV_SIG_ID_Galileo_E1BC      = SAT_SV_SIG_ID_Galileo_E1B2,
-    SAT_SV_SIG_ID_Galileo_E5aI      = 3,
-    SAT_SV_SIG_ID_Galileo_E5aQ      = 4,
-    SAT_SV_SIG_ID_Galileo_E5a       = SAT_SV_SIG_ID_Galileo_E5aQ,
-    SAT_SV_SIG_ID_Galileo_E5bI      = 5,
-    SAT_SV_SIG_ID_Galileo_E5bQ      = 6,
-    SAT_SV_SIG_ID_Galileo_E5        = SAT_SV_SIG_ID_Galileo_E5bQ,
+    SAT_SV_SIG_ID_Galileo_E1C2  = 0,
+    SAT_SV_SIG_ID_Galileo_E1B2  = 1,
+    SAT_SV_SIG_ID_Galileo_E1BC  = SAT_SV_SIG_ID_Galileo_E1B2,
+    SAT_SV_SIG_ID_Galileo_E5aI  = 3,
+    SAT_SV_SIG_ID_Galileo_E5aQ  = 4,
+    SAT_SV_SIG_ID_Galileo_E5a   = SAT_SV_SIG_ID_Galileo_E5aQ,
+    SAT_SV_SIG_ID_Galileo_E5bI  = 5,
+    SAT_SV_SIG_ID_Galileo_E5bQ  = 6,
+    SAT_SV_SIG_ID_Galileo_E5    = SAT_SV_SIG_ID_Galileo_E5bQ,
 
-    SAT_SV_SIG_ID_BeiDou_B1D1       = 0,
-    SAT_SV_SIG_ID_BeiDou_B1D2       = 1,
-    SAT_SV_SIG_ID_BeiDou_B2D1       = 2,
-    SAT_SV_SIG_ID_BeiDou_B2D2       = 3,
-    SAT_SV_SIG_ID_BeiDou_B2         = SAT_SV_SIG_ID_BeiDou_B2D1,
-    SAT_SV_SIG_ID_BeiDou_B1C        = 5,
-    SAT_SV_SIG_ID_BeiDou_B2a        = 7,
+    SAT_SV_SIG_ID_BeiDou_B1D1   = 0,
+    SAT_SV_SIG_ID_BeiDou_B1D2   = 1,
+    SAT_SV_SIG_ID_BeiDou_B2D1   = 2,
+    SAT_SV_SIG_ID_BeiDou_B2D2   = 3,
+    SAT_SV_SIG_ID_BeiDou_B2     = SAT_SV_SIG_ID_BeiDou_B2D1,
+    SAT_SV_SIG_ID_BeiDou_B1C    = 5,
+    SAT_SV_SIG_ID_BeiDou_B2a    = 7,
 
-    SAT_SV_SIG_ID_QZSS_L1CA         = 0,
-    SAT_SV_SIG_ID_QZSS_L1S          = 1,
-    SAT_SV_SIG_ID_QZSS_L2CM         = 4,
-    SAT_SV_SIG_ID_QZSS_L2CL         = 5,
-    SAT_SV_SIG_ID_QZSS_L2           = SAT_SV_SIG_ID_QZSS_L2CL,
-    SAT_SV_SIG_ID_QZSS_L5I          = 8,
-    SAT_SV_SIG_ID_QZSS_L5Q          = 9,
-    SAT_SV_SIG_ID_QZSS_L5           = SAT_SV_SIG_ID_QZSS_L5Q,
+    SAT_SV_SIG_ID_QZSS_L1CA     = 0,
+    SAT_SV_SIG_ID_QZSS_L1S      = 1,
+    SAT_SV_SIG_ID_QZSS_L2CM     = 4,
+    SAT_SV_SIG_ID_QZSS_L2CL     = 5,
+    SAT_SV_SIG_ID_QZSS_L2       = SAT_SV_SIG_ID_QZSS_L2CL,
+    SAT_SV_SIG_ID_QZSS_L5I      = 8,
+    SAT_SV_SIG_ID_QZSS_L5Q      = 9,
+    SAT_SV_SIG_ID_QZSS_L5       = SAT_SV_SIG_ID_QZSS_L5Q,
 
-    SAT_SV_SIG_ID_GLONASS_L1OF      = 0,
-    SAT_SV_SIG_ID_GLONASS_L2OF      = 2,
+    SAT_SV_SIG_ID_GLONASS_L1OF  = 0,
+    SAT_SV_SIG_ID_GLONASS_L2OF  = 2,
 
-    SAT_SV_SIG_ID_NAVIC_L5A         = 0, 
+    SAT_SV_SIG_ID_NAVIC_L5A     = 0,
 };
 
 enum eSatSigQuality
 {
-    SAT_SIG_QUALITY_NO_SIGNAL                   = 0,     // no signal
-    SAT_SIG_QUALITY_SEARCHING                   = 1,     // searching signal
-    SAT_SIG_QUALITY_ACQUIRED                    = 2,     // signal acquired
-    SAT_SIG_QUALITY_DETECTED                    = 3,     // signal detected but unusable
-    SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC         = 4,     // code locked and time synchronized
-    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_1    = 5,     // code and carrier locked and time synchronized
-    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2    = 6,     // "
-    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3    = 7,     // "
+    SAT_SIG_QUALITY_NO_SIGNAL                   = 0,  // no signal
+    SAT_SIG_QUALITY_SEARCHING                   = 1,  // searching signal
+    SAT_SIG_QUALITY_ACQUIRED                    = 2,  // signal acquired
+    SAT_SIG_QUALITY_DETECTED                    = 3,  // signal detected but unusable
+    SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC         = 4,  // code locked and time synchronized
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_1    = 5,  // code and carrier locked and time synchronized
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2    = 6,  // "
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3    = 7,  // "
 };
 
 enum eSatSigStatus
 {
-    SAT_SIG_STATUS_HEALTH_UNKNOWN               = 0x0000,    // 0 = unknown
-    SAT_SIG_STATUS_HEALTH_GOOD                  = 0x0001,    // 1 = healthy
-    SAT_SIG_STATUS_HEALTH_BAD                   = 0x0002,    // 2 = unhealthy
-    SAT_SIG_STATUS_HEALTH_MASK                  = 0x0003,
-    SAT_SIG_STATUS_USED_IN_SOLUTION             = 0x0004,  // Signal is used in the solution
-    SAT_SIG_STATUS_USED_IN_SOLUTION_OFFSET      = 2,
+    SAT_SIG_STATUS_HEALTH_UNKNOWN           = 0x0000,  // 0 = unknown
+    SAT_SIG_STATUS_HEALTH_GOOD              = 0x0001,  // 1 = healthy
+    SAT_SIG_STATUS_HEALTH_BAD               = 0x0002,  // 2 = unhealthy
+    SAT_SIG_STATUS_HEALTH_MASK              = 0x0003,
+    SAT_SIG_STATUS_USED_IN_SOLUTION         = 0x0004,  // Signal is used in the solution
+    SAT_SIG_STATUS_USED_IN_SOLUTION_OFFSET  = 2,
 };
 
 
@@ -1280,22 +1280,22 @@ enum eSatSigStatus
 typedef struct PACKED
 {
     /** GNSS identifier (see eSatSvGnssId) */
-    uint8_t                    gnssId;
+    uint8_t                     gnssId;
 
     /** Satellite identifier */
-    uint8_t                    svId;
+    uint8_t                     svId;
 
     /** Signal identifier, frequency description (eSatSvSigId) */
-    uint8_t                    sigId;
+    uint8_t                     sigId;
 
     /** (dBHz) Carrier to noise ratio (signal strength) */
-    uint8_t                    cno;
+    uint8_t                     cno;
 
     /** Quality indicator (see eSatSigQuality) */
-    uint8_t                    quality;
+    uint8_t                     quality;
 
     /** Status flags (see eSatSigStatus) */
-    uint16_t                status;
+    uint16_t                    status;
 
 } gnss_sig_sv_t;
 
@@ -1303,82 +1303,82 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in milliseconds */
-    uint32_t                timeOfWeekMs;                
+    uint32_t                    timeOfWeekMs;
     /** Number of satellite signals in the following satelliate signal list */
-    uint32_t                numSigs;                    
+    uint32_t                    numSigs;
     /** Satellite signal list */
-    gnss_sig_sv_t            sig[MAX_NUM_SAT_SIGNALS];    
+    gnss_sig_sv_t               sig[MAX_NUM_SAT_SIGNALS];
 } gnss_sig_t;
 
 typedef uint8_t         gnss_extension_ver_t[30];
-#define GNSS_VER_NUM_EXTENSIONS    6
+#define GNSS_VER_NUM_EXTENSIONS 6
 /** (DID_GNSS1_VERSION) GPS version strings */
 typedef struct PACKED
 {
     /** Software version */
-    uint8_t                 swVersion[30];
+    uint8_t                     swVersion[30];
     /** Hardware version */
-    uint8_t                 hwVersion[10];        
+    uint8_t                     hwVersion[10];
     /** Extension 30 bytes array description  */
-    gnss_extension_ver_t     extension[GNSS_VER_NUM_EXTENSIONS];        
+    gnss_extension_ver_t        extension[GNSS_VER_NUM_EXTENSIONS];
 } gnss_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in seconds */
-    double                  timeOfWeek;                    
+    double                  timeOfWeek;
 
     /** Quaternion body rotation with respect to ECEF */
-    float                   qe2b[4];                    
+    float                   qe2b[4];
 
     /** (m/s) Velocity in ECEF frame */
-    float                   ve[3];                        
+    float                   ve[3];
 
     /** (m)     Position in ECEF frame */
-    double                  ecef[3];                
+    double                  ecef[3];
 
     /** (rad/s) Gyro bias */
-    float                   biasPqr[3];               
-    
+    float                   biasPqr[3];
+
     /** (m/s^2) Accelerometer bias */
-    float                   biasAcc[3];                
-    
+    float                   biasAcc[3];
+
     /** (m)     Barometer bias */
-    float                   biasBaro;               
-    
+    float                   biasBaro;
+
     /** (rad)   Magnetic declination */
-    float                   magDec;                 
-    
+    float                   magDec;
+
     /** (rad)   Magnetic inclination */
-    float                   magInc;                 
+    float                   magInc;
 } inl2_states_t;
 
 // (DID_ROS_COVARIANCE_POSE_TWIST) INL2 - INS Extended Kalman Filter (EKF) state covariance
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in seconds */
-    double                  timeOfWeek;
+    double                      timeOfWeek;
 
     /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF pose errors: Attitude (roll,pitch,yaw) error (body frame, rad²), Position (x,y,z) error (ECEF frame, m²) */
-    /** Index layout: 
+    /** Index layout:
      *    0 __ __ __ __ __
      *    1  2 __ __ __ __
      *    3  4  5 __ __ __
      *    6  7  8  9 __ __
      *   10 11 12 13 14 __
      *   15 16 17 18 19 20  */
-    float                    covPoseLD[21];
+    float                       covPoseLD[21];
 
     /** Packed 6x6 lower-diagonal covariance matrix (21 values, row-major) for EKF twist errors: Velocity (x,y,z) error (ECEF frame, (m/s)^2), Angular rate (p,q,r) error (body frame, (rad/s)^2) */
-    /** Index layout: 
+    /** Index layout:
      *   0 __ __ __ __ __
      *   1  2 __ __ __ __
      *   3  4  5 __ __ __
      *   6  7  8  9 __ __
      *  10 11 12 13 14 __
      *  15 16 17 18 19 20  */
-    float                    covTwistLD[21];
+    float                       covTwistLD[21];
 } ros_covariance_pose_twist_t;
 
 // (DID_INL2_STATUS)
@@ -1390,12 +1390,12 @@ typedef struct PACKED
     int             accel_motion;
     int             rot_motion;
     int             zero_vel;
-    int             ahrs_gnss_cnt;       // Counter of sequential valid GPS data (for switching from AHRS to navigation)
+    int             ahrs_gnss_cnt;  // Counter of sequential valid GPS data (for switching from AHRS to navigation)
     float           hdg_err;
-    int             hdg_coarse;         // Flag whether initial attitude error converged
-    int             hdg_aligned;        // Flag whether initial attitude error converged
+    int             hdg_coarse;     // Flag whether initial attitude error converged
+    int             hdg_aligned;    // Flag whether initial attitude error converged
     int             hdg_aligning;
-    int             ekf_init_done;      // Hot EKF initialization completed
+    int             ekf_init_done;  // Hot EKF initialization completed
     int             mag_cal_good;
     int             mag_cal_done;
     int             stat_magfield;
@@ -1470,7 +1470,7 @@ typedef struct PACKED
 
     /** MSL altitude from barometric pressure sensor in meters */
     float                   mslBar;
-    
+
     /** Relative humidity as a percent (%rH). Range is 0% - 100% */
     float                   humidity;
 
@@ -1491,16 +1491,16 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in milliseconds */
-    uint32_t                timeOfWeekMs;
+    uint32_t                    timeOfWeekMs;
 
     /** Latitude, longitude and height above ellipsoid (rad, rad, m) */
-    double                  lla[3];
+    double                      lla[3];
 
     /** Velocities in body frames of X, Y and Z (m/s) */
-    float                   uvw[3];
+    float                       uvw[3];
 
     /** Quaternion body rotation with respect to NED: W, X, Y, Z */
-    float                    qn2b[4];
+    float                       qn2b[4];
 } ins_output_t;
 
 /** (DID_SYS_PARAMS) System parameters */
@@ -1532,7 +1532,7 @@ typedef struct PACKED
 
     /** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
     uint32_t                navOutputPeriodMs;
-    
+
     /** Actual sample period relative to GPS PPS (sec) */
     double                  sensorTruePeriod;
 
@@ -1554,66 +1554,66 @@ typedef struct PACKED
 enum eGenFaultCodes
 {
     /** INS state limit overrun - UVW */
-    GFC_INS_STATE_ORUN_UVW                  = 0x00000001,
+    GFC_INS_STATE_ORUN_UVW      = 0x00000001,
     /** INS state limit overrun - Latitude */
-    GFC_INS_STATE_ORUN_LAT                  = 0x00000002,
+    GFC_INS_STATE_ORUN_LAT      = 0x00000002,
     /** INS state limit overrun - Altitude */
-    GFC_INS_STATE_ORUN_ALT                  = 0x00000004,
+    GFC_INS_STATE_ORUN_ALT      = 0x00000004,
     /** Unhandled interrupt */
-    GFC_UNHANDLED_INTERRUPT                 = 0x00000010,
+    GFC_UNHANDLED_INTERRUPT     = 0x00000010,
     /** GNSS receiver critical fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_FATAL_MASK) */
-    GFC_GNSS_CRITICAL_FAULT                 = 0x00000020,
+    GFC_GNSS_CRITICAL_FAULT     = 0x00000020,
     /** GNSS Tx limited */
-    GFC_GNSS_TX_LIMITED                     = 0x00000040,
+    GFC_GNSS_TX_LIMITED         = 0x00000040,
     /** GNSS Rx overrun */
-    GFC_GNSS_RX_OVERRUN                     = 0x00000080,
+    GFC_GNSS_RX_OVERRUN         = 0x00000080,
     /** Fault: sensor initialization  */
-    GFC_INIT_SENSORS                        = 0x00000100,
+    GFC_INIT_SENSORS            = 0x00000100,
     /** Fault: SPI bus initialization  */
-    GFC_INIT_SPI                            = 0x00000200,
+    GFC_INIT_SPI                = 0x00000200,
     /** Fault: SPI configuration  */
-    GFC_CONFIG_SPI                          = 0x00000400,
+    GFC_CONFIG_SPI              = 0x00000400,
     /** Fault: GNSS1 init  */
-    GFC_GNSS1_INIT                          = 0x00000800,
+    GFC_GNSS1_INIT              = 0x00000800,
     /** Fault: GNSS2 init  */
-    GFC_GNSS2_INIT                          = 0x00001000,
+    GFC_GNSS2_INIT              = 0x00001000,
     /** Flash failed to load valid values */
-    GFC_FLASH_INVALID_VALUES                = 0x00002000,
+    GFC_FLASH_INVALID_VALUES    = 0x00002000,
     /** Flash checksum failure */
-    GFC_FLASH_CHECKSUM_FAILURE              = 0x00004000,
+    GFC_FLASH_CHECKSUM_FAILURE  = 0x00004000,
     /** Flash write failure */
-    GFC_FLASH_WRITE_FAILURE                 = 0x00008000,
+    GFC_FLASH_WRITE_FAILURE     = 0x00008000,
     /** System Fault: general */
-    GFC_SYS_FAULT_GENERAL                   = 0x00010000,
+    GFC_SYS_FAULT_GENERAL       = 0x00010000,
     /** System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
-    GFC_SYS_FAULT_CRITICAL                  = 0x00020000,
+    GFC_SYS_FAULT_CRITICAL      = 0x00020000,
     /** Sensor(s) saturated */
-    GFC_SENSOR_SATURATION                   = 0x00040000,
+    GFC_SENSOR_SATURATION       = 0x00040000,
     /** INS extended kalman filter states invalid and the EKF was reset */
-    GFC_EKF_STATES_INVALID                  = 0x00080000,
+    GFC_EKF_STATES_INVALID      = 0x00080000,
     /** Fault: IMU initialization */
-    GFC_INIT_IMU                            = 0x00100000,
+    GFC_INIT_IMU                = 0x00100000,
     /** Fault: Barometer initialization */
-    GFC_INIT_BAROMETER                      = 0x00200000,
+    GFC_INIT_BAROMETER          = 0x00200000,
     /** Fault: Magnetometer initialization */
-    GFC_INIT_MAGNETOMETER                   = 0x00400000,
+    GFC_INIT_MAGNETOMETER       = 0x00400000,
     /** Fault: I2C initialization */
-    GFC_INIT_I2C                            = 0x00800000,
+    GFC_INIT_I2C                = 0x00800000,
     /** Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin. */
-    GFC_CHIP_ERASE_INVALID                  = 0x01000000,
+    GFC_CHIP_ERASE_INVALID      = 0x01000000,
     /** Fault: EKF GPS time fault */
-    GFC_EKF_GNSS_TIME_FAULT                 = 0x02000000,
+    GFC_EKF_GNSS_TIME_FAULT     = 0x02000000,
     /** Fault: GPS receiver time fault */
-    GFC_GNSS_RECEIVER_TIME                  = 0x04000000,
+    GFC_GNSS_RECEIVER_TIME      = 0x04000000,
     /** Fault: GNSS reciever ceneral fault. See the corresponding GPS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK) */
-    GFC_GNSS_GENERAL_FAULT                  = 0x08000000,
+    GFC_GNSS_GENERAL_FAULT      = 0x08000000,
     /** Fault: Invalid IMU input rejected by EKF */
-    GFC_EKF_INPUT_INVALID_IMU               = 0x10000000,
+    GFC_EKF_INPUT_INVALID_IMU   = 0x10000000,
     /** Fault: GPS RTOS error */
-    GFC_GNSS_RTOS_ERROR                     = 0x20000000,
+    GFC_GNSS_RTOS_ERROR         = 0x20000000,
 
     /** IMX GFC flags that relate to GPX status flags */
-    GFC_GPX_STATUS_COMMON_MASK = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
+    GFC_GPX_STATUS_COMMON_MASK  = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,
 };
 
 
@@ -1628,88 +1628,88 @@ typedef struct PACKED
 
 } system_command_t;
 
-enum eSystemCommand 
+enum eSystemCommand
 {
-    SYS_CMD_NONE                                        = 0,            // (uint32 inv: 4294967295)
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES                    = 1,            // (uint32 inv: 4294967294)
-    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET                 = 2,            // (uint32 inv: 4294967293)
-    SYS_CMD_ENABLE_SENSOR_STATS                         = 3,            // (uint32 inv: 4294967292)
-    SYS_CMD_ENABLE_RTOS_STATS                           = 4,            // (uint32 inv: 4294967291)
-    SYS_CMD_ZERO_MOTION                                 = 5,            // (uint32 inv: 4294967290)
-    SYS_CMD_REF_POINT_STATIONARY                        = 6,            // (uint32 inv: 4294967289)
-    SYS_CMD_REF_POINT_MOVING                            = 7,            // (uint32 inv: 4294967288)
-    SYS_CMD_RESET_RTOS_STATS                            = 8,            // (uint32 inv: 4294967287)
+    SYS_CMD_NONE                                                    = 0,  // (uint32 inv: 4294967295)
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES                                = 1,  // (uint32 inv: 4294967294)
+    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET                             = 2,  // (uint32 inv: 4294967293)
+    SYS_CMD_ENABLE_SENSOR_STATS                                     = 3,  // (uint32 inv: 4294967292)
+    SYS_CMD_ENABLE_RTOS_STATS                                       = 4,  // (uint32 inv: 4294967291)
+    SYS_CMD_ZERO_MOTION                                             = 5,  // (uint32 inv: 4294967290)
+    SYS_CMD_REF_POINT_STATIONARY                                    = 6,  // (uint32 inv: 4294967289)
+    SYS_CMD_REF_POINT_MOVING                                        = 7,  // (uint32 inv: 4294967288)
+    SYS_CMD_RESET_RTOS_STATS                                        = 8,  // (uint32 inv: 4294967287)
 
-    SYS_CMD_ENABLE_GNSS_LOW_LEVEL_CONFIG                 = 10,           // (uint32 inv: 4294967285)
-    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE                  = 11,           // (uint32 inv: 4294967284)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS1       = 12,           // (uint32 inv: 4294967283)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS2       = 13,           // (uint32 inv: 4294967282)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0       = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 15,           // (uint32 inv: 4294967280)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2       = 16,           // (uint32 inv: 4294967279)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GNSS1      = 17,           // (uint32 inv: 4294967278)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS1  = 18,           // (uint32 inv: 4294967277)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS2  = 19,           // (uint32 inv: 4294967276)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE = 29,  // (uint32 inv: 4294967266)
+    SYS_CMD_ENABLE_GNSS_LOW_LEVEL_CONFIG                            = 10,  // (uint32 inv: 4294967285)
+    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE                              = 11,  // (uint32 inv: 4294967284)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS1                  = 12,  // (uint32 inv: 4294967283)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS2                  = 13,  // (uint32 inv: 4294967282)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0                   = 14,  // (uint32 inv: 4294967281)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1                   = 15,  // (uint32 inv: 4294967280)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2                   = 16,  // (uint32 inv: 4294967279)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GNSS1                 = 17,  // (uint32 inv: 4294967278)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS1             = 18,  // (uint32 inv: 4294967277)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS2             = 19,  // (uint32 inv: 4294967276)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB               = 20,  // (uint32 inv: 4294967275)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0              = 21,  // (uint32 inv: 4294967274)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1              = 22,  // (uint32 inv: 4294967273)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2              = 23,  // (uint32 inv: 4294967272)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK                  = 24,  // (uint32 inv: 4294967271)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK                 = 25,  // (uint32 inv: 4294967270)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK                 = 26,  // (uint32 inv: 4294967269)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK                 = 27,  // (uint32 inv: 4294967268)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK             = 28,  // (uint32 inv: 4294967267)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE    = 29,  // (uint32 inv: 4294967266)
 
-    SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                  = 30,           // (uint32 inv: 4294967265)
-    SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER         = 31,           // (uint32 inv: 4294967264)
-    SYS_CMD_GPX_ENABLE_GNSS2_CHIPSET_BOOTLOADER         = 32,           // (uint32 inv: 4294967263)
-    SYS_CMD_GPX_ENABLE_GNSS1_PASS_THROUGH               = 33,           // (uint32 inv: 4294967262)
-    SYS_CMD_GPX_ENABLE_GNSS2_PASS_THROUGH               = 34,           // (uint32 inv: 4294967261)
-    SYS_CMD_GPX_HARD_RESET_GNSS1                        = 36,           // (uint32 inv: 4294967259)
-    SYS_CMD_GPX_HARD_RESET_GNSS2                        = 37,           // (uint32 inv: 4294967258)
-    SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
-    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967256) // Enables serial bridge on IMX to GPX and loopback on GPX.
-    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
-    SYS_CMD_GPX_ENABLE_RTOS_STATS                       = 41,           // (uint32 inv: 4294967254)
+    SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                              = 30,  // (uint32 inv: 4294967265)
+    SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER                     = 31,  // (uint32 inv: 4294967264)
+    SYS_CMD_GPX_ENABLE_GNSS2_CHIPSET_BOOTLOADER                     = 32,  // (uint32 inv: 4294967263)
+    SYS_CMD_GPX_ENABLE_GNSS1_PASS_THROUGH                           = 33,  // (uint32 inv: 4294967262)
+    SYS_CMD_GPX_ENABLE_GNSS2_PASS_THROUGH                           = 34,  // (uint32 inv: 4294967261)
+    SYS_CMD_GPX_HARD_RESET_GNSS1                                    = 36,  // (uint32 inv: 4294967259)
+    SYS_CMD_GPX_HARD_RESET_GNSS2                                    = 37,  // (uint32 inv: 4294967258)
+    SYS_CMD_GPX_SOFT_RESET_GPX                                      = 38,  // (uint32 inv: 4294967257)
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK              = 39,  // (uint32 inv: 4294967256) // Enables serial bridge on IMX to GPX and loopback on GPX.
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE     = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
+    SYS_CMD_GPX_ENABLE_RTOS_STATS                                   = 41,  // (uint32 inv: 4294967254)
 
-    SYS_CMD_GNSS_RCVR_QUIET_MODE                        = 60,           // (uint32 inv: 4294967235) 
-    SYS_CMD_GNSS_RCVR_SOFT_RESET                        = 61,           // (uint32 inv: 4294967234)
-    SYS_CMD_GNSS_RCVR_HARD_RESET                        = 62,           // (uint32 inv: 4294967233)
+    SYS_CMD_GNSS_RCVR_QUIET_MODE                                    = 60,  // (uint32 inv: 4294967235)
+    SYS_CMD_GNSS_RCVR_SOFT_RESET                                    = 61,  // (uint32 inv: 4294967234)
+    SYS_CMD_GNSS_RCVR_HARD_RESET                                    = 62,  // (uint32 inv: 4294967233)
 
-    SYS_CMD_RESET_EKF_STATES                            = 70,           // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
-    SYS_CMD_CLEAR_ERROR_STATUS                          = 71,           // (uint32 inv: 4294967225) // Resets debug information such as CPU reset cause and fault states.
+    SYS_CMD_RESET_EKF_STATES                                        = 70,  // (uint32 inv: 4294967226) // Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset.
+    SYS_CMD_CLEAR_ERROR_STATUS                                      = 71,  // (uint32 inv: 4294967225) // Resets debug information such as CPU reset cause and fault states.
 
-    SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
-    SYS_CMD_SAVE_GNSS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
-    SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
-    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
-    SYS_CMD_MANF_ERASE_CALIBRATION_MOTION               = 1357924678,   // (uint32 inv: 2937042617) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_ERASE_CALIBRATION                      = 1357924679,   // (uint32 inv: 2937042616) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+    SYS_CMD_SAVE_FLASH                                              = 97,  // (uint32 inv: 4294967198)
+    SYS_CMD_SAVE_GNSS_ASSIST_TO_FLASH_RESET                         = 98,  // (uint32 inv: 4294967197)
+    SYS_CMD_SOFTWARE_RESET                                          = 99,  // (uint32 inv: 4294967196)
+    SYS_CMD_MANF_UNLOCK                                             = 1122334455,  // (uint32 inv: 3172632840)
+    SYS_CMD_MANF_ERASE_CALIBRATION_MOTION                           = 1357924678,  // (uint32 inv: 2937042617) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ERASE_CALIBRATION                                  = 1357924679,  // (uint32 inv: 2937042616) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_FACTORY_RESET                                      = 1357924680,  // (uint32 inv: 2937042615) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                                         = 1357924681,  // (uint32 inv: 2937042614) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION                              = 1357924682,  // (uint32 inv: 2937042613) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                              = 1357924683,  // (uint32 inv: 2937042612) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
 
-    SYS_CMD_FAULT_TEST_TRIG_MALLOC                      = 57005,
-    SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                  = 57006,
-    SYS_CMD_FAULT_TEST_TRIG_WATCHDOG                    = 57007,
-    SYS_CMD_FAULT_TEST_TRIG_FLASH_TORN_WRITE            = 57008,    // SN-7873: erase test page, start dword program, NVIC_SystemReset mid-flight to leave a torn dword with bad ECC; auto-fires NMI on next boot to exercise the full classify+recover cycle
+    SYS_CMD_FAULT_TEST_TRIG_MALLOC                                  = 57005,
+    SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                              = 57006,
+    SYS_CMD_FAULT_TEST_TRIG_WATCHDOG                                = 57007,
+    SYS_CMD_FAULT_TEST_TRIG_FLASH_TORN_WRITE                        = 57008,  // SN-7873: erase test page, start dword program, NVIC_SystemReset mid-flight to leave a torn dword with bad ECC; auto-fires NMI on next boot to exercise the full classify+recover cycle
 };
 
 enum eSerialPortBridge
 {
     SERIAL_PORT_BRIDGE_DISABLED         = 0,
 
-    SERIAL_PORT_BRIDGE_GNSS1_TO_USB      = 1,
-    SERIAL_PORT_BRIDGE_GNSS1_TO_SER0     = 2,
-    SERIAL_PORT_BRIDGE_GNSS1_TO_SER1     = 3,
-    SERIAL_PORT_BRIDGE_GNSS1_TO_SER2     = 4,
+    SERIAL_PORT_BRIDGE_GNSS1_TO_USB     = 1,
+    SERIAL_PORT_BRIDGE_GNSS1_TO_SER0    = 2,
+    SERIAL_PORT_BRIDGE_GNSS1_TO_SER1    = 3,
+    SERIAL_PORT_BRIDGE_GNSS1_TO_SER2    = 4,
 
-    SERIAL_PORT_BRIDGE_GNSS2_TO_USB      = 5,
-    SERIAL_PORT_BRIDGE_GNSS2_TO_SER0     = 6,
-    SERIAL_PORT_BRIDGE_GNSS2_TO_SER1     = 7,
-    SERIAL_PORT_BRIDGE_GNSS2_TO_SER2     = 8,
+    SERIAL_PORT_BRIDGE_GNSS2_TO_USB     = 5,
+    SERIAL_PORT_BRIDGE_GNSS2_TO_SER0    = 6,
+    SERIAL_PORT_BRIDGE_GNSS2_TO_SER1    = 7,
+    SERIAL_PORT_BRIDGE_GNSS2_TO_SER2    = 8,
 
     SERIAL_PORT_BRIDGE_USB_TO_SER0      = 9,
     SERIAL_PORT_BRIDGE_USB_TO_SER1      = 10,
@@ -1718,13 +1718,13 @@ enum eSerialPortBridge
     SERIAL_PORT_BRIDGE_SER0_TO_SER2     = 13,
     SERIAL_PORT_BRIDGE_SER1_TO_SER2     = 14,
 
-    SERIAL_PORT_BRIDGE_USB_TO_USB       = 15,   // loopback
-    SERIAL_PORT_BRIDGE_SER0_TO_SER0     = 16,   // loopback
-    SERIAL_PORT_BRIDGE_SER1_TO_SER1     = 17,   // loopback
-    SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,   // loopback
+    SERIAL_PORT_BRIDGE_USB_TO_USB       = 15,  // loopback
+    SERIAL_PORT_BRIDGE_SER0_TO_SER0     = 16,  // loopback
+    SERIAL_PORT_BRIDGE_SER1_TO_SER1     = 17,  // loopback
+    SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,  // loopback
 };
 
-#define NMEA_BUFFER_SIZE 256
+#define NMEA_BUFFER_SIZE    256
 
 typedef struct nmeaBroadcastMsgPair
 {
@@ -1735,7 +1735,7 @@ typedef struct nmeaBroadcastMsgPair
     uint8_t msgPeriod;
 } nmeaBroadcastMsgPair_t;
 
-#define MAX_nmeaBroadcastMsgPairs 20
+#define MAX_nmeaBroadcastMsgPairs   20
 
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
@@ -1744,12 +1744,12 @@ typedef struct PACKED
     uint32_t                options;
 
     /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaMsgId) */
-    nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
+    nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];
 
     /*  Example usage:
      *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGnssDtMs = 200 (5Hz)
-     *  nmeaBroadcastMsgs[0].msgID = 6, nmeaBroadcastMsgs[0].msgPeriod = 5  
-     *  nmeaBroadcastMsgs[1].msgID = 7, nmeaBroadcastMsgs[1].msgPeriod = 1 */           
+     *  nmeaBroadcastMsgs[0].msgID = 6, nmeaBroadcastMsgs[0].msgPeriod = 5
+     *  nmeaBroadcastMsgs[1].msgID = 7, nmeaBroadcastMsgs[1].msgPeriod = 1 */
 
 } nmea_msgs_t;
 
@@ -1767,7 +1767,7 @@ typedef struct PACKED
 
 typedef struct PACKED
 {                                       // Units only apply for calibrated data
-    float                   mag[3];         // (uT)        Magnetometers
+    float                   mag[3];     // (uT)        Magnetometers
 } sensors_mag_t;
 
 typedef struct PACKED
@@ -1786,7 +1786,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
-    double                  time;       // Units only apply for calibrated data
+    double                  time;                   // Units only apply for calibrated data
 
     sensors_mpu_t           mpu[MAX_IMU_DEVICES];
 } sensors_t;
@@ -1810,14 +1810,14 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    float                   lpfLsb[3];              // Low-pass filtered of g_sensors.lsb
-    float                   lpfTemp;                // (°C) Low-pass filtered sensor temperature
-    float                   k[3];                   // Slope (moved from flash to here)
-    float                   temp;                   // (°C)    Temperature of sensor
-    float                   tempRampRate;           // (°C/s) Temperature ramp rate
-    uint32_t                tci;                    // Index of current temperature compensation point
-    uint32_t                numTcPts;               // Total number of tc points
-    float                   dtTemp;                 // (°C) Temperature from last calibration point
+    float                   lpfLsb[3];      // Low-pass filtered of g_sensors.lsb
+    float                   lpfTemp;        // (°C) Low-pass filtered sensor temperature
+    float                   k[3];           // Slope (moved from flash to here)
+    float                   temp;           // (°C)    Temperature of sensor
+    float                   tempRampRate;   // (°C/s) Temperature ramp rate
+    uint32_t                tci;            // Index of current temperature compensation point
+    uint32_t                numTcPts;       // Total number of tc points
+    float                   dtTemp;         // (°C) Temperature from last calibration point
 } sensor_comp_unit_t;
 
 // Explicit wire-format variants of the DID_SCOMP payload. IMX-5 firmware sends v1.3
@@ -1889,9 +1889,9 @@ typedef struct PACKED
 #define NUM_USR_PORTS           NUM_COM_PORTS
 #endif
 
-/** Realtime Message Controller (used in rmc_t). 
-    The data sets available through RMC are broadcast at the availability of the data.  A goal of RMC is 
-    to provide updates from each onboard sensor as fast as possible with minimal latency.  The RMC is 
+/** Realtime Message Controller (used in rmc_t).
+    The data sets available through RMC are broadcast at the availability of the data.  A goal of RMC is
+    to provide updates from each onboard sensor as fast as possible with minimal latency.  The RMC is
     provided so that broadcast of sensor data is done as soon as it becomes available.   The exception to
     this rule is the INS output data, which has a configurable output data rate according to DID_RMC.insPeriodMs.
 */
@@ -1900,60 +1900,60 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_ALL                    (RMC_OPTIONS_PORT_MASK)
 #define RMC_OPTIONS_PORT_CURRENT                0x00000000
 #define RMC_OPTIONS_PORT_SER0                   0x00000001
-#define RMC_OPTIONS_PORT_SER1                   0x00000002      // also SPI
+#define RMC_OPTIONS_PORT_SER1                   0x00000002                  // also SPI
 #define RMC_OPTIONS_PORT_SER2                   0x00000004
 #define RMC_OPTIONS_PORT_USB                    0x00000008
-#define RMC_OPTIONS_PRESERVE_CTRL               0x00000100      // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT                  0x00000200      // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
-#define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00      // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
-#define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10              // Bit offset for NMEA speed filter options
-#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1               // NMEA speed filtering: Enable  
-#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   2               // NMEA speed filtering: Disable 
+#define RMC_OPTIONS_PRESERVE_CTRL               0x00000100                  // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00                  // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10                          // Bit offset for NMEA speed filter options
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1                           // NMEA speed filtering: Enable
+#define RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE   2                           // NMEA speed filtering: Disable
 
                                                                 // RMC message data rates:
-#define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
-#define RMC_BITS_INS2                   0x0000000000000002      // "
-#define RMC_BITS_INS3                   0x0000000000000004      // "
-#define RMC_BITS_INS4                   0x0000000000000008      // "
-#define RMC_BITS_IMU                    0x0000000000000010      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-#define RMC_BITS_PIMU                   0x0000000000000020      // "
-#define RMC_BITS_BAROMETER              0x0000000000000040      // ~8ms
-#define RMC_BITS_MAGNETOMETER           0x0000000000000080      // ~10ms
-#define RMC_BITS_IMUS                   0x0000000000000100      // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-// #define RMC_BITS_UNUSED                 0x0000000000000200 
-#define RMC_BITS_GNSS1_POS               0x0000000000000400      // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS2_POS               0x0000000000000800      // "
-#define RMC_BITS_GNSS1_RAW               0x0000000000001000      // "
-#define RMC_BITS_GNSS2_RAW               0x0000000000002000      // "
-#define RMC_BITS_GNSS1_SAT               0x0000000000004000      // 1s
-#define RMC_BITS_GNSS2_SAT               0x0000000000008000      // "
-#define RMC_BITS_GNSS_BASE_RAW           0x0000000000010000      // 
-#define RMC_BITS_STROBE_IN_TIME         0x0000000000020000      // On strobe input event
-#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
-#define RMC_BITS_IMUS_UNCAL             0x0000000000080000      // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-#define RMC_BITS_GNSS1_VEL               0x0000000000100000      // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS2_VEL               0x0000000000200000      // "
-#define RMC_BITS_GNSS1_UBX_POS           0x0000000000400000      // "
-#define RMC_BITS_GNSS1_RTK_POS           0x0000000000800000      // "
-#define RMC_BITS_GNSS1_RTK_POS_REL       0x0000000001000000      // "
-#define RMC_BITS_GNSS1_RTK_POS_MISC      0x0000000004000000      // "
-#define RMC_BITS_INL2_NED_SIGMA         0x0000000008000000
-#define RMC_BITS_RTK_STATE              0x0000000010000000
-#define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
-#define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
-#define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
-#define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
+#define RMC_BITS_INS1                   0x0000000000000001  // rmc.insPeriodMs (4ms default)
+#define RMC_BITS_INS2                   0x0000000000000002  // "
+#define RMC_BITS_INS3                   0x0000000000000004  // "
+#define RMC_BITS_INS4                   0x0000000000000008  // "
+#define RMC_BITS_IMU                    0x0000000000000010  // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+#define RMC_BITS_PIMU                   0x0000000000000020  // "
+#define RMC_BITS_BAROMETER              0x0000000000000040  // ~8ms
+#define RMC_BITS_MAGNETOMETER           0x0000000000000080  // ~10ms
+#define RMC_BITS_IMUS                   0x0000000000000100  // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
+// #define RMC_BITS_UNUSED                 0x0000000000000200
+#define RMC_BITS_GNSS1_POS          0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS2_POS          0x0000000000000800  // "
+#define RMC_BITS_GNSS1_RAW          0x0000000000001000  // "
+#define RMC_BITS_GNSS2_RAW          0x0000000000002000  // "
+#define RMC_BITS_GNSS1_SAT          0x0000000000004000  // 1s
+#define RMC_BITS_GNSS2_SAT          0x0000000000008000  // "
+#define RMC_BITS_GNSS_BASE_RAW      0x0000000000010000  //
+#define RMC_BITS_STROBE_IN_TIME     0x0000000000020000  // On strobe input event
+#define RMC_BITS_DIAGNOSTIC_MESSAGE 0x0000000000040000
+#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_GNSS1_VEL          0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS2_VEL          0x0000000000200000  // "
+#define RMC_BITS_GNSS1_UBX_POS      0x0000000000400000  // "
+#define RMC_BITS_GNSS1_RTK_POS      0x0000000000800000  // "
+#define RMC_BITS_GNSS1_RTK_POS_REL  0x0000000001000000  // "
+#define RMC_BITS_GNSS1_RTK_POS_MISC 0x0000000004000000  // "
+#define RMC_BITS_INL2_NED_SIGMA     0x0000000008000000
+#define RMC_BITS_RTK_STATE          0x0000000010000000
+#define RMC_BITS_RTK_CODE_RESIDUAL  0x0000000020000000
+#define RMC_BITS_RTK_PHASE_RESIDUAL 0x0000000040000000
+#define RMC_BITS_WHEEL_ENCODER      0x0000000080000000
+#define RMC_BITS_GROUND_VEHICLE     0x0000000100000000
 // #define RMC_BITS_UNUSED                 0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
-#define RMC_BITS_GNSS1_RTK_HDG_REL       0x0000001000000000      // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS1_RTK_HDG_MISC      0x0000002000000000      // "
-#define RMC_BITS_REFERENCE_IMU          0x0000004000000000      // DID_FLASH_CONFIG.startupNavDtMs
-#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000      // "
+#define RMC_BITS_GNSS1_RTK_HDG_REL      0x0000001000000000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS1_RTK_HDG_MISC     0x0000002000000000  // "
+#define RMC_BITS_REFERENCE_IMU          0x0000004000000000  // DID_FLASH_CONFIG.startupNavDtMs
+#define RMC_BITS_REFERENCE_PIMU         0x0000008000000000  // "
 #define RMC_BITS_IMUS_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
-#define RMC_BITS_GNSS1_SIG               0x0000040000000000      // 1s
-#define RMC_BITS_GNSS2_SIG               0x0000080000000000
+#define RMC_BITS_GNSS1_SIG              0x0000040000000000  // 1s
+#define RMC_BITS_GNSS2_SIG              0x0000080000000000
 
 // GPX messages could go into a local grmc if imx memory we expanded. (TM)
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000
@@ -1969,11 +1969,11 @@ typedef struct PACKED
 #define RMC_BITS_EVENT                  0x0800000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
-#define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
-#define RMC_BITS_PRESET                 0x8000000000000000        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
+#define RMC_BITS_INTERNAL_PPD           0x4000000000000000  //
+#define RMC_BITS_PRESET                 0x8000000000000000  // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
-#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS   100         // uint8
-#define RMC_PRESET_PPD_IMUS_PERIOD_MULT     255         // uint8
+#define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS   100     // uint8
+#define RMC_PRESET_PPD_IMUS_PERIOD_MULT     255     // uint8
 
 // Preset: Post Processing Data
 #define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
@@ -2023,7 +2023,7 @@ typedef struct PACKED
 #define RMC_PRESET_ALLAN_VARIANCE_IMUS      (RMC_BITS_PRESET \
                                             | RMC_BITS_IMU \
                                             | RMC_BITS_IMUS)
-#define RMC_PRESET_GNSS                      (RMC_BITS_PRESET \
+#define RMC_PRESET_GNSS (RMC_BITS_PRESET \
                                             | RMC_BITS_GNSS1_POS \
                                             | RMC_BITS_GNSS2_POS \
                                             | RMC_BITS_GNSS1_VEL \
@@ -2049,7 +2049,7 @@ typedef struct PACKED
 
     /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
     uint32_t                options;
-    
+
     /** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
@@ -2066,122 +2066,122 @@ typedef struct PACKED
 
 enum eNmeaMsgId
 {
-    NMEA_MSG_ID_INVALID     = 0,
-    NMEA_MSG_ID_PIMU        = 1,
-    NMEA_MSG_ID_PPIMU       = 2,
-    NMEA_MSG_ID_PRIMU       = 3,
-    NMEA_MSG_ID_PINS1       = 4,
-    NMEA_MSG_ID_PINS2       = 5,
-    NMEA_MSG_ID_PGPSP       = 6,
-    NMEA_MSG_ID_GNGGA       = 7,
-    NMEA_MSG_ID_GNGLL       = 8,
-    NMEA_MSG_ID_GNGSA       = 9,
-    NMEA_MSG_ID_GNRMC       = 10,
-    NMEA_MSG_ID_GNZDA       = 11,
-    NMEA_MSG_ID_PASHR       = 12,
-    NMEA_MSG_ID_PSTRB       = 13,
-    NMEA_MSG_ID_INFO        = 14,
-    NMEA_MSG_ID_GNGSV       = 15,
-    NMEA_MSG_ID_GNVTG       = 16,
-    NMEA_MSG_ID_INTEL       = 17,
-    NMEA_MSG_ID_POWGPS      = 18,
-    NMEA_MSG_ID_POWTLV      = 19,
+    NMEA_MSG_ID_INVALID             = 0,
+    NMEA_MSG_ID_PIMU                = 1,
+    NMEA_MSG_ID_PPIMU               = 2,
+    NMEA_MSG_ID_PRIMU               = 3,
+    NMEA_MSG_ID_PINS1               = 4,
+    NMEA_MSG_ID_PINS2               = 5,
+    NMEA_MSG_ID_PGPSP               = 6,
+    NMEA_MSG_ID_GNGGA               = 7,
+    NMEA_MSG_ID_GNGLL               = 8,
+    NMEA_MSG_ID_GNGSA               = 9,
+    NMEA_MSG_ID_GNRMC               = 10,
+    NMEA_MSG_ID_GNZDA               = 11,
+    NMEA_MSG_ID_PASHR               = 12,
+    NMEA_MSG_ID_PSTRB               = 13,
+    NMEA_MSG_ID_INFO                = 14,
+    NMEA_MSG_ID_GNGSV               = 15,
+    NMEA_MSG_ID_GNVTG               = 16,
+    NMEA_MSG_ID_INTEL               = 17,
+    NMEA_MSG_ID_POWGPS              = 18,
+    NMEA_MSG_ID_POWTLV              = 19,
     NMEA_MSG_ID_COUNT,
 
     // IMX/GPX Input Commands
     NMEA_MSG_ID_ASCE,         // "ASCE" - NMEA messages broadcast enable
-    NMEA_MSG_ID_BLEN,         // "BLEN" - Enable bootloader on IMX (app firmware update)    
+    NMEA_MSG_ID_BLEN,         // "BLEN" - Enable bootloader on IMX (app firmware update)
     NMEA_MSG_ID_EBLE,         // "EBLE" - Enable bootloader on EVB
-    NMEA_MSG_ID_NELB,         // "NELB" - Enable SAM-BA mode    
+    NMEA_MSG_ID_NELB,         // "NELB" - Enable SAM-BA mode
     NMEA_MSG_ID_PERS,         // "PERS" - Save perstent messages
     NMEA_MSG_ID_SRST,         // "SRTS" - Software reset
     NMEA_MSG_ID_STPB,         // "STPB" - Stop broadcasts on all ports
     NMEA_MSG_ID_STPC,         // "STPC" - Stop broadcasts on current port
 
-    // Special case messages for each supported base message those with ID less than NMEA_MSG_ID_COUNT. 
+    // Special case messages for each supported base message those with ID less than NMEA_MSG_ID_COUNT.
     // Each base message get a 256 range of ID's for their special cases. Example for NMEA_MSG_ID_GNGSV:
     // NMEA_MSG_ID_GNGSV_START = NMEA_MSG_ID_GNGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
     // NOTE: Any ID greater than 256 is a special case, use the follow to extract the root case:
     //   if (msgId >= NMEA_MSG_ID_SPECIAL_CASE_START) msgId >>= 8;
-    NMEA_MSG_ID_SPECIAL_CASE_START = 256,
+    NMEA_MSG_ID_SPECIAL_CASE_START  = 256,
 
     // Filtered GNGSV NMEA Message IDs:
 
     // GNGSV - All constellations
-    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GNGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840) Used for reference only
-    NMEA_MSG_ID_GNGSV_0         = NMEA_MSG_ID_GNGSV_START,                                                                                                                  // GNGSV_0 (3840) Clear all constellations and frequencies
-    NMEA_MSG_ID_GNGSV_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),                                                                                    // GNGSV_1 (3841) Enable all constellations band1
-    NMEA_MSG_ID_GNGSV_2         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),                                                                                    // GNGSV_2 (3842) Enable all constellations band2
-    NMEA_MSG_ID_GNGSV_2_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                                        // GNGSV_2_1 (3843) Enable all constellations band1, band2
-    NMEA_MSG_ID_GNGSV_3         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT),                                                                                    // GNGSV_3 (3844) Enable all constellations band3
-    NMEA_MSG_ID_GNGSV_3_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                                        // GNGSV_3_1 (3845) Enable all constellations band1, band3
-    NMEA_MSG_ID_GNGSV_3_2       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                                        // GNGSV_3_2 (3846) Enable all constellations band2, band3
-    NMEA_MSG_ID_GNGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                            // GNGSV_3_2_1 (3847) Enable all constellations band1, band2, band3
-    NMEA_MSG_ID_GNGSV_5         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT),                                                                                        // GNGSV_5 (3848) Enable all constellations band5
-    NMEA_MSG_ID_GNGSV_5_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                                            // GNGSV_5_1 (3849) Enable all constellations band1, band5
-    NMEA_MSG_ID_GNGSV_5_2       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                                            // GNGSV_5_2 (3850) Enable all constellations band2, band5
-    NMEA_MSG_ID_GNGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                // GNGSV_5_2_1 (3851) Enable all constellations band1, band2, band5
-    NMEA_MSG_ID_GNGSV_5_3       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT),                                                            // GNGSV_5_3 (3852) Enable all constellations band3, band5
-    NMEA_MSG_ID_GNGSV_5_3_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                // GNGSV_5_3_1 (3853) Enable all constellations band1, band3, band5
-    NMEA_MSG_ID_GNGSV_5_3_2     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                // GNGSV_5_3_2 (3854) Enable all constellations band2, band3, band5
-    NMEA_MSG_ID_GNGSV_5_3_2_1   = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),    // GNGSV_5_3_2_1 (3855) Enable all constellations band1, band2, band3, band5                                                                                                              // GNGSV (3855) Enable all constellations and frequencies
+    NMEA_MSG_ID_GNGSV_START         = NMEA_MSG_ID_GNGSV * NMEA_MSG_ID_SPECIAL_CASE_START,  // (3840) Used for reference only
+    NMEA_MSG_ID_GNGSV_0             = NMEA_MSG_ID_GNGSV_START,  // GNGSV_0 (3840) Clear all constellations and frequencies
+    NMEA_MSG_ID_GNGSV_1             = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_1 (3841) Enable all constellations band1
+    NMEA_MSG_ID_GNGSV_2             = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),  // GNGSV_2 (3842) Enable all constellations band2
+    NMEA_MSG_ID_GNGSV_2_1           = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_2_1 (3843) Enable all constellations band1, band2
+    NMEA_MSG_ID_GNGSV_3             = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT),  // GNGSV_3 (3844) Enable all constellations band3
+    NMEA_MSG_ID_GNGSV_3_1           = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_3_1 (3845) Enable all constellations band1, band3
+    NMEA_MSG_ID_GNGSV_3_2           = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),  // GNGSV_3_2 (3846) Enable all constellations band2, band3
+    NMEA_MSG_ID_GNGSV_3_2_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_3_2_1 (3847) Enable all constellations band1, band2, band3
+    NMEA_MSG_ID_GNGSV_5             = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT),  // GNGSV_5 (3848) Enable all constellations band5
+    NMEA_MSG_ID_GNGSV_5_1           = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_5_1 (3849) Enable all constellations band1, band5
+    NMEA_MSG_ID_GNGSV_5_2           = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),  // GNGSV_5_2 (3850) Enable all constellations band2, band5
+    NMEA_MSG_ID_GNGSV_5_2_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_5_2_1 (3851) Enable all constellations band1, band2, band5
+    NMEA_MSG_ID_GNGSV_5_3           = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT),  // GNGSV_5_3 (3852) Enable all constellations band3, band5
+    NMEA_MSG_ID_GNGSV_5_3_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_5_3_1 (3853) Enable all constellations band1, band3, band5
+    NMEA_MSG_ID_GNGSV_5_3_2         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),  // GNGSV_5_3_2 (3854) Enable all constellations band2, band3, band5
+    NMEA_MSG_ID_GNGSV_5_3_2_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),  // GNGSV_5_3_2_1 (3855) Enable all constellations band1, band2, band3, band5                                                                                                              // GNGSV (3855) Enable all constellations and frequencies
 
     // GPGSV - GPS
-    NMEA_MSG_ID_GPGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GPS_OFFSET),    // GPGSV_0 (3856) Disable all GPS frequencies
-    NMEA_MSG_ID_GPGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_1 (3857) Enable GPS L1
-    NMEA_MSG_ID_GPGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_2 (3858) Enable GPS L2
-    NMEA_MSG_ID_GPGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_2_1 (3859) Enable GPS L1, L2
-    NMEA_MSG_ID_GPGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_5 (3864) Enable GPS L5
-    NMEA_MSG_ID_GPGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_5_1 (3865) Enable GPS L1, L5
-    NMEA_MSG_ID_GPGSV_5_2       = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_5_2 (3866) Enable GPS L2, L5
-    NMEA_MSG_ID_GPGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_GPS_OFFSET),    // GPGSV_5_2_1 (3867) Enable GPS L1, L2, L5
-    NMEA_MSG_ID_GPGSV           = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV (3871) Enable all GPS frequencies
+    NMEA_MSG_ID_GPGSV_0             = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_0 (3856) Disable all GPS frequencies
+    NMEA_MSG_ID_GPGSV_1             = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_1 (3857) Enable GPS L1
+    NMEA_MSG_ID_GPGSV_2             = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_2 (3858) Enable GPS L2
+    NMEA_MSG_ID_GPGSV_2_1           = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_2_1 (3859) Enable GPS L1, L2
+    NMEA_MSG_ID_GPGSV_5             = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_5 (3864) Enable GPS L5
+    NMEA_MSG_ID_GPGSV_5_1           = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_5_1 (3865) Enable GPS L1, L5
+    NMEA_MSG_ID_GPGSV_5_2           = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_5_2 (3866) Enable GPS L2, L5
+    NMEA_MSG_ID_GPGSV_5_2_1         = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV_5_2_1 (3867) Enable GPS L1, L2, L5
+    NMEA_MSG_ID_GPGSV               = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_GPS_OFFSET),  // GPGSV (3871) Enable all GPS frequencies
 
     // GAGSV - Galileo
-    NMEA_MSG_ID_GAGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GAL_OFFSET),    // GAGSV_0 (3888) Disable all Galileo frequencies
-    NMEA_MSG_ID_GAGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GAL_OFFSET),        // GAGSV_1 (3889) Enable Galileo E1
-    NMEA_MSG_ID_GAGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GAL_OFFSET),        // GAGSV_5 (3896) Enable Galileo E5
-    NMEA_MSG_ID_GAGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GAL_OFFSET),      // GAGSV_5_1 (3897) Enable Galileo E1, E5
-    NMEA_MSG_ID_GAGSV           = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_GAL_OFFSET),  // GAGSV (3903) Enable all Galileo frequencies
+    NMEA_MSG_ID_GAGSV_0             = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GAL_OFFSET),  // GAGSV_0 (3888) Disable all Galileo frequencies
+    NMEA_MSG_ID_GAGSV_1             = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GAL_OFFSET),  // GAGSV_1 (3889) Enable Galileo E1
+    NMEA_MSG_ID_GAGSV_5             = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GAL_OFFSET),  // GAGSV_5 (3896) Enable Galileo E5
+    NMEA_MSG_ID_GAGSV_5_1           = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GAL_OFFSET),  // GAGSV_5_1 (3897) Enable Galileo E1, E5
+    NMEA_MSG_ID_GAGSV               = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_GAL_OFFSET),  // GAGSV (3903) Enable all Galileo frequencies
 
     // GBGSV - Beido
-    NMEA_MSG_ID_GBGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_0 (3904) Disable all Beidou frequencies
-    NMEA_MSG_ID_GBGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_1 (3905) Enable Beidou B1
-    NMEA_MSG_ID_GBGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_2 (3906) Enable Beidou B2
-    NMEA_MSG_ID_GBGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_2_1 (3907) Enable Beidou B1, B2
-    NMEA_MSG_ID_GBGSV_3         = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_3 (3908) Enable Beidou B3 
-    NMEA_MSG_ID_GBGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_3_1 (3909) Enable Beidou B1, B3
-    NMEA_MSG_ID_GBGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_3_2 (3910) Enable Beidou B2, B3
-    NMEA_MSG_ID_GBGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_3_2_1 (3911) Enable Beidou B1, B2, B3
-    NMEA_MSG_ID_GBGSV           = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV (3919) Enable all Beidou frequencies
+    NMEA_MSG_ID_GBGSV_0             = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_0 (3904) Disable all Beidou frequencies
+    NMEA_MSG_ID_GBGSV_1             = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_1 (3905) Enable Beidou B1
+    NMEA_MSG_ID_GBGSV_2             = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_2 (3906) Enable Beidou B2
+    NMEA_MSG_ID_GBGSV_2_1           = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_2_1 (3907) Enable Beidou B1, B2
+    NMEA_MSG_ID_GBGSV_3             = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_3 (3908) Enable Beidou B3
+    NMEA_MSG_ID_GBGSV_3_1           = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_3_1 (3909) Enable Beidou B1, B3
+    NMEA_MSG_ID_GBGSV_3_2           = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_3_2 (3910) Enable Beidou B2, B3
+    NMEA_MSG_ID_GBGSV_3_2_1         = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV_3_2_1 (3911) Enable Beidou B1, B2, B3
+    NMEA_MSG_ID_GBGSV               = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_BEI_OFFSET),  // GBGSV (3919) Enable all Beidou frequencies
 
     // GQGSV - QZSS
-    NMEA_MSG_ID_GQGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_0 (3920) Disable all QZSS frequencies
-    NMEA_MSG_ID_GQGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_1 (3921) Enable QZSS L1
-    NMEA_MSG_ID_GQGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_2 (3922) Enable QZSS L2
-    NMEA_MSG_ID_GQGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_2_1 (3923) Enable QZSS L1, L2
-    NMEA_MSG_ID_GQGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_5 (3928) Enable QZSS L5
-    NMEA_MSG_ID_GQGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_5_1 (3929) Enable QZSS L1, L5
-    NMEA_MSG_ID_GQGSV_5_2       = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_5_2 (3930) Enable QZSS L2, L5
-    NMEA_MSG_ID_GQGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_5_2_1 (3931) Enable QZSS L1, L2, L5
-    NMEA_MSG_ID_GQGSV           = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV (3935) Enable all QZSS frequencies
+    NMEA_MSG_ID_GQGSV_0             = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_0 (3920) Disable all QZSS frequencies
+    NMEA_MSG_ID_GQGSV_1             = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_1 (3921) Enable QZSS L1
+    NMEA_MSG_ID_GQGSV_2             = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_2 (3922) Enable QZSS L2
+    NMEA_MSG_ID_GQGSV_2_1           = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_2_1 (3923) Enable QZSS L1, L2
+    NMEA_MSG_ID_GQGSV_5             = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_5 (3928) Enable QZSS L5
+    NMEA_MSG_ID_GQGSV_5_1           = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_5_1 (3929) Enable QZSS L1, L5
+    NMEA_MSG_ID_GQGSV_5_2           = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_5_2 (3930) Enable QZSS L2, L5
+    NMEA_MSG_ID_GQGSV_5_2_1         = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV_5_2_1 (3931) Enable QZSS L1, L2, L5
+    NMEA_MSG_ID_GQGSV               = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_QZS_OFFSET),  // GQGSV (3935) Enable all QZSS frequencies
 
     // GLGSV - Glonass
-    NMEA_MSG_ID_GLGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_0 (3936) Disable all Glonass frequencies
-    NMEA_MSG_ID_GLGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_1 (3937) Enable Glonass L1
-    NMEA_MSG_ID_GLGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_2 (3938) Enable Glonass L2
-    NMEA_MSG_ID_GLGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_2_1 (3939) Enable Glonass L1, L2
-    NMEA_MSG_ID_GLGSV_3         = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_3 (3940) Enable Glonass L3
-    NMEA_MSG_ID_GLGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_3_1 (3941) Enable Glonass L1, L3
-    NMEA_MSG_ID_GLGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_3_2 (3942) Enable Glonass L2, L3
-    NMEA_MSG_ID_GLGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_3_2_1 (3943) Enable Glonass L1, L2, L3
-    NMEA_MSG_ID_GLGSV           = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV (3951) Enable all Glonass frequencies
-    
-    NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // (3951) Used for reference only
+    NMEA_MSG_ID_GLGSV_0             = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_0 (3936) Disable all Glonass frequencies
+    NMEA_MSG_ID_GLGSV_1             = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_1 (3937) Enable Glonass L1
+    NMEA_MSG_ID_GLGSV_2             = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_2 (3938) Enable Glonass L2
+    NMEA_MSG_ID_GLGSV_2_1           = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_2_1 (3939) Enable Glonass L1, L2
+    NMEA_MSG_ID_GLGSV_3             = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_3 (3940) Enable Glonass L3
+    NMEA_MSG_ID_GLGSV_3_1           = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_3_1 (3941) Enable Glonass L1, L3
+    NMEA_MSG_ID_GLGSV_3_2           = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_3_2 (3942) Enable Glonass L2, L3
+    NMEA_MSG_ID_GLGSV_3_2_1         = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV_3_2_1 (3943) Enable Glonass L1, L2, L3
+    NMEA_MSG_ID_GLGSV               = (NMEA_MSG_ID_GNGSV_5_3_2_1 + NMEA_GNGSV_GLO_OFFSET),  // GLGSV (3951) Enable all Glonass frequencies
+
+    NMEA_MSG_ID_GNGSV_END           = NMEA_MSG_ID_GLGSV,  // (3951) Used for reference only
 };
 
 typedef struct {
-    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constellation mask (see eGnGSVIndex)*/
+    uint8_t constMask[SAT_SV_GNSS_ID_COUNT];    /* Constellation mask (see eGnGSVIndex)*/
 } gsvMask_t;
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
@@ -2219,7 +2219,7 @@ typedef struct PACKED
 {
      /** Data stream enable bits and options for the specified ports.  (see RMC_BITS_...) */
     rmc_t                   rmc;
-    
+
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT];
 
@@ -2228,45 +2228,45 @@ typedef struct PACKED
 } rmci_t;
 
 // GPX Realtime Message Controller (GRMC) - message broadcast mechanism.
-#define GRMC_OPTIONS_PORT_MASK           0x000000FF
-#define GRMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
-#define GRMC_OPTIONS_PORT_CURRENT        0x00000000
-#define GRMC_OPTIONS_PORT_SER0           0x00000001
-#define GRMC_OPTIONS_PORT_SER1           0x00000002    // also SPI
-#define GRMC_OPTIONS_PORT_SER2           0x00000004
-#define GRMC_OPTIONS_PORT_USB            0x00000008
-#define GRMC_OPTIONS_PRESERVE_CTRL       0x00000100    // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define GRMC_OPTIONS_PERSISTENT          0x00000200    // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+#define GRMC_OPTIONS_PORT_MASK      0x000000FF
+#define GRMC_OPTIONS_PORT_ALL       (RMC_OPTIONS_PORT_MASK)
+#define GRMC_OPTIONS_PORT_CURRENT   0x00000000
+#define GRMC_OPTIONS_PORT_SER0      0x00000001
+#define GRMC_OPTIONS_PORT_SER1      0x00000002                  // also SPI
+#define GRMC_OPTIONS_PORT_SER2      0x00000004
+#define GRMC_OPTIONS_PORT_USB       0x00000008
+#define GRMC_OPTIONS_PRESERVE_CTRL  0x00000100                  // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define GRMC_OPTIONS_PERSISTENT     0x00000200                  // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.
 
 
 enum GRMC_BIT_POS{
-    GRMC_BIT_POS_DEV_INFO =             0,
-    GRMC_BIT_POS_FLASH_CFG =            1,
-    GRMC_BIT_POS_STATUS =               2,
-    GRMC_BIT_POS_RTOS_INFO =            3,
-    GRMC_BIT_POS_DEBUG_ARRAY =          4,
-    GRMC_BIT_POS_GNSS1_POS =             5,
-    GRMC_BIT_POS_GNSS1_VEL =             6,
-    GRMC_BIT_POS_GNSS1_SAT =             7,
-    GRMC_BIT_POS_GNSS1_SIG =             8,
-    GRMC_BIT_POS_GNSS1_RAW =             9,
-    GRMC_BIT_POS_GNSS1_VERSION =         10,
-    GRMC_BIT_POS_GNSS2_POS =             11,
-    GRMC_BIT_POS_GNSS2_VEL =             12,
-    GRMC_BIT_POS_GNSS2_SAT =             13,
-    GRMC_BIT_POS_GNSS2_SIG =             14,
-    GRMC_BIT_POS_GNSS2_RAW =             15,
-    GRMC_BIT_POS_GNSS2_VERSION =         16,
-    GRMC_BIT_POS_GNSS1_RTK_POS =         17,
-    GRMC_BIT_POS_GNSS1_RTK_POS_MISC =    18,
-    GRMC_BIT_POS_GNSS1_RTK_POS_REL =     19,
-    GRMC_BIT_POS_GNSS2_RTK_CMP_MISC =    20,
-    GRMC_BIT_POS_GNSS2_RTK_CMP_REL =     21,
-    GRMC_BIT_POS_DID_RTK_DEBUG =        22,
-    GRMC_BIT_POS_DID_PORT_MON =         23,
-    GRMC_BIT_POS_DID_GPX_PORT_MON =     24,
-    GRMC_BIT_POS_DID_GNSS_BASE_RAW =     25,
-    GRMC_BIT_POS_DID_GPX_SYS_FAULT =    26,
+    GRMC_BIT_POS_DEV_INFO           = 0,
+    GRMC_BIT_POS_FLASH_CFG          = 1,
+    GRMC_BIT_POS_STATUS             = 2,
+    GRMC_BIT_POS_RTOS_INFO          = 3,
+    GRMC_BIT_POS_DEBUG_ARRAY        = 4,
+    GRMC_BIT_POS_GNSS1_POS          = 5,
+    GRMC_BIT_POS_GNSS1_VEL          = 6,
+    GRMC_BIT_POS_GNSS1_SAT          = 7,
+    GRMC_BIT_POS_GNSS1_SIG          = 8,
+    GRMC_BIT_POS_GNSS1_RAW          = 9,
+    GRMC_BIT_POS_GNSS1_VERSION      = 10,
+    GRMC_BIT_POS_GNSS2_POS          = 11,
+    GRMC_BIT_POS_GNSS2_VEL          = 12,
+    GRMC_BIT_POS_GNSS2_SAT          = 13,
+    GRMC_BIT_POS_GNSS2_SIG          = 14,
+    GRMC_BIT_POS_GNSS2_RAW          = 15,
+    GRMC_BIT_POS_GNSS2_VERSION      = 16,
+    GRMC_BIT_POS_GNSS1_RTK_POS      = 17,
+    GRMC_BIT_POS_GNSS1_RTK_POS_MISC = 18,
+    GRMC_BIT_POS_GNSS1_RTK_POS_REL  = 19,
+    GRMC_BIT_POS_GNSS2_RTK_CMP_MISC = 20,
+    GRMC_BIT_POS_GNSS2_RTK_CMP_REL  = 21,
+    GRMC_BIT_POS_DID_RTK_DEBUG      = 22,
+    GRMC_BIT_POS_DID_PORT_MON       = 23,
+    GRMC_BIT_POS_DID_GPX_PORT_MON   = 24,
+    GRMC_BIT_POS_DID_GNSS_BASE_RAW  = 25,
+    GRMC_BIT_POS_DID_GPX_SYS_FAULT  = 26,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2275,34 +2275,34 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_STATUS                (0x0000000000000001 << GRMC_BIT_POS_STATUS)
 #define GRMC_BITS_RTOS_INFO             (0x0000000000000001 << GRMC_BIT_POS_RTOS_INFO)
 #define GRMC_BITS_DEBUG_ARRAY           (0x0000000000000001 << GRMC_BIT_POS_DEBUG_ARRAY)
-#define GRMC_BITS_GNSS1_POS              (0x0000000000000001 << GRMC_BIT_POS_GNSS1_POS)
-#define GRMC_BITS_GNSS1_VEL              (0x0000000000000001 << GRMC_BIT_POS_GNSS1_VEL)
-#define GRMC_BITS_GNSS1_SAT              (0x0000000000000001 << GRMC_BIT_POS_GNSS1_SAT)
-#define GRMC_BITS_GNSS1_SIG              (0x0000000000000001 << GRMC_BIT_POS_GNSS1_SIG)
-#define GRMC_BITS_GNSS1_RAW              (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RAW)
-#define GRMC_BITS_GNSS1_VERSION          (0x0000000000000001 << GRMC_BIT_POS_GNSS1_VERSION)
-#define GRMC_BITS_GNSS2_POS              (0x0000000000000001 << GRMC_BIT_POS_GNSS2_POS)
-#define GRMC_BITS_GNSS2_VEL              (0x0000000000000001 << GRMC_BIT_POS_GNSS2_VEL)
-#define GRMC_BITS_GNSS2_SAT              (0x0000000000000001 << GRMC_BIT_POS_GNSS2_SAT)
-#define GRMC_BITS_GNSS2_SIG              (0x0000000000000001 << GRMC_BIT_POS_GNSS2_SIG)
-#define GRMC_BITS_GNSS2_RAW              (0x0000000000000001 << GRMC_BIT_POS_GNSS2_RAW)
-#define GRMC_BITS_GNSS2_VERSION          (0x0000000000000001 << GRMC_BIT_POS_GNSS2_VERSION)
-#define GRMC_BITS_GNSS1_RTK_POS          (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RTK_POS)
-#define GRMC_BITS_GNSS1_RTK_POS_MISC     (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RTK_POS_MISC)
-#define GRMC_BITS_GNSS1_RTK_POS_REL      (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RTK_POS_REL)
-#define GRMC_BITS_GNSS2_RTK_CMP_MISC     (0x0000000000000001 << GRMC_BIT_POS_GNSS2_RTK_CMP_MISC)
-#define GRMC_BITS_GNSS2_RTK_CMP_REL      (0x0000000000000001 << GRMC_BIT_POS_GNSS2_RTK_CMP_REL)
+#define GRMC_BITS_GNSS1_POS             (0x0000000000000001 << GRMC_BIT_POS_GNSS1_POS)
+#define GRMC_BITS_GNSS1_VEL             (0x0000000000000001 << GRMC_BIT_POS_GNSS1_VEL)
+#define GRMC_BITS_GNSS1_SAT             (0x0000000000000001 << GRMC_BIT_POS_GNSS1_SAT)
+#define GRMC_BITS_GNSS1_SIG             (0x0000000000000001 << GRMC_BIT_POS_GNSS1_SIG)
+#define GRMC_BITS_GNSS1_RAW             (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RAW)
+#define GRMC_BITS_GNSS1_VERSION         (0x0000000000000001 << GRMC_BIT_POS_GNSS1_VERSION)
+#define GRMC_BITS_GNSS2_POS             (0x0000000000000001 << GRMC_BIT_POS_GNSS2_POS)
+#define GRMC_BITS_GNSS2_VEL             (0x0000000000000001 << GRMC_BIT_POS_GNSS2_VEL)
+#define GRMC_BITS_GNSS2_SAT             (0x0000000000000001 << GRMC_BIT_POS_GNSS2_SAT)
+#define GRMC_BITS_GNSS2_SIG             (0x0000000000000001 << GRMC_BIT_POS_GNSS2_SIG)
+#define GRMC_BITS_GNSS2_RAW             (0x0000000000000001 << GRMC_BIT_POS_GNSS2_RAW)
+#define GRMC_BITS_GNSS2_VERSION         (0x0000000000000001 << GRMC_BIT_POS_GNSS2_VERSION)
+#define GRMC_BITS_GNSS1_RTK_POS         (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RTK_POS)
+#define GRMC_BITS_GNSS1_RTK_POS_MISC    (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RTK_POS_MISC)
+#define GRMC_BITS_GNSS1_RTK_POS_REL     (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RTK_POS_REL)
+#define GRMC_BITS_GNSS2_RTK_CMP_MISC    (0x0000000000000001 << GRMC_BIT_POS_GNSS2_RTK_CMP_MISC)
+#define GRMC_BITS_GNSS2_RTK_CMP_REL     (0x0000000000000001 << GRMC_BIT_POS_GNSS2_RTK_CMP_REL)
 #define GRMC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GRMC_BIT_POS_DID_RTK_DEBUG)
 #define GRMC_BITS_PORT_MON              (0x0000000000000001 << GRMC_BIT_POS_DID_PORT_MON)
 #define GRMC_BITS_GPX_PORT_MON          (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_PORT_MON)
-#define GRMC_BITS_GNSS_BASE_RAW          (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
+#define GRMC_BITS_GNSS_BASE_RAW         (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
 #define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
-#define GRMC_BITS_PRESET                (0x8000000000000000)    // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
+#define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
 #define GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS      1000
-#define GRMC_PRESET_GPX_GNSS1_VERSION_PERIOD_MS  1000
-#define GRMC_PRESET_GPX_GNSS2_VERSION_PERIOD_MS  1000
+#define GRMC_PRESET_GPX_GNSS1_VERSION_PERIOD_MS 1000
+#define GRMC_PRESET_GPX_GNSS2_VERSION_PERIOD_MS 1000
 #define GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS     500
 #define GRMC_PRESET_GPX_STATUS_PERIOD_MS        500
 #define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS   500
@@ -2316,7 +2316,7 @@ enum GRMC_BIT_POS{
                                         /*| GRMC_BITS_DEBUG_ARRAY*/ \
                                         | GRMC_BITS_GPX_SYS_FAULT)
 
-#define GRMC_PRESET_GPX_GNSS1            (GRMC_BITS_GNSS1_POS \
+#define GRMC_PRESET_GPX_GNSS1   (GRMC_BITS_GNSS1_POS \
                                         | GRMC_BITS_GNSS1_VEL \
                                         | GRMC_BITS_GNSS1_SAT \
                                         | GRMC_BITS_GNSS1_SIG \
@@ -2324,7 +2324,7 @@ enum GRMC_BIT_POS{
                                         /*| GRMC_BITS_GNSS1_RTK_POS*/ \
                                         | GRMC_BITS_GNSS1_RAW)
 
-#define GRMC_PRESET_GPX_GNSS2            (GRMC_BITS_GNSS2_POS \
+#define GRMC_PRESET_GPX_GNSS2   (GRMC_BITS_GNSS2_POS \
                                         | GRMC_BITS_GNSS2_VEL \
                                         | GRMC_BITS_GNSS2_SAT \
                                         | GRMC_BITS_GNSS2_SIG \
@@ -2340,141 +2340,141 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GRMC_BITS_DID_RTK_DEBUG)
 
 
-typedef struct PACKED 
+typedef struct PACKED
 {
-    rmc_t rmc;
+    rmc_t       rmc;
 
     /** Period of the message to be sent in ms*/
-    uint16_t periodMultiple[GRMC_BIT_POS_COUNT];
+    uint16_t    periodMultiple[GRMC_BIT_POS_COUNT];
 
     /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
-    rmcNmea_t rmcNmea;
+    rmcNmea_t   rmcNmea;
 } grmci_t;
 
 enum eMagCalState
 {
-    MAG_CAL_STATE_DO_NOTHING    = (int)0, 
+    MAG_CAL_STATE_DO_NOTHING                = (int)0,
 
     /** COMMAND: Recalibrate magnetometers using multiple axis */
-    MAG_CAL_STATE_MULTI_AXIS    = (int)1,
+    MAG_CAL_STATE_MULTI_AXIS                = (int)1,
 
     /** COMMAND: Recalibrate magnetometers using only one axis */
-    MAG_CAL_STATE_SINGLE_AXIS   = (int)2,
+    MAG_CAL_STATE_SINGLE_AXIS               = (int)2,
 
     /** COMMAND: Stop mag recalibration and do not save results */
-    MAG_CAL_STATE_ABORT         = (int)101,
+    MAG_CAL_STATE_ABORT                     = (int)101,
 
     /** STATUS: Mag recalibration is in progress */
-    MAG_CAL_STATE_RECAL_RUNNING = (int)200,
+    MAG_CAL_STATE_RECAL_RUNNING             = (int)200,
 
     /** STATUS: Mag recalibration has completed */
-    MAG_CAL_STATE_RECAL_COMPLETE = (int)201,
+    MAG_CAL_STATE_RECAL_COMPLETE            = (int)201,
 
     /** STATUS: Mag recalibration mode not supported */
-    MAG_CAL_STATE_RECAL_MODE_NOT_SUPPORTED = (int)202,
+    MAG_CAL_STATE_RECAL_MODE_NOT_SUPPORTED  = (int)202,
 };
 
 /** (DID_MAG_CAL) Magnetometer Calibration */
 typedef struct PACKED
 {
     /** Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState) */
-    uint32_t                state;
-    
+    uint32_t                    state;
+
     /** Mag recalibration progress indicator: 0-100 % */
-    float                    progress;
+    float                       progress;
 
     /** Magnetic declination estimate */
-    float                    declination;
+    float                       declination;
 } mag_cal_t;
 
 // (DID_INL2_MAG_OBS_INFO)
 typedef struct PACKED
-{                                            // INL2 - Magnetometer observer info 
+{                                            // INL2 - Magnetometer observer info
     /** Timestamp in milliseconds */
-    uint32_t                timeOfWeekMs;    
+    uint32_t                    timeOfWeekMs;
 
     /** Number of calibration samples */
-    uint32_t                Ncal_samples;
+    uint32_t                    Ncal_samples;
 
     /** Data ready to be processed */
-    uint32_t                ready;
+    uint32_t                    ready;
 
-    /** Calibration data present.  Set to -1 to force mag recalibration. */    
-    uint32_t                calibrated;
+    /** Calibration data present.  Set to -1 to force mag recalibration. */
+    uint32_t                    calibrated;
 
     /** Allow mag to auto-recalibrate */
-    uint32_t                auto_recal;
+    uint32_t                    auto_recal;
 
-    /** Bad sample data */        
-    uint32_t                outlier;
+    /** Bad sample data */
+    uint32_t                    outlier;
 
     /** Heading from magnetometer */
-    float                    magHdg;
+    float                       magHdg;
 
-    /** Heading from INS */            
-    float                    insHdg;
+    /** Heading from INS */
+    float                       insHdg;
 
     /** Difference between mag heading and (INS heading plus mag declination) */
-    float                    magInsHdgDelta;
+    float                       magInsHdgDelta;
 
     /** Normalized innovation squared (likelihood metric) */
-    float                    nis;
+    float                       nis;
 
     /** Threshold for maximum NIS */
-    float                    nis_threshold;
+    float                       nis_threshold;
 
     /** Magnetometer calibration matrix. Must be initialized with a unit matrix, not zeros! */
-    float                    Wcal[9];
+    float                       Wcal[9];
 
     /** Active calibration set (0 or 1) */
-    uint32_t                activeCalSet;
+    uint32_t                    activeCalSet;
 
     /** Offset between magnetometer heading and estimate heading */
-    float                    magHdgOffset;
+    float                       magHdgOffset;
 
     /** Scaled computed variance between calibrated magnetometer samples.  */
-    float                   Tcal;
+    float                       Tcal;
 
     /** Calibrated magnetometer output can be produced using: Bcal = Wcal * (Braw - bias_cal) */
-    float                   bias_cal[3];
+    float                       bias_cal[3];
 } inl2_mag_obs_info_t;
 
 /** Built-in Test: Input Command */
 enum eBitCommand
 {
-    BIT_CMD_NONE                                    = (int)0,       // No command
-    BIT_CMD_OFF                                     = (int)1,       // Stop built-in test
-    BIT_CMD_FULL_STATIONARY                         = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
-    BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
-    BIT_CMD_RESERVED_2                              = (int)5,   
-    BIT_CMD_IMU_REJECT                              = (int)6,       // IMU fault rejection test 
-    BIT_CMD_IMU_REJECT_CONTINUOUS                   = (int)7,       // Continuous IMU fault rejection test without ending
-    BIT_CMD_IMU_INVALID_DATA                        = (int)8,       // IMU invalid data test
-    BIT_CMD_IMU_SATURATED_SENSOR                    = (int)9,       // IMU saturated sensor test
+    BIT_CMD_NONE                            = (int)0,  // No command
+    BIT_CMD_OFF                             = (int)1,  // Stop built-in test
+    BIT_CMD_FULL_STATIONARY                 = (int)2,  // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations.
+    BIT_CMD_BASIC_MOVING                    = (int)3,  // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
+    BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY   = (int)4,  // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run.
+    BIT_CMD_RESERVED_2                      = (int)5,
+    BIT_CMD_IMU_REJECT                      = (int)6,  // IMU fault rejection test
+    BIT_CMD_IMU_REJECT_CONTINUOUS           = (int)7,  // Continuous IMU fault rejection test without ending
+    BIT_CMD_IMU_INVALID_DATA                = (int)8,  // IMU invalid data test
+    BIT_CMD_IMU_SATURATED_SENSOR            = (int)9,  // IMU saturated sensor test
 };
 
 /** Built-in Test: State */
 enum eBitState
 {
-    BIT_STATE_OFF                                   = (int)0,
-    BIT_STATE_DONE                                  = (int)1,       // Test is finished
-    BIT_STATE_RUNNING                               = (int)6,
-    BIT_STATE_FINISHING                             = (int)7,       // Computing results
+    BIT_STATE_OFF       = (int)0,
+    BIT_STATE_DONE      = (int)1,  // Test is finished
+    BIT_STATE_RUNNING   = (int)6,
+    BIT_STATE_FINISHING = (int)7,  // Computing results
 };
 
 /** Built-in Test: Test Mode */
 enum eBitTestMode
 {
-    BIT_TEST_MODE_FAILED                            = (int)98,      // Test mode ran and failed
-    BIT_TEST_MODE_DONE                              = (int)99,      // Test mode ran and completed
-    BIT_TEST_MODE_SIM_GNSS_NOISE                     = (int)100,     // Simulate CNO noise
-    BIT_TEST_MODE_COMMUNICATIONS_REPEAT             = (int)101,     // Send duplicate message 
-    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
-    BIT_TEST_MODE_IMU_FAULT_REJECTION               = (int)104,     // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
-    BIT_TEST_MODE_IMU_INVALID_DATA                  = (int)105,     // Simulate invalid IMU data (NaN) and ensure it is detected and rejected.
-    BIT_TEST_MODE_IMU_SATURATION_DATA               = (int)106,     // Simulate saturated IMU data (out-of-range) and ensure it is detected and rejected.
+    BIT_TEST_MODE_FAILED                    = (int)98,  // Test mode ran and failed
+    BIT_TEST_MODE_DONE                      = (int)99,  // Test mode ran and completed
+    BIT_TEST_MODE_SIM_GNSS_NOISE            = (int)100,  // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT     = (int)101,  // Send duplicate message
+    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW = (int)102,  // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW = (int)103,  // Cause Tx buffer overflow on current serial port by sending too much data.
+    BIT_TEST_MODE_IMU_FAULT_REJECTION       = (int)104,  // Simulate a fault on each IMU sensor and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_INVALID_DATA          = (int)105,  // Simulate invalid IMU data (NaN) and ensure it is detected and rejected.
+    BIT_TEST_MODE_IMU_SATURATION_DATA       = (int)106,  // Simulate saturated IMU data (out-of-range) and ensure it is detected and rejected.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2482,8 +2482,8 @@ enum eHdwBitStatusFlags
 {
     HDW_BIT_PASSED_MASK                     = (int)0x0000000F,
     HDW_BIT_PASSED_ALL                      = (int)0x00000001,
-    HDW_BIT_PASSED_NO_GNSS                   = (int)0x00000002,    // Passed w/o valid GPS signal
-    HDW_BIT_MODE_MASK                       = (int)0x000000F0,    // BIT mode run
+    HDW_BIT_PASSED_NO_GNSS                  = (int)0x00000002,  // Passed w/o valid GPS signal
+    HDW_BIT_MODE_MASK                       = (int)0x000000F0,  // BIT mode run
     HDW_BIT_MODE_OFFSET                     = (int)4,
 #define HDW_BIT_MODE(hdwBitStatus)          (((hdwBitStatus)&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
     HDW_BIT_FAILED_MASK                     = (int)0xFFFFFF00,
@@ -2492,44 +2492,44 @@ enum eHdwBitStatusFlags
     HDW_BIT_FAULT_NOISE_ACC                 = (int)0x00000200,
     HDW_BIT_FAULT_MAGNETOMETER              = (int)0x00000400,
     HDW_BIT_FAULT_BAROMETER                 = (int)0x00000800,
-    HDW_BIT_FAULT_GNSS_NO_COM                = (int)0x00001000,    // No GPS serial communications
-    HDW_BIT_FAULT_GNSS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
-    HDW_BIT_FAULT_GNSS_POOR_ACCURACY         = (int)0x00004000,    // Low number of satellites, or bad accuracy 
-    HDW_BIT_FAULT_GNSS_NOISE                 = (int)0x00008000,    // (Not implemented)
-    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00010000,    // IMU fault rejection failure
-    HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
-    HDW_BIT_FAULT_EKF_NOT_INITIALIZED       = (int)0x02000000,    // EKF not initialized
+    HDW_BIT_FAULT_GNSS_NO_COM               = (int)0x00001000,  // No GPS serial communications
+    HDW_BIT_FAULT_GNSS_POOR_CNO             = (int)0x00002000,  // Poor GPS signal strength.  Check antenna
+    HDW_BIT_FAULT_GNSS_POOR_ACCURACY        = (int)0x00004000,  // Low number of satellites, or bad accuracy
+    HDW_BIT_FAULT_GNSS_NOISE                = (int)0x00008000,  // (Not implemented)
+    HDW_BIT_FAULT_IMU_FAULT_REJECTION       = (int)0x00010000,  // IMU fault rejection failure
+    HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,  // Hardware type does not match firmware
+    HDW_BIT_FAULT_EKF_NOT_INITIALIZED       = (int)0x02000000,  // EKF not initialized
 };
 
 /** Calibration built-in test flags */
 enum eCalBitStatusFlags
 {
-    CAL_BIT_PASSED_MASK                     = (int)0x0000000F,
-    CAL_BIT_PASSED_ALL                      = (int)0x00000001,
-    CAL_BIT_MODE_MASK                       = (int)0x000000F0,    // BIT mode run
-    CAL_BIT_MODE_OFFSET                     = (int)4,
+    CAL_BIT_PASSED_MASK             = (int)0x0000000F,
+    CAL_BIT_PASSED_ALL              = (int)0x00000001,
+    CAL_BIT_MODE_MASK               = (int)0x000000F0,  // BIT mode run
+    CAL_BIT_MODE_OFFSET             = (int)4,
 #define CAL_BIT_MODE(calBitStatus)          (((calBitStatus)&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
-    CAL_BIT_FAILED_MASK                     = (int)0x00FFFF00,
-    CAL_BIT_FAULT_TCAL_EMPTY                = (int)0x00000100,    // Temperature calibration not present
-    CAL_BIT_FAULT_TCAL_TSPAN                = (int)0x00000200,    // Temperature calibration temperature range is inadequate
-    CAL_BIT_FAULT_TCAL_INCONSISTENT         = (int)0x00000400,    // Temperature calibration number of points or slopes are not consistent
-    CAL_BIT_FAULT_TCAL_CORRUPT              = (int)0x00000800,    // Temperature calibration memory corruption
-    CAL_BIT_FAULT_TCAL_PQR_BIAS             = (int)0x00001000,    // Temperature calibration gyro bias
-    CAL_BIT_FAULT_TCAL_PQR_SLOPE            = (int)0x00002000,    // Temperature calibration gyro slope
-    CAL_BIT_FAULT_TCAL_PQR_LIN              = (int)0x00004000,    // Temperature calibration gyro linearity
-    CAL_BIT_FAULT_TCAL_ACC_BIAS             = (int)0x00008000,    // Temperature calibration accelerometer bias
-    CAL_BIT_FAULT_TCAL_ACC_SLOPE            = (int)0x00010000,    // Temperature calibration accelerometer slope
-    CAL_BIT_FAULT_TCAL_ACC_LIN              = (int)0x00020000,    // Temperature calibration accelerometer linearity
-    CAL_BIT_FAULT_CAL_SERIAL_NUM            = (int)0x00040000,    // Calibration info: wrong device serial number
-    CAL_BIT_FAULT_MCAL_MAG_INVALID          = (int)0x00080000,    // Motion calibration MAG Cross-axis alignment is poorly formed
-    CAL_BIT_FAULT_MCAL_EMPTY                = (int)0x00100000,    // Motion calibration Cross-axis alignment is not calibrated
-    CAL_BIT_FAULT_MCAL_IMU_INVALID          = (int)0x00200000,    // Motion calibration IMU Cross-axis alignment is poorly formed
-    CAL_BIT_FAULT_MOTION_PQR                = (int)0x00400000,    // Motion on gyros
-    CAL_BIT_FAULT_MOTION_ACC                = (int)0x00800000,    // Motion on accelerometers
-    CAL_BIT_NOTICE_IMU1_PQR_BIAS            = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
-    CAL_BIT_NOTICE_IMU2_PQR_BIAS            = (int)0x02000000,    // IMU 2 gyro bias offset detected.  If stationary, zero gyros command may be used.
-    CAL_BIT_NOTICE_IMU1_ACC_BIAS            = (int)0x10000000,    // IMU 1 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
-    CAL_BIT_NOTICE_IMU2_ACC_BIAS            = (int)0x20000000,    // IMU 2 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
+    CAL_BIT_FAILED_MASK             = (int)0x00FFFF00,
+    CAL_BIT_FAULT_TCAL_EMPTY        = (int)0x00000100,  // Temperature calibration not present
+    CAL_BIT_FAULT_TCAL_TSPAN        = (int)0x00000200,  // Temperature calibration temperature range is inadequate
+    CAL_BIT_FAULT_TCAL_INCONSISTENT = (int)0x00000400,  // Temperature calibration number of points or slopes are not consistent
+    CAL_BIT_FAULT_TCAL_CORRUPT      = (int)0x00000800,  // Temperature calibration memory corruption
+    CAL_BIT_FAULT_TCAL_PQR_BIAS     = (int)0x00001000,  // Temperature calibration gyro bias
+    CAL_BIT_FAULT_TCAL_PQR_SLOPE    = (int)0x00002000,  // Temperature calibration gyro slope
+    CAL_BIT_FAULT_TCAL_PQR_LIN      = (int)0x00004000,  // Temperature calibration gyro linearity
+    CAL_BIT_FAULT_TCAL_ACC_BIAS     = (int)0x00008000,  // Temperature calibration accelerometer bias
+    CAL_BIT_FAULT_TCAL_ACC_SLOPE    = (int)0x00010000,  // Temperature calibration accelerometer slope
+    CAL_BIT_FAULT_TCAL_ACC_LIN      = (int)0x00020000,  // Temperature calibration accelerometer linearity
+    CAL_BIT_FAULT_CAL_SERIAL_NUM    = (int)0x00040000,  // Calibration info: wrong device serial number
+    CAL_BIT_FAULT_MCAL_MAG_INVALID  = (int)0x00080000,  // Motion calibration MAG Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MCAL_EMPTY        = (int)0x00100000,  // Motion calibration Cross-axis alignment is not calibrated
+    CAL_BIT_FAULT_MCAL_IMU_INVALID  = (int)0x00200000,  // Motion calibration IMU Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MOTION_PQR        = (int)0x00400000,  // Motion on gyros
+    CAL_BIT_FAULT_MOTION_ACC        = (int)0x00800000,  // Motion on accelerometers
+    CAL_BIT_NOTICE_IMU1_PQR_BIAS    = (int)0x01000000,  // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU2_PQR_BIAS    = (int)0x02000000,  // IMU 2 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU1_ACC_BIAS    = (int)0x10000000,  // IMU 1 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
+    CAL_BIT_NOTICE_IMU2_ACC_BIAS    = (int)0x20000000,  // IMU 2 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
 };
 
 
@@ -2591,7 +2591,7 @@ typedef struct PACKED
 
 // GPX Built-in Test (GPX-BIT)
 enum eGPXBit_resultsPos{
-    GPXBit_resultsPos_PPS1 = 0,
+    GPXBit_resultsPos_PPS1  = 0,
     GPXBit_resultsPos_PPS2,
     GPXBit_resultsPos_UART,
     GPXBit_resultsPos_IO,
@@ -2604,59 +2604,59 @@ enum eGPXBit_resultsPos{
 };
 
 enum eGPXBit_results{
-    GPXBit_resultsBit_PPS1              = (0x01 << GPXBit_resultsPos_PPS1),
-    GPXBit_resultsBit_PPS2              = (0x01 << GPXBit_resultsPos_PPS2),
-    GPXBit_resultsBit_UART              = (0x01 << GPXBit_resultsPos_UART),
-    GPXBit_resultsBit_IO                = (0x01 << GPXBit_resultsPos_IO),
-    GPXBit_resultsBit_GNSS               = (0x01 << GPXBit_resultsPos_GNSS),
-    GPXBit_resultsBit_FINISHED          = (0x01 << GPXBit_resultsPos_FINISHED),
-    GPXBit_resultsBit_CANCELED          = (0x01 << GPXBit_resultsPos_CANCELED),
-    GPXBit_resultsBit_ERROR             = (0x01 << GPXBit_resultsPos_ERROR),
+    GPXBit_resultsBit_PPS1      = (0x01 << GPXBit_resultsPos_PPS1),
+    GPXBit_resultsBit_PPS2      = (0x01 << GPXBit_resultsPos_PPS2),
+    GPXBit_resultsBit_UART      = (0x01 << GPXBit_resultsPos_UART),
+    GPXBit_resultsBit_IO        = (0x01 << GPXBit_resultsPos_IO),
+    GPXBit_resultsBit_GNSS      = (0x01 << GPXBit_resultsPos_GNSS),
+    GPXBit_resultsBit_FINISHED  = (0x01 << GPXBit_resultsPos_FINISHED),
+    GPXBit_resultsBit_CANCELED  = (0x01 << GPXBit_resultsPos_CANCELED),
+    GPXBit_resultsBit_ERROR     = (0x01 << GPXBit_resultsPos_ERROR),
 };
 
-#define GPXBit_RESULT_GNSS_QT_EXIT_Mask      GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2
+#define GPXBit_RESULT_GNSS_QT_EXIT_Mask GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2
 
 enum eGPXBit_CMD{
-    GPXBit_CMD_NONE                                     = 0,
-    GPXBit_CMD_START_MANUF_TEST                         = 1,
-    GPXBit_CMD_ALERT_UART_TEST_STR                      = 2,
-    GPXBit_CMD_ALERT_PPS1_RX                            = 3,
-    GPXBit_CMD_ALERT_PPS2_RX                            = 4,
-    GPXBit_CMD_REPORT                                   = 5,
-    GPXBit_CMD_STOP                                     = 6,
+    GPXBit_CMD_NONE                                 = 0,
+    GPXBit_CMD_START_MANUF_TEST                     = 1,
+    GPXBit_CMD_ALERT_UART_TEST_STR                  = 2,
+    GPXBit_CMD_ALERT_PPS1_RX                        = 3,
+    GPXBit_CMD_ALERT_PPS2_RX                        = 4,
+    GPXBit_CMD_REPORT                               = 5,
+    GPXBit_CMD_STOP                                 = 6,
 
-    GPXBit_CMD_START_SIM_GPS_NOISE                      = 7,
-    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,        // Send duplicate message
-    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,        // Cause Tx buffer overflow on current serial port by sending too much data.
-    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,       // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,       // Cause watchdog reset by stalling COMM task
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,       // Cause watchdog reset by stalling RTK task
-    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,       // Cause hard fault
-    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,       // Cause malloc failure
+    GPXBit_CMD_START_SIM_GPS_NOISE                  = 7,
+    GPXBit_CMD_START_COMMUNICATIONS_REPEAT          = 8,  // Send duplicate message
+    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW      = 9,  // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW      = 10,  // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK   = 11,  // Cause watchdog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK    = 12,  // Cause watchdog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT           = 13,  // Cause hard fault
+    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC               = 14,  // Cause malloc failure
 };
 
 enum eGPXBit_test_mode{
-    GPXBit_test_mode_NONE                               = (int)0,
-    GPXBit_test_mode_FAILURE                            = (int)8,
-    GPXBit_test_mode_DONE                               = (int)9,
-    GPXBit_test_mode_MANUFACTURING                      = (int)10,      // Standard manufacturing
+    GPXBit_test_mode_NONE                           = (int)0,
+    GPXBit_test_mode_FAILURE                        = (int)8,
+    GPXBit_test_mode_DONE                           = (int)9,
+    GPXBit_test_mode_MANUFACTURING                  = (int)10,  // Standard manufacturing
 
-    GPXBit_test_mode_SIM_GNSS_NOISE                      = (int)100,     // Simulate CNO noise
-    GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
-    GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
-    GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_test_mode_SYS_FAULT_WATCHDOG_COMM_TASK       = (int)104,     // Cause watchdog reset by stalling COMM task
-    GPXBit_test_mode_SYS_FAULT_WATCHDOG_RTK_TASK        = (int)105,     // Cause watchdog reset by stalling RTK task
+    GPXBit_test_mode_SIM_GNSS_NOISE                 = (int)100,  // Simulate CNO noise
+    GPXBit_test_mode_COMMUNICATIONS_REPEAT          = (int)101,  // Send duplicate message
+    GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW      = (int)102,  // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW      = (int)103,  // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_test_mode_SYS_FAULT_WATCHDOG_COMM_TASK   = (int)104,  // Cause watchdog reset by stalling COMM task
+    GPXBit_test_mode_SYS_FAULT_WATCHDOG_RTK_TASK    = (int)105,  // Cause watchdog reset by stalling RTK task
 };
 
-#define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GNSS | GPXBit_resultsBit_FINISHED)
+#define GPXBit_resultMasks_PASSED   (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GNSS | GPXBit_resultsBit_FINISHED)
 
 /** (DID_GPX_BIT) Built-in self-test parameters */
 typedef struct PACKED
 {
     /** GPX built-in test status (see eGPXBit_results) */
     uint32_t                results;
-    
+
     /** Command (see eGPXBit_CMD) */
     uint8_t                 command;
 
@@ -2680,70 +2680,70 @@ typedef struct PACKED
 enum eInfieldCalState
 {
     /** User Commands: */
-    INFIELD_CAL_STATE_CMD_OFF                           = 0,
+    INFIELD_CAL_STATE_CMD_OFF                                   = 0,
 
     /** Initialization Commands.  Select one of the following to clear prior samples and set the mode.  Zero accels requires vertical alignment.  No motion is required for all unless disabled.  */
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_IMU                         = 1,            // Zero accel and gyro biases.
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_GYRO                        = 2,            // Zero only gyro  biases.
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_ACCEL                       = 3,            // Zero only accel biases.
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE                    = 4,            // Zero (level) INS attitude by adjusting INS rotation.
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU                = 5,            // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation. 
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO               = 6,            // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation. 
-    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL              = 7,            // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
-    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT     = 0x00010000,   // Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
-    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_REQUIRE_VERTIAL   = 0x00020000,   // Bitwise AND this with the above init commands to disable vertical alignment requirement for accelerometer bias calibration (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_IMU                         = 1,  // Zero accel and gyro biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_GYRO                        = 2,  // Zero only gyro  biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ACCEL                       = 3,  // Zero only accel biases.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE                    = 4,  // Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_IMU                = 5,  // Zero gyro and accel biases.  Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_GYRO               = 6,  // Zero only gyro  biases.  Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_ZERO_ATTITUDE_ACCEL              = 7,  // Zero only accel biases.  Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_MOTION_DETECT     = 0x00010000,  // Bitwise AND this with the above init commands to disable motion detection during sampling (allow for more tolerant sampling).
+    INFIELD_CAL_STATE_CMD_INIT_OPTION_DISABLE_REQUIRE_VERTIAL   = 0x00020000,  // Bitwise AND this with the above init commands to disable vertical alignment requirement for accelerometer bias calibration (allow for more tolerant sampling).
 
     /** Sample and End Commands: */
-    INFIELD_CAL_STATE_CMD_START_SAMPLE                          = 8,    // Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
-    INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH                       = 9,    // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
-    
+    INFIELD_CAL_STATE_CMD_START_SAMPLE                          = 8,  // Initiate 5 second sensor sampling and averaging.  Run for each orientation and 180 degree yaw rotation.
+    INFIELD_CAL_STATE_CMD_SAVE_AND_FINISH                       = 9,  // Run this command to compute and save results.  Must be run following INFIELD_CAL_STATE_CMD_START_SAMPLE.
+
     /** Status: (read only) */
-    INFIELD_CAL_STATE_READY_FOR_SAMPLING                        = 50,   // System has been initialized and is waiting for user to intiate sampling.  User must send a command to exit this state.
-    INFIELD_CAL_STATE_SAMPLING                                  = 51,   // System is averaging the IMU data.  Minimize all motion and vibration.
-    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                        = 52,   // Follow up calibration zero with BIT and copy out IMU biases.
-    INFIELD_CAL_STATE_SAVED_AND_FINISHED                        = 53,   // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases.  Updates are saved to flash. 
+    INFIELD_CAL_STATE_READY_FOR_SAMPLING                        = 50,  // System has been initialized and is waiting for user to intiate sampling.  User must send a command to exit this state.
+    INFIELD_CAL_STATE_SAMPLING                                  = 51,  // System is averaging the IMU data.  Minimize all motion and vibration.
+    INFIELD_CAL_STATE_RUN_BIT_AND_FINISH                        = 52,  // Follow up calibration zero with BIT and copy out IMU biases.
+    INFIELD_CAL_STATE_SAVED_AND_FINISHED                        = 53,  // Calculations are complete and DID_INFIELD_CAL.imu holds the update IMU biases.  Updates are saved to flash.
 
     /** Error Status: (read only) */
-    INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED                     = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set. 
-    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_MOTION_DETECTED        = 101,  // Error: Motion detected. Sampling aborted. 
-    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_NOT_VERTICAL           = 102,  // Error: System not vertical. Sampling aborted. 
+    INFIELD_CAL_STATE_ERROR_NOT_INITIALIZED                     = 100,  // Init command (INFIELD_CAL_STATE_CMD_INIT_...) not set.
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_MOTION_DETECTED        = 101,  // Error: Motion detected. Sampling aborted.
+    INFIELD_CAL_STATE_ERROR_SAMPLE_ABORT_NOT_VERTICAL           = 102,  // Error: System not vertical. Sampling aborted.
     INFIELD_CAL_STATE_ERROR_NO_SAMPLES_COLLECTED                = 103,  // Error: No samples have been collected
-    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                        = 104,  // Error: Calibration zero is not 
+    INFIELD_CAL_STATE_ERROR_POOR_CAL_FIT                        = 104,  // Error: Calibration zero is not
 
     /** Internal Use Only */
     INFIELD_CAL_STATE_CMD_MASK                                  = 0x0000FFFF,
-    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT                      = 11,    // Initiate 5 second sensor sample and averaging.  Does not save sample into cal data.
+    INFIELD_CAL_STATE_CMD_START_SAMPLE_BIT                      = 11,  // Initiate 5 second sensor sample and averaging.  Does not save sample into cal data.
 };
 
 enum eInfieldCalStatus
 {
-    INFIELD_CAL_STATUS_AXIS_DN_GRAVITY                          = 0x00000001,   // Axis points in direction of gravity more than any other axis.
-    INFIELD_CAL_STATUS_AXIS_DN_SAMPLED                          = 0x00000002,   // Sampled
-    INFIELD_CAL_STATUS_AXIS_DN_SAMPLED_180                      = 0x00000004,   // Sampled based on average of two orientations with 180 degree delta yaw. 
-    INFIELD_CAL_STATUS_AXIS_UP_GRAVITY                          = 0x00000008,   // Axis points in direction of gravity more than any other axis.
-    INFIELD_CAL_STATUS_AXIS_UP_SAMPLED                          = 0x00000010,   // Sampled
-    INFIELD_CAL_STATUS_AXIS_UP_SAMPLED_180                      = 0x00000020,   // Sampled based on average of two orientations with 180 degree delta yaw.
+    INFIELD_CAL_STATUS_AXIS_DN_GRAVITY              = 0x00000001,  // Axis points in direction of gravity more than any other axis.
+    INFIELD_CAL_STATUS_AXIS_DN_SAMPLED              = 0x00000002,  // Sampled
+    INFIELD_CAL_STATUS_AXIS_DN_SAMPLED_180          = 0x00000004,  // Sampled based on average of two orientations with 180 degree delta yaw.
+    INFIELD_CAL_STATUS_AXIS_UP_GRAVITY              = 0x00000008,  // Axis points in direction of gravity more than any other axis.
+    INFIELD_CAL_STATUS_AXIS_UP_SAMPLED              = 0x00000010,  // Sampled
+    INFIELD_CAL_STATUS_AXIS_UP_SAMPLED_180          = 0x00000020,  // Sampled based on average of two orientations with 180 degree delta yaw.
 
-    INFIELD_CAL_STATUS_SAMPLE_X_OFFSET                          = 0,
-    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET                          = 6,
-    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET                          = 12,
-    
-    INFIELD_CAL_STATUS_AXIS_MASK                                = 0x0000003F,
-    INFIELD_CAL_STATUS_AXES_GRAVITY_MASK                        = (\
+    INFIELD_CAL_STATUS_SAMPLE_X_OFFSET              = 0,
+    INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET              = 6,
+    INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET              = 12,
+
+    INFIELD_CAL_STATUS_AXIS_MASK                    = 0x0000003F,
+    INFIELD_CAL_STATUS_AXES_GRAVITY_MASK            = (\
         ((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_X_OFFSET) | \
         ((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_Y_OFFSET) | \
         ((INFIELD_CAL_STATUS_AXIS_DN_GRAVITY|INFIELD_CAL_STATUS_AXIS_UP_GRAVITY)<<INFIELD_CAL_STATUS_SAMPLE_Z_OFFSET)),
 
-    INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL                       = 0x00100000,    // Zero accel bias.  Require vertical alignment for sampling. 
-    INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO                        = 0x00200000,    // Zero gyro bias.
-    INFIELD_CAL_STATUS_ENABLED_ZERO_ATTITUDE                    = 0x00400000,    // Zero (level) INS attitude by adjusting INS rotation.
-    INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT                    = 0x00800000,    // Require no motion during sampling. 
-    INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK                      = 0x00F00000,
-    INFIELD_CAL_STATUS_ENABLED_BIT                              = 0x01000000,    // Used for BIT 
-    INFIELD_CAL_STATUS_DISABLED_REQUIRE_VERTICAL                = 0x02000000,    // Do not require vertical alignment for accelerometer calibration. 
+    INFIELD_CAL_STATUS_ENABLED_ZERO_ACCEL           = 0x00100000,  // Zero accel bias.  Require vertical alignment for sampling.
+    INFIELD_CAL_STATUS_ENABLED_ZERO_GYRO            = 0x00200000,  // Zero gyro bias.
+    INFIELD_CAL_STATUS_ENABLED_ZERO_ATTITUDE        = 0x00400000,  // Zero (level) INS attitude by adjusting INS rotation.
+    INFIELD_CAL_STATUS_ENABLED_MOTION_DETECT        = 0x00800000,  // Require no motion during sampling.
+    INFIELD_CAL_STATUS_ENABLED_NORMAL_MASK          = 0x00F00000,
+    INFIELD_CAL_STATUS_ENABLED_BIT                  = 0x01000000,  // Used for BIT
+    INFIELD_CAL_STATUS_DISABLED_REQUIRE_VERTICAL    = 0x02000000,  // Do not require vertical alignment for accelerometer calibration.
 
-    INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL                        = 0x10000000,    // Axis is not aligned vertically and cannot be used for zero accel sampling.  
-    INFIELD_CAL_STATUS_MOTION_DETECTED                          = 0x20000000,    // System is not stationary and cannot be used for infield calibration.
+    INFIELD_CAL_STATUS_AXIS_NOT_VERTICAL            = 0x10000000,  // Axis is not aligned vertically and cannot be used for zero accel sampling.
+    INFIELD_CAL_STATUS_MOTION_DETECTED              = 0x20000000,  // System is not stationary and cannot be used for infield calibration.
 };
 
 /** Inertial Measurement Unit (IMU) data */
@@ -2757,13 +2757,13 @@ typedef struct PACKED
 {
     imu_acc_t               dev[MAX_IMU_DEVICES];
 
-    float                   yaw;        // (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
+    float                   yaw;                    // (rad) Heading of IMU sample.  Used to determine how to average additional samples.  0 = invalid, 999 = averaged
 } infield_cal_direction_t;
 
 typedef struct PACKED
 {
-    infield_cal_direction_t down;       // Pointed toward earth
-    infield_cal_direction_t up;         // Pointed toward sky
+    infield_cal_direction_t down;   // Pointed toward earth
+    infield_cal_direction_t up;     // Pointed toward sky
 } infield_cal_vaxis_t;
 
 // (DID_INFIELD_CAL)
@@ -2778,7 +2778,7 @@ typedef struct PACKED
     /** Number of samples used in IMU average. sampleTimeMs = 0 means "imu" member contains the IMU bias from flash.  */
     uint32_t                sampleTimeMs;
 
-    /** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */ 
+    /** Dual purpose variable.  1.) This is the averaged IMU sample when sampleTimeMs != 0.  2.) This is a mirror of the motion calibration IMU bias from flash when sampleTimeMs = 0. */
     imui_t                  imu[MAX_IMU_DEVICES];
 
     /** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
@@ -2814,9 +2814,9 @@ enum eSysConfigBits
     /** Disable barometer fusion */
     SYS_CFG_BITS_DISABLE_BAROMETER_FUSION               = (int)0x00002000,
     /** Disable GPS 1 fusion */
-    SYS_CFG_BITS_DISABLE_GNSS1_FUSION                    = (int)0x00004000,
+    SYS_CFG_BITS_DISABLE_GNSS1_FUSION                   = (int)0x00004000,
     /** Disable GPS 2 fusion */
-    SYS_CFG_BITS_DISABLE_GNSS2_FUSION                    = (int)0x00008000,
+    SYS_CFG_BITS_DISABLE_GNSS2_FUSION                   = (int)0x00008000,
 
     /** Disable automatic Zero Velocity Updates (ZUPT).  Disabling automatic ZUPT is useful for degraded GPS environments or applications with very slow velocities. */
     SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES     = (int)0x00010000,
@@ -2830,13 +2830,14 @@ enum eSysConfigBits
     /** Disable wheel encoder fusion */
     SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
 
-    SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
+    /** Enable rover GNSS antenna offset estimation in RTK compassing mode */
+    SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION  = (int)0x00200000,
 
     /** Brownout reset threshold voltage level */
-    SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,              // 1.65 - 1.75 V  (default)
-    SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
-    SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
-    SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
+    SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,  // 1.65 - 1.75 V  (default)
+    SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,  // 2.0  - 2.1  V
+    SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,  // 2.25 - 2.35 V
+    SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,  // 2.5  - 2.6  V
     SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
     SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
 
@@ -2850,55 +2851,55 @@ enum eSysConfigBits
 enum eGpxGnssSatSigConst
 {
     /** GPS  */
-    GPX_GNSS_SAT_SIG_CONST_GPS_L1                       = (uint16_t)0x0001,
-    GPX_GNSS_SAT_SIG_CONST_GPS_L5                       = (uint16_t)0x0002,
-    GPX_GNSS_SAT_SIG_CONST_GPS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GPS_L1 | GPX_GNSS_SAT_SIG_CONST_GPS_L5),
+    GPX_GNSS_SAT_SIG_CONST_GPS_L1   = (uint16_t)0x0001,
+    GPX_GNSS_SAT_SIG_CONST_GPS_L5   = (uint16_t)0x0002,
+    GPX_GNSS_SAT_SIG_CONST_GPS      = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GPS_L1 | GPX_GNSS_SAT_SIG_CONST_GPS_L5),
     /** QZSS  */
-    GPX_GNSS_SAT_SIG_CONST_QZS_L1                       = (uint16_t)0x0004,
-    GPX_GNSS_SAT_SIG_CONST_QZS_L5                       = (uint16_t)0x0008,
-    GPX_GNSS_SAT_SIG_CONST_QZS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_QZS_L1 | GPX_GNSS_SAT_SIG_CONST_QZS_L5),
+    GPX_GNSS_SAT_SIG_CONST_QZS_L1   = (uint16_t)0x0004,
+    GPX_GNSS_SAT_SIG_CONST_QZS_L5   = (uint16_t)0x0008,
+    GPX_GNSS_SAT_SIG_CONST_QZS      = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_QZS_L1 | GPX_GNSS_SAT_SIG_CONST_QZS_L5),
     /** Galileo  */
-    GPX_GNSS_SAT_SIG_CONST_GAL_E1                       = (uint16_t)0x0010,
-    GPX_GNSS_SAT_SIG_CONST_GAL_E5                       = (uint16_t)0x0020,
-    GPX_GNSS_SAT_SIG_CONST_GAL                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GAL_E1 | GPX_GNSS_SAT_SIG_CONST_GAL_E5),
+    GPX_GNSS_SAT_SIG_CONST_GAL_E1   = (uint16_t)0x0010,
+    GPX_GNSS_SAT_SIG_CONST_GAL_E5   = (uint16_t)0x0020,
+    GPX_GNSS_SAT_SIG_CONST_GAL      = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GAL_E1 | GPX_GNSS_SAT_SIG_CONST_GAL_E5),
     /** BeiDou  */
-    GPX_GNSS_SAT_SIG_CONST_BDS_B1                       = (uint16_t)0x0040,
-    GPX_GNSS_SAT_SIG_CONST_BDS_B2                       = (uint16_t)0x0080,
-    GPX_GNSS_SAT_SIG_CONST_BDS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_BDS_B1 | GPX_GNSS_SAT_SIG_CONST_BDS_B2),
+    GPX_GNSS_SAT_SIG_CONST_BDS_B1   = (uint16_t)0x0040,
+    GPX_GNSS_SAT_SIG_CONST_BDS_B2   = (uint16_t)0x0080,
+    GPX_GNSS_SAT_SIG_CONST_BDS      = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_BDS_B1 | GPX_GNSS_SAT_SIG_CONST_BDS_B2),
     /** GLONASS  */
-    GPX_GNSS_SAT_SIG_CONST_GLO_L1                       = (uint16_t)0x0300,
-    GPX_GNSS_SAT_SIG_CONST_GLO                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GLO_L1),
+    GPX_GNSS_SAT_SIG_CONST_GLO_L1   = (uint16_t)0x0300,
+    GPX_GNSS_SAT_SIG_CONST_GLO      = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GLO_L1),
     /** SBAS  */
-    GPX_GNSS_SAT_SIG_CONST_SBS_L1                       = (uint16_t)0x1000,
-    GPX_GNSS_SAT_SIG_CONST_SBS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_SBS_L1),
+    GPX_GNSS_SAT_SIG_CONST_SBS_L1   = (uint16_t)0x1000,
+    GPX_GNSS_SAT_SIG_CONST_SBS      = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_SBS_L1),
     /** IRNSS / NavIC  */
-    GPX_GNSS_SAT_SIG_CONST_IRN                          = (uint16_t)0x2000,
+    GPX_GNSS_SAT_SIG_CONST_IRN      = (uint16_t)0x2000,
     /** IMES  */
-    GPX_GNSS_SAT_SIG_CONST_IME                          = (uint16_t)0x4000,
+    GPX_GNSS_SAT_SIG_CONST_IME      = (uint16_t)0x4000,
 };
 
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
     /** GPS  */
-    GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
+    GNSS_SAT_SIG_CONST_GPS              = (uint16_t)0x0003,
     /** QZSS  */
-    GNSS_SAT_SIG_CONST_QZS                              = (uint16_t)0x000C,
+    GNSS_SAT_SIG_CONST_QZS              = (uint16_t)0x000C,
     /** Galileo  */
-    GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
+    GNSS_SAT_SIG_CONST_GAL              = (uint16_t)0x0030,
     /** BeiDou  */
-    GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
+    GNSS_SAT_SIG_CONST_BDS              = (uint16_t)0x00C0,
     /** GLONASS  */
-    GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
+    GNSS_SAT_SIG_CONST_GLO              = (uint16_t)0x0300,
     /** SBAS  */
-    GNSS_SAT_SIG_CONST_SBS                              = (uint16_t)0x1000,
+    GNSS_SAT_SIG_CONST_SBS              = (uint16_t)0x1000,
     /** IRNSS / NavIC  */
-    GNSS_SAT_SIG_CONST_IRN                              = (uint16_t)0x2000,
+    GNSS_SAT_SIG_CONST_IRN              = (uint16_t)0x2000,
     /** IMES  */
-    GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
+    GNSS_SAT_SIG_CONST_IME              = (uint16_t)0x4000,
 
     /** GNSS ALL */
-    GNSS_SAT_SIG_CONST_ALL = \
+    GNSS_SAT_SIG_CONST_ALL              = \
         GNSS_SAT_SIG_CONST_GPS | \
         GNSS_SAT_SIG_CONST_QZS | \
         GNSS_SAT_SIG_CONST_GAL | \
@@ -2909,7 +2910,7 @@ enum eGnssSatSigConst
         GNSS_SAT_SIG_CONST_IME,
 
     /** GNSS default */
-    GNSS_SAT_SIG_CONST_DEFAULT = \
+    GNSS_SAT_SIG_CONST_DEFAULT          = \
         GNSS_SAT_SIG_CONST_GPS | \
         GNSS_SAT_SIG_CONST_SBS | \
         GNSS_SAT_SIG_CONST_QZS | \
@@ -2917,7 +2918,7 @@ enum eGnssSatSigConst
         GNSS_SAT_SIG_CONST_GLO | \
         GNSS_SAT_SIG_CONST_BDS,
 
-    GNSS_SAT_SIG_CONST_DEFAULT_INTEL = \
+    GNSS_SAT_SIG_CONST_DEFAULT_INTEL    = \
         GNSS_SAT_SIG_CONST_GPS | \
         GNSS_SAT_SIG_CONST_GAL,
 };
@@ -2930,9 +2931,9 @@ enum eRTKConfigBits
 
     /** Enable external RTK GNSS positioning (GNSS1) */
     RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING             = (int)0x00000002,
-    
+
     /** Enable dual GNSS RTK compassing (GNSS2 to GNSS1) */
-    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000004,    
+    RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING              = (int)0x00000004,
 
     /** Enable dual GNSS RTK compassing (GNSS2 to GNSS1) DEPRECATED */
     RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED   = (int)0x00000008,
@@ -2945,61 +2946,61 @@ enum eRTKConfigBits
 
     /** Mask of RTK position, heading, and base modes */
     RTK_CFG_BITS_ROVER_MODE_MASK                        = (int)0x0000000F,
-    
+
     /** Enable RTK base and output ublox data from GPS 1 on serial port 0 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0            = (int)0x00000010,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0           = (int)0x00000010,
 
     /** Enable RTK base and output ublox data from GPS 1 on serial port 1 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1            = (int)0x00000020,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1           = (int)0x00000020,
 
     /** Enable RTK base and output ublox data from GPS 1 on serial port 2 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2            = (int)0x00000040,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2           = (int)0x00000040,
 
     /** Enable RTK base and output ublox data from GPS 1 on USB port */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB             = (int)0x00000080,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB            = (int)0x00000080,
 
     /** Enable RTK base and output RTCM3 data from GPS 1 on serial port 0 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0            = (int)0x00000100,
-    
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0           = (int)0x00000100,
+
     /** Enable RTK base and output RTCM3 data from GPS 1 on serial port 1 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1            = (int)0x00000200,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1           = (int)0x00000200,
 
     /** Enable RTK base and output RTCM3 data from GPS 1 on serial port 2 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2            = (int)0x00000400,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2           = (int)0x00000400,
 
     /** Enable RTK base and output RTCM3 data from GPS 1 on USB port */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB             = (int)0x00000800,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB            = (int)0x00000800,
 
     /** Enable RTK base and output ublox data from GPS 2 on serial port 0 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0            = (int)0x00001000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0           = (int)0x00001000,
 
     /** Enable RTK base and output ublox data from GPS 2 on serial port 1 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1            = (int)0x00002000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1           = (int)0x00002000,
 
     /** Enable RTK base and output ublox data from GPS 2 on serial port 2 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2            = (int)0x00004000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2           = (int)0x00004000,
 
     /** Enable RTK base and output ublox data from GPS 2 on USB port */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB             = (int)0x00008000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB            = (int)0x00008000,
 
     /** Enable RTK base and output RTCM3 data from GPS 2 on serial port 0 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0            = (int)0x00010000,
-    
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0           = (int)0x00010000,
+
     /** Enable RTK base and output RTCM3 data from GPS 2 on serial port 1 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1            = (int)0x00020000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1           = (int)0x00020000,
 
     /** Enable RTK base and output RTCM3 data from GPS 2 on serial port 2 */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2            = (int)0x00040000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2           = (int)0x00040000,
 
     /** Enable RTK base and output RTCM3 data from GPS 2 on USB port */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB             = (int)0x00080000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB            = (int)0x00080000,
 
     /** Enable base mode moving position. (For future use. Not implemented. This bit should always be 0 for now.) TODO: Implement moving base. */
     RTK_CFG_BITS_BASE_POS_MOVING                        = (int)0x00100000,
-    
+
     /** Reserved for future use */
-    RTK_CFG_BITS_RESERVED1                              = (int)0x00200000,    
-    
+    RTK_CFG_BITS_RESERVED1                              = (int)0x00200000,
+
     /** When using RTK, specifies whether the base station is identical hardware to this rover. If so, there are optimizations enabled to get fix faster. */
     RTK_CFG_BITS_RTK_BASE_IS_IDENTICAL_TO_ROVER         = (int)0x00400000,
 
@@ -3007,154 +3008,154 @@ enum eRTKConfigBits
     RTK_CFG_BITS_GPS_PORT_PASS_THROUGH                  = (int)0x00800000,
 
     /** Enable RTK base and output RTCM3 data from GPS 1 on the current serial port */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_CUR_PORT        = (int)0x01000000,
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_CUR_PORT       = (int)0x01000000,
 
     /** Enable RTK base and output RTCM3 data from GPS 2 on the current serial port */
-    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_CUR_PORT        = (int)0x02000000,
-    
+    RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_CUR_PORT       = (int)0x02000000,
+
     /** If this bit is set in conjuction with set current port this will clear current port */
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CLEAR_CUR_PORT       = (int)0x04000000,
 
     /** Mask of RTK base and output RTCM3 data on the current serial ports */
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_CUR_PORT),
 
-    RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK = (
+    RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK                  = (
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB  ),
 
-    RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK = (
+    RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK                  = (
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB  ),
 
-    RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK = (
+    RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK                  = (
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB  ),
 
-    RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK = (
+    RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK                  = (
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2 |
             RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB  ),
 
-    RTK_CFG_BITS_BASE_UBLOX_MASK = ( RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK | RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK),
-    RTK_CFG_BITS_BASE_RTCM3_MASK = ( RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK | RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK),
+    RTK_CFG_BITS_BASE_UBLOX_MASK                        = ( RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK | RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK),
+    RTK_CFG_BITS_BASE_RTCM3_MASK                        = ( RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK | RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK),
 
     /** All base station bits */
-    RTK_CFG_BITS_BASE_MODE = ( RTK_CFG_BITS_BASE_UBLOX_MASK | RTK_CFG_BITS_BASE_RTCM3_MASK),
+    RTK_CFG_BITS_BASE_MODE                              = ( RTK_CFG_BITS_BASE_UBLOX_MASK | RTK_CFG_BITS_BASE_RTCM3_MASK),
 
     /** Base station bits enabled on Ser0 */
-    RTK_CFG_BITS_RTK_BASE_SER0 = (
+    RTK_CFG_BITS_RTK_BASE_SER0                          = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0 | RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0),
 
     /** Base station bits enabled on Ser1 */
-    RTK_CFG_BITS_RTK_BASE_SER1 = (
+    RTK_CFG_BITS_RTK_BASE_SER1                          = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1 | RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1),
 
     /** Base station bits enabled on Ser2 */
-    RTK_CFG_BITS_RTK_BASE_SER2 = (
+    RTK_CFG_BITS_RTK_BASE_SER2                          = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2 | RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2),
 
     /** Base station bits for GNSS1 Ublox */
-    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS1_UBLOX = (
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS1_UBLOX            = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB),
 
     /** Base station bits for GNSS2 Ublox */
-    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS2_UBLOX = (
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS2_UBLOX            = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB),
 
     /** Base station bits for GNSS1 RTCM */
-    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS1_RTCM = (
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS1_RTCM             = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0 |
-        RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1 | 
-        RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2 | 
+        RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1 |
+        RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB),
 
     /** Base station bits for GNSS2 RTCM */
-    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS2_RTCM = (
+    RTK_CFG_BITS_RTK_BASE_OUTPUT_GNSS2_RTCM             = (
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2 |
         RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB),
 
     /** Rover on-board RTK engine used */
-    RTK_CFG_BITS_ROVER_MODE_ONBOARD_MASK = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED),
+    RTK_CFG_BITS_ROVER_MODE_ONBOARD_MASK                = (RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_DEPRECATED | RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_DEPRECATED),
 
     /** Mask of Rover, Compassing, and Base modes */
-    RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),    
+    RTK_CFG_BITS_ALL_MODES_MASK                         = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),
 };
 
 #define DEFAULT_DYNAMIC_MODEL                   DYNAMIC_MODEL_AIRBORNE_4G
-#define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)  // (rad)
-#define DEFAULT_GNSS_RTK_CN0_MINIMUM            30  // (dBHz)
-#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20  // (dBHz)
+#define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)       // (rad)
+#define DEFAULT_GNSS_RTK_CN0_MINIMUM            30                          // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20                          // (dBHz)
 
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
-    /** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000, 4000 deg/s */    
-    SENSOR_CFG_GYR_FS_250               = (int)0x00000000,
-    SENSOR_CFG_GYR_FS_500               = (int)0x00000001,
-    SENSOR_CFG_GYR_FS_1000              = (int)0x00000002,
-    SENSOR_CFG_GYR_FS_2000              = (int)0x00000003,
-    SENSOR_CFG_GYR_FS_4000              = (int)0x00000004,
-    SENSOR_CFG_GYR_FS_MAX               = (int)0x00000007, // Uses individual sensors max range 
-    SENSOR_CFG_GYR_FS_MASK              = (int)0x00000007,
-    SENSOR_CFG_GYR_FS_OFFSET            = (int)0,
-    
-    /** Accelerometer full-scale sensing range selection: +- 2, 4, 8, 16 m/s^2 */
-    SENSOR_CFG_ACC_FS_2G                = (int)0x00000000,
-    SENSOR_CFG_ACC_FS_4G                = (int)0x00000001,
-    SENSOR_CFG_ACC_FS_8G                = (int)0x00000002,
-    SENSOR_CFG_ACC_FS_16G               = (int)0x00000003,
-    SENSOR_CFG_ACC_FS_32G               = (int)0x00000004,
-    // SENSOR_CFG_ACC_FS_80G              = (int)0x00000005, Unsupported at this time (available in future; contact sales for more information)
-    SENSOR_CFG_ACC_FS_MAX               = (int)0x00000007, // Uses individual sensors max range 
-    SENSOR_CFG_ACC_FS_MASK              = (int)0x00000070,
-    SENSOR_CFG_ACC_FS_OFFSET            = (int)4,
-    
-    /** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following 
-    bit values can be used to override the bandwidth (frequency) to: 250, 184, 92, 41, 20, 10, 5 Hz */
-    SENSOR_CFG_GYR_DLPF_250HZ           = (int)0x00000000,
-    SENSOR_CFG_GYR_DLPF_184HZ           = (int)0x00000001,
-    SENSOR_CFG_GYR_DLPF_92HZ            = (int)0x00000002,
-    SENSOR_CFG_GYR_DLPF_41HZ            = (int)0x00000003,
-    SENSOR_CFG_GYR_DLPF_20HZ            = (int)0x00000004,
-    SENSOR_CFG_GYR_DLPF_10HZ            = (int)0x00000005,
-    SENSOR_CFG_GYR_DLPF_5HZ             = (int)0x00000006,
-    SENSOR_CFG_GYR_DLPF_MASK            = (int)0x00000F00,
-    SENSOR_CFG_GYR_DLPF_OFFSET          = (int)8,
+    /** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000, 4000 deg/s */
+    SENSOR_CFG_GYR_FS_250                       = (int)0x00000000,
+    SENSOR_CFG_GYR_FS_500                       = (int)0x00000001,
+    SENSOR_CFG_GYR_FS_1000                      = (int)0x00000002,
+    SENSOR_CFG_GYR_FS_2000                      = (int)0x00000003,
+    SENSOR_CFG_GYR_FS_4000                      = (int)0x00000004,
+    SENSOR_CFG_GYR_FS_MAX                       = (int)0x00000007,  // Uses individual sensors max range
+    SENSOR_CFG_GYR_FS_MASK                      = (int)0x00000007,
+    SENSOR_CFG_GYR_FS_OFFSET                    = (int)0,
 
-    /** Accelerometer digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The 
+    /** Accelerometer full-scale sensing range selection: +- 2, 4, 8, 16 m/s^2 */
+    SENSOR_CFG_ACC_FS_2G                        = (int)0x00000000,
+    SENSOR_CFG_ACC_FS_4G                        = (int)0x00000001,
+    SENSOR_CFG_ACC_FS_8G                        = (int)0x00000002,
+    SENSOR_CFG_ACC_FS_16G                       = (int)0x00000003,
+    SENSOR_CFG_ACC_FS_32G                       = (int)0x00000004,
+    // SENSOR_CFG_ACC_FS_80G              = (int)0x00000005, Unsupported at this time (available in future; contact sales for more information)
+    SENSOR_CFG_ACC_FS_MAX                       = (int)0x00000007,  // Uses individual sensors max range
+    SENSOR_CFG_ACC_FS_MASK                      = (int)0x00000070,
+    SENSOR_CFG_ACC_FS_OFFSET                    = (int)4,
+
+    /** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following
+    bit values can be used to override the bandwidth (frequency) to: 250, 184, 92, 41, 20, 10, 5 Hz */
+    SENSOR_CFG_GYR_DLPF_250HZ                   = (int)0x00000000,
+    SENSOR_CFG_GYR_DLPF_184HZ                   = (int)0x00000001,
+    SENSOR_CFG_GYR_DLPF_92HZ                    = (int)0x00000002,
+    SENSOR_CFG_GYR_DLPF_41HZ                    = (int)0x00000003,
+    SENSOR_CFG_GYR_DLPF_20HZ                    = (int)0x00000004,
+    SENSOR_CFG_GYR_DLPF_10HZ                    = (int)0x00000005,
+    SENSOR_CFG_GYR_DLPF_5HZ                     = (int)0x00000006,
+    SENSOR_CFG_GYR_DLPF_MASK                    = (int)0x00000F00,
+    SENSOR_CFG_GYR_DLPF_OFFSET                  = (int)8,
+
+    /** Accelerometer digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The
     following bit values can be used to override the bandwidth (frequency) to: 218, 218, 99, 45, 21, 10, 5 Hz */
-    SENSOR_CFG_ACC_DLPF_218HZ           = (int)0x00000000,
-    SENSOR_CFG_ACC_DLPF_218HZb          = (int)0x00000001,
-    SENSOR_CFG_ACC_DLPF_99HZ            = (int)0x00000002,
-    SENSOR_CFG_ACC_DLPF_45HZ            = (int)0x00000003,
-    SENSOR_CFG_ACC_DLPF_21HZ            = (int)0x00000004,
-    SENSOR_CFG_ACC_DLPF_10HZ            = (int)0x00000005,
-    SENSOR_CFG_ACC_DLPF_5HZ             = (int)0x00000006,
-    SENSOR_CFG_ACC_DLPF_MASK            = (int)0x0000F000,
-    SENSOR_CFG_ACC_DLPF_OFFSET          = (int)12,
+    SENSOR_CFG_ACC_DLPF_218HZ                   = (int)0x00000000,
+    SENSOR_CFG_ACC_DLPF_218HZb                  = (int)0x00000001,
+    SENSOR_CFG_ACC_DLPF_99HZ                    = (int)0x00000002,
+    SENSOR_CFG_ACC_DLPF_45HZ                    = (int)0x00000003,
+    SENSOR_CFG_ACC_DLPF_21HZ                    = (int)0x00000004,
+    SENSOR_CFG_ACC_DLPF_10HZ                    = (int)0x00000005,
+    SENSOR_CFG_ACC_DLPF_5HZ                     = (int)0x00000006,
+    SENSOR_CFG_ACC_DLPF_MASK                    = (int)0x0000F000,
+    SENSOR_CFG_ACC_DLPF_OFFSET                  = (int)12,
 
     /** Euler rotation of IMU and magnetometer from Hardware Frame to Sensor Frame.  Rotation applied in the order of yaw, pitch, roll from the sensor frame (labeled on uINS). */
     SENSOR_CFG_SENSOR_ROTATION_MASK             = (int)0x001F0000,
     SENSOR_CFG_SENSOR_ROTATION_OFFSET           = (int)16,
-    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,    // roll, pitch, yaw rotation (deg).
+    SENSOR_CFG_SENSOR_ROTATION_0_0_0            = (int)0,  // roll, pitch, yaw rotation (deg).
     SENSOR_CFG_SENSOR_ROTATION_0_0_90           = (int)1,
     SENSOR_CFG_SENSOR_ROTATION_0_0_180          = (int)2,
     SENSOR_CFG_SENSOR_ROTATION_0_0_N90          = (int)3,
@@ -3182,97 +3183,97 @@ enum eSensorConfig
     /** Magnetometer output data rate (ODR).  Set to enable 100Hz output data rate.  System reset required to enable. */
     // SENSOR_CFG_MAG_ODR_100_HZ                   = (int)0x00200000,       // This is commented out to save instruction space memory.  Uncomment after the system has been optimized.
 
-    /** Disable magnetometer sensor (sensorConfig[22]) */    
+    /** Disable magnetometer sensor (sensorConfig[22]) */
     SENSOR_CFG_DISABLE_MAGNETOMETER             = (int)0x00400000,
-    /** Disable barometometer sensor (sensorConfig[23]) */    
+    /** Disable barometometer sensor (sensorConfig[23]) */
     SENSOR_CFG_DISABLE_BAROMETER                = (int)0x00800000,
 
     /** Multiple IMU fault detection level. Higher levels add new features to previous levels */
     SENSOR_CFG_IMU_FAULT_DETECT_MASK            = (int)0xFF000000,
-    SENSOR_CFG_IMU_FAULT_DETECT_GYR             = (int)0x01000000,      // Enable multiple IMU gyro fault detection.           Must be enabled for other gyr detection modes (offline, large bias, and noise).
-    SENSOR_CFG_IMU_FAULT_DETECT_ACC             = (int)0x02000000,      // Enable multiple IMU accelerometer fault detection.  Must be enabled for other acc detection modes (offline, large bias, and noise).
+    SENSOR_CFG_IMU_FAULT_DETECT_GYR             = (int)0x01000000,  // Enable multiple IMU gyro fault detection.           Must be enabled for other gyr detection modes (offline, large bias, and noise).
+    SENSOR_CFG_IMU_FAULT_DETECT_ACC             = (int)0x02000000,  // Enable multiple IMU accelerometer fault detection.  Must be enabled for other acc detection modes (offline, large bias, and noise).
 
     // Set to ZERO to exclude from build
-    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = 0,    // (int)0x04000000,      // One or more IMUs is offline or stuck
-    SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS      = 0,    // (int)0x08000000,
-    SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,    // (int)0x10000000,
+    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = 0,  // (int)0x04000000,      // One or more IMUs is offline or stuck
+    SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS      = 0,  // (int)0x08000000,
+    SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,  // (int)0x10000000,
 };
 
 /** IO configuration (used with nvm_flash_cfg_t.ioConfig) */
 enum eIoConfig
 {
     /** Strobe (input and output) trigger on rising edge (0 = falling edge) (ioConfig[0]) */
-    IO_CONFIG_STROBE_TRIGGER_HIGH               = (int)0x00000001,
+    IO_CONFIG_STROBE_TRIGGER_HIGH       = (int)0x00000001,
 
     // G1,G2 - STROBE, CAN, Ser2, I2C (future) (ioConfig[3-1])
     /** G1,G2 - STROBE input on G2 */
-    IO_CONFIG_G1G2_STROBE_INPUT_G2              = (int)0x00000002,
+    IO_CONFIG_G1G2_STROBE_INPUT_G2      = (int)0x00000002,
     /** G1,G2 - CAN Bus */
-    IO_CONFIG_G1G2_CAN_BUS                      = (int)0x00000004,
+    IO_CONFIG_G1G2_CAN_BUS              = (int)0x00000004,
     /** G1,G2 - General Communications on Ser2. Excludes GPS communications. */
-    IO_CONFIG_G1G2_COM2                         = (int)0x00000006,
+    IO_CONFIG_G1G2_COM2                 = (int)0x00000006,
     /** G1,G2 - I2C */
-    IO_CONFIG_G1G2_I2C                          = (int)0x00000008,
+    IO_CONFIG_G1G2_I2C                  = (int)0x00000008,
     /** G1,G2 - MASK.  Note: This G1,G2 setting is overridden when GNSS1 or GNSS2 is configured to use Ser2. */
-    IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
+    IO_CONFIG_G1G2_MASK                 = (int)0x0000000E,
     /** G1,G2 - Default */
-    IO_CONFIG_G1G2_DEFAULT                      = IO_CONFIG_G1G2_COM2,
+    IO_CONFIG_G1G2_DEFAULT              = IO_CONFIG_G1G2_COM2,
 
     // G9 - STROBE, QDEC0 (future) (ioConfig[5-4])
     /** G9 - Strobe input */
-    IO_CONFIG_G9_STROBE_INPUT                   = (int)0x00000010,
+    IO_CONFIG_G9_STROBE_INPUT           = (int)0x00000010,
     /** G9 - Enable Nav update strobe output pulse on G9 (uINS pin 10) indicating preintegrated IMU and navigation updates */
-    IO_CONFIG_G9_STROBE_OUTPUT_NAV              = (int)0x00000020,
+    IO_CONFIG_G9_STROBE_OUTPUT_NAV      = (int)0x00000020,
     /** G9 - SPI DRDY */
-    IO_CONFIG_G9_SPI_DRDY                       = (int)0x00000030,
+    IO_CONFIG_G9_SPI_DRDY               = (int)0x00000030,
     /** G9 - Bit mask */
-    IO_CONFIG_G9_MASK                           = (int)0x00000030,
+    IO_CONFIG_G9_MASK                   = (int)0x00000030,
     /** G9 - Default */
-    IO_CONFIG_G9_DEFAULT                        = (int)0,    
+    IO_CONFIG_G9_DEFAULT                = (int)0,
 
     // G6,G7 - Ser1, QDEC0 (future) (ioConfig[7-6])
     /** G6,G7 - General Communications on Ser1. Excludes GPS communications.  Overriden when SPI is enabled (G9 held low on bootup/config). */
-    IO_CONFIG_G6G7_COM1                         = (int)0x00000040,
+    IO_CONFIG_G6G7_COM1                 = (int)0x00000040,
     /** G6,G7 - Quadrature wheel encoder input (G6 QDEC0-A).  Overriden when SPI is enabled (G9 held low on bootup/config). */
 //  IO_CONFIG_G6G7_QDEC0_INPUT_G6               = (int)0x00000080,
     /** G6,G7 - Bit mask */
-    IO_CONFIG_G6G7_MASK                         = (int)0x000000C0,
+    IO_CONFIG_G6G7_MASK                 = (int)0x000000C0,
     /** G6,G7 - Default */
-    IO_CONFIG_G6G7_DEFAULT                      = IO_CONFIG_G6G7_COM1,    
+    IO_CONFIG_G6G7_DEFAULT              = IO_CONFIG_G6G7_COM1,
 
     // G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config) (ioConfig[10-8])
     /** G5,G8 - Strobe input on G5 */
-    IO_CONFIG_G5G8_STROBE_INPUT_G5              = (int)0x00000100,
+    IO_CONFIG_G5G8_STROBE_INPUT_G5      = (int)0x00000100,
     /** G5,G8 - Strobe input on G8 */
-    IO_CONFIG_G5G8_STROBE_INPUT_G8              = (int)0x00000200,
+    IO_CONFIG_G5G8_STROBE_INPUT_G8      = (int)0x00000200,
     /** G5,G8 - Strobe input on both G5 and G8 */
-    IO_CONFIG_G5G8_STROBE_INPUT_G5_G8           = (int)0x00000300,
+    IO_CONFIG_G5G8_STROBE_INPUT_G5_G8   = (int)0x00000300,
     /** G5,G8 - Strobe input on both G5 and G8 */
-    IO_CONFIG_G5G8_G6G7_SPI_ENABLE              = (int)0x00000400,
+    IO_CONFIG_G5G8_G6G7_SPI_ENABLE      = (int)0x00000400,
     /** G5,G8 - Quadrature wheel encoder input (G5 QDEC1-B, G8 QDEC1-A) */
-    IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000500,
+    IO_CONFIG_G5G8_QDEC_INPUT           = (int)0x00000500,
     /** G5,G8 - Bit mask */
-    IO_CONFIG_G5G8_MASK                         = (int)0x00000700,
+    IO_CONFIG_G5G8_MASK                 = (int)0x00000700,
     /** G5,G8 - Default */
-    IO_CONFIG_G5G8_DEFAULT                      = (int)0,    
+    IO_CONFIG_G5G8_DEFAULT              = (int)0,
 
     /** G15 (GPS PPS) - STROBE (ioConfig[11]) */
-    IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
+    IO_CONFIG_G15_STROBE_INPUT          = (int)0x00000800,
 
     /** GPS TIMEPULSE source (ioConfig[15-13]) */
-    IO_CFG_GNSS1_PPS_SOURCE_OFFSET              = (int)13,
-    IO_CFG_GNSS1_PPS_SOURCE_MASK                = (int)0x00000007,
-    IO_CFG_GNSS1_PPS_SOURCE_BITMASK             = (int)(IO_CFG_GNSS1_PPS_SOURCE_MASK<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET),    
-    IO_CFG_GNSS1_PPS_SOURCE_DISABLED            = (int)0,
-    IO_CFG_GNSS1_PPS_SOURCE_G15                 = (int)1,
-    IO_CFG_GNSS1_PPS_SOURCE_G2                  = (int)3,
-    IO_CFG_GNSS1_PPS_SOURCE_G5                  = (int)4,
-    IO_CFG_GNSS1_PPS_SOURCE_G12                 = (int)5,
-    IO_CFG_GNSS1_PPS_SOURCE_G9                  = (int)6,
+    IO_CFG_GNSS1_PPS_SOURCE_OFFSET      = (int)13,
+    IO_CFG_GNSS1_PPS_SOURCE_MASK        = (int)0x00000007,
+    IO_CFG_GNSS1_PPS_SOURCE_BITMASK     = (int)(IO_CFG_GNSS1_PPS_SOURCE_MASK<<IO_CFG_GNSS1_PPS_SOURCE_OFFSET),
+    IO_CFG_GNSS1_PPS_SOURCE_DISABLED    = (int)0,
+    IO_CFG_GNSS1_PPS_SOURCE_G15         = (int)1,
+    IO_CFG_GNSS1_PPS_SOURCE_G2          = (int)3,
+    IO_CFG_GNSS1_PPS_SOURCE_G5          = (int)4,
+    IO_CFG_GNSS1_PPS_SOURCE_G12         = (int)5,
+    IO_CFG_GNSS1_PPS_SOURCE_G9          = (int)6,
 
- #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }    
+ #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)    { (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }
  #define IO_CFG_GNSS1_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GNSS1_PPS_SOURCE_OFFSET)&IO_CFG_GNSS1_PPS_SOURCE_MASK)
-     
+
      /** GPS 1 source OFFSET (ioConfig[18-16]) */
      IO_CONFIG_GNSS1_SOURCE_OFFSET                = (int)16,
      /** GPS 2 source OFFSET (ioConfig[21-19]) */
@@ -3283,62 +3284,66 @@ enum eIoConfig
      IO_CONFIG_GNSS2_TYPE_OFFSET                  = (int)25,
 
     /** GPS 1 skip initialization (ioConfig[12]) */
-    IO_CONFIG_GNSS1_NO_INIT                      = (int)0x00001000,
+    IO_CONFIG_GNSS1_NO_INIT             = (int)0x00001000,
     /** GPS 2 skip initialization (ioConfig[28]) */
-    IO_CONFIG_GNSS2_NO_INIT                      = (int)0x10000000,
+    IO_CONFIG_GNSS2_NO_INIT             = (int)0x10000000,
 
     /** GPS source MASK */
-    IO_CONFIG_GNSS_SOURCE_MASK                   = (int)0x00000007,
+    IO_CONFIG_GNSS_SOURCE_MASK          = (int)0x00000007,
     /** GPS source - Disable */
-    IO_CONFIG_GNSS_SOURCE_DISABLE                = (int)0,
+    IO_CONFIG_GNSS_SOURCE_DISABLE       = (int)0,
     /** GPS source - Serial 0 */
-    IO_CONFIG_GNSS_SOURCE_SER0                   = (int)3,
+    IO_CONFIG_GNSS_SOURCE_SER0          = (int)3,
     /** GPS source - Serial 1 */
-    IO_CONFIG_GNSS_SOURCE_SER1                   = (int)4,
+    IO_CONFIG_GNSS_SOURCE_SER1          = (int)4,
     /** GPS source - Serial 2 */
-    IO_CONFIG_GNSS_SOURCE_SER2                   = (int)5,
+    IO_CONFIG_GNSS_SOURCE_SER2          = (int)5,
     /** GPS source - last type */
-    IO_CONFIG_GNSS_SOURCE_LAST                   = IO_CONFIG_GNSS_SOURCE_SER2,    // set to last source
+    IO_CONFIG_GNSS_SOURCE_LAST          = IO_CONFIG_GNSS_SOURCE_SER2,  // set to last source
 
     /** GPS type MASK */
-    IO_CONFIG_GNSS_TYPE_MASK                     = (int)0x00000007,
+    IO_CONFIG_GNSS_TYPE_MASK            = (int)0x00000007,
     /** GPS type - Unused.  USE this when adding a new GNSS Receiver */
-    IO_CONFIG_GNSS_TYPE_NONE                     = (int)0,
+    IO_CONFIG_GNSS_TYPE_NONE            = (int)0,
     /** GPS type - ublox ZED-F9P w/ RTK */
-    IO_CONFIG_GNSS_TYPE_UBX_F9P                  = (int)1,
+    IO_CONFIG_GNSS_TYPE_UBX_F9P         = (int)1,
     /** GPS type - NMEA */
-    IO_CONFIG_GNSS_TYPE_NMEA                     = (int)2,
+    IO_CONFIG_GNSS_TYPE_NMEA            = (int)2,
     /** GPS type - InertialSense GPX */
-    IO_CONFIG_GNSS_TYPE_GPX                      = (int)3,
+    IO_CONFIG_GNSS_TYPE_GPX             = (int)3,
     /** GPS type - Septentrio */
-    IO_CONFIG_GNSS_TYPE_SEPTENTRIO               = (int)4,
+    IO_CONFIG_GNSS_TYPE_SEPTENTRIO      = (int)4,
+    /** GPS type - Host (pass-through from connected IMX host) */
+    IO_CONFIG_GNSS_TYPE_ISB             = (int)5,
+    /** GPS type - ublox X20 w/ RTK */
+    IO_CONFIG_GNSS_TYPE_UBX_X20         = (int)6,
     /** GPS type - last type */
-    IO_CONFIG_GNSS_TYPE_LAST                     = IO_CONFIG_GNSS_TYPE_SEPTENTRIO,		// Set to last type
+    IO_CONFIG_GNSS_TYPE_LAST            = IO_CONFIG_GNSS_TYPE_UBX_X20,  // Set to last type
 
-#define IO_CONFIG_GNSS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GNSS1_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
-#define IO_CONFIG_GNSS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GNSS2_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
-#define IO_CONFIG_GNSS1_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GNSS1_TYPE_OFFSET)&IO_CONFIG_GNSS_TYPE_MASK)
-#define IO_CONFIG_GNSS2_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GNSS2_TYPE_OFFSET)&IO_CONFIG_GNSS_TYPE_MASK)
+#define IO_CONFIG_GNSS1_SOURCE(ioConfig)    (((ioConfig)>>IO_CONFIG_GNSS1_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
+#define IO_CONFIG_GNSS2_SOURCE(ioConfig)    (((ioConfig)>>IO_CONFIG_GNSS2_SOURCE_OFFSET)&IO_CONFIG_GNSS_SOURCE_MASK)
+#define IO_CONFIG_GNSS1_TYPE(ioConfig)      (((ioConfig)>>IO_CONFIG_GNSS1_TYPE_OFFSET)&IO_CONFIG_GNSS_TYPE_MASK)
+#define IO_CONFIG_GNSS2_TYPE(ioConfig)      (((ioConfig)>>IO_CONFIG_GNSS2_TYPE_OFFSET)&IO_CONFIG_GNSS_TYPE_MASK)
 
-#define SET_IO_CFG_GNSS1_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS1_SOURCE_OFFSET, IO_CONFIG_GNSS_SOURCE_MASK)
-#define SET_IO_CFG_GNSS2_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS2_SOURCE_OFFSET, IO_CONFIG_GNSS_SOURCE_MASK)
-#define SET_IO_CFG_GNSS1_TYPE(result,val)    SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS1_TYPE_OFFSET, IO_CONFIG_GNSS_TYPE_MASK)
-#define SET_IO_CFG_GNSS2_TYPE(result,val)    SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS2_TYPE_OFFSET, IO_CONFIG_GNSS_TYPE_MASK)
+#define SET_IO_CFG_GNSS1_SOURCE(result,val) SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS1_SOURCE_OFFSET, IO_CONFIG_GNSS_SOURCE_MASK)
+#define SET_IO_CFG_GNSS2_SOURCE(result,val) SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS2_SOURCE_OFFSET, IO_CONFIG_GNSS_SOURCE_MASK)
+#define SET_IO_CFG_GNSS1_TYPE(result,val)   SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS1_TYPE_OFFSET, IO_CONFIG_GNSS_TYPE_MASK)
+#define SET_IO_CFG_GNSS2_TYPE(result,val)   SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GNSS2_TYPE_OFFSET, IO_CONFIG_GNSS_TYPE_MASK)
 
-    /** IMU 1 disable (ioConfig[29]) */    
-    IO_CONFIG_IMU_1_DISABLE                         = (int)0x20000000,
+    /** IMU 1 disable (ioConfig[29]) */
+    IO_CONFIG_IMU_1_DISABLE             = (int)0x20000000,
     /** IMU 2 disable (ioConfig[30]) */
-    IO_CONFIG_IMU_2_DISABLE                         = (int)0x40000000,
+    IO_CONFIG_IMU_2_DISABLE             = (int)0x40000000,
     /** IMU 3 disable (ioConfig[31]) */
-    IO_CONFIG_IMU_3_DISABLE                         = (int)0x80000000,
+    IO_CONFIG_IMU_3_DISABLE             = (int)0x80000000,
 };
 
-#define IO_CONFIG_DEFAULT     (IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)    
+#define IO_CONFIG_DEFAULT   (IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)
 
 enum eIoConfig2
 {
     // NOTE IO_CFG2_G11_STROBE_INPUT and IO_CFG2_G12_STROBE_INPUT
-    // cannot be set at the same time. If this is attemped 
+    // cannot be set at the same time. If this is attemped
     // IO_CFG2_G12_STROBE_INPUT will be set to IO_CFG2_G12_SWO
     /** G11 (SWDIO) - (eIoConfig2[0]) */
     IO_CFG2_G11_OFFSET                      = (int)0,
@@ -3382,110 +3387,110 @@ enum eIoConfig2
     /** GNSS2 TIMEPULSE source (eIoConfig2[7-6]) */
     IO_CFG2_GNSS2_PPS_SOURCE_OFFSET         = (int)6,
     IO_CFG2_GNSS2_PPS_SOURCE_MASK           = (int)0x03,
-    IO_CFG2_GNSS2_PPS_SOURCE_BITMASK        = (int)(IO_CFG2_GNSS2_PPS_SOURCE_MASK<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET),    
+    IO_CFG2_GNSS2_PPS_SOURCE_BITMASK        = (int)(IO_CFG2_GNSS2_PPS_SOURCE_MASK<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET),
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED       = (int)0,
     IO_CFG2_GNSS2_PPS_SOURCE_G8             = (int)1,
     IO_CFG2_GNSS2_PPS_SOURCE_G11            = (int)2,
-    IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,    
+    IO_CFG2_GNSS2_PPS_SOURCE_G13            = (int)3,
     IO_CFG2_GNSS2_PPS_SOURCE_DISABLED_val   = (int)0x00,
     IO_CFG2_GNSS2_PPS_SOURCE_G8_val         = (int)0x40,
     IO_CFG2_GNSS2_PPS_SOURCE_G11_val        = (int)0x80,
     IO_CFG2_GNSS2_PPS_SOURCE_G13_val        = (int)0xC0,
 };
 
-#define IO_CFG2_GNSS2_PPS_SOURCE(ioConfig) (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
+#define IO_CFG2_GNSS2_PPS_SOURCE(ioConfig)  (((ioConfig)>>IO_CFG2_GNSS2_PPS_SOURCE_OFFSET)&IO_CFG2_GNSS2_PPS_SOURCE_MASK)
 
 enum ePlatformConfig
 {
     // IMX Carrier Board
-    PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
-    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
-    PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.         PPS disabled
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "                    PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "                    PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,          
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3:           PPS1 on  G5 (pin  9), PPS2 on G8 (pin 8)
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // IG-1.0:              PPS1 on  G8 (pin  8)
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // IG-1.1 and later:    PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,          // IG-1.1 and later:    PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2:                PPS1 on G15 (pin 20)
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,          // "
-    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
-    PLATFORM_CFG_TYPE_IMX_BRK_1                 = (int)21,          // IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_RUG4_G2                   = (int)22,          // PCB RUG-4.x:         PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_IG2_1                     = (int)23,          // IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_COUNT                     = (int)24,
+    PLATFORM_CFG_TYPE_MASK                                                          = (int)0x0000003F,
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP                                                 = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
+    PLATFORM_CFG_TYPE_NONE                                                          = (int)0,   // IMX-5 default
+    PLATFORM_CFG_TYPE_RUG3_G0                                                       = (int)8,   // PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,   // "                    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G2                                                       = (int)10,  // "                    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_EVB2_G2                                                       = (int)11,
+    PLATFORM_CFG_TYPE_TBED3                                                         = (int)12,  // Testbed-3:           PPS1 on  G5 (pin  9), PPS2 on G8 (pin 8)
+    PLATFORM_CFG_TYPE_IG1_0_G2                                                      = (int)13,  // IG-1.0:              PPS1 on  G8 (pin  8)
+    PLATFORM_CFG_TYPE_IG1_G1                                                        = (int)14,  // IG-1.1 and later:    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                                                        = (int)15,  // IG-1.1 and later:    PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_IG2                                                           = (int)16,  // IG-2:                PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_LAMBDA_G1                                                     = (int)17,  // Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_LAMBDA_G2                                                     = (int)18,  // "
+    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA                                             = (int)19,  // Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA                                             = (int)20,  // "
+    PLATFORM_CFG_TYPE_IMX_BRK_1                                                     = (int)21,  // IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_G2                                                       = (int)22,  // PCB RUG-4.x:         PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_IG2_1                                                         = (int)23,  // IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_COUNT                                                         = (int)24,
 
     // Presets
-    PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
-    PLATFORM_CFG_PRESET_OFFSET                  = (int)8,
+    PLATFORM_CFG_PRESET_MASK                                                        = (int)0x0000FF00,
+    PLATFORM_CFG_PRESET_OFFSET                                                      = (int)8,
 
     // RUG-3 - Presets
-    PLATFORM_CFG_RUG3_PRESET__0__PRESETS_DISABLED                               = 0,    // Don't use presets.  IOEXP_BITS can be set directly.
-    PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1          = 1,    // RUG-3-G0 default
-    PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GNSS1          = 2,
-    PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GNSS1          = 3,
-    PLATFORM_CFG_RUG3_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GNSS1          = 4,
-    PLATFORM_CFG_RUG3_PRESET__5__S1_RS485_7_8_9_10_____________S2_GNSS1__S0_GNSS2 = 5,
-    PLATFORM_CFG_RUG3_PRESET__6__SPI_7_8_9_10__________________S2_GNSS1__S0_GNSS2 = 6,
-    PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2 = 7,    // RUG-3-G2 default
-    PLATFORM_CFG_RUG3_PRESET__8_________________CAN_11_12______S1_GNSS1__S0_GNSS2 = 8,
-    PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GNSS1__S0_GNSS2 = 9,
-    PLATFORM_CFG_RUG3_PRESET__COUNT                                             = 10,
+    PLATFORM_CFG_RUG3_PRESET__0__PRESETS_DISABLED                                   = 0,  // Don't use presets.  IOEXP_BITS can be set directly.
+    PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1             = 1,  // RUG-3-G0 default
+    PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GNSS1             = 2,
+    PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GNSS1             = 3,
+    PLATFORM_CFG_RUG3_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GNSS1             = 4,
+    PLATFORM_CFG_RUG3_PRESET__5__S1_RS485_7_8_9_10_____________S2_GNSS1__S0_GNSS2   = 5,
+    PLATFORM_CFG_RUG3_PRESET__6__SPI_7_8_9_10__________________S2_GNSS1__S0_GNSS2   = 6,
+    PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2   = 7,  // RUG-3-G2 default
+    PLATFORM_CFG_RUG3_PRESET__8_________________CAN_11_12______S1_GNSS1__S0_GNSS2   = 8,
+    PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GNSS1__S0_GNSS2   = 9,
+    PLATFORM_CFG_RUG3_PRESET__COUNT                                                 = 10,
 
-    PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT    = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1,
-    PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT    = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2,
+    PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT                                            = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1,
+    PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT                                            = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2,
 
     // RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
-    PLATFORM_CFG_RUG3_IOEXP_BIT_MASK            = (int)0x00FF0000,
-    PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET          = (int)16,
+    PLATFORM_CFG_RUG3_IOEXP_BIT_MASK                                                = (int)0x00FF0000,
+    PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET                                              = (int)16,
 
-    RUG3_IOEXP_BIT_OFFSET_n232_485              = (int)0,
-    RUG3_IOEXP_BIT_OFFSET_n232_TTL              = (int)1,
-    RUG3_IOEXP_BIT_OFFSET_nRS_CAN               = (int)2,
-    RUG3_IOEXP_BIT_OFFSET_nGNSS2_RS              = (int)3,
-    RUG3_IOEXP_BIT_OFFSET_nSPIEN                = (int)4,
-    RUG3_IOEXP_BIT_OFFSET_nSPI_SER              = (int)5,
-    RUG3_IOEXP_BIT_OFFSET_nGPSRST               = (int)6,
+    RUG3_IOEXP_BIT_OFFSET_n232_485                                                  = (int)0,
+    RUG3_IOEXP_BIT_OFFSET_n232_TTL                                                  = (int)1,
+    RUG3_IOEXP_BIT_OFFSET_nRS_CAN                                                   = (int)2,
+    RUG3_IOEXP_BIT_OFFSET_nGNSS2_RS                                                 = (int)3,
+    RUG3_IOEXP_BIT_OFFSET_nSPIEN                                                    = (int)4,
+    RUG3_IOEXP_BIT_OFFSET_nSPI_SER                                                  = (int)5,
+    RUG3_IOEXP_BIT_OFFSET_nGPSRST                                                   = (int)6,
 
-    PLATFORM_CFG_UPDATE_IO_CONFIG               = (int)0x01000000,    // Generate ioConfig based on platform config
+    PLATFORM_CFG_UPDATE_IO_CONFIG                                                   = (int)0x01000000,  // Generate ioConfig based on platform config
 };
 
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
 typedef struct PACKED
 {
     /** (Do not use, internal development only) Time of measurement in current GPS week */
-    double timeOfWeek;
+    double      timeOfWeek;
 
     /** Status */
-    uint32_t status;
+    uint32_t    status;
 
     /** (Do not use, internal development only) Left wheel angle (rad) */
-    float theta_l;
+    float       theta_l;
 
     /** (Do not use, internal development only) Right wheel angle (rad) */
-    float theta_r;
-    
+    float       theta_r;
+
     /** Left wheel angular rate (rad/s). Positive when wheel is turning toward the forward direction of the vehicle. Use WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT in DID_FLASH_CONFIG::wheelConfig to reverse this. */
-    float omega_l;
+    float       omega_l;
 
     /** Right wheel angular rate (rad/s). Positive when wheel is turning toward the forward direction of the vehicle. Use WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT in DID_FLASH_CONFIG::wheelConfig to reverse this. */
-    float omega_r;
+    float       omega_r;
 
     /** (Do not use, internal development only) Left wheel revolution count */
-    uint32_t wrap_count_l;
+    uint32_t    wrap_count_l;
 
     /** (Do not use, internal development only) Right wheel revolution count */
-    uint32_t wrap_count_r;
+    uint32_t    wrap_count_r;
 
     /** Wheel encoder velocity noise variance (rad^2/s^2) */
-    float var_wheel_omega;
+    float       var_wheel_omega;
 
     /** Wheel encoder angle noise variance (rad^2) */
-    float var_wheel_theta;
+    float       var_wheel_theta;
 
 } wheel_encoder_t;
 
@@ -3494,20 +3499,20 @@ enum eWheelCfgBits
     WHEEL_CFG_BITS_ENABLE_ENCODER           = (int)0x00000002,
     WHEEL_CFG_BITS_ENABLE_CONTROL           = (int)0x00000004,
     WHEEL_CFG_BITS_ENABLE_MASK              = (int)0x0000000F,
-    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_l 
+    WHEEL_CFG_BITS_DIRECTION_REVERSE_LEFT   = (int)0x00000100,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_l
     WHEEL_CFG_BITS_DIRECTION_REVERSE_RIGHT  = (int)0x00000200,  // Used to reverse direction of DID_WHEEL_ENCODER::omega_r
     WHEEL_CFG_BITS_ENCODER_SOURCE           = (int)0x00000400,  // 0 = uINS, 1 = EVB
 };
 
 enum eGroundVehicleMode
 {
-    GV_MODE_STANDBY                         = 0,
-    GV_MODE_LEARNING                        = 1,
-    GV_CMD_LEARNING_START                   = 2,    // Use provided transform and sigma
-    GV_CMD_LEARNING_RESUME                  = 3,    // Reset sigma values
-    GV_CMD_LEARNING_CLEAR_AND_START         = 4,    // Zero transform and reset sigma values
-    GV_CMD_LEARNING_STOP_AND_SAVE           = 5,
-    GV_CMD_LEARNING_CANCEL                  = 6,
+    GV_MODE_STANDBY                 = 0,
+    GV_MODE_LEARNING                = 1,
+    GV_CMD_LEARNING_START           = 2,  // Use provided transform and sigma
+    GV_CMD_LEARNING_RESUME          = 3,  // Reset sigma values
+    GV_CMD_LEARNING_CLEAR_AND_START = 4,  // Zero transform and reset sigma values
+    GV_CMD_LEARNING_STOP_AND_SAVE   = 5,
+    GV_CMD_LEARNING_CANCEL          = 6,
 };
 
 typedef struct PACKED
@@ -3544,19 +3549,19 @@ typedef struct PACKED
 
 enum eGroundVehicleStatus
 {
-    /** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */ 
+    /** Kinematic learing is solving for the translation from IMU to wheel (wheel_config). */
     GV_STATUS_LEARNING_ENABLED      = 0x00000001,
-    
-    /** Navigation is running without GPS input. */ 
+
+    /** Navigation is running without GPS input. */
     GV_STATUS_DEAD_RECKONING        = 0x01000000,
 
-    /** Vehicle kinematic parameters agree with GPS. */ 
+    /** Vehicle kinematic parameters agree with GPS. */
     GV_STATUS_KINEMATIC_CAL_GOOD    = 0x02000000,
 
-    /** Vehicle kinematic learning has converged and is complete. */ 
+    /** Vehicle kinematic learning has converged and is complete. */
     GV_STATUS_LEARNING_CONVERGED    = 0x04000000,
 
-    /** Vehicle kinematic learning data (wheel_config_t) is missing. */ 
+    /** Vehicle kinematic learning data (wheel_config_t) is missing. */
     GV_STATUS_LEARNING_NEEDED       = 0x08000000,
 
 };
@@ -3596,14 +3601,14 @@ enum eDynamicModel
 
 enum eImuShockOptions
 {
-    IMU_SHOCK_OPTIONS_ENABLE            = 0x01,
-    IMU_SHOCK_OPTIONS_FAST_RECOVERY     = 0x02      // Useful when shocks occur during rotation, as it minimizes post-shock error and reduces the time required for attitude convergence. However, this option increases the amount of attitude error induced by shock events and is therefore discouraged when the platform is stationary and not rotating during shocks.
+    IMU_SHOCK_OPTIONS_ENABLE        = 0x01,
+    IMU_SHOCK_OPTIONS_FAST_RECOVERY = 0x02  // Useful when shocks occur during rotation, as it minimizes post-shock error and reduces the time required for attitude convergence. However, this option increases the amount of attitude error induced by shock events and is therefore discouraged when the platform is stationary and not rotating during shocks.
 };
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
- * or new fields added to the end.  
- * NOTE: The key value must be incremented to ensure the defaults are restored anytime the fields 
+ * or new fields added to the end.
+ * NOTE: The key value must be incremented to ensure the defaults are restored anytime the fields
  * change or the default values change.  Default changes should be noted in the changelog.
 */
 typedef struct PACKED
@@ -3637,7 +3642,7 @@ typedef struct PACKED
 
     /** X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna. */
     float                   gnss1AntOffset[3];
- 
+
     /** INS dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t                 dynamicModel;
 
@@ -3688,10 +3693,10 @@ typedef struct PACKED
 
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
     uint32_t                gnssTimeSyncPeriodMs;
-    
+
     /** GPS measurement (system input) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
     uint32_t                startupGnssDtMs;
-    
+
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
 
@@ -3753,23 +3758,23 @@ typedef struct PACKED
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
 typedef struct PACKED
-{                                            
+{
     /** Timestamp in milliseconds */
-    unsigned int            timeOfWeekMs;    
+    unsigned int            timeOfWeekMs;
     /** NED position error sigma */
-    float                   StdPosNed[3];        
+    float                   StdPosNed[3];
     /** NED velocity error sigma */
-    float                   StdVelNed[3];        
+    float                   StdVelNed[3];
     /** NED attitude error sigma */
-    float                   StdAttNed[3];        
+    float                   StdAttNed[3];
     /** Acceleration bias error sigma */
-    float                   StdAccBias[3];        
+    float                   StdAccBias[3];
     /** Angular rate bias error sigma */
-    float                   StdGyrBias[3];        
+    float                   StdGyrBias[3];
     /** Barometric altitude bias error sigma */
-    float                   StdBarBias;        
+    float                   StdBarBias;
     /** Mag declination error sigma */
-    float                   StdMagDeclination;    
+    float                   StdMagDeclination;
 } inl2_ned_sigma_t;
 
 /** (DID_STROBE_IN_TIME) Timestamp for input strobe. */
@@ -3800,7 +3805,7 @@ typedef struct PACKED
     double                  lf[DEBUG_LF_ARRAY_SIZE];
 } debug_array_t;
 
-#define DEBUG_STRING_SIZE        80
+#define DEBUG_STRING_SIZE   80
 
 /* (DID_DEBUG_STRING) */
 typedef struct PACKED
@@ -3815,105 +3820,105 @@ PUSH_PACK_8
 typedef struct PACKED
 {
     gtime_t time;
-    double rp_ecef[3]; // Rover position
-    double rv_ecef[3]; // Rover velocity
-    double ra_ecef[3]; // Rover acceleration
-    double bp_ecef[3]; // Base position
-    double bv_ecef[3]; // Base velocity
-    double qr[6]; // rover position and velocity covariance main diagonal
-    double b[24]; // satellite bias
-    double qb[24]; // main diagonal of sat bias covariances
-    uint8_t sat_id[24]; // satellite id of b[]
+    double  rp_ecef[3];     // Rover position
+    double  rv_ecef[3];     // Rover velocity
+    double  ra_ecef[3];     // Rover acceleration
+    double  bp_ecef[3];     // Base position
+    double  bv_ecef[3];     // Base velocity
+    double  qr[6];          // rover position and velocity covariance main diagonal
+    double  b[24];          // satellite bias
+    double  qb[24];         // main diagonal of sat bias covariances
+    uint8_t sat_id[24];     // satellite id of b[]
 } rtk_state_t;
 
 typedef struct PACKED
 {
     gtime_t time;
-    int32_t nv; // number of measurements
-    uint8_t sat_id_i[24]; // sat id of measurements (reference sat)
-    uint8_t sat_id_j[24]; // sat id of measurements
-    uint8_t type[24]; // type (0 = dd-range, 1 = dd-phase, 2 = baseline)
-    double v[24]; // residual
+    int32_t nv;             // number of measurements
+    uint8_t sat_id_i[24];   // sat id of measurements (reference sat)
+    uint8_t sat_id_j[24];   // sat id of measurements
+    uint8_t type[24];       // type (0 = dd-range, 1 = dd-phase, 2 = baseline)
+    double  v[24];          // residual
 } rtk_residual_t;
 
 typedef struct PACKED
 {
-    gtime_t time;
+    gtime_t     time;
 
-    uint8_t rtkd_unused8_1;
-    uint8_t code_outlier;                    //!< Code residual in float solution too large
-    uint8_t phase_outlier;                   //!< Phase residual in float solution too large
-    uint8_t rtkd_unused8_2;
+    uint8_t     rtkd_unused8_1;
+    uint8_t     code_outlier;           //!< Code residual in float solution too large
+    uint8_t     phase_outlier;          //!< Phase residual in float solution too large
+    uint8_t     rtkd_unused8_2;
 
-    uint8_t rtkd_unused8_3;
-    uint8_t rtkd_unused8_4;
-    uint8_t bad_baseline_holdamb;            //!< Bad baseline during hold ambiguity (may not be needed, consider removing)
-    uint8_t rtkd_unused8_5;
+    uint8_t     rtkd_unused8_3;
+    uint8_t     rtkd_unused8_4;
+    uint8_t     bad_baseline_holdamb;   //!< Bad baseline during hold ambiguity (may not be needed, consider removing)
+    uint8_t     rtkd_unused8_5;
 
-    uint8_t outc_ovfl;                       //!< Observation/reject outage counter
-    uint8_t rtkd_unused8_6;
-    uint8_t rtkd_unused8_7;
-    uint8_t large_v2b;                       //!< Vector to base distance too large
+    uint8_t     outc_ovfl;              //!< Observation/reject outage counter
+    uint8_t     rtkd_unused8_6;
+    uint8_t     rtkd_unused8_7;
+    uint8_t     large_v2b;              //!< Vector to base distance too large
 
-    uint8_t base_position_update;            //!< Received position of base correction counter
-    uint8_t rover_position_error;
-    uint8_t reset_bias;                      //!< Satellite bias reset counter
-    uint8_t rtkd_unused8_8;
+    uint8_t     base_position_update;   //!< Received position of base correction counter
+    uint8_t     rover_position_error;
+    uint8_t     reset_bias;             //!< Satellite bias reset counter
+    uint8_t     rtkd_unused8_8;
 
-    float   pos_variance;                    //!< position variance
+    float       pos_variance;           //!< position variance
 
-    uint8_t diff_age_error;                  //!< Difference age too large
-    uint8_t rtkd_unused8_9;
-    uint8_t rover_packet_age_ms;             //!< Age of last received rover packet  (TODO) convert to int16_t
-    uint8_t base_packet_age_ms;              //!< Age of last received base packet  (TODO) convert to int16_t
+    uint8_t     diff_age_error;         //!< Difference age too large
+    uint8_t     rtkd_unused8_9;
+    uint8_t     rover_packet_age_ms;    //!< Age of last received rover packet  (TODO) convert to int16_t
+    uint8_t     base_packet_age_ms;     //!< Age of last received base packet  (TODO) convert to int16_t
 
-    uint32_t rtkd_unused32_1;
+    uint32_t    rtkd_unused32_1;
 
-    uint32_t cycle_slips;                    //!< Accumulation of total cycle slips
+    uint32_t    cycle_slips;            //!< Accumulation of total cycle slips
 
-    float rtk_to_rcvr_pos_error;             //!< RTK position Error with respect to GNSS receiver
+    float       rtk_to_rcvr_pos_error;  //!< RTK position Error with respect to GNSS receiver
 
-    uint8_t rtkd_unused8_10;
-    uint8_t rtkd_unused8_11;
-    uint8_t error_count;                     //!< Pre-filtered observations error count
-    uint8_t error_code;                      //!< Pre-filtered observations error code
+    uint8_t     rtkd_unused8_10;
+    uint8_t     rtkd_unused8_11;
+    uint8_t     error_count;            //!< Pre-filtered observations error count
+    uint8_t     error_code;             //!< Pre-filtered observations error code
 
-    uint32_t rtkd_unused32_2;
+    uint32_t    rtkd_unused32_2;
 
-    uint8_t rtkd_unused8_12;
-    uint8_t rtkd_unused8_13;
-    uint8_t warning_count;                   //!< Pre-filtered observations warning count
-    uint8_t warning_code;                    //!< Pre-filtered observations warning code
+    uint8_t     rtkd_unused8_12;
+    uint8_t     rtkd_unused8_13;
+    uint8_t     warning_count;          //!< Pre-filtered observations warning count
+    uint8_t     warning_code;           //!< Pre-filtered observations warning code
 
-    double double_debug[4];
+    double      double_debug[4];
 
-    uint8_t debug[2];
-    uint8_t obs_base_unfiltered;             //!< Number of base observations from the receiver (before filtering)
-    uint8_t obs_rover_unfiltered;            //!< Number of rovr observations from the receiver (before filtering)
+    uint8_t     debug[2];
+    uint8_t     obs_base_unfiltered;    //!< Number of base observations from the receiver (before filtering)
+    uint8_t     obs_rover_unfiltered;   //!< Number of rovr observations from the receiver (before filtering)
 
-    uint8_t rtkd_unused8_14;
-    uint8_t rtkd_unused8_15;
-    uint8_t rtkd_unused8_16;
-    uint8_t obs_unhealthy;                   //!< number of sats marked as "unhealthy" by GNSS receiver (nonzero terms in svh)
+    uint8_t     rtkd_unused8_14;
+    uint8_t     rtkd_unused8_15;
+    uint8_t     rtkd_unused8_16;
+    uint8_t     obs_unhealthy;          //!< number of sats marked as "unhealthy" by GNSS receiver (nonzero terms in svh)
 
-    uint8_t obs_rover_relpos;                //!< nu - number of observations input to relpos() before selsat(), rover
-    uint8_t obs_base_relpos;                 //!< nr - number of observations input to relpos() before selsat(), base
-    uint8_t obs_pairs_used_float;            //!< number of sat pairs used to compute the float solution
-    uint8_t obs_pairs_used_fixed;            //!< number of sat pairs used to compute the fixed solution
+    uint8_t     obs_rover_relpos;       //!< nu - number of observations input to relpos() before selsat(), rover
+    uint8_t     obs_base_relpos;        //!< nr - number of observations input to relpos() before selsat(), base
+    uint8_t     obs_pairs_used_float;   //!< number of sat pairs used to compute the float solution
+    uint8_t     obs_pairs_used_fixed;   //!< number of sat pairs used to compute the fixed solution
 
-    uint8_t obs_eph_relpos;                  //!< number of sats with ephemeris available (min is 0, max is nu)
-    uint8_t obs_low_snr_rover;               //!< number of sats with low snr at rover and exclude from solution
-    uint8_t obs_low_snr_base;                //!< number of sats with low snr at base and exclude from solution
-    uint8_t rtkd_unused8_17;
+    uint8_t     obs_eph_relpos;         //!< number of sats with ephemeris available (min is 0, max is nu)
+    uint8_t     obs_low_snr_rover;      //!< number of sats with low snr at rover and exclude from solution
+    uint8_t     obs_low_snr_base;       //!< number of sats with low snr at base and exclude from solution
+    uint8_t     rtkd_unused8_17;
 
-    uint8_t obs_zero_L1_rover;               //!< number of sats with zero L1 pseudorange or phase at rover
-    uint8_t obs_zero_L1_base;                //!< number of sats with zero L1 pseudorange or phase at base
-    uint8_t obs_low_elev;                    //!< number of sats with low elevation
-    uint8_t rtkd_unused8_18;
+    uint8_t     obs_zero_L1_rover;      //!< number of sats with zero L1 pseudorange or phase at rover
+    uint8_t     obs_zero_L1_base;       //!< number of sats with zero L1 pseudorange or phase at base
+    uint8_t     obs_low_elev;           //!< number of sats with low elevation
+    uint8_t     rtkd_unused8_18;
 
-    uint8_t rtkd_unused8_19;
-    uint8_t rtkd_unused8_20;
-    uint8_t reserved[2];
+    uint8_t     rtkd_unused8_19;
+    uint8_t     rtkd_unused8_20;
+    uint8_t     reserved[2];
 } rtk_debug_t;
 
 POP_PACK
@@ -3924,7 +3929,7 @@ PUSH_PACK_1
 typedef struct
 {
     /** positioning mode (PMODE_???) */
-    int32_t mode;           
+    int32_t mode;
 
     /** solution type (0:forward,1:backward,2:combined) */
     int32_t soltype;
@@ -3936,13 +3941,13 @@ typedef struct
     int32_t navsys;
 
     /** elevation mask angle (rad) */
-    float elmin;
+    float   elmin;
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
 
     /** snr range from the highest snr satellite to consider (overrides snrmin if non-zero) */
-    int32_t snrrange; 
+    int32_t snrrange;
 
     /** AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
     int32_t modear;
@@ -3998,70 +4003,67 @@ typedef struct
     /** base position for relative mode */
     int32_t refpos;
 
-    /** code/phase error ratio */
-    float eratio[NFREQ];
-
     /** measurement error factor */
-    float err[7];
+    float   err[12];
 
     /** initial-state std [0]bias,[1]iono [2]trop */
-    float std[3];
+    float   std[3];
 
     /** process-noise std [0]bias,[1]iono [2]trop [3]acch [4]accv [5] pos */
-    float prn[6];
+    float   prn[6];
 
     /** satellite clock stability (sec/sec) */
-    double sclkstab;
+    double  sclkstab;
 
     /** AR validation threshold */
-    float thresar[8];
+    float   thresar[8];
 
     /** elevation mask of AR for rising satellite (rad) */
-    float elmaskar;
+    float   elmaskar;
 
     /** elevation mask to hold ambiguity (rad) */
-    float elmaskhold;
+    float   elmaskhold;
 
     /** slip threshold of geometry-free phase (m) */
-    float thresslip;
+    float   thresslip;
 
     /* slip threshold of doppler (m) */
-    float thresdop;
+    float   thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
-    float varholdamb;
+    float   varholdamb;
 
     /** gain used for GLO and SBAS sats to adjust ambiguity */
-    float gainholdamb;
+    float   gainholdamb;
 
     /** max difference of time (sec) */
-    float maxtdiff;
+    float   maxtdiff;
 
     /** reset sat biases after this long trying to get fix if not acquired */
-    int fix_reset_base_msgs;
+    int     fix_reset_base_msgs;
 
     /** reject threshold of innovation for phase [0] and code [1] (m) */
-    float maxinno[2];
+    float   maxinno[2];
     /** reject thresholds of NIS for phase [0] and code [1] */
-    float maxnis_lo[2];
-    float maxnis_hi[2];
+    float   maxnis_lo[2];
+    float   maxnis_hi[2];
 
     /** reject threshold of gdop */
-    double maxgdop;
+    double  maxgdop;
 
     /** baseline length constraint {const,sigma before fix, sigma after fix} (m) */
-    float baseline[3];
-    float max_baseline_error;
-    float reset_baseline_error;
+    float   baseline[3];
+    float   max_baseline_error;
+    float   reset_baseline_error;
 
     /** maximum error wrt ubx position (triggers reset if more than this far) (m) */
-    float max_ubx_error;
+    float   max_ubx_error;
 
     /** rover position for fixed mode {x,y,z} (ecef) (m) */
-    double ru[3];
+    double  ru[3];
 
     /** base position for relative mode {x,y,z} (ecef) (m) */
-    double rb[3];
+    double  rb[3];
 
     /** max averaging epochs */
     int32_t maxaveep;
@@ -4069,8 +4071,14 @@ typedef struct
     /** output single by dgps/float/fix/ppp outage */
     int32_t outsingle;
 
-    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) **/
-    float velcon[2];
+    /** velocity constraint in compassing mode {var before fix, var after fix} (m^2/s^2) */
+    float   velcon[2];
+
+    /** LPF alpha for multipath bias estimation. Smaller value means heavier filtering. */
+    float   mp_bias_lpf_alpha;
+
+    /** LPF alpha for multipath variance estimation. Smaller value means heavier filtering. */
+    float   mp_var_lpf_alpha;
 } prcopt_t;
 typedef prcopt_t gnss_rtk_opt_t;
 
@@ -4109,29 +4117,29 @@ typedef struct PACKED
 //#endif
 
     /** Observation data carrier-phase (cycle). The carrier phase initial ambiguity is initialized using an approximate value to make the magnitude of the phase close to the pseudorange measurement. Clock resets are applied to both phase and code measurements in accordance with the RINEX specification. */
-    double L[NFREQ+NEXOBS];
+    double  L[NFREQ+NEXOBS];
 
     /** Observation data pseudorange (m). GLONASS inter frequency channel delays are compensated with an internal calibration table */
-    double P[NFREQ+NEXOBS]; 
+    double  P[NFREQ+NEXOBS];
 
     /** Observation data Doppler measurement (positive sign for approaching satellites) (Hz) */
-    float D[NFREQ+NEXOBS];
+    float   D[NFREQ+NEXOBS];
 } obsd_t;
 
-#define GNSS_RAW_MESSAGE_BUF_SIZE    1000
-#define MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE (GNSS_RAW_MESSAGE_BUF_SIZE / sizeof(obsd_t))
+#define GNSS_RAW_MESSAGE_BUF_SIZE               1000
+#define MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE    (GNSS_RAW_MESSAGE_BUF_SIZE / sizeof(obsd_t))
 
 /** observation data */
 typedef struct
 {
     /** number of observation slots used */
-    uint32_t n;
+    uint32_t    n;
 
     /** number of observation slots allocated */
-    uint32_t nmax;
+    uint32_t    nmax;
 
     /** observation data buffer */
-    obsd_t* data;
+    obsd_t*     data;
 } obs_t;
 
 /** non-Glonass ephemeris data */
@@ -4142,15 +4150,15 @@ typedef struct
 
     /** IODE Issue of Data, Ephemeris (ephemeris version) */
     int32_t iode;
-    
+
     /** IODC Issue of Data, Clock (clock version) */
     int32_t iodc;
 
     /** SV accuracy (URA index) IRN-IS-200H p.97 */
-    int32_t sva;            
+    int32_t sva;
 
     /** SV health GPS/QZS (0:ok) */
-    int32_t svh;            
+    int32_t svh;
 
     /** GPS/QZS: gps week, GAL: galileo week */
     int32_t week;
@@ -4163,86 +4171,86 @@ typedef struct
 
     /** Time Of Ephemeris, ephemeris reference epoch in seconds within the week (s) */
     gtime_t toe;
-    
+
     /** clock data reference time (s) (20.3.4.5) */
     gtime_t toc;
-    
+
     /** T_trans (s) */
     gtime_t ttr;
 
     /** Orbit semi-major axis (m) */
-    double A;
+    double  A;
 
     /** Orbit eccentricity (non-dimensional)  */
-    double e;
+    double  e;
 
     /** Orbit inclination angle at reference time (rad) */
-    double i0;
+    double  i0;
 
     /** Longitude of ascending node of orbit plane at weekly epoch (rad) */
-    double OMG0;
+    double  OMG0;
 
     /** Argument of perigee (rad) */
-    double omg;
+    double  omg;
 
     /** Mean anomaly at reference time (rad) */
-    double M0;
+    double  M0;
 
     /** Mean Motion Difference From Computed Value (rad) */
-    double deln;
+    double  deln;
 
     /** Rate of Right Ascension (rad/s) */
-    double OMGd;
+    double  OMGd;
 
     /** Rate of Inclination Angle (rad/s) */
-    double idot;
+    double  idot;
 
     /** Amplitude of the Cosine Harmonic Correction Term to the Orbit Radius (m) */
-    double crc;
+    double  crc;
 
     /** Amplitude of the Sine Harmonic Correction Term to the Orbit Radius (m) */
-    double crs;
+    double  crs;
 
     /** Amplitude of the Cosine Harmonic Correction Term to the Argument of Latitude (rad)  */
-    double cuc;
+    double  cuc;
 
     /** Amplitude of the Sine Harmonic Correction Term to the Argument of Latitude (rad) */
-    double cus;
+    double  cus;
 
     /** Amplitude of the Cosine Harmonic Correction Term to the Angle of Inclination (rad) */
-    double cic;
+    double  cic;
 
     /** Amplitude of the Sine Harmonic Correction Term to the Angle of Inclination (rad) */
-    double cis;
+    double  cis;
 
     /** Time Of Ephemeris, ephemeris reference epoch in seconds within the week (s), same as <toe> above but represented as double type. Note that toe is computed as eph->toe = gst2time(week, eph->toes). This is the expiration time and is generally ~2 hours ahead of current time. */
-    double toes;
+    double  toes;
 
     /** Fit interval (h) (0: 4 hours, 1: greater than 4 hours) */
-    double fit;
+    double  fit;
 
     /** SV clock offset, af0 (s) */
-    double f0;
-    
+    double  f0;
+
     /** SV clock drift, af1 (s/s, non-dimensional) */
-    double f1;
-    
+    double  f1;
+
     /** SV clock drift rate, af2 (1/s) */
-    double f2;
+    double  f2;
 
     /** Group delay parameters GPS/QZS: tgd[0] = TGD (IRN-IS-200H p.103). Galilleo: tgd[0] = BGD E5a/E1, tgd[1] = BGD E5b/E1. Beidou: tgd[0] = BGD1, tgd[1] = BGD2 */
-    double tgd[4];
+    double  tgd[4];
 
     /** Adot for CNAV, not used */
-    double Adot;
-    
+    double  Adot;
+
     /** First derivative of mean motion n (second derivative of mean anomaly M), ndot for CNAV (rad/s/s). Not used. */
-    double ndot;
+    double  ndot;
 } eph_t;
 
 /** Glonass ephemeris data */
 typedef struct
-{        
+{
     /** Satellite number in RTKlib notation.  GPS: 1-32, GLONASS: 33-59, Galilleo: 60-89, SBAS: 90-95 */
     int32_t sat;
 
@@ -4254,10 +4262,10 @@ typedef struct
 
     /** satellite health */
     int32_t svh;
-    
+
     /** satellite accuracy */
     int32_t sva;
-    
+
     /** satellite age of operation */
     int32_t age;
 
@@ -4268,22 +4276,22 @@ typedef struct
     gtime_t tof;
 
     /** satellite position (ecef) (m) */
-    double pos[3];
+    double  pos[3];
 
     /** satellite velocity (ecef) (m/s) */
-    double vel[3];
+    double  vel[3];
 
     /** satellite acceleration (ecef) (m/s^2) */
-    double acc[3];
+    double  acc[3];
 
     /** SV clock bias (s) */
-    double taun;
+    double  taun;
 
     /** relative frequency bias */
-    double gamn;
+    double  gamn;
 
     /** delay between L1 and L2 (s) */
-    double dtaun;
+    double  dtaun;
 } geph_t;
 
 /** SBAS message type */
@@ -4291,7 +4299,7 @@ typedef struct
 {
     /** receiption time - week */
     int32_t week;
-    
+
     /** reception time - tow */
     int32_t tow;
 
@@ -4310,16 +4318,16 @@ typedef struct
 {
     /** antenna delta type (0:enu,1:xyz) */
     int32_t deltype;
-    
+
     /** station position (ecef) (m) */
-    double pos[3];
+    double  pos[3];
 
     /** antenna position delta (e/n/u or x/y/z) (m) */
-    double del[3];
+    double  del[3];
 
     /** antenna height (m) */
-    double hgt;
-    
+    double  hgt;
+
     /** station id */
     int32_t stationId;
 } sta_t;
@@ -4340,81 +4348,81 @@ typedef struct
     int32_t week;
 
     /* Toa */
-    gtime_t toa;        
-                        
+    gtime_t toa;
+
     /** SV orbit parameters - A */
-    double A;
+    double  A;
 
     /** SV orbit parameters - e */
-    double e;
+    double  e;
 
     /** SV orbit parameters - i0 */
-    double i0;
+    double  i0;
 
     /** SV orbit parameters - OMG0 */
-    double OMG0;
-    
+    double  OMG0;
+
     /** SV orbit parameters - omg */
-    double omg;
-    
+    double  omg;
+
     /** SV orbit parameters - M0 */
-    double M0;
-    
+    double  M0;
+
     /** SV orbit parameters - OMGd */
-    double OMGd;
+    double  OMGd;
 
     /** Toa (s) in week - toas */
-    double toas;
+    double  toas;
 
     /** SV clock parameters - af0 */
-    double f0;
-    
+    double  f0;
+
     /** SV clock parameters - af1 */
-    double f1;
+    double  f1;
 } alm_t;
 
 /** ionosphere model and utc parameters */
 typedef struct
 {
-    double ion_gps[8];  /* GPS iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
-    double ion_gal[4];  /* Galileo iono model parameters {ai0,ai1,ai2,0} */
-    double ion_qzs[8];  /* QZSS iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
-    double ion_cmp[8];  /* BeiDou iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
-    double ion_irn[8];  /* IRNSS iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
+    double  ion_gps[8];     /* GPS iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
+    double  ion_gal[4];     /* Galileo iono model parameters {ai0,ai1,ai2,0} */
+    double  ion_qzs[8];     /* QZSS iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
+    double  ion_cmp[8];     /* BeiDou iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
+    double  ion_irn[8];     /* IRNSS iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3} */
 
-    double utc_gps[4];  /* GPS delta-UTC parameters {A0,A1,T,W} */
-    double utc_glo[4];  /* GLONASS UTC GPS time parameters */
-    double utc_gal[4];  /* Galileo UTC GPS time parameters */
-    double utc_qzs[4];  /* QZS UTC GPS time parameters */
-    double utc_cmp[4];  /* BeiDou UTC parameters */
-    double utc_irn[4];  /* IRNSS UTC parameters */
-    double utc_sbs[4];  /* SBAS UTC parameters */
+    double  utc_gps[4];     /* GPS delta-UTC parameters {A0,A1,T,W} */
+    double  utc_glo[4];     /* GLONASS UTC GPS time parameters */
+    double  utc_gal[4];     /* Galileo UTC GPS time parameters */
+    double  utc_qzs[4];     /* QZS UTC GPS time parameters */
+    double  utc_cmp[4];     /* BeiDou UTC parameters */
+    double  utc_irn[4];     /* IRNSS UTC parameters */
+    double  utc_sbs[4];     /* SBAS UTC parameters */
 
-    int32_t leaps;      /* leap seconds (s) */
-    
-    alm_t alm;          /* almanac */
+    int32_t leaps;          /* leap seconds (s) */
+
+    alm_t   alm;            /* almanac */
 } ion_model_utc_alm_t;
 
 /** RTK solution status */
 enum eRtkSolStatus
 {
     /** No status */
-    rtk_solution_status_none = 0,
+    rtk_solution_status_none    = 0,
 
     /** RTK fix */
-    rtk_solution_status_fix = 1,
+    rtk_solution_status_fix     = 1,
 
     /** RTK float */
-    rtk_solution_status_float = 2,
+    rtk_solution_status_float   = 2,
 
     /** RTK SBAS */
-    rtk_solution_status_sbas = 3,
+    rtk_solution_status_sbas    = 3,
 
     /** RTK DGPS */
-    rtk_solution_status_dgps = 4,
+    rtk_solution_status_dgps    = 4,
 
     /** RTK SINGLE */
-    rtk_solution_status_single = 5
+    rtk_solution_status_single  = 5
 };
 
 /** (DID_GNSS1_RTK_POS_REL, DID_GNSS2_RTK_CMP_REL) - RTK and Dual GNSS heading base to rover relative info. */
@@ -4434,7 +4442,7 @@ typedef struct PACKED
 
     /** Distance from base to rover (m) */
     float                   baseToRoverDistance;
-    
+
     /** Angle from north to baseToRoverVector in local tangent plane. (rad) */
     float                   baseToRoverHeading;
 
@@ -4443,7 +4451,7 @@ typedef struct PACKED
 
     /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag */
     uint32_t                status;
-    
+
 } gnss_rtk_rel_t;
 
 /** (DID_GNSS1_RTK_POS_MISC, DID_GNSS2_RTK_CMP_MISC) - requires little endian CPU */
@@ -4463,10 +4471,10 @@ typedef struct PACKED
 
     /** Geometric dilution of precision (meters) */
     float                   gDop;
-    
+
     /** Horizontal dilution of precision (meters) */
     float                   hDop;
-    
+
     /** Vertical dilution of precision (meters) */
     float                   vDop;
 
@@ -4475,7 +4483,7 @@ typedef struct PACKED
 
     /** Cycle slip counter */
     uint32_t                cycleSlipCount;
-    
+
 
 
     /** Rover gps observation element counter */
@@ -4522,7 +4530,7 @@ typedef struct PACKED
 
     /** Base station glonass ephemeris element counter */
     uint32_t                baseGlonassEphemerisCount;
-    
+
     /** Rover galileo ephemeris element counter */
     uint32_t                roverGalileoEphemerisCount;
 
@@ -4554,57 +4562,57 @@ typedef struct PACKED
 
     /** Ionosphere model, utc and almanac count */
     uint32_t                ionUtcAlmCount;
-    
-    
+
+
     /** Number of checksum failures from received corrections */
     uint32_t                correctionChecksumFailures;
 
     /** Time to first RTK fix. */
     uint32_t                timeToFirstFixMs;
-    
+
 } gnss_rtk_misc_t;
 
 /** RAW data types for DID_GNSS_BASE_RAW and DID_GNSS2_RAW */
 enum eRawDataType
 {
     /** obsd_t */
-    raw_data_type_observation = 1,
+    raw_data_type_observation                   = 1,
 
     /** eph_t */
-    raw_data_type_ephemeris = 2,
+    raw_data_type_ephemeris                     = 2,
 
     /** geph_t */
-    raw_data_type_glonass_ephemeris = 3,
+    raw_data_type_glonass_ephemeris             = 3,
 
     /** sbsmsg_t */
-    raw_data_type_sbas = 4,
+    raw_data_type_sbas                          = 4,
 
     /** sta_t */
     raw_data_type_base_station_antenna_position = 5,
 
     /** ion_model_utc_alm_t */
-    raw_data_type_ionosphere_model_utc_alm = 6,
-    
+    raw_data_type_ionosphere_model_utc_alm      = 6,
+
     /** gnss_rtk_misc_t */
-    raw_data_type_rtk_solution = 123
+    raw_data_type_rtk_solution                  = 123
 };
 
 
 
 typedef union PACKED
-{   
+{
     /** Satellite observation data */
     obsd_t              obs[MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE];
-    
+
     /** Satellite non-GLONASS ephemeris data (GPS, Galileo, Beidou, QZSS) */
     eph_t               eph;
-    
+
     /** Satellite GLONASS ephemeris data */
     geph_t              gloEph;
-    
+
     /** Satellite-Based Augmentation Systems (SBAS) data */
     sbsmsg_t            sbas;
-        
+
     /** Base station information (base position, antenna position, antenna height, etc.) */
     sta_t               sta;
 
@@ -4620,19 +4628,19 @@ typedef union PACKED
 typedef struct PACKED
 {
     /** Receiver index (1=RECEIVER_INDEX_GNSS1, 2=RECEIVER_INDEX_EXTERNAL_BASE, or 3=RECEIVER_INDEX_GNSS2) */
-    uint8_t receiverIndex;
+    uint8_t         receiverIndex;
 
     /** Type of data (eRawDataType: 1=observations, 2=ephemeris, 3=glonassEphemeris, 4=SBAS, 5=baseAntenna, 6=IonosphereModel) */
-    uint8_t dataType;
+    uint8_t         dataType;
 
     /** Number of observations in data (obsd_t) when dataType==1 (raw_data_type_observation). */
-    uint8_t obsCount;
+    uint8_t         obsCount;
 
     /** Reserved */
-    uint8_t reserved;
+    uint8_t         reserved;
 
-    /** Interpret based on dataType (see eRawDataType) */    
-    uGnssRawData data;
+    /** Interpret based on dataType (see eRawDataType) */
+    uGnssRawData    data;
 } gnss_raw_t;
 
 // (DID_GNSS1_TIMEPULSE, DID_GNSS2_TIMEPULSE)
@@ -4676,35 +4684,35 @@ typedef struct
 /**
 * Diagnostic message
 */
-typedef struct 
+typedef struct
 {
     /** GPS time of week (since Sunday morning) in milliseconds */
-    uint32_t timeOfWeekMs;
-    
+    uint32_t    timeOfWeekMs;
+
     /** Message length, including null terminator */
-    uint32_t messageLength;
-    
+    uint32_t    messageLength;
+
     /** Message data, max size of message is 256 */
-    char message[256];
+    char        message[256];
 } diag_msg_t;
 
 enum eSurveyInStatus
 {
     // default state
-    SURVEY_IN_STATE_OFF                     = 0,
+    SURVEY_IN_STATE_OFF             = 0,
 
     // commands
-    SURVEY_IN_STATE_CANCEL                  = 1,
-    SURVEY_IN_STATE_START_3D                = 2,
-    SURVEY_IN_STATE_START_FLOAT             = 3,
-    SURVEY_IN_STATE_START_FIX               = 4,
+    SURVEY_IN_STATE_CANCEL          = 1,
+    SURVEY_IN_STATE_START_3D        = 2,
+    SURVEY_IN_STATE_START_FLOAT     = 3,
+    SURVEY_IN_STATE_START_FIX       = 4,
 
     // status
-    SURVEY_IN_STATE_RUNNING_3D              = 8,
-    SURVEY_IN_STATE_RUNNING_FLOAT           = 9,
-    SURVEY_IN_STATE_RUNNING_FIX             = 10,
-    SURVEY_IN_STATE_SAVE_POS                = 19,
-    SURVEY_IN_STATE_DONE                    = 20
+    SURVEY_IN_STATE_RUNNING_3D      = 8,
+    SURVEY_IN_STATE_RUNNING_FLOAT   = 9,
+    SURVEY_IN_STATE_RUNNING_FIX     = 10,
+    SURVEY_IN_STATE_SAVE_POS        = 19,
+    SURVEY_IN_STATE_DONE            = 20
 };
 
 /**
@@ -4713,22 +4721,22 @@ enum eSurveyInStatus
 typedef struct
 {
     /** State of current survey, eSurveyInStatus */
-    uint32_t state;
+    uint32_t    state;
 
     /** Maximum time (milliseconds) survey will run if minAccuracy is not first achieved. (ignored if 0). */
-    uint32_t maxDurationSec;
+    uint32_t    maxDurationSec;
 
     /** Required horizontal accuracy (m) for survey to complete before maxDuration. (ignored if 0) */
-    float minAccuracy;
+    float       minAccuracy;
 
     /** Elapsed time (seconds) of the survey. */
-    uint32_t elapsedTimeSec;
+    uint32_t    elapsedTimeSec;
 
     /** Approximate horizontal accuracy of the survey (m). */
-    float hAccuracy;
+    float       hAccuracy;
 
     /** The current surveyed latitude, longitude, altitude (deg, deg, m) */
-    double lla[3];
+    double      lla[3];
 } survey_in_t;
 
 
@@ -4740,26 +4748,26 @@ typedef struct
 enum eGpxSysConfigBits
 {
     /** Disable (tri-state) VCC_RF (GPX pin 16) output supplied via VAUX (GPX pin 40). */
-    GPX_SYS_CFG_BITS_DISABLE_VCC_RF                         = 0x00000001,
+    GPX_SYS_CFG_BITS_DISABLE_VCC_RF         = 0x00000001,
 
     /** Brownout reset threshold voltage level */
-    GPX_SYS_CFG_BITS_BOR_LEVEL_0                            = 0x0,              // 1.65 - 1.75 V  (default)
-    GPX_SYS_CFG_BITS_BOR_LEVEL_1                            = 0x1,              // 2.0  - 2.1  V
-    GPX_SYS_CFG_BITS_BOR_LEVEL_2                            = 0x2,              // 2.25 - 2.35 V
-    GPX_SYS_CFG_BITS_BOR_LEVEL_3                            = 0x3,              // 2.5  - 2.6  V
-    GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK                     = (int)0x00C00000,
-    GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET                   = 22,
+    GPX_SYS_CFG_BITS_BOR_LEVEL_0            = 0x0,  // 1.65 - 1.75 V  (default)
+    GPX_SYS_CFG_BITS_BOR_LEVEL_1            = 0x1,  // 2.0  - 2.1  V
+    GPX_SYS_CFG_BITS_BOR_LEVEL_2            = 0x2,  // 2.25 - 2.35 V
+    GPX_SYS_CFG_BITS_BOR_LEVEL_3            = 0x3,  // 2.5  - 2.6  V
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK     = (int)0x00C00000,
+    GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET   = 22,
 };
 
 /**
  * (DID_GPX_FLASH_CFG) GPX flash config.
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
- * or new fields added to the end.  
- * NOTE: The key value must be incremented to ensure the defaults are restored anytime the fields 
+ * or new fields added to the end.
+ * NOTE: The key value must be incremented to ensure the defaults are restored anytime the fields
  * change or the default values change.  Default changes should be noted in the changelog.
 */
 typedef struct
-{  
+{
     /** Size of this struct */
     uint32_t                size;
 
@@ -4786,7 +4794,7 @@ typedef struct
 
     /** X,Y,Z offset in meters in Sensor Frame to GPS 2 antenna. */
     float                   gnss2AntOffset[3];
- 
+
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t                gnssSatSigConst;
 
@@ -4822,7 +4830,7 @@ typedef struct
 
     /** Reserved */
     uint32_t                reserved2;
-    
+
     /** Reference latitude, longitude and height above ellipsoid for north east down (NED) calculations (deg, deg, m) */
     double                  refLla[3];
 
@@ -4832,153 +4840,153 @@ typedef struct
 enum eGpxStatus
 {
     /** Communications parse error count */
-    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK                 = (int)0x0000000F,
-    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET               = 0,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** Rx communications not dectected in last 30 seconds */
-    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED            = (int)0x00000010,
-    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED            = (int)0x00000020,
-    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED            = (int)0x00000040,
-    GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED             = (int)0x00000080,
+    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000010,
+    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000020,
+    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000040,
+    GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED      = (int)0x00000080,
 
     /** Update confirmed */
-    GPX_STATUS_UPDATE_CONFIRMED                         = (int)0x00000100,
+    GPX_STATUS_UPDATE_CONFIRMED                 = (int)0x00000100,
 
     /** General Fault mask */
-    GPX_STATUS_GENERAL_FAULT_MASK                       = (int)0xFFFF0000,
+    GPX_STATUS_GENERAL_FAULT_MASK               = (int)0xFFFF0000,
 
     /** RTK buffer filled causing data loss */
-    GPX_STATUS_FAULT_RTK_QUEUE_LIMITED                  = (int)0x00010000,
+    GPX_STATUS_FAULT_RTK_QUEUE_LIMITED          = (int)0x00010000,
 
     /** GNSS receiver time fault **/
-    GPX_STATUS_FAULT_GNSS_RCVR_TIME                     = (int)0x00100000,
+    GPX_STATUS_FAULT_GNSS_RCVR_TIME             = (int)0x00100000,
     /** RTOS task period overrun **/
-    GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN           = (int)0x00200000,
+    GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN   = (int)0x00200000,
     /** DMA Fault detected **/
-    GPX_STATUS_FAULT_DMA                                = (int)0x00800000,
+    GPX_STATUS_FAULT_DMA                        = (int)0x00800000,
 
     /** Fatal faults - critical failure resulting in CPU reset */
-    GPX_STATUS_FATAL_MASK                               = (int)0x1F000000,
-    GPX_STATUS_FATAL_OFFSET                             = 24,
-    GPX_STATUS_FATAL_RESET_LOW_POW                      = (int)1,       // reset from low power
-    GPX_STATUS_FATAL_RESET_BROWN                        = (int)2,       // reset from brown out
-    GPX_STATUS_FATAL_RESET_WATCHDOG                     = (int)3,       // reset from watchdog
-    GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)4,                     
-    GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)5,
-    GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)6,
-    GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)7,
-    GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)8,
-    GPX_STATUS_FATAL_UNALIGNED_ACCESS                   = (int)9,
-    GPX_STATUS_FATAL_MEMORY_ERROR                       = (int)10,
-    GPX_STATUS_FATAL_BUS_ERROR                          = (int)11,      // bad pointer or malloc
-    GPX_STATUS_FATAL_USAGE_ERROR                        = (int)12,
-    GPX_STATUS_FATAL_DIV_ZERO                           = (int)13,
-    GPX_STATUS_FATAL_SER0_REINIT                        = (int)14,
-    GPX_STATUS_FATAL_UNKNOWN                            = (int)0x1F,    // TODO: Temporarily set to (5 bits). Reset to 0xFF when gpx_flash_cfg.debug is no longer used with fault reporting. (WHJ) 
+    GPX_STATUS_FATAL_MASK                       = (int)0x1F000000,
+    GPX_STATUS_FATAL_OFFSET                     = 24,
+    GPX_STATUS_FATAL_RESET_LOW_POW              = (int)1,  // reset from low power
+    GPX_STATUS_FATAL_RESET_BROWN                = (int)2,  // reset from brown out
+    GPX_STATUS_FATAL_RESET_WATCHDOG             = (int)3,  // reset from watchdog
+    GPX_STATUS_FATAL_CPU_EXCEPTION              = (int)4,
+    GPX_STATUS_FATAL_UNHANDLED_INTERRUPT        = (int)5,
+    GPX_STATUS_FATAL_STACK_OVERFLOW             = (int)6,
+    GPX_STATUS_FATAL_KERNEL_OOPS                = (int)7,
+    GPX_STATUS_FATAL_KERNEL_PANIC               = (int)8,
+    GPX_STATUS_FATAL_UNALIGNED_ACCESS           = (int)9,
+    GPX_STATUS_FATAL_MEMORY_ERROR               = (int)10,
+    GPX_STATUS_FATAL_BUS_ERROR                  = (int)11,  // bad pointer or malloc
+    GPX_STATUS_FATAL_USAGE_ERROR                = (int)12,
+    GPX_STATUS_FATAL_DIV_ZERO                   = (int)13,
+    GPX_STATUS_FATAL_SER0_REINIT                = (int)14,
+    GPX_STATUS_FATAL_UNKNOWN                    = (int)0x1F,  // TODO: Temporarily set to (5 bits). Reset to 0xFF when gpx_flash_cfg.debug is no longer used with fault reporting. (WHJ)
 
     /** Internal use */
-    GPX_STATUS_FAULT_RP                                 = (int)0x20000000,
+    GPX_STATUS_FAULT_RP                         = (int)0x20000000,
     /** Reserved for future fault status */
-    GPX_STATUS_FAULT_UNUSED                             = (int)0xC0000000,
+    GPX_STATUS_FAULT_UNUSED                     = (int)0xC0000000,
 };
 
 /** Hardware status flags */
 enum eGPXHdwStatusFlags
 {
     /** GNSS1 satellite signals are being received (antenna and cable are good) */
-    GPX_HDW_STATUS_GNSS1_SATELLITE_RX                   = (int)0x00000001,
+    GPX_HDW_STATUS_GNSS1_SATELLITE_RX       = (int)0x00000001,
     /** GNSS2 satellite signals are being received (antenna and cable are good) */
-    GPX_HDW_STATUS_GNSS2_SATELLITE_RX                   = (int)0x00000002,
+    GPX_HDW_STATUS_GNSS2_SATELLITE_RX       = (int)0x00000002,
     /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
-    GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID             = (int)0x00000004,
+    GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID = (int)0x00000004,
     /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
-    GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID             = (int)0x00000008,
-    
+    GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID = (int)0x00000008,
+
     /** GNSS 1 reset required count */
-    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
-    GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK   = (int)0x00000070,
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET = 4,
 #define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
- 
+
     /** Failed to communicate or setup GNSS receiver 1 */
-    GPX_HDW_STATUS_FAULT_GNSS1_INIT                     = (int)0x00000080,
-    GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
+    GPX_HDW_STATUS_FAULT_GNSS1_INIT         = (int)0x00000080,
+    GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET  = 7,
 
     /** GNSS 2 reset required count */
-    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
-    GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK   = (int)0x00000700,
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET = 8,
 #define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
 
     /** Failed to communicate or setup GNSS receiver 2 */
-    GPX_HDW_STATUS_FAULT_GNSS2_INIT                     = (int)0x00000800,
-    GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
+    GPX_HDW_STATUS_FAULT_GNSS2_INIT         = (int)0x00000800,
+    GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET  = 11,
 
     /** GNSS is faulting firmware update REQUIRED */
-    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
+    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED  = (int)0x00001000,
     /** Enables LED in Manufacturing TBed */
-    GPX_HDW_STATUS_LED_ENABLED                          = (int)0x00002000,
+    GPX_HDW_STATUS_LED_ENABLED              = (int)0x00002000,
     /** System Reset is Required for proper function */
-    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
+    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED    = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
-    GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
+    GPX_HDW_STATUS_FLASH_WRITE_PENDING      = (int)0x00008000,
 
     /** Communications Tx buffer limited */
-    GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
+    GPX_HDW_STATUS_ERR_COM_TX_LIMITED       = (int)0x00010000,
     /** Communications Rx buffer overrun */
-    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000, 
+    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN       = (int)0x00020000,
     /** Communications Err mask */
-    GPX_HDW_STATUS_ERR_COM_MASK                         = (int)0x00030000, 
-    
+    GPX_HDW_STATUS_ERR_COM_MASK             = (int)0x00030000,
+
     /** GNSS1 PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GNSS1_PPS                      = (int)0x00040000,
+    GPX_HDW_STATUS_ERR_NO_GNSS1_PPS         = (int)0x00040000,
     /** GNSS2 PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GNSS2_PPS                      = (int)0x00080000,
+    GPX_HDW_STATUS_ERR_NO_GNSS2_PPS         = (int)0x00080000,
     /** GPS PPS error mask */
-    GPX_HDW_STATUS_ERR_PPS_MASK                         = (int)0x000C0000,
+    GPX_HDW_STATUS_ERR_PPS_MASK             = (int)0x000C0000,
 
     /** GNSS1 signal strength low (<20)*/
-    GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1                     = (int)0x00100000,
+    GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1        = (int)0x00100000,
     /** GNSS2 signal strength low (<20)*/
-    GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2                     = (int)0x00200000,
+    GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2        = (int)0x00200000,
     /** GNSS1 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
-    GPX_HDW_STATUS_ERR_CNO_GNSS1_IR                      = (int)0x00400000,
+    GPX_HDW_STATUS_ERR_CNO_GNSS1_IR         = (int)0x00400000,
     /** GNSS2 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
-    GPX_HDW_STATUS_ERR_CNO_GNSS2_IR                      = (int)0x00800000,
+    GPX_HDW_STATUS_ERR_CNO_GNSS2_IR         = (int)0x00800000,
     /** GPS signal error mask*/
-    GPX_HDW_STATUS_ERR_CNO_MASK                         = (int)0x00F00000,
+    GPX_HDW_STATUS_ERR_CNO_MASK             = (int)0x00F00000,
 
     /** (BIT) Built-in self-test running */
-    GPX_HDW_STATUS_BIT_RUNNING                          = (int)0x01000000,
+    GPX_HDW_STATUS_BIT_RUNNING              = (int)0x01000000,
     /** (BIT) Built-in self-test passed */
-    GPX_HDW_STATUS_BIT_PASSED                           = (int)0x02000000,
+    GPX_HDW_STATUS_BIT_PASSED               = (int)0x02000000,
     /** (BIT) Built-in self-test failure */
-    GPX_HDW_STATUS_BIT_FAULT                            = (int)0x03000000,
+    GPX_HDW_STATUS_BIT_FAULT                = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
-    GPX_HDW_STATUS_BIT_MASK                             = (int)0x03000000,
+    GPX_HDW_STATUS_BIT_MASK                 = (int)0x03000000,
     /** (BIT) Built-in self-test offset */
-    GPX_HDW_STATUS_BIT_OFFSET                           = 24,
+    GPX_HDW_STATUS_BIT_OFFSET               = 24,
 
     /** Temperature outside spec'd operating range */
-    GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
+    GPX_HDW_STATUS_ERR_TEMPERATURE          = (int)0x04000000,
     /** Time synchronized by GPS PPS */
-    GPX_HDW_STATUS_GNSS_PPS_TIMESYNC                     = (int)0x08000000,
+    GPX_HDW_STATUS_GNSS_PPS_TIMESYNC        = (int)0x08000000,
 
     /** Cause of system reset */
-    GPX_HDW_STATUS_RESET_CAUSE_MASK                     = (int)0x70000000,    
+    GPX_HDW_STATUS_RESET_CAUSE_MASK         = (int)0x70000000,
     /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE              = (int)0x10000000,
+    GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE  = (int)0x10000000,
     /** Reset from Software */
-    GPX_HDW_STATUS_RESET_CAUSE_SOFT                     = (int)0x20000000,
+    GPX_HDW_STATUS_RESET_CAUSE_SOFT         = (int)0x20000000,
     /** Reset from Hardware (NRST pin low) */
-    GPX_HDW_STATUS_RESET_CAUSE_HDW                      = (int)0x40000000,
-    
-    /** Critical System Fault, CPU error.  (see DID_GPX_STATUS.status, eGpxStatus::GPX_STATUS_FATAL_MASK) */
-    GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
+    GPX_HDW_STATUS_RESET_CAUSE_HDW          = (int)0x40000000,
 
-    GPX_HDW_STATUS_ERROR_MASK                           = (int)(GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS1_INIT | 
-                                                                GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS2_INIT | 
+    /** Critical System Fault, CPU error.  (see DID_GPX_STATUS.status, eGpxStatus::GPX_STATUS_FATAL_MASK) */
+    GPX_HDW_STATUS_FAULT_SYS_CRITICAL       = (int)0x80000000,
+
+    GPX_HDW_STATUS_ERROR_MASK               = (int)(GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS1_INIT |
+                                                                GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK | GPX_HDW_STATUS_FAULT_GNSS2_INIT |
                                                                 GPX_HDW_STATUS_ERR_COM_MASK | GPX_HDW_STATUS_ERR_PPS_MASK | GPX_HDW_STATUS_ERR_CNO_MASK |
-                                                                GPX_HDW_STATUS_ERR_TEMPERATURE | GPX_HDW_STATUS_RESET_CAUSE_MASK | 
+                                                                GPX_HDW_STATUS_ERR_TEMPERATURE | GPX_HDW_STATUS_RESET_CAUSE_MASK |
                                                                 GPX_HDW_STATUS_FAULT_SYS_CRITICAL),
 };
 
@@ -5000,7 +5008,7 @@ enum eGNSSDriverRstCause {
 };
 
 enum eGPXGnssRunState {
-    kReset = 0,
+    kReset  = 0,
     kInit,
     kRun,
     kPassthrough,
@@ -5022,7 +5030,7 @@ typedef struct
     uint8_t runState;       /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
-#define GPX_INVALID_MCU_TEMP    -274.0f // 1 degree less than  absolute 0 
+#define GPX_INVALID_MCU_TEMP    -274.0f     // 1 degree less than  absolute 0
 
 /**
 * (DID_GPX_STATUS) GPX status.
@@ -5066,7 +5074,7 @@ typedef struct
     /** port */
     uint8_t                 gpxSourcePort;
 
-    double                  upTime;     //!< Time in seconds, since system was started
+    double                  upTime;                             //!< Time in seconds, since system was started
 } gpx_status_t;
 
 
@@ -5077,43 +5085,43 @@ typedef struct
 enum eEvbStatus
 {
     /** SD card logger: card ready */
-    EVB_STATUS_SD_CARD_READY                = 0x00000001,
+    EVB_STATUS_SD_CARD_READY            = 0x00000001,
 
     /** SD card Logger: running */
-    EVB_STATUS_SD_LOG_ENABLED               = 0x00000002,
+    EVB_STATUS_SD_LOG_ENABLED           = 0x00000002,
 
     /** SD card error: card file system */
-    EVB_STATUS_SD_ERR_CARD_FAULT            = 0x00000010,
+    EVB_STATUS_SD_ERR_CARD_FAULT        = 0x00000010,
 
     /** SD card error: card full */
-    EVB_STATUS_SD_ERR_CARD_FULL             = 0x00000020,
+    EVB_STATUS_SD_ERR_CARD_FULL         = 0x00000020,
 
     /** SD card error: mask */
-    EVB_STATUS_SD_ERR_CARD_MASK             = 0x000000F0,
+    EVB_STATUS_SD_ERR_CARD_MASK         = 0x000000F0,
 
     /** WiFi: enabled */
-    EVB_STATUS_WIFI_ENABLED                 = 0x00010000,
+    EVB_STATUS_WIFI_ENABLED             = 0x00010000,
 
     /** WiFi: connected to access point (hot spot) or another device */
-    EVB_STATUS_WIFI_CONNECTED               = 0x00020000,
+    EVB_STATUS_WIFI_CONNECTED           = 0x00020000,
 
     /** XBee: enabled */
-    EVB_STATUS_XBEE_ENABLED                 = 0x00100000,
+    EVB_STATUS_XBEE_ENABLED             = 0x00100000,
 
     /** XBee: connected */
-    EVB_STATUS_XBEE_CONNECTED               = 0x00200000,
+    EVB_STATUS_XBEE_CONNECTED           = 0x00200000,
 
     /** XBee: configured */
-    EVB_STATUS_XBEE_CONFIGURED              = 0x00400000,
+    EVB_STATUS_XBEE_CONFIGURED          = 0x00400000,
 
     /** XBee: failed to configure */
-    EVB_STATUS_XBEE_CONFIG_FAILURE          = 0x00800000,
+    EVB_STATUS_XBEE_CONFIG_FAILURE      = 0x00800000,
 
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
-    EVB_STATUS_FLASH_WRITE_IN_PROGRESS      = 0x01000000,
+    EVB_STATUS_FLASH_WRITE_IN_PROGRESS  = 0x01000000,
 
     /** Manufacturing unlocked */
-    EVB_STATUS_MANF_UNLOCKED                = 0x02000000,
+    EVB_STATUS_MANF_UNLOCKED            = 0x02000000,
 
 };
 
@@ -5123,13 +5131,13 @@ enum eEvb2CommPorts
     EVB2_PORT_UINS0     = 0,
     EVB2_PORT_UINS1     = 1,
     EVB2_PORT_XBEE      = 2,
-    EVB2_PORT_XRADIO    = 3,        // H4-8 (orange) Tx, H4-7 (brown) Rx 
-    EVB2_PORT_BLE       = 4,        
-    EVB2_PORT_SP330     = 5,        // H3-2 (brown) Tx, H3-5 (green)  Rx
-    EVB2_PORT_GPIO_H8   = 6,        // H8-5 (brown) Tx, H8-6 (orange) Rx
+    EVB2_PORT_XRADIO    = 3,  // H4-8 (orange) Tx, H4-7 (brown) Rx
+    EVB2_PORT_BLE       = 4,
+    EVB2_PORT_SP330     = 5,  // H3-2 (brown) Tx, H3-5 (green)  Rx
+    EVB2_PORT_GPIO_H8   = 6,  // H8-5 (brown) Tx, H8-6 (orange) Rx
     EVB2_PORT_USB       = 7,
-    EVB2_PORT_WIFI      = 8,        
-    EVB2_PORT_CAN       = 9,        // H2-3 CANL (brown), H2-4 CANH (orange)
+    EVB2_PORT_WIFI      = 8,
+    EVB2_PORT_CAN       = 9,  // H2-3 CANL (brown), H2-4 CANH (orange)
     EVB2_PORT_COUNT
 };
 
@@ -5143,12 +5151,12 @@ enum eEvb2ComBridgeOptions
     EVB2_CB_OPTIONS_BLE_ENABLE          = 0x00000040,
     EVB2_CB_OPTIONS_SPI_ENABLE          = 0x00000080,
     EVB2_CB_OPTIONS_CAN_ENABLE          = 0x00000100,
-    EVB2_CB_OPTIONS_I2C_ENABLE          = 0x00000200,       // Tied to uINS G1,G2
+    EVB2_CB_OPTIONS_I2C_ENABLE          = 0x00000200,  // Tied to uINS G1,G2
 };
 
 enum eEvb2PortOptions
 {
-    EVB2_PORT_OPTIONS_RADIO_RTK_FILTER  = 0x00000001, // Allow RTCM3, NMEA, and RTCM3.  Reject IS binary.
+    EVB2_PORT_OPTIONS_RADIO_RTK_FILTER  = 0x00000001,  // Allow RTCM3, NMEA, and RTCM3.  Reject IS binary.
     EVB2_PORT_OPTIONS_DEFAULT           = EVB2_PORT_OPTIONS_RADIO_RTK_FILTER,
 };
 
@@ -5199,7 +5207,7 @@ typedef struct
 } evb_wifi_t;
 
 typedef struct
-{  
+{
     /** Server IP address */
     union {
         uint32_t        u32;
@@ -5217,12 +5225,12 @@ enum eEvbFlashCfgBits
     EVB_CFG_BITS_WIFI_SELECT_OFFSET             = 0,
     EVB_CFG_BITS_SERVER_SELECT_MASK             = 0x0000000C,
     EVB_CFG_BITS_SERVER_SELECT_OFFSET           = 2,
-    EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,   // Don't enable PPD stream when log button is pressed
+    EVB_CFG_BITS_NO_STREAM_PPD_ON_LOG_BUTTON    = 0x00000010,  // Don't enable PPD stream when log button is pressed
     EVB_CFG_BITS_ENABLE_ADC4                    = 0x00000200,
     EVB_CFG_BITS_ENABLE_ADC10                   = 0x00000400,
 };
 
-#define NUM_WIFI_PRESETS     3
+#define NUM_WIFI_PRESETS                        3
 #define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {(bits)&=EVB_CFG_BITS_WIFI_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
 #define EVB_CFG_BITS_SET_IDX_SERVER(bits,idx)   {(bits)&=EVB_CFG_BITS_SERVER_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_SERVER_SELECT_OFFSET)&EVB_CFG_BITS_SERVER_SELECT_MASK);}
 #define EVB_CFG_BITS_IDX_WIFI(bits)             (((bits)&EVB_CFG_BITS_WIFI_SELECT_MASK)>>EVB_CFG_BITS_WIFI_SELECT_OFFSET)
@@ -5232,7 +5240,7 @@ enum eEvbFlashCfgBits
 * (DID_EVB_FLASH_CFG) EVB-2 flash config for monitor, config, and logger control interface
 */
 typedef struct
-{  
+{
     /** Size of this struct */
     uint32_t                size;
 
@@ -5315,32 +5323,32 @@ typedef struct
 enum eEvb2ComBridgePreset
 {
     /** No change.  Sending this value causes no effect. */
-    EVB2_CB_PRESET_NA = 0,
+    EVB2_CB_PRESET_NA               = 0,
 
     /** No connections.  Off: XBee, WiFi */
-    EVB2_CB_PRESET_ALL_OFF = 1,
+    EVB2_CB_PRESET_ALL_OFF          = 1,
 
     /** [uINS Hub] LED-GRN (uINS-COM): USB, RS232, H8.  (uINS-AUX): XRadio.  Off: XBee, WiFi */
-    EVB2_CB_PRESET_RS232 = 2,
+    EVB2_CB_PRESET_RS232            = 2,
 
     /** [uINS Hub] LED-BLU (uINS-COM): USB, RS232, H8.  (uINS-AUX): XBee, XRadio.  Off: WiFi */
-    EVB2_CB_PRESET_RS232_XBEE = 3,
+    EVB2_CB_PRESET_RS232_XBEE       = 3,
 
     /** [uINS Hub] LED-PUR (uINS-COM): USB, RS422, H8.  (uINS-AUX): WiFi, XRadio.  Off: XBee */
-    EVB2_CB_PRESET_RS422_WIFI = 4,
+    EVB2_CB_PRESET_RS422_WIFI       = 4,
 
     /** [uINS Hub] LED-CYA (uINS-SER1 SPI): USB, RS423, H8.  Off: WiFi, XBee.  A reset is required following selection of this CBPreset to enable SPI on the uINS, in order to assert uINS pin 10 (G9/nSPI_EN) during bootup. */
-    EVB2_CB_PRESET_SPI_RS232 = 5,
+    EVB2_CB_PRESET_SPI_RS232        = 5,
 
     /** [USB Hub]  LED-YEL (USB): RS232, H8, XBee, XRadio. */
-    EVB2_CB_PRESET_USB_HUB_RS232 = 6,
+    EVB2_CB_PRESET_USB_HUB_RS232    = 6,
 
     /** [USB Hub]  LED-WHT (USB): RS485/RS422, H8, XRadio. */
-    EVB2_CB_PRESET_USB_HUB_RS422 = 7,
-    
+    EVB2_CB_PRESET_USB_HUB_RS422    = 7,
+
     /** Number of bridge configuration presets */
-    EVB2_CB_PRESET_COUNT = 8,
-    
+    EVB2_CB_PRESET_COUNT            = 8,
+
 };
 
 #define EVB2_CB_PRESET_DEFAULT      EVB2_CB_PRESET_RS232
@@ -5349,64 +5357,64 @@ enum eEvb2ComBridgePreset
 enum eEvb2LoggerMode
 {
     /** Do not change.  Sending this value causes no effect. */
-    EVB2_LOG_NA                         = 0,
+    EVB2_LOG_NA         = 0,
 
     /** Start new log */
-    EVB2_LOG_CMD_START                  = 2,
+    EVB2_LOG_CMD_START  = 2,
 
     /** Stop logging */
-    EVB2_LOG_CMD_STOP                   = 4,
+    EVB2_LOG_CMD_STOP   = 4,
 
     /** Purge all data logs from drive */
-    EVB2_LOG_CMD_PURGE                  = 1002,
-        
+    EVB2_LOG_CMD_PURGE  = 1002,
+
 };
 
 enum ePortMonPortType
 {
-    PORT_MON_PORT_TYPE_UART             = (uint8_t)(1 << 4),
-    PORT_MON_PORT_TYPE_USB              = (uint8_t)(2 << 4),
-    PORT_MON_PORT_TYPE_SPI              = (uint8_t)(3 << 4),
-    PORT_MON_PORT_TYPE_I2C              = (uint8_t)(4 << 4),
-    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),
-    PORT_MON_PORT_TYPE_MAX              = (uint8_t)(6 << 4)
+    PORT_MON_PORT_TYPE_UART = (uint8_t)(1 << 4),
+    PORT_MON_PORT_TYPE_USB  = (uint8_t)(2 << 4),
+    PORT_MON_PORT_TYPE_SPI  = (uint8_t)(3 << 4),
+    PORT_MON_PORT_TYPE_I2C  = (uint8_t)(4 << 4),
+    PORT_MON_PORT_TYPE_CAN  = (uint8_t)(5 << 4),
+    PORT_MON_PORT_TYPE_MAX  = (uint8_t)(6 << 4)
 };
 
-/** 
-* (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
+/**
+* (DID_PORT_MONITOR) Data rate and status monitoring for each communications port.
 */
 typedef port_stats_t port_monitor_set_t;
 
 typedef struct
 {
     /** Port monitor set */
-    port_stats_t port[NUM_SERIAL_PORTS];
+    port_stats_t    port[NUM_SERIAL_PORTS];
 
     /** Number of ports in the port[] array */
-    uint8_t activePorts;        // FIXME: This should be moved to BEFORE the port definition, so on the receiving end, we know how many ports to expect.
+    uint8_t         activePorts;                // FIXME: This should be moved to BEFORE the port definition, so on the receiving end, we know how many ports to expect.
 } port_monitor_t;
 
 /** Stores data for the event mask */
 typedef struct
 {
     /** Prioity mask (see eEventPriority) */
-    int8_t priorityLevel;
-      
+    int8_t      priorityLevel;
+
     /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
-    uint32_t msgTypeIdMask;
+    uint32_t    msgTypeIdMask;
 } did_event_mask_t;
 
 /** Sent in the data field of DID_EVENT for eEventProtocol:
  *  EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER,
  *  EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER,
- *  EVENT_MSG_TYPE_ID_ENA_FILTER 
+ *  EVENT_MSG_TYPE_ID_ENA_FILTER
 */
 typedef struct
 {
     /**target port mask 0x80 for current port other port (0x01 << TARGET_PORT) where target port is */
-    uint8_t portMask;
+    uint8_t             portMask;
 
-    did_event_mask_t eventMask;
+    did_event_mask_t    eventMask;
 
 } did_event_filter_t;
 
@@ -5414,13 +5422,13 @@ typedef struct
 
 typedef struct
 {
-    uint32_t reqAddr;
-    uint8_t data[EVENT_MEM_REQ_SIZE];
+    uint32_t    reqAddr;
+    uint8_t     data[EVENT_MEM_REQ_SIZE];
 } did_event_memResp_t;
 
 typedef struct
 {
-    uint32_t reqAddr;
+    uint32_t    reqAddr;
 } did_event_memReq_t;
 
 enum eEventMsgTypeID
@@ -5455,10 +5463,10 @@ enum eEventMsgTypeID
 };
 
 typedef struct{
-    uint32_t                inst_CCR;         /**< DMA channel x configuration register        */
-    uint32_t                inst_CNDTR;       /**< DMA channel x number of data register       */
-    uint32_t                inst_CPAR;        /**< DMA channel x peripheral address register   */
-    uint32_t                inst_CMAR;        /**< DMA channel x memory address register       */
+    uint32_t                inst_CCR;                   /**< DMA channel x configuration register        */
+    uint32_t                inst_CNDTR;                 /**< DMA channel x number of data register       */
+    uint32_t                inst_CPAR;                  /**< DMA channel x peripheral address register   */
+    uint32_t                inst_CMAR;                  /**< DMA channel x memory address register       */
 
     uint8_t                 *ptr_start;
     uint8_t                 *ptr_end;
@@ -5478,7 +5486,7 @@ typedef struct{
     uint16_t                cfg_buf_len;                // This doesn't correspond to the length register, it is just however big the buffer is
     uint8_t                 cfg_linear_buf;             // If true, the buffer is user-specified and we treat it like a non-circular buffer.
     void                    *cfg_tcie_handler;          // If n
-    
+
     int                     lastDmaUsed;                // Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
     uint8_t                 overflow;                   // Buffer overflow
 
@@ -5486,17 +5494,17 @@ typedef struct{
 
 enum eEventPriority
 {
-    EVENT_PRIORITY_FAULT            = 0,
-    EVENT_PRIORITY_ERR              = 1,
-    EVENT_PRIORITY_WARNING          = 2,
-    EVENT_PRIORITY_INFO             = 3,
-    EVENT_PRIORITY_INFO_VERBOSE     = 4,
-    EVENT_PRIORITY_DBG              = 5,
-    EVENT_PRIORITY_DBG_VERBOSE      = 6, 
-    EVENT_PRIORITY_TRIVIAL          = 7,
-    
+    EVENT_PRIORITY_FAULT        = 0,
+    EVENT_PRIORITY_ERR          = 1,
+    EVENT_PRIORITY_WARNING      = 2,
+    EVENT_PRIORITY_INFO         = 3,
+    EVENT_PRIORITY_INFO_VERBOSE = 4,
+    EVENT_PRIORITY_DBG          = 5,
+    EVENT_PRIORITY_DBG_VERBOSE  = 6,
+    EVENT_PRIORITY_TRIVIAL      = 7,
+
     // None should be used on all messages that should only be broadcast based on ID
-    EVENT_PRIORITY_NONE             = -1,
+    EVENT_PRIORITY_NONE         = -1,
 };
 
 typedef struct
@@ -5506,10 +5514,10 @@ typedef struct
 
     /** Serial number */
     uint32_t        senderSN;
-  
+
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
     uint16_t        senderHdwId;
-    
+
     /** see eEventPriority */
     int8_t          priority;
     uint8_t         res8;
@@ -5517,114 +5525,114 @@ typedef struct
     /** see eEventMsgTypeID */
     uint16_t        msgTypeID;
     uint16_t        length;
-    
-    uint8_t data[1];
+
+    uint8_t         data[1];
 } did_event_t;
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
 enum eSysFaultStatus
 {
-    SYS_FAULT_STATUS_HARDWARE_RESET                 = 0x00000000,
-    SYS_FAULT_STATUS_USER_RESET                     = 0x00000001,
-    SYS_FAULT_STATUS_ENABLE_BOOTLOADER              = 0x00000002,
-    
+    SYS_FAULT_STATUS_HARDWARE_RESET             = 0x00000000,
+    SYS_FAULT_STATUS_USER_RESET                 = 0x00000001,
+    SYS_FAULT_STATUS_ENABLE_BOOTLOADER          = 0x00000002,
+
     // General:
-    SYS_FAULT_STATUS_SOFT_RESET                     = 0x00000010,
-    SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          = 0x00000020,
-    SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      = 0x00000040,
-    SYS_FAULT_STATUS_RTK_MISC_ERROR                 = 0x00000080,
-    SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           = 0x00000100,
-    SYS_FAULT_STATUS_RTK_BUFFER_LIMIT               = 0x00000200,
-    SYS_FAULT_STATUS_SENSOR_CALIBRATION             = 0x00000400,
-    SYS_FAULT_STATUS_HARDWARE_DETECTION             = 0x00000800,
-    SYS_FAULT_STATUS_FLASH_ECCD_NVM                 = 0x00001000,    // Uncorrectable flash ECC in NVM region; page erased on boot recovery
-    SYS_FAULT_STATUS_FLASH_ECCD_APP_CODE            = 0x00002000,    // Uncorrectable flash ECC in app code region; informational (PR2 will stay-in-ISbl)
-    SYS_FAULT_STATUS_FLASH_ECCD_BL_CODE             = 0x00004000,    // Uncorrectable flash ECC in IS-bootloader code region (IMX-5 only); informational (PR2 will jump to ROM DFU)
-    SYS_FAULT_STATUS_FLASH_ECCC                     = 0x00008000,    // Correctable flash ECC (single-bit, hardware-corrected); informational
-    SYS_FAULT_STATUS_GENERAL_ERROR_MASK             = 0x00FFFFF0,
+    SYS_FAULT_STATUS_SOFT_RESET                 = 0x00000010,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT      = 0x00000020,
+    SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED  = 0x00000040,
+    SYS_FAULT_STATUS_RTK_MISC_ERROR             = 0x00000080,
+    SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE       = 0x00000100,
+    SYS_FAULT_STATUS_RTK_BUFFER_LIMIT           = 0x00000200,
+    SYS_FAULT_STATUS_SENSOR_CALIBRATION         = 0x00000400,
+    SYS_FAULT_STATUS_HARDWARE_DETECTION         = 0x00000800,
+    SYS_FAULT_STATUS_FLASH_ECCD_NVM             = 0x00001000,  // Uncorrectable flash ECC in NVM region; page erased on boot recovery
+    SYS_FAULT_STATUS_FLASH_ECCD_APP_CODE        = 0x00002000,  // Uncorrectable flash ECC in app code region; informational (PR2 will stay-in-ISbl)
+    SYS_FAULT_STATUS_FLASH_ECCD_BL_CODE         = 0x00004000,  // Uncorrectable flash ECC in IS-bootloader code region (IMX-5 only); informational (PR2 will jump to ROM DFU)
+    SYS_FAULT_STATUS_FLASH_ECCC                 = 0x00008000,  // Correctable flash ECC (single-bit, hardware-corrected); informational
+    SYS_FAULT_STATUS_GENERAL_ERROR_MASK         = 0x00FFFFF0,
 
 
     // Critical: (usually associated with system reset)
-    SYS_FAULT_STATUS_CRITICAL_ERROR_pos             = 24,
-    SYS_FAULT_STATUS_HARD_FAULT                     = 1 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_USAGE_FAULT                    = 2 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_MEM_MANGE                      = 3 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_BUS_FAULT                      = 4 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_MALLOC_FAILED                  = 5 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_STACK_OVERFLOW                 = 6 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_WATCHDOG_RESET                 = 7 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
-    SYS_FAULT_STATUS_CRITICAL_ERROR_MASK            = 0xFF000000,
+    SYS_FAULT_STATUS_CRITICAL_ERROR_pos         = 24,
+    SYS_FAULT_STATUS_HARD_FAULT                 = 1 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_USAGE_FAULT                = 2 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_MEM_MANGE                  = 3 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_BUS_FAULT                  = 4 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_MALLOC_FAILED              = 5 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_STACK_OVERFLOW             = 6 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_WATCHDOG_RESET             = 7 << SYS_FAULT_STATUS_CRITICAL_ERROR_pos,
+    SYS_FAULT_STATUS_CRITICAL_ERROR_MASK        = 0xFF000000,
 };
 
 enum eBackupOffset
 {
-    IS_BACKUP_UPTIME = 0,
-    IS_BACKUP_STATUS = 1,
-    IS_BACKUP_FILE_NUM = 2,
-    IS_BACKUP_LINE_NUM = 3,
-    IS_BACKUP_HALT_REASON = 4,
-    IS_BACKUP_LR = 5,
-    IS_BACKUP_PC = 6,
-    IS_BACKUP_PSR = 7,
-    IS_BACKUP_TASK_A_LAST_FEED = 8,
-    IS_BACKUP_TASK_B_LAST_FEED = 9,
-    IS_BACKUP_WDT_LAST_FEED = 10,
-    IS_BACKUP_VAR0 = 11,
-    IS_BACKUP_VAR1 = 12,
-    IS_BACKUP_VAR2 = 13,
-    IS_BACKUP_VAR3 = 14,
+    IS_BACKUP_UPTIME            = 0,
+    IS_BACKUP_STATUS            = 1,
+    IS_BACKUP_FILE_NUM          = 2,
+    IS_BACKUP_LINE_NUM          = 3,
+    IS_BACKUP_HALT_REASON       = 4,
+    IS_BACKUP_LR                = 5,
+    IS_BACKUP_PC                = 6,
+    IS_BACKUP_PSR               = 7,
+    IS_BACKUP_TASK_A_LAST_FEED  = 8,
+    IS_BACKUP_TASK_B_LAST_FEED  = 9,
+    IS_BACKUP_WDT_LAST_FEED     = 10,
+    IS_BACKUP_VAR0              = 11,
+    IS_BACKUP_VAR1              = 12,
+    IS_BACKUP_VAR2              = 13,
+    IS_BACKUP_VAR3              = 14,
     IS_BACKUP_COUNT
 };
 
-/** (DID_SYS_FAULT) System Fault Information */ 
-typedef struct 
+/** (DID_SYS_FAULT) System Fault Information */
+typedef struct
 {
     /** Time (uptime in milli-seconds) */
-    uint32_t upTime;   
+    uint32_t    upTime;
 
     /** System fault status (see eSysFaultStatus) */
-    uint32_t status;
+    uint32_t    status;
 
     /** Line number of fault */
-    uint32_t fileNum;
-    
+    uint32_t    fileNum;
+
     /** File number at fault */
-    uint32_t lineNum;
-    
+    uint32_t    lineNum;
+
     /** Zephyr halt reason */
-    uint32_t haltReason;     
+    uint32_t    haltReason;
 
     /** link register value at time of fault.  */
-    uint32_t lr;
-    
+    uint32_t    lr;
+
     /** Program Counter value at time of fault */
-    uint32_t pc;
-    
+    uint32_t    pc;
+
     /** Program Status Register value at time of fault */
-    uint32_t psr;
+    uint32_t    psr;
 
     /** Miliseconds since task A last ran */
-    uint32_t taskALastFeed;
-    
+    uint32_t    taskALastFeed;
+
     /** Miliseconds since task B last ran */
-    uint32_t taskBLastFeed;
-    
+    uint32_t    taskBLastFeed;
+
     /** Miliseconds since WDT last fed */
-    uint32_t wdtLastFeed;    
+    uint32_t    wdtLastFeed;
 
     /** Multi purpose register 0 */
-    uint32_t var0;
-        
+    uint32_t    var0;
+
     /** Multi purpose register 1  */
-    uint32_t var1;    
+    uint32_t    var1;
 
     /** Multi purpose register 2 */
-    uint32_t var2;
-        
+    uint32_t    var2;
+
     /** Multi purpose register 3 */
-    uint32_t var3;
-        
+    uint32_t    var3;
+
 } system_fault_t;
 
 /** RTOS tasks */
@@ -5656,7 +5664,7 @@ enum eImxRtosTask
 enum eGpxRtosTask
 {
     /** Task 0: Communication */
-    GPX_TASK_COMM = 0,
+    GPX_TASK_COMM   = 0,
 
     /** Task 1: RTK */
     GPX_TASK_RTK,
@@ -5703,18 +5711,18 @@ enum eEvbRtosTask
 enum eRtosTask
 {
 #if defined(GPX_1)
-    TASK_IDLE           = GPX_TASK_IDLE,
-    TASK_TIMER          = GPX_TASK_TIMER,
-    RTOS_NUM_TASKS      = GPX_RTOS_NUM_TASKS
-#else   // IMX_5    
-    TASK_IDLE           = IMX_TASK_IDLE,
-    TASK_TIMER          = IMX_TASK_TIMER,
-    RTOS_NUM_TASKS      = IMX_RTOS_NUM_TASKS
+    TASK_IDLE       = GPX_TASK_IDLE,
+    TASK_TIMER      = GPX_TASK_TIMER,
+    RTOS_NUM_TASKS  = GPX_RTOS_NUM_TASKS
+#else   // IMX_5
+    TASK_IDLE       = IMX_TASK_IDLE,
+    TASK_TIMER      = IMX_TASK_TIMER,
+    RTOS_NUM_TASKS  = IMX_RTOS_NUM_TASKS
 #endif
 };
 
 /** Max task name length - do not change */
-#define MAX_TASK_NAME_LEN 12
+#define MAX_TASK_NAME_LEN   12
 
 /** RTOS task info */
 typedef struct PACKED
@@ -5766,7 +5774,7 @@ typedef struct PACKED
 
     /** Handle */
     uint32_t                handle;
-    
+
 } rtos_task_t;
 
 /** Internal RTOS task profiling info (processor ticks instead of usec) */
@@ -5861,19 +5869,19 @@ typedef struct PACKED
 } evb_rtos_info_t;
 
 
-typedef struct 
+typedef struct
 {
-    uint32_t runTimeUs;
-    uint32_t maxRuntimeUs;
-    uint32_t StartTimeUs;
-    uint32_t startPeriodUs;
+    uint32_t    runTimeUs;
+    uint32_t    maxRuntimeUs;
+    uint32_t    StartTimeUs;
+    uint32_t    startPeriodUs;
 } runtime_profile_t;
 
 /** (DID_RUNTIME_PROFILER) */
-#define RUNTIME_PROFILE_COUNT    4
-typedef struct 
+#define RUNTIME_PROFILE_COUNT   4
+typedef struct
 {
-    runtime_profile_t p[RUNTIME_PROFILE_COUNT];
+    runtime_profile_t   p[RUNTIME_PROFILE_COUNT];
 } runtime_profiler_t;
 
 
@@ -5912,18 +5920,18 @@ enum
 /** Valid baud rates for Inertial Sense hardware */
 enum can_baudrate_t
 {
-    CAN_BAUDRATE_20_KBPS   =   20,
-    CAN_BAUDRATE_33_KBPS   =   33,
-    CAN_BAUDRATE_50_KBPS   =   50,
-    CAN_BAUDRATE_83_KBPS   =   83,
-    CAN_BAUDRATE_100_KBPS  =  100,
-    CAN_BAUDRATE_125_KBPS  =  125,
-    CAN_BAUDRATE_200_KBPS  =  200,
-    CAN_BAUDRATE_250_KBPS  =  250,
-    CAN_BAUDRATE_500_KBPS  =  500,
-    CAN_BAUDRATE_1000_KBPS = 1000,
+    CAN_BAUDRATE_20_KBPS    = 20,
+    CAN_BAUDRATE_33_KBPS    = 33,
+    CAN_BAUDRATE_50_KBPS    = 50,
+    CAN_BAUDRATE_83_KBPS    = 83,
+    CAN_BAUDRATE_100_KBPS   = 100,
+    CAN_BAUDRATE_125_KBPS   = 125,
+    CAN_BAUDRATE_200_KBPS   = 200,
+    CAN_BAUDRATE_250_KBPS   = 250,
+    CAN_BAUDRATE_500_KBPS   = 500,
+    CAN_BAUDRATE_1000_KBPS  = 1000,
 
-    CAN_BAUDRATE_COUNT = 10
+    CAN_BAUDRATE_COUNT      = 10
 };
 
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
@@ -5931,10 +5939,10 @@ typedef struct PACKED
 {
     /** Broadcast period multiple - CAN time message. 0 to disable. */
     uint16_t                can_period_mult[NUM_CIDS];
-    
+
     /** Transmit address. */
     uint32_t                can_transmit_address[NUM_CIDS];
-    
+
     /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
     uint16_t                can_baudrate_kbps;
 
@@ -5950,50 +5958,50 @@ typedef struct PACKED
 /** Union of datasets */
 typedef union PACKED
 {
-    dev_info_t                  devInfo;
-    ins_1_t                     ins1;
-    ins_2_t                     ins2;
-    ins_3_t                     ins3;
-    ins_4_t                     ins4;
-    imu_t                       imu;
-    imus_t                      imus;
-    magnetometer_t              mag;
-    mag_cal_t                   magCal;
-    barometer_t                 baro;
-    wheel_encoder_t             wheelEncoder;
-    ground_vehicle_t            groundVehicle;
-    pos_measurement_t           posMeasurement;
-    pimu_t                      pImu;
-    gnss_pos_t                   gpsPos;
-    gnss_vel_t                   gpsVel;
-    gnss_sat_t                   gpsSat;
-    gnss_sig_t                   gpsSig;
-    gnss_version_t               gnssVer;
-    gnss_rtk_rel_t               gnssRtkRel;
-    gnss_rtk_misc_t              gnssRtkMisc;
-    inl2_states_t               inl2States;
-    inl2_ned_sigma_t            inl2NedSigma;
-    nvm_flash_cfg_t             flashCfg;
-    survey_in_t                 surveyIn;
-    sys_params_t                sysParams;
-    sys_sensors_t               sysSensors;
-    rtos_info_t                 rtosInfo;
-    gpx_rtos_info_t             gRtosInfo;
-    gnss_raw_t                   gnssRaw;
-    sys_sensors_adc_t           sensorsAdc;
-    rmc_t                       rmc;
-    evb_status_t                evbStatus;
-    infield_cal_t               infieldCal;
-    gpx_status_t                gpxStatus;
-    debug_array_t               imxDebugArray;
-    debug_array_t               gpxDebugArray;
-    port_monitor_t              portMonitor;
-    did_event_t                 event;
-    manufacturing_info_t        manfInfo;
-    bit_t                       bit;
+    dev_info_t                      devInfo;
+    ins_1_t                         ins1;
+    ins_2_t                         ins2;
+    ins_3_t                         ins3;
+    ins_4_t                         ins4;
+    imu_t                           imu;
+    imus_t                          imus;
+    magnetometer_t                  mag;
+    mag_cal_t                       magCal;
+    barometer_t                     baro;
+    wheel_encoder_t                 wheelEncoder;
+    ground_vehicle_t                groundVehicle;
+    pos_measurement_t               posMeasurement;
+    pimu_t                          pImu;
+    gnss_pos_t                      gpsPos;
+    gnss_vel_t                      gpsVel;
+    gnss_sat_t                      gpsSat;
+    gnss_sig_t                      gpsSig;
+    gnss_version_t                  gnssVer;
+    gnss_rtk_rel_t                  gnssRtkRel;
+    gnss_rtk_misc_t                 gnssRtkMisc;
+    inl2_states_t                   inl2States;
+    inl2_ned_sigma_t                inl2NedSigma;
+    nvm_flash_cfg_t                 flashCfg;
+    survey_in_t                     surveyIn;
+    sys_params_t                    sysParams;
+    sys_sensors_t                   sysSensors;
+    rtos_info_t                     rtosInfo;
+    gpx_rtos_info_t                 gRtosInfo;
+    gnss_raw_t                      gnssRaw;
+    sys_sensors_adc_t               sensorsAdc;
+    rmc_t                           rmc;
+    evb_status_t                    evbStatus;
+    infield_cal_t                   infieldCal;
+    gpx_status_t                    gpxStatus;
+    debug_array_t                   imxDebugArray;
+    debug_array_t                   gpxDebugArray;
+    port_monitor_t                  portMonitor;
+    did_event_t                     event;
+    manufacturing_info_t            manfInfo;
+    bit_t                           bit;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
-    evb_luna_velocity_control_t wheelController;
+    evb_luna_velocity_control_t     wheelController;
 #endif
 } uDatasets;
 
@@ -6085,23 +6093,23 @@ void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 // BE_SWAP: if big endian then swap, else no-op
 // LE_SWAP: if little endian then swap, else no-op
 #if CPU_IS_BIG_ENDIAN
-#define BE_SWAP64F(_i) flipDoubleCopy(_i)
-#define BE_SWAP32F(_i) flipFloatCopy(_i)
-#define BE_SWAP32(_i) (SWAP32(_i))
-#define BE_SWAP16(_i) (SWAP16(_i))
-#define LE_SWAP64F(_i) (_i)
-#define LE_SWAP32F(_i) (_i)
-#define LE_SWAP32(_i) (_i)
-#define LE_SWAP16(_i) (_i)
+#define BE_SWAP64F(_i)  flipDoubleCopy(_i)
+#define BE_SWAP32F(_i)  flipFloatCopy(_i)
+#define BE_SWAP32(_i)   (SWAP32(_i))
+#define BE_SWAP16(_i)   (SWAP16(_i))
+#define LE_SWAP64F(_i)  (_i)
+#define LE_SWAP32F(_i)  (_i)
+#define LE_SWAP32(_i)   (_i)
+#define LE_SWAP16(_i)   (_i)
 #else // little endian
-#define BE_SWAP64F(_i) (_i)
-#define BE_SWAP32F(_i) (_i)
-#define BE_SWAP32(_i) (_i)
-#define BE_SWAP16(_i) (_i)
-#define LE_SWAP64F(_i) flipDoubleCopy(_i)
-#define LE_SWAP32F(_i) flipFloatCopy(_i)
-#define LE_SWAP32(_i) (SWAP32(_i))
-#define LE_SWAP16(_i) (SWAP16(_i))
+#define BE_SWAP64F(_i)  (_i)
+#define BE_SWAP32F(_i)  (_i)
+#define BE_SWAP32(_i)   (_i)
+#define BE_SWAP16(_i)   (_i)
+#define LE_SWAP64F(_i)  flipDoubleCopy(_i)
+#define LE_SWAP32F(_i)  flipFloatCopy(_i)
+#define LE_SWAP32(_i)   (SWAP32(_i))
+#define LE_SWAP16(_i)   (SWAP16(_i))
 #endif
 
 /**
@@ -6159,7 +6167,7 @@ int satNo(int sys, int prn);
 /*
 convert satellite gnssID + svID to satellite number
 
-@param gnssID satellite system 
+@param gnssID satellite system
 @param svID satellite prn/slot number
 @return satellite number (0:error)
 */
@@ -6182,20 +6190,20 @@ int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo);
 
 /****************************************
  * PROPOSED CHANGES FOR PROTOCOL IS V3.0
- * 
+ *
  * - Remove GNSS_STATUS_NUM_SATS_USED_MASK bits in eGnssStatus this is reported in satsUsed in gnss_pos_t.
  * - Move spoofing/jamming status into gnss_pos_t.status and reclaim gnss_pos_t.status2 as resevered.
  * - Change $INFO to conform to NMEA 0183 standard. $INFO is a proprietary message and should start with $P and have max of 79 characters. see SN-6231
- * 
+ *
  * - GNSS rename references to GPSn to GNSSn
  *
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  ****************************************/

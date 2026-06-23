@@ -2,13 +2,13 @@
 #define __RTK_EMBEDDED_DEFINES_H_
 
 #define ENAGAL
+#define ENACMP
 // #define ENAGLO
 // #define ENAQZS
-// #define ENACMP
 // #define ENASBS
 
-#define NUMSATSOL   20      // Max number of observations used in the solution
-#define MAXOBS      46      // Max number of observations used in pre-buffer
+#define NUMSATSOL   30      // Max number of observations used in the solution
+#define MAXOBS      55      // Max number of observations used in pre-buffer
 #define NFREQ       2       // Number of carrier frequencies
 #define NEXOBS      0       // Number of extended obs codes
 
