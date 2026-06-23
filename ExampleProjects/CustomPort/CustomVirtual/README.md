@@ -187,7 +187,7 @@ vpf.releasePort(port);
 ```
 
 ### Step 8: Incorporate Logging
-The core/msg_logger.h API provides multi-platform message logging with level control, and printf-style format strings support.  Add log commands to your application code as desired, like so:
+The [msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  Add log commands to your application code as desired, like so:
 
 ```C++
 log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s'", portName(port));
