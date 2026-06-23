@@ -64,9 +64,7 @@ int main(int argc, char* argv[])
         return -3;
     }
 
-    /** STEP 6: In a loop, send to and receive messages from the loopback port.
-     * This should run a fairly fast rate, (1ms is typical) to avoid data from filling
-     * the COMM buffer, which could lead to data drop.
+    /** STEP 6: In a loop, send to and receive messages from the loopback port.   
      */
     const unsigned char wbuf[] = "IMPORTANT MESSAGE";
     unsigned int wlen = strlen(reinterpret_cast<const char*>(wbuf));
@@ -101,7 +99,7 @@ int main(int argc, char* argv[])
             rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
         }
 
-        if (rbytes == wbytes) {
+        if ( (wbytes > 0) && (rbytes == wbytes) ) {
             if ( memcmp(rbuf, wbuf, wlen) == 0 ) {
                 log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s'", portName(port));
             }
