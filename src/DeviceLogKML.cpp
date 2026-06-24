@@ -82,11 +82,11 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
         }
         break;
 
-    case cDataKML::KID_GPS:
-    case cDataKML::KID_GPS1:
-    case cDataKML::KID_GPS2:
+    case cDataKML::KID_GNSS:
+    case cDataKML::KID_GNSS1:
+    case cDataKML::KID_GNSS2:
     case cDataKML::KID_RTK:
-        if (!m_enableGpsLogging)
+        if (!m_enableGnssLogging)
         {    
             return false;
         }
@@ -136,10 +136,10 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
         colorStr = "ff00ffff";      // yellow
         colorDrStr = "ff00a5ff";    // orange
         break;
-    case cDataKML::KID_GPS:
+    case cDataKML::KID_GNSS:
         colorStr = "ff0000ff";  // red
         break;
-    case cDataKML::KID_GPS1:
+    case cDataKML::KID_GNSS1:
         colorStr = "ffff0000";  // blue
         break;
     case cDataKML::KID_RTK:
@@ -248,9 +248,9 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
                 ostringstream timeStream;
                 switch (kid)
                 {
-                case cDataKML::KID_GPS:
-                case cDataKML::KID_GPS1:
-                case cDataKML::KID_GPS2:
+                case cDataKML::KID_GNSS:
+                case cDataKML::KID_GNSS1:
+                case cDataKML::KID_GNSS2:
                 case cDataKML::KID_RTK:
                     timeStream << fixed << setprecision(1) << item.time;
                     break;
@@ -506,11 +506,11 @@ bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* 
 
     switch (kid)
     {
-    case cDataKML::KID_GPS:
-    case cDataKML::KID_GPS1:
-    case cDataKML::KID_GPS2:
+    case cDataKML::KID_GNSS:
+    case cDataKML::KID_GNSS1:
+    case cDataKML::KID_GNSS2:
     case cDataKML::KID_RTK:
-        if (!m_enableGpsLogging)
+        if (!m_enableGnssLogging)
         {
             return true;
         }

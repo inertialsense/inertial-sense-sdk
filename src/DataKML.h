@@ -62,9 +62,9 @@ public:
     {
         KID_INS = 0,
         KID_REF,
-        KID_GPS,
-        KID_GPS1,
-        KID_GPS2,
+        KID_GNSS,
+        KID_GNSS1,
+        KID_GNSS2,
         KID_RTK,
         MAX_NUM_KID,
     };
@@ -76,9 +76,9 @@ public:
             default:                return -1; // Unused
             case DID_INS_1:         // FALL THROUGH       
             case DID_INS_2:         return KID_INS;
-            case DID_GNSS1_POS:      return KID_GPS;
-            case DID_GNSS1_RCVR_POS: return KID_GPS1;
-            case DID_GNSS2_POS:      return KID_GPS2;
+            case DID_GNSS1_POS:      return KID_GNSS;
+            case DID_GNSS1_RCVR_POS: return KID_GNSS1;
+            case DID_GNSS2_POS:      return KID_GNSS2;
             case DID_GNSS1_RTK_POS:  return KID_RTK;
         }
     }
@@ -92,9 +92,9 @@ public:
             case KID_INS:
             case KID_REF:
                 return 130;
-            case KID_GPS:
-            case KID_GPS1:
-            case KID_GPS2:
+            case KID_GNSS:
+            case KID_GNSS1:
+            case KID_GNSS2:
             case KID_RTK:
                 return 65;
         }
