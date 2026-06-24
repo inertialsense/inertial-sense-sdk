@@ -100,13 +100,6 @@ PIMU_PERIOD_MS  = 4         # requested DID_PIMU broadcast period (~250 Hz)
 SEND_INTERVAL_S = 1.0       # how often to (re)send the GET_DATA command
 POLL_INTERVAL_S = 0.001     # delay between SPI read ticks
 
-# Sanity bound for ts_delta (gap between consecutive PIMU message
-# timestamps). Strategy A has no DR pin, so a 0x00 filler byte run can
-# occasionally false-match the ISB preamble and yield a garbage t_time;
-# without this bound a single such glitch would permanently latch
-# ts_delta_min/max via min()/max() with no way to recover.
-TS_DELTA_SANITY_MAX_S = 1.0
-
 LOG_DEVICE_SERIAL_NUM = 0   # set to the device's serial number if known (DID_DEV_INFO)
 LOG_DIRECTORY_DEFAULT = "./IS_logs"
 
@@ -367,25 +360,15 @@ def main() -> None:
                 # Track delta between consecutive PIMU message timestamps
                 # (t_time), as distinct from `dt` (the integration period
                 # field already inside the payload).
-                ts_delta = 0.0
-                ts_delta_suspect = False
                 if prev_t_time is not None:
                     ts_delta = t_time - prev_t_time
-                    if ts_delta <= 0.0 or ts_delta > TS_DELTA_SANITY_MAX_S:
-                        # Likely a false preamble match in the no-DR filler
-                        # stream producing a garbage t_time. Discard this
-                        # sample from the running stats (and don't advance
-                        # prev_t_time, since t_time itself may be bad) so
-                        # one glitch can't permanently latch min/max.
-                        ts_delta_suspect = True
-                    else:
-                        ts_delta_min = min(ts_delta_min, ts_delta)
-                        ts_delta_max = max(ts_delta_max, ts_delta)
-                        ts_delta_sum += ts_delta
-                        ts_delta_n += 1
-                        prev_t_time = t_time
+                    ts_delta_min = min(ts_delta_min, ts_delta)
+                    ts_delta_max = max(ts_delta_max, ts_delta)
+                    ts_delta_sum += ts_delta
+                    ts_delta_n += 1
                 else:
-                    prev_t_time = t_time
+                    ts_delta = 0.0
+                prev_t_time = t_time
                 ts_delta_avg = (ts_delta_sum / ts_delta_n) if ts_delta_n else 0.0
 
                 print(
@@ -394,8 +377,7 @@ def main() -> None:
                     f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s  "
                     f"(log: {logger.bytes_written + len(logger._buf)} bytes, "
                     f"{logger.chunks_written} chunk(s) flushed)\n"
-                    f"          ts_delta: cur={ts_delta*1000:7.3f} ms"
-                    f"{'  [SUSPECT - discarded from stats]' if ts_delta_suspect else ''}  "
+                    f"          ts_delta: cur={ts_delta*1000:7.3f} ms  "
                     f"min={(0.0 if ts_delta_min is math.inf else ts_delta_min*1000):7.3f} ms  "
                     f"max={(0.0 if ts_delta_max == -math.inf else ts_delta_max*1000):7.3f} ms  "
                     f"avg={ts_delta_avg*1000:7.3f} ms",
