@@ -3,14 +3,22 @@
 InertialSense SPI DID_PIMU Example — log to ISB_RAW (.raw) file
 Raspberry Pi 5
 
-Requests a continuous DID_PIMU broadcast over SPI (Data Ready pin gated, same
-approach as spi_pimu_dr_example.py) and writes every raw byte received from
-the device into a Inertial Sense ".raw" log file using the exact on-disk
-chunk format produced by cISLogger::LOGTYPE_RAW (see cDeviceLogRaw::SaveData /
+Requests a continuous DID_PIMU broadcast over SPI using fixed-size polling
+(Strategy A — no Data Ready pin required, same approach as
+spi_pimu_example.py) and writes every raw byte received from the device into
+an Inertial Sense ".raw" log file using the exact on-disk chunk format
+produced by cISLogger::LOGTYPE_RAW (see cDeviceLogRaw::SaveData /
 cDataChunk::WriteToFile in is-common/SDK/src/DeviceLogRaw.cpp and
 is-common/SDK/src/DataChunk.cpp). The resulting file can be opened by the
 desktop SDK's log reader / cltool / EvalTool exactly like a raw log captured
 over UART or USB.
+
+Note: because Strategy A has no Data Ready pin, the IMX clocks out 0x00
+filler bytes whenever its transmit buffer is empty, and those filler bytes
+are captured into the log verbatim along with real ISB packets (this mirrors
+exactly what would be received on the wire). This is harmless — the parser
+and any downstream tools simply skip bytes that aren't part of a valid ISB
+packet — but it does make the .raw file larger than the DR-gated approach.
 
 ISB_RAW chunk format (sChunkHeader, packed, little-endian, version 2):
     offset  size  field
@@ -50,15 +58,14 @@ Hardware connections (IMX <-> Raspberry Pi 5 40-pin header):
     IMX SPI_MISO -> Pin 21  (GPIO9  / SPI0_MISO)
     IMX SPI_nCS  -> Pin 24  (GPIO8  / SPI0_CE0)
     IMX nSPI_EN  -> GND     (hold low at power-up to enable SPI)
-    IMX DR       -> Pin 22  (GPIO25)              <-- Data Ready, active HIGH
 
 Raspberry Pi 5 setup:
     1. Enable SPI0 in /boot/firmware/config.txt, then reboot:
            dtoverlay=spi0-1cs
     2. Install dependencies:
-           sudo apt install python3-spidev python3-lgpio
-    3. Add your user to the spi and gpio groups:
-           sudo usermod -aG spi,gpio $USER   # log out and back in
+           sudo apt install python3-spidev
+    3. Add your user to the spi group:
+           sudo usermod -aG spi $USER   # log out and back in
 
 Run:
     python3 spi_pimu_isb_raw_log_example.py [output_directory]
@@ -73,7 +80,6 @@ import select
 import tty
 import termios
 import spidev
-import lgpio
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -82,17 +88,14 @@ import lgpio
 SPI_BUS      = 0            # SPI bus number -> /dev/spidevBUS.DEVICE
 SPI_DEVICE   = 0            # SPI device (chip-select index)
 SPI_MODE     = 3            # CPOL=1, CPHA=1  required by the IMX
-SPI_SPEED_HZ = 1_000_000    # 1 MHz
+SPI_SPEED_HZ = 1_000_000    # 1 MHz; Strategy A (no DR) is limited to 3 MHz max
 
-GPIO_CHIP    = 4            # /dev/gpiochip4 on Raspberry Pi 5
-DR_GPIO_LINE = 25           # GPIO25 (Pin 22) — IMX Data Ready, active HIGH
-
-SPI_CHUNK_SIZE = 64         # bytes per SPI read while DR is asserted
-DR_READ_S      = 0.250      # max time to spend reading while DR is asserted
+SPI_READ_SIZE = 250         # bytes to read each poll tick
 
 NAV_DT_MS       = 4         # IMX-6 nav period in ms (used for period calculation)
 PIMU_PERIOD_MS  = 4         # requested DID_PIMU broadcast period (~250 Hz)
 SEND_INTERVAL_S = 1.0       # how often to (re)send the GET_DATA command
+POLL_INTERVAL_S = 0.050     # delay between SPI read ticks
 
 LOG_DEVICE_SERIAL_NUM = 0   # set to the device's serial number if known (DID_DEV_INFO)
 LOG_DIRECTORY_DEFAULT = "./IS_logs"
@@ -296,9 +299,6 @@ def main() -> None:
     spi.max_speed_hz = SPI_SPEED_HZ
     spi.mode = SPI_MODE
 
-    gpio_h = lgpio.gpiochip_open(GPIO_CHIP)
-    lgpio.gpio_claim_input(gpio_h, DR_GPIO_LINE)
-
     stop_pkt = build_stop_broadcasts()
     get_pkt  = build_get_data(DID_PIMU, PIMU_PERIOD_MS)
 
@@ -311,6 +311,7 @@ def main() -> None:
               f"|  /dev/spidev{SPI_BUS}.{SPI_DEVICE}  |  {SPI_SPEED_HZ // 1_000} kHz")
         print(f"Logging raw bytes to: {log_path}")
         print(f"Requested period: ~{period_actual} ms")
+        print(f"Read block      : {SPI_READ_SIZE} bytes per poll tick")
         print(f"Press '{EXIT_KEY.upper()}' to stop and close the log.\n")
 
         # Clear any stale broadcasts left over from a previous session.
@@ -328,51 +329,45 @@ def main() -> None:
                 spi.xfer2(list(get_pkt))
                 last_send = now
 
-            # Read SPI bytes while DR is asserted, log every byte received.
-            if lgpio.gpio_read(gpio_h, DR_GPIO_LINE) == 1:
-                rx_buf = bytearray()
-                read_deadline = time.monotonic() + DR_READ_S
-                while (lgpio.gpio_read(gpio_h, DR_GPIO_LINE) == 1
-                       and time.monotonic() < read_deadline):
-                    rx_buf.extend(spi.readbytes(SPI_CHUNK_SIZE))
+            # Read a fixed block of SPI bytes (Strategy A — no DR pin).
+            # The IMX clocks out 0x00 when its buffer is empty; non-zero
+            # bytes are parsed as ISB packets below. Every byte received,
+            # filler included, is written into the ISB_RAW log, mirroring
+            # cDeviceLogRaw::SaveData()'s pass-through of whatever bytes
+            # arrived on the wire.
+            rx_buf = bytes(spi.readbytes(SPI_READ_SIZE))
+            logger.log_data(rx_buf)
 
-                if rx_buf:
-                    # Write the exact bytes received into the ISB_RAW log,
-                    # mirroring cDeviceLogRaw::SaveData()'s pass-through.
-                    logger.log_data(bytes(rx_buf))
+            for pkt_type, did, payload in parse_isb_packets(rx_buf):
+                if pkt_type != PKT_TYPE_DATA or did != DID_PIMU:
+                    continue
+                if len(payload) < PIMU_SIZE:
+                    continue
 
-                    for pkt_type, did, payload in parse_isb_packets(bytes(rx_buf)):
-                        if pkt_type != PKT_TYPE_DATA or did != DID_PIMU:
-                            continue
-                        if len(payload) < PIMU_SIZE:
-                            continue
+                count += 1
+                t_time, dt, _, *rest = _PIMU_FMT.unpack_from(payload)
+                theta = rest[0:3]
+                vel   = rest[3:6]
 
-                        count += 1
-                        t_time, dt, _, *rest = _PIMU_FMT.unpack_from(payload)
-                        theta = rest[0:3]
-                        vel   = rest[3:6]
-
-                        print(
-                            f"[{count:5d}]  t={t_time:10.3f} s  dt={dt:.4f} s  "
-                            f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
-                            f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s  "
-                            f"(log: {logger.bytes_written + len(logger._buf)} bytes, "
-                            f"{logger.chunks_written} chunk(s) flushed)",
-                            flush=True,
-                        )
+                print(
+                    f"[{count:5d}]  t={t_time:10.3f} s  dt={dt:.4f} s  "
+                    f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
+                    f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s  "
+                    f"(log: {logger.bytes_written + len(logger._buf)} bytes, "
+                    f"{logger.chunks_written} chunk(s) flushed)",
+                    flush=True,
+                )
 
             if check_exit():
                 break
 
-            time.sleep(0.005)
+            time.sleep(POLL_INTERVAL_S)
 
     except KeyboardInterrupt:
         pass    # Ctrl+C falls through to finally
 
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, saved_termios)
-        lgpio.gpio_free(gpio_h, DR_GPIO_LINE)
-        lgpio.gpiochip_close(gpio_h)
         spi.close()
         logger.close()
         print(f"\nExiting. Wrote {logger.bytes_written} bytes "
