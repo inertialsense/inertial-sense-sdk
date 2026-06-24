@@ -1095,7 +1095,7 @@ int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo)
     if (newInfo->hardwareId == 0 || newInfo->hardwareId == 0xFFFF) return 0;
 
     // Only valid date numbers
-    if (newInfo->date[0] == 0 || newInfo->date[0] == 0xFFFFFFFF) return 0;
+    if (newInfo->date[0] == 0 || newInfo->date[0] == (char)0xFF) return 0;
 
     return 1;
 }
