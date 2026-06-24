@@ -661,6 +661,9 @@ private:
 
     std::set<port_handle_t> portsToValidate;    //!< ports which were discovered but have not been validated as an ISDevice
 
+    device_listener_handle_t                m_deviceListenerHandle;  //!< handle for the deviceManagerHandler listener registered on the singleton DeviceManager; removed in ~InertialSense() so a destroyed instance never leaves a dangling listener
+    PortManager::port_listener_handle_t     m_portListenerHandle;    //!< handle for the portManagerHandler listener registered on the singleton PortManager; removed in ~InertialSense()
+
 
     // returns false if logger failed to open
     bool UpdateServer();

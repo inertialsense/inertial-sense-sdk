@@ -103,7 +103,7 @@ class SuperNPP():
             if os.path.isfile(item_path):
                 # Directory contains .raw or .dat file
                 if (".dat" in item or ".raw" in item) and "base_station.raw" not in item:
-                    if os.path.basename(directory) in self.params["blacklist_logs"]:
+                    if self.params.get("blacklist_logs") and os.path.basename(directory) in self.params["blacklist_logs"]:
                         print("Excluding blacklisted log: " + os.path.basename(directory))
                     else:
                         print("Adding log: " + directory)

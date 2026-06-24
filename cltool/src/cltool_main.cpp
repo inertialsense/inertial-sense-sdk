@@ -1481,7 +1481,7 @@ static int inertialSenseMain()
     if (g_commandLineOptions.replayDataLog)
     {
         // [REPLAY INSTRUCTION] 1.) Replay data log
-        return cltool_replayDataLog();
+        return cltool_replayDataLog() ? EXIT_CODE_SUCCESS : EXIT_CODE_INVALID_COMMAND_LINE;
     }
 
     // if event parsing return after completeing
