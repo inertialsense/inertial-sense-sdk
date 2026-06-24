@@ -321,8 +321,13 @@ def main() -> None:
         spi.xfer2(list(stop_pkt))
         time.sleep(0.05)
 
-        count     = 0
-        last_send = time.monotonic() - SEND_INTERVAL_S
+        count        = 0
+        last_send    = time.monotonic() - SEND_INTERVAL_S
+        prev_t_time  = None
+        ts_delta_min = math.inf
+        ts_delta_max = -math.inf
+        ts_delta_sum = 0.0
+        ts_delta_n   = 0
 
         while True:
             now = time.monotonic()
@@ -352,12 +357,30 @@ def main() -> None:
                 theta = rest[0:3]
                 vel   = rest[3:6]
 
+                # Track delta between consecutive PIMU message timestamps
+                # (t_time), as distinct from `dt` (the integration period
+                # field already inside the payload).
+                if prev_t_time is not None:
+                    ts_delta = t_time - prev_t_time
+                    ts_delta_min = min(ts_delta_min, ts_delta)
+                    ts_delta_max = max(ts_delta_max, ts_delta)
+                    ts_delta_sum += ts_delta
+                    ts_delta_n += 1
+                else:
+                    ts_delta = 0.0
+                prev_t_time = t_time
+                ts_delta_avg = (ts_delta_sum / ts_delta_n) if ts_delta_n else 0.0
+
                 print(
                     f"[{count:5d}]  t={t_time:10.3f} s  dt={dt:.4f} s  "
                     f"dTheta={theta[0]:9.5f}, {theta[1]:9.5f}, {theta[2]:9.5f} rad  "
                     f"dVel={vel[0]:9.5f}, {vel[1]:9.5f}, {vel[2]:9.5f} m/s  "
                     f"(log: {logger.bytes_written + len(logger._buf)} bytes, "
-                    f"{logger.chunks_written} chunk(s) flushed)",
+                    f"{logger.chunks_written} chunk(s) flushed)\n"
+                    f"          ts_delta: cur={ts_delta*1000:7.3f} ms  "
+                    f"min={(0.0 if ts_delta_min is math.inf else ts_delta_min*1000):7.3f} ms  "
+                    f"max={(0.0 if ts_delta_max == -math.inf else ts_delta_max*1000):7.3f} ms  "
+                    f"avg={ts_delta_avg*1000:7.3f} ms",
                     flush=True,
                 )
 
