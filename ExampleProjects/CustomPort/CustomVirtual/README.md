@@ -26,15 +26,40 @@ Note paths relative to SDK src/ folder.
 ## Documentation
 Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions if that suits you, but all information is contained in this document plus the files listed above.  
 
-The following implementation instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and **treat the code in this README as orientation only**.
+The following implementation instructions identify some examples of similar code to that found under corresponding "STEP X" markings in the source files.  Please refer to the source file code directly and **treat the incomplete snippets of code in this README as orientation only**.
 
 ## Implementation
 
-### Step 1: Choose Port Channel Implementation
+### Step 1: Create Port Channel Implementation
 Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base_port C object, and base_port then provides an API for channel access using a set of function hooks for methods implemented in your channel code.  The base_port comes with definitions for all kinds of different port types.  See the SDK [base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
 
+Some of the base_port function handles from base_port.h, a minimal viable set of which would be required for your specific application and you must implement for your project to provide the channel that the port will use:
+```C
+typedef struct base_port_s {
+    //...
+    pfnPortValidate portValidate;           //!< a function which confirms the viability of the port - this does not open or connect the port
+    pfnPortOpen portOpen;                   //!< a function to open/connect the specified port - may not be supported by all implementations
+    pfnPortClose portClose;                 //!< a function to close/disconnect the specified port - may not be supported by all implementations
+    pfnPortFree portFree;                   //!< a function which returns the number of bytes which can safely be written
+    pfnPortAvailable portAvailable;         //!< a function which returns the number of bytes currently available, waiting to be read
+    pfnPortFlush portFlush;                 //!< a function to flush all data currently waiting to be read
+    pfnPortDrain portDrain;                 //!< a function to clear/drain all data currently waiting to be written/sent to the port
+    pfnPortRead portRead;                   //!< a function to return copy some number of bytes available for reading into a local buffer (and removed from the ports read buffer)
+    //...
+} base_port_t;
+```
 
-In this example we use the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h), which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware:
+Some of the port types defined in base_port.h:
+```C
+//...
+#define PORT_TYPE__UDP              0x0006      //!< this port wraps a UDP-based network socket
+#define PORT_TYPE__FILE             0x0007      //!< this port wraps a OS file handle/stream
+#define PORT_TYPE__LOOPBACK         0x00FE      //!< this port is a loopback to another port.
+#define PORT_TYPE__COMM             0x1000      //!< this is a modifier for other port types, indicating that the port is a communication port, with a is_comm instance and message/packet parsing capabilities
+//...
+```
+
+In this example we use for our channel the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h), which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware:
 
 ```C
 typedef struct test_port_s {
@@ -54,6 +79,34 @@ typedef struct test_port_s {
 } test_port_t;
 
 ```
+
+In [test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp) we can see various functions defined for specific channel usage, which will provide the underlying functionality for the base_port once properly assigned, such as:
+
+```C
+static int testPortFree(port_handle_t port) {
+    return ringBufFree(&((test_port_t*)port)->portRingBuf);
+}
+
+static int testPortAvailable(port_handle_t port) {
+    return ringBufUsed(&((test_port_t*)port)->portRingBuf);
+}
+```
+
+test_serial_utils.cpp also provides an initialization function that links the handles of the test port channel implementation to the base_port, allowing us to use the generic base_port API regardless of the details of the underlying channel implementation:
+
+```C
+void initTestPorts() {
+   //...
+        port.base.portRead = testPortRead;
+        port.base.portWrite = testPortWrite;
+        port.base.portFree = testPortFree;
+        port.base.portAvailable = testPortAvailable;
+        port.base.portName = testPortName;
+   //...
+}
+```
+
+We will later show where this init function would be called by your new custom Port Factory to complete set up of the base_port interface and allow you to send data.
 
 
 ### Step 2: Create New Project Files and Include Headers
@@ -123,7 +176,12 @@ else
 
 port_handle_t port = (port_handle_t) testPort;   
 ```
-Run intialization and validation routines on the new port.
+
+Now that you have a port handle that points to a base_port object, we can set up the base_port with the channel implementation.  Run intialization and validation routines on the new port.  For example, run this function found in test_serial_utils.cpp:
+
+```C++
+initTestPorts();
+```
 
 Add in additional support functions as needed for your application.  For example, in our virtual comm port code we use this function:
 ```C++
