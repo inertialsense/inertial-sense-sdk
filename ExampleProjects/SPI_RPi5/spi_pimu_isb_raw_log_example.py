@@ -93,12 +93,12 @@ SPI_SPEED_HZ = 25_000_000   # 20 MHz; exceeds the documented 3 MHz max for
                             # reads since the IMX SPI slave has no Data Ready
                             # handshake to throttle the host at this rate
 
-SPI_READ_SIZE = 250         # bytes to read each poll tick
+SPI_READ_SIZE = 100         # bytes to read each poll tick
 
 NAV_DT_MS       = 4         # IMX-6 nav period in ms (used for period calculation)
 PIMU_PERIOD_MS  = 4         # requested DID_PIMU broadcast period (~250 Hz)
 SEND_INTERVAL_S = 1.0       # how often to (re)send the GET_DATA command
-POLL_INTERVAL_S = 0.003     # delay between SPI read ticks
+POLL_INTERVAL_S = 0.001     # delay between SPI read ticks
 
 LOG_DEVICE_SERIAL_NUM = 0   # set to the device's serial number if known (DID_DEV_INFO)
 LOG_DIRECTORY_DEFAULT = "./IS_logs"
