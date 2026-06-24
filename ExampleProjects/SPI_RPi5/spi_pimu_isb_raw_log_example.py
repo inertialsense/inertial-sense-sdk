@@ -88,7 +88,10 @@ import spidev
 SPI_BUS      = 0            # SPI bus number -> /dev/spidevBUS.DEVICE
 SPI_DEVICE   = 0            # SPI device (chip-select index)
 SPI_MODE     = 3            # CPOL=1, CPHA=1  required by the IMX
-SPI_SPEED_HZ = 3_000_000    # 3 MHz; Strategy A (no DR) is limited to 3 MHz max
+SPI_SPEED_HZ = 20_000_000   # 20 MHz; exceeds the documented 3 MHz max for
+                            # Strategy A (no DR) — may cause corrupted/missed
+                            # reads since the IMX SPI slave has no Data Ready
+                            # handshake to throttle the host at this rate
 
 SPI_READ_SIZE = 250         # bytes to read each poll tick
 
