@@ -25,9 +25,9 @@ using namespace std;
 #define DEBUG_PRINTF
 #endif
 
-void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig);
+void init_sat_and_sig(gnss_sat_t* gnssSat, gnss_sig_t* gnssSig);
 
-void compareGpsPos(gnss_pos_t &g1, gnss_pos_t &g2)
+void compareGnssPos(gnss_pos_t &g1, gnss_pos_t &g2)
 {
     EXPECT_NEAR(g1.timeOfWeekMs, g2.timeOfWeekMs, 1);
     EXPECT_EQ(g1.week, g2.week);
@@ -53,7 +53,7 @@ void compareGpsPos(gnss_pos_t &g1, gnss_pos_t &g2)
     EXPECT_EQ(g1.status2, g2.status2);
 }
 
-void compareGpsVel(gnss_vel_t &g1, gnss_vel_t &g2)
+void compareGnssVel(gnss_vel_t &g1, gnss_vel_t &g2)
 {
     EXPECT_NEAR(g1.timeOfWeekMs, g2.timeOfWeekMs, 1);
     for (int i=0; i<3; i++)
@@ -152,7 +152,7 @@ TEST(protocol_nmea, zda_cpu_time_skip)
 #ifdef _WIN32
     GTEST_SKIP() << "Skipping test on Windows.";
 #endif
-    printf("DESCRIPTION: Test that ZDA work around will pregress linearly and not apply incorrectly apply offset when GPS update is missing.\n");
+    printf("DESCRIPTION: Test that ZDA work around will pregress linearly and not apply incorrectly apply offset when GNSS update is missing.\n");
     initGlobals();
     char buf[1024]; 
     gnss_pos_t pos = {};
@@ -422,8 +422,8 @@ TEST(protocol_nmea, PGPSP)
     gnss_vel_t resultVel = {};
     nmea_parse_pgpsp(resultPos, resultVel, abuf, ASCII_BUF_LEN);
 
-    compareGpsPos(pos, resultPos);
-    compareGpsVel(vel, resultVel);
+    compareGnssPos(pos, resultPos);
+    compareGnssVel(vel, resultVel);
 }
 
 #define OPERATING_LIMIT_MPS     500     // (m/s)
@@ -467,8 +467,8 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
         gnss_vel_t resultVel = {};
         nmea_parse_pgpsp(resultPos, resultVel, abuf, ASCII_BUF_LEN);
 
-        compareGpsPos(pos, resultPos);
-        compareGpsVel(vel, resultVel);
+        compareGnssPos(pos, resultPos);
+        compareGnssVel(vel, resultVel);
     }
 }
 
@@ -513,7 +513,7 @@ TEST(protocol_nmea, GGA)
     nmea_parse_gga(abuf, ASCII_BUF_LEN, pos2, t, utcWeekday);
     pos.hAcc = pos2.hAcc;
 
-    compareGpsPos(pos, pos2);
+    compareGnssPos(pos, pos2);
 }
 
 TEST(protocol_nmea, GGA_sweep_operating_range)
@@ -560,7 +560,7 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
         nmea_parse_gga(abuf, ASCII_BUF_LEN, pos2, t, utcWeekday);
         pos.hAcc = pos2.hAcc;
 
-        compareGpsPos(pos, pos2);
+        compareGnssPos(pos, pos2);
 
         char abuf2[ASCII_BUF_LEN] = {0};
         n = nmea_gga(abuf2, ASCII_BUF_LEN, pos2);
@@ -1254,14 +1254,14 @@ TEST(protocol_nmea, GSV_binary_GSV)
     buf += "$GLGSV,2,2,07" ",87,47,127,35" ",88,73,350,34" ",87,47,127,20"                      "*53\r\n";
 
     uint32_t cnoSum = 0, cnoCount = 0;
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
     for (char *ptr = (char*)(buf.c_str()); ptr < (buf.c_str() + buf.size());)
     {
-        ptr = nmea_parse_gsv(ptr, (int)buf.size(), &gpsSat, &gpsSig, &cnoSum, &cnoCount);
+        ptr = nmea_parse_gsv(ptr, (int)buf.size(), &gnssSat, &gnssSig, &cnoSum, &cnoCount);
     }
     char abuf[ASCII_BUF2] = { 0 };
-    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
     EXPECT_EQ(abuf_n,  buf.size());
     EXPECT_TRUE(memcmp(abuf, buf.c_str(), abuf_n) == 0) << "Before (" << buf.size() << "):\n" << buf << "After (" << abuf_n << "):\n" << abuf;
@@ -1302,15 +1302,15 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
     buf += "$GLGSV,1,1,01" ",87,47,127,20"                                                  ",3" "*41\r\n";
 
     uint32_t cnoSum = 0, cnoCount = 0;
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
     char abuf[ASCII_BUF2] = { 0 };
 
     for (char *ptr = (char*)(buf.c_str()); ptr < (buf.c_str() + buf.size());)
     {
-        ptr = nmea_parse_gsv(ptr, (int)buf.size(), &gpsSat, &gpsSig, &cnoSum, &cnoCount);
+        ptr = nmea_parse_gsv(ptr, (int)buf.size(), &gnssSat, &gnssSig, &cnoSum, &cnoCount);
     }
-    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
     EXPECT_EQ(abuf_n,  buf.size());
     EXPECT_TRUE(memcmp(abuf, buf.c_str(), abuf_n) == 0) << "Before (" << buf.size() << "):\n" << buf << "After (" << abuf_n << "):\n" << abuf;
@@ -1366,10 +1366,10 @@ void compare_gnss_sig_t(gnss_sig_t& dstSig, gnss_sig_t& srcSig) {
 
 TEST(protocol_nmea, binary_GSV_binary)
 {
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
 
-    init_sat_and_sig(&gpsSat, &gpsSig);
+    init_sat_and_sig(&gnssSat, &gnssSig);
     clear_GSV_values();
 
     string buf = "$ASCE,0,15,1*3D\r\n";
@@ -1381,7 +1381,7 @@ TEST(protocol_nmea, binary_GSV_binary)
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1394,14 +1394,14 @@ TEST(protocol_nmea, binary_GSV_binary)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        compare_gnss_sat_t(outSat, gpsSat);
-        compare_gnss_sig_t(outSig, gpsSig);
+        compare_gnss_sat_t(outSat, gnssSat);
+        compare_gnss_sig_t(outSig, gnssSig);
     }
 
     {   // Test NMEA protocol 4.10
         nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1414,17 +1414,17 @@ TEST(protocol_nmea, binary_GSV_binary)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        compare_gnss_sat_t(outSat, gpsSat);
-        compare_gnss_sig_t(outSig, gpsSig);
+        compare_gnss_sat_t(outSat, gnssSat);
+        compare_gnss_sig_t(outSig, gnssSig);
     }
 }
 
 TEST(protocol_nmea, GNGSV)
 {
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
 
-    init_sat_and_sig(&gpsSat, &gpsSig);
+    init_sat_and_sig(&gnssSat, &gnssSig);
     clear_GSV_values();
 
     string buf = "$ASCE,0,GNGSV,1*72\r\n";
@@ -1436,7 +1436,7 @@ TEST(protocol_nmea, GNGSV)
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1449,14 +1449,14 @@ TEST(protocol_nmea, GNGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        compare_gnss_sat_t(outSat, gpsSat);
-        compare_gnss_sig_t(outSig, gpsSig);
+        compare_gnss_sat_t(outSat, gnssSat);
+        compare_gnss_sig_t(outSig, gnssSig);
     }
 
     {   // Test NMEA protocol 4.10
         nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1469,17 +1469,17 @@ TEST(protocol_nmea, GNGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        compare_gnss_sat_t(outSat, gpsSat);
-        compare_gnss_sig_t(outSig, gpsSig);
+        compare_gnss_sat_t(outSat, gnssSat);
+        compare_gnss_sig_t(outSig, gnssSig);
     }
 }
 
 TEST(protocol_nmea, GPGSV)
 {
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
 
-    init_sat_and_sig(&gpsSat, &gpsSig);
+    init_sat_and_sig(&gnssSat, &gnssSig);
     clear_GSV_values();
 
     string buf = "$ASCE,0,GPGSV,1*6C\r\n";
@@ -1491,7 +1491,7 @@ TEST(protocol_nmea, GPGSV)
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1520,7 +1520,7 @@ TEST(protocol_nmea, GPGSV)
     {   // Test NMEA protocol 4.10
         nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1547,10 +1547,10 @@ TEST(protocol_nmea, GPGSV)
 
 TEST(protocol_nmea, GAGSV)
 {
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
 
-    init_sat_and_sig(&gpsSat, &gpsSig);
+    init_sat_and_sig(&gnssSat, &gnssSig);
     clear_GSV_values();
 
     string buf = "$ASCE,0,GAGSV,1*7D\r\n";
@@ -1562,7 +1562,7 @@ TEST(protocol_nmea, GAGSV)
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1591,7 +1591,7 @@ TEST(protocol_nmea, GAGSV)
     {   // Test NMEA protocol 4.10
         nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1618,10 +1618,10 @@ TEST(protocol_nmea, GAGSV)
 
 TEST(protocol_nmea, GBGSV)
 {
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
 
-    init_sat_and_sig(&gpsSat, &gpsSig);
+    init_sat_and_sig(&gnssSat, &gnssSig);
     clear_GSV_values();
 
     string buf = "$ASCE,0,GBGSV,1*7E\r\n";
@@ -1633,7 +1633,7 @@ TEST(protocol_nmea, GBGSV)
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1662,7 +1662,7 @@ TEST(protocol_nmea, GBGSV)
     {   // Test NMEA protocol 4.10
         nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1689,10 +1689,10 @@ TEST(protocol_nmea, GBGSV)
 
 TEST(protocol_nmea, GLGSV)
 {
-    gnss_sat_t gpsSat = {};
-    gnss_sig_t gpsSig = {};
+    gnss_sat_t gnssSat = {};
+    gnss_sig_t gnssSig = {};
 
-    init_sat_and_sig(&gpsSat, &gpsSig);
+    init_sat_and_sig(&gnssSat, &gnssSig);
     clear_GSV_values();
 
     string buf = "$ASCE,0,GLGSV,1*70\r\n";
@@ -1704,7 +1704,7 @@ TEST(protocol_nmea, GLGSV)
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1733,7 +1733,7 @@ TEST(protocol_nmea, GLGSV)
     {   // Test NMEA protocol 4.10
         nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
-        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gnssSat, gnssSig);
 
         gnss_sat_t outSat = {};
         gnss_sig_t outSig = {};
@@ -1837,7 +1837,7 @@ TEST(protocol_nmea, checksum)
 }
 #endif
 
-void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig)
+void init_sat_and_sig(gnss_sat_t* gnssSat, gnss_sig_t* gnssSig)
 {
     // Satellite data array
     static const gnss_sat_sv_t sat_data[] = 
@@ -1928,25 +1928,25 @@ void init_sat_and_sig(gnss_sat_t* gpsSat, gnss_sig_t* gpsSig)
         {SAT_SV_GNSS_ID_GLO, 24, SAT_SV_SIG_ID_GLONASS_L1OF, 32, 7, 41}
     };
 
-    // Initialize gpsSat
-    gpsSat->timeOfWeekMs = 436693200;
-    gpsSat->numSats = sizeof(sat_data)/sizeof(gnss_sat_sv_t);
-    for (size_t i = 0; i < gpsSat->numSats; i++) 
+    // Initialize gnssSat
+    gnssSat->timeOfWeekMs = 436693200;
+    gnssSat->numSats = sizeof(sat_data)/sizeof(gnss_sat_sv_t);
+    for (size_t i = 0; i < gnssSat->numSats; i++) 
     {
-        gpsSat->sat[i] = sat_data[i];
+        gnssSat->sat[i] = sat_data[i];
     }
 
-    // Initialize gpsSig
-    gpsSig->timeOfWeekMs = 436693200;
-    gpsSig->numSigs = sizeof(sig_data)/sizeof(gnss_sig_sv_t);
-    for (size_t i = 0; i < gpsSig->numSigs; i++) 
+    // Initialize gnssSig
+    gnssSig->timeOfWeekMs = 436693200;
+    gnssSig->numSigs = sizeof(sig_data)/sizeof(gnss_sig_sv_t);
+    for (size_t i = 0; i < gnssSig->numSigs; i++) 
     {
-        gpsSig->sig[i] = sig_data[i];
+        gnssSig->sig[i] = sig_data[i];
     }
 
     // Array bounds checks
-    ASSERT_TRUE(gpsSat->numSats <= MAX_NUM_SATELLITES);
-    ASSERT_TRUE(gpsSig->numSigs <= MAX_NUM_SAT_SIGNALS);
+    ASSERT_TRUE(gnssSat->numSats <= MAX_NUM_SATELLITES);
+    ASSERT_TRUE(gnssSig->numSigs <= MAX_NUM_SAT_SIGNALS);
 }
 
 
