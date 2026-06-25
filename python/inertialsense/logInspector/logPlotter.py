@@ -3196,6 +3196,8 @@ class logPlot:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadGyros(0, did=did)
+        if not len(sensors):
+            return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve the initial sensors list for later use in subplot configuration and CSV writing
@@ -3291,6 +3293,8 @@ class logPlot:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadAccels(0, did=did)
+        if not len(sensors):
+            return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve initial sensors for subplot configuration and CSV writing.
