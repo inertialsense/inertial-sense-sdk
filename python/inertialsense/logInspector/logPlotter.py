@@ -3270,7 +3270,7 @@ class logPlot:
         self.setup_and_wire_legend()
 
         with open(self.log.directory + '/allan_deviation_pqr.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
+            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R\n')
             f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
             today = date.today()
             for idx, d in enumerate(included_devs_pqr):
@@ -3369,7 +3369,7 @@ class logPlot:
         self.setup_and_wire_legend()
 
         with open(self.log.directory + '/allan_deviation_acc.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
+            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,VRW-X,VRW-Y,VRW-Z\n')
             f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
             today = date.today()
             for idx, d in enumerate(included_devs_acc):
