@@ -161,19 +161,22 @@ static void display_server_client_status(bool showMessageSummary=false, bool ref
     static uint64_t serverByteCount = 0;
     static uint64_t serverByteRateTimeMsLast = 0;
     static uint64_t serverByteCountLast = 0;
+    static uint16_t numClients = 0;
+    static uint16_t numClientsLast = 0;
     static stringstream outstream;
 
     port_stats_t correctionStats = {};
     if (g_correctionOutput && g_correctionOutput->getSourcePort()) {
         // remember, if we're a "BASE", we're ARE a Correction SERVER
         correctionStats = *portStats(g_correctionOutput->getSourcePort());
+        numClients = g_correctionOutput->getActiveClients();
     } else if (g_correctionInput && g_correctionInput->getSourcePort()) {
         // but, if we are a "ROVER", we're USING a Correction SERVICE
         correctionStats = *portStats(g_correctionInput->getSourcePort());
     }
 
     uint64_t newServerByteCount = correctionStats.rxBytes;  // this is the bytes RECEIVED FROM the source device (which should be SENT TO all connected clients
-    if (serverByteCount != newServerByteCount)
+    if ((serverByteCount != newServerByteCount) || (numClients != numClientsLast))
     {
         serverByteCount = newServerByteCount;
 
@@ -204,7 +207,7 @@ static void display_server_client_status(bool showMessageSummary=false, bool ref
 
         if (g_correctionOutput)
         {   // Server
-            int numClients = g_correctionOutput->getActiveClients();
+            numClients = g_correctionOutput->getActiveClients();
             outstream << "Active Connections: " << numClients << "    \n";
             if (showMessageSummary)
             {
@@ -948,6 +951,8 @@ void cltool_firmwareUpdateWaiter()
 
 static int cltool_createHost()
 {
+    g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_PRETTY;
+    g_inertialSenseDisplay.SetDisplayMode(g_commandLineOptions.displayMode);
     InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
     g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);

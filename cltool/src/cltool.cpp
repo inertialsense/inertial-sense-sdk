@@ -310,7 +310,7 @@ void print_dids()
     cltool_outputHelp();
 }
 
-void enable_display_mode(int mode = cInertialSenseDisplay::DMODE_PRETTY)
+void enable_display_mode(cInertialSenseDisplay::eDisplayMode mode = cInertialSenseDisplay::DMODE_PRETTY)
 {   
     g_commandLineOptions.displayMode = mode;
 }
@@ -1451,14 +1451,14 @@ void cltool_outputUsage()
 	cout << "OPTIONS (RTK Rover / Base)" << endlbOn;
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
-	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
-	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777" << endl;
-	cout << "            -rover=TCP:UBLOX:192.168.1.100:7777" << endl;
-	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
-	cout << "    -base=" << boldOff << "TCP://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
-	cout << "            -base=TCP://:7777                           (IP is optional)" << endl;
-	cout << "            -base=TCP://192.168.1.43:7777" << endl;
-	cout << "            -base=TCP://[::1]:7777                      (IPv6 host in brackets)" << endl;
+	cout << "            -rover=ntrip://192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
+	cout << "            -rover=tcp://192.168.1.100:7777" << endl;
+	cout << "            -rover=tcp://TCP:UBLOX:192.168.1.100:7777" << endl;
+	cout << "            -rover=/dev/" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
+	cout << "    -base=" << boldOff << "tcp://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
+	cout << "            -base=tcp://:7777                           (IP is optional)" << endl;
+	cout << "            -base=tcp://192.168.1.43:7777" << endl;
+	cout << "            -base=tcp://[::1]:7777                      (IPv6 host in brackets)" << endl;
 	cout << endlbOn;	
 	cout << "CLTool - " << boldOff << cltool_version() << endl;
 
