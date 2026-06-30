@@ -3,6 +3,47 @@
 #include "data_sets_canbus.h"
 
 // ============================================================================
+// Dispatch
+// ============================================================================
+
+/** @brief Dispatch an ISB-to-CAN conversion by CAN message ID; calls the
+ *         appropriate CAN_ISB_*_to_CAN_* function for the given cid. */
+int CAN_ISB_dispatch(void* data, can_cid_t cid, is_can_payload* out)
+{
+    switch (cid)
+    {
+    case CID_INS_TIME:          return CAN_ISB_INS_to_CAN_time(static_cast<ins_1_t*>(data), out);
+    case CID_INS_STATUS:        return CAN_ISB_INS_to_CAN_ins_status(static_cast<ins_1_t*>(data), out);
+    case CID_INS_EULER:         return CAN_ISB_INS_to_CAN_ins_euler(static_cast<ins_1_t*>(data), out);
+    case CID_INS_QUATN2B:       return CAN_ISB_INS_to_CAN_quatn2b(static_cast<ins_2_t*>(data), out);
+    case CID_INS_QUATE2B:       return CAN_ISB_INS_to_CAN_quate2b(static_cast<ins_4_t*>(data), out);
+    case CID_INS_UVW:           return CAN_ISB_INS_to_CAN_uvw(static_cast<ins_1_t*>(data), out);
+    case CID_INS_VE:            return CAN_ISB_INS_to_CAN_ve(static_cast<ins_4_t*>(data), out);
+    case CID_INS_LAT:           return CAN_ISB_INS_to_CAN_latitude(static_cast<ins_1_t*>(data), out);
+    case CID_INS_LON:           return CAN_ISB_INS_to_CAN_longitude(static_cast<ins_1_t*>(data), out);
+    case CID_INS_ALT:           return CAN_ISB_INS_to_CAN_altitude(static_cast<ins_1_t*>(data), out);
+    case CID_INS_NORTH_EAST:    return CAN_ISB_INS_to_CAN_ned_north_east(static_cast<ins_1_t*>(data), out);
+    case CID_INS_DOWN:          return CAN_ISB_INS_to_CAN_ned_down(static_cast<ins_1_t*>(data), out);
+    case CID_INS_ECEF_X:        return CAN_ISB_INS_to_CAN_ecef_x(static_cast<ins_4_t*>(data), out);
+    case CID_INS_ECEF_Y:        return CAN_ISB_INS_to_CAN_ecef_y(static_cast<ins_4_t*>(data), out);
+    case CID_INS_ECEF_Z:        return CAN_ISB_INS_to_CAN_ecef_z(static_cast<ins_4_t*>(data), out);
+    case CID_INS_MSL:           return CAN_ISB_INS_to_CAN_msl(static_cast<ins_3_t*>(data), out);
+    case CID_PREINT_PX:         return CAN_ISB_PIMU_to_CAN_pimu_px(static_cast<pimu_t*>(data), out);
+    case CID_PREINT_QY:         return CAN_ISB_PIMU_to_CAN_pimu_qy(static_cast<pimu_t*>(data), out);
+    case CID_PREINT_RZ:         return CAN_ISB_PIMU_to_CAN_pimu_rz(static_cast<pimu_t*>(data), out);
+    case CID_DUAL_PX:           return CAN_ISB_IMU_to_CAN_dual_imu_px(static_cast<imu_t*>(data), out);
+    case CID_DUAL_QY:           return CAN_ISB_IMU_to_CAN_dual_imu_qy(static_cast<imu_t*>(data), out);
+    case CID_DUAL_RZ:           return CAN_ISB_IMU_to_CAN_dual_imu_rz(static_cast<imu_t*>(data), out);
+    case CID_GNSS1_POS:         return CAN_ISB_GNSS_to_CAN_gnss1_pos(static_cast<gnss_pos_t*>(data), out);
+    case CID_GNSS2_POS:         return CAN_ISB_GNSS_to_CAN_gnss2_pos(static_cast<gnss_pos_t*>(data), out);
+    case CID_GNSS1_RTK_POS_REL: return CAN_ISB_GNSS_to_CAN_gnss1_rtk_pos_rel(static_cast<gnss_rtk_rel_t*>(data), out);
+    case CID_GNSS2_RTK_CMP_REL: return CAN_ISB_GNSS_to_CAN_gnss2_rtk_cmp_rel(static_cast<gnss_rtk_rel_t*>(data), out);
+    case CID_ROLL_ROLLRATE:     return CAN_ISB_IMU_to_CAN_roll_rollRate(static_cast<imu_t*>(data), out);
+    default:                    return -1;
+    }
+}
+
+// ============================================================================
 // ISB -> CAN
 // ============================================================================
 

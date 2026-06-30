@@ -6,6 +6,21 @@
 
 #include <stdint.h>
 
+/**
+ * @brief Dispatch a single ISB-to-CAN conversion by CAN message ID.
+ *
+ * Casts @p data to the IS data structure type required by @p cid and calls
+ * the corresponding @c CAN_ISB_*_to_CAN_* function.  The caller is responsible
+ * for ensuring @p data points to a valid structure of the correct type for the
+ * given @p cid (see the per-CID mapping in protocol_CAN.cpp).
+ *
+ * @param data  Pointer to the source IS data structure (e.g. ins_1_t*, imu_t*).
+ * @param cid   CAN message ID selecting which payload to build (@c can_cid_t).
+ * @param out   CAN payload union to write into.
+ * @return      Number of bytes to transmit, or -1 if @p cid is unrecognised.
+ */
+int CAN_ISB_dispatch(void* data, can_cid_t cid, is_can_payload* out);
+
 // ============================================================================
 // ISB -> CAN
 // Each function packs the relevant fields of an IS data structure into the
