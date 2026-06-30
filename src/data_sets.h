@@ -5883,7 +5883,7 @@ typedef struct
 } runtime_profiler_t;
 
 
-enum
+enum can_cid_t
 {
     CID_INS_TIME,
     CID_INS_STATUS,
