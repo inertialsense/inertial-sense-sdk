@@ -42,7 +42,7 @@ public:
  * If this passes, the test passes.
  */
 
-TEST(ROSCommunicationsTests, test_navsatfix ) {
+TEST(ROSCommunicationsTests, test_navsatfix) {
     auto testNode = std::make_shared<gpsTestNode>();
     testNode->init();
 
@@ -79,7 +79,7 @@ TEST(ROSCommunicationsTests, test_navsatfix ) {
         }
 
         now = testNode->now().seconds();
-    } while(!testNode->navsatfix_passed && (now < expires));
+    } while (!testNode->navsatfix_passed && (now < expires));
 
     EXPECT_TRUE(testNode->navsatfix_passed);
     EXPECT_GE(testNode->msg_NavSatFix.latitude, -90.0);

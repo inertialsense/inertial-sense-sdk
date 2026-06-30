@@ -14,11 +14,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // #define LL_VALIDATE_INPUT          // Uncomment to check that inputs are valid, not NULL.
 
-void linkedListClear( linked_list_t *ll )
+void linkedListClear(linked_list_t *ll)
 {
 #ifdef LL_VALIDATE_INPUT
     // Validate Input
-    if( ll==0 )
+    if (ll==0)
         return;
 #endif
 
@@ -27,15 +27,15 @@ void linkedListClear( linked_list_t *ll )
 }
 
 
-void linkedListInsertAtHead( linked_list_t *ll, linked_list_node_t *newNode )
+void linkedListInsertAtHead(linked_list_t *ll, linked_list_node_t *newNode)
 {
 #ifdef LL_VALIDATE_INPUT
     // Validate Input
-    if( ll==0 || newNode==0 )
+    if (ll==0 || newNode==0)
         return;
 #endif
 
-    if( ll->head )
+    if (ll->head)
     {   // Non-empty linked list.  
         ll->head->prev = newNode;
         newNode->nextCt = ll->head;
@@ -50,13 +50,13 @@ void linkedListInsertAtHead( linked_list_t *ll, linked_list_node_t *newNode )
 }
 
 
-void linkedListInsertBefore( linked_list_t *ll, linked_list_node_t *node, linked_list_node_t *newNode )
+void linkedListInsertBefore(linked_list_t *ll, linked_list_node_t *node, linked_list_node_t *newNode)
 {
     linked_list_node_t *prev;
 
 #ifdef LL_VALIDATE_INPUT
     // Validate Input
-    if( ll==0 || node==0 || newNode==0 )
+    if (ll==0 || node==0 || newNode==0)
         return;
 #endif
 
@@ -64,7 +64,7 @@ void linkedListInsertBefore( linked_list_t *ll, linked_list_node_t *node, linked
     prev = (linked_list_node_t*)(node->prev);
 
     // Prev <-> newNode
-    if( prev )
+    if (prev)
     {   // Node is NOT head of linked list (prev exists).
         prev->nextCt = newNode;
         newNode->prev = prev;
@@ -81,14 +81,14 @@ void linkedListInsertBefore( linked_list_t *ll, linked_list_node_t *node, linked
 }
 
 
-void linkedListRemove( linked_list_t *ll, linked_list_node_t *node )
+void linkedListRemove(linked_list_t *ll, linked_list_node_t *node)
 {
     linked_list_node_t* prev;
     linked_list_node_t* next;
 
 #ifdef LL_VALIDATE_INPUT
     // Validate Input
-    if( ll==0 || node==0 )
+    if (ll==0 || node==0)
         return;
 #endif
 
@@ -97,17 +97,17 @@ void linkedListRemove( linked_list_t *ll, linked_list_node_t *node )
     next = (linked_list_node_t*)(node->nextCt);
 
     // Update Head and Tail pointers if needed
-    if( ll->head == node )  
+    if (ll->head == node)  
         ll->head = next;
     
-    if( ll->tail == node )  
+    if (ll->tail == node)  
         ll->tail = prev;
 
     // Remove item from linked list, connect adjacent nodes
-    if(prev)    
+    if (prev)    
         prev->nextCt = next;
 
-    if(next)    
+    if (next)    
         next->prev = prev;
 }
 

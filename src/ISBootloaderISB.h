@@ -29,14 +29,15 @@ class cISBootloaderISB : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderISB(
-        ISBootloader::pfnBootloadProgress upload_cb,
-        ISBootloader::pfnBootloadProgress verify_cb,
-        ISBootloader::pfnBootloadStatus info_cb,
-        serial_port_t* port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb,
+        port_handle_t port
+  ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_ISB;
+        m_bootloader_type = IS_BL_TYPE_ISB;
+        m_port_name = std::string(portName(port));
     }
     
     ~cISBootloaderISB() 
@@ -71,7 +72,7 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    is_operation_result handshake_sync(serial_port_t* s);
+    is_operation_result handshake_sync(port_handle_t port);
 
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 
@@ -101,10 +102,13 @@ private:
     is_operation_result fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum);
     is_operation_result download_data(int startOffset, int endOffset);
 
+    bool hasHandshake = false;          // true if we've negotiated a handshake previously on this port/connection
+
     // Verification parameters
     int m_currentPage;
     int m_verifyCheckSum;
 
+    is_operation_result process_hex_record(const std::string& record, int* verifyCheckSum);
     is_operation_result process_hex_file(FILE* file);
 
     struct {
@@ -121,6 +125,13 @@ private:
 
     static std::vector<uint32_t> rst_serial_list;
     static std::mutex rst_serial_list_mutex;
+
+    int currentPage = 0;
+    int currentOffset = m_isb_props.app_offset;
+
+    static const int HEX_BUFFER_SIZE = 1024;
+    unsigned char output[HEX_BUFFER_SIZE * 2]; // big enough to store an entire extra line of buffer if needed
+
 };
 
-#endif	// __IS_BOOTLOADER_ISB_H
+#endif    // __IS_BOOTLOADER_ISB_H

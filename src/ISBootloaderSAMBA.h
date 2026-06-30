@@ -25,15 +25,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cISBootloaderSAMBA : public ISBootloader::cISBootloaderBase
 {
 public:
-    cISBootloaderSAMBA( 
-        ISBootloader::pfnBootloadProgress upload_cb,
-        ISBootloader::pfnBootloadProgress verify_cb,
-        ISBootloader::pfnBootloadStatus info_cb,
-        serial_port_t* port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+    cISBootloaderSAMBA(
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb,
+        port_handle_t port
+  ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb }
     {
-        m_port = port;
-        m_device_type = ISBootloader::IS_DEV_TYPE_SAMBA;
+        m_port = (port_handle_t)port;
+        m_port_name = std::string(portName(port));
+        m_bootloader_type = IS_BL_TYPE_SAMBA;
     }
     
     ~cISBootloaderSAMBA() 
@@ -130,4 +131,4 @@ private:
     uint32_t checksum;
 };
 
-#endif	// __IS_BOOTLOADER_ISB_H
+#endif    // __IS_BOOTLOADER_ISB_H

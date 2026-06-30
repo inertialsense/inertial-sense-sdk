@@ -71,14 +71,14 @@ void md5_init(md5Context_t& context) {
 }
 
 // MD5 block update operation
-void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen) {
-    unsigned int i, index, partLen;
+void md5_update(md5Context_t& context, const unsigned char *input, size_t inputLen) {
+    size_t i, index, partLen;
 
     if (!inputLen)
         return; // don't do ANY processing if there is no data passed.
 
     // Compute number of bytes mod 64
-    index = (unsigned int)((context.count[0] >> 3) & 0x3F);
+    index = (size_t)((context.count[0] >> 3) & 0x3F);
 
     // Update number of bits
     if ((context.count[0] += ((uint32_t)inputLen << 3)) < ((uint32_t)inputLen << 3)) {
@@ -256,37 +256,37 @@ void md5_hash(md5hash_t& md5, uint32_t data_len, uint8_t* data)
 
 /**
  * Gets the file size and calculated md5sum of the specified file.
- * @param filename the file to validate/fetch details for
+ * @param is [IN] the input stream to validate/fetch details for
  * @param filesize [OUT] the size of the file, as read from the scan
  * @param md5result [OUT] the MD5 checksum calculated for the file
  * @return 0 on success, errno (negative) if error
  */
-int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
+int md5_stream_details(std::istream& is, size_t& filesize, md5hash_t& md5)
 {
     if (!is) return -EINVAL;
-    if (!is->good()) return -errno;
+    if (!is.good()) return -errno;
 
     md5Context_t context;
     md5_init(context);
 
     filesize = 0;
-    is->seekg(ios_base::beg);
-    while (is && (is->tellg() != -1))
+    is.seekg(ios_base::beg);
+    while (is && (is.tellg() != -1))
     {
         uint8_t buff[MD5_BUFF_SIZE] = {};
-        is->read((char *)buff, sizeof(buff));
-        int len = (int)is->gcount();
+        is.read((char *)buff, sizeof(buff));
+        int len = (int)is.gcount();
 
         md5_update(context, (const unsigned char *)buff, (unsigned int)len);
 
-        if (is->eof()) //  || (len != sizeof(buff)))
+        if (is.eof()) //  || (len != sizeof(buff)))
         {
             filesize += len;
             break;
         }
         else
         {
-            int32_t tell = (int32_t)is->tellg();
+            int32_t tell = (int32_t)is.tellg();
             if (tell != -1) {
                 filesize = tell;
             }
@@ -296,9 +296,9 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
     md5_final(context, md5);
 
     // reset back to the start of the stream before returning
-    if (is->fail())
-        is->clear();
-    is->seekg(ios_base::beg);
+    if (is.fail())
+        is.clear();
+    is.seekg(ios_base::beg);
     return 0;
 }
 
@@ -311,7 +311,7 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
  */
 int md5_file_details(const std::string& filename, size_t& filesize, md5hash_t& md5) {
     ifstream file(filename);
-    return md5_file_details(&file, filesize, md5);
+    return md5_stream_details(file, filesize, md5);
 }
 
 
@@ -438,7 +438,7 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
     int offset;
-    for(offset=0; offset<new_len; offset += (512/8)) {
+    for (offset=0; offset<new_len; offset += (512/8)) {
 
         // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
         uint32_t *w = (uint32_t *) (msg + offset);
@@ -451,7 +451,7 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
 
         // Main loop:
         uint32_t i;
-        for(i = 0; i<64; i++) {
+        for (i = 0; i<64; i++) {
             uint32_t f, g;
 
             if (i < 16) {

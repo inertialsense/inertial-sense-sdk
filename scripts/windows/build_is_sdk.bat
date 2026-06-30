@@ -1,5 +1,10 @@
 @echo off 
-for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
+
+echo .
+echo Building InertialSense SDK...
+echo .
+
+for %%i in ("%~dp0..\..") do SET SDK_DIR="%%~fi"
 call %SDK_DIR%\scripts\lib\activate_python_venv.bat
 
 python %SDK_DIR%\scripts\build_manager.py IS_SDK_lib %SDK_DIR% %*

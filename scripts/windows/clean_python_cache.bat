@@ -1,7 +1,7 @@
 @echo off 
 
 :: Set SDK_DIR as  directory path
-for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
+for %%i in ("%~dp0..\..") do SET SDK_DIR="%%~fi"
 
 set "BASE_DIR=%SDK_DIR%\python"
 

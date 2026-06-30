@@ -28,6 +28,10 @@ public:
     std::size_t write(const void* bytes, std::size_t len) OVERRIDE;
     int lprintf(const char* format, ...) OVERRIDE;
     int vprintf(const char* format, va_list args) OVERRIDE;
+    
+    // Static utility function for formatted printing to stdout
+    static int lprintfStdout(const char* format, ...);
+    static std::string formatString(const char* format, ...);
 
     int getch() OVERRIDE;
     std::size_t read(void* bytes, std::size_t len) OVERRIDE;

@@ -29,8 +29,8 @@ TEST(test_main, basic)
 
     bool success = false;
     unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
-	while((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
-	{
+    while ((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
+    {
         isROS.update();
         if (testNode.did_rx_pimu_) {
             success = true;
@@ -45,7 +45,7 @@ TEST(test_main, basic)
         }
     }
 
-    ASSERT_TRUE( success );
+    ASSERT_TRUE(success);
     isROS.terminate();
 }
 
@@ -57,9 +57,9 @@ TEST(test_main, basic)
  *
  * In inertial-sense-ros, we do some maths to try publish them both in RosTime::Time messages, as seconds/nanos.
  *
- * In this test, we subscribe to INS_1, GPS_1 and IMU, and also DID_GPS1_TIMEPULSE.  Once we get a GPS fix, we a set of messages over 10 seconds.  Then, we take the average difference between the INS timestamp
+ * In this test, we subscribe to INS_1, GPS_1 and IMU, and also DID_GNSS1_TIMEPULSE.  Once we get a GPS fix, we a set of messages over 10 seconds.  Then, we take the average difference between the INS timestamp
  * and the nearest GPS timestamp.  The average deviation should be below <0.5s, but ideally is below 0.1s.
- * DID_GPS1_TIMEPULSE provides the towOffset, timeMcu (effectively time since bootup)
+ * DID_GNSS1_TIMEPULSE provides the towOffset, timeMcu (effectively time since bootup)
  */
 
 #if 0 //Test needs to be revised. Odd timing that is not necessarily a problem causes the test to fail periodically. Specifically the GPS <> INS timing sometimes is 1e+6 because of timing of the test start and all the messages be received.
@@ -89,7 +89,7 @@ TEST(test_main, gps_ins_time_sync)
                        "\n"
                        "gps1:\n"
                        "  type: 'F9P'\n"
-                       "  gpsTimeUserDelay: 0.0\n"
+                       "  gnssTimeUserDelay: 0.0\n"
                        "  messages:\n"
                        "    pos_vel:\n"
                        "      topic: \"gps1/pos_vel\"\n"
@@ -107,7 +107,7 @@ TEST(test_main, gps_ins_time_sync)
 
     bool success = false;
     unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
-    while( ((nowTimeMs = current_timeMs()) - startTimeMs < 10000) && !testNode.got_gps_tow )
+    while (((nowTimeMs = current_timeMs()) - startTimeMs < 10000) && !testNode.got_gps_tow)
     {
         isROS.update();
         // check regularly, but don't print regularly..
@@ -122,7 +122,7 @@ TEST(test_main, gps_ins_time_sync)
     TEST_COUT << "Got TimeOfWeek/GPS Fix.  Collecting 10 seconds of data..." << std::endl;
 
     startTimeMs = current_timeMs(), prevTimeMs = 0;
-    while((nowTimeMs = current_timeMs()) - startTimeMs < 10000)
+    while ((nowTimeMs = current_timeMs()) - startTimeMs < 10000)
     {
         isROS.update();
         // check regularly, but don't print regularly..
@@ -138,10 +138,10 @@ TEST(test_main, gps_ins_time_sync)
     TEST_COUT << "Timestamp Deviation (GPS <> INS):   [" << testNode.get_min_deviation(testNode.gps_ts, testNode.ins_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.ins_ts) << "]" << :: std::endl;
     TEST_COUT << "Timestamp Deviation (INS <> IMU):   [" << testNode.get_min_deviation(testNode.ins_ts, testNode.imu_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts) << " <= "  << testNode.get_max_deviation(testNode.ins_ts, testNode.imu_ts) << "]" << :: std::endl;
 
-    EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.pimu_ts));
-    EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts));
-    EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts));
-    EXPECT_GE( 0.005, testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts));
+    EXPECT_GE(0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.pimu_ts));
+    EXPECT_GE(0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts));
+    EXPECT_GE(0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts));
+    EXPECT_GE(0.005, testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts));
     isROS.terminate();
 }
 #endif
@@ -159,7 +159,7 @@ void cTestNode::init()
 bool cTestNode::step()
 {
     // static double last_time = 0;
-    // if( ros::ok() )
+    // if (ros::ok())
     // {
     //     double current_time = ros::Time::now().toSec();
     //     double dt = current_time - last_time;

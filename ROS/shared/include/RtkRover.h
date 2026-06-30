@@ -56,7 +56,7 @@ public:
     bool connectivity_watchdog_enabled_ = true;
     float connectivity_watchdog_timer_frequency_ = 1;
     ROS_TIMER connectivity_watchdog_timer_;
-    void connectivity_watchdog_timer_callback( ROS1_TIMEREVENT_ARG ); 
+    void connectivity_watchdog_timer_callback(ROS1_TIMEREVENT_ARG); 
     RtkRoverCorrectionProvider_Ntrip(YAML::Node& node) : RtkRoverCorrectionProvider(node, "ntrip") { configure(node); }
     void configure(YAML::Node& node);
     std::string get_connection_string();
@@ -101,8 +101,8 @@ protected:
 #endif
 public:
     bool enable = true;                 // Enables/Disables the entire provider - enabled until explicitly disabled
-    bool compassing_enable = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
-    bool positioning_enable = false;    // Enable RTK precision positioning at GPS1
+    bool compassing_enable = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GNSS2
+    bool positioning_enable = false;    // Enable RTK precision positioning at GNSS1
 
     RtkRoverCorrectionProvider* correction_input;
     RtkRoverProvider(YAML::Node node) : ph_((YAML::Node&)node) { configure(node); }

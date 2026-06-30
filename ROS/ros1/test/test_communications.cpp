@@ -37,7 +37,7 @@ public:
  * If this passes, the test passes.
  */
 
-TEST(ROSCommunicationsTests, test_navsatfix )
+TEST(ROSCommunicationsTests, test_navsatfix)
 {
     gpsTestNode testNode;
     testNode.init();
@@ -75,7 +75,7 @@ TEST(ROSCommunicationsTests, test_navsatfix )
         }
 
         now = ros::Time::now().toSec();
-    } while(!testNode.navsatfix_passed && (now < expires));
+    } while (!testNode.navsatfix_passed && (now < expires));
 
     EXPECT_TRUE(testNode.navsatfix_passed);
     EXPECT_GE(testNode.msg_NavSatFix.latitude, -90.0);

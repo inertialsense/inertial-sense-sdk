@@ -127,7 +127,7 @@ void Serial::async_read_end(const boost::system::error_code &error, size_t bytes
 
 void Serial::write(const uint8_t* bytes, uint8_t len)
 {
-  assert(len <= BUFFER_SIZE); //! \todo Do something less catastrophic here
+  assert(len <= BUFFER_SIZE); // TODO Do something less catastrophic here
 
   WriteBuffer *buffer = new WriteBuffer();
   buffer->len = len;

@@ -319,8 +319,8 @@ void Scanner::ScanPlainScalar() {
   m_canBeJSONFlow = false;
 
   // finally, check and see if we ended on an illegal character
-  // if(Exp::IllegalCharInScalar.Matches(INPUT))
-  //	throw ParserException(INPUT.mark(), ErrorMsg::CHAR_IN_SCALAR);
+  // if (Exp::IllegalCharInScalar.Matches(INPUT))
+  //    throw ParserException(INPUT.mark(), ErrorMsg::CHAR_IN_SCALAR);
 
   Token token(Token::PLAIN_SCALAR, mark);
   token.value = scalar;

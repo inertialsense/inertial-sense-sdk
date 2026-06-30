@@ -5,8 +5,8 @@
 
 TEST(InertialSense, General)
 {
-// 	InertialSense inertialSenseInterface();
+//     InertialSense inertialSenseInterface();
 
-	EXPECT_TRUE(true);
+    EXPECT_TRUE(true);
 }
 

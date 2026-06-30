@@ -27,34 +27,43 @@ using namespace ISBootloader;
 using namespace std;
 
 // print out upload progress
-static is_operation_result bootloaderUploadProgress(void* obj, float pct)
+static is_operation_result bootloaderUploadProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-	if (obj == NULL) return IS_OP_OK;
+    int percent = (int)(pct * 100.0f);
+    printf("\rUpload Progress: %d%%\r", percent);
 
-	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
-	int percent = (int)(pct * 100.0f);
-	printf("\rUpload Progress: %d%%\r", percent);
-	ctx->m_update_progress = percent;
-
-	return IS_OP_OK;
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_update_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
+    return IS_OP_OK;
 }
 
 // print out verify progress
-static is_operation_result bootloaderVerifyProgress(void* obj, float pct)
+static is_operation_result bootloaderVerifyProgress(const std::any& obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
-	if (obj == NULL) return IS_OP_OK;
+    int percent = (int)(pct * 100.0f);
+    printf("\rVerify Progress: %d%%\r", percent);
 
-	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
-	int percent = (int)(pct * 100.0f);
-	printf("\rVerify Progress: %d%%\r", percent);
-	ctx->m_verify_progress = percent;
-
-	return IS_OP_OK;
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+            isblPtr->m_verify_progress = percent;
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
+    return IS_OP_OK;
 }
 
-static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ...)
+static void bootloaderStatusText(const std::any& obj, eLogLevel level, const char* str, ...)
 {
-	if (obj == NULL) return;
 
     static char buffer[256];
 
@@ -64,68 +73,77 @@ static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ..
     va_end(ap);
 
 
-	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
+    ISBootloader::cISBootloaderBase* isblPtr = NULL;
+    if (obj.has_value()) {
+        try {
+            isblPtr = std::any_cast<ISBootloader::cISBootloaderBase *>(obj);
+        } catch (const std::bad_any_cast &e) {
+            // std::cout << "EXCEPTION >> " << e.what() << ": " << obj.type().name() << '\n';
+        }
+    }
 
-	if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
-	{
-		printf("%s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
-	}
-	else if(ctx->m_sn != 0)
-	{
-		printf("(SN%d):", ctx->m_sn);
-	}
-	else if (ctx->m_port_name.size() != 0)
-	{
-		printf("%s:", ctx->m_port_name.c_str());
-	}
-	else
-	{
-		printf("SN?:");
-	}
+    if (isblPtr == NULL)
+    {
+        cout << buffer << endl;
+        return;
+    }
 
-	printf("\t\t\t%s\r\n", buffer);
+    if (isblPtr) {
+        if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
+            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+        } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
+            printf("    | (SN%d):", isblPtr->m_sn);
+        } else if (isblPtr->m_port_name.size() != 0) {
+            printf("    | %s:", isblPtr->m_port_name.c_str());
+        } else {
+            printf("    | SN?:");
+        }
+    }
+
+    if (buffer[0])
+        printf(" %s\r\n", buffer);
 }
 
 int main(int argc, char* argv[])
 {
-	if (argc < 4 || argc > 5)
-	{
-		printf("Please pass the com port, baudrate, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
-		printf("usage: %s {COMx} {Baudrate} {Firmware file} {Bootloader file (optional)}\r\n", argv[0]);
-		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 IS_uINS-3.hex" 
-		return -1;
-	}
+    if (argc < 4 || argc > 5)
+    {
+        printf("Please pass the com port, baudrate, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
+        printf("usage: %s {COMx} {Baudrate} {Firmware file} {Bootloader file (optional)}\r\n", argv[0]);
+        // In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 IS_uINS-3.hex" 
+        return -1;
+    }
 
-	// For now, we will use all present devices.
-	std::vector<std::string> portStrings;
-	cISSerialPort::GetComPorts(portStrings);
+    // For now, we will use all present devices.
+    std::vector<std::string> portStrings;
+    cISSerialPort::GetComPorts(portStrings);
 
-	// Set all files the same, the bootloader logic will identify the file and only put it onto the appropriate devices.
-	firmwares_t files;
-	files.fw_uINS_3.path = std::string(argv[2]);
-	files.bl_uINS_3.path = std::string(argv[2]);
-	files.fw_IMX_5.path = std::string(argv[2]);
-	files.bl_IMX_5.path = std::string(argv[2]);
-	files.fw_EVB_2.path = std::string(argv[2]);
-	files.bl_EVB_2.path = std::string(argv[2]);
+    // Set all files the same, the bootloader logic will identify the file and only put it onto the appropriate devices.
+    firmwares_t files;
+    files.fw_uINS_3.path = std::string(argv[2]);
+    files.bl_uINS_3.path = std::string(argv[2]);
+    files.fw_IMX_5.path = std::string(argv[2]);
+    files.bl_IMX_5.path = std::string(argv[2]);
+    files.fw_EVB_2.path = std::string(argv[2]);
+    files.bl_EVB_2.path = std::string(argv[2]);
 
-	
+    
 
-	vector<string> all_ports;                   // List of ports connected
+    vector<string> all_ports;                   // List of ports connected
 
-	// For now, we will use all present devices.
+    // For now, we will use all present devices.
     cISSerialPort::GetComPorts(all_ports);
 
     // Update the firmware on any port that was open
     std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
-	if (!cISBootloaderThread::set_mode_and_check_devices(
-			all_ports,
-			atoi(argv[1]),
-			files,
-			bootloaderUploadProgress,
-			bootloaderVerifyProgress,
-			bootloaderStatusText,
-			NULL,
+    if (!cISBootloaderThread::set_mode_and_check_devices(
+            all_ports,
+            atoi(argv[1]),
+            files,
+                bootloaderUploadProgress,
+            bootloaderVerifyProgress,
+            bootloaderStatusText,
+            NULL,
 			&confirm_device_list))
 		return -1;   // Error or no devices found
 
@@ -133,17 +151,17 @@ int main(int argc, char* argv[])
 
     // Update the firmware on any port that wasn't initially deselected
     // update the firmware on any port that was open
-	cISBootloaderThread::update(
-		portStrings,
-		true,
-		atoi(argv[1]),
-		files,
-		bootloaderUploadProgress,
-		bootloaderVerifyProgress,
-		bootloaderStatusText,
-		NULL);
+    cISBootloaderThread::update(
+        portStrings,
+        true,
+        atoi(argv[1]),
+        files,
+        bootloaderUploadProgress,
+        bootloaderVerifyProgress,
+        bootloaderStatusText,
+        NULL);
 
 
-	return 0;
+    return 0;
 }
 

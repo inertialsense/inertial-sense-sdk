@@ -18,11 +18,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <cstdarg>
 #include <string>
 
-#define LOG_DEBUG_FILE_WRITE	0		// Enable file debug printout
-#define LOG_DEBUG_FILE_READ		0		// 
-#define LOG_DEBUG_CHUNK_WRITE	0		// Enable chunk debug printout
-#define LOG_DEBUG_CHUNK_READ	0
-#define LOG_CHUNK_STATS			0		// 0 = disabled, 1 = summary, 2 = detailed
+#define LOG_DEBUG_FILE_WRITE    0   // Enable file debug printout
+#define LOG_DEBUG_FILE_READ     0   // 
+#define LOG_DEBUG_CHUNK_WRITE   0   // Enable chunk debug printout
+#define LOG_DEBUG_CHUNK_READ    0
+#define LOG_CHUNK_STATS         0   // 0 = disabled, 1 = summary, 2 = detailed
 
 
 class cISLogFileBase
@@ -30,23 +30,23 @@ class cISLogFileBase
 public:
     virtual ~cISLogFileBase() {}
 
-    virtual bool open(const char* filePath, const char* mode) = 0;
-    virtual bool close() = 0;
-    virtual bool flush() = 0;
-    virtual bool good() = 0;
-    virtual bool isOpened() = 0;
+    virtual bool open(const char* filePath, const char* mode)       = 0;
+    virtual bool close()                                            = 0;
+    virtual bool flush()                                            = 0;
+    virtual bool good()                                             = 0;
+    virtual bool isOpened()                                         = 0;
 
-    virtual int putch(char ch) = 0;
-    virtual int puts(const char* str) = 0;
-    virtual std::size_t write(const void* bytes, std::size_t len) = 0;
-    virtual int lprintf(const char* format, ...) = 0;
-    virtual int vprintf(const char* format, va_list args) = 0;
+    virtual int putch(char ch)                                      = 0;
+    virtual int puts(const char* str)                               = 0;
+    virtual std::size_t write(const void* bytes, std::size_t len)   = 0;
+    virtual int lprintf(const char* format, ...)                    = 0;
+    virtual int vprintf(const char* format, va_list args)           = 0;
 
-    virtual int getch() = 0;
-    virtual std::size_t read(void* bytes, std::size_t len) = 0;
-    virtual int seek(long int offset, int origin = SEEK_SET) = 0;   // origin = SEEK_SET means offset is from start of file
-    virtual long int tell() = 0;
-    virtual int eof() = 0;		// returns non-zero at end of file
+    virtual int getch()                                             = 0;
+    virtual std::size_t read(void* bytes, std::size_t len)          = 0;
+    virtual int seek(long int offset, int origin = SEEK_SET)        = 0;   // origin = SEEK_SET means offset is from start of file
+    virtual long int tell()                                         = 0;
+    virtual int eof()                                               = 0; // returns non-zero at end of file
 
 };
 

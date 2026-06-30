@@ -16,40 +16,41 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/InertialSense.h"
 
-static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
+static int msgHandlerIsb(InertialSense* i, p_data_t* data, port_handle_t port)
 {
-	static uint64_t dataCount;
-	printf("Data count: %" PRIu64 "          \r", ++dataCount);
+    static uint64_t dataCount;
+    printf("Data count: %" PRIu64 "          \r", ++dataCount);
+    return 0;
 }
 
 int main(int argc, char* argv[])
 {
-	if (argc < 1)
-	{
-		printf("Please pass the data log directory path (i.e. \"C:\\Users\\[username]\\Documents\\Inertial Sense\\Logs\\20180716_172323)\"\r\n");
-		return -1;
-	}
+    if (argc < 1)
+    {
+        printf("Please pass the data log directory path (i.e. \"C:\\Users\\[username]\\Documents\\Inertial Sense\\Logs\\20180716_172323)\"\r\n");
+        return -1;
+    }
 
-	// STEP 2: Instantiate InertialSense class
-	// InertialSense class wraps communications and logging in a convenient, easy to use class
-	InertialSense inertialSense(msgHandlerIsb);
+    // STEP 2: Instantiate InertialSense class
+    // InertialSense class wraps communications and logging in a convenient, easy to use class
+    InertialSense inertialSense(msgHandlerIsb);
 
-	// STEP 3: Enable data logger
-	// get log type from command line
-	cISLogger::sSaveOptions options;
-	options.logType = (argc < 3 ? cISLogger::LOGTYPE_RAW : cISLogger::ParseLogType(argv[2]));
-	inertialSense.EnableLogger(true, "", options);
+    // STEP 3: Enable data logger
+    // get log type from command line
+    cISLogger::sSaveOptions options;
+    options.logType = (argc < 3 ? cISLogger::LOGTYPE_RAW : cISLogger::ParseLogType(argv[2]));
+    inertialSense.EnableLogger(true, "", options);
 
-	// utility class for display and ctrl-c handling
-	cInertialSenseDisplay display;
+    // utility class for display and ctrl-c handling
+    cInertialSenseDisplay display;
 
-	std::cout << "Started logger..." << std::endl;
+    std::cout << "Started logger..." << std::endl;
 
-	while (!display.ExitProgram())
-	{
-		inertialSense.Update();
-	}
+    while (!display.ExitProgram())
+    {
+        inertialSense.Update();
+    }
 
-	inertialSense.Close();
+    inertialSense.Close();
 }
 

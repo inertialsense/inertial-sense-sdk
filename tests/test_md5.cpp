@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
-#include "../ISConstants.h"
+#include "ISConstants.h"
 #include "../util/md5.h"
 
 #ifdef _WIN32
@@ -35,7 +35,7 @@ void check_md5_file(const char *filename)
         throw std::runtime_error("Failed to open file for reading");
     }
 
-    EXPECT_EQ(md5_file_details(&s, filesize, hash), 0);
+    EXPECT_EQ(md5_stream_details(s, filesize, hash), 0);
 
     // Convert computed hash to string
     std::string hashStr = md5_to_string(hash);
@@ -140,7 +140,7 @@ TEST(md5, hash_from_file_1_to_400k_file_size)
     // GTEST_SKIP();
     const char *filename = "md5_test.txt";
 
-    for (int len=1; len<400000; )
+    for (int len=1; len<400000;)
     {
         // Create test file
         ofstream myfile(filename);

@@ -29,6 +29,7 @@
 
 #include "data_sets.h"
 #include "InertialSense.h"
+#include "version/version.h"
 
 #include "RtkBase.h"
 #include "RtkRover.h"
@@ -111,17 +112,15 @@ using namespace std::chrono_literals;
 #define GPS_UNIX_OFFSET 315964800 // GPS time started on 6/1/1980 while UNIX time started 1/1/1970 this is the difference between those in seconds
 #define LEAP_SECONDS 18           // GPS time does not have leap seconds, UNIX does (as of 1/1/2017 - next one is probably in 2020 sometime unless there is some crazy earthquake or nuclear blast)
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
-#define REPO_VERSION_MAJOR 2
-#define REPO_VERSION_MINOR 5   // [UPDATE_RELEASE_VERSION_HERE] The repo/firmware version should originate from git tag (like repositoryInfo.h used in EvalTool).  For now we set these manually.
-#define REPO_VERSION_REVIS 0
 
-#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
-    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
-                            [this](InertialSense *i, p_data_t *data, int pHandle)           \
-                            {                                                               \
-                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */                     \
-                                this->__cb_fun(DID, reinterpret_cast<__type *>(data->ptr)); \
-                            })
+// TODO: Replace this macro with an equivelent method in ISDevice::registerDataHandler(uint8_t dataId, callback) and update project.
+//#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
+//    IS_.BroadcastBinaryData((eDataIDs)(DID), (int)(__periodmultiple),                                           \
+//                            [this](InertialSense *i, p_data_t *data, void *port)                                \
+//                            {                                                                                   \
+//                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */  \
+//                                this->__cb_fun((eDataIDs)DID, reinterpret_cast<__type *>(data->ptr));           \
+//                            })
 
 
 class InertialSenseROS //: SerialListener
@@ -246,7 +245,7 @@ public:
     ROS_TIMER rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
     void stop_rtk_connectivity_watchdog_timer();
-    void rtk_connectivity_watchdog_timer_callback( ROS1_TIMEREVENT_ARG );
+    void rtk_connectivity_watchdog_timer_callback(ROS1_TIMEREVENT_ARG);
 
     void INS1_callback(eDataIDs DID, const ins_1_t *const msg);
     void INS2_callback(eDataIDs DID, const ins_2_t *const msg);
@@ -256,22 +255,22 @@ public:
     void odom_ins_ned_callback(eDataIDs DID, const ins_2_t *const msg);
     void odom_ins_ecef_callback(eDataIDs DID, const ins_2_t *const msg);
     void odom_ins_enu_callback(eDataIDs DID, const ins_2_t *const msg);
-    void GPS_info_callback(eDataIDs DID, const gps_sat_t *const msg);
+    void GPS_info_callback(eDataIDs DID, const gnss_sat_t *const msg);
     void mag_callback(eDataIDs DID, const magnetometer_t *const msg);
     void baro_callback(eDataIDs DID, const barometer_t *const msg);
     void preint_IMU_callback(eDataIDs DID, const pimu_t *const msg);
     void imu_raw_callback(eDataIDs DID, const imu_t *const msg);
     void strobe_in_time_callback(eDataIDs DID, const strobe_in_time_t *const msg);
-    void diagnostics_callback( ROS1_TIMEREVENT_ARG );
-    void GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg);
-    void GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg);
-    void GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg);
+    void diagnostics_callback(ROS1_TIMEREVENT_ARG);
+    void GPS_pos_callback(eDataIDs DID, const gnss_pos_t *const msg);
+    void GPS_vel_callback(eDataIDs DID, const gnss_vel_t *const msg);
+    void GPS_raw_callback(eDataIDs DID, const gnss_raw_t *const msg);
     void GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, int nObs);
-    void GPS_obs_bundle_timer_callback( ROS1_TIMEREVENT_ARG );
+    void GPS_obs_bundle_timer_callback(ROS1_TIMEREVENT_ARG);
     void GPS_eph_callback(eDataIDs DID, const eph_t *const msg);
     void GPS_geph_callback(eDataIDs DID, const geph_t *const msg);
-    void RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg);
-    void RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg);
+    void RTK_Misc_callback(eDataIDs DID, const gnss_rtk_misc_t *const msg);
+    void RTK_Rel_callback(eDataIDs DID, const gnss_rtk_rel_t *const msg);
 
 #ifdef ROS2
     Node::SharedPtr nh_;
@@ -284,7 +283,7 @@ public:
 #endif
     struct
     {
-    	ins_1_t ins1;
+        ins_1_t ins1;
     } did_;
 
     struct
@@ -510,10 +509,10 @@ public:
     GPSInfo msg_gps1_info;
     GPSInfo msg_gps2_info;
 #endif
-    gps_pos_t gps1_pos;
-    gps_pos_t gps2_pos;
-    gps_vel_t gps1_vel;
-    gps_vel_t gps2_vel;
+    gnss_pos_t gps1_pos;
+    gnss_pos_t gps2_pos;
+    gnss_vel_t gps1_vel;
+    gnss_vel_t gps2_vel;
     float poseCov_[36], twistCov_[36];
 
     // Connection to the uINS
@@ -535,7 +534,7 @@ public:
     uint32_t rtkConfigBits_ = 0;                // this is read directly from the config
     uint32_t wheelConfigBits_ = 0;              // this is read directly from the config
 
-    float gpsTimeUserDelay_ = 0;
+    float gnssTimeUserDelay_ = 0;
 
     // EVB Flash Parameters
     struct evb_flash_parameters

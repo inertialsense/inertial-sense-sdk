@@ -126,6 +126,26 @@ int cISLogFile::lprintf(const char* format, ...)
     return result;
 }
 
+int cISLogFile::lprintfStdout(const char* format, ...)
+{
+    int result;
+    va_list args;
+    va_start(args, format);
+    result = ::vprintf(format, args);
+    va_end(args);
+    return result;
+}
+
+std::string cISLogFile::formatString(const char* format, ...) 
+{
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    return std::string(buffer);
+}
+
 int cISLogFile::vprintf(const char* format, va_list args)
 {
     if (m_file) {

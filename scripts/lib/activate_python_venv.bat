@@ -1,6 +1,5 @@
 @echo off
 REM This file must be run using the "call" command to set up the Python virtual environment
-setlocal
 
 REM Get the directory of this script
 for %%I in ("%~dp0") do set "LIB_DIR=%%~fI"
@@ -12,4 +11,3 @@ REM Activate the virtual environment
 call "%venv_path%\Scripts\activate.bat"
 
 echo Activated virtual environment: %venv_path%
-endlocal

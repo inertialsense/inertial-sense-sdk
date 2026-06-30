@@ -37,50 +37,50 @@ using namespace std;
 
 bool cDeviceLogJSON::CloseAllFiles()
 {
-	cDeviceLog::CloseAllFiles();
-	if (m_pFile != NULLPTR)
-	{
-		m_pFile->putch(']');
-		CloseISLogFile(m_pFile);
-	}
-	return true;
+    cDeviceLog::CloseAllFiles();
+    if (m_pFile != NULLPTR)
+    {
+        m_pFile->putch(']');
+        CloseISLogFile(m_pFile);
+    }
+    return true;
 }
 
 bool cDeviceLogJSON::GetNextItemForFile()
 {
-	m_jsonString.clear();
-	if (m_pFile == NULLPTR)
-	{
-		return false;
-	}
-	int stack = 0;
-	int pc = 0;
-	int i;
-	while ((i = m_pFile->getch()) != EOF)
-	{
-		char c = (char)i;
-		if (c == '{' && pc != '\\')
-		{
-			stack++;
-		}
-		else if (c == '}' && pc != '\\')
-		{
-			stack--;
-			if (stack == 0)
-			{
+    m_jsonString.clear();
+    if (m_pFile == NULLPTR)
+    {
+        return false;
+    }
+    int stack = 0;
+    int pc = 0;
+    int i;
+    while ((i = m_pFile->getch()) != EOF)
+    {
+        char c = (char)i;
+        if (c == '{' && pc != '\\')
+        {
+            stack++;
+        }
+        else if (c == '}' && pc != '\\')
+        {
+            stack--;
+            if (stack == 0)
+            {
                 m_jsonString.append(1, c);
-				break;
-			}
-		}
+                break;
+            }
+        }
 
         if (stack != 0)
-		{
-			m_jsonString.append(1, c);
-		}
+        {
+            m_jsonString.append(1, c);
+        }
 
-		pc = c;
-	}
-	return (m_jsonString.size() != 0);
+        pc = c;
+    }
+    return (m_jsonString.size() != 0);
 }
 
 
@@ -90,74 +90,74 @@ bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, pro
 
     bool needsComma = true;
 
-	// Create first file it it doesn't exist, return out if failure
+    // Create first file it it doesn't exist, return out if failure
     if (m_pFile == NULLPTR)
-	{
+    {
         needsComma = false;
         if (!OpenNewSaveFile())
         {
             return false;
         }
         m_pFile->putch('[');
-	}
-	else if (dataHdr->id == DID_DEV_INFO)
-	{
-		memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
-	}
+    }
+    else if (dataHdr->id == DID_DEV_INFO)
+    {
+        memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
+    }
 
-	// Write date to file
+    // Write date to file
     int nBytes = m_json.WriteDataToFile(m_pFile, *dataHdr, dataBuf, (needsComma ? ",\n" : NULLPTR));
-	if (!m_pFile->good())
-	{
-		return false;
-	}
+    if (!m_pFile->good())
+    {
+        return false;
+    }
 
-	// File byte size
-	m_logSize += nBytes;
+    // File byte size
+    m_logSize += nBytes;
 
-	if (m_logSize >= m_maxFileSize)
-	{
-		// Close existing file
-		m_pFile->putch(']');
-		CloseISLogFile(m_pFile);
-		m_logSize = 0;
-	}
+    if (m_logSize >= m_maxFileSize)
+    {
+        // Close existing file
+        m_pFile->putch(']');
+        CloseISLogFile(m_pFile);
+        m_logSize = 0;
+    }
 
-	return true;
+    return true;
 }
 
 
 p_data_buf_t* cDeviceLogJSON::ReadData()
 {
-	if (m_pFile == NULLPTR)
-	{
+    if (m_pFile == NULLPTR)
+    {
         if (!OpenNextReadFile())
         {
             return NULLPTR;
         }
-	}
-	p_data_buf_t* data = ReadDataFromFile();
+    }
+    p_data_buf_t* data = ReadDataFromFile();
     cDeviceLog::UpdateStatsFromFile(data);
-	return data;
+    return data;
 }
 
 
 p_data_buf_t* cDeviceLogJSON::ReadDataFromFile()
 {
-	if (m_pFile == NULLPTR)
-	{
-		assert(false);
-		return NULLPTR;
-	}
+    if (m_pFile == NULLPTR)
+    {
+        assert(false);
+        return NULLPTR;
+    }
     while (!GetNextItemForFile() && OpenNextReadFile()) {}
-	if (m_json.StringJSONToData(m_jsonString, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf)))
-	{
-		if (m_data.hdr.id == DID_DEV_INFO)
-		{
-			memcpy((void *)&(device->devInfo), m_data.buf, sizeof(dev_info_t));
-		}
-		return &m_data;
-	}
+    if (m_json.StringJSONToData(m_jsonString, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf)))
+    {
+        if (m_data.hdr.id == DID_DEV_INFO)
+        {
+            memcpy((void *)&(device->devInfo), m_data.buf, sizeof(dev_info_t));
+        }
+        return &m_data;
+    }
     return NULLPTR;
 }
 

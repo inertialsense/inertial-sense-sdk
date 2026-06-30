@@ -10,8 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef DEVICE_LOG_SERIAL_H
-#define DEVICE_LOG_SERIAL_H
+#ifndef IS_SDK__DEVICE_LOG_SERIAL_H
+#define IS_SDK__DEVICE_LOG_SERIAL_H
 
 #include <stdio.h>
 #include <string>
@@ -22,38 +22,31 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 
 
-class cDeviceLogSerial : public cDeviceLog {
+class cDeviceLogSerial : public cDeviceLog 
+{
 public:
     cDeviceLogSerial();
-
-    cDeviceLogSerial(const ISDevice *dev);
-
+    cDeviceLogSerial(device_handle_t dev);
     cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo);
+    cDeviceLogSerial(port_handle_t port);
 
-    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
-
+    void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
+    void InitDeviceForReading() OVERRIDE;
     bool CloseAllFiles() OVERRIDE;
-
     bool FlushToFile() OVERRIDE;
-
     bool SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype = _PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
-
     p_data_buf_t *ReadData() OVERRIDE;
 
     void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-
     std::string LogFileExtention() OVERRIDE { return std::string(".dat"); }
-
     void Flush() OVERRIDE;
 
     cDataChunk m_chunk;
 
 private:
     p_data_buf_t *ReadDataFromChunk();
-
     bool ReadChunkFromFile();
-
     bool WriteChunkToFile();
 };
 
-#endif // DEVICE_LOG_SERIAL_H
+#endif // IS_SDK__DEVICE_LOG_SERIAL_H

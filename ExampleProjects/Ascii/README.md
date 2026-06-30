@@ -54,7 +54,7 @@ This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/r
 
 ```C++
 	// stop all broadcasts on the device, we don't want binary message coming through while we are doing ASCII
-	if (!serialPortWriteAscii(&serialPort, "STPB", 4))
+	if (!portWriteAscii(&serialPort, "STPB", 4))
 	{
 		printf("Failed to encode stop broadcasts message\r\n");
 		return -3;
@@ -62,7 +62,7 @@ This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/r
 
 	// ASCII protocol is based on NMEA protocol https://en.wikipedia.org/wiki/NMEA_0183
 	// turn on the INS message at a period of 100 milliseconds (10 hz)
-	// serialPortWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
+	// portWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
 	// ASCE message enables ASCII broadcasts
 	// ASCE fields: 1:options, ID0, Period0, ID1, Period1, ........ ID19, Period19
 	// IDs:
@@ -100,7 +100,7 @@ This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/r
 	// Stop all messages / broadcasts
 	// const char* asciiMessage = "STPB";
 																				
-	if (!serialPortWriteAscii(&serialPort, asciiMessage, (int)strnlen(asciiMessage, 128)))
+	if (!portWriteAscii(&serialPort, asciiMessage, (int)strnlen(asciiMessage, 128)))
 	{
 		printf("Failed to encode ASCII get INS message\r\n");
 		return -4;

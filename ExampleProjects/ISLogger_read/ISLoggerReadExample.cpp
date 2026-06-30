@@ -21,58 +21,58 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	if (argc < 2)
-	{
-		printf("Provide the log directory as an argument: $ ./ISLoggerReadExample sandbox/20241101_123142\n");
-		return -1;
-	}
+    if (argc < 2)
+    {
+        printf("Provide the log directory as an argument: $ ./ISLoggerReadExample sandbox/20241101_123142\n");
+        return -1;
+    }
 
-	string logPath = argv[1];
+    string logPath = argv[1];
 
     cISLogger logger;
     logger.LoadFromDirectory(logPath);
 
-	cout << "Started CISLogger read.  Press ctrl-c to quit." << endl;
+    cout << "Started CISLogger read.  Press ctrl-c to quit." << endl;
 
-	// Utility class for ctrl-c handling
-	cInertialSenseDisplay display;
-	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_SCROLL);
-	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
-	display.SetDisplayMode(cInertialSenseDisplay::DMODE_STATS);	
+    // Utility class for ctrl-c handling
+    cInertialSenseDisplay display;
+    // display.SetDisplayMode(cInertialSenseDisplay::DMODE_SCROLL);
+    // display.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    display.SetDisplayMode(cInertialSenseDisplay::DMODE_STATS);    
     display.SetKeyboardNonBlocking();
 
-	std::vector<shared_ptr<cDeviceLog>> devices = logger.DeviceLogs();
+    std::vector<shared_ptr<cDeviceLog>> devices = logger.DeviceLogs();
     for (auto deviceLog : devices)
-	{
-		if (display.ExitProgram())
-		{
-			return 0;
-		}
+    {
+        if (display.ExitProgram())
+        {
+            return 0;
+        }
 
         p_data_buf_t* data = NULL;
         while ((data = deviceLog->ReadData()))
-		{
+        {
 #if 0
-			double replaySpeedX = 0;	// Set to zero for non-realtime, fast as possible
-			display.ProcessData(data, true, replaySpeedX);
-			display.PrintData();
+            double replaySpeedX = 0;    // Set to zero for non-realtime, fast as possible
+            display.ProcessData(data, true, replaySpeedX);
+            display.PrintData();
 #endif
 
 #if 0
-			printf("ID: %3d\n", data->hdr.id);
+            printf("ID: %3d\n", data->hdr.id);
 #endif
 
 #if 0
-			logger.PrintStatistics();
+            logger.PrintStatistics();
 #endif
-		}
+        }
 
-		// Scan for "q" press to exit program
-		display.GetKeyboardInput();
-	}
-	// Revert non-blocking keyboard
-	display.ResetTerminalMode();
+        // Scan for "q" press to exit program
+        display.GetKeyboardInput();
+    }
+    // Revert non-blocking keyboard
+    display.ResetTerminalMode();
 
-	logger.CloseAllFiles();
+    logger.CloseAllFiles();
 }
 

@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(ExampleProjects)
 
@@ -35,3 +35,4 @@ add_subdirectory(ISLogger_write)
 add_subdirectory(InertialSense_logger)
 add_subdirectory(NTRIP_rover)
 add_subdirectory(IS_NMEAProtocolCheckSum)
+

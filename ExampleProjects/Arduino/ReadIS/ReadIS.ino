@@ -56,7 +56,9 @@ void setup()
     Serial.println("initializing");
 
     // Initialize comm interface - call this before doing any comm functions
-    is_comm_init(&comm, s_buffer, sizeof(s_buffer));
+    is_comm_init(&comm, s_buffer, sizeof(s_buffer), NULL); // TODO: Use callbacks
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
     // Stop all the broadcasts on the device
     int messageSize = is_comm_stop_broadcasts_all_ports(&comm);
@@ -64,7 +66,7 @@ void setup()
 
     // Ask for ins_1 message 20 times per second.  Ask for the whole thing, so
     // set 0's for the offset and size
-    messageSize = is_comm_get_data_to_buf(buffer, bufferSize, &comm, DID_INS_1, sizeof(ins_1_t), 0, 1000);
+    messageSize = is_comm_get_data_to_buf(s_buffer, sizeof(s_buffer), &comm, DID_INS_1, sizeof(ins_1_t), 0, 1000);
     Serial1.write(comm.rxBuf.start, messageSize); // Transmit the message to the inertialsense device
 }
 

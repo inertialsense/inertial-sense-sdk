@@ -24,56 +24,56 @@ using namespace std;
 // [SERIAL]:[RTCM3]:[serial port]:[baudrate]
 cISStream* cISClient::OpenConnectionToServer(const string& connectionString, bool *enableGpggaForwarding)
 {
-	vector<string> pieces;
-	splitString(connectionString, ':', pieces);
-	if (pieces.size() < 4)
-	{
-		return NULLPTR;
-	}
+    vector<string> pieces;
+    splitString(connectionString, ':', pieces);
+    if (pieces.size() < 4)
+    {
+        return NULLPTR;
+    }
 
-	string type     = pieces[0];	// TCP, SERIAL
-	string protocol = pieces[1];	// RTCM3, UBLOX, IS
+    string type     = pieces[0];        // TCP, SERIAL
+    string protocol = pieces[1];        // RTCM3, UBLOX, IS
 
-	if (type == "SERIAL")
-	{
-		cISSerialPort *clientStream = new cISSerialPort();
+    if (type == "SERIAL")
+    {
+        cISSerialPort *clientStream = new cISSerialPort();
 
-		string portName = pieces[2];	// /dev/ttyACM0
-		string baudrate = pieces[3];	// 921600
+        string portName = pieces[2];    // /dev/ttyACM0
+        string baudrate = pieces[3];    // 921600
 
-		if (clientStream->Open(portName, atoi(baudrate.c_str())))
-		{
-			return clientStream;
-		}
-	}
-	else if(type == "TCP" || type == "NTRIP")
-	{
-		cISTcpClient *clientStream = new cISTcpClient();
+        if (clientStream->Open(portName, atoi(baudrate.c_str())))
+        {
+            return clientStream;
+        }
+    }
+    else if (type == "TCP" || type == "NTRIP")
+    {
+        cISTcpClient *clientStream = new cISTcpClient();
 
-		string host     = (pieces[2].size()>0 ? pieces[2] : "127.0.0.1");	// ipAddr/URL
-		string port     = (pieces[3]);
-		string subUrl   = (pieces.size() > 4 ? pieces[4] : "");
-		string username = (pieces.size() > 5 ? pieces[5] : "");
-		string password = (pieces.size() > 6 ? pieces[6] : "");
+        string host     = (pieces[2].size()>0 ? pieces[2] : "127.0.0.1");    // ipAddr/URL
+        string port     = (pieces[3]);
+        string subUrl   = (pieces.size() > 4 ? pieces[4] : "");
+        string username = (pieces.size() > 5 ? pieces[5] : "");
+        string password = (pieces.size() > 6 ? pieces[6] : "");
 
-		if (clientStream->Open(host, atoi(port.c_str()), 100) != 0)
-		{
-			return NULLPTR;
-		}
+        if (clientStream->Open(host, atoi(port.c_str()), 100) != 0)
+        {
+            return NULLPTR;
+        }
 
-		if (subUrl.size() != 0)
-		{	// Connect NTRIP if specified - https://igs.bkg.bund.de/root_ftp/NTRIP/documentation/NtripDocumentation.pdf
-			string userAgent = "NTRIP Inertial Sense";			// NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
-			clientStream->HttpGet(subUrl, userAgent, username, password);
-			if (enableGpggaForwarding != NULL)
-			{
-				*enableGpggaForwarding = true;
-			}
-		}
+        if (subUrl.size() != 0)
+        {   // Connect NTRIP if specified - https://igs.bkg.bund.de/root_ftp/NTRIP/documentation/NtripDocumentation.pdf
+            string userAgent = "NTRIP Inertial Sense";            // NTRIP standard requires "NTRIP" to be at the start of the User-Agent string.
+            clientStream->HttpGet(subUrl, userAgent, username, password);
+            if (enableGpggaForwarding != NULL)
+            {
+                *enableGpggaForwarding = true;
+            }
+        }
 
-		return clientStream;
-	}
+        return clientStream;
+    }
 
-	return NULLPTR;
+    return NULLPTR;
 }
 
