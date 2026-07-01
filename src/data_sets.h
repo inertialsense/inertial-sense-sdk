@@ -3194,7 +3194,7 @@ enum eSensorConfig
     SENSOR_CFG_IMU_FAULT_DETECT_ACC             = (int)0x02000000,  // Enable multiple IMU accelerometer fault detection.  Must be enabled for other acc detection modes (offline, large bias, and noise).
 
     // Set to ZERO to exclude from build
-    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = 0,  // (int)0x04000000,      // One or more IMUs is offline or stuck
+    SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = (int)0x04000000,      // One or more IMUs is offline or stuck
     SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS      = 0,  // (int)0x08000000,
     SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,  // (int)0x10000000,
 };
