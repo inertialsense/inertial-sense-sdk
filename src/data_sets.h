@@ -5963,6 +5963,9 @@ typedef struct PACKED
     /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
     uint16_t                can_baudrate_kbps;
 
+    /** Receive address */
+    uint32_t                can_receive_address;
+
 } can_config_t;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)

@@ -74,7 +74,7 @@ PYBIND11_NUMPY_DTYPE(debug_array_t, i, f, lf);
 PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(imu_mag_t, imu, mag);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
-// PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps);
+// PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps, can_receive_address);
 
 PYBIND11_NUMPY_DTYPE(gpx_flash_cfg_t, size, checksum, key, ser0BaudRate, ser1BaudRate, ser2BaudRate, startupGnssDtMs, gnss1AntOffset, gnss2AntOffset, gnssSatSigConst, dynamicModel, debug, gnssTimeSyncPeriodMs, gnssTimeUserDelay, gnssMinimumElevation, RTKCfgBits, gnssCn0Minimum, gnssCn0DynMinOffset, reserved1, sysCfgBits, reserved2);
 PYBIND11_NUMPY_DTYPE(gpx_gnss_status_t, lastRstCause, fwUpdateState, initState, runState);
