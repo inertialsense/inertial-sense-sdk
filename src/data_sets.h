@@ -2214,6 +2214,12 @@ typedef struct PACKED
 
 }rmcNmea_t;
 
+typedef struct PACKED
+{
+    uint32_t                 canBits;               // CAN message enable bits for the specified ports.  (see RMC_BITS_...)
+    uint8_t                  canPeriod[NUM_CIDS];   // CAN period multiple of
+}rmcCan_t;
+
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
@@ -2224,6 +2230,9 @@ typedef struct PACKED
     uint8_t                 periodMultiple[DID_COUNT];
 
     rmcNmea_t               rmcNmea;
+    
+    /** CAN message controller settings. */
+    rmcCan_t                rmcCan;
 
 } rmci_t;
 
@@ -5901,17 +5910,25 @@ enum can_cid_t
     CID_INS_ECEF_Y,
     CID_INS_ECEF_Z,
     CID_INS_MSL,
+
     CID_PREINT_PX,
     CID_PREINT_QY,
     CID_PREINT_RZ,
+
     CID_DUAL_PX,
     CID_DUAL_QY,
     CID_DUAL_RZ,
+
     CID_GNSS1_POS,
+
     CID_GNSS2_POS,
+
     CID_GNSS1_RTK_POS_REL,
+
     CID_GNSS2_RTK_CMP_REL,
+
     CID_ROLL_ROLLRATE,
+    
     NUM_CIDS
 };
 
@@ -5946,16 +5963,13 @@ enum can_baudrate_t
 typedef struct PACKED
 {
     /** Broadcast period multiple - CAN time message. 0 to disable. */
-    uint16_t                can_period_mult[NUM_CIDS];
+    uint16_t                 can_period_mult[NUM_CIDS];
 
     /** Transmit address. */
     uint32_t                can_transmit_address[NUM_CIDS];
 
     /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
     uint16_t                can_baudrate_kbps;
-
-    /** Receive address. */
-    uint32_t                can_receive_address;
 
 } can_config_t;
 
