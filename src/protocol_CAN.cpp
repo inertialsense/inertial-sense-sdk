@@ -1,6 +1,16 @@
 #include "protocol_CAN.h"
-#include "globals.h"
 #include "data_sets_canbus.h"
+#include "ISPose.h"
+
+#ifdef SDK_UNIT_TEST
+// In test builds (SDK_UNIT_TEST defined by SDK/tests/CMakeLists.txt), firmware globals
+// are not available. The test file provides definitions for these two symbols.
+typedef struct { gnss_pos_t pos; gnss_vel_t vel; } gnss_posvel_t;
+extern gnss_posvel_t g_gnssNav[2];
+extern ins_output_t g_insOut;
+#else
+#include "globals.h"
+#endif
 
 // ============================================================================
 // Dispatch
