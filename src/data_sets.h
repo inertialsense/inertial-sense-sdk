@@ -81,7 +81,7 @@ typedef uint32_t eDataIDs;
 #define DID_GNSS1_TIMEPULSE             (eDataIDs)41    /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42    /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_UNUSED_43                   (eDataIDs)43    /** unused */
-#define DID_UNUSED_44                   (eDataIDs)44    /** unused */
+#define DID_CANFD_CONFIG                (eDataIDs)44    /** (can_config_t) CAN FD configuration: FD message broadcast rates, transmit addresses, and baud rate. Shares the same data structure as DID_CAN_CONFIG. */
 #define DID_GNSS1_SIG                   (eDataIDs)45    /** (gnss_sig_t) GNSS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46    /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47    /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
