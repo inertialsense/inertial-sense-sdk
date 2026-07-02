@@ -541,3 +541,239 @@ int CAN_CAN_roll_rollRate_to_ISB_IMU(is_can_payload* in, imu_t* out)
     out->I.pqr[0] = in->rollrollrate.pImu1 / 1000.0f;
     return (int)sizeof(is_can_roll_rollRate);
 }
+
+// ============================================================================
+// CAN FD encode (ISB → wire)
+// ============================================================================
+
+int CANFD_ISB_INS1_to_CANFD(ins_1_t* ins, is_canfd_payload* out)
+{
+    out->ins1.week       = ins->week;
+    out->ins1.timeOfWeek = ins->timeOfWeek;
+    out->ins1.insStatus  = ins->insStatus;
+    out->ins1.hdwStatus  = ins->hdwStatus;
+    out->ins1.theta[0]   = ins->theta[0];
+    out->ins1.theta[1]   = ins->theta[1];
+    out->ins1.theta[2]   = ins->theta[2];
+    out->ins1.uvw[0]     = ins->uvw[0];
+    out->ins1.uvw[1]     = ins->uvw[1];
+    out->ins1.uvw[2]     = ins->uvw[2];
+    out->ins1.lat        = ins->lla[0];
+    out->ins1.lon        = ins->lla[1];
+    out->ins1.alt        = (float)ins->lla[2];
+    return (int)sizeof(is_canfd_ins1);
+}
+
+int CANFD_ISB_INS2_to_CANFD(ins_2_t* ins, is_canfd_payload* out)
+{
+    out->ins2.qn2b[0] = ins->qn2b[0];
+    out->ins2.qn2b[1] = ins->qn2b[1];
+    out->ins2.qn2b[2] = ins->qn2b[2];
+    out->ins2.qn2b[3] = ins->qn2b[3];
+    return (int)sizeof(is_canfd_ins2);
+}
+
+int CANFD_ISB_INS3_to_CANFD(ins_3_t* ins, is_canfd_payload* out)
+{
+    out->ins3.msl = ins->msl;
+    return (int)sizeof(is_canfd_ins3);
+}
+
+int CANFD_ISB_INS4_to_CANFD(ins_4_t* ins, is_canfd_payload* out)
+{
+    out->ins4.qe2b[0] = ins->qe2b[0];
+    out->ins4.qe2b[1] = ins->qe2b[1];
+    out->ins4.qe2b[2] = ins->qe2b[2];
+    out->ins4.qe2b[3] = ins->qe2b[3];
+    out->ins4.ve[0]   = ins->ve[0];
+    out->ins4.ve[1]   = ins->ve[1];
+    out->ins4.ve[2]   = ins->ve[2];
+    out->ins4.ecef[0] = ins->ecef[0];
+    out->ins4.ecef[1] = ins->ecef[1];
+    out->ins4.ecef[2] = ins->ecef[2];
+    return (int)sizeof(is_canfd_ins4);
+}
+
+int CANFD_ISB_PIMU_to_CANFD(pimu_t* pimu, is_canfd_payload* out)
+{
+    out->pimu.theta[0] = pimu->theta[0];
+    out->pimu.theta[1] = pimu->theta[1];
+    out->pimu.theta[2] = pimu->theta[2];
+    out->pimu.vel[0]   = pimu->vel[0];
+    out->pimu.vel[1]   = pimu->vel[1];
+    out->pimu.vel[2]   = pimu->vel[2];
+    out->pimu.dt       = pimu->dt;
+    out->pimu.status   = pimu->status;
+    return (int)sizeof(is_canfd_pimu);
+}
+
+int CANFD_ISB_IMU_to_CANFD(imu_t* imu, is_canfd_payload* out)
+{
+    out->imu.pqr[0]  = imu->I.pqr[0];
+    out->imu.pqr[1]  = imu->I.pqr[1];
+    out->imu.pqr[2]  = imu->I.pqr[2];
+    out->imu.acc[0]  = imu->I.acc[0];
+    out->imu.acc[1]  = imu->I.acc[1];
+    out->imu.acc[2]  = imu->I.acc[2];
+    out->imu.status  = imu->status;
+    return (int)sizeof(is_canfd_imu);
+}
+
+int CANFD_ISB_GNSS1_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out)
+{
+    out->gnsspos.status  = gnss->status;
+    out->gnsspos.cnoMean = gnss->cnoMean;
+    return (int)sizeof(is_canfd_gnss_pos);
+}
+
+int CANFD_ISB_GNSS2_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out)
+{
+    out->gnsspos.status  = gnss->status;
+    out->gnsspos.cnoMean = gnss->cnoMean;
+    return (int)sizeof(is_canfd_gnss_pos);
+}
+
+int CANFD_ISB_GNSS1_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out)
+{
+    out->rtkrel.arRatio         = gnss->arRatio;
+    out->rtkrel.differentialAge = gnss->differentialAge;
+    out->rtkrel.distanceToBase  = gnss->baseToRoverDistance;
+    out->rtkrel.headingToBase   = gnss->baseToRoverHeading;
+    return (int)sizeof(is_canfd_gnss_rtk_rel);
+}
+
+int CANFD_ISB_GNSS2_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out)
+{
+    out->rtkrel.arRatio         = gnss->arRatio;
+    out->rtkrel.differentialAge = gnss->differentialAge;
+    out->rtkrel.distanceToBase  = gnss->baseToRoverDistance;
+    out->rtkrel.headingToBase   = gnss->baseToRoverHeading;
+    return (int)sizeof(is_canfd_gnss_rtk_rel);
+}
+
+int CANFD_ISB_dispatch(void* data, canfd_cid_t fdcid, is_canfd_payload* out)
+{
+    switch (fdcid)
+    {
+    case FDCID_INS_1:           return CANFD_ISB_INS1_to_CANFD((ins_1_t*)data, out);
+    case FDCID_INS_2:           return CANFD_ISB_INS2_to_CANFD((ins_2_t*)data, out);
+    case FDCID_INS_3:           return CANFD_ISB_INS3_to_CANFD((ins_3_t*)data, out);
+    case FDCID_INS_4:           return CANFD_ISB_INS4_to_CANFD((ins_4_t*)data, out);
+    case FDCID_PIMU:            return CANFD_ISB_PIMU_to_CANFD((pimu_t*)data, out);
+    case FDCID_IMU:             return CANFD_ISB_IMU_to_CANFD((imu_t*)data, out);
+    case FDCID_GNSS1_POS:       return CANFD_ISB_GNSS1_POS_to_CANFD((gnss_pos_t*)data, out);
+    case FDCID_GNSS2_POS:       return CANFD_ISB_GNSS2_POS_to_CANFD((gnss_pos_t*)data, out);
+    case FDCID_GNSS1_RTK_POS_REL: return CANFD_ISB_GNSS1_RTK_REL_to_CANFD((gnss_rtk_rel_t*)data, out);
+    case FDCID_GNSS2_RTK_CMP_REL: return CANFD_ISB_GNSS2_RTK_REL_to_CANFD((gnss_rtk_rel_t*)data, out);
+    default:                    return -1;
+    }
+}
+
+// ============================================================================
+// CAN FD decode (wire → ISB)
+// ============================================================================
+
+int CANFD_CANFD_to_ISB_INS1(is_canfd_payload* in, ins_1_t* out)
+{
+    out->week        = in->ins1.week;
+    out->timeOfWeek  = in->ins1.timeOfWeek;
+    out->insStatus   = in->ins1.insStatus;
+    out->hdwStatus   = in->ins1.hdwStatus;
+    out->theta[0]    = in->ins1.theta[0];
+    out->theta[1]    = in->ins1.theta[1];
+    out->theta[2]    = in->ins1.theta[2];
+    out->uvw[0]      = in->ins1.uvw[0];
+    out->uvw[1]      = in->ins1.uvw[1];
+    out->uvw[2]      = in->ins1.uvw[2];
+    out->lla[0]      = in->ins1.lat;
+    out->lla[1]      = in->ins1.lon;
+    out->lla[2]      = in->ins1.alt;
+    return (int)sizeof(is_canfd_ins1);
+}
+
+int CANFD_CANFD_to_ISB_INS2(is_canfd_payload* in, ins_2_t* out)
+{
+    out->qn2b[0] = in->ins2.qn2b[0];
+    out->qn2b[1] = in->ins2.qn2b[1];
+    out->qn2b[2] = in->ins2.qn2b[2];
+    out->qn2b[3] = in->ins2.qn2b[3];
+    return (int)sizeof(is_canfd_ins2);
+}
+
+int CANFD_CANFD_to_ISB_INS3(is_canfd_payload* in, ins_3_t* out)
+{
+    out->msl = in->ins3.msl;
+    return (int)sizeof(is_canfd_ins3);
+}
+
+int CANFD_CANFD_to_ISB_INS4(is_canfd_payload* in, ins_4_t* out)
+{
+    out->qe2b[0] = in->ins4.qe2b[0];
+    out->qe2b[1] = in->ins4.qe2b[1];
+    out->qe2b[2] = in->ins4.qe2b[2];
+    out->qe2b[3] = in->ins4.qe2b[3];
+    out->ve[0]   = in->ins4.ve[0];
+    out->ve[1]   = in->ins4.ve[1];
+    out->ve[2]   = in->ins4.ve[2];
+    out->ecef[0] = in->ins4.ecef[0];
+    out->ecef[1] = in->ins4.ecef[1];
+    out->ecef[2] = in->ins4.ecef[2];
+    return (int)sizeof(is_canfd_ins4);
+}
+
+int CANFD_CANFD_to_ISB_PIMU(is_canfd_payload* in, pimu_t* out)
+{
+    out->theta[0] = in->pimu.theta[0];
+    out->theta[1] = in->pimu.theta[1];
+    out->theta[2] = in->pimu.theta[2];
+    out->vel[0]   = in->pimu.vel[0];
+    out->vel[1]   = in->pimu.vel[1];
+    out->vel[2]   = in->pimu.vel[2];
+    out->dt       = in->pimu.dt;
+    out->status   = in->pimu.status;
+    return (int)sizeof(is_canfd_pimu);
+}
+
+int CANFD_CANFD_to_ISB_IMU(is_canfd_payload* in, imu_t* out)
+{
+    out->I.pqr[0] = in->imu.pqr[0];
+    out->I.pqr[1] = in->imu.pqr[1];
+    out->I.pqr[2] = in->imu.pqr[2];
+    out->I.acc[0] = in->imu.acc[0];
+    out->I.acc[1] = in->imu.acc[1];
+    out->I.acc[2] = in->imu.acc[2];
+    out->status   = in->imu.status;
+    return (int)sizeof(is_canfd_imu);
+}
+
+int CANFD_CANFD_to_ISB_GNSS1_POS(is_canfd_payload* in, gnss_pos_t* out)
+{
+    out->status  = in->gnsspos.status;
+    out->cnoMean = in->gnsspos.cnoMean;
+    return (int)sizeof(is_canfd_gnss_pos);
+}
+
+int CANFD_CANFD_to_ISB_GNSS2_POS(is_canfd_payload* in, gnss_pos_t* out)
+{
+    out->status  = in->gnsspos.status;
+    out->cnoMean = in->gnsspos.cnoMean;
+    return (int)sizeof(is_canfd_gnss_pos);
+}
+
+int CANFD_CANFD_to_ISB_GNSS1_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
+{
+    out->arRatio            = in->rtkrel.arRatio;
+    out->differentialAge    = in->rtkrel.differentialAge;
+    out->baseToRoverDistance = in->rtkrel.distanceToBase;
+    out->baseToRoverHeading = in->rtkrel.headingToBase;
+    return (int)sizeof(is_canfd_gnss_rtk_rel);
+}
+
+int CANFD_CANFD_to_ISB_GNSS2_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
+{
+    out->arRatio            = in->rtkrel.arRatio;
+    out->differentialAge    = in->rtkrel.differentialAge;
+    out->baseToRoverDistance = in->rtkrel.distanceToBase;
+    out->baseToRoverHeading = in->rtkrel.headingToBase;
+    return (int)sizeof(is_canfd_gnss_rtk_rel);
+}

@@ -503,4 +503,43 @@ int CAN_CAN_dual_imu_rz_to_ISB_IMU(is_can_payload* in, imu_t* out);
  */
 int CAN_CAN_roll_rollRate_to_ISB_IMU(is_can_payload* in, imu_t* out);
 
+// ============================================================================
+// CAN FD encode/decode
+// Encode: ISB data structure → is_canfd_payload (ISB→wire).
+// Decode: is_canfd_payload → ISB data structure (wire→ISB).
+// Returns number of bytes to transmit / consumed, or -1 on unknown FDCID.
+// ============================================================================
+
+int CANFD_ISB_dispatch(void* data, canfd_cid_t fdcid, is_canfd_payload* out);
+
+int CANFD_ISB_INS1_to_CANFD(ins_1_t* ins, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_INS1(is_canfd_payload* in, ins_1_t* out);
+
+int CANFD_ISB_INS2_to_CANFD(ins_2_t* ins, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_INS2(is_canfd_payload* in, ins_2_t* out);
+
+int CANFD_ISB_INS3_to_CANFD(ins_3_t* ins, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_INS3(is_canfd_payload* in, ins_3_t* out);
+
+int CANFD_ISB_INS4_to_CANFD(ins_4_t* ins, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_INS4(is_canfd_payload* in, ins_4_t* out);
+
+int CANFD_ISB_PIMU_to_CANFD(pimu_t* pimu, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_PIMU(is_canfd_payload* in, pimu_t* out);
+
+int CANFD_ISB_IMU_to_CANFD(imu_t* imu, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_IMU(is_canfd_payload* in, imu_t* out);
+
+int CANFD_ISB_GNSS1_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_GNSS1_POS(is_canfd_payload* in, gnss_pos_t* out);
+
+int CANFD_ISB_GNSS2_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_GNSS2_POS(is_canfd_payload* in, gnss_pos_t* out);
+
+int CANFD_ISB_GNSS1_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_GNSS1_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out);
+
+int CANFD_ISB_GNSS2_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out);
+int CANFD_CANFD_to_ISB_GNSS2_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out);
+
 #endif // PROTOCOL_CAN_H_

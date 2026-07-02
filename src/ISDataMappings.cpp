@@ -1968,6 +1968,28 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate");
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
+
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_1]",              offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_INS_1, DATA_TYPE_UINT16, "", "FD period multiplier for INS-1");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_2]",              offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_INS_2, DATA_TYPE_UINT16, "", "FD period multiplier for INS-2 quaternion");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_3]",              offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_INS_3, DATA_TYPE_UINT16, "", "FD period multiplier for INS-3 MSL");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_4]",              offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_INS_4, DATA_TYPE_UINT16, "", "FD period multiplier for INS-4");
+    mapper.AddMember2("can_fd_period_mult[FDCID_PIMU]",               offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_PIMU, DATA_TYPE_UINT16, "", "FD period multiplier for PIMU");
+    mapper.AddMember2("can_fd_period_mult[FDCID_IMU]",                offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_IMU, DATA_TYPE_UINT16, "", "FD period multiplier for IMU");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS1_POS]",          offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_GNSS1_POS, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS1 position");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS2_POS]",          offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_GNSS2_POS, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS2 position");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS1_RTK_POS_REL]",  offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS1 RTK relative");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS2_RTK_CMP_REL]",  offsetof(can_config_t, can_fd_period_mult) + sizeof(uint16_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS2 RTK compassing relative");
+
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_1]",             offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_INS_1, DATA_TYPE_UINT32, "", "FD transmit address for INS-1", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_2]",             offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_INS_2, DATA_TYPE_UINT32, "", "FD transmit address for INS-2", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_3]",             offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_INS_3, DATA_TYPE_UINT32, "", "FD transmit address for INS-3", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_4]",             offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_INS_4, DATA_TYPE_UINT32, "", "FD transmit address for INS-4", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_PIMU]",              offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_PIMU, DATA_TYPE_UINT32, "", "FD transmit address for PIMU", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_IMU]",               offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_IMU, DATA_TYPE_UINT32, "", "FD transmit address for IMU", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_POS]",         offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_POS, DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 position", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_POS]",         offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_POS, DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 position", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 RTK relative", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_fd_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 RTK compassing relative", DATA_FLAGS_DISPLAY_HEX);
 }
 
 static void PopulateMapDiagMsg(data_set_t data_set[DID_COUNT], uint32_t did)

@@ -2243,8 +2243,24 @@ enum can_cid_t
     CID_GNSS2_POS,
     CID_GNSS1_RTK_POS_REL,
     CID_GNSS2_RTK_CMP_REL,
-    CID_ROLL_ROLLRATE, 
+    CID_ROLL_ROLLRATE,
     NUM_CIDS
+};
+
+/** CAN FD message IDs — one frame per source DID, using native float/double precision */
+enum canfd_cid_t
+{
+    FDCID_INS_1 = 0,           // DID_INS_1: full INS-1 data in 64 bytes
+    FDCID_INS_2,                // DID_INS_2: native-precision qn2b quaternion (16 bytes)
+    FDCID_INS_3,                // DID_INS_3: MSL altitude (4 bytes)
+    FDCID_INS_4,                // DID_INS_4: qe2b + ve + ecef (52 bytes in 64-byte frame)
+    FDCID_PIMU,                 // DID_PIMU: theta + vel + dt + status (32 bytes)
+    FDCID_IMU,                  // DID_IMU: pqr + acc + status (28 bytes in 32-byte frame)
+    FDCID_GNSS1_POS,            // DID_GNSS1_POS: status + cnoMean (8 bytes)
+    FDCID_GNSS2_POS,            // DID_GNSS2_POS: status + cnoMean (8 bytes)
+    FDCID_GNSS1_RTK_POS_REL,   // DID_GNSS1_RTK_POS_REL: native float (16 bytes)
+    FDCID_GNSS2_RTK_CMP_REL,   // DID_GNSS2_RTK_CMP_REL: native float (16 bytes)
+    NUM_FDCIDS
 };
 
 /** Realtime message controller internal (RMCI). */
@@ -5958,6 +5974,13 @@ typedef struct PACKED
 
     /** Receive address */
     uint32_t                can_receive_address;
+
+    /** Broadcast period multiple for CAN FD messages. 0 to disable. Ignored on hardware without CAN FD (e.g. IMX-5). */
+    uint16_t                can_fd_period_mult[NUM_FDCIDS];
+
+    /** Transmit address for each CAN FD message. Defaults to the transmit address of the first
+     *  classic CID derived from the same DID if left as 0 at CAN_init() time. */
+    uint32_t                can_fd_transmit_address[NUM_FDCIDS];
 
 } can_config_t;
 
