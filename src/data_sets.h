@@ -2214,11 +2214,38 @@ typedef struct PACKED
 
 }rmcNmea_t;
 
-typedef struct PACKED
+
+enum can_cid_t
 {
-    uint32_t                 canBits;               // CAN message enable bits for the specified ports.  (see RMC_BITS_...)
-    uint8_t                  canPeriod[NUM_CIDS];   // CAN period multiple of
-}rmcCan_t;
+    CID_INS_TIME = 0,
+    CID_INS_STATUS,
+    CID_INS_EULER,
+    CID_INS_QUATN2B,
+    CID_INS_QUATE2B,
+    CID_INS_UVW,
+    CID_INS_VE,
+    CID_INS_LAT,
+    CID_INS_LON,
+    CID_INS_ALT,
+    CID_INS_NORTH_EAST,
+    CID_INS_DOWN,
+    CID_INS_ECEF_X,
+    CID_INS_ECEF_Y,
+    CID_INS_ECEF_Z,
+    CID_INS_MSL,
+    CID_PREINT_PX,
+    CID_PREINT_QY,
+    CID_PREINT_RZ,
+    CID_DUAL_PX,
+    CID_DUAL_QY,
+    CID_DUAL_RZ,
+    CID_GNSS1_POS,
+    CID_GNSS2_POS,
+    CID_GNSS1_RTK_POS_REL,
+    CID_GNSS2_RTK_CMP_REL,
+    CID_ROLL_ROLLRATE, 
+    NUM_CIDS
+};
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
@@ -2230,9 +2257,6 @@ typedef struct PACKED
     uint8_t                 periodMultiple[DID_COUNT];
 
     rmcNmea_t               rmcNmea;
-    
-    /** CAN message controller settings. */
-    rmcCan_t                rmcCan;
 
 } rmci_t;
 
@@ -5892,37 +5916,6 @@ typedef struct
 } runtime_profiler_t;
 
 
-enum can_cid_t
-{
-    CID_INS_TIME = 0,
-    CID_INS_STATUS,
-    CID_INS_EULER,
-    CID_INS_QUATN2B,
-    CID_INS_QUATE2B,
-    CID_INS_UVW,
-    CID_INS_VE,
-    CID_INS_LAT,
-    CID_INS_LON,
-    CID_INS_ALT,
-    CID_INS_NORTH_EAST,
-    CID_INS_DOWN,
-    CID_INS_ECEF_X,
-    CID_INS_ECEF_Y,
-    CID_INS_ECEF_Z,
-    CID_INS_MSL,
-    CID_PREINT_PX,
-    CID_PREINT_QY,
-    CID_PREINT_RZ,
-    CID_DUAL_PX,
-    CID_DUAL_QY,
-    CID_DUAL_RZ,
-    CID_GNSS1_POS,
-    CID_GNSS2_POS,
-    CID_GNSS1_RTK_POS_REL,
-    CID_GNSS2_RTK_CMP_REL,
-    CID_ROLL_ROLLRATE, 
-    NUM_CIDS
-};
 
 /** Valid baud rates for Inertial Sense hardware */
 enum can_baudrate_t
