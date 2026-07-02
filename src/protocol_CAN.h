@@ -505,41 +505,195 @@ int CAN_CAN_roll_rollRate_to_ISB_IMU(is_can_payload* in, imu_t* out);
 
 // ============================================================================
 // CAN FD encode/decode
-// Encode: ISB data structure → is_canfd_payload (ISB→wire).
-// Decode: is_canfd_payload → ISB data structure (wire→ISB).
-// Returns number of bytes to transmit / consumed, or -1 on unknown FDCID.
+// Encode (ISB→wire): pack an ISB DID struct into an is_canfd_payload.
+// Decode (wire→ISB): unpack an is_canfd_payload into an ISB DID struct.
+// All functions return the number of payload bytes written/consumed, which
+// equals sizeof(the corresponding is_canfd_* struct).  Payload sizes match
+// valid CAN FD DLC steps; the driver zero-pads any remainder automatically.
 // ============================================================================
 
+/**
+ * @brief Encode an ISB data struct into a CAN FD payload and dispatch it by FDCID.
+ *
+ * Routes @p data to the appropriate @c CANFD_ISB_*_to_CANFD() encoder based on
+ * @p fdcid.  @p data must point to the ISB DID struct corresponding to the FDCID
+ * (e.g. @c ins_1_t* for @c FDCID_INS_1).
+ *
+ * @param data   Pointer to the source ISB data structure (cast to void*).
+ * @param fdcid  CAN FD CID identifying which DID and encoder to use.
+ * @param out    Output payload union; the matching member is populated.
+ * @return       Number of payload bytes written, or -1 if @p fdcid is unknown.
+ */
 int CANFD_ISB_dispatch(void* data, canfd_cid_t fdcid, is_canfd_payload* out);
 
+/**
+ * @brief Encode DID_INS_1 data into a 64-byte CAN FD INS-1 payload (ISB→wire).
+ * @param ins  Source INS-1 structure (week, timeOfWeek, insStatus, hdwStatus,
+ *             theta[3], uvw[3], lla[3]).
+ * @param out  Output payload union; populates the @c ins1 member (64 bytes).
+ * @return     sizeof(is_canfd_ins1) = 64.
+ */
 int CANFD_ISB_INS1_to_CANFD(ins_1_t* ins, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD INS-1 payload into a DID_INS_1 structure (wire→ISB).
+ * @param in   Source payload union; reads the @c ins1 member.
+ * @param out  Target INS-1 structure; writes week, timeOfWeek, insStatus,
+ *             hdwStatus, theta[3], uvw[3], lla[3].
+ * @return     sizeof(is_canfd_ins1) = 64.
+ */
 int CANFD_CANFD_to_ISB_INS1(is_canfd_payload* in, ins_1_t* out);
 
+/**
+ * @brief Encode DID_INS_2 quaternion into a 16-byte CAN FD INS-2 payload (ISB→wire).
+ * @param ins  Source INS-2 structure; uses @c qn2b[4] (nav-to-body quaternion).
+ * @param out  Output payload union; populates the @c ins2 member (16 bytes).
+ * @return     sizeof(is_canfd_ins2) = 16.
+ */
 int CANFD_ISB_INS2_to_CANFD(ins_2_t* ins, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD INS-2 payload into a DID_INS_2 structure (wire→ISB).
+ * @param in   Source payload union; reads the @c ins2 member.
+ * @param out  Target INS-2 structure; writes @c qn2b[4].
+ * @return     sizeof(is_canfd_ins2) = 16.
+ */
 int CANFD_CANFD_to_ISB_INS2(is_canfd_payload* in, ins_2_t* out);
 
+/**
+ * @brief Encode DID_INS_3 MSL altitude into a 4-byte CAN FD INS-3 payload (ISB→wire).
+ * @param ins  Source INS-3 structure; uses @c msl (mean sea level altitude, metres).
+ * @param out  Output payload union; populates the @c ins3 member (4 bytes).
+ * @return     sizeof(is_canfd_ins3) = 4.
+ */
 int CANFD_ISB_INS3_to_CANFD(ins_3_t* ins, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD INS-3 payload into a DID_INS_3 structure (wire→ISB).
+ * @param in   Source payload union; reads the @c ins3 member.
+ * @param out  Target INS-3 structure; writes @c msl.
+ * @return     sizeof(is_canfd_ins3) = 4.
+ */
 int CANFD_CANFD_to_ISB_INS3(is_canfd_payload* in, ins_3_t* out);
 
+/**
+ * @brief Encode DID_INS_4 data into a 52-byte CAN FD INS-4 payload (ISB→wire).
+ *        Packed into a 64-byte FD frame; the remaining 12 bytes are zero-padded
+ *        by the driver.
+ * @param ins  Source INS-4 structure; uses @c qe2b[4], @c ve[3], @c ecef[3].
+ * @param out  Output payload union; populates the @c ins4 member (52 bytes).
+ * @return     sizeof(is_canfd_ins4) = 52.
+ */
 int CANFD_ISB_INS4_to_CANFD(ins_4_t* ins, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD INS-4 payload into a DID_INS_4 structure (wire→ISB).
+ * @param in   Source payload union; reads the @c ins4 member.
+ * @param out  Target INS-4 structure; writes @c qe2b[4], @c ve[3], @c ecef[3].
+ * @return     sizeof(is_canfd_ins4) = 52.
+ */
 int CANFD_CANFD_to_ISB_INS4(is_canfd_payload* in, ins_4_t* out);
 
+/**
+ * @brief Encode DID_PIMU data into a 32-byte CAN FD PIMU payload (ISB→wire).
+ * @param pimu  Source PIMU structure; uses @c theta[3], @c vel[3], @c dt, @c status.
+ * @param out   Output payload union; populates the @c pimu member (32 bytes).
+ * @return      sizeof(is_canfd_pimu) = 32.
+ */
 int CANFD_ISB_PIMU_to_CANFD(pimu_t* pimu, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD PIMU payload into a DID_PIMU structure (wire→ISB).
+ * @param in   Source payload union; reads the @c pimu member.
+ * @param out  Target PIMU structure; writes @c theta[3], @c vel[3], @c dt, @c status.
+ * @return     sizeof(is_canfd_pimu) = 32.
+ */
 int CANFD_CANFD_to_ISB_PIMU(is_canfd_payload* in, pimu_t* out);
 
+/**
+ * @brief Encode DID_IMU data into a 28-byte CAN FD IMU payload (ISB→wire).
+ *        Packed into a 32-byte FD frame; the remaining 4 bytes are zero-padded
+ *        by the driver.
+ * @param imu  Source IMU structure; uses @c I.pqr[3], @c I.acc[3], @c status.
+ * @param out  Output payload union; populates the @c imu member (28 bytes).
+ * @return     sizeof(is_canfd_imu) = 28.
+ */
 int CANFD_ISB_IMU_to_CANFD(imu_t* imu, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD IMU payload into a DID_IMU structure (wire→ISB).
+ * @param in   Source payload union; reads the @c imu member.
+ * @param out  Target IMU structure; writes @c I.pqr[3], @c I.acc[3], @c status.
+ * @return     sizeof(is_canfd_imu) = 28.
+ */
 int CANFD_CANFD_to_ISB_IMU(is_canfd_payload* in, imu_t* out);
 
+/**
+ * @brief Encode DID_GNSS1_POS data into an 8-byte CAN FD GNSS-1 position payload (ISB→wire).
+ * @param gnss  Source GNSS position structure; uses @c status and @c cnoMean.
+ * @param out   Output payload union; populates the @c gnsspos member (8 bytes).
+ * @return      sizeof(is_canfd_gnss_pos) = 8.
+ */
 int CANFD_ISB_GNSS1_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD GNSS-1 position payload into a DID_GNSS1_POS structure (wire→ISB).
+ * @param in   Source payload union; reads the @c gnsspos member.
+ * @param out  Target GNSS position structure; writes @c status and @c cnoMean.
+ * @return     sizeof(is_canfd_gnss_pos) = 8.
+ */
 int CANFD_CANFD_to_ISB_GNSS1_POS(is_canfd_payload* in, gnss_pos_t* out);
 
+/**
+ * @brief Encode DID_GNSS2_POS data into an 8-byte CAN FD GNSS-2 position payload (ISB→wire).
+ * @param gnss  Source GNSS position structure; uses @c status and @c cnoMean.
+ * @param out   Output payload union; populates the @c gnsspos member (8 bytes).
+ * @return      sizeof(is_canfd_gnss_pos) = 8.
+ */
 int CANFD_ISB_GNSS2_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD GNSS-2 position payload into a DID_GNSS2_POS structure (wire→ISB).
+ * @param in   Source payload union; reads the @c gnsspos member.
+ * @param out  Target GNSS position structure; writes @c status and @c cnoMean.
+ * @return     sizeof(is_canfd_gnss_pos) = 8.
+ */
 int CANFD_CANFD_to_ISB_GNSS2_POS(is_canfd_payload* in, gnss_pos_t* out);
 
+/**
+ * @brief Encode DID_GNSS1_RTK_POS_REL data into a 16-byte CAN FD RTK relative payload (ISB→wire).
+ * @param gnss  Source RTK relative structure; uses @c arRatio, @c differentialAge,
+ *              @c baseToRoverDistance, and @c baseToRoverHeading.
+ * @param out   Output payload union; populates the @c rtkrel member (16 bytes).
+ * @return      sizeof(is_canfd_gnss_rtk_rel) = 16.
+ */
 int CANFD_ISB_GNSS1_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD RTK relative payload into a DID_GNSS1_RTK_POS_REL structure (wire→ISB).
+ * @param in   Source payload union; reads the @c rtkrel member.
+ * @param out  Target RTK relative structure; writes @c arRatio, @c differentialAge,
+ *             @c baseToRoverDistance, and @c baseToRoverHeading.
+ * @return     sizeof(is_canfd_gnss_rtk_rel) = 16.
+ */
 int CANFD_CANFD_to_ISB_GNSS1_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out);
 
+/**
+ * @brief Encode DID_GNSS2_RTK_CMP_REL data into a 16-byte CAN FD RTK relative payload (ISB→wire).
+ * @param gnss  Source RTK relative structure; uses @c arRatio, @c differentialAge,
+ *              @c baseToRoverDistance, and @c baseToRoverHeading.
+ * @param out   Output payload union; populates the @c rtkrel member (16 bytes).
+ * @return      sizeof(is_canfd_gnss_rtk_rel) = 16.
+ */
 int CANFD_ISB_GNSS2_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out);
+
+/**
+ * @brief Decode a CAN FD RTK relative payload into a DID_GNSS2_RTK_CMP_REL structure (wire→ISB).
+ * @param in   Source payload union; reads the @c rtkrel member.
+ * @param out  Target RTK relative structure; writes @c arRatio, @c differentialAge,
+ *             @c baseToRoverDistance, and @c baseToRoverHeading.
+ * @return     sizeof(is_canfd_gnss_rtk_rel) = 16.
+ */
 int CANFD_CANFD_to_ISB_GNSS2_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out);
 
 #endif // PROTOCOL_CAN_H_

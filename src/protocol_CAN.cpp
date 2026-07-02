@@ -10,47 +10,6 @@ extern gnss_posvel_t g_gnssNav[2];
 extern ins_output_t g_insOut;
 
 // ============================================================================
-// Dispatch
-// ============================================================================
-
-/** @brief Dispatch an ISB-to-CAN conversion by CAN message ID; calls the
- *         appropriate CAN_ISB_*_to_CAN_* function for the given cid. */
-int CAN_ISB_dispatch(void* data, can_cid_t cid, is_can_payload* out)
-{
-    switch (cid)
-    {
-    case CID_INS_TIME:          return CAN_ISB_INS_to_CAN_time(static_cast<ins_1_t*>(data), out);
-    case CID_INS_STATUS:        return CAN_ISB_INS_to_CAN_ins_status(static_cast<ins_1_t*>(data), out);
-    case CID_INS_EULER:         return CAN_ISB_INS_to_CAN_ins_euler(static_cast<ins_1_t*>(data), out);
-    case CID_INS_QUATN2B:       return CAN_ISB_INS_to_CAN_quatn2b(static_cast<ins_2_t*>(data), out);
-    case CID_INS_QUATE2B:       return CAN_ISB_INS_to_CAN_quate2b(static_cast<ins_4_t*>(data), out);
-    case CID_INS_UVW:           return CAN_ISB_INS_to_CAN_uvw(static_cast<ins_1_t*>(data), out);
-    case CID_INS_VE:            return CAN_ISB_INS_to_CAN_ve(static_cast<ins_4_t*>(data), out);
-    case CID_INS_LAT:           return CAN_ISB_INS_to_CAN_latitude(static_cast<ins_1_t*>(data), out);
-    case CID_INS_LON:           return CAN_ISB_INS_to_CAN_longitude(static_cast<ins_1_t*>(data), out);
-    case CID_INS_ALT:           return CAN_ISB_INS_to_CAN_altitude(static_cast<ins_1_t*>(data), out);
-    case CID_INS_NORTH_EAST:    return CAN_ISB_INS_to_CAN_ned_north_east(static_cast<ins_1_t*>(data), out);
-    case CID_INS_DOWN:          return CAN_ISB_INS_to_CAN_ned_down(static_cast<ins_1_t*>(data), out);
-    case CID_INS_ECEF_X:        return CAN_ISB_INS_to_CAN_ecef_x(static_cast<ins_4_t*>(data), out);
-    case CID_INS_ECEF_Y:        return CAN_ISB_INS_to_CAN_ecef_y(static_cast<ins_4_t*>(data), out);
-    case CID_INS_ECEF_Z:        return CAN_ISB_INS_to_CAN_ecef_z(static_cast<ins_4_t*>(data), out);
-    case CID_INS_MSL:           return CAN_ISB_INS_to_CAN_msl(static_cast<ins_3_t*>(data), out);
-    case CID_PREINT_PX:         return CAN_ISB_PIMU_to_CAN_pimu_px(static_cast<pimu_t*>(data), out);
-    case CID_PREINT_QY:         return CAN_ISB_PIMU_to_CAN_pimu_qy(static_cast<pimu_t*>(data), out);
-    case CID_PREINT_RZ:         return CAN_ISB_PIMU_to_CAN_pimu_rz(static_cast<pimu_t*>(data), out);
-    case CID_DUAL_PX:           return CAN_ISB_IMU_to_CAN_dual_imu_px(static_cast<imu_t*>(data), out);
-    case CID_DUAL_QY:           return CAN_ISB_IMU_to_CAN_dual_imu_qy(static_cast<imu_t*>(data), out);
-    case CID_DUAL_RZ:           return CAN_ISB_IMU_to_CAN_dual_imu_rz(static_cast<imu_t*>(data), out);
-    case CID_GNSS1_POS:         return CAN_ISB_GNSS_to_CAN_gnss1_pos(static_cast<gnss_pos_t*>(data), out);
-    case CID_GNSS2_POS:         return CAN_ISB_GNSS_to_CAN_gnss2_pos(static_cast<gnss_pos_t*>(data), out);
-    case CID_GNSS1_RTK_POS_REL: return CAN_ISB_GNSS_to_CAN_gnss1_rtk_pos_rel(static_cast<gnss_rtk_rel_t*>(data), out);
-    case CID_GNSS2_RTK_CMP_REL: return CAN_ISB_GNSS_to_CAN_gnss2_rtk_cmp_rel(static_cast<gnss_rtk_rel_t*>(data), out);
-    case CID_ROLL_ROLLRATE:     return CAN_ISB_IMU_to_CAN_roll_rollRate(static_cast<imu_t*>(data), out);
-    default:                    return -1;
-    }
-}
-
-// ============================================================================
 // ISB -> CAN
 // ============================================================================
 
@@ -546,6 +505,7 @@ int CAN_CAN_roll_rollRate_to_ISB_IMU(is_can_payload* in, imu_t* out)
 // CAN FD encode (ISB → wire)
 // ============================================================================
 
+/** @brief Encode DID_INS_1 into a 64-byte CAN FD INS-1 payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_INS1_to_CANFD(ins_1_t* ins, is_canfd_payload* out)
 {
     out->ins1.week       = ins->week;
@@ -564,6 +524,7 @@ int CANFD_ISB_INS1_to_CANFD(ins_1_t* ins, is_canfd_payload* out)
     return (int)sizeof(is_canfd_ins1);
 }
 
+/** @brief Encode DID_INS_2 quaternion into a 16-byte CAN FD INS-2 payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_INS2_to_CANFD(ins_2_t* ins, is_canfd_payload* out)
 {
     out->ins2.qn2b[0] = ins->qn2b[0];
@@ -573,12 +534,14 @@ int CANFD_ISB_INS2_to_CANFD(ins_2_t* ins, is_canfd_payload* out)
     return (int)sizeof(is_canfd_ins2);
 }
 
+/** @brief Encode DID_INS_3 MSL altitude into a 4-byte CAN FD INS-3 payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_INS3_to_CANFD(ins_3_t* ins, is_canfd_payload* out)
 {
     out->ins3.msl = ins->msl;
     return (int)sizeof(is_canfd_ins3);
 }
 
+/** @brief Encode DID_INS_4 into a 52-byte CAN FD INS-4 payload (64-byte frame, zero-padded). See protocol_CAN.h for full doc. */
 int CANFD_ISB_INS4_to_CANFD(ins_4_t* ins, is_canfd_payload* out)
 {
     out->ins4.qe2b[0] = ins->qe2b[0];
@@ -594,6 +557,7 @@ int CANFD_ISB_INS4_to_CANFD(ins_4_t* ins, is_canfd_payload* out)
     return (int)sizeof(is_canfd_ins4);
 }
 
+/** @brief Encode DID_PIMU into a 32-byte CAN FD PIMU payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_PIMU_to_CANFD(pimu_t* pimu, is_canfd_payload* out)
 {
     out->pimu.theta[0] = pimu->theta[0];
@@ -607,6 +571,7 @@ int CANFD_ISB_PIMU_to_CANFD(pimu_t* pimu, is_canfd_payload* out)
     return (int)sizeof(is_canfd_pimu);
 }
 
+/** @brief Encode DID_IMU into a 28-byte CAN FD IMU payload (32-byte frame, zero-padded). See protocol_CAN.h for full doc. */
 int CANFD_ISB_IMU_to_CANFD(imu_t* imu, is_canfd_payload* out)
 {
     out->imu.pqr[0]  = imu->I.pqr[0];
@@ -619,6 +584,7 @@ int CANFD_ISB_IMU_to_CANFD(imu_t* imu, is_canfd_payload* out)
     return (int)sizeof(is_canfd_imu);
 }
 
+/** @brief Encode DID_GNSS1_POS status and CNO into an 8-byte CAN FD GNSS-1 position payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_GNSS1_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out)
 {
     out->gnsspos.status  = gnss->status;
@@ -626,6 +592,7 @@ int CANFD_ISB_GNSS1_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out)
     return (int)sizeof(is_canfd_gnss_pos);
 }
 
+/** @brief Encode DID_GNSS2_POS status and CNO into an 8-byte CAN FD GNSS-2 position payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_GNSS2_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out)
 {
     out->gnsspos.status  = gnss->status;
@@ -633,6 +600,7 @@ int CANFD_ISB_GNSS2_POS_to_CANFD(gnss_pos_t* gnss, is_canfd_payload* out)
     return (int)sizeof(is_canfd_gnss_pos);
 }
 
+/** @brief Encode DID_GNSS1_RTK_POS_REL into a 16-byte CAN FD RTK relative payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_GNSS1_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out)
 {
     out->rtkrel.arRatio         = gnss->arRatio;
@@ -642,6 +610,7 @@ int CANFD_ISB_GNSS1_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 
+/** @brief Encode DID_GNSS2_RTK_CMP_REL into a 16-byte CAN FD RTK relative payload. See protocol_CAN.h for full doc. */
 int CANFD_ISB_GNSS2_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out)
 {
     out->rtkrel.arRatio         = gnss->arRatio;
@@ -651,28 +620,11 @@ int CANFD_ISB_GNSS2_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 
-int CANFD_ISB_dispatch(void* data, canfd_cid_t fdcid, is_canfd_payload* out)
-{
-    switch (fdcid)
-    {
-    case FDCID_INS_1:           return CANFD_ISB_INS1_to_CANFD((ins_1_t*)data, out);
-    case FDCID_INS_2:           return CANFD_ISB_INS2_to_CANFD((ins_2_t*)data, out);
-    case FDCID_INS_3:           return CANFD_ISB_INS3_to_CANFD((ins_3_t*)data, out);
-    case FDCID_INS_4:           return CANFD_ISB_INS4_to_CANFD((ins_4_t*)data, out);
-    case FDCID_PIMU:            return CANFD_ISB_PIMU_to_CANFD((pimu_t*)data, out);
-    case FDCID_IMU:             return CANFD_ISB_IMU_to_CANFD((imu_t*)data, out);
-    case FDCID_GNSS1_POS:       return CANFD_ISB_GNSS1_POS_to_CANFD((gnss_pos_t*)data, out);
-    case FDCID_GNSS2_POS:       return CANFD_ISB_GNSS2_POS_to_CANFD((gnss_pos_t*)data, out);
-    case FDCID_GNSS1_RTK_POS_REL: return CANFD_ISB_GNSS1_RTK_REL_to_CANFD((gnss_rtk_rel_t*)data, out);
-    case FDCID_GNSS2_RTK_CMP_REL: return CANFD_ISB_GNSS2_RTK_REL_to_CANFD((gnss_rtk_rel_t*)data, out);
-    default:                    return -1;
-    }
-}
-
 // ============================================================================
 // CAN FD decode (wire → ISB)
 // ============================================================================
 
+/** @brief Decode a CAN FD INS-1 payload into a DID_INS_1 structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_INS1(is_canfd_payload* in, ins_1_t* out)
 {
     out->week        = in->ins1.week;
@@ -691,6 +643,7 @@ int CANFD_CANFD_to_ISB_INS1(is_canfd_payload* in, ins_1_t* out)
     return (int)sizeof(is_canfd_ins1);
 }
 
+/** @brief Decode a CAN FD INS-2 payload into a DID_INS_2 structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_INS2(is_canfd_payload* in, ins_2_t* out)
 {
     out->qn2b[0] = in->ins2.qn2b[0];
@@ -700,12 +653,14 @@ int CANFD_CANFD_to_ISB_INS2(is_canfd_payload* in, ins_2_t* out)
     return (int)sizeof(is_canfd_ins2);
 }
 
+/** @brief Decode a CAN FD INS-3 payload into a DID_INS_3 structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_INS3(is_canfd_payload* in, ins_3_t* out)
 {
     out->msl = in->ins3.msl;
     return (int)sizeof(is_canfd_ins3);
 }
 
+/** @brief Decode a CAN FD INS-4 payload into a DID_INS_4 structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_INS4(is_canfd_payload* in, ins_4_t* out)
 {
     out->qe2b[0] = in->ins4.qe2b[0];
@@ -721,6 +676,7 @@ int CANFD_CANFD_to_ISB_INS4(is_canfd_payload* in, ins_4_t* out)
     return (int)sizeof(is_canfd_ins4);
 }
 
+/** @brief Decode a CAN FD PIMU payload into a DID_PIMU structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_PIMU(is_canfd_payload* in, pimu_t* out)
 {
     out->theta[0] = in->pimu.theta[0];
@@ -734,6 +690,7 @@ int CANFD_CANFD_to_ISB_PIMU(is_canfd_payload* in, pimu_t* out)
     return (int)sizeof(is_canfd_pimu);
 }
 
+/** @brief Decode a CAN FD IMU payload into a DID_IMU structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_IMU(is_canfd_payload* in, imu_t* out)
 {
     out->I.pqr[0] = in->imu.pqr[0];
@@ -746,6 +703,7 @@ int CANFD_CANFD_to_ISB_IMU(is_canfd_payload* in, imu_t* out)
     return (int)sizeof(is_canfd_imu);
 }
 
+/** @brief Decode a CAN FD GNSS-1 position payload into a DID_GNSS1_POS structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_GNSS1_POS(is_canfd_payload* in, gnss_pos_t* out)
 {
     out->status  = in->gnsspos.status;
@@ -753,6 +711,7 @@ int CANFD_CANFD_to_ISB_GNSS1_POS(is_canfd_payload* in, gnss_pos_t* out)
     return (int)sizeof(is_canfd_gnss_pos);
 }
 
+/** @brief Decode a CAN FD GNSS-2 position payload into a DID_GNSS2_POS structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_GNSS2_POS(is_canfd_payload* in, gnss_pos_t* out)
 {
     out->status  = in->gnsspos.status;
@@ -760,6 +719,7 @@ int CANFD_CANFD_to_ISB_GNSS2_POS(is_canfd_payload* in, gnss_pos_t* out)
     return (int)sizeof(is_canfd_gnss_pos);
 }
 
+/** @brief Decode a CAN FD RTK relative payload into a DID_GNSS1_RTK_POS_REL structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_GNSS1_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
 {
     out->arRatio            = in->rtkrel.arRatio;
@@ -769,6 +729,7 @@ int CANFD_CANFD_to_ISB_GNSS1_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 
+/** @brief Decode a CAN FD RTK relative payload into a DID_GNSS2_RTK_CMP_REL structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_GNSS2_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
 {
     out->arRatio            = in->rtkrel.arRatio;
@@ -776,4 +737,64 @@ int CANFD_CANFD_to_ISB_GNSS2_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
     out->baseToRoverDistance = in->rtkrel.distanceToBase;
     out->baseToRoverHeading = in->rtkrel.headingToBase;
     return (int)sizeof(is_canfd_gnss_rtk_rel);
+}
+
+// ============================================================================
+// Dispatch
+// ============================================================================
+
+/** @brief Dispatch an ISB-to-CAN conversion by CAN message ID; calls the
+ *         appropriate CAN_ISB_*_to_CAN_* function for the given cid. */
+int CAN_ISB_dispatch(void* data, can_cid_t cid, is_can_payload* out)
+{
+    switch (cid)
+    {
+    case CID_INS_TIME:          return CAN_ISB_INS_to_CAN_time(static_cast<ins_1_t*>(data), out);
+    case CID_INS_STATUS:        return CAN_ISB_INS_to_CAN_ins_status(static_cast<ins_1_t*>(data), out);
+    case CID_INS_EULER:         return CAN_ISB_INS_to_CAN_ins_euler(static_cast<ins_1_t*>(data), out);
+    case CID_INS_QUATN2B:       return CAN_ISB_INS_to_CAN_quatn2b(static_cast<ins_2_t*>(data), out);
+    case CID_INS_QUATE2B:       return CAN_ISB_INS_to_CAN_quate2b(static_cast<ins_4_t*>(data), out);
+    case CID_INS_UVW:           return CAN_ISB_INS_to_CAN_uvw(static_cast<ins_1_t*>(data), out);
+    case CID_INS_VE:            return CAN_ISB_INS_to_CAN_ve(static_cast<ins_4_t*>(data), out);
+    case CID_INS_LAT:           return CAN_ISB_INS_to_CAN_latitude(static_cast<ins_1_t*>(data), out);
+    case CID_INS_LON:           return CAN_ISB_INS_to_CAN_longitude(static_cast<ins_1_t*>(data), out);
+    case CID_INS_ALT:           return CAN_ISB_INS_to_CAN_altitude(static_cast<ins_1_t*>(data), out);
+    case CID_INS_NORTH_EAST:    return CAN_ISB_INS_to_CAN_ned_north_east(static_cast<ins_1_t*>(data), out);
+    case CID_INS_DOWN:          return CAN_ISB_INS_to_CAN_ned_down(static_cast<ins_1_t*>(data), out);
+    case CID_INS_ECEF_X:        return CAN_ISB_INS_to_CAN_ecef_x(static_cast<ins_4_t*>(data), out);
+    case CID_INS_ECEF_Y:        return CAN_ISB_INS_to_CAN_ecef_y(static_cast<ins_4_t*>(data), out);
+    case CID_INS_ECEF_Z:        return CAN_ISB_INS_to_CAN_ecef_z(static_cast<ins_4_t*>(data), out);
+    case CID_INS_MSL:           return CAN_ISB_INS_to_CAN_msl(static_cast<ins_3_t*>(data), out);
+    case CID_PREINT_PX:         return CAN_ISB_PIMU_to_CAN_pimu_px(static_cast<pimu_t*>(data), out);
+    case CID_PREINT_QY:         return CAN_ISB_PIMU_to_CAN_pimu_qy(static_cast<pimu_t*>(data), out);
+    case CID_PREINT_RZ:         return CAN_ISB_PIMU_to_CAN_pimu_rz(static_cast<pimu_t*>(data), out);
+    case CID_DUAL_PX:           return CAN_ISB_IMU_to_CAN_dual_imu_px(static_cast<imu_t*>(data), out);
+    case CID_DUAL_QY:           return CAN_ISB_IMU_to_CAN_dual_imu_qy(static_cast<imu_t*>(data), out);
+    case CID_DUAL_RZ:           return CAN_ISB_IMU_to_CAN_dual_imu_rz(static_cast<imu_t*>(data), out);
+    case CID_GNSS1_POS:         return CAN_ISB_GNSS_to_CAN_gnss1_pos(static_cast<gnss_pos_t*>(data), out);
+    case CID_GNSS2_POS:         return CAN_ISB_GNSS_to_CAN_gnss2_pos(static_cast<gnss_pos_t*>(data), out);
+    case CID_GNSS1_RTK_POS_REL: return CAN_ISB_GNSS_to_CAN_gnss1_rtk_pos_rel(static_cast<gnss_rtk_rel_t*>(data), out);
+    case CID_GNSS2_RTK_CMP_REL: return CAN_ISB_GNSS_to_CAN_gnss2_rtk_cmp_rel(static_cast<gnss_rtk_rel_t*>(data), out);
+    case CID_ROLL_ROLLRATE:     return CAN_ISB_IMU_to_CAN_roll_rollRate(static_cast<imu_t*>(data), out);
+    default:                    return -1;
+    }
+}
+
+/** @brief Encode an ISB data struct into a CAN FD payload by FDCID. See protocol_CAN.h for full doc. */
+int CANFD_ISB_dispatch(void* data, canfd_cid_t fdcid, is_canfd_payload* out)
+{
+    switch (fdcid)
+    {
+    case FDCID_INS_1:           return CANFD_ISB_INS1_to_CANFD((ins_1_t*)data, out);
+    case FDCID_INS_2:           return CANFD_ISB_INS2_to_CANFD((ins_2_t*)data, out);
+    case FDCID_INS_3:           return CANFD_ISB_INS3_to_CANFD((ins_3_t*)data, out);
+    case FDCID_INS_4:           return CANFD_ISB_INS4_to_CANFD((ins_4_t*)data, out);
+    case FDCID_PIMU:            return CANFD_ISB_PIMU_to_CANFD((pimu_t*)data, out);
+    case FDCID_IMU:             return CANFD_ISB_IMU_to_CANFD((imu_t*)data, out);
+    case FDCID_GNSS1_POS:       return CANFD_ISB_GNSS1_POS_to_CANFD((gnss_pos_t*)data, out);
+    case FDCID_GNSS2_POS:       return CANFD_ISB_GNSS2_POS_to_CANFD((gnss_pos_t*)data, out);
+    case FDCID_GNSS1_RTK_POS_REL: return CANFD_ISB_GNSS1_RTK_REL_to_CANFD((gnss_rtk_rel_t*)data, out);
+    case FDCID_GNSS2_RTK_CMP_REL: return CANFD_ISB_GNSS2_RTK_REL_to_CANFD((gnss_rtk_rel_t*)data, out);
+    default:                    return -1;
+    }
 }
