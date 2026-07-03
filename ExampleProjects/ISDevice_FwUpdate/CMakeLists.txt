@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
-project(ISFirmwareUpdateExample_v2)
+project(ISDevice_FwUpdate)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
@@ -12,7 +12,7 @@ include_directories(
 )
 
 # Define the executable
-add_executable(${PROJECT_NAME} ISFirmwareUpdateExample_v2.cpp)
+add_executable(${PROJECT_NAME} ISDeviceFwUpdate.cpp)
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
