@@ -55,6 +55,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef B921600
 #define B921600 921600
 #endif
+#ifndef B1000000
+#define B1000000 1000000
+#endif
 #ifndef B1500000
 #define B1500000 1500000
 #endif
@@ -66,6 +69,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 #ifndef B3000000
 #define B3000000 3000000
+#endif
+#ifndef B4000000
+#define B4000000 4000000
 #endif
 
 #endif
@@ -171,15 +177,17 @@ static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferre
 #else
 
 /**
- * @brief Validate the baud rate.
- * This function checks if the given baud rate is a standard, supported value.
- * It returns the corresponding termios speed flag for the given baud rate.
- * If the baud rate is not supported, it returns 0.
+ * @brief Map a baud rate to its standard termios Bxxx constant, if one exists.
+ * Returns the corresponding termios speed constant for a known standard rate, or 0 if the rate
+ * has no standard constant. A 0 return does NOT mean "invalid" (see serialPortBaudRateSupported):
+ * it means the rate must be applied via the platform custom-rate path (Linux termios2/BOTHER,
+ * macOS IOSSIOSPEED). SN-8239: added 1000000 and 4000000; note 1220000/1440000 have no Bxxx
+ * constant on Linux and therefore intentionally return 0 (custom path).
  *
- * @param baudRate The baud rate to validate.
- * @return int The validated baud rate, or 0 if invalid.
+ * @param baudRate The requested baud rate (bits/sec).
+ * @return int The termios Bxxx constant, or 0 if the rate is not a standard enumerated rate.
  */
-static int validate_baud_rate(int baudRate)
+int serialPortStandardBaudRate(int baudRate)
 {
     switch (baudRate)
     {
@@ -197,11 +205,27 @@ static int validate_baud_rate(int baudRate)
     case 230400:  return B230400;
     case 460800:  return B460800;
     case 921600:  return B921600;
+    case 1000000: return B1000000;
     case 1500000: return B1500000;
     case 2000000: return B2000000;
     case 2500000: return B2500000;
     case 3000000: return B3000000;
+    case 4000000: return B4000000;
     }
+}
+
+/**
+ * @brief Report whether a baud rate is supported by the SDK serial layer.
+ * Accepts any positive rate up to SERIAL_PORT_BAUDRATE_MAX (10 Mbaud). Standard rates are applied
+ * via their Bxxx constant; anything else is applied as a custom rate (Linux termios2/BOTHER,
+ * macOS IOSSIOSPEED). Pure decision logic, separated so it is unit-testable without USB hardware.
+ *
+ * @param baudRate The requested baud rate (bits/sec).
+ * @return int 1 if the rate is supported, 0 otherwise.
+ */
+int serialPortBaudRateSupported(int baudRate)
+{
+    return (baudRate > 0 && baudRate <= SERIAL_PORT_BAUDRATE_MAX) ? 1 : 0;
 }
 
 /**
@@ -224,13 +248,15 @@ static int configure_serial_port(int fd, int baudRate)
         return -1;
     }
 
-    // Restrict baudrate to predefined values (standard and high speed)
-    baudRate = validate_baud_rate(baudRate);    
-    if (baudRate == 0)
+    // SN-8239: accept standard rates (mapped to a termios Bxxx constant) and arbitrary custom rates
+    // up to SERIAL_PORT_BAUDRATE_MAX (10 Mbaud). stdBaud == 0 means "no standard constant" -> use the
+    // platform custom-rate path. Note baudRate keeps the raw requested rate throughout.
+    if (!serialPortBaudRateSupported(baudRate))
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: error invalid baudrate: %s (%d)", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: unsupported baudrate: %d (max %d)", baudRate, SERIAL_PORT_BAUDRATE_MAX);
         return -1;
     }
+    int stdBaud = serialPortStandardBaudRate(baudRate);
 
     // Set Baud Rate
 #if PLATFORM_IS_APPLE
@@ -238,16 +264,20 @@ static int configure_serial_port(int fd, int baudRate)
     // HACK: Mac will not allow higher baud rate until after set lower valid rate: e.g. 230400
     cfsetospeed(&tty, 230400);
     cfsetispeed(&tty, 230400);
-    // Now baud rate can be set higher than 230400
-    if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
+    // IOSSIOSPEED takes the actual integer speed, so both standard and custom rates go through here.
+    speed_t appleSpeed = (speed_t)baudRate;
+    if (ioctl(fd, IOSSIOSPEED, &appleSpeed) == -1)
     {
         log_error(IS_LOG_PORT, "config_serial_port():: error %d from ioctl IOSSIOSPEED", errno);
     }
 
 #else
 
-    cfsetospeed(&tty, baudRate);
-    cfsetispeed(&tty, baudRate);
+    // Linux: standard rates are set here via the Bxxx constant. Custom rates cannot be expressed by
+    // cfsetospeed/cfsetispeed (Bxxx tops out at B4000000), so we set a valid placeholder speed now and
+    // apply the real rate via termios2/BOTHER (serialPortSetCustomBaudLinux) after tcsetattr below.
+    cfsetospeed(&tty, (stdBaud != 0) ? stdBaud : B38400);
+    cfsetispeed(&tty, (stdBaud != 0) ? stdBaud : B38400);
 
     // Attempt to configure LOW_LATENCY for UART/serial ports - though doesn't appear to improve things much.
     struct serial_struct serial;
@@ -321,6 +351,20 @@ static int configure_serial_port(int fd, int baudRate)
             return -1;
         }
     }
+
+#if PLATFORM_IS_LINUX
+    // SN-8239: a custom (non-standard) rate can't be expressed by Bxxx/cfsetospeed, so the flags above
+    // were applied with a placeholder speed; now set the real rate via termios2/BOTHER. This preserves
+    // the just-applied line flags (it reads them back via TCGETS2 and only overrides the speed).
+    if (stdBaud == 0)
+    {
+        if (serialPortSetCustomBaudLinux(fd, baudRate) != 0)
+        {
+            log_error(IS_LOG_PORT, "config_serial_port():: failed to set custom baud %d: %s (%d)", baudRate, strerror(errno), errno);
+            return -1;
+        }
+    }
+#endif
 
     return 0;
 }
