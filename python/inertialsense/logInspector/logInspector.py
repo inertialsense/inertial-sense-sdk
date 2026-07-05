@@ -409,6 +409,8 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('IMU Status', 'imuStatus')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
+        self.addListItem('GPX Status', 'gpxStatus')
+        self.addListItem('GPX HDW Status', 'gpxHdwStatus')
 
     def createListIns(self):
         self.addListItem('Pos NED Map', 'posNEDMap')
@@ -430,22 +432,20 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Magnetometer', 'magnetometer')
         self.addListItem('Temp', 'temp')
 
-    def createListGps(self):
-        self.addListItem('GPS LLA', 'gpsLLA')
-        self.addListItem('GPS 1 Stats', 'gpsStats')
-        self.addListItem('GPS 2 Stats', 'gps2Stats')
-        self.addListItem('GPS Time', 'gpsTime')
-        self.addListItem('GPX Status', 'gpxStatus')
-        self.addListItem('GPX HDW Status', 'gpxHdwStatus')
+    def createListGnss(self):
+        self.addListItem('GNSS LLA', 'gnssLLA')
+        self.addListItem('GNSS 1 Stats', 'gnssStats')
+        self.addListItem('GNSS 2 Stats', 'gnss2Stats')
+        self.addListItem('GNSS Time', 'gnssTime')
         self.addListItem('RTK Pos Stats', 'rtkPosStats')
         self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')
-        self.addListItem('RTK Obs GNSS1', 'rtkObsGPS1')
-        self.addListItem('RTK Obs GNSS2', 'rtkObsGPS2')
+        self.addListItem('RTK Obs GNSS1', 'rtkObsGNSS1')
+        self.addListItem('RTK Obs GNSS2', 'rtkObsGNSS2')
         self.addListItem('RTK Obs Rover-Base Double Diff', 'rtkObsDoubleDiff')
-        self.addListItem('GPS Position NED Map', 'gpsPosNEDMap')
-        self.addListItem('GPS Position NED', 'gpsPosNED')
-        self.addListItem('GPS Velocity NED', 'gpsVelNED')
+        self.addListItem('GNSS Position NED Map', 'gnssPosNEDMap')
+        self.addListItem('GNSS Position NED', 'gnssPosNED')
+        self.addListItem('GNSS Velocity NED', 'gnssVelNED')
 
     def createListGeneral(self):
         None
@@ -492,8 +492,8 @@ class LogInspectorWindow(QMainWindow):
         self.addListSection('SENSORS')
         self.createListSensors()
 
-        self.addListSection('GPS')
-        self.createListGps()
+        self.addListSection('GNSS')
+        self.createListGnss()
 
         self.addListSection('GENERAL')
         self.createListGeneral()
@@ -513,8 +513,8 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton = QPushButton("Save All Plots")
         self.saveAllPushButton.setToolTip("Save all plots to file")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
-        self.showGps2 = QCheckBox("GNSS2", self)
-        self.showGps2.stateChanged.connect(self.changeShowGps2Checkbox)
+        self.showGnss2 = QCheckBox("GNSS2", self)
+        self.showGnss2.stateChanged.connect(self.changeShowGnss2Checkbox)
 
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.setSpacing(0)
@@ -527,17 +527,17 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions2.addWidget(self.saveAllPushButton)
         self.VLayoutOptions3 = QVBoxLayout()
         self.VLayoutOptions3.setSpacing(0)
-        self.VLayoutOptions3.addWidget(self.showGps2)
+        self.VLayoutOptions3.addWidget(self.showGnss2)
         
-        if 0:   # Show GPS Velocity Filter Input in UI
-            self.GpsVelFilterLabel = QLabel(" GPS Vel Filter", self)
-            self.gpsVelFilter = QSpinBox(self)
-            self.gpsVelFilter.setValue(0)
-            self.gpsVelFilter.setMaximumWidth(35)
-            self.gpsVelFilter.valueChanged.connect(self.changeGpsVelFilterInput)
+        if 0:   # Show GNSS Velocity Filter Input in UI
+            self.GnssVelFilterLabel = QLabel(" GNSS Vel Filter", self)
+            self.gnssVelFilter = QSpinBox(self)
+            self.gnssVelFilter.setValue(0)
+            self.gnssVelFilter.setMaximumWidth(35)
+            self.gnssVelFilter.valueChanged.connect(self.changeGnssVelFilterInput)
             self.HLayoutOptions3 = QHBoxLayout()
-            self.HLayoutOptions3.addWidget(self.gpsVelFilter)
-            self.HLayoutOptions3.addWidget(self.GpsVelFilterLabel)
+            self.HLayoutOptions3.addWidget(self.gnssVelFilter)
+            self.HLayoutOptions3.addWidget(self.GnssVelFilterLabel)
             self.VLayoutOptions3.addLayout(self.HLayoutOptions3)
 
         group_box = QGroupBox("")
@@ -688,13 +688,13 @@ class LogInspectorWindow(QMainWindow):
                 mplot.plotter.enableXAxisSample(state)
                 self.updatePlot()
 
-    def changeShowGps2Checkbox(self, state):
+    def changeShowGnss2Checkbox(self, state):
         for mplot in self.mplots:
             if mplot.plotter:
-                mplot.plotter.enableGps2(state)
+                mplot.plotter.enableGnss2(state)
                 self.updatePlot()
 
-    def changeGpsVelFilterInput(self, text):
+    def changeGnssVelFilterInput(self, text):
         # Ignore input until a log is loaded
         if getattr(self, 'log', None) is None:
             return
@@ -703,7 +703,7 @@ class LogInspectorWindow(QMainWindow):
             filter_mode = int(text) if text is not None else 0
             for mplot in self.mplots:
                 if mplot.plotter:
-                    mplot.plotter.setGpsVelFilterMode(filter_mode)
+                    mplot.plotter.setGnssVelFilterMode(filter_mode)
             # update once after applying to all plotters
             self.updatePlot()
         except (ValueError, TypeError):
@@ -919,8 +919,9 @@ class LogInspectorWindow(QMainWindow):
         
         # Select post_processed directory in file tree view
         for row in range(index.model().rowCount(index)):
-            if self.fileTree.model().fileName(index.child(row, 0)) == "post_processed":
-                self.fileTree.setCurrentIndex(index.child(row, 0))
+            child_index = index.model().index(row, 0, index)
+            if self.fileTree.model().fileName(child_index) == "post_processed":
+                self.fileTree.setCurrentIndex(child_index)
                 QtCore.QCoreApplication.processEvents() # refresh UI
                 self.handleTreeViewClick()
                 continue

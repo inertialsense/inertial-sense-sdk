@@ -45,8 +45,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "TcpPortFactory.h"
 #include "ISmDnsPortFactory.h"
 #include "RelayPortFactory.h"
+#include "PortFactory.h"
 #include "util/natsort.h"
-#include "util/uri.hpp"
+#include "util/util.h"
 
 #include "ISBootloaderThread.h"
 #include "CorrectionService.h"
@@ -68,8 +69,7 @@ static void sendNmea(serial_port_t &port, string nmeaMsg);
 
 /// Extract the hostname portion of a canonical "http://host:port" URL for hostname-based filtering.
 static std::string hostnameFromUrl(const std::string& url) {
-    const FIX8::uri parsed{url};
-    return std::string{parsed.get_host()};
+    return utils::parseUri(url).host;
 }
 
 /// Pre-warm RelayPortFactory: register manual URLs, then pump tick() for up to 3 s so
@@ -652,8 +652,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
-        FIX8::uri uri(g_commandLineOptions.roverConnection);
-        if (uri.parse() && uri.has_scheme() && (std::string(uri.get_scheme()) == "ntrip")) {
+        if (utils::parseUri(g_commandLineOptions.roverConnection).scheme == "ntrip") {
             g_correctionInput = std::make_shared<NtripCorrectionService>(g_commandLineOptions.roverConnection);
         } else {
             g_correctionInput = std::make_shared<CorrectionService>(g_commandLineOptions.roverConnection);
@@ -973,8 +972,7 @@ static int cltool_createHost()
     device_handle_t srcDevice = DeviceManager::getInstance().front();
     inertialSenseInterface.StopBroadcasts();
 
-    // FIXME: Parse the rest of the "baseConnection" command-line argument for the listen address/port for incoming requests and configure the InertialSense correctionServer
-    g_correctionOutput = std::make_shared<Rtcm3CorrectionServer>(srcDevice);
+    g_correctionOutput = std::make_shared<Rtcm3CorrectionServer>(srcDevice, g_commandLineOptions.baseConnection);
     MessageStats::mul_stats_t rtcm3Stats;
     g_correctionOutput->setMessageStats(&rtcm3Stats);
 
@@ -1483,7 +1481,7 @@ static int inertialSenseMain()
     if (g_commandLineOptions.replayDataLog)
     {
         // [REPLAY INSTRUCTION] 1.) Replay data log
-        return cltool_replayDataLog();
+        return cltool_replayDataLog() ? EXIT_CODE_SUCCESS : EXIT_CODE_INVALID_COMMAND_LINE;
     }
 
     // if event parsing return after completeing

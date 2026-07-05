@@ -52,8 +52,8 @@ void flipDouble(void* ptr)
     const uint32_t* w = (const uint32_t*)(ptr);
     union
     {
-        double v;
-        uint32_t w[2];
+        double      v;
+        uint32_t    w[2];
     } u;
     u.w[0] = w[1];
     u.w[1] = w[0];
@@ -64,8 +64,8 @@ double flipDoubleCopy(double val)
 {
     union
     {
-        double v;
-        uint32_t w[2];
+        double      v;
+        uint32_t    w[2];
     } u1, u2;
     u1.v = val;
     u2.w[1] = SWAP32(u1.w[0]);
@@ -80,7 +80,7 @@ void flipEndianess32(uint8_t* data, int dataLength)
     {
         return;
     }
-    
+
     uint32_t* dataPtr = (void*)data;
     uint32_t* dataPtrEnd = (void*)(data + dataLength);
     while (dataPtr < dataPtrEnd)
@@ -224,7 +224,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
     static uint16_t offsetsRmc[] =
     {
-        1, 
+        1,
         // 0x8000 denotes a 64 bit int vs a double
         offsetof(rmc_t, bits) | 0x8000
     };
@@ -371,20 +371,20 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 103: DID_CAL_MOTION_GYR
         0,                      // 104: DID_CAL_MOTION_ACC
         0,                      // 105: DID_CAL_MOTION_MAG
-        0,                      // 106: 
-        0,                      // 107: 
-        0,                      // 108: 
-        0,                      // 109: 
-        0,                      // 110: 
-        0,                      // 111: 
-        0,                      // 112: 
-        0,                      // 113: 
-        0,                      // 114: 
-        0,                      // 115: 
-        0,                      // 116: 
-        0,                      // 117: 
-        0,                      // 118: 
-        0,                      // 119: 
+        0,                      // 106:
+        0,                      // 107:
+        0,                      // 108:
+        0,                      // 109:
+        0,                      // 110:
+        0,                      // 111:
+        0,                      // 112:
+        0,                      // 113:
+        0,                      // 114:
+        0,                      // 115:
+        0,                      // 116:
+        0,                      // 117:
+        0,                      // 118:
+        0,                      // 119:
         0,                      // 120: DID_GPX_DEV_INFO
         0,                      // 121: DID_GPX_FLASH_CFG
         0,                      // 122: DID_GPX_RTOS_INFO
@@ -446,7 +446,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         2,
         offsetof(manufacturing_info_t, date), _MEMBER_ARRAY_ELEMENT_COUNT(manufacturing_info_t, date)
     };
-    
+
     static uint16_t diagMsgOffsets[] =
     {
         2,
@@ -539,7 +539,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 81: DID_EVB_FLASH_CFG
         0,                      // 82: DID_EVB_DEBUG_ARRAY
         0,                      // 83: DID_EVB_RTOS_INFO
-        0,                      // 84: 
+        0,                      // 84:
         0,                      // 85: DID_IMU_MAG
         0,                      // 86: DID_PIMU_MAG
         0,                      // 87: DID_GROUND_VEHICLE
@@ -561,20 +561,20 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 103: DID_CAL_MOTION_GYR
         0,                      // 104: DID_CAL_MOTION_ACC
         0,                      // 105: DID_CAL_MOTION_MAG
-        0,                      // 106: 
-        0,                      // 107: 
-        0,                      // 108: 
-        0,                      // 109: 
-        0,                      // 110: 
-        0,                      // 111: 
-        0,                      // 112: 
-        0,                      // 113: 
-        0,                      // 114: 
-        0,                      // 115: 
-        0,                      // 116: 
-        0,                      // 117: 
-        0,                      // 118: 
-        0,                      // 119: 
+        0,                      // 106:
+        0,                      // 107:
+        0,                      // 108:
+        0,                      // 109:
+        0,                      // 110:
+        0,                      // 111:
+        0,                      // 112:
+        0,                      // 113:
+        0,                      // 114:
+        0,                      // 115:
+        0,                      // 116:
+        0,                      // 117:
+        0,                      // 118:
+        0,                      // 119:
         0,                      // 120: DID_GPX_DEV_INFO
         0,                      // 121: DID_GPX_FLASH_CFG
         0,                      // 122: DID_GPX_RTOS_INFO
@@ -609,16 +609,16 @@ uint32_t checksum32(const void* data, int count)
     {
         return 0;
     }
-    
+
     uint32_t checksum = 0;
     uint32_t* dataPtr = (uint32_t*)data;
     uint32_t* dataEnd = dataPtr + (count / 4);
-    
+
     while (dataPtr < dataEnd)
     {
         checksum ^= *dataPtr++;
     }
-    
+
     return checksum;
 }
 
@@ -635,7 +635,7 @@ uint32_t flashChecksum32(const void* data, int size)
 }
 
 // DID to RMC bit look-up table
-const uint64_t g_didToRmcBit[DID_COUNT] = 
+const uint64_t g_didToRmcBit[DID_COUNT] =
 {
     [DID_INS_1]                 = RMC_BITS_INS1,
     [DID_INS_2]                 = RMC_BITS_INS2,
@@ -698,7 +698,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 }
 
 // DID to NMEA RMC bit look-up table
-const uint64_t g_didToNmeaRmcBit[DID_COUNT] = 
+const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 {
     [DID_IMU]                   = NMEA_RMC_BITS_PIMU,
     [DID_PIMU]                  = NMEA_RMC_BITS_PPIMU,
@@ -734,7 +734,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 };
 
 // DID to GPX RMC bit look-up table
-const uint64_t g_gpxDidToGrmcBit[DID_COUNT] = 
+const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
 {
     [DID_GPX_DEV_INFO]          = GRMC_BITS_DEV_INFO,
     [DID_GPX_FLASH_CFG]         = GRMC_BITS_FLASH_CFG,
@@ -788,8 +788,8 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_GNSS1_RTK_POS_MISC]    = 1,
     [GRMC_BIT_POS_GNSS1_RTK_POS_REL]     = 1,
     [GRMC_BIT_POS_GNSS2_RTK_CMP_MISC]    = 1,
-    [GRMC_BIT_POS_GNSS2_RTK_CMP_REL]     = 1, 
-    [GRMC_BIT_POS_DID_RTK_DEBUG]        = GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,  
+    [GRMC_BIT_POS_GNSS2_RTK_CMP_REL]     = 1,
+    [GRMC_BIT_POS_DID_RTK_DEBUG]        = GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,
     [GRMC_BIT_POS_DID_PORT_MON]         = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_SYS_FAULT]    = GRMC_PRESET_GPX_SYS_FAULT_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
@@ -866,7 +866,7 @@ int satNumCalc(int gnssID, int svID) {
 
 #endif    // #ifndef GPX_1
 
-#define ENABLE_PROFILER        1
+#define ENABLE_PROFILER 1
 
 void profiler_start(runtime_profile_t *p, uint32_t timeUs)
 {
@@ -902,7 +902,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p)
 #endif
 }
 
-/** Populate missing hardware descriptor in dev_info_t */ 
+/** Populate missing hardware descriptor in dev_info_t */
 void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 {
     if (devInfo->hardwareType != IS_HARDWARE_TYPE_UNKNOWN)
@@ -913,7 +913,7 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
     int year = ((int)(devInfo->buildYear)) + 2000;
     if (year <= 2024)
     {   // Hardware from 2024 and earlier is detectible using hardware version
-        switch (devInfo->hardwareVer[0])    
+        switch (devInfo->hardwareVer[0])
         {
         case 2: devInfo->hardwareType = IS_HARDWARE_TYPE_EVB;  break;
         case 3: devInfo->hardwareType = IS_HARDWARE_TYPE_UINS; break;
@@ -925,9 +925,9 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 /**
  * decodes the NMEA GSV family of messages
  * Returns: message id (see eNmeaMsgId)
- *  Error   -1 for NMEA head not found 
+ *  Error   -1 for NMEA head not found
  *             -2 for invalid length
- *          -3 other error 
+ *          -3 other error
 */
 int decodeGSV(char* a, int aSize)
 {
@@ -964,7 +964,7 @@ int decodeGSV(char* a, int aSize)
     return msgNum;
 }
 
-#define UINT32_MATCH(u1,u2)    ((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
+#define UINT32_MATCH(u1,u2) ((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
 
 int getNmeaMsgId(const void *msg, int msgSize)
 {
@@ -974,7 +974,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
     char *cptr = (char*)msg;
     char *talker = &cptr[1];
 
-    switch(*talker)
+    switch (*talker)
     {
     case 'A':
         if      (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
@@ -1020,7 +1020,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
         if      (UINT32_MATCH(talker,"STPB"))       { return NMEA_MSG_ID_STPB; }
         else if (UINT32_MATCH(talker,"STPC"))       { return NMEA_MSG_ID_STPC; }
         else if (UINT32_MATCH(talker,"SRST"))       { return NMEA_MSG_ID_SRST; }
-        break;        
+        break;
     }
 
     return -1;
@@ -1034,7 +1034,7 @@ int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
     }
 
     int n = 0;
-    switch(msgId)
+    switch (msgId)
     {
     default: return -1;
     case NMEA_MSG_ID_PIMU:      memcpy(buf, "PIMU",  n = 4);    break;

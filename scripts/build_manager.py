@@ -308,9 +308,19 @@ class BuildTestManager:
                 print("No Visual Studio installations found using vswhere.exe. Trying fallback methods.")
                 # print(f"  DEBUG:: {command}")
 
+                candidate_roots = [
+                    os.environ.get("ProgramFiles", r"C:\Program Files"),
+                    os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+                ]
+                candidate_editions = ["BuildTools", "Community", "Professional", "Enterprise", None]
                 candidate_vcvars_paths = [
-                    r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
-                    r"C:\Program Files\Microsoft Visual Studio\2022\VC\Auxiliary\Build\vcvarsall.bat",
+                    (
+                        os.path.join(root, "Microsoft Visual Studio", "2022", edition, "VC", "Auxiliary", "Build", "vcvarsall.bat")
+                        if edition
+                        else os.path.join(root, "Microsoft Visual Studio", "2022", "VC", "Auxiliary", "Build", "vcvarsall.bat")
+                    )
+                    for root in candidate_roots
+                    for edition in candidate_editions
                 ]
                 vcvarsall_path = next((p for p in candidate_vcvars_paths if os.path.exists(p)), None)
                 if not vcvarsall_path:

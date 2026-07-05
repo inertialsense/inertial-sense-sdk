@@ -35,4 +35,10 @@ add_subdirectory(ISLogger_write)
 add_subdirectory(InertialSense_logger)
 add_subdirectory(NTRIP_rover)
 add_subdirectory(IS_NMEAProtocolCheckSum)
+add_subdirectory(Minimal_ISDevice)
+
+# SPI example targets Linux only (Raspberry Pi 5 or any Linux SPI host)
+if(UNIX AND NOT APPLE)
+    add_subdirectory(SPI_RPi5)
+endif()
 
