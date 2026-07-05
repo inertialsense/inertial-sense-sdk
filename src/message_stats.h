@@ -25,12 +25,12 @@ public:
     // Nested types
     struct stats_t
     {
-        int count;
-        uint64_t timeMs;
-        uint64_t prevTimeMs;
-        uint64_t bytes;
-        uint64_t startTimeMs;
-        int bytesPerSec;
+        int count = 0;
+        uint64_t timeMs = 0;
+        uint64_t prevTimeMs = 0;
+        uint64_t bytes = 0;
+        uint64_t startTimeMs = 0;
+        int bytesPerSec = 0;
         std::string description;
     };
 
