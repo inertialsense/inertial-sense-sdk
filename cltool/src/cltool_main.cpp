@@ -151,45 +151,75 @@ static void cltoolWarmRelayDiscovery() {
 
 static void display_server_client_status(bool showMessageSummary=false, bool refreshDisplay=false)
 {
-    if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
-        g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
-    {
-        return;
-    }
+    const cInertialSenseDisplay::eDisplayMode mode = g_inertialSenseDisplay.GetDisplayMode();
+    if (mode == cInertialSenseDisplay::DMODE_QUIET)
+        return;     // -q: suppress host status output entirely
 
     static float serverKBps = 0;
     static uint64_t serverByteCount = 0;
     static uint64_t serverByteRateTimeMsLast = 0;
     static uint64_t serverByteCountLast = 0;
+    static uint16_t numClients = 0;
+    static uint16_t numClientsLast = 0;
     static stringstream outstream;
 
     port_stats_t correctionStats = {};
     if (g_correctionOutput && g_correctionOutput->getSourcePort()) {
-        // remember, if we're a "BASE", we're ARE a Correction SERVER
+        // remember, if we're a "BASE", we ARE a Correction SERVER
         correctionStats = *portStats(g_correctionOutput->getSourcePort());
+        numClients = g_correctionOutput->getActiveClients();
     } else if (g_correctionInput && g_correctionInput->getSourcePort()) {
         // but, if we are a "ROVER", we're USING a Correction SERVICE
         correctionStats = *portStats(g_correctionInput->getSourcePort());
     }
 
-    uint64_t newServerByteCount = correctionStats.rxBytes;  // this is the bytes RECEIVED FROM the source device (which should be SENT TO all connected clients
-    if (serverByteCount != newServerByteCount)
+    uint64_t newServerByteCount = correctionStats.rxBytes;  // bytes RECEIVED FROM the source device (forwarded to all connected clients)
+    const bool bytesChanged   = (serverByteCount != newServerByteCount);
+    const bool clientsChanged = (numClients != numClientsLast);
+
+    // Recompute the data rate whenever the byte count advances (shared by all display modes)
+    if (bytesChanged)
     {
         serverByteCount = newServerByteCount;
-
-        // Data rate of server bytes
         uint64_t timeMs = getTickCount();
         uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
         if (dtMs >= 1000)
         {
-            uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
-            serverKBps = ((float)serverBytesDelta / (float)dtMs);
-
-            // Update history
+            serverKBps = ((float)(serverByteCount - serverByteCountLast) / (float)dtMs);
             serverByteCountLast = serverByteCount;
             serverByteRateTimeMsLast = timeMs;
         }
+    }
 
+    if (mode == cInertialSenseDisplay::DMODE_SCROLL)
+    {   // -s: append a periodic single-line status - on a client-count change, or at most every 2s
+        static uint64_t lastScrollMs = 0;
+        uint64_t nowMs = getTickCount();
+        if (clientsChanged || (nowMs - lastScrollMs >= 2000))
+        {
+            lastScrollMs = nowMs;
+            numClientsLast = numClients;
+            if (g_correctionOutput)
+            {
+                cout << "Base " << g_correctionOutput->getListenIpAddress() << ":" << g_correctionOutput->getListenIpPort()
+                     << "  conns: " << numClients
+                     << "  Tx: " << fixed << setprecision(1) << serverKBps << " KB/s, "
+                     << (long long)(correctionStats.rxBytes / 1024.0) << " KB" << endl;
+            }
+            else if (g_correctionInput)
+            {
+                port_handle_t srcPort = g_correctionInput->getSourcePort();
+                cout << "Rover [" << portName(srcPort) << (!portIsOpened(srcPort) ? " (Closed)" : "") << "]"
+                     << "  Rx: " << fixed << setprecision(1) << serverKBps << " KB/s, "
+                     << (long long)(correctionStats.rxBytes / 1024.0) << " KB" << endl;
+            }
+        }
+        return;
+    }
+
+    // DMODE_PRETTY (default): full multi-line dashboard block, rebuilt only on a change
+    if (bytesChanged || clientsChanged)
+    {
         outstream.str("");    // clear
         outstream << "\n";
         if (g_correctionOutput)
@@ -204,8 +234,8 @@ static void display_server_client_status(bool showMessageSummary=false, bool ref
 
         if (g_correctionOutput)
         {   // Server
-            int numClients = g_correctionOutput->getActiveClients();
             outstream << "Active Connections: " << numClients << "    \n";
+            numClientsLast = numClients;    // consume the change so we only redraw on an actual count change, not every cycle
             if (showMessageSummary)
             {
                 outstream << MessageStats::summary(*g_correctionOutput->getMessageStats());
@@ -976,6 +1006,7 @@ static int cltool_createHost()
     MessageStats::mul_stats_t rtcm3Stats;
     g_correctionOutput->setMessageStats(&rtcm3Stats);
 
+    const bool prettyDisplay = (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_PRETTY);
     unsigned int timeSinceClearMs = 0, curTimeMs;
     while (!g_inertialSenseDisplay.ExitProgram())
     {
@@ -983,16 +1014,20 @@ static int cltool_createHost()
         g_correctionOutput->step();
         inertialSenseInterface.Update();
         bool refresh = false;
-        if (((curTimeMs - timeSinceClearMs) > 2000) || (curTimeMs < timeSinceClearMs))
-        {   // Clear terminal
-            g_inertialSenseDisplay.Clear();
-            timeSinceClearMs = curTimeMs;
-            refresh = true;
+        if (prettyDisplay)
+        {   // full-screen dashboard: reposition the cursor and periodically clear.  In -s/-q modes we
+            // leave the cursor alone so display_server_client_status() can scroll (or suppress) cleanly.
+            if (((curTimeMs - timeSinceClearMs) > 2000) || (curTimeMs < timeSinceClearMs))
+            {   // Clear terminal
+                g_inertialSenseDisplay.Clear();
+                timeSinceClearMs = curTimeMs;
+                refresh = true;
+            }
+            g_inertialSenseDisplay.Home();
+            cout << g_inertialSenseDisplay.Hello();
+            display_logger_status(&inertialSenseInterface, refresh);
         }
-        g_inertialSenseDisplay.Home();
-        cout << g_inertialSenseDisplay.Hello();
-        display_logger_status(&inertialSenseInterface, refresh);
-        display_server_client_status(true, refresh);
+        display_server_client_status(true, refresh);    // handles PRETTY / SCROLL / QUIET internally
     }
     cout << "Shutting down..." << endl;
 
