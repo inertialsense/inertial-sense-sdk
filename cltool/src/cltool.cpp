@@ -1452,8 +1452,7 @@ void cltool_outputUsage()
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
 	cout << "            -rover=ntrip://192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
-	cout << "            -rover=tcp://192.168.1.100:7777" << endl;
-	cout << "            -rover=tcp://TCP:UBLOX:192.168.1.100:7777" << endl;
+	cout << "            -rover=tcp://192.168.1.100:7777                                  (raw RTCM3 over TCP)" << endl;
 	cout << "            -rover=/dev/" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
 	cout << "    -base=" << boldOff << "tcp://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
 	cout << "            -base=tcp://:7777                           (IP is optional)" << endl;
