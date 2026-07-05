@@ -209,6 +209,7 @@ static void display_server_client_status(bool showMessageSummary=false, bool ref
         {   // Server
             numClients = g_correctionOutput->getActiveClients();
             outstream << "Active Connections: " << numClients << "    \n";
+            numClientsLast = numClients;    // consume the change so we only redraw on an actual count change, not every cycle
             if (showMessageSummary)
             {
                 outstream << MessageStats::summary(*g_correctionOutput->getMessageStats());
