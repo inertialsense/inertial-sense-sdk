@@ -5963,24 +5963,25 @@ enum can_baudrate_t
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
-    /** Broadcast period multiple - CAN time message. 0 to disable. */
-    uint16_t                 can_period_mult[NUM_CIDS];
+    /** Broadcast period multiple for each CAN message. 0 disables the message.
+     *  Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values.
+     *  In CAN-FD mode the same array is reused: indices 0..NUM_FDCIDS-1
+     *  correspond to canfd_cid_t values (FDCID_INS_1=0, FDCID_INS_2=1, …).
+     *  NUM_FDCIDS < NUM_CIDS so there is no overlap. */
+    uint16_t                can_period_mult[NUM_CIDS];
 
-    /** Transmit address. */
+    /** Transmit address for each CAN message.
+     *  Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values.
+     *  In CAN-FD mode indices 0..NUM_FDCIDS-1 correspond to canfd_cid_t values
+     *  and are validated / defaulted by CAN_init() when FD is enabled. */
     uint32_t                can_transmit_address[NUM_CIDS];
 
-    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
+    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates). Bit 15
+     *  (CAN_BAUDRATE_KBPS_FD_ENABLE) enables CAN-FD on capable hardware. */
     uint16_t                can_baudrate_kbps;
 
     /** Receive address */
     uint32_t                can_receive_address;
-
-    /** Broadcast period multiple for CAN FD messages. 0 to disable. Ignored on hardware without CAN FD (e.g. IMX-5). */
-    uint16_t                can_fd_period_mult[NUM_FDCIDS];
-
-    /** Transmit address for each CAN FD message. Defaults to the transmit address of the first
-     *  classic CID derived from the same DID if left as 0 at CAN_init() time. */
-    uint32_t                can_fd_transmit_address[NUM_FDCIDS];
 
 } can_config_t;
 
