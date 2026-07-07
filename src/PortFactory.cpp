@@ -255,6 +255,9 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/serial.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <unistd.h>
 
 /**
  * Performs an Linux OS-level check to determine the validity of a port, by checking for existence
@@ -264,8 +267,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
  * @return
  */
 bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& pName) {
-    struct stat st;
-    char buffer[1024];
+    struct stat st = {};
 
     // check first for /dev/<pName> and that its a character device
     if (! (!stat(pName.c_str(), &st) && S_ISCHR(st.st_mode) && st.st_rdev))
@@ -276,16 +278,11 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
         return true;
 #endif
 
-    std::string devdir = utils::string_format("/sys/class/tty/%s/device/driver", basename(pName.c_str()));
-    if (! (!lstat(devdir.c_str(), &st) && S_ISLNK(st.st_mode) && st.st_nlink))
-        return false;
-
-    memset(buffer, 0, sizeof(buffer));
-    if (readlink(devdir.c_str(), buffer, sizeof(buffer)) <= 0)
-        return false;
-
-    std::string driver = std::string(basename(buffer));
-    if (driver == "port")
+    // Resolve the real hardware driver (walks past the kernel >= 6.8 "serial-base"
+    // port/ctrl layers). An empty/"port" result means there is no genuine backing
+    // driver, so the port is not valid.
+    std::string driver = get_driver__linux(utils::string_format("/sys/class/tty/%s", basename(pName.c_str())));
+    if (driver.empty() || driver == "port")
         return false;   // these are not valid ports
 
     if (driver == "serial8250") {
@@ -296,26 +293,45 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
 
 std::string SerialPortFactory::get_driver__linux(const std::string& tty)
 {
-    struct stat st;
-    std::string devicedir = tty;
+    struct stat st = {};
+    std::string devlink = tty + "/device";
 
-    // Append '/device' to the tty-path
-    devicedir += "/device";
+    // The tty's "device" entry must be a symlink to the underlying device node
+    if (lstat(devlink.c_str(), &st) != 0 || !S_ISLNK(st.st_mode))
+        return "";
 
-    if (lstat(devicedir.c_str(), &st)==0 && S_ISLNK(st.st_mode))
-    {   // Stat the devicedir and handle it if it is a symlink
-        char buffer[1024];
-        memset(buffer, 0, sizeof(buffer));
+    // Resolve to the real device path so we can walk its parents if needed
+    char real[PATH_MAX] = {};
+    if (realpath(devlink.c_str(), real) == nullptr)
+        return "";
+    std::string devpath(real);
 
-        // Append '/driver' and return basename of the target
-        devicedir += "/driver";
+    // Reads the driver name (basename of the device's "driver" symlink target)
+    auto driver_at = [](const std::string& p) -> std::string {
+        char buffer[1024] = {};
+        std::string driverlink = p + "/driver";
+        if (readlink(driverlink.c_str(), buffer, sizeof(buffer) - 1) <= 0)
+            return "";
+        return basename(buffer);
+    };
 
-        if (readlink(devicedir.c_str(), buffer, sizeof(buffer)) > 0)
-        {
-            return basename(buffer);
-        }
+    std::string driver = driver_at(devpath);
+
+    // Kernels >= 6.8 interpose a "serial-base" bus with intermediate "port" and
+    // "ctrl" devices between the tty and the real controller, so the immediate
+    // driver is always "port". Walk up the device parent chain past those layers
+    // to recover the actual hardware driver (e.g. serial8250, uart-pl011). Older
+    // kernels expose the real driver directly, so this loop is skipped.
+    while (driver == "port" || driver == "ctrl")
+    {
+        size_t slash = devpath.find_last_of('/');
+        if (slash == std::string::npos || slash == 0)
+            break;
+        devpath.resize(slash);
+        driver = driver_at(devpath);
     }
-    return "";
+
+    return driver;
 }
 
 void SerialPortFactory::register_comport__linux(std::vector<std::string>& comList, std::vector<std::string>& comList8250, const std::string& dir)
@@ -340,26 +356,33 @@ void SerialPortFactory::register_comport__linux(std::vector<std::string>& comLis
 
 void SerialPortFactory::probe_serial8250_comports__linux(std::vector<std::string>& comList, std::vector<std::string> comList8250)
 {
-    struct serial_struct serinfo;
-    std::vector<std::string>::iterator it = comList8250.begin();
+    struct serial_struct serinfo = {};
+
+    // The PORT_UNKNOWN filter below exists to reject the legacy static /dev/ttyS0..N
+    // "phantom" nodes that the x86 ISA 8250 driver pre-creates without backing
+    // hardware. Those phantoms only occur on PC/BIOS (non-device-tree) systems.
+    // On a device-tree platform (e.g. Raspberry Pi) a serial8250 port that the
+    // kernel bound a driver to is real hardware, even though its SoC UART reports
+    // TIOCGSERIAL type == PORT_UNKNOWN (it never populates the legacy serial_struct).
+    // So on device-tree systems we accept the port regardless of the reported type.
+    bool deviceTreePlatform = (access("/proc/device-tree", F_OK) == 0);
 
     // Iterate over all serial8250-devices
-    while (it != comList8250.end())
+    for (auto& dev : comList8250)
     {   // Try to open the device
-        int fd = open((*it).c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY);
+        int fd = open(dev.c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY);
 
         if (fd >= 0)
         {   // Get serial_info
-            if (ioctl(fd, TIOCGSERIAL, &serinfo)==0)
+            if (ioctl(fd, TIOCGSERIAL, &serinfo) == 0)
             {
-                if (serinfo.type != PORT_UNKNOWN)
-                {   // device type is no PORT_UNKNOWN we accept the port
-                    comList.push_back(*it);
+                if (serinfo.type != PORT_UNKNOWN || deviceTreePlatform)
+                {   // Accept known port types, or any driver-bound port on a device-tree platform
+                    comList.push_back(dev);
                 }
             }
             close(fd);
         }
-        it ++;
     }
 }
 
