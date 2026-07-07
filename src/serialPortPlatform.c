@@ -268,7 +268,10 @@ static int configure_serial_port(int fd, int baudRate)
     speed_t appleSpeed = (speed_t)baudRate;
     if (ioctl(fd, IOSSIOSPEED, &appleSpeed) == -1)
     {
+        // SN-8239: with arbitrary rates now accepted, a rate the hardware can't produce must NOT be
+        // reported as success — propagate the failure so the caller doesn't run at an unintended speed.
         log_error(IS_LOG_PORT, "config_serial_port():: error %d from ioctl IOSSIOSPEED", errno);
+        return -1;
     }
 
 #else
@@ -276,8 +279,17 @@ static int configure_serial_port(int fd, int baudRate)
     // Linux: standard rates are set here via the Bxxx constant. Custom rates cannot be expressed by
     // cfsetospeed/cfsetispeed (Bxxx tops out at B4000000), so we set a valid placeholder speed now and
     // apply the real rate via termios2/BOTHER (serialPortSetCustomBaudLinux) after tcsetattr below.
-    cfsetospeed(&tty, (stdBaud != 0) ? stdBaud : B38400);
-    cfsetispeed(&tty, (stdBaud != 0) ? stdBaud : B38400);
+    speed_t setSpeed = (stdBaud != 0) ? (speed_t)stdBaud : B38400;
+    if (cfsetospeed(&tty, setSpeed) != 0 || cfsetispeed(&tty, setSpeed) != 0)
+    {
+        // SN-8239: the Bxxx constant was rejected by this platform (e.g. a B4000000 fallback that is
+        // not a real termios speed on this kernel). Don't leave the port at an unintended speed and
+        // report success: apply a safe placeholder and route through the custom-baud path below, which
+        // sets the real rate via termios2/BOTHER and works for any rate.
+        cfsetospeed(&tty, B38400);
+        cfsetispeed(&tty, B38400);
+        stdBaud = 0;
+    }
 
     // Attempt to configure LOW_LATENCY for UART/serial ports - though doesn't appear to improve things much.
     struct serial_struct serial;
