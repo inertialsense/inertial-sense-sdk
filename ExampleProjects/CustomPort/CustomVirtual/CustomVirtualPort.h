@@ -34,7 +34,7 @@
 #define COM_BUFFER_SIZE     4096
 #define PORT_BUFFER_SIZE    8192
 
-typedef struct test_port_s {
+typedef struct custom_port_s {
     union {
         base_port_t base;
         comm_port_t comm;
@@ -48,12 +48,12 @@ typedef struct test_port_s {
     ring_buf_t      portRingBuf;
     uint8_t         portBuffer[PORT_BUFFER_SIZE];
     uint8_t         name[6];
-} test_port_t;
+} custom_port_t;
 
-extern test_port_t g_testPorts[NUM_COM_PORTS];
+extern custom_port_t g_customPorts[NUM_COM_PORTS];
 extern std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg;
 
-#define TEST_PORT(n)     ((test_port_t *)&g_testPorts[n])
+#define TEST_PORT(n)     ((custom_port_t *)&g_customPorts[n])
 #define TEST0_PORT       TEST_PORT(0)
 #define TEST1_PORT       TEST_PORT(1)
 #define TEST2_PORT       TEST_PORT(2)
@@ -68,13 +68,13 @@ extern std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg;
 void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, port_handle_t srcPort, port_handle_t dstPort, uint32_t led=0, int testMode=1);
 #endif
 
-static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len);
-static int testPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len);
-static int testPortFree(port_handle_t port);
-static int testPortAvailable(port_handle_t port);
-static const char* testPortName(port_handle_t port);
+static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len);
+static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len);
+static int customPortFree(port_handle_t port);
+static int customPortAvailable(port_handle_t port);
+static const char* customPortName(port_handle_t port);
 
-void initTestPorts();
+void initCustomPorts();
 
 int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequence=true);
 int test_serial_generate_ordered_data(uint8_t buf[], int bufSize);

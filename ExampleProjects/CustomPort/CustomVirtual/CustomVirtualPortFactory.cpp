@@ -41,30 +41,30 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
         return nullptr;
    
     /** In this example we use a virtual port, so there is no baud rate or blocking to set; our port is defined by
-     *  test_serial_utils; defined g_testPorts given by TESTn_PORT is an array of test_port_t, 0 and 1 are loopback ports
+     *  CustomVirtualPort; defined g_customPorts given by TESTn_PORT is an array of custom_port_t, 0 and 1 are loopback ports
      */
-    test_port_t* testPort;
+    custom_port_t* customPort;
     if (pName == "TEST0") {
-        testPort = TEST0_PORT;
+        customPort = TEST0_PORT;
     }
     else if (pName == "TEST1") {
-        testPort = TEST1_PORT;
+        customPort = TEST1_PORT;
     }
     else
         return nullptr;
 
     /** Need a port_handle_t reference to our port to use for our own validation and to return from bind */
-    port_handle_t port = (port_handle_t) testPort;   
-    *testPort = {};
+    port_handle_t port = (port_handle_t) customPort;
+    *customPort = {};
 
     /** This init routine assigns the base port functions of the underlying port implementation
      */
-    initTestPorts();
+    initCustomPorts();
 
     /** Open and validate and configure the port as needed for the port implementation here; in this virtual port
      * example, do not need to open or configure
      */
-    testPort->base.portValidate = CustomVirtualPortFactory::validate_port;
+    customPort->base.portValidate = CustomVirtualPortFactory::validate_port;
     portValidate(port);
        
     log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Allocated new comm port '%s'", portName(port));
@@ -86,7 +86,7 @@ bool CustomVirtualPortFactory::releasePort(port_handle_t port) {
      * In this example we use a virtual port with the static object, so there is no memory to free, only clear
      */
     //for example, delete (serial_port_t*)port;
-    memset(port, 0, sizeof(test_port_t));
+    memset(port, 0, sizeof(custom_port_t));
 
     return true;
 }
@@ -143,9 +143,9 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
     portNames.clear();
     portNames.resize(NUM_COM_PORTS);
 
-    // The size of the test_port_t name is a magic number in the declaration; derive it rather than
+    // The size of the custom_port_t name is a magic number in the declaration; derive it rather than
     // insert the same number in case it changes    
-    size_t nlen = sizeof( ((test_port_t*)0)->name );
+    size_t nlen = sizeof( ((custom_port_t*)0)->name );
         
     // Populate the vector using index into global test port array
     int i = 0;
@@ -153,7 +153,7 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
     // Generate each string with the unique identifying names the underlying test port implementation dictates;
     // won't assume the test port names are null-terminated
     for (auto& str : portNames) {
-        str = std::string( reinterpret_cast<const char*>(g_testPorts[i].name), nlen );
+        str = std::string( reinterpret_cast<const char*>(g_customPorts[i].name), nlen );
         log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Found port '%s'", str.c_str());
         ++i;
     }

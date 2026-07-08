@@ -34,7 +34,7 @@
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
 
-test_port_t g_testPorts[NUM_COM_PORTS] = {};
+custom_port_t g_customPorts[NUM_COM_PORTS] = {};
 
 std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
 
@@ -157,7 +157,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 #endif  // PLATFORM_IS_EMBEDDED
 
 // These only need to be defined/initialized if we're not building for embedded
-static test_port_t* boundPorts[NUM_COM_PORTS] {
+static custom_port_t* boundPorts[NUM_COM_PORTS] {
         #if (NUM_COM_PORTS > 0)
             TEST0_PORT, // loopback
         #endif
@@ -172,51 +172,51 @@ static test_port_t* boundPorts[NUM_COM_PORTS] {
         #endif
 };
 
-static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
+static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
-    return ringBufRead(&((test_port_t*)port)->portRingBuf, buf, len);
+    return ringBufRead(&((custom_port_t*)port)->portRingBuf, buf, len);
 }
 
-static int testPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
+static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
 {
-    test_port_t* destPort = boundPorts[portId(port)];
+    custom_port_t* destPort = boundPorts[portId(port)];
 
     if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
     {   
         // Buffer overflow
 #if !defined(IS_IMX) && !defined(GPX_1)
-            throw new std::out_of_range(utils::string_format("testPortWrite ring buffer overflow on %s: %d !!!\n", portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
+            throw new std::out_of_range(utils::string_format("customPortWrite ring buffer overflow on %s: %d !!!\n", portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
 #endif
         return PORT_ERROR__WRITE_FAILURE;
     }
     return len;
 }
 
-static int testPortFree(port_handle_t port) {
-    return ringBufFree(&((test_port_t*)port)->portRingBuf);
+static int customPortFree(port_handle_t port) {
+    return ringBufFree(&((custom_port_t*)port)->portRingBuf);
 }
 
-static int testPortAvailable(port_handle_t port) {
-    return ringBufUsed(&((test_port_t*)port)->portRingBuf);
+static int customPortAvailable(port_handle_t port) {
+    return ringBufUsed(&((custom_port_t*)port)->portRingBuf);
 }
 
-static const char* testPortName(port_handle_t port) {
-    return (const char*)((test_port_t*)port)->name;
+static const char* customPortName(port_handle_t port) {
+    return (const char*)((custom_port_t*)port)->name;
 }
 
-void initTestPorts() {
+void initCustomPorts() {
     int portNum = 0;
-    for (test_port_t& port : g_testPorts) {
+    for (custom_port_t& port : g_customPorts) {
         port.base.pnum = portNum;
         port.base.ptype = PORT_TYPE__COMM;
         if (portNum <= 1)
             port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
 
-        port.base.portRead = testPortRead;
-        port.base.portWrite = testPortWrite;
-        port.base.portFree = testPortFree;
-        port.base.portAvailable = testPortAvailable;
-        port.base.portName = testPortName;
+        port.base.portRead = customPortRead;
+        port.base.portWrite = customPortWrite;
+        port.base.portFree = customPortFree;
+        port.base.portAvailable = customPortAvailable;
+        port.base.portName = customPortName;
         portFlagsSet(&port, PORT_FLAG__VALID);
         portFlagsSet(&port, PORT_FLAG__OPENED);
 
