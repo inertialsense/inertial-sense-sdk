@@ -477,13 +477,7 @@ bool ISFirmwareUpdater::step() {
     if (device && (device->port != port))
         port = device->port;
 
-    // Re-discover the device's port whenever it is not valid (portIsValid() also covers the null case).
-    // This matters on a fixed/non-re-enumerating serial link: when the device reboots into, or back out
-    // of, the ISbl bootloader during a firmware update, disconnect(true) invalidates the handle but the
-    // OS node persists, so discovery never re-adds it on its own. Retrying on !portIsValid() keeps
-    // attempting discovery until the rebooted device responds again (previously this was `!port`, which
-    // is false for an invalidated-but-non-null handle, so re-discovery never ran and the update stalled).
-    if (!portIsValid(port) && (nextPortCheck < current_timeMs())) {
+    if (!port && (nextPortCheck < current_timeMs())) {
         nextPortCheck = current_timeMs() + 1000;    // check every second.
         PortManager& portManager = PortManager::getInstance();
         DeviceManager& deviceManager = DeviceManager::getInstance();
@@ -950,8 +944,10 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
         else if (targetName == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
         else if (targetName == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
         else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
+        else if (targetName == "SEPT1") setTarget(fwUpdate::TARGET_SEPTENTRIO_G5__1);
+        else if (targetName == "SEPT2") setTarget(fwUpdate::TARGET_SEPTENTRIO_G5__2);
         else {
-            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, GNSS1, GNSS2)", targetName.c_str());
+            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, GNSS1, GNSS2, SEPT1, SEPT2)", targetName.c_str());
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             return;
         }

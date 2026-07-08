@@ -284,6 +284,13 @@ namespace fwUpdate {
                     default: return "CXD5610";
                 }
                 break;
+            case TARGET_SEPTENTRIO_G5:
+                switch (target & 0x0F) {
+                    case 1: return "SEPTENTRIO.1";
+                    case 2: return "SEPTENTRIO.2";
+                    default: return "SEPTENTRIO";
+                }
+                break;
             default: return "[UNKNOWN]";
         }
     }
