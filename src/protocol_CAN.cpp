@@ -6,8 +6,15 @@
 // Defined in families/imx/globals.cpp in firmware builds;
 // stub definitions are provided in test_protocol_CAN.cpp for SDK unit-test builds.
 typedef struct { gnss_pos_t pos; gnss_vel_t vel; } gnss_posvel_t;
+
+#ifdef IS_IMX
 extern gnss_posvel_t g_gnssNav[2];
 extern ins_output_t g_insOut;
+else
+// these vars do not exist globally
+gnss_posvel_t g_gnssNav[2];
+ins_output_t g_insOut;
+#endif
 
 // ============================================================================
 // ISB -> CAN
