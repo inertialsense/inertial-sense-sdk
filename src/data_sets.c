@@ -763,6 +763,7 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GPX_PORT_MONITOR]      = GRMC_BITS_GPX_PORT_MON,
     [DID_GNSS_BASE_RAW]          = GRMC_BITS_GNSS_BASE_RAW,
     [DID_GPX_SYS_FAULT]         = GRMC_BITS_GPX_SYS_FAULT,
+    [DID_GNSS1_RCVR_POS]         = GRMC_BITS_GNSS1_RCVR_POS,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -794,6 +795,7 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_DID_GPX_SYS_FAULT]    = GRMC_PRESET_GPX_SYS_FAULT_PERIOD_MS,
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GNSS_BASE_RAW]     = 1,
+    [GRMC_BIT_POS_GNSS1_RCVR_POS]        = 1,
 };
 
 #ifndef GPX_1
@@ -1082,9 +1084,9 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
 
 /**
  * @brief Check if the manufacturing info meets the requirements for writing to flash.
- * 
- * @param newInfo 
- * @return int 
+ *
+ * @param newInfo
+ * @return int
  */
 int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo)
 {
