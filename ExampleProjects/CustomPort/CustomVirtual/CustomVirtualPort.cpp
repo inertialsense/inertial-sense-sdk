@@ -8,6 +8,8 @@
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
+/** STEP 1: Include IS core and other needed SDK header files here
+ */
 #include <array>
 #include <string>
 #include <stdexcept>
@@ -17,146 +19,20 @@
 #include "com_manager.h"
 #include "CustomVirtualPort.h"
 
-#if PLATFORM_IS_EMBEDDED
-#include "drivers/d_time.h"
-#include "drivers/d_serial.h"
-#if defined(IMX_5)
-#include "drivers/d_watchdog.h"
-#elif defined(IMX_6)
-#include "randomBandaids.h"
-#endif
-#define TIME_USEC()             time_usec()
-#define TIME_DELAY_USEC(us)     time_delay_usec(us)
-#else
 #include "util/util.h"
 #include "../src/ISUtilities.h"
 #define TIME_USEC()             current_timeUs()
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
-#endif
 
+/** For this example, we use a fixed stack allocation of our ports
+ */
 custom_port_t g_customPorts[NUM_COM_PORTS] = {};
 
 std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
 
-#if PLATFORM_IS_EMBEDDED
-void serWriteInPieces(port_handle_t port, const unsigned char *buf, int length)
-{
-    int left = length; 
-    for (int send=1; left>0; send*=2)
-    {
-        send = _MIN(left, send);
-        serWrite(port, &(buf[length - left]), send);
-        left -= send; 
-    }
-}
 
-/**
- * @brief Forward data read from one serial port to another.  Includes testmode used to verify integrity of serial port driver.  
- * 
- * @param comm is_comm_instance_t used for parsing data (to disable serial port bridge)
- * @param srcPort Serial port to read from.
- * @param dstPort Serial port to write to.
- * @param testMode Enable test mode to perform sequential serWrite() calls back to back to test capability of the serial driver.
+/** This indexes pointers to the custom ports
  */
-void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, port_handle_t srcPort, port_handle_t dstPort, uint32_t led, int testMode)
-{
-#if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
-    while (1)
-    {
-        uint8_t txBuf[200];
-        int n = test_serial_generate_ordered_data(txBuf, sizeof(txBuf));
-#if 1   // Send data once
-        serWrite(dstPort, (unsigned char*)&(txBuf), n);
-#else   // Send data in pieces
-        serWriteInPieces(dstPort, (unsigned char*)&(txBuf), n);
-#endif
-        test_serial_delay_for_tx(n+5);
-
-#if PLATFORM_IS_EMBEDDED && defined(IS_IMX)
-        // Prevent watchdog reset
-        watchdog_maintenance_taskA();  
-        watchdog_maintenance_taskB();
-#endif
-    }
-#endif
-
-    // gpio_toggle_level(G19_QDEC1B_PIN);   // GPX debug
-
-    int n = is_comm_free(&comm);    // Call before adding data to comm->rxBuf.tail with serRead().
-    if ((n = serRead(srcPort, comm.rxBuf.tail, n)) <= 0)
-    {   // No data to forward
-        return;
-    }
-
-#if TEST_ENABLE_MANUAL_RX   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_driver.cpp 
-    if (test_serial_rx_receive(comm.rxBuf.tail, n) < 0)
-    {   // Catch error here
-        while (1);
-    }
-    return;  // Return to prevent Tx
-#endif
-
-    // Forward data
-    if (testMode)
-    {   // Test mode enabled for driver testing.  Forward data in pieces.
-        serWriteInPieces(dstPort, comm.rxBuf.tail, n);
-    }
-    else
-    {   // All at once
-        serWrite(dstPort, comm.rxBuf.tail, n);
-    }
-
-    // Update comm buffer tail pointer
-    comm.rxBuf.tail += n;
-
-#if PLATFORM_IS_EMBEDDED && !defined(IS_IMX) && !defined(GPX_1)
-    if (led){ LED_TOGGLE(led); }
-#endif
-
-    //////////////////////////////////////////////////
-    // Data parser follows
-    static uint32_t enabledMaskBackup=0;
-    if (enabledMaskBackup==0)
-    {   
-        enabledMaskBackup = comm.cb.protocolMask;
-        comm.cb.protocolMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
-    }
-    protocol_type_t ptype;
-    while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
-    {
-        switch (ptype)
-        {
-        default:    break;    // Do nothing
-
-        case _PTYPE_INERTIAL_SENSE_DATA:
-            if (comm.rxPkt.dataHdr.id == DID_SYS_CMD)
-            {
-                system_command_t *cmd = (system_command_t*)(comm.rxPkt.data.ptr);
-                if (cmd->command == ~cmd->invCommand)
-                {   // Valid command
-                    switch (cmd->command)
-                    {
-                    case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
-                        // Look for disable serial port bridge command
-                        // Require users to first disable serial bridge before enabling other bridge
-                        // We want to keep all serial bridge enable code in writeSysCmd().  WHJ
-                        serialPortBridge = 0;
-
-                        // Restore enabled protocol mask
-                        comm.cb.protocolMask = enabledMaskBackup;
-                        enabledMaskBackup = 0;
-                        testMode = 0;
-                        break;
-                    }
-                }
-            }
-            break;
-        }
-    }
-}
-#endif  // PLATFORM_IS_EMBEDDED
-
-// These only need to be defined/initialized if we're not building for embedded
 static custom_port_t* boundPorts[NUM_COM_PORTS] {
         #if (NUM_COM_PORTS > 0)
             TEST0_PORT, // loopback
@@ -172,6 +48,8 @@ static custom_port_t* boundPorts[NUM_COM_PORTS] {
         #endif
 };
 
+/** Implementations of our core functions for this custom virtual port
+ */
 static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
     return ringBufRead(&((custom_port_t*)port)->portRingBuf, buf, len);
@@ -184,9 +62,9 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
     if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
     {   
         // Buffer overflow
-#if !defined(IS_IMX) && !defined(GPX_1)
-            throw new std::out_of_range(utils::string_format("customPortWrite ring buffer overflow on %s: %d !!!\n", portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
-#endif
+        throw new std::out_of_range(utils::string_format("customPortWrite ring buffer overflow on %s: %d !!!\n",
+                                                         portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
+
         return PORT_ERROR__WRITE_FAILURE;
     }
     return len;
@@ -204,6 +82,8 @@ static const char* customPortName(port_handle_t port) {
     return (const char*)((custom_port_t*)port)->name;
 }
 
+/** Implementations of our support functions for this custom virtual port
+ */
 void initCustomPorts() {
     int portNum = 0;
     for (custom_port_t& port : g_customPorts) {
@@ -225,7 +105,7 @@ void initCustomPorts() {
 
         portNum++;
     }
-}
+} //initCustomPorts
 
 /**
  * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 
@@ -240,30 +120,7 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
 {
     static bool waitForStart = waitForStartSequence;
 
-#if 0   // Rx Test - 8-bit
-    static uint8_t testVal = 0;
-    static uint8_t testValLast = 0;
-    static uint8_t rxBufLast = 0;
-    static uint64_t count = 0;
-    for (int i=0; i<len; i++)
-    {
-        if (rxBuf[i] == 0)
-        {   // Reset Rx testVal
-            testVal = 0;
-            g_debugDtUsMax = 0;
-        }
-        
-        if (rxBuf[i] != testVal)
-        {   // Uncomment and put breakpoint here
-            while (1);
-        }
-        rxBufLast = rxBuf[i];
-        testValLast = testVal;
-
-        testVal++;
-        count++;
-    }
-#else   // Rx Test - 16-bit
+    // Rx Test - 16-bit
     static union
     {
         struct
@@ -324,10 +181,9 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
         
         count++;
     }
-#endif
 
     return count;
-}
+} //test_serial_rx_receive
 
 /**
  * @brief Generate Tx data for manual serial test. 
@@ -340,13 +196,6 @@ int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
 {
     static uint16_t testVal = 0;
 
-#if 0   // 8-bit count
-    for (int i=1; i<bufSize; i++)
-    {
-        buf[i] = (uint8_t)testVal;
-        testVal++;
-    }
-#else   // 16-bit count
     uint16_t *ptr = (uint16_t*)buf;
 
     // Populate buffer
@@ -355,7 +204,6 @@ int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
         ptr[i] = testVal;
         testVal++;
     }
-#endif
 
     return bufSize;
 }

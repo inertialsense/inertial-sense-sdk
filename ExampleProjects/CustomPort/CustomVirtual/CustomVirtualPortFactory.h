@@ -34,7 +34,6 @@
  * virtual test ports
  */
 //for example, #include "serialPort.h"
-//#include "test_serial_utils.h"
 #include "CustomVirtualPort.h"
 
 

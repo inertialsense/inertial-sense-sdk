@@ -32,7 +32,7 @@ The following implementation instructions identify some examples of similar code
 
 ## Implementation
 
-### Step 1: Create Port Channel Implementation
+### Step 1: Create Port Channel Implementation Header
 Identify and source or build the underlying transport interface.  The Port Factory is designed to provide a base class for building a port discoverer, upon any lower level channel type.  Your channel implementation extends the SDK base_port C object, and base_port then provides an API for channel access using a set of function hooks for methods implemented in your channel code.  The base_port comes with definitions for all kinds of different port types.  See the SDK [base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
 
 Some of the base_port function handles from base_port.h, a minimal viable set of which would be required for your specific application and you must implement for your project to provide the channel that the port will use:
@@ -61,49 +61,48 @@ Some of the port types defined in base_port.h:
 //...
 ```
 
-In this example we use for our channel the SDK virtual test port defined in [test_serial_utils.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.h), which has both loopback and passthrough ports, so that the example can be demonstrated without specialized hardware:
+In this example we create for our channel a virtual test port defined in [CustomVirtualPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.h), which has both loopback and internally bridged passthrough ports, so that the example can be demonstrated without specialized hardware:
 
 ```C
-typedef struct test_port_s {
+typedef struct custom_port_s {
     union {
         base_port_t base;
         comm_port_t comm;
     };
 
-    rmci_t          rmci;
-    uint8_t         rmciUPMcnt[DID_COUNT];
-    uint8_t         rmciNMEAcnt[NMEA_MSG_ID_COUNT];
-
     // Used to simulate serial ports
     ring_buf_t      portRingBuf;
     uint8_t         portBuffer[PORT_BUFFER_SIZE];
     uint8_t         name[6];
-} test_port_t;
+} custom_port_t;
 
 ```
 
-In [test_serial_utils.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/main/tests/test_serial_utils.cpp) we can see various functions defined for specific channel usage, which will provide the underlying functionality for the base_port once properly assigned, such as:
+### Step 2: Complete Port Channel Implementation
+In [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp) we define various functions for specific channel usage, which will provide the underlying functionality for the base_port once properly assigned, such as:
 
 ```C
-static int testPortFree(port_handle_t port) {
+static int customPortFree(port_handle_t port) {
     return ringBufFree(&((test_port_t*)port)->portRingBuf);
 }
 
-static int testPortAvailable(port_handle_t port) {
+static int customPortAvailable(port_handle_t port) {
     return ringBufUsed(&((test_port_t*)port)->portRingBuf);
 }
 ```
 
-test_serial_utils.cpp also provides an initialization function that links the handles of the test port channel implementation to the base_port, allowing us to use the generic base_port API regardless of the details of the underlying channel implementation:
+CustomVirtualPort.cpp also provides an initialization function that links the handles of our virtual port channel implementation to the base_port, allowing us to use the generic base_port API regardless of the details of the underlying channel implementation.  We will reference these virtual ports with the string names "TEST\<X\>", as in `TEST0`.
 
 ```C
-void initTestPorts() {
+void initCustomPorts() {
    //...
-        port.base.portRead = testPortRead;
-        port.base.portWrite = testPortWrite;
-        port.base.portFree = testPortFree;
-        port.base.portAvailable = testPortAvailable;
-        port.base.portName = testPortName;
+   port.base.portRead = customPortRead;
+   port.base.portWrite = customPortWrite;
+   port.base.portFree = customPortFree;
+   port.base.portAvailable = customPortAvailable;
+   port.base.portName = customPortName;
+   //...
+   SNPRINTF((char *)port.name, 6, "TEST%1d", portNum);
    //...
 }
 ```
@@ -111,7 +110,7 @@ void initTestPorts() {
 We will later show where this init function would be called by your new custom Port Factory to complete set up of the base_port interface and allow you to send data.
 
 
-### Step 2: Create New Project Files and Include Headers
+### Step 2: Create New Port Factory Project Files and Include Headers
 Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  This example uses CustomVirtualPortFactory.*.  
 
 Example headers for .h file:
