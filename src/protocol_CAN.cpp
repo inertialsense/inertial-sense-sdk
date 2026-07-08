@@ -8,12 +8,18 @@
 typedef struct { gnss_pos_t pos; gnss_vel_t vel; } gnss_posvel_t;
 
 #ifdef IS_IMX
+// IMX firmware: defined in families/imx/globals.cpp
 extern gnss_posvel_t g_gnssNav[2];
 extern ins_output_t g_insOut;
-#else
-// these vars do not exist globally on GPX/non-IMX builds; provide stub storage
+#elif PLATFORM_IS_EMBEDDED
+// GPX / other non-IMX embedded: no globals.cpp and no test file; own the storage here.
 gnss_posvel_t g_gnssNav[2];
 ins_output_t g_insOut;
+#else
+// SDK host (lib + unit-test) builds: forward-declare only.
+// Definitions are provided by test_protocol_CAN.cpp when linked into unit tests.
+extern gnss_posvel_t g_gnssNav[2];
+extern ins_output_t g_insOut;
 #endif
 
 // ============================================================================
