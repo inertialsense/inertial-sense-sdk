@@ -23,6 +23,21 @@ extern "C" {
 // returns non-zero if success, 0 if platform not implemented
 int serialPortPlatformInit(port_handle_t port);
 
+// SN-8239: baud-rate helpers (POSIX). serialPortStandardBaudRate() returns the termios Bxxx constant
+// for a known standard rate or 0 if the rate must use the custom path; serialPortBaudRateSupported()
+// returns 1 for any rate in (0, SERIAL_PORT_BAUDRATE_MAX]. Exposed (non-static) for unit testing.
+// Declared only off-Windows to match their definitions (the Windows branch of serialPortPlatform.c
+// does not define them), so a stray Windows caller fails at compile time rather than link time.
+#if !defined(_WIN32)
+int serialPortStandardBaudRate(int baudRate);
+int serialPortBaudRateSupported(int baudRate);
+#endif
+
+#if defined(__linux__)
+// SN-8239: set an arbitrary custom baud rate on an open fd via termios2/BOTHER (see serialPortLinuxCustomBaud.c).
+int serialPortSetCustomBaudLinux(int fd, int baudRate);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

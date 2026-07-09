@@ -1690,6 +1690,8 @@ enum eSystemCommand
     SYS_CMD_MANF_CHIP_ERASE                                         = 1357924681,  // (uint32 inv: 2937042614) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                              = 1357924682,  // (uint32 inv: 2937042613) SYS_CMD_MANF_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                              = 1357924683,  // (uint32 inv: 2937042612) SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
+    SYS_CMD_MANF_LED_ON                                             = 1357924684,  // (uint32 inv: 2937042611) Enable testbed LED on IMX (sysStatus) and GPX (hdwStatus).
+    SYS_CMD_MANF_LED_OFF                                            = 1357924685,  // (uint32 inv: 2937042610) Disable testbed LED on IMX (sysStatus) and GPX (hdwStatus).
 
     SYS_CMD_FAULT_TEST_TRIG_MALLOC                                  = 57005,
     SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                              = 57006,
@@ -2316,6 +2318,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_GPX_PORT_MON   = 24,
     GRMC_BIT_POS_DID_GNSS_BASE_RAW  = 25,
     GRMC_BIT_POS_DID_GPX_SYS_FAULT  = 26,
+    GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2346,6 +2349,7 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GPX_PORT_MON          (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_PORT_MON)
 #define GRMC_BITS_GNSS_BASE_RAW         (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
 #define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
+#define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -4967,7 +4971,7 @@ enum eGPXHdwStatusFlags
     /** Failed to communicate or setup GNSS receiver 2 */
     GPX_HDW_STATUS_FAULT_GNSS2_INIT         = (int)0x00000800,
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET  = 11,
-
+    
     /** GNSS is faulting firmware update REQUIRED */
     GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED  = (int)0x00001000,
     /** Enables LED in Manufacturing TBed */
