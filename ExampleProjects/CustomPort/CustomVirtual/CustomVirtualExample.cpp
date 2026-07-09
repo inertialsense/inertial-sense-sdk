@@ -12,7 +12,7 @@
  */
 
 
-/** STEP 4: Include user IO capabilities for this demo so when run visual indicators appear */
+/** STEP 6: Include user IO capabilities for this demo so when run visual indicators appear */
 #include <stdio.h>
 
 /** Include utility functions for use by your custom port class member functions defined here
@@ -26,12 +26,10 @@
 void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName);
 
 /**
- * Uses arg for com port to connect to IS physical (or virtual?) device in a 
+ * Uses arg for identifying virtual serial port in a 
  * "minimal" example of setting up a custom serial port connection.  Bind a 
- * port_handle_t to the named port. With the handle, the port is opened, and an
- * TODO involve ISDevice here?
- * ISDevice is created using that handle.  With the resulting device we validate its connectivity and configure it to stream
- * DID_SYS_PARAMS messages every 5 seconds.  Data is output to the console, and the application loops until the port is closed.
+ * port_handle_t to the named port. With the handle, the port is opened, which is
+ * in loopback mode in this case, and a simple write/read test is performed.
  */
 int main(int argc, char* argv[])
 {
@@ -44,7 +42,7 @@ int main(int argc, char* argv[])
 
     printf("Attempting to allocate and open virtual port %s\r\n", argv[1]);
         
-    /** STEP 5: Initialize and open comms port, which is virtual loopback in this case */
+    /** STEP 7: Initialize and open comms port, which is virtual loopback in this case */
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
     port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
        
@@ -59,7 +57,7 @@ int main(int argc, char* argv[])
         return -3;
     }
 
-    /** STEP 6: In a loop, send to and receive messages from the loopback port.   
+    /** STEP 8: In a loop, send to and receive messages from the loopback port.   
      */
     const unsigned char wbuf[] = "IMPORTANT MESSAGE";
     unsigned int wlen = strlen(reinterpret_cast<const char*>(wbuf));
@@ -104,7 +102,7 @@ int main(int argc, char* argv[])
         }
     } //while
 
-    /** STEP 7:  Demonstrate the locatePorts function, which is given a callback to help target a different port among
+    /** STEP 9:  Demonstrate the locatePorts function, which is given a callback to help target a different port among
      * those available, using a name search pattern in regex
      */
     auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
@@ -130,7 +128,7 @@ int main(int argc, char* argv[])
  */
 void portHandler(PortFactory* factory, uint16_t pType, const std::string& pName)
 {
-    /** STEP 8:  Demonstrate logging */
+    /** STEP 10:  Demonstrate logging */
     log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "portHandler call success");
     
 } //portHandler

@@ -8,7 +8,7 @@
  */
 
 
-/** STEP 2: Include C++ libraries for use by your custom port class member functions defined here
+/** STEP 4: Include C++ libraries for use by your custom port class member functions defined here
  */
 #include <vector>
 #include <regex>
@@ -27,7 +27,10 @@
 //for example, #include "PortManager.h"
 
 
-/** STEP 3
+/** STEP 5: Implement the required functions for a Port Factory
+ */
+
+/**
  * @brief  Required minimum method, validates name and type, locates and/or instantiates new port
  */
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType) {
@@ -36,6 +39,7 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
    
     /** In this example we use a virtual port, so there is no baud rate or blocking to set; our port is defined by
      *  CustomVirtualPort; defined g_customPorts given by TESTn_PORT is an array of custom_port_t, 0 and 1 are loopback ports
+     *  and present the only ports utilized in this simple example
      */
     custom_port_t* customPort;
     if (pName == "TEST0") {
@@ -126,7 +130,7 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
 
 
 /**
- * Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
+ * @brief Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
  * For this example, it will be a number of virtual ports defined in the data_sets.h header used by the 
  * test_serial_utils definitions.
  * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
