@@ -15,7 +15,6 @@ include_directories(
     ${IS_SDK_DIR}/src
     ${IS_SDK_DIR}/src/core
     ${IS_SDK_DIR}/src/protocol
-    ${IS_SDK_DIR}/src/libusb/libusb
     ${IS_SDK_DIR}/src/util
     ${IS_SDK_DIR}/tests/runtime
 )
@@ -67,7 +66,7 @@ if(WIN32)   # Windows
     )
     endif()
 else()      # Linux
-    set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} udev pthread m)
+    set(PROJECT_PLATFORM_LIBS gtest_main ${GTEST_LIBRARIES} pthread m)
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)

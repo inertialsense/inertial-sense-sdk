@@ -24,8 +24,6 @@
 
 #if PLATFORM_IS_EMBEDDED == 0
     #include "yaml-cpp/yaml.h"
-    #include "ISDFUFirmwareUpdater.h"
-    #include "ISBootloaderBase.h"
 #endif
 
 

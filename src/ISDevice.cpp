@@ -324,20 +324,27 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
             // m_isb_props.rom_available = buf[4];
 
             if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
-                switch ((ISBootloader::eProcessorType) buf[5]) {
-                    case ISBootloader::IS_PROCESSOR_UNKNOWN:
+                enum ProcessorType {
+                    PROCESSOR_UNKNOWN = -1,
+                    PROCESSOR_SAMX70 = 0,
+                    PROCESSOR_STM32L4,
+                    PROCESSOR_STM32U5,
+                    PROCESSOR_COUNT
+                };
+                switch ((ProcessorType) buf[5]) {
+                    case PROCESSOR_UNKNOWN:
                         devInfo.hardwareType = IS_HARDWARE_TYPE_UNKNOWN;
                         break;
-                    case ISBootloader::IS_PROCESSOR_SAMx70:
+                    case PROCESSOR_SAMX70:
                         devInfo.hardwareType = IS_HARDWARE_TYPE_EVB;
                         break;
-                    case ISBootloader::IS_PROCESSOR_STM32L4:
+                    case PROCESSOR_STM32L4:
                         // IMX-5.0
                         devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
                         devInfo.hardwareVer[0] = 5;
                         devInfo.hardwareVer[1] = 0;
                         break;
-                    case ISBootloader::IS_PROCESSOR_STM32U5:
+                    case PROCESSOR_STM32U5:
                         // STM32U5 hardware (IMX-6 and GPX-1) uses mcuBoot, not ISbl —
                         // reaching this branch indicates an unexpected/legacy state.
                         // Don't assign a misleading default like "GPX-1.0" or "IMX-1.0":
@@ -346,7 +353,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                         // Leave hardwareType/hardwareVer untouched so any previously-cached
                         // identity (set by an APP-state validation upstream) survives.
                         break;
-                    case ISBootloader::IS_PROCESSOR_NUM:
+                    case PROCESSOR_COUNT:
                         break;
                 }
                 // m_isb_props.is_evb = buf[6];

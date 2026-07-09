@@ -73,7 +73,7 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
 
     if (session_target != fwUpdate::TARGET_UNKNOWN) {
         if (_target == fwUpdate::TARGET_DFU_FLAG) {
-            deviceUpdater = new ISDFUFirmwareUpdater(_target);
+            log_error(IS_LOG_FWUPDATE, "USB DFU firmware updates are not supported");
         } else if (_target & fwUpdate::TARGET_ISB_FLAG) {
             // we are about to do an IMX-5 update through the IS bootloader
             deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);

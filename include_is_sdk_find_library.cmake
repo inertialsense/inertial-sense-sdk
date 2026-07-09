@@ -48,8 +48,9 @@ get_filename_component(_consumer_build_name "${CMAKE_BINARY_DIR}" NAME)
 set(_IS_SDK_BUILD_DIR "${IS_SDK_DIR}/${_consumer_build_name}")
 
 if(IS_SDK_BUILD_FROM_SOURCE)
-    add_subdirectory(${IS_SDK_DIR} ${_IS_SDK_BUILD_DIR})
-    message(STATUS "IS_SDK_BUILD_FROM_SOURCE=ON. Building SDK source into: ${_IS_SDK_BUILD_DIR}")
+    set(_IS_SDK_SOURCE_BUILD_DIR "${CMAKE_BINARY_DIR}/is-sdk")
+    add_subdirectory(${IS_SDK_DIR} ${_IS_SDK_SOURCE_BUILD_DIR})
+    message(STATUS "IS_SDK_BUILD_FROM_SOURCE=ON. Building SDK source into: ${_IS_SDK_SOURCE_BUILD_DIR}")
     return()
 endif()
 
@@ -72,6 +73,7 @@ else()
     # No prebuilt library — build the SDK from source as a sub-project.
     # Place artifacts under SDK/<consumer-build-name>/ so the result is
     # discoverable as a prebuilt on subsequent configures.
-    add_subdirectory(${IS_SDK_DIR} ${_IS_SDK_BUILD_DIR})
-    message(STATUS "InertialSenseSDK library NOT FOUND. Building SDK source into: ${_IS_SDK_BUILD_DIR}")
+    set(_IS_SDK_SOURCE_BUILD_DIR "${CMAKE_BINARY_DIR}/is-sdk")
+    add_subdirectory(${IS_SDK_DIR} ${_IS_SDK_SOURCE_BUILD_DIR})
+    message(STATUS "InertialSenseSDK library NOT FOUND. Building SDK source into: ${_IS_SDK_SOURCE_BUILD_DIR}")
 endif()

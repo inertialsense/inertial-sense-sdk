@@ -8,31 +8,6 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # set(CMAKE_FIND_DEBUG_MODE TRUE)
-if(LINUX)
-	find_package(UDev QUIET)	# try using find_package as a last resort (this seems to not exist on some platforms).
-	if (NOT UDEV_FOUND)
-		message(STATUS "`find_package` could not locate the libudev package. Trying again using 'pkg_check'.")
-		find_package(PkgConfig QUIET)
-		pkg_check_modules(UDEV libudev)
-		if (NOT UDEV_FOUND)
-			message(STATUS "'pkg_check' could not locate the libudev package. Trying again using 'find_library'.")
-			find_library(UDEV_LIB udev)
-			if (NOT UDEV_LIB)
-				message(STATUS "'find_library' could not locate the libudev library. Trying again using 'find_library'.")
-			else()
-				SET(UDEV_LIBRARIES udev)
-				SET(UDEV_FOUND 1)
-			endif()
-		endif()
-	endif()
-
-	if (UDEV_FOUND)
-		message(STATUS "libudev found:\n     Libraries: ${UDEV_LIBRARIES}\n     Includes Path: ${UDEV_INCLUDE_DIRS}\n     Libraries Path: ${UDEV_LIBRARY_DIRS}")
-	else()
-		message(FATAL_ERROR "UDev not found. Have you ran the \"install_sdk_dependencies\" script for your platform?")
-	endif()
-endif()
-
 file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
@@ -55,32 +30,9 @@ file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.h"
 )
 
-# Compile libusb from source
-if(WIN32)
-	file(GLOB SOURCES_LIB_USB
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
-	)
-	# Suppress specific warnings for libusb (third-party code)
-	if(MSVC)
-		set_source_files_properties(${SOURCES_LIB_USB} PROPERTIES COMPILE_FLAGS "/wd5287")
-	endif()
-elseif(APPLE)
-	file(GLOB SOURCES_LIB_USB
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*darwin*"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
-	)
-else()
-	file(GLOB SOURCES_LIB_USB
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*linux*"
-		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
-	)
-endif()
+list(FILTER SOURCES_SDK EXCLUDE REGEX "ISDFUFirmwareUpdater\\.(cpp|h)$")
+list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloader.*\\.(cpp|h)$")
+list(FILTER SOURCES_SDK EXCLUDE REGEX "InertialSense\\.(cpp|h)$")
 
 # Ignore bootloader files
 # list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloader.*")
@@ -90,9 +42,6 @@ list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 # Exclude ISDeviceCal (Qt-dependent code, moved to standard C++ but not needed for SDK builds)
 # list(FILTER SOURCES_SDK EXCLUDE REGEX "ISDeviceCal.*")
 
-list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
-
-# find_package(udev)
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
 # Include paths
@@ -100,8 +49,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src
         src/util
         src/protocol
-        src/libusb
-        src/libusb/libusb
         src/yaml-cpp
         tests/runtime
         external
@@ -150,9 +97,6 @@ if (WIN32)
 elseif(APPLE)
     # macOS specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/Xcode
-			${UDEV_INCLUDE_DIRS}
-			${UDEV_LIB_INCLUDE}
     )
 
 	add_custom_command(
@@ -165,11 +109,6 @@ elseif(APPLE)
 			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
 	)
 	add_dependencies(${PROJECT_NAME} gen_files)
-    set_source_files_properties(
-        src/libusb/libusb/core.c
-        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
-    )
-
     # macOS compiler flags
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
@@ -182,9 +121,6 @@ elseif(APPLE)
 elseif(LINUX)
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
-			${UDEV_INCLUDE_DIRS}
-			${UDEV_LIB_INCLUDE}
     )
 
 	add_custom_command(
@@ -197,11 +133,6 @@ elseif(LINUX)
 			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
 	)
 	add_dependencies(${PROJECT_NAME} gen_files)
-    set_source_files_properties(
-        src/libusb/libusb/core.c
-        PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable"
-    )
-
     # Linux compiler flags
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations")
@@ -210,5 +141,5 @@ elseif(LINUX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 	# Link in Linux specific packages
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${UDEV_LIBRARIES} m)
+    target_link_libraries(${PROJECT_NAME} PUBLIC m)
 endif ()

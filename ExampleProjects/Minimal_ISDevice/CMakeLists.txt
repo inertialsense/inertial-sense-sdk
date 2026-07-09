@@ -3,12 +3,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 project(ISDeviceBasics1)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
+
+# This serial-only example builds the SDK directly from source.
+set(IS_SDK_BUILD_FROM_SOURCE ON CACHE BOOL "" FORCE)
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 # Include InertialSenseSDK header files
 include_directories(
     ${IS_SDK_DIR}/src
-    ${IS_SDK_DIR}/src/libusb/libusb
 )
 
 # Define the executable

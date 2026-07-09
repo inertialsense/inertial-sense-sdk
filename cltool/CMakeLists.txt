@@ -12,7 +12,6 @@ include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 include_directories(
     src
     ${IS_SDK_DIR}/src
-    ${IS_SDK_DIR}/src/libusb/libusb
 )
 
 add_definitions(-DIS_LOG_LEVEL=IS_LOG_LEVEL_MORE_INFO)
