@@ -18,22 +18,14 @@
 
 #ifdef __cplusplus
 
-/** STEP 1: Include IS core and other needed SDK header files here
- */
-//for example, #include "ISConstants.h"
-#include "core/base_port.h"
-#include "core/msg_logger.h"
-
-/** Include the header file for the abstract class PortFactory.h
- */
-#include "PortFactory.h"
-
-/**
- * Include any of your own custom application port definition headers, the lower-level
- * code that defines the interface used by this custom port factory; in this case the SDK
+/** STEP 4: Include IS core and other needed SDK header files here; 
+ * include any of your own custom application port definition headers, the lower-level
+ * code that defines the interface used by this custom port factory; in this case the new
  * virtual test ports
  */
-//for example, #include "serialPort.h"
+#include "core/base_port.h"
+#include "core/msg_logger.h"
+#include "PortFactory.h"
 #include "CustomVirtualPort.h"
 
 

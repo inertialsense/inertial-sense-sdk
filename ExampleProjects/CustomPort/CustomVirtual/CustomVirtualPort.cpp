@@ -8,19 +8,17 @@
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
-/** STEP 1: Include IS core and other needed SDK header files here
+/** Include C++ library and other needed SDK header files here
  */
 #include <array>
 #include <string>
 #include <stdexcept>
 
-#include "ISConstants.h"
-#include "ISComm.h"
-#include "com_manager.h"
 #include "CustomVirtualPort.h"
 
 #include "util/util.h"
 #include "../src/ISUtilities.h"
+
 #define TIME_USEC()             current_timeUs()
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 
@@ -48,7 +46,7 @@ static custom_port_t* boundPorts[NUM_COM_PORTS] {
         #endif
 };
 
-/** Implementations of our core functions for this custom virtual port
+/** STEP 3: Implementations of our core functions for this custom virtual port
  */
 static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
@@ -107,123 +105,5 @@ void initCustomPorts() {
     }
 } //initCustomPorts
 
-/**
- * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 
- * 0 to 255 is received. The test is reset when start sequence is received is received.
- * 
- * @param rxBuf Data received
- * @param len number of bytes received
- * @param waitForStartSequence If test should wait for start sequence before running the test.
- * @return int64_t Number of bytes received with test passing.  -1 if test fails.
- */
-int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequence)
-{
-    static bool waitForStart = waitForStartSequence;
-
-    // Rx Test - 16-bit
-    static union
-    {
-        struct
-        {
-            uint8_t lb;         // Lower byte
-            uint8_t ub;         // Upper byte
-        };
-        struct
-        {
-            uint16_t u16;
-        };
-    } rx;
-
-    static uint16_t testVal = 0;
-    static bool rxUpperByte = false;
-    static uint8_t rxByteLast[3] = {0};
-    static int64_t count = 0;
-    for (int i=0; i<len; i++)
-    {
-        uint8_t rxByte = rxBuf[i];
-
-        if (rxByteLast[2] == 0 && rxByteLast[1] == 0 &&
-            rxByteLast[0] == 1 && rxByte == 0)
-        {   // Received 0x00 0x00 0x01 0x00.  Reset Rx testVal.
-            // count = 3;
-            rx.u16 = testVal = 1;
-            rxUpperByte = true;
-            waitForStart = false;
-        }
-
-        rxByteLast[2] = rxByteLast[1];
-        rxByteLast[1] = rxByteLast[0];
-        rxByteLast[0] = rxByte;
-
-        if (waitForStart)
-        {
-            continue;
-        }
-
-        if (rxUpperByte)
-        {   // Upper byte comes second
-            rx.ub = rxByte;
-            rxUpperByte = false;
-
-            // Run the test (exclude zero because it is used to reset test)
-            if (rx.u16 != 0 && rx.u16 != testVal)
-            {   // Uncomment and put breakpoint here
-//                while (1);
-                return -1;
-            }
-            testVal++;
-        }
-        else
-        {   // Lower byte comes first
-            rx.lb = rxByte;
-            rxUpperByte = true;
-        }
-        
-        count++;
-    }
-
-    return count;
-} //test_serial_rx_receive
-
-/**
- * @brief Generate Tx data for manual serial test. 
- * 
- * @param buf Buffer where data is to be written.  Must be a multiple of two bytes.
- * @param bufSize Size of available buffer.
- * @return int 
- */
-int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
-{
-    static uint16_t testVal = 0;
-
-    uint16_t *ptr = (uint16_t*)buf;
-
-    // Populate buffer
-    for (int i=0; i<bufSize/2; i++)
-    {
-        ptr[i] = testVal;
-        testVal++;
-    }
-
-    return bufSize;
-}
-
-/**
- * @brief Calculate a delay sufficient for the specified data at baudrate to be sent,
- *  preventing buffer overflow and optionally sleep for that duration.
- * @param bytes number of bytes that has/will be sent
- * @param baud Size of available buffer.
- * @param sleep if true (default) will sleep for the calculated time, otherwise will return immediately
- * @return the calculated wait in microseconds
- */
-int test_serial_delay_for_tx(int bytes, int baud, bool sleep)
-{
-    int bytes_per_sec = (baud / 10);  // ~10 (bits/byte)
-
-    // Delay for enough time to allow data
-    int delayUs = (1000000 * bytes / bytes_per_sec) + 10;     // + 10us additional for buffer
-    if (!sleep) TIME_DELAY_USEC(delayUs);
-    return delayUs;
-}
 
 
