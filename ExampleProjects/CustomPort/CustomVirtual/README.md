@@ -1,6 +1,6 @@
 # SDK: Port Factory Custom Virtual Communications Port Example Project
 
-This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom virtual test port as the base_port channel implementation, and the creation and usage of a custom Port Factory child class, using the Inertial Sense SDK.  A simple application can be built from the provided code out of the box.
+This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom virtual test port as the `base_port` channel implementation, and the creation and usage of a custom `PortFactory` child class, using the Inertial Sense SDK.  A simple application can be built from the provided code out of the box.
 
 ## Files
 
@@ -301,7 +301,7 @@ Facility definitions like `IS_LOG_PORT` or `IS_LOG_PORT_FACTORY` identify which 
    ``` bash
    ./CustomVirtual TEST0
    ```
-     *Note that only TEST0 and TEST1 are available by default in this example code, and TEST2 through TEST5 would require modifications to the code to support*
+   *Note that only TEST0 and TEST1 are available by default in this example code, and TEST2 through TEST5 would require modifications to the code to support*
 
 6. View logged results in the file called `inertial_sense.log` that is written local to the app executable.  You should see something like this:
    ```
