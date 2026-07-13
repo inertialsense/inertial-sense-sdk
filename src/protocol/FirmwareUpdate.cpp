@@ -285,12 +285,7 @@ namespace fwUpdate {
                 }
                 break;
             case TARGET_SEPTENTRIO_G5:
-                switch (target & 0x0F) {
-                    case 1: return "SEPTENTRIO.1";
-                    case 2: return "SEPTENTRIO.2";
-                    default: return "SEPTENTRIO";
-                }
-                break;
+                return "SEPTENTRIO";
             default: return "[UNKNOWN]";
         }
     }
