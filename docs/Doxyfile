@@ -42,8 +42,6 @@ RECURSIVE              = YES
 
 FILE_PATTERNS          = *.h \
                          *.hpp \
-                         *.cpp \
-                         *.c \
                          *.md
 
 EXCLUDE                =
@@ -106,7 +104,7 @@ SHOW_NAMESPACES        = YES
 
 QUIET                  = YES
 WARNINGS               = YES
-WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_UNDOCUMENTED   = NO
 WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = YES
 WARN_FORMAT            = "$file:$line: $text"

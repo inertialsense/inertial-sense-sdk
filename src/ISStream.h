@@ -10,6 +10,19 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISStream.h
+ * @brief Abstract stream interface and file-backed implementation for the IS SDK.
+ *
+ * Defines @ref cISStream, a pure-virtual I/O stream interface used throughout the
+ * SDK for transport-agnostic data exchange (serial, file, TCP, etc.), and
+ * @ref cISFileStream, a concrete stdio-backed implementation for reading and
+ * writing log files.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+ */
+
 #ifndef __ISSTREAM_H__
 #define __ISSTREAM_H__
 
@@ -79,6 +92,7 @@ private:
     cISStream(const cISStream& copy); // Disable copy constructor
 };
 
+/** @brief Concrete @ref cISStream implementation backed by a stdio FILE handle. */
 class cISFileStream : public cISStream
 {
 public:
