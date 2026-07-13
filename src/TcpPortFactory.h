@@ -10,11 +10,15 @@
 #define IS_SDK__TCP_PORT_FACTORY_H
 
 #include <csignal>
-#ifdef _WIN32
+
+#include "ISConstants.h"
+
+#if PLATFORM_IS_WINDOWS
 #include <winsock2.h>
 #endif
-#include "PortFactory.h"
+
 #include "core/tcpPort.h"
+#include "PortFactory.h"
 
 /**
  * Singleton class passed to PortManager to allow a user to connect to a remote serial port over the network using a URL

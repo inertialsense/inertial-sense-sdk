@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
-from .logInspector import LogInspectorWindow
+try:
+    from .logInspector import LogInspectorWindow
+except ImportError:
+    # Fallback for direct script execution
+    from logInspector import LogInspectorWindow
 
 import subprocess
 import sys, os, signal, ctypes, yaml
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
+from PyQt6 import QtCore
+from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
+from PyQt6.QtCore import Qt
 
 # import logInspector as logInspector
 
@@ -31,9 +36,13 @@ class ChooseDevsDialog(QDialog):
             checkbox = QCheckBox()
             checkbox.setText(str(parent.log.serials[i]))
             checkbox.setChecked(i in parent.mplots[0].plotter.active_devs)
-            checkbox.clicked.connect(self.updatePlot)
             self.checkboxes.append(checkbox)
             self.mainLayout.addWidget(checkbox)
+
+        self.applyButton = QPushButton()
+        self.applyButton.setText("Apply")
+        self.applyButton.clicked.connect(self.updatePlot)
+        self.mainLayout.addWidget(self.applyButton)
 
         self.okbutton = QPushButton()
         self.okbutton.setText("OK")
@@ -53,17 +62,16 @@ class ChooseDevsDialog(QDialog):
         self.parent.updatePlot()
 
     def clickedOk(self):
+        self.updatePlot()
         self.close()
 
     def selectAll(self):
         for checkbox in self.checkboxes:
             checkbox.setChecked(True)
-        self.updatePlot()
 
     def selectNone(self):
         for checkbox in self.checkboxes:
             checkbox.setChecked(False)
-        self.updatePlot()
 
 
 class logInspectorInternal(LogInspectorWindow):
@@ -83,13 +91,23 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('EKF Biases', 'ekfBiases')
 
     def createListSensors(self):
-        self.addListItem('IMU3 Gyro', 'imu3PQR')
-        self.addListItem('IMU3 Accel', 'imu3Acc')
-        self.addListItem('IMU3 Gyro Combined', 'imu3PqrCombined')
-        self.addListItem('IMU3 Accel Combined', 'imu3AccCombined')
+        self.addListItem('IMUs Uncal Gyro',  'imusUncalPqr')
+        self.addListItem('IMUs Uncal Accel', 'imusUncalAcc')
+        self.addListItem('IMUs Raw Gyro',  'imusRawPqr')
+        self.addListItem('IMUs Raw Accel', 'imusRawAcc')
+        self.addListItem('IMUs Raw Gyro Combined',  'imusRawPqrCombined')
+        self.addListItem('IMUs Raw Accel Combined', 'imusRawAccCombined')
+        self.addListItem('IMUs Raw Gyro FFT', 'gyroFFT')
+        self.addListItem('IMUs Raw Gyro PSD', 'gyroRawPSD')
+        self.addListItem('IMUs Raw Accel FFT', 'accelFFT')
+        self.addListItem('IMUs Raw Accel PSD', 'accelRawPSD')
+        self.addListItem('IMUs Gyro',  'imusPqr')
+        self.addListItem('IMUs Accel', 'imusAcc')
         super(logInspectorInternal, self).createListSensors()
-        self.addListItem('Allan Var. Gyro', 'allanVariancePQR')
-        self.addListItem('Allan Var. Accel', 'allanVarianceAcc')
+        self.addListItem('Allan Dev. Gyro', 'allanDeviationPqr')
+        self.addListItem('Allan Dev. Accel', 'allanDeviationAcc')
+        self.addListItem('Allan Dev. Imus Gyro',  'allanDeviationImusPqr')
+        self.addListItem('Allan Dev. Imus Accel', 'allanDeviationImusAcc')
         self.addListItem('Mag Decl.', 'magDec')
         self.addListItem('Wheel Encoder', 'wheelEncoder')
         self.addListItem('Ground Vehicle Status', 'groundVehicleStatus')
@@ -121,7 +139,7 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('RTK Dbg 2 Lock', 'rtkDebug2Lock')
         self.addListItem('RTK Pos Misc', 'rtkPosMisc')
         self.addListItem('RTK Cmp Misc', 'rtkCmpMisc')
-        self.addListItem('GPS Raw Time', 'gpsRawTime')
+        self.addListItem('GNSS Raw Time', 'gnssRawTime')
         #self.addButton('RTK Rel', lambda: self.plot('rtkRel'))
 
     def createBottomToolbar(self):
@@ -145,7 +163,7 @@ class logInspectorInternal(LogInspectorWindow):
         try:
             dlg = ChooseDevsDialog(self)
             dlg.show()
-            dlg.exec_()
+            dlg.exec()
         except Exception as e:
             self.showError(e)
 
@@ -226,8 +244,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.LayoutVTests.addWidget(self.reprocess)
         # self.reprocess.stateChanged.connect(self.changeReprocess)
 
-    def createListGps(self):
-        super(logInspectorInternal, self).createListGps()
+    def createListGnss(self):
+        super(logInspectorInternal, self).createListGnss()
         self.addListItem('GNSS Ephemeris', 'gnssEphemeris')
         self.addListItem('GPX Debug Float', 'gpxDebugfArray')
         self.addListItem('GPX Debug Int', 'gpxDebugiArray')
@@ -247,6 +265,9 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     app = QApplication(sys.argv)
+    app.styleHints().setColorScheme(Qt.ColorScheme.Light)
+    if os.name == 'nt':
+        app.setStyle('Fusion')
 
     configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "log_inspector.yaml")
 

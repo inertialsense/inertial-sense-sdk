@@ -20,8 +20,9 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#include <poll.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
-#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->base.perror = errno; return -errno; } while(0)
+#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->socket = -errno; tcpPort->base.perror = errno; return -errno; } while(0)
 #endif
 
 /**
@@ -63,29 +64,61 @@ int tcpPortValidate(port_handle_t port) {
  */
 int tcpPortOpen(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
-    if (tcpPort->socket >= 0) { // The socket is already open, we don't need to do anything
-        return -EISCONN;
-    }
-    // Create new socket
-    tcpPort->socket = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
-    if (tcpPort->socket < 0) {
-        tcpPort->socket = -errno; // File descriptors should always be positive so we can store the errno here
-        tcpPort->base.perror = errno; // Store errno somewhere where clients can read it
-        return tcpPort->socket; // Return error code to calling function
+    if (tcpPort->socket < 0) { // No socket yet -- create one and begin connecting.
+        // Create new socket
+        tcpPort->socket = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
+        if (tcpPort->socket < 0) {
+            portFlagsClear(port, PORT_FLAG__OPENED);
+            HANDLE_SOCKET_ERROR(tcpPort);
+        }
+        // Force the socket into non-blocking mode BEFORE connect(). Otherwise a
+        // connect() to an unreachable/filtered host stalls the calling thread for
+        // the full kernel SYN timeout (~1-2 min), regardless of tcpPort->blocking.
+        // (A freshly created socket defaults to blocking, so assert that here to
+        // guarantee tcpPortSetBlocking() actually issues the FIONBIO ioctl.)
+        tcpPort->blocking_internal = true;
+        tcpPortSetBlocking(port, false);
     }
 
-    // Connect socket to remote
-    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, sizeof(tcpPort->addr.storage));
+    // Connect socket to remote (use family-specific address length)
+    socklen_t addrlen;
+    switch (tcpPort->addr.domain) {
+        case AF_INET:  addrlen = sizeof(struct sockaddr_in);  break;
+        case AF_INET6: addrlen = sizeof(struct sockaddr_in6); break;
+        default:       addrlen = sizeof(tcpPort->addr.storage); break;
+    }
+    int retval = connect(tcpPort->socket, &tcpPort->addr.generic, addrlen);
     if (retval != 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+#ifdef PLATFORM_IS_WINDOWS
+        int err = WSAGetLastError();
+        bool connected = (err == WSAEISCONN);
+        bool pending   = (err == WSAEWOULDBLOCK) || (err == WSAEALREADY) || (err == WSAEINPROGRESS) || (err == WSAEINVAL);
+#else
+        int err = errno;
+        bool connected = (err == EISCONN);
+        // Non-blocking connect that hasn't finished the handshake yet -- the first
+        // call returns EINPROGRESS, subsequent polls (portOpen is re-invoked by the
+        // caller until the port opens) return EALREADY. Neither is an error.
+        bool pending   = (err == EINPROGRESS) || (err == EALREADY) || (err == EWOULDBLOCK);
+#endif
+        if (pending) {
+            // Handshake still in flight. Leave the socket intact and report success
+            // WITHOUT setting PORT_FLAG__OPENED, so the caller keeps polling until the
+            // connection either completes (EISCONN below) or hard-fails.
+            tcpPort->base.perror = 0;
+            return PORT_ERROR__NONE;
+        }
+        if (!connected) {
+            portFlagsClear(port, PORT_FLAG__OPENED);
+            HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
+        }
     }
 
-    // Set socket mode
-    tcpPort->blocking_internal = true;
+    // Connection established -- apply the caller's desired blocking mode.
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     portFlagsSet(port, PORT_FLAG__OPENED);
+    tcpPort->base.perror = 0;
     return 0;
 }
 
@@ -96,10 +129,26 @@ int tcpPortOpen(port_handle_t port) {
  */
 int tcpPortClose(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
-    if (tcpPort->socket < 0) { // The file descriptor is invalid, creating it errored, or we already closed it.
-        tcpPort->base.perror = -(tcpPort->socket);
+    if (tcpPort->socket < 0) {
+        // socket < 0 covers three cases, none of which are an "operation failed"
+        // for this call:
+        //   1. Never opened (socket initialized to -EBADF in tcpPortInit).
+        //   2. Open previously failed — perror was already stamped at the
+        //      original failure site (HANDLE_SOCKET_ERROR / tcpPortValidate).
+        //   3. Already closed — perror reflects whatever the prior close set.
+        // In all three, closing again is a benign no-op; stamping perror here
+        // would either invent a phantom EBADF (case 1) or overwrite a more
+        // meaningful prior error (cases 2/3) and surface "errant" status to
+        // consumers reading via portError() (e.g. UI markup).
         return tcpPort->socket;
     }
+
+#ifdef PLATFORM_IS_WINDOWS
+    shutdown(tcpPort->socket, SD_BOTH);
+#else
+    shutdown(tcpPort->socket, SHUT_RDWR);
+#endif
+
     int retval = close(tcpPort->socket);
     if (retval != 0) {
         tcpPort->base.perror = errno;
@@ -132,14 +181,12 @@ int tcpPortFree(port_handle_t port) {
     int bufferSize = 0;
     socklen_t bufferSizeLen = sizeof(bufferSize); // in/out parameter
     if (getsockopt(tcpPort->socket, SOL_SOCKET, SO_SNDBUF, &bufferSize, &bufferSizeLen) < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
     }
 
     int bytesUsed;
     if (ioctl(tcpPort->socket,TIOCOUTQ, &bytesUsed) < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
     }
     return bufferSize - bytesUsed;
 #endif
@@ -159,6 +206,7 @@ int tcpPortAvailable(port_handle_t port) {
 
     int bytesAvailable;
     if (ioctl(tcpPort->socket, FIONREAD, &bytesAvailable) < 0) {
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
         tcpPort->base.perror = errno;
         return -errno;
     }
@@ -183,6 +231,7 @@ int tcpPortFlush(port_handle_t port) {
         tcpPortSetBlocking(port, true);
         ssize_t retval = recv(tcpPort->socket, throwAwayBuf, sizeof(throwAwayBuf), 0);
         if (retval < 0) {
+            HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
             tcpPort->base.perror = errno;
             return -errno;
         }
@@ -247,13 +296,17 @@ int tcpPortRead(port_handle_t port, uint8_t* buf, unsigned int len) {
         return tcpPort->socket;
     }
 
-    tcpPortSetBlocking(port, tcpPort->blocking);
-
     // Receive data from the socket
+    // NOTE: recv() returns 0 when the remote end is closed; but returns -1 && errno == EAGAIN or EWOULDBLOCK is connected, but no data
+    tcpPortSetBlocking(port, tcpPort->blocking);
     ssize_t retval = recv(tcpPort->socket, buf, len, 0);
-    if (retval < 0) {
-        tcpPort->base.perror = errno;
-        return -errno;
+
+    if ((retval < 0) && (errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
+    } else if (retval == 0) {
+        // retval == 0 means the remote has disconnected...
+        tcpPortClose(port);
+        tcpPort->base.perror = ENOTCONN;    // denote that the socket is not connected anymore.
     }
 
     return retval;
@@ -275,32 +328,33 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
         return tcpPort->socket;
     }
 
+    // Use poll() to wait for data with timeout — works correctly regardless of
+    // blocking mode (SO_RCVTIMEO is ignored on non-blocking sockets on Linux).
+#ifdef PLATFORM_IS_WINDOWS
     tcpPortSetBlocking(port, false);
-    // Set a timeout on the socket
-#ifdef PLATFORM_IS_WINDOWS
     DWORD tv = timeout;
-#else
-    struct timeval tv;
-    tv.tv_sec = timeout/1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
-#endif
     if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
         HANDLE_SOCKET_ERROR(tcpPort);
     }
-
-    // Receive data from the socket
     ssize_t retval = recv(tcpPort->socket, buf, len, 0);
-
-    // Reset socket timeout
-#ifdef PLATFORM_IS_WINDOWS
     tv = 0;
-#else
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-#endif
     if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
         HANDLE_SOCKET_ERROR(tcpPort);
     }
+#else
+    tcpPortSetBlocking(port, false);
+    struct pollfd pfd = { .fd = tcpPort->socket, .events = POLLIN };
+    int pollrc = poll(&pfd, 1, (int)timeout);
+    ssize_t retval;
+    if (pollrc > 0 && (pfd.revents & POLLIN)) {
+        retval = recv(tcpPort->socket, buf, len, 0);
+    } else if (pollrc == 0) {
+        return 0;  // Timeout — no data available
+    } else {
+        HANDLE_SOCKET_ERROR(tcpPort);
+        return -1;
+    }
+#endif
 
     // Return
     if (retval < 0) {
@@ -345,10 +399,11 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 #endif
     ssize_t retval = send(tcpPort->socket, buf, len, MSG_NOSIGNAL);
     if (retval < 0) {
-        if (errno == EPIPE)
+        if (errno == EPIPE) {
             tcpPortClose(port); // remote has disconnected, so force this socket closed.
-        tcpPort->base.perror = errno;
-        return -errno;
+            portInvalidate(port);   // since we can't re-establish to the client (because TCP), invalidate the port
+        }
+        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
     }
 
     return retval;
@@ -391,7 +446,7 @@ void tcpPortInitWithSocket(port_handle_t port, int id, int type, const char* nam
         is_comm_port_init(COMM_PORT(port), NULL);
 
     tcpPort->socket = socket;
-    tcpPort->name = strdup(name);
+    strncpy(tcpPort->name, name, MAX_TCP_PORT_NAME_LENGTH);
 
     socklen_t peer_addr_len = sizeof(tcpPort->addr.storage);
     getpeername(socket, (struct sockaddr *)&tcpPort->addr.storage, &peer_addr_len);
@@ -435,7 +490,7 @@ void tcpPortInit(port_handle_t port, int id, const char* name, const struct sock
         is_comm_port_init(COMM_PORT(port), NULL);
 
     tcpPort->socket = -EBADF;
-    tcpPort->name = strdup(name);
+    strncpy(tcpPort->name, name, MAX_TCP_PORT_NAME_LENGTH);
     tcpPort->addr.storage = *ip;
     tcpPort->blocking = portFlagsIsSet(port, PORT_FLAG__BLOCKING);
     tcpPort->blocking_internal = true;
@@ -450,8 +505,6 @@ void tcpPortInit(port_handle_t port, int id, const char* name, const struct sock
 void tcpPortDelete(port_handle_t port) {
     if (!port)
         return;
-    tcp_port_t* tcpPort = TCP_PORT(port);
-    free(tcpPort->name);
     memset(port, 0, sizeof(tcp_port_t));
 }
 

@@ -12,9 +12,10 @@ import sys
 import threading
 import yaml
 
-sys.path.insert(1, '../../SDK/python/inertialsense/logInspector')
-sys.path.insert(1, '../logInspector')
-sys.path.insert(1, '../logs')
+_supernpp_dir = Path(__file__).resolve().parent
+_inertialsense_dir = _supernpp_dir.parent
+sys.path.insert(1, str(_inertialsense_dir / 'logInspector'))
+sys.path.insert(1, str(_inertialsense_dir / 'logs'))
 
 from logReader import Log
 
@@ -65,8 +66,8 @@ class SuperNPP():
         results_filename =  os.path.normpath(os.path.join(self.params["directory"], self.params["results_directory"] , self.params["name"] + "_results.txt"))
         return results_filename
 
-    def getSerialNumbers(self):
-        return self.log.getSerialNumbers()
+    def serialNumbers(self):
+        return self.log.serialNumbers()
 
     def protocolVersion(self):
         return self.log.protocolVersion()
@@ -102,7 +103,7 @@ class SuperNPP():
             if os.path.isfile(item_path):
                 # Directory contains .raw or .dat file
                 if (".dat" in item or ".raw" in item) and "base_station.raw" not in item:
-                    if os.path.basename(directory) in self.params["blacklist_logs"]:
+                    if self.params.get("blacklist_logs") and os.path.basename(directory) in self.params["blacklist_logs"]:
                         print("Excluding blacklisted log: " + os.path.basename(directory))
                     else:
                         print("Adding log: " + directory)
@@ -216,13 +217,25 @@ class SuperNPP():
         else:
             serials = config_serials
 
-        file_path = os.path.dirname(os.path.realpath(__file__))
-        npp_build_folder = os.path.normpath(file_path + '../../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
             exename = './navpp'
+            build_dir_name = 'build'
         else:                   # Windows
             exename = 'navpp.exe'
-            npp_build_folder += '-release'
+            build_dir_name = 'build-release'
+        npp_build_folder = None
+        search_dir = Path(__file__).resolve().parent
+        while True:
+            candidate = search_dir / 'cpp' / 'NavPostProcess' / build_dir_name
+            if candidate.is_dir():
+                npp_build_folder = str(candidate)
+                break
+            if search_dir == search_dir.parent:
+                break
+            search_dir = search_dir.parent
+        if npp_build_folder is None:
+            print(f"ERROR: Could not find NavPostProcess/{build_dir_name} folder searching upward from {Path(__file__).resolve()}")
+            return
         cmds = [exename + ' -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 
         mode_suffix = {1: ' -mode COLD', 2: ' -mode FACTORY'}.get(self.startMode, '')

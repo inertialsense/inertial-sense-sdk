@@ -115,12 +115,12 @@ void write_bootloader_signature_stay_in_bootloader_mode(void)
     flash_unlock(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS + BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE - 1, 0, 0);
 
     // this flash write is allowed to erase and write a 512 byte page because it is in the small sector, last param of 1 does this
-    flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 1);
+    flash_write_IS(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 1);
 
     // unlock flash in case of firmware downgrade
     unlockUserFlash();
 #else
-    flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 0);
+    flash_write_IS(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 0);
 #endif
 }
 

@@ -7,8 +7,6 @@
  */
 
 #include "ISBFirmwareUpdater.h"
-#include "ISBootloaderBase.h"
-#include "ISBootloaderISB.h"
 #include "InertialSense.h"
 
 
@@ -106,14 +104,22 @@ bool ISBFirmwareUpdater::fwUpdate_sendProgressFormatted(int level, int total_chu
 
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
 bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
-
     if (session_status == fwUpdate::NOT_STARTED)
         return false;
 
-    // printf("fwUpdate_step(): %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
+    // This allows suspending the fwUpdate for until a set time - usually during instances such as
+    // device reboots, where we don't want to try and spin while devices
+    if (nextStepMs && ((int32_t)(current_timeMs() - nextStepMs) < 0))  // suspending the fwUpdate execution until this time
+        return false;
+    nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
+
+    if (!device)    // nothing to do without a valid device
+        return false;
+
+    FnProfiler fn("ISBFirmwareUpdater::fwUpdate_step() [" + device->getIdAsString() + "]", 30000);
 
     // if we're running ISBootloader, so we need to make sure that we have EXPLICIT_READ access to the port - so that the ISComm parser doesn't try and pull data...
-    if (device && portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
+    if (portIsValid(device->port) && (portType(device->port) & PORT_TYPE__COMM)) {
         if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
             COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
         else
@@ -129,11 +135,28 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // advance to ready. The ISFirmwareUpdater should handle most of this for us, we just need to tell it
         // to look for new ISDevices.
 
-        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
-        if (device && !device->isConnected() && portIsValid(device->port))
-            device->connect(true);
+        // NOTE: Because fwUpdate_step() can be called very frequently, this can bog-down the OS if we try
+        // and open ports too quickly, before they are ready.  If attempt to connect() fails, we should throttle
+        // back this and return
 
-        if (device && device->isConnected() && device->hasDeviceInfo()) {
+        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+        if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
+            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", ISDevice::getIdAsString(target_devInfo).c_str());
+            return false;
+        }
+
+        if (portIsValid(device->port) && !device->isConnected()) {
+            log_debug(IS_LOG_FWUPDATE, "Device %s is disconnected... Attempting to reconnect.", device->getIdAsString().c_str());
+            if (!device->connect(false)) {   // we will revalidate below, asynchronously
+                log_warn(IS_LOG_FWUPDATE,"Device %s failed to reconnect.", device->getIdAsString().c_str());
+                // SLEEP_MS(100);
+            }
+        }
+
+        if (device->isConnected()) {
+            if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
+                return true;    // we'll keep in our current state until we can validate the device
+
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
@@ -156,19 +179,8 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into ISbl mode.", ISDevice::getIdAsString(target_devInfo).c_str()); // note we use target_devInfo since we don't have a good device yet
                 }
             }
-        } else {
-/*
-            // FIXME: This causes the EvalTool to crash occasionally -
-            //   I think the Port Discovery interferes with the normal EvalTool Port Discovery
-            if (nextPortCheck < current_timeMs()) {
-                nextPortCheck = current_timeMs() + 2500;
-                // NO Device found -- probably waiting for it to reboot.  Let's check for knew ports with no known Devices
-                if (portManager.discoverPorts()) {
-                    deviceManager.discoverDevices();
-                }
-            }
-*/
         }
+        fn.mark("Finished INITIALIZING step.");
     }
 
     if ((session_status >= fwUpdate::READY) && (session_status <= fwUpdate::FINALIZING)) {
@@ -182,32 +194,103 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 eraseState = eraseFlash_step();
                 if (eraseState >= ERASE_DONE)
                     updateState = WRITING;
+                fn.mark("Finished ERASING step.");
                 break;
             case WRITING: // prepare for write
                 writeState = writeFlash_step(writeTimeout);
                 if (writeState >= WRITE_DONE)
                     updateState = VERIFYING;
+                fn.mark("Finished WRITING step.");
                 break;
             case VERIFYING: // waiting for write to finish
                 if (doVerify) {
                     // do some verify step??
                 } else {
                     updateState = REBOOT_TO_APP;
-                    session_status = fwUpdate::FINALIZING;
                 }
                 break;
             case REBOOT_TO_APP:
                 if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
-                    rebootToAPP(false);  // we should be able to keep the port open
+                    rebootToAPP(false);
+                session_status = fwUpdate::FINALIZING;
+                last_reboot = current_timeMs();
+                nextStepMs = last_reboot + 2000;  // give device 2s to start rebooting
                 updateState = UPDATE_DONE;
                 break;
-            case UPDATE_DONE:
-                // at this point, we should have rebooted, and we're waiting for the device to reboot back up, so we can confirm the update succeeded.
+            case UPDATE_DONE: {
+                // Async wait: device is rebooting from bootloader to APP mode.
+                // Keep session_status == FINALIZING until device is rediscovered in APP mode.
+
+                // Heartbeat: emit a progress message at progress_interval regardless of
+                // which sub-branch we take below. The host (ISFirmwareUpdater) treats any
+                // received message as a keep-alive (FirmwareUpdate.cpp:708 → resetTimeout);
+                // without it, session_status flips to ERR_TIMEOUT after 20s and the parent
+                // reports "No Response from device" while the device is genuinely rebooting.
+                if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                    nextProgressReport = current_timeMs() + progress_interval;
+                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                        "Waiting for device [%s] to reboot into APP mode.",
+                        ISDevice::getIdAsString(target_devInfo).c_str());
+                }
+
+                // Periodically trigger port rediscovery
+                if (current_timeMs() > nextPortCheck) {
+                    portManager.discoverPorts();
+                    nextPortCheck = current_timeMs() + 1000;
+                }
+
+                // Re-fetch device (port may have changed after USB re-enumeration)
+                device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+                if (!device) {
+                    // Device not yet rediscovered — keep waiting (heartbeat above)
+                    if ((current_timeMs() - last_reboot) > 20000) {
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                            "Timed out waiting for device [%s] to reboot into APP mode. Upload was successful.",
+                            ISDevice::getIdAsString(target_devInfo).c_str());
+                        // Fall through to finish — the upload itself succeeded
+                    } else {
+                        break;  // keep waiting
+                    }
+                } else {
+                    // Device found — try to connect and validate
+                    if (portIsValid(device->port) && !device->isConnected()) {
+                        if (!device->connect(false))
+                            break;  // retry next cycle
+                    }
+
+                    if (device->isConnected()) {
+                        if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
+                            break;  // keep waiting for validation
+
+                        if (device->devInfo.hdwRunState != HDW_STATE_APP) {
+                            // Still in bootloader or unknown — keep waiting
+                            if ((current_timeMs() - last_reboot) > 20000) {
+                                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                                    "Device [%s] rebooted but not in APP mode (state=%d). Upload was successful.",
+                                    device->getIdAsString().c_str(), device->devInfo.hdwRunState);
+                                // Fall through to finish
+                            } else {
+                                break;
+                            }
+                        } else {
+                            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
+                                "Device [%s] confirmed running in APP mode.",
+                                device->getIdAsString().c_str());
+                        }
+                    } else {
+                        break;  // not yet connected
+                    }
+                }
+
+                // Finalize — either confirmed APP mode or timed out (upload was successful either way)
                 if (imgStream) { delete imgStream; imgStream = nullptr; }
                 if (imgBuffer) { delete imgBuffer; imgBuffer = nullptr; }
                 session_status = fwUpdate::FINISHED;
+                fn.mark("Finished UPDATE_DONE step.");
                 break;
+            }
         }
+        fn.mark("Finished non-initializing steps.");
     }
 
 #ifdef DEBUG_INFO
@@ -227,7 +310,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         fwUpdate_sendProgress();
     }
 
-    // printf(" %s\n", fwUpdate_getStatusName(session_status)); fflush(stdout);
     return true;
 }
 
@@ -285,6 +367,8 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
     if (msg.hdr.target_device != fwUpdate::TARGET_ISB_IMX5)
         return fwUpdate::ERR_INVALID_TARGET;
 
+    FnProfiler fn("ISBFirmwareUpdater::fwUpdate_startUpdate() [" + ( device ? device->getIdAsString() : "") + "]");
+
     if ((session_status < fwUpdate::NOT_STARTED) || (session_status >= fwUpdate::READY))
         return session_status;  // the session has already been started; we probably shouldn't allow it to be interrupted
         // TODO: the above it tricky, because if the session gets stuck, it can't be restarted again.
@@ -300,13 +384,16 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
 
     if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         rebootToISB();
+        fn.mark("Booting to ISBootloader.");
         SLEEP_MS(100);
         return fwUpdate::INITIALIZING;
     }
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-        if (fetch_device_info_and_signature() == IS_OP_OK)   // this call will validate the ISbootloader version and populate m_isb_props necessary for a successful update.
+        if (fetch_device_info_and_signature() == IS_OP_OK) { // this call will validate the ISbootloader version and populate m_isb_props necessary for a successful update.
+            fn.mark("Booted to ISBootloader & validated.");
             return fwUpdate::READY;
+        }
     }
 
     return fwUpdate::ERR_INVALID_TARGET;
@@ -489,7 +576,6 @@ bool ISBFirmwareUpdater::rebootToRomDfu()
 bool ISBFirmwareUpdater::rebootToISB()
 {
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Resetting %s into Bootloader (ISbl)...", device->getIdAsString().c_str());
-    // fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to Bootloader (ISbl)...  %d", device->devInfo.hdwRunState);
 
     if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
         // we're already in the bootloader, so just issue a reset to the bootloader (we should stay in bootloader)  TODO - Should we issue a reset, if we're already where we want to be??
@@ -497,20 +583,22 @@ bool ISBFirmwareUpdater::rebootToISB()
             return true;
     } else if (device->devInfo.hdwRunState == HDW_STATE_APP) {
         // In case we are in program mode, try and send the commands to go into bootloader mode
-        for (size_t loop = 0; loop < 10; loop++) {
+        for (size_t loop = 0; loop < 3; loop++) {
             if (device->SendNmea("STPB") && device->SendNmea("BLEN"))
-                break;        // If the write fails, assume the device is now in bootloader mode.
+                break;        // If the write fails, assume the device got our command and rebooted
 
             SLEEP_MS(10);
             if (device->SetSysCmd(SYS_CMD_ENABLE_BOOTLOADER_AND_RESET))
                 break;
-
         }
+
         last_reboot = current_timeMs();
-        device->disconnect();  // If we haven't already disconnected, let's disconnect and we'll attempt to open again
+        nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
+        device->disconnect(true);  // close AND invalidate the port; this port will have to be rediscovered to be used again.
+        log_debug(IS_LOG_FWUPDATE, "Disconnecting after reboot; Waiting 2 seconds for device to return.");
         // portManager.releasePort(device->port);  //
         // SLEEP_MS(50);
-        portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
+        // portManager.discoverPorts(); // if we are a USB connection, and do a force a quick discoverPorts() to discover if our USB port was lost.
     } else {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Unable to reset device to ISbl because the current device state is unknown (%d).", device->devInfo.hdwRunState);
         return false;
@@ -530,40 +618,47 @@ bool ISBFirmwareUpdater::rebootToISB()
  * @return true if successful, otherwise false
  */
 bool ISBFirmwareUpdater::rebootToAPP(bool keepPortOpen) {
-    if (!device || !portIsOpened(device->port))
+    if (!device || !portIsOpened(device->port) || device->devInfo.hdwRunState != HDW_STATE_BOOTLOADER)
         return false;
 
     fwUpdate_sendProgress(IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
-    // send the "reboot to program mode" command and the device should start in program mode
-    int retry = 5;
-    while (retry-- && portIsOpened(device->port) && !portError(device->port)) {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sending 'BOOT UP' command.");
-        int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7", 15);
-        if (writeCnt == 15) {
-            for (int i = 0; (portWrite(device->port, (unsigned char *) "\r\n", 2) >= 0) && (i < 3); i++) {
-                SLEEP_MS(25);
-            }
-        } else if (writeCnt < 0) {
-            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Failed to send 'JUMP-TO-APP' command to serial port: %s [%d]", portName(device->port), writeCnt);
+    // Send the "reboot to program mode" command and the device should restart in program mode
+    // However, depending on the port type, this may or may not result in the port/device connection being lost
+    // We'll just send the "Boot Up" command a time or 3 - if the portWrite() fails, we'll assume we succeeded,
+    // otherwise, send a few extra times for good measure, and then assume we succeeded -- either way, success!
+    int retry = 0;
+    do {
+        int writeCnt = portWrite(device->port, (unsigned char *) ":020000040300F7\r\n", 17);
+        if (writeCnt == 17) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) Sent 'BOOT UP' command.");
+        } else {
+            // if we didn't send the entire string, we probably lost the connection - probably because it rebooted.
+            if (!retry)     // if retry == 0 the we failed on the first attempt - this isn't so good, so let's notify someone.
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN, "(ISB) Failed to send 'JUMP-TO-APP' command to port: %s [%d]", portName(device->port), writeCnt);
             break;
         }
         SLEEP_MS(10);
-        portFlush(device->port);
-    }
+    } while (++retry < 3);
 
-    // invalidate, because we don't know until we rediscover the device
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;    // clear this so we don't get confused about the state of the device.
     if ((portType(device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM) {
         // ISbl can put a port in EXPLICIT READ mode; we need to clear that flag
         COMM_PORT(device->port)->flags &= ~COMM_PORT_FLAG__EXPLICIT_READ;
     }
 
-    if (!keepPortOpen) {
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
-        device->disconnect();
+    if (portIsOpened(device->port)) {
+        if (!keepPortOpen) {
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) Disconnecting device: %s", device->getIdAsString().c_str());
+            device->disconnect(true);
+            nextStepMs = current_timeMs() + 2000;   // Sometimes we can be a little aggressive after a breakup - let's take a hot minute before we try and reconnect
+            log_debug(IS_LOG_FWUPDATE, "Disconnecting after reboot; Waiting 2 seconds for device to return.");
+        } else {
+            portFlush(device->port);
+        }
     }
-    return (retry > 0);
+
+    return true;    // since with a UART port, we won't actually know if the device boots to APP, so we just return true
 }
 
 
@@ -632,17 +727,14 @@ bool ISBFirmwareUpdater::waitForAck(const std::string& ackStr, const std::string
         return false;
 
     int count = portRead(device->port, rxWorkBufPtr, ackStr.length());
-    if (count < 0) {
-        return false; // FIXME: handle read errors more appropriately
+    if (count > 0) {
+        rxWorkBufPtr += count;
     }
 
-    rxWorkBufPtr += count;
-
-    // we want to have a calculated progress which seems reasonable.
-    // Since erasing flash is a non-deterministic operation (from our standpoint)
-    // let's use a log algorithm that will elapse approx 75% of the progress in
-    // the average time that a device takes to complete this operation (about 10 seconds)
-    // the remaining 25% will slowly elapse as we get closer to the timeout period.
+    // Update progress and send periodic reports regardless of whether data was received.
+    // portRead() returns -1 (EAGAIN/EWOULDBLOCK) on non-blocking TCP sockets when no data
+    // is available — this is expected during long operations like flash erase, and should
+    // not prevent progress reporting.
     progress = (float)(1.0 - std::pow((double)(maxTimeout - elapsedTime) / (double)maxTimeout, 4));
     if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
         nextProgressReport = current_timeMs() + progress_interval;
@@ -858,7 +950,6 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%02X", checkSum);
 
-
     if (!portWriteAndWaitForTimeout(device->port, checkSumHex, 2, (unsigned char *) ".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT)) {
         fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
         return IS_OP_ERROR;
@@ -871,10 +962,9 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     return IS_OP_OK;
 }
 
-is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount)
+is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent)
 {
-    (void)currentPage;
-
+    dataSent = false;
     if (charCount > MAX_SEND_COUNT)
     {
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): charCount (%d) exceeded MAX_SEND_COUNT (%d).", charCount, MAX_SEND_COUNT);
@@ -891,7 +981,7 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
     if (currentOffset + byteCount > FLASH_PAGE_SIZE)
     {
         int pageByteCount = FLASH_PAGE_SIZE - currentOffset;
-        if ((pageByteCount < 0) || (pageByteCount > 255) || upload_hex_page(hexData, pageByteCount) != IS_OP_OK)
+        if ((pageByteCount < 0) || (pageByteCount > 255) || (upload_hex_page(hexData, pageByteCount) != IS_OP_OK))
         {
             fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): pageByteCount (%d) invalid or upload overruns current page.", pageByteCount);
             return IS_OP_ERROR;
@@ -899,12 +989,16 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
         hexData += (pageByteCount * 2);
         charCount -= (pageByteCount * 2);
+        dataSent = true;
     }
 
-    if (charCount != 0 && upload_hex_page(hexData, charCount / 2) != IS_OP_OK)
+    if (charCount != 0)
     {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
-        return IS_OP_ERROR;
+        if (upload_hex_page(hexData, charCount / 2) != IS_OP_OK) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
+            return IS_OP_ERROR;
+        }
+        dataSent = true;
     }
 
     return IS_OP_OK;
@@ -950,6 +1044,176 @@ is_operation_result ISBFirmwareUpdater::fill_current_page()
 }
 
 /**
+ * This function processes an Intel HEX stream, line by line, and re-encodes it into a slightly more
+ * compact format, by combining short, contiguous but discrete records into a single larger record,
+ * before sending it over the wire to the device. This function will process as many records as it
+ * can until a record is sent to the device, at which point it will return.  This function is intended
+ * to be called repeatedly until the entire file is processed.
+ * @param byteStream
+ * @return one of IS_OP_* indicating the status of the processing of the stream.
+ *    IS_OP_OK if a record was sent to the device
+ *    IS_OP_CLOSED is the entire stream has been processed and there is no more data
+ *    IS_OP_ERROR if an error occurred while trying to process the stream
+ */
+is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byteStream)
+{
+    int lineLength;
+    // m_update_progress = 0.0f;
+    char line[HEX_BUFFER_SIZE];
+    int outputSize = 0;
+    int pad;
+    unsigned char tmp[5];
+    int subOffset = 0, i = 0;
+    bool recordSent = false;
+
+    if (lastSubOffset < 0) {
+        lastSubOffset = currentOffset;
+        outputPtr = output;
+    }
+
+    while (!recordSent && (lineLength = is_isb_read_line(byteStream, line)) != 0) {
+
+        if (lineLength > 12 && line[7] == '0' && line[8] == '0') {
+            if (lineLength > HEX_BUFFER_SIZE * 4) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
+                return IS_OP_ERROR;
+            }
+
+            // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
+            memcpy(tmp, line + 3, 4);
+            tmp[4] = '\0';
+            subOffset = strtol((char*)tmp, 0, 16);
+
+            // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
+            // that the bytes that were skipped get set to something
+            if (subOffset > lastSubOffset) {
+
+                // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
+                pad = (subOffset - lastSubOffset);
+                if (outputPtr + pad >= outputPtrEnd) {
+                    if ((currentPage != 0) || (lastSubOffset != 0)) {
+                        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
+                        return IS_OP_ERROR;
+                    }
+
+                    lastSubOffset = m_isb_props.app_offset;
+                    pad = (subOffset - lastSubOffset);
+                }
+
+                while (pad-- != 0) {
+                    *outputPtr++ = 'F';
+                    *outputPtr++ = 'F';
+                }
+            }
+
+            // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
+            // check for overflow
+            pad = lineLength - 11;
+            if (outputPtr + pad >= outputPtrEnd) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
+                return IS_OP_ERROR;
+            }
+
+            for (i = 9; i < lineLength - 2; i++) {
+                *outputPtr++ = line[i];
+            }
+
+            // set the end offset so we can check later for skipped offsets
+            lastSubOffset = subOffset + ((lineLength - 11) / 2);
+            outputSize = (int)(outputPtr - output);
+
+            // we try to send the most allowed by this hex file format
+            if (outputSize < MAX_SEND_COUNT) {
+                // keep buffering
+                continue; // return IS_OP_OK;
+            }
+
+            // upload this chunk
+            if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), recordSent) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
+                return IS_OP_ERROR;
+            }
+
+            outputSize -= MAX_SEND_COUNT;
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
+                return IS_OP_ERROR;
+            }
+
+            if (outputSize > 0) {
+                // move the left-over data to the beginning
+                memmove(output, output + MAX_SEND_COUNT, outputSize);
+            }
+
+            // reset output ptr back to the next chunk of data
+            outputPtr = output + outputSize;
+        } else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13) {
+            memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
+            tmp[1] = '\0';
+            int newPage = strtol((char*)tmp, 0, 16);
+            fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) flash page changed (%d) in stream.", newPage);
+
+            if (newPage == 0) {
+                lastSubOffset = currentOffset = m_isb_props.app_offset;
+                continue; // return IS_OP_OK;   // we've updated the page offset, let's keep going....
+            }
+
+            lastSubOffset = 0;
+            outputSize = (int)(outputPtr - output);
+
+            if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
+                return IS_OP_ERROR;
+            }
+
+            // flush the remainder of data to the current page
+            if (upload_hex(output, outputSize, recordSent) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
+                return IS_OP_ERROR;
+            }
+
+            // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
+            if (fill_current_page() != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
+                return IS_OP_ERROR;
+            }
+
+            // change to the next page
+            currentPage = newPage;
+            currentOffset = 0;
+            if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
+                return IS_OP_ERROR;
+            }
+
+            // set the output ptr back to the beginning, no more data is in the queue
+            outputPtr = output;
+        }
+        else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
+        {   // End of last page (end of file marker)
+            fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) End of last page/file.");
+            outputSize = (int)(outputPtr - output);
+
+            // flush the remainder of data to the page
+            if (upload_hex(output, outputSize, recordSent) != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
+                return IS_OP_ERROR;
+            }
+            if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
+                fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
+                return IS_OP_ERROR;
+            }
+
+            outputPtr = output;
+        }
+    }
+
+    return (lineLength == 0 ? IS_OP_CLOSED : IS_OP_OK);
+}
+
+
+/**
  * Processes an Intel hex file, one chunk/line at a time. This function is meant to be called
  * repeatedly (in a step/thread, minimal-blocking fashion) until the entire file is processed.
  * @return true if the entire file has been processed, otherwise false (repeat until true)
@@ -991,6 +1255,8 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
                     writeState = WRITE_ERROR;
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
                     return writeState;
+                default:
+                    break;
             }
             break;
         }
@@ -1016,165 +1282,6 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
     }
 
     return writeState;
-}
-
-is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byteStream)
-{
-
-    int lineLength;
-    // m_update_progress = 0.0f;
-    char line[HEX_BUFFER_SIZE];
-    int outputSize = 0;
-    int pad;
-    unsigned char tmp[5];
-    int subOffset = 0, i = 0;
-
-    if (lastSubOffset < 0) {
-        lastSubOffset = currentOffset;
-        outputPtr = output;
-    }
-
-    if ((lineLength = is_isb_read_line(byteStream, line)) == 0)
-        return IS_OP_CLOSED;
-
-    if (lineLength > 12 && line[7] == '0' && line[8] == '0') {
-        if (lineLength > HEX_BUFFER_SIZE * 4) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) hex file line length too long");
-            return IS_OP_ERROR;
-        }
-
-        // we need to know the offset that this line was supposed to be stored at so we can check if offsets are skipped
-        memcpy(tmp, line + 3, 4);
-        tmp[4] = '\0';
-        subOffset = strtol((char*)tmp, 0, 16);
-
-        // check if we skipped an offset, the intel hex file format can do this, in which case we need to make sure
-        // that the bytes that were skipped get set to something
-        if (subOffset > lastSubOffset) {
-
-            // pad with FF bytes, this is an internal implementation detail to how the device stores unused memory
-            pad = (subOffset - lastSubOffset);
-            if (outputPtr + pad >= outputPtrEnd) {
-                // FIXME: There is some race-condition here that occasionally allows lastSubOffset = 0 when the current page is 0, when it should be lastSubOffset = m_isb_props.app_offset
-                //  this results in pad being > the buffersize - for now we'll check for that condition and correct it, if necessary
-                if ((currentPage != 0) || (lastSubOffset != 0)) {
-                    fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) FF padding overflowed buffer");
-                    return IS_OP_ERROR;
-                }
-
-                lastSubOffset = m_isb_props.app_offset;
-                pad = (subOffset - lastSubOffset);
-            }
-
-            while (pad-- != 0) {
-                *outputPtr++ = 'F';
-                *outputPtr++ = 'F';
-            }
-        }
-
-        // skip the first 9 chars which are not data, then take everything else minus the last two chars which are a checksum
-        // check for overflow
-        pad = lineLength - 11;
-        if (outputPtr + pad >= outputPtrEnd) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Line data overflowed output buffer");
-            return IS_OP_ERROR;
-        }
-
-        for (i = 9; i < lineLength - 2; i++) {
-            *outputPtr++ = line[i];
-        }
-
-        // set the end offset so we can check later for skipped offsets
-        lastSubOffset = subOffset + ((lineLength - 11) / 2);
-        outputSize = (int)(outputPtr - output);
-
-        // we try to send the most allowed by this hex file format
-        if (outputSize < MAX_SEND_COUNT) {
-            // keep buffering
-            return IS_OP_OK;
-        }
-
-        // upload this chunk
-        if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize)) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload chunk");
-            return IS_OP_ERROR;
-        }
-
-        outputSize -= MAX_SEND_COUNT;
-
-        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (1)");
-            return IS_OP_ERROR;
-        }
-
-        if (outputSize > 0) {
-            // move the left-over data to the beginning
-            memmove(output, output + MAX_SEND_COUNT, outputSize);
-        }
-
-        // reset output ptr back to the next chunk of data
-        outputPtr = output + outputSize;
-    } else if (strncmp(line, ":020000040", 10) == 0 && strlen(line) >= 13) {
-        memcpy(tmp, line + 12, 3);      // Only support up to 10 pages currently
-        tmp[1] = '\0';
-        int newPage = strtol((char*)tmp, 0, 16);
-        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_DEBUG, "(ISB) flash page changed (%d) in stream.", newPage);
-
-        if (newPage == 0) {
-            lastSubOffset = currentOffset = m_isb_props.app_offset;
-            return IS_OP_OK;
-        }
-
-        lastSubOffset = 0;
-        outputSize = (int)(outputPtr - output);
-
-        if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Output size was too large (2)");
-            return IS_OP_ERROR;
-        }
-
-        // flush the remainder of data to the current page
-        if (upload_hex(output, outputSize) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex");
-            return IS_OP_ERROR;
-        }
-
-        // fill remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
-        if (fill_current_page() != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page");
-            return IS_OP_ERROR;
-        }
-
-        // change to the next page
-        currentPage = newPage;
-        currentOffset = 0;
-        if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Failed to issue select page or to start programming");
-            return IS_OP_ERROR;
-        }
-
-        // set the output ptr back to the beginning, no more data is in the queue
-        outputPtr = output;
-    }
-    else if (lineLength > 10 && line[7] == '0' && line[8] == '1')
-    {   // End of last page (end of file marker)
-        fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "(ISB) End of last page/file.");
-        outputSize = (int)(outputPtr - output);
-
-        // flush the remainder of data to the page
-        if (upload_hex(output, outputSize) != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload hex (last)");
-            return IS_OP_ERROR;
-        }
-        if (currentOffset != 0 && fill_current_page() != IS_OP_OK) {
-            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in fill page (last)");
-            return IS_OP_ERROR;
-        }
-
-        outputPtr = output;
-    }
-
-    return IS_OP_OK;
 }
 
 

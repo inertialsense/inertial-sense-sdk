@@ -11,19 +11,43 @@
 #define IS_SDK_TCP_SERVER_PORT_FACTORY_H
 
 #include <csignal>
+#include <cerrno>
+#include <iostream>
 #include <set>
+#include <utility>
 
-#ifdef _WIN32
-#include <winsock2.h>
+#include "ISConstants.h"
+
+#if PLATFORM_IS_WINDOWS
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
     #pragma comment(lib, "ws2_32.lib") // Link with ws2_32.lib
-#else
+#elif !PLATFORM_IS_EMBEDDED
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <netdb.h>
+
     #include <arpa/inet.h>
     #include <sys/socket.h> // For AF_INET
 #endif
 
 #include "core/msg_logger.h"
-#include "PortFactory.h"
 #include "core/tcpPort.h"
+#include "PortFactory.h"
+
+/**
+ * Context codes identifying which step of TcpServerPortFactory::startListening() failed; returned as the
+ * first element of getLastListenError().  This is intentionally separate from the PORT_ERROR__* / base_port_t
+ * framework, which applies to accepted client connections rather than the listening socket itself.
+ */
+enum eTcpListenErrorContext {
+    TCP_LISTEN_CTX__NONE      = 0,      //!< no listener-setup failure recorded (listener is up)
+    TCP_LISTEN_CTX__SOCKET    = 1,      //!< socket() failed
+    TCP_LISTEN_CTX__GETFLAGS  = 2,      //!< fcntl(F_GETFL) failed
+    TCP_LISTEN_CTX__NONBLOCK  = 3,      //!< fcntl(F_SETFL, O_NONBLOCK) / ioctlsocket(FIONBIO) failed
+    TCP_LISTEN_CTX__BIND      = 4,      //!< bind() failed
+    TCP_LISTEN_CTX__LISTEN    = 5,      //!< listen() failed
+};
 
 /**
  * Unlike other PortFactories, TcpServerPortFactory is NOT a singleton - since there may be multiple instances which listen an unique ports, etc.
@@ -52,25 +76,21 @@ public:
         }
 #endif
 
-        factoryOptions.listenerPort = listenPort;
-        factoryOptions.maxConnections = maxConnections;
-        factoryOptions.portDefaultBlocking = portDefaultBlocking;
-        factoryOptions.backgroundListener = backgroundListener;
-        factoryOptions.listeningAddr.sin_family = AF_INET;
-        factoryOptions.listeningAddr.sin_port = htons(listenPort);
-
-        // we expect either a string "<address>" or "<address> (<name>)" - in either case, we just want the <address> part (upto the space)
-        std::string ipAddr = listenAddr.substr(0, listenAddr.find_first_of(' '));
-
-        struct in_addr addr = {};
-        if (inet_pton(AF_INET, ipAddr.c_str(), &addr) <= 0) {
-            // Handle error: invalid address or address not supported
-            factoryOptions.listeningAddr.sin_addr.s_addr = INADDR_NONE; // A common error indicator for in_addr_t
-        }
-        factoryOptions.listeningAddr.sin_addr = addr;
-
+        configure(listenPort, listenAddr, maxConnections, portDefaultBlocking, backgroundListener);
     };
+
+    /**
+     * NOTE that TcpServerPortFactory is an outlier in PortFactory, because it retains knowledge of AT LEAST its own listening port
+     * But generally it also knows about all client sockets which are connected to it.  If the factory is destroyed, to be good stewards
+     * of the heap, we should clean up and destroy all the associated ports.
+     */
     ~TcpServerPortFactory() {
+        stopListening();
+        shutdownAllClients();
+        for (auto& se : knownSockets) {
+            releasePort(se.port);
+        }
+        knownSockets.clear();
 #ifdef PLATFORM_IS_WINDOWS
         WSACleanup();
 #endif
@@ -89,6 +109,17 @@ public:
 
     void shutdownAllClients();
 
+    /**
+     * Forensic accessor for listener-setup failures.  Intentionally separate from the PORT_ERROR__* /
+     * base_port_t framework (which tracks accepted client connections); this reports only on the
+     * listening socket itself.
+     * @return a {context, error} pair for the most recent startListening() failure: .first is the
+     *  eTcpListenErrorContext step that failed, .second is the platform socket error (errno on POSIX,
+     *  WSAGetLastError() on Windows).  Returns {TCP_LISTEN_CTX__NONE, 0} when the listener was last
+     *  set up successfully.
+     */
+    std::pair<eTcpListenErrorContext, int> getLastListenError() const { return lastListenError; }
+
 protected:
     struct socket_entry_t {
         int socket = 0;
@@ -104,9 +135,32 @@ protected:
 
     };
 
+    void configure(uint16_t listenPort = 4321, const std::string& listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
+        factoryOptions.listenerPort = listenPort;
+        factoryOptions.maxConnections = maxConnections;
+        factoryOptions.portDefaultBlocking = portDefaultBlocking;
+        factoryOptions.backgroundListener = backgroundListener;
+        factoryOptions.listeningAddr.sin_family = AF_INET;
+        factoryOptions.listeningAddr.sin_port = htons(listenPort);
+
+        // we expect either a string "<address>" or "<address> (<name>)" - in either case, we just want the <address> part (upto the space)
+        std::string ipAddr = listenAddr.substr(0, listenAddr.find_first_of(' '));
+
+        struct in_addr addr = {};
+        if (inet_pton(AF_INET, ipAddr.c_str(), &addr) <= 0) {
+            // Handle error: invalid address or address not supported
+            factoryOptions.listeningAddr.sin_addr.s_addr = INADDR_NONE; // A common error indicator for in_addr_t
+        }
+        factoryOptions.listeningAddr.sin_addr = addr;
+    }
+
     bool startListening();
 
     void stopListening();
+
+    int getClientConnectionCount() {
+        return (int)knownSockets.size();
+    }
 
     std::vector<socket_entry_t> getClientSockets() {
         std::vector<socket_entry_t> out;
@@ -122,10 +176,19 @@ protected:
     bool processPendingConnections(std::function<void(const socket_entry_t&)> cb);
 
 private:
+    /**
+     * Captures the platform socket error (errno / WSAGetLastError()) together with the supplied
+     * failure context into lastListenError, and logs it.  Called by startListening() before it tears
+     * the half-open socket back down, so the forensic detail survives the cleanup.
+     * @param context the eTcpListenErrorContext step that failed
+     */
+    void recordListenError(eTcpListenErrorContext context);
+
     std::set<socket_entry_t> knownSockets;
     std::set<socket_entry_t> prevSockets;
 
     int listen_fd = 0; /* listener socket */
+    std::pair<eTcpListenErrorContext, int> lastListenError { TCP_LISTEN_CTX__NONE, 0 };   //!< {context, error} of the last startListening() failure; {NONE, 0} when the listener is up
 };
 
 

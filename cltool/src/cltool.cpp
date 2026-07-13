@@ -15,7 +15,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <chrono>
 #include <ctime>
+#include <map>
 #include "ISDataMappings.h"
+#include "ISmDnsPortFactory.h"
+#include "PortFactory.h"
 
 using namespace std;
 
@@ -181,7 +184,7 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         }
     }
 
-    // Replace each match with quoted version.  This regex matches unquoted keys like: gps1AntOffset[0] or myField[12]
+    // Replace each match with quoted version.  This regex matches unquoted keys like: gnss1AntOffset[0] or myField[12]
     static const std::regex keyWithIndexRegex(R"((\{[^{}]*?)\b([A-Za-z_][A-Za-z0-9_]*\[\d+\])(?=\s*:))");
     s = std::regex_replace(s, keyWithIndexRegex, "$1\"$2\"");
     
@@ -196,7 +199,7 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         return false;
     }
 
-    // Convert indexed keys to sequences i.e. {gps1AntOffset[0]: 1.5, gps1AntOffset[1]: 2.5} becomes {gps1AntOffset: [1.5, 2.5]}
+    // Convert indexed keys to sequences i.e. {gnss1AntOffset[0]: 1.5, gnss1AntOffset[1]: 2.5} becomes {gnss1AntOffset: [1.5, 2.5]}
     ConvertIndexedKeysToSequences(node);
 
     g_commandLineOptions.datasets.clear();
@@ -307,7 +310,7 @@ void print_dids()
     cltool_outputHelp();
 }
 
-void enable_display_mode(int mode = cInertialSenseDisplay::DMODE_PRETTY)
+void enable_display_mode(cInertialSenseDisplay::eDisplayMode mode = cInertialSenseDisplay::DMODE_PRETTY)
 {   
     g_commandLineOptions.displayMode = mode;
 }
@@ -371,8 +374,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-cal-upload"))
         {
-            i++;
-            g_commandLineOptions.imxCalUploadFile = &argv[i][0];
+            g_commandLineOptions.imxCalUpload = true;
+            if ((i < argc - 1) && (argv[i+1][0] != '-')) {
+                i++;
+                g_commandLineOptions.imxCalUploadFile = &argv[i][0];
+            }
         }
         else if (startsWith(a, "-chipEraseIMX"))
         {
@@ -384,11 +390,31 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (matches(a, "-c") && (i + 1) < argc)
         {
+            // Supports: single port (e.g., "COM5"), comma-separated ports (e.g., "COM2,COM4,COM5"),
+            // wildcard (e.g., "*" for all ports, "*4" for first 4 ports)
             g_commandLineOptions.comPort = argv[++i];   // use next argument
         }
         else if (startsWith(a, "-dboc"))
         {
             g_commandLineOptions.disableBroadcastsOnClose = true;
+        }
+        else if (matches(a, "-device") && (i + 1) < argc)
+        {
+            std::string devType = argv[++i];
+            std::transform(devType.begin(), devType.end(), devType.begin(), ::tolower);
+            if      (devType == "imx")                                                                          g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX;
+            else if (devType == "imx-5" || devType == "imx5")                                                   g_commandLineOptions.filterHdwType = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, -1);
+            else if (devType == "imx5.0" || devType == "imx-5.0")                                               g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_5_0;
+            else if (devType == "imx6.0" || devType == "imx-6.0" || devType == "imx6" || devType == "imx-6")    g_commandLineOptions.filterHdwType = IS_HARDWARE_IMX_6_0;
+            else if (devType == "gpx"  || devType == "gpx1" || devType == "gpx-1")                              g_commandLineOptions.filterHdwType = IS_HARDWARE_GPX;
+            else
+            {
+                cout << "Invalid device type: " << devType << ". Expected: imx, imx5, imx6, gpx, uins, evb." << endl;
+                return false;
+            }
+            // If no port was explicitly set, default to wildcard discovery
+            if (g_commandLineOptions.comPort.empty())
+                g_commandLineOptions.comPort = "*";
         }
         else if (startsWith(a, "-dur="))
         {
@@ -656,6 +682,52 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-list-dids"))
+        {
+            g_commandLineOptions.listLogDids = true;
+            g_commandLineOptions.replayDataLog = true;  // implies log replay
+        }
+        else if (startsWith(a, "-use-mdns"))
+        {
+            g_commandLineOptions.useMdns = true;
+        }
+        else if (strcmp(a, "-use-relay-list") == 0)
+        {
+            // Print discovered relay hosts and exit (after the 3 s warmup).
+            g_commandLineOptions.useRelay = true;
+            g_commandLineOptions.useRelayList = true;
+        }
+        else if (startsWith(a, "-use-relay-only="))
+        {
+            // Filter mDNS-discovered hosts to a user-specified whitelist.
+            g_commandLineOptions.useRelay = true;
+            splitString(string(&a[strlen("-use-relay-only=")]), ',', g_commandLineOptions.relayOnlyHosts);
+        }
+        else if (startsWith(a, "-use-relay="))
+        {
+            // Manual relay URL(s), comma-separated. Each is added and enabled.
+            g_commandLineOptions.useRelay = true;
+            splitString(string(&a[strlen("-use-relay=")]), ',', g_commandLineOptions.relayUrls);
+        }
+        else if (strcmp(a, "-use-relay") == 0)
+        {
+            // Bare -use-relay: enable factory, auto-enable all mDNS-discovered hosts.
+            g_commandLineOptions.useRelay = true;
+        }
+        else if (startsWith(a, "-mdns-resolve="))
+        {
+            std::string val = &a[14];
+            uint8_t flags = 0;
+            if (val.find("v4") != std::string::npos || val.find("ipv4") != std::string::npos)
+                flags |= MDNS_RESOLVE_IPV4;
+            if (val.find("v6") != std::string::npos || val.find("ipv6") != std::string::npos)
+                flags |= MDNS_RESOLVE_IPV6;
+            if (val.find("hostname") != std::string::npos || val.find("host") != std::string::npos)
+                flags |= MDNS_RESOLVE_HOSTNAME;
+            if (flags == 0)
+                flags = MDNS_RESOLVE_DEFAULT;
+            g_commandLineOptions.mdnsResolvePreference = flags;
+        }
         else if (startsWith(a, "-lmf="))
         {
             g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
@@ -743,6 +815,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
+        else if (startsWith(a, "-presetGNSS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GNSS;
+            enable_display_mode();
+        }
         else if (startsWith(a, "-presetGPXPPD"))
         {
             g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
@@ -809,9 +886,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.roverConnection = &a[7];
 
-            // DID_GPS1_POS must be enabled for NTRIP VRS to supply rover position.
+            // DID_GNSS1_POS must be enabled for NTRIP VRS to supply rover position.
             stream_did_t dataset = {};
-            read_did_argument("DID_GPS1_POS", &dataset);
+            read_did_argument("DID_GNSS1_POS", &dataset);
             g_commandLineOptions.datasets.push_back(dataset);
             enable_display_mode();
         }
@@ -843,17 +920,27 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:        g_commandLineOptions.disableDeviceValidation = true;    break;
             }
         }
+        else if (matches(a, "-sn") && (i + 1) < argc)
+        {
+            g_commandLineOptions.targetDeviceId = ISDevice::parseDeviceIdString(argv[++i]);
+            if (g_commandLineOptions.targetDeviceId == 0) {
+                cout << "Invalid device identifier: " << argv[i] << ". Expected: 129495, SN129495, or IMX-5.0:SN129495" << endl;
+                return false;
+            }
+        }
         else if (startsWith(a, "-s"))
         {
             enable_display_mode(cInertialSenseDisplay::DMODE_SCROLL);
         }
         else if (startsWith(a, "-ub") && (i + 1) < argc)
         {
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.updateBootloaderFilename = argv[++i];              // use next argument
         }
         else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
+            g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO;
             if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
                 g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
@@ -871,6 +958,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;  // use legacy firmware update mechanism
                 g_commandLineOptions.updateAppFirmwareFilename = argv[++i];         // use next argument
             }
+        }
+        else if (startsWith(a, "-fw-set-policy") && (i + 1) < argc)
+        {
+            g_commandLineOptions.fwPolicyOverrides.push_back(argv[++i]);
         }
         else if (startsWith(a, "-uv"))
         {
@@ -903,6 +994,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                     p++;
                 }
             }
+            IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
@@ -917,20 +1009,25 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
     }
 
-    // We are either using a serial port or replaying data
-    if ((g_commandLineOptions.comPort.length() == 0) && !g_commandLineOptions.replayDataLog)
+    // Always apply the verboseLevel to the SDK log system
+    IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
+
+    // We are either using a serial port, targeting a device by serial number, or replaying data
+    bool hasPort = (g_commandLineOptions.comPort.length() != 0);
+    bool hasTarget = (g_commandLineOptions.targetDeviceId != 0);
+    if (!hasPort && !hasTarget && !g_commandLineOptions.replayDataLog)
     {
         cltool_outputUsage();
         return false;
     }
-    else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && !hasPort && !hasTarget)
     {
-        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" or \"-sn \" with bootloader" << endl;
         return false;
     }
-    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
+    else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && !hasPort && !hasTarget)
     {
-        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" or \"-sn \" with bootloader" << endl;
         return false;
     }
 
@@ -952,25 +1049,90 @@ bool cltool_replayDataLog()
         return false;
     }
 
-    cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
+    if (g_commandLineOptions.listLogDids)
+    {
+        bool multiDevice = logger.DeviceCount() > 1;
+        p_data_buf_t *data;
+        for (auto dl : logger.DeviceLogs())
+        {
+            if (multiDevice)
+                printf("Device SN%u:\n", dl->SerialNumber());
+            std::map<uint32_t, uint32_t> didCounts;
+            while ((data = logger.ReadData(dl)) != NULL)
+                didCounts[data->hdr.id]++;
+            printf("    Count  DID  Name\n");
+            for (const auto& [did, count] : didCounts)
+                printf("%9u%5u  %s\n", count, did, cISDataMappings::DataName(did));
+        }
+        return true;
+    }
+
+    bool getMode = (!g_commandLineOptions.outputOnceDid.empty() &&
+                    g_commandLineOptions.getNode &&
+                    !g_commandLineOptions.getNode.IsNull() &&
+                    g_commandLineOptions.getNode.size() > 0);
+
+    if (!getMode)
+        cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
+
+    bool multiDevice = logger.DeviceCount() > 1;
     p_data_buf_t *data;
     // for (int d=0; d<logger.DeviceCount(); d++)
     for (auto dl : logger.DeviceLogs())
     {
-        if (logger.DeviceCount() > 1)
-        {
-            printf("Device SN%d: \n", dl->SerialNumber());
-        }
+        if (multiDevice)
+            printf("Device SN%u:\n", dl->SerialNumber());
+
+        // In get mode use a per-device copy so each device is searched independently
+        std::vector<uint32_t> remainingDids = getMode ? g_commandLineOptions.outputOnceDid : std::vector<uint32_t>{};
+
         while (((data = logger.ReadData(dl)) != NULL) && !g_inertialSenseDisplay.ExitProgram())
         {
             p_data_t d = {data->hdr, data->buf};
-            g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
-            g_inertialSenseDisplay.PrintData();
+
+            if (getMode)
+            {
+                for (auto it = remainingDids.begin(); it != remainingDids.end(); )
+                {
+                    if (d.hdr.id == *it)
+                    {
+                        YAML::Node output;
+                        if (!cISDataMappings::DataToYaml(d.hdr.id, d.ptr, output, g_commandLineOptions.getNode))
+                        {
+                            cout << "Error parsing: " << *it << "\n";
+                        }
+                        else
+                        {
+                            YAML::Emitter out;
+                            out << output;
+                            if (out.good())
+                                std::cout << out.c_str() << std::endl;
+                            else
+                                std::cerr << "YAML emitter error: " << out.GetLastError() << std::endl;
+                        }
+                        it = remainingDids.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
+                if (remainingDids.empty())
+                    break;  // All DIDs found for this device; advance to next device
+            }
+            else
+            {
+                g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+                g_inertialSenseDisplay.PrintData();
+            }
         }
     }
 
-    cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
-    g_inertialSenseDisplay.Goodbye();
+    if (!getMode)
+    {
+        cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
+        g_inertialSenseDisplay.Goodbye();
+    }
     return true;
 }
 
@@ -1139,20 +1301,26 @@ void cltool_outputUsage()
 	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << " # stream DID messages" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GNSS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << " # stream DID messages" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << " # stream same as line above" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << " # stream post processing data (PPD) with INS2" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << " # stream at 115200 bps, GNSS streamed at 10x startupGnssDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << " # 921600 bps baudrate on all serial ports" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4,COM5 -did DID_INS_1    "        << EXAMPLE_SPACE_2 << " # connect to multiple ports (comma-separated)" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0 -did DID_INS_1              "                       << " # SPI device, mode 3 default" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c spi:///dev/spi0.0[b2000000,d18] -did DID_INS_1 "                     << " # SPI: 2 MHz, data-ready on GPIO 18" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c /dev/spi0.0[b2000000,d18] -did DID_INS_1       "                     << " # SPI: bare device path with opts" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password         # Connect to RTK NTRIP base" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GPS1_POS                                    # Return specific DIDs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"   # Return portion of two DIDs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -get 12        "                                 << " # show first DID_FLASH_CONFIG value from a log" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -list-dids     "                                 << " # list all DIDs found in log files" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password          # Connect to RTK NTRIP base" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GNSS1_POS                                    # Return specific DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"    # Return portion of two DIDs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
@@ -1160,10 +1328,21 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four." << endlbOn;
+	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
+    cout << "    -c " << boldOff << "spi:///DEVICE_PATH[OPTS]  Select SPI device (e.g., spi:///dev/spi0.0). Optional comma-separated OPTS in brackets:" << endlbOn;
+    cout << "         " << boldOff << "  b<HZ>     SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
+    cout << "         " << boldOff << "  d<GPIO>   GPIO number for data-ready input (omit to disable)." << endlbOn;
+    cout << "         " << boldOff << "  m<MODE>   SPI clock/phase mode 0-3 (default: 3)." << endlbOn;
+	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
+	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
+    cout << "    -use-relay" << boldOff << "      Enable HTTP relay discovery (bridgeboard / SSE); auto-enable all mDNS-discovered relay hosts." << endlbOn;
+    cout << "    -use-relay=" << boldOff << "URL[,URL...]  Register and enable one or more manual relay host URLs (any of \"http://host:port\", \"host:port\", or bare hostname/IP)." << endlbOn;
+    cout << "    -use-relay-only=" << boldOff << "HOST[,HOST...]  When auto-enabling mDNS-discovered relays, enable only hosts whose hostname matches the whitelist." << endlbOn;
+    cout << "    -use-relay-list" << boldOff << " Enable relay discovery, print the resulting host list, and exit." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
@@ -1209,31 +1388,37 @@ void cltool_outputUsage()
     cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
     cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -fw-set-policy " << boldOff << "POLICY[:PATTERN]  Set update policy (skip, if-newer, force)." << endlbOn;
+    cout << "         " << boldOff << "                              Without :PATTERN, sets default for all targets." << endlbOn;
+    cout << "         " << boldOff << "                              With :PATTERN, overrides policy for matching" << endlbOn;
+    cout << "         " << boldOff << "                              step labels or target names (case-insensitive" << endlbOn;
+    cout << "         " << boldOff << "                              substring match). Can be specified multiple times." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Messages)" << endl;
     cout << "    -get <DID1>,<DID2>,...                  " << boldOff << " Return values of dataset(s). DID may be a name or number." << endlbOn;
     cout << "    -get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\" " << boldOff << " Return values of dataset(s). DID may be a name or number. YAML input format." << endlbOn;
-    cout << "                                            " << boldOff << " Examples: -get 1,4,12,DID_GPS1_POS" << endlbOn;
-    cout << "                                            " << boldOff << "           -get \"{DID_INS_1,DID_GPS1_POS}\"" << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -get 1,4,12,DID_GNSS1_POS" << endlbOn;
+    cout << "                                            " << boldOff << "           -get \"{DID_INS_1,DID_GNSS1_POS}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"" << endlbOn;
     cout << "    -set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " Set values of dataset(s). DID may be a number or name. YAML input format." << endlbOn;
-    cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gps1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
-    cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gps1AntOffset[2]: 1.2}}\"" << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
 	cout << "          Message period = source period x PERIODMULT. PERIODMULT is 1 if not specified." << endlbOff;
-	cout << "          Common DIDs: DID_INS_1, DID_INS_2, DID_INS_4, DID_PIMU, DID_IMU, DID_GPS1_POS," << endlbOff;
-	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
+	cout << "          Common DIDs: DID_INS_1, DID_INS_2, DID_INS_4, DID_PIMU, DID_IMU, DID_GNSS1_POS," << endlbOff;
+	cout << "          DID_GNSS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
 	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGNSS    " << boldOff << " Send RMC preset to enable GNSS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
+	cout << "OPTIONS (Writing to data log file)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
 	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
@@ -1241,9 +1426,13 @@ void cltool_outputUsage()
 	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
 	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
+	cout << endlbOn;
+	cout << "OPTIONS (Reading from data log file)" << endl;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
 	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
+	cout << "    -list-dids  " << boldOff << "    List all DID messages found in replay data log with occurrence counts (use with -rp)" << endlbOn;
+	cout << "                " << boldOff << "         Example: -rp logs/20170117_222549 -list-dids" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (READ flash config) - DEPRECATED, use `-get` instead" << endl;
 	cout << "    -imxFlashCfg" << boldOff  <<  "                                # List all \"keys\" and \"values\" in IMX" << endlbOn;
@@ -1262,14 +1451,13 @@ void cltool_outputUsage()
 	cout << "OPTIONS (RTK Rover / Base)" << endlbOn;
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
-	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
-	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777" << endl;
-	cout << "            -rover=TCP:UBLOX:192.168.1.100:7777" << endl;
-	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
-	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
-	cout << "            -base=TCP::7777                             (IP is optional)" << endl;
-	cout << "            -base=TCP:192.168.1.43:7777" << endl;
-	cout << "            -base=SERIAL:" << EXAMPLE_PORT << ":921600" << endl;
+	cout << "            -rover=ntrip://192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
+	cout << "            -rover=tcp://192.168.1.100:7777                                  (raw RTCM3 over TCP)" << endl;
+	cout << "            -rover=/dev/" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
+	cout << "    -base=" << boldOff << "tcp://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
+	cout << "            -base=tcp://:7777                           (IP is optional)" << endl;
+	cout << "            -base=tcp://192.168.1.43:7777" << endl;
+	cout << "            -base=tcp://[::1]:7777                      (IPv6 host in brackets)" << endl;
 	cout << endlbOn;	
 	cout << "CLTool - " << boldOff << cltool_version() << endl;
 

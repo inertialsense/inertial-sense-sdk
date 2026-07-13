@@ -13,11 +13,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <cstdio>
 #include <cstddef>
-#include <functional>
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
-#include "ISDisplay.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 #include "message_stats.h"
@@ -115,6 +113,15 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 {
                     timestamp = cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
+                    // D-01 / SN-7879: per-packet v2 index record. Using the
+                    // current m_lastIndexOffset captures the chunk-input
+                    // offset (advanced after the parser loop), giving every
+                    // packet in this chunk-input the same offset but its
+                    // own DID + payload timestamp + ToW flag — which is
+                    // exactly what per-DID time-range queries against the
+                    // index need.
+                    addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;
 
@@ -157,6 +164,12 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             // Update log statistics
             m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, timestamp);
             globalLogStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, timestamp);
+
+            // Cache diagnostic DIDs for summary generation
+            if (ptype == _PTYPE_INERTIAL_SENSE_DATA || ptype == _PTYPE_INERTIAL_SENSE_CMD)
+            {
+                m_logStats.CacheDiagnosticData(m_comm.rxPkt.dataHdr.id, m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size, timestamp, m_comm.rxPkt.dataHdr.offset);
+            }
         }
     }
 
@@ -181,6 +194,15 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     {
         return false;   // unable to push the buffer into the chunk
     }
+
+    // D-01 / SN-7879: advance the index-offset counter for the *next*
+    // chunk-input. The base cDeviceLog::SaveData(int, ...) used to do
+    // this immediately on entry, but that broke per-packet emission
+    // (records inside the parser loop above would have been tagged
+    // with the next-chunk's offset). We defer the bump to here so the
+    // offset captured by per-packet addIndexRecord calls matches the
+    // chunk-input's starting offset.
+    m_lastIndexOffset += dataSize;
 
     return true;
 }

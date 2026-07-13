@@ -9,28 +9,10 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifdef PLATFORM_IS_WINDOWS
-// Windows.h is included somewhere and this prevents it from max as a macro which breaks uri.hpp
-#define NOMINMAX
-#endif
-
-#include <cerrno>
-#include <iostream>
-#include <uri.hpp>
-#include <util.h>
-
-#ifdef PLATFORM_IS_WINDOWS
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#endif
-
-#include "TcpPortFactory.h"
 #include "TcpServerPortFactory.h"
+
+#include "util/util.h"
+
 #include "PortManager.h"
 
 
@@ -67,15 +49,10 @@ port_handle_t TcpServerPortFactory::bindPort(const std::string& pName, uint16_t 
     }
 
     // Parse pName for address
-    const FIX8::uri url {pName};
-    if (url.get_scheme() != "tcp" || url.get_port().empty() || url.get_host().empty()) {
+    const utils::UriParts url = utils::parseUri(pName);
+    if (url.scheme != "tcp" || !url.hasPort() || !url.hasHost()) {
         return nullptr;
     }
-    std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
-        uriHost = uriHost.substr(1, uriHost.size() - 2);
-    }
-    std::string uriPort {url.get_port()};
 
     // locate this port name in our list of known sockets
     for (auto& e : knownSockets) {
@@ -102,7 +79,7 @@ bool TcpServerPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    log_debug(IS_LOG_PORT_FACTORY, "Releasing TCP/network port '%s'\n", portName(port));
+    log_debug(IS_LOG_PORT_FACTORY, "Releasing TCP/network port '%s'", portName(port));
 
     for (auto it = knownSockets.begin(); it != knownSockets.end(); it++) {
         if (it->port == port) {
@@ -123,15 +100,12 @@ bool TcpServerPortFactory::releasePort(port_handle_t port) {
  * @return True if port can be created, false otherwise
  */
 bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType) {
-    const FIX8::uri url {pName};
-    if (url.get_scheme() != "tcp" || url.get_port().empty() || url.get_host().empty()) {
+    const utils::UriParts url = utils::parseUri(pName);
+    if (url.scheme != "tcp" || !url.hasPort() || !url.hasHost()) {
         return false;
     }
-    std::string uriHost {url.get_host()};
-    if (uriHost.starts_with("[") && uriHost.ends_with("]")) {
-        uriHost = uriHost.substr(1, uriHost.size() - 2);
-    }
-    std::string uriPort {url.get_port()};
+    const std::string& uriHost = url.host;
+    const std::string uriPort = std::to_string(url.port);
 
     if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) {
         return false;
@@ -156,13 +130,33 @@ bool TcpServerPortFactory::validatePort(const std::string& pName, uint16_t pType
     return false;
 }
 
+void TcpServerPortFactory::recordListenError(eTcpListenErrorContext context) {
+#ifdef PLATFORM_IS_WINDOWS
+    const int err = WSAGetLastError();
+#else
+    const int err = errno;
+#endif
+    lastListenError = { context, err };     // capture before any cleanup so close() can't clobber the code
+    log_error(IS_LOG_PORT_FACTORY, "TcpServerPortFactory: listener setup failed (context %d, error %d)", (int)context, err);
+}
+
 bool TcpServerPortFactory::startListening() {
     struct sockaddr_in serveraddr; /* server's addr */
 
+    // Idempotent: if we already have an open listener, don't create a second socket.  Doing so would
+    // overwrite listen_fd, orphan the live listener, and fail to re-bind the (already in-use) port.
+    if (listen_fd > 0)
+        return true;
+
+    lastListenError = { TCP_LISTEN_CTX__NONE, 0 };  // fresh attempt; recordListenError() repopulates this on failure
+
     // socket: create the parent socket
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_fd < 0)
+    if (listen_fd < 0) {
+        recordListenError(TCP_LISTEN_CTX__SOCKET);
+        listen_fd = 0;          // nothing valid to retain; leave a clean state for the next attempt
         return false;   // ERROR opening socket;
+    }
 
 #ifdef PLATFORM_IS_WINDOWS
     // setsockopt: Handy debugging trick that lets us rerun the server immediately after we kill it;
@@ -172,6 +166,8 @@ bool TcpServerPortFactory::startListening() {
 
     DWORD nonBlocking = 1;
     if (ioctlsocket(listen_fd, FIONBIO, &nonBlocking) != 0) {
+        recordListenError(TCP_LISTEN_CTX__NONBLOCK);
+        stopListening();        // tear the half-open socket down so the next call starts clean
         return false; // Error setting non-blocking flag
     }
 #else
@@ -183,11 +179,15 @@ bool TcpServerPortFactory::startListening() {
     // Get the current flags for the socket file descript
     int flags;
     if ((flags = fcntl(listen_fd, F_GETFL, 0)) == -1) {
+        recordListenError(TCP_LISTEN_CTX__GETFLAGS);
+        stopListening();        // tear the half-open socket down so the next call starts clean
         return false; // Error getting flags
     }
 
     // Add the O_NONBLOCK flag to the current flags
     if (fcntl(listen_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        recordListenError(TCP_LISTEN_CTX__NONBLOCK);
+        stopListening();        // tear the half-open socket down so the next call starts clean
         return false; // Error setting non-blocking flag
     }
 #endif
@@ -199,12 +199,18 @@ bool TcpServerPortFactory::startListening() {
     serveraddr.sin_port = htons((unsigned short)factoryOptions.listenerPort);   // this is the port we will listen on
 
     // bind: associate the parent socket with a port
-    if (bind(listen_fd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)
+    if (bind(listen_fd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0) {
+        recordListenError(TCP_LISTEN_CTX__BIND);
+        stopListening();        // tear the half-open socket down so the next call starts clean
         return false; // ERROR on binding
+    }
 
     // listen: make this socket ready to accept connection requests
-    if (listen(listen_fd, factoryOptions.maxConnections) < 0) /* allow factoryOptions.maxConnections (default 10) requests to queue up */
+    if (listen(listen_fd, factoryOptions.maxConnections) < 0) { /* allow factoryOptions.maxConnections (default 10) requests to queue up */
+        recordListenError(TCP_LISTEN_CTX__LISTEN);
+        stopListening();        // tear the half-open socket down so the next call starts clean
         return false; // ERROR on listen
+    }
 
     return true;
 }
@@ -227,6 +233,7 @@ void TcpServerPortFactory::shutdownAllClients() {
 #else
         shutdown(ks.socket, SHUT_RDWR);
 #endif
+        portClose(ks.port);
     }
 }
 
@@ -237,9 +244,14 @@ void TcpServerPortFactory::shutdownAllClients() {
 bool TcpServerPortFactory::processPendingConnections(std::function<void(const socket_entry_t&)> cb) {
     struct sockaddr_in clientaddr;      // client addr
     char hostaddrp[INET6_ADDRSTRLEN];
-    int clientfd;                   // socket associated to the client
+    int clientfd = -1;                   // socket associated to the client
     socklen_t clientlen = sizeof(clientaddr); // byte size of client's address
     bool result = false;                // true if one or more connections are successfully accepted
+
+    // No active listener (never started, or torn down after a setup failure).  Without this guard a
+    // failed listener (listen_fd == 0) would accept(0) on every call, spamming the error log.
+    if (listen_fd <= 0)
+        return false;
 
     do {
         // accept: wait for a connection request

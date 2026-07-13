@@ -18,7 +18,11 @@
 #define IS_SDK__DEVICE_MANAGER_H
 
 #include <list>
+#include <map>
+#include <memory>
 #include <mutex>
+#include <functional>
+#include <unordered_set>
 
 #include "core/msg_logger.h"
 
@@ -31,6 +35,7 @@ typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_in
 typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 
 typedef std::function<void(uint8_t, device_handle_t)> device_listener;
+typedef std::shared_ptr<device_listener> device_listener_handle_t;
 
 // typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
@@ -49,6 +54,8 @@ public:
         DEVICE_REMOVED,                 //!< a previously known device was removed from the manager
     };
 
+    inline static const char* device_event_names[] = { "DEVICE_ADDED", "DEVICE_PORT_BOUND", "DEVICE_CONNECTED", "DEVICE_INFO_CHANGED", "DEVICE_DISCONNECTED", "DEVICE_PORT_LOST", "DEVICE_REMOVED" };
+
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
     static const uint16_t DISCOVERY__IGNORE_CLOSED_PORTS          = 0x0001;       //!< when set, this will cause closed ports to be skipped/ignored, otherwise open the port before attempting discovery
     static const uint16_t DISCOVERY__CLOSE_PORT_ON_FAILURE        = 0x0002;       //!< when set, this will cause the port to be closed when discovery fails, otherwise the port will be left open
@@ -56,6 +63,8 @@ public:
     static const uint16_t DISCOVERY__FORCE_REVALIDATION           = 0x0010;       //!< when set, if an existing device entry if found for this port, the device will be forced to validate again.
 
     static const uint16_t DISCOVERY__DEFAULTS                     = DISCOVERY__CLOSE_PORT_ON_FAILURE; // (DISCOVERY__IGNORE_CLOSED_PORTS | DISCOVERY__CLOSE_PORT_ON_FAILURE);
+
+    static const uint32_t DISCOVERY__DEFAULT_TIMEOUT               = 3000;         //!< default timeout (ms) for device discovery; matches DeviceFactory::deviceTimeout
 
     DeviceManager(DeviceManager const &) = delete;
     DeviceManager& operator=(DeviceManager const&) = delete;
@@ -76,18 +85,7 @@ public:
      * @param options a bitmask of misc options that will can affect the discovery behavior.
      * @return true if one more more devices were discovered, otherwise false
      */
-    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
-        bool result = false;
-        // options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
-        for (auto port : portManager.locked_range()) {
-            // FIXME: sometimes this segfaults - I think the portManager's set gets updated while iterating here.
-            //  we may need to put a mutex on the PortManager so we can't add/remove ports while iterating on the base set.
-            //  probably s smart thing to do for the DeviceManager too
-            result |= discoverDevice(port, hdwId, timeoutMs, options);
-        }
-        return result;
-    }
+    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS);
 
     /**
      * Iterates through all registered factories attempting to identify a discoverable device on the specified port.
@@ -100,36 +98,45 @@ public:
      * @return true if a device was discovered on the specified port, otherwise false
      */
     bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
         options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
         options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
 
         if (!portIsValid(port))
             return false;
 
-        // first check if this port is already associated with another device
-        for (auto d: *this) {
-            if (d && d->hasDeviceInfo() && (d->port == port)) {
-                if ((options & DISCOVERY__FORCE_REVALIDATION)) {
-                    // Invalidate the device, which will force a rediscovery, without losing the identity of the device itself.
-                    d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
-                    memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
-                } else {
-                    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
-                        portClose(port);
-                    return true;    // this is a success (rediscovered an existing device), without a FORCE_VALIDATION
+        // Narrow the manager lock to only the parts that touch knownDevices/factories.
+        // factory->locateDevice() below can block up to timeoutMs doing port I/O and
+        // invokes user packet callbacks; holding the manager mutex across it causes
+        // AB-BA deadlock with locks taken by those callbacks (SN-8057).
+        std::vector<DeviceFactory*> factoriesSnapshot;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+
+            // first check if this port is already associated with another device
+            for (auto d: *this) {
+                if (d && d->hasDeviceInfo() && (d->port == port)) {
+                    if ((options & DISCOVERY__FORCE_REVALIDATION)) {
+                        // Invalidate the device, which will force a rediscovery, without losing the identity of the device itself.
+                        d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                        memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                    } else {
+                        if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                            portClose(port);
+                        return true;    // this is a success (rediscovered an existing device), without a FORCE_VALIDATION
+                    }
                 }
             }
+
+            factoriesSnapshot = factories;
         }
 
         // open the port, if needed - if we can't open it, fail.
-        if (!portIsOpened(port)
-            && ( (options & DISCOVERY__IGNORE_CLOSED_PORTS)
-                 || (portOpen(port) != PORT_ERROR__NONE)) )
+        if ( (!portIsOpened(port) && (options & DISCOVERY__IGNORE_CLOSED_PORTS)) ||
+             (portOpen(port) != PORT_ERROR__NONE) )
             return false;
 
 
-        for (auto l : factories) {
+        for (auto l : factoriesSnapshot) {
             std::function<bool(DeviceFactory *, const dev_info_t &, port_handle_t)> cb = std::bind(&DeviceManager::deviceHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, options);
             if (l->locateDevice(cb, port, hdwId, timeoutMs)) {
                 if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)  // locateDevice should already handle this, but just in case.
@@ -187,27 +194,64 @@ public:
      * @param handler a function pointer to be called when a new device is discovered
      * @return the previously registered handler, if any
      */
-    void addDeviceListener(const device_listener& listener) { std::lock_guard<std::recursive_mutex> lock(mutex); listeners.push_back(listener); }
-
-    /**
-     * Removes a previously registered device listener.
-     * @param handler a function pointer to be called when a new device is discovered
-     * @return the previously registered handler, if any
-     */
-    bool removeDeviceListener(const device_listener& listener) {
-        (void)listener; // Suppress unused parameter warning
-        // TODO: locate the listener, and remove it if found and return true, otherwise return false
-        return false;
+    device_listener_handle_t addDeviceListener(const device_listener& listener) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        device_listener_handle_t listenerPtr = std::make_shared<device_listener>(listener);
+        listeners.insert(listenerPtr);
+        return listenerPtr;
     }
 
     /**
-     * Notifies all listeners of a particular device event
-     * @param device the device to which the event is applicable
-     * @param event the specific event id that occurred.
+     * Removes a previously registered device listener.
+     * @param listener the handle returned by addDeviceListener()
+     * @return true if the listener was found and removed, otherwise false
+     */
+    bool removeDeviceListener(const device_listener_handle_t& listener) {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        return (listeners.erase(listener) != 0);
+    }
+
+    /**
+     * Seed a device hint for a port, allowing device validation to skip the DID_DEV_INFO probe.
+     * Called by RelayPortFactory (and potentially other factories) when the relay has already
+     * identified the device's serial number, hardware type, firmware version, etc.
+     * The hint is keyed on port_handle_t and is valid for the lifetime of that port handle.
+     * @param port the port handle (from bindPort) to associate the hint with
+     * @param hint the relay-authoritative device info
+     */
+    void seedDeviceHint(port_handle_t port, const dev_info_t& hint);
+
+    /**
+     * Retrieve a previously seeded device hint for a port, or nullptr if no hint exists.
+     */
+    const dev_info_t* getDeviceHint(port_handle_t port) const;
+
+    /**
+     * Remove a previously seeded device hint.
+     */
+    void clearDeviceHint(port_handle_t port);
+
+    /**
+     * Notifies all listeners of a particular device event.
+     *
+     * Listeners are invoked WITHOUT holding DeviceManager::mutex. Holding the
+     * mutex during dispatch creates an AB/BA deadlock with any caller that
+     * already holds another resource (e.g. ISDevice::portMutex) and reaches into
+     * DeviceManager — for example `ISDevice::step()` (which holds portMutex,
+     * fires DEVICE_DISCONNECTED on a port-state change) racing against
+     * `DeviceManager::discoverDevices()` (which holds DeviceManager::mutex and
+     * eventually takes portMutex via `validate→SendRaw`). Snapshotting the
+     * listener vector under the lock and dispatching after release is safe:
+     * the listener registry is only mutated through addPortListener/clear-style
+     * helpers that already take the same mutex.
      */
     void notifyListeners(device_handle_t device, uint8_t event) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
-        for (device_listener& l : listeners) l(event, device);    // notify that this device's port has been updated
+        std::vector<device_listener_handle_t> snapshot;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            snapshot.assign(listeners.begin(), listeners.end());
+        }
+        for (auto& l : snapshot) if (l) (*l)(event, device);
     }
 
 
@@ -249,15 +293,7 @@ public:
     /**
      * Remove and release/free all known/discovered devices.
      */
-    void clear(bool closePorts = true) {
-        std::lock_guard<std::recursive_mutex> lock(mutex);
-        auto tmpSet = getDevicesAsVector();
-        for (auto d : tmpSet) releaseDevice(d, closePorts, true);
-
-        // just to make sure we didn't miss anything (though this could cause memory leaks)
-        std::list<device_handle_t>::clear();
-        knownDevices.clear();
-    }
+    void clear(bool closePorts = true);
 
     /**
     * Get the number of open devices
@@ -285,6 +321,11 @@ public:
      * @returns an device_handle_t instance associated with the specified port, or NULL if not found
      */
     device_handle_t getDevice(port_handle_t port);
+
+    /**
+     * @returns an device_handle_t instance at the specified index, or NULL if not found
+     */
+    device_handle_t getDeviceByIndex(int index);
 
     /**
      * @returns an device_handle_t instance identified by the deviceId string (as provided by ISDevice::getIdAsString()), or NULL if not found
@@ -366,11 +407,13 @@ private:
     PortManager& portManager = PortManager::getInstance();
 
     std::vector<DeviceFactory*> factories;                              //!< list of device factories responsible for detecting, allocating and freeing ports of different types. -- Note that DeviceFactories should always be static singletons, DO NOT FREE/DELETE the factory!
-    std::vector<device_listener> listeners;                             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
+    std::unordered_set<device_listener_handle_t> listeners;             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
     std::vector<device_entry_t> knownDevices;                           //!< vector of previously discovered devices, by factory & hdwid (bits 47-63) + serial (bits 0-31) - different than actual, allocated devices
+    std::map<port_handle_t, device_handle_t> portToDeviceMap;           //!< map of port handles to device handles for fast lookups
 
     int managementOptions = DISCOVERY__DEFAULTS;                        //!< a bit mask of various options used to modify the behavior of the device manager during various operations
     std::recursive_mutex mutex;
+    std::map<port_handle_t, dev_info_t> deviceHints_;                  //!< seeded hints keyed by port_handle_t; valid for the lifetime of the port handle
 
     class LockedRangeProxy {
     private:

@@ -516,20 +516,17 @@ void running_mean_filter_f64(double mean[], float input[], int arraySize, int sa
 */
 void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount);
 
+// Condense multiple IMUs down to one IMU
+void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices);
+int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude); // for individual IMU exclusion
+void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
-// Look for error in dual IMU data
-void errorCheckImu3(imu3_t *di);
+// Duplicate one IMU to multiple IMUs
+void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices);
 
-// Condense triple IMUs down to one IMU
-int tripleToSingleImu(imu_t *result, const imu3_t *di);
-int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude); // for individual IMU exclusion
-void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
-
-// Duplicate one IMU to triple IMUs
-void singleToTripleImu(imu3_t *result, imu_t *imu);
-
-// Convert integrated IMU to IMU. 0 on success, -1 on failure.
-int preintegratedImuToIMU(imu_t *imu, const pimu_t *imuInt);
+// Convert integrated IMU to IMU. Returns 1 on success, 0 on failure (e.g. when dt == 0).
+int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt);
+int preintegratedImuToImu(imu_t *imu, const pimu_t *imuInt);
 int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 
 float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
@@ -544,6 +541,16 @@ float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int N
  * \param imuLast       Previous gyro and accelerometer sample.
  */
 void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast);
+
+/** 
+ * \brief Compute coning and sculling integrals from multiple gyro and accelerometer samples
+ *
+ * \param pimuOut       Coning and sculling integral output array
+ * \param pimuCnt       Number of elements in pimuOut array
+ * \param imusIn        Array of gyro and accelerometer samples.
+ * \param imuLastArray  Array of previous gyro and accelerometer samples.
+ */
+void integrateImusIntoPimuArray(pimu_t pimuOut[MAX_IMU_DEVICES], const int pimuCnt, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES]);
 
 // Set integral, time, and status to zero
 void zeroPimu(pimu_t *pimu);

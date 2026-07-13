@@ -30,7 +30,7 @@ void mdns::tick() {
     if(!lock.try_lock()) return; // If the mutex is locked return
 
     if (createMdnsSockets() <= 0) {
-        log_warn(IS_LOG_FACILITY_MDNS, "Failed to open any sockets to listen for MDNS responses on");
+        log_warn(IS_LOG_MDNS_CACHE, "Failed to open any sockets to listen for MDNS responses on");
         return;
     }
 
@@ -47,13 +47,13 @@ void mdns::sendQuery(mdns_record_type_t type, const std::string& query) {
     size_t capacity = 2048;
     void* buffer = malloc(capacity);
     if (buffer == nullptr) {
-        log_error(IS_LOG_FACILITY_MDNS, "Failed to allocate memory for MDNS query are you out of memory?");
+        log_error(IS_LOG_MDNS_CACHE, "Failed to allocate memory for MDNS query are you out of memory?");
         return;
     }
 
     for (int isock = 0; isock < socketsOpened; ++isock) {
         if (mdns_query_send(mdnsSockets[isock], type, query.c_str(), strlen(query.c_str()), buffer, capacity, 0)) {
-            log_warn(IS_LOG_FACILITY_MDNS, "Failed to send DNS-DS discovery: %s", strerror(errno));
+            log_warn(IS_LOG_MDNS_CACHE, "Failed to send DNS-DS discovery: %s", strerror(errno));
         }
     }
 
@@ -119,7 +119,8 @@ std::vector<mdns::mdns_record_cpp_t> mdns::getRecords() {
  */
 sockaddr_storage mdns::resolveName(const std::string& name) {
     std::vector<mdns_record_cpp_t> records = getRecords();
-    sockaddr_storage result = {.ss_family = AF_UNSPEC};
+    sockaddr_storage result = {};
+    result.ss_family = AF_UNSPEC;
     for (mdns_record_cpp_t& record : records) {
         if (record.name != name) {
             continue;
@@ -244,7 +245,7 @@ int mdns::createMdnsSockets() {
     struct ifaddrs* ifa = 0;
 
     if (getifaddrs(&ifaddr) < 0)
-        log_warn(IS_LOG_FACILITY_MDNS, "Unable to get interface addresses.");
+        log_warn(IS_LOG_MDNS_CACHE, "Unable to get interface addresses.");
 
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
         if (!ifa->ifa_addr)
@@ -318,10 +319,11 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
                         size_t size, size_t name_offset, size_t name_length, size_t record_offset,
                         size_t record_length, void* user_data) {
 
-    // Do not process ANSWER messages
-    if (entry != MDNS_ENTRYTYPE_ANSWER) {
-        log_warn(IS_LOG_FACILITY_MDNS, "Unable to process non ANSWER responses: Not Supported.");
-        return -ENOTSUP;
+    // Process ANSWER and ADDITIONAL records (additional carries A/AAAA/SRV/TXT
+    // alongside PTR responses per RFC 6762). Skip AUTHORITY and QUESTION entries.
+    if (entry != MDNS_ENTRYTYPE_ANSWER && entry != MDNS_ENTRYTYPE_ADDITIONAL) {
+        log_more_debug(IS_LOG_MDNS_CACHE, "Ignoring AUTHORITY/QUESTION record entry type: %d", entry);
+        return 0;
     }
 
     // Create buffers for strings
@@ -330,6 +332,34 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
 
     // Extract the name of the mdns record
     mdns_string_t entryName = mdns_string_extract(data, size, &name_offset, entrybuffer, sizeof(entrybuffer));
+
+    // RFC 6762 §10.1: TTL=0 is a "goodbye" — the record is being withdrawn.
+    // Immediately remove any matching record from the cache.
+    if (ttl == 0) {
+        mdns_record_cpp_t probe;
+        probe.name = std::string(MDNS_STRING_ARGS(entryName));
+        probe.type = static_cast<mdns_record_type>(rtype);
+        probe.rclass = rclass;
+        // For goodbye, we need to match the record identity. Build a minimal record for lookup.
+        // The hash/equality on mdns_record_cpp_t uses (name, type, rclass) + type-specific rdata.
+        // Since we don't have the full rdata here for matching, erase ALL records with the same
+        // (name, type, rclass) prefix — conservative but correct for goodbye semantics.
+        std::vector<mdns_record_cpp_t> toRemove;
+        for (const auto& [rec, ts] : responses) {
+            if (rec.name == probe.name && rec.type == probe.type && rec.rclass == probe.rclass) {
+                toRemove.push_back(rec);
+            }
+        }
+        for (const auto& rec : toRemove) {
+            responses.erase(rec);
+            log_debug(IS_LOG_MDNS_CACHE, "mDNS goodbye: removed record '%s' type=%d", rec.name.c_str(), rec.type);
+        }
+        return 0;
+    }
+
+    // Clamp wire TTL to minimum floor to prevent overly aggressive eviction
+    if (ttl < MDNS_TTL_FLOOR_S)
+        ttl = MDNS_TTL_FLOOR_S;
 
     // TXT records are received as an array of TXT records that all have the same name, class, and ttl
     // but because of this they have slightly different logic for handling them
@@ -372,7 +402,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             mdns_record_srv_cpp_t srvRecord = mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
             newRecord.data.srv = srvRecord;
         } else {
-            log_warn(IS_LOG_FACILITY_MDNS, "Unable to process unknown MDNS record type: Not Supported.");
+            log_warn(IS_LOG_MDNS_CACHE, "Unable to process unknown MDNS record type: Not Supported.");
             return -ENOTSUP;
         }
         // Save the type of record to struct so that we know how to parse the union
@@ -452,22 +482,21 @@ int mdns::handleMdnsQueryResponses() {
 }
 
 /**
- * Cleanup expired responses that have either had their TTLs expire or are older than the MDNS_RECORD_TIMEOUT_MS
+ * Cleanup expired responses based on their wire TTL.
+ * The TTL is already clamped to MDNS_TTL_FLOOR_S at ingestion time (queryCallback),
+ * and TTL=0 (goodbye) packets are handled immediately in queryCallback — so this
+ * cleanup only needs to check the TTL-based expiry.
  */
 void mdns::cleanupExpiredResponses() {
+    auto now = std::chrono::steady_clock::now();
     std::vector<mdns_record_cpp_t> deadRecords;
-    for (std::pair<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>> response: responses) {
-        // Delete records with expired TTLs
-        if (response.second < std::chrono::steady_clock::now() - std::chrono::seconds(response.first.ttl)) {
-            deadRecords.push_back(response.first);
-        }
-
-        // Delete records that exceed our timeout
-        if (response.second < std::chrono::steady_clock::now() - std::chrono::milliseconds(MDNS_RECORD_TIMEOUT_MS)) {
-            deadRecords.push_back(response.first);
+    for (const auto& [record, timestamp] : responses) {
+        // Record expires when (receive_time + ttl_seconds) < now
+        if (timestamp < now - std::chrono::seconds(record.ttl)) {
+            deadRecords.push_back(record);
         }
     }
-    for (mdns_record_cpp_t deadRecord: deadRecords) {
+    for (const auto& deadRecord : deadRecords) {
         responses.erase(deadRecord);
     }
 }

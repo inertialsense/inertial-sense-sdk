@@ -36,9 +36,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+
+#include "core/msg_logger.h"
+
 #include "protocol_nmea.h"
-#include "util/natsort.h"
 #include "CorrectionService.h"
+#include "NtripCorrectionService.h"
+#include "TcpPortFactory.h"
+#include "ISmDnsPortFactory.h"
+#include "RelayPortFactory.h"
+#include "PortFactory.h"
+#include "util/natsort.h"
+#include "util/util.h"
+
+#include "ISBootloaderThread.h"
+#include "CorrectionService.h"
+#include "Rtcm3CorrectionServer.h"
 
 using namespace std;
 
@@ -49,56 +62,183 @@ static bool g_cmdSuccessExitAppNow = false;
 static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
-CorrectionService *g_roverConnection = NULL;
+shared_ptr<CorrectionService> g_correctionInput = NULL;
+shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
-static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
-{
-    if (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_QUIET ||
-        g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_SCROLL)
-    {
-        return;
+/// Extract the hostname portion of a canonical "http://host:port" URL for hostname-based filtering.
+static std::string hostnameFromUrl(const std::string& url) {
+    return utils::parseUri(url).host;
+}
+
+/// Pre-warm RelayPortFactory: register manual URLs, then pump tick() for up to 3 s so
+/// mDNS-discovered hosts surface. After warmup, enable hosts per CLI selection:
+///   - `-use-relay=<url>,<url>` → relayUrls are added+enabled manually
+///   - `-use-relay-only=<host>,<host>` → only mDNS-discovered hosts whose hostname
+///     matches an entry in relayOnlyHosts are enabled
+///   - bare `-use-relay` (no value) → all mDNS-discovered hosts are enabled
+/// Prints a one-line-per-host summary.
+static void cltoolWarmRelayDiscovery() {
+    auto& rpf = RelayPortFactory::getInstance();
+
+    // 1. Register any manually-provided URLs and enable them immediately.
+    for (const auto& url : g_commandLineOptions.relayUrls) {
+        if (url.empty()) continue;
+        rpf.addRelayHost(url);
+        rpf.setRelayHostEnabled(url, true);
     }
+
+    printf("Discovering relay hosts...\n");
+    uint32_t deadline = current_timeMs() + 3000;
+
+    const bool hasManualUrls = !g_commandLineOptions.relayUrls.empty();
+    const bool hasOnlyFilter = !g_commandLineOptions.relayOnlyHosts.empty();
+
+    while (current_timeMs() < deadline) {
+        RelayPortFactory::tick();
+        SLEEP_MS(50);
+
+        // Auto-enable mDNS-discovered hosts unless manual URLs were supplied.
+        // With -use-relay-only, only hosts whose hostname matches the whitelist are enabled.
+        if (!hasManualUrls) {
+            for (auto& host : rpf.getRelayHosts()) {
+                if (host.enabled) continue;
+                if (!host.viaMdns) continue;
+                if (hasOnlyFilter) {
+                    std::string hn = hostnameFromUrl(host.url);
+                    bool match = false;
+                    for (const auto& allowed : g_commandLineOptions.relayOnlyHosts) {
+                        if (hn == allowed) { match = true; break; }
+                    }
+                    if (!match) continue;
+                }
+                rpf.setRelayHostEnabled(host.url, true);
+            }
+        }
+
+        // Early-exit once we've got a stable picture: at least one enabled host has both
+        // device entries AND its transport has resolved (stream connected or polling fallback).
+        // Otherwise the "feed=Auto" badge would be the reported value for the short window
+        // between the one-shot snapshot and the first SSE event.
+        auto hosts = rpf.getRelayHosts();
+        bool ready = false;
+        for (const auto& h : hosts) {
+            if (!h.enabled || h.deviceCount == 0) continue;
+            if (h.streamConnected || h.feedType == RelayPortFactory::RelayFeedType::Polling) {
+                ready = true;
+                break;
+            }
+        }
+        if (ready) break;
+    }
+
+    // Summary line per host, including transport badge.
+    auto hosts = rpf.getRelayHosts();
+    if (hosts.empty()) {
+        printf("  No relay hosts discovered.\n");
+    } else {
+        for (const auto& h : hosts) {
+            const char* feed = (h.feedType == RelayPortFactory::RelayFeedType::SSE)     ? "SSE"
+                             : (h.feedType == RelayPortFactory::RelayFeedType::Polling) ? "Polling"
+                             :                                                            "Auto";
+            printf("  Relay: %s  enabled=%d  devices=%zu  feed=%s  %s\n",
+                   h.url.c_str(), h.enabled, h.deviceCount, feed,
+                   h.viaMdns ? "(mDNS)" : "(manual)");
+        }
+    }
+}
+
+static void display_server_client_status(bool showMessageSummary=false, bool refreshDisplay=false)
+{
+    const cInertialSenseDisplay::eDisplayMode mode = g_inertialSenseDisplay.GetDisplayMode();
+    if (mode == cInertialSenseDisplay::DMODE_QUIET)
+        return;     // -q: suppress host status output entirely
 
     static float serverKBps = 0;
     static uint64_t serverByteCount = 0;
     static uint64_t serverByteRateTimeMsLast = 0;
     static uint64_t serverByteCountLast = 0;
+    static uint16_t numClients = 0;
+    static uint16_t numClientsLast = 0;
     static stringstream outstream;
 
-    uint64_t newServerByteCount = i->ClientServerByteCount();
-    if (serverByteCount != newServerByteCount)
+    port_stats_t correctionStats = {};
+    if (g_correctionOutput && g_correctionOutput->getSourcePort()) {
+        // remember, if we're a "BASE", we ARE a Correction SERVER
+        correctionStats = *portStats(g_correctionOutput->getSourcePort());
+        numClients = g_correctionOutput->getActiveClients();
+    } else if (g_correctionInput && g_correctionInput->getSourcePort()) {
+        // but, if we are a "ROVER", we're USING a Correction SERVICE
+        correctionStats = *portStats(g_correctionInput->getSourcePort());
+    }
+
+    uint64_t newServerByteCount = correctionStats.rxBytes;  // bytes RECEIVED FROM the source device (forwarded to all connected clients)
+    const bool bytesChanged   = (serverByteCount != newServerByteCount);
+    const bool clientsChanged = (numClients != numClientsLast);
+
+    // Recompute the data rate whenever the byte count advances (shared by all display modes)
+    if (bytesChanged)
     {
         serverByteCount = newServerByteCount;
-
-        // Data rate of server bytes
         uint64_t timeMs = getTickCount();
         uint64_t dtMs = timeMs - serverByteRateTimeMsLast;
         if (dtMs >= 1000)
         {
-            uint64_t serverBytesDelta = serverByteCount - serverByteCountLast;
-            serverKBps = ((float)serverBytesDelta / (float)dtMs);
-
-            // Update history
+            serverKBps = ((float)(serverByteCount - serverByteCountLast) / (float)dtMs);
             serverByteCountLast = serverByteCount;
             serverByteRateTimeMsLast = timeMs;
         }
+    }
 
+    if (mode == cInertialSenseDisplay::DMODE_SCROLL)
+    {   // -s: append a periodic single-line status - on a client-count change, or at most every 2s
+        static uint64_t lastScrollMs = 0;
+        uint64_t nowMs = getTickCount();
+        if (clientsChanged || (nowMs - lastScrollMs >= 2000))
+        {
+            lastScrollMs = nowMs;
+            numClientsLast = numClients;
+            if (g_correctionOutput)
+            {
+                cout << "Base " << g_correctionOutput->getListenIpAddress() << ":" << g_correctionOutput->getListenIpPort()
+                     << "  conns: " << numClients
+                     << "  Tx: " << fixed << setprecision(1) << serverKBps << " KB/s, "
+                     << (long long)(correctionStats.rxBytes / 1024.0) << " KB" << endl;
+            }
+            else if (g_correctionInput)
+            {
+                port_handle_t srcPort = g_correctionInput->getSourcePort();
+                cout << "Rover [" << portName(srcPort) << (!portIsOpened(srcPort) ? " (Closed)" : "") << "]"
+                     << "  Rx: " << fixed << setprecision(1) << serverKBps << " KB/s, "
+                     << (long long)(correctionStats.rxBytes / 1024.0) << " KB" << endl;
+            }
+        }
+        return;
+    }
+
+    // DMODE_PRETTY (default): full multi-line dashboard block, rebuilt only on a change
+    if (bytesChanged || clientsChanged)
+    {
         outstream.str("");    // clear
         outstream << "\n";
-        if (server)
+        if (g_correctionOutput)
         {
-            outstream << "Server: " << i->TcpServerIpAddressPort()   << "     Tx: ";
+            outstream << "Corrections Output: " << g_correctionOutput->getListenIpAddress() << ":" << g_correctionOutput->getListenIpPort() << "     Tx: ";
+        } else if (g_correctionInput) {
+            port_handle_t srcPort = g_correctionInput->getSourcePort();
+            outstream << "Corrections Input: [" << portName(srcPort) << (!portIsOpened(srcPort) ? " (Closed)" : "") << "]     Rx: ";
         }
-        outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
-        if (server)
+        outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)(correctionStats.rxBytes / 1024.0) << " Kbytes    \n";
+
+        if (g_correctionOutput)
         {   // Server
-            outstream << "Connections: " << i->ClientConnectionCurrent() << " current, " << i->ClientConnectionTotal() << " total    \n";
+            outstream << "Active Connections: " << numClients << "    \n";
+            numClientsLast = numClients;    // consume the change so we only redraw on an actual count change, not every cycle
             if (showMessageSummary)
             {
-                outstream << i->ServerMessageStatsSummary();
+                outstream << MessageStats::summary(*g_correctionOutput->getMessageStats());
             }
             refreshDisplay = true;
         }
@@ -111,7 +251,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
             }
             if (showMessageSummary)
             {
-                outstream << i->ClientMessageStatsSummary();
+                outstream << MessageStats::summary(*g_correctionInput->getMessageStats());
             }
         }
     }
@@ -241,6 +381,18 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
+    }
+
+    // If correctionInputs are on, and we've received an updated GNSS position, pass it on to the correction service, if needed.
+    if (g_correctionInput && (data->hdr.id == DID_GNSS1_POS)) {
+        gnss_pos_t gnssPos = *(gnss_pos_t*)data->ptr;
+        if (std::shared_ptr<NtripCorrectionService> ntripPtr = std::dynamic_pointer_cast<NtripCorrectionService>(g_correctionInput)) {
+            static uint32_t lastUpdate = current_timeMs();
+            if (lastUpdate + 5000 < current_timeMs()) {     // Let's not flood the NTRIP caster with every position update...
+                ntripPtr->updatePosition(gnssPos);
+                lastUpdate = current_timeMs();
+            }
+        }
     }
 
     if (!g_commandLineOptions.outputOnceDid.empty())
@@ -473,14 +625,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         bool manfUnlock = false;
         switch(g_commandLineOptions.sysCommand)
         {
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GNSS2:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1:
-            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GNSS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GNSS2:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1:
@@ -530,8 +682,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
     {
-        g_roverConnection = new CorrectionService(g_commandLineOptions.roverConnection);
-        g_roverConnection->addDevices(std::vector<device_handle_t> { std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices()) });
+        if (utils::parseUri(g_commandLineOptions.roverConnection).scheme == "ntrip") {
+            g_correctionInput = std::make_shared<NtripCorrectionService>(g_commandLineOptions.roverConnection);
+        } else {
+            g_correctionInput = std::make_shared<CorrectionService>(g_commandLineOptions.roverConnection);
+        }
+        g_correctionInput->addDevices(std::vector<device_handle_t>{std::begin(inertialSenseInterface.getDevices()), std::end(inertialSenseInterface.getDevices())});
     }
     if (g_commandLineOptions.setNode && !g_commandLineOptions.setNode.IsNull() && g_commandLineOptions.setNode.size() > 0)
     {
@@ -575,7 +731,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.imxCalUploadFile.size() > 0)
     {
-        if (!cltool_uploadImxCalibrationFile(inertialSenseInterface, g_commandLineOptions.imxCalUploadFile))
+        if (!inertialSenseInterface.UploadImxCalibrationFromFile(g_commandLineOptions.imxCalUploadFile))
         {   // Exit cltool now and report error code
             std::exit(-3);
         }
@@ -764,8 +920,9 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
 void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
-    static char buffer[256];
+    std::string msgOut;
 
+    static char buffer[256];
     memset(buffer, 0, sizeof(buffer));
     if (str) {
         va_list ap;
@@ -789,21 +946,25 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
     }
 
     if ((isblPtr == NULL) && (fwPtr == NULL) && (level <= g_commandLineOptions.verboseLevel)) {
-        cout << buffer << endl;
+        msgOut += buffer;
+        cout << msgOut << endl;
+        log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
             ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS))) {
-            printf("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
+            msgOut += utils::string_format("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
             if (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS) {
                 int tot, num;
                 float percent = fwPtr->getProgress(&num, &tot) * 100.f;
-                printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
+                msgOut += utils::string_format(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
             } else if (g_commandLineOptions.verboseLevel > ::IS_LOG_LEVEL_MORE_INFO) {
                 // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
             }
             if (buffer[0])
-                printf(" :: %s", buffer);
-            printf("\n");
+                msgOut += utils::string_format(" :: %s", buffer);
+
+            cout << msgOut << endl;
+            log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
         }
     }
 
@@ -817,7 +978,11 @@ void cltool_firmwareUpdateWaiter()
 
 static int cltool_createHost()
 {
-    InertialSense inertialSenseInterface;
+    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    g_inertialSenseInterface = &inertialSenseInterface;
+    inertialSenseInterface.setErrorHandler(cltool_errorCallback);
+    inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
+
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate))
     {
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
@@ -833,34 +998,40 @@ static int cltool_createHost()
         cout << "Failed to update GPX flash config" << endl;
         return -1;
     }
-    else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))
-    {
-        cout << "Failed to create host at " << g_commandLineOptions.baseConnection << endl;
-        return -1;
-    }
 
+    device_handle_t srcDevice = DeviceManager::getInstance().front();
     inertialSenseInterface.StopBroadcasts();
 
+    g_correctionOutput = std::make_shared<Rtcm3CorrectionServer>(srcDevice, g_commandLineOptions.baseConnection);
+    MessageStats::mul_stats_t rtcm3Stats;
+    g_correctionOutput->setMessageStats(&rtcm3Stats);
+
+    const bool prettyDisplay = (g_inertialSenseDisplay.GetDisplayMode() == cInertialSenseDisplay::DMODE_PRETTY);
     unsigned int timeSinceClearMs = 0, curTimeMs;
     while (!g_inertialSenseDisplay.ExitProgram())
     {
-        inertialSenseInterface.Update();
         curTimeMs = current_timeMs();
+        g_correctionOutput->step();
+        inertialSenseInterface.Update();
         bool refresh = false;
-        if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
-        {   // Clear terminal
-            g_inertialSenseDisplay.Clear();
-            timeSinceClearMs = curTimeMs;
-            refresh = true;
+        if (prettyDisplay)
+        {   // full-screen dashboard: reposition the cursor and periodically clear.  In -s/-q modes we
+            // leave the cursor alone so display_server_client_status() can scroll (or suppress) cleanly.
+            if (((curTimeMs - timeSinceClearMs) > 2000) || (curTimeMs < timeSinceClearMs))
+            {   // Clear terminal
+                g_inertialSenseDisplay.Clear();
+                timeSinceClearMs = curTimeMs;
+                refresh = true;
+            }
+            g_inertialSenseDisplay.Home();
+            cout << g_inertialSenseDisplay.Hello();
+            display_logger_status(&inertialSenseInterface, refresh);
         }
-        g_inertialSenseDisplay.Home();
-        cout << g_inertialSenseDisplay.Hello();
-        display_logger_status(&inertialSenseInterface, refresh);
-        display_server_client_status(&inertialSenseInterface, true, true, refresh);
+        display_server_client_status(true, refresh);    // handles PRETTY / SCROLL / QUIET internally
     }
     cout << "Shutting down..." << endl;
 
-    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
+    g_correctionOutput = nullptr;
     return 0;
 }
 
@@ -907,16 +1078,98 @@ static int cltool_dataStreaming()
 {
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
-    InertialSense inertialSenseInterface({}, {&CltoolDeviceFactory::getInstance()});
+    // Build explicit port factory list — only include ISmDnsPortFactory when -use-mdns is specified
+    SerialPortFactory& spf = SerialPortFactory::getInstance();
+    spf.portOptions.defaultBaudRate = g_commandLineOptions.baudRate;
+    spf.portOptions.defaultBlocking = false;
+    TcpPortFactory& tpf = TcpPortFactory::getInstance();
+    tpf.portOptions.defaultBlocking = false;
+
+    std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useMdns) {
+        ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
+        mdpf.portOptions.defaultBlocking = false;
+        mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
+        portFactories.push_back(&mdpf);
+    }
+    if (g_commandLineOptions.useRelay) {
+        portFactories.push_back(&RelayPortFactory::getInstance());
+    }
+
+    InertialSense inertialSenseInterface(portFactories, {&CltoolDeviceFactory::getInstance()});
     g_inertialSenseInterface = &inertialSenseInterface;
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
     inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 
-    // [C++ COMM INSTRUCTION] STEP 2: Open serial port
-    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
+    // Pre-warm mDNS cache so network devices are discoverable when Open() calls discoverPorts()
+    if (g_commandLineOptions.useMdns) {
+        printf("Discovering mDNS devices...\n");
+        uint32_t deadline = current_timeMs() + 3000;
+        while (current_timeMs() < deadline) {
+            ISmDnsPortFactory::tick();
+            SLEEP_MS(50);
+        }
+    }
+
+    // Pre-warm relay discovery: add/enable relay host(s) and pump tick() to populate the cache
+    if (g_commandLineOptions.useRelay) {
+        cltoolWarmRelayDiscovery();
+
+        // -use-relay-list is a "print and exit" mode — skip device open.
+        if (g_commandLineOptions.useRelayList) {
+            return 0;
+        }
+    }
+
+    // [C++ COMM INSTRUCTION] STEP 2: Open the requested port and validate a device
+    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose, g_commandLineOptions.filterHdwType))
     {
-        cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-        return -1;    // Failed to open serial port
+        // InertialSense::Open returns false for several distinct reasons that the
+        // original "Failed to open serial port at <url>" message conflated:
+        //   (a) the URL didn't match any registered PortFactory — PortManager is empty;
+        //   (b) a factory matched but the port couldn't actually be opened (access
+        //       denied, port held by another process, TCP refused, DNS failed); or
+        //   (c) the port opened fine, but no device responded to discovery in time.
+        // For comPort = '*' or a comma-separated list, summarizing as a single
+        // outcome is unhelpful — different ports can fail for different reasons.
+        // Enumerate per-port state from PortManager so the user sees the OS-level
+        // error code (perror, populated by tcpPort/serialPort drivers from errno)
+        // and the validate/open status of each port that was discovered.
+        if (PortManager::getInstance().empty())
+        {
+            cout << "Could not find a recognizable port for '" << g_commandLineOptions.comPort.c_str()
+                 << "' (no PortFactory matched)." << endl;
+        }
+        else
+        {
+            cout << "Could not establish a device connection for '" << g_commandLineOptions.comPort.c_str()
+                 << "':" << endl;
+            DeviceManager& dm = DeviceManager::getInstance();
+            for (auto port : PortManager::getInstance().locked_range())
+            {
+                if (!port) continue;
+                const char* name = portName(port);
+                uint16_t err = portError(port);
+                bool opened = portIsOpened(port);
+                bool valid = portIsValid(port);
+                bool hasDevice = (dm.getDevice(port) != nullptr);
+
+                cout << "  " << (name ? name : "<unnamed>") << ": ";
+                if (hasDevice) {
+                    cout << "device validated (this port is OK)";
+                } else if (err != 0) {
+                    cout << "port error (" << (int)(int16_t)err << ": " << strerror((int)(int16_t)err) << ")";
+                } else if (!valid) {
+                    cout << "port invalidated";
+                } else if (!opened) {
+                    cout << "port could not be opened";
+                } else {
+                    cout << "port opened but device did not respond to discovery";
+                }
+                cout << endl;
+            }
+        }
+        return -1;
     }
 
     if (g_commandLineOptions.list_devices) {
@@ -943,6 +1196,28 @@ static int cltool_dataStreaming()
 
     int exitCode = EXIT_CODE_SUCCESS;
 
+    // Bootloader-state guard: if any of the connected devices is sitting in
+    // HDW_STATE_BOOTLOADER, the data-streaming, NMEA, and DID flows below will all
+    // hang indefinitely — bootloaders don't speak DID/NMEA. The exception is the
+    // firmware-update path itself (which exists to recover this state); only block
+    // when we're NOT about to update firmware. Provide a clear, actionable message
+    // so the user doesn't sit watching "Tx 0, Rx 0".
+    const bool isFwUpdateRun =
+        (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST &&
+         !g_commandLineOptions.fwUpdateCmds.empty()) ||
+        (g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST &&
+         !g_commandLineOptions.updateAppFirmwareFilename.empty());
+    if (!isFwUpdateRun) {
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (device && device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
+                cout << "Device " << device->getIdAsString()
+                     << " is in BOOTLOADER mode and will not respond to data, NMEA, or DID requests." << endl
+                     << "  Reboot the device, or run a firmware update (-uf, -ufpkg, -uf-cmd) to recover." << endl;
+                return EXIT_CODE_DEVICE_DISCONNECTED;
+            }
+        }
+    }
+
     // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
     if (cltool_setupCommunications(inertialSenseInterface))
     {
@@ -961,6 +1236,23 @@ static int cltool_dataStreaming()
         try
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
+                // Inject policy override commands before the firmware update commands
+                if (!g_commandLineOptions.fwPolicyOverrides.empty()) {
+                    std::vector<std::string> combined;
+                    for (auto& po : g_commandLineOptions.fwPolicyOverrides) {
+                        auto colonPos = po.find(':');
+                        if (colonPos != std::string::npos) {
+                            // pattern-specific: "skip:GNSS" → "policy=skip,target=GNSS"
+                            combined.push_back("policy=" + po.substr(0, colonPos) + ",target=" + po.substr(colonPos + 1));
+                        } else {
+                            // default: "force" → "policy=force"
+                            combined.push_back("policy=" + po);
+                        }
+                    }
+                    combined.insert(combined.end(), g_commandLineOptions.fwUpdateCmds.begin(), g_commandLineOptions.fwUpdateCmds.end());
+                    g_commandLineOptions.fwUpdateCmds = combined;
+                }
+
                 if (inertialSenseInterface.updateFirmware(
                         g_commandLineOptions.updateFirmwareTarget,
                         g_commandLineOptions.fwUpdateCmds,
@@ -990,13 +1282,23 @@ static int cltool_dataStreaming()
             SLEEP_MS(1);
 
             uint8_t loopCnt = 0;
+            uint32_t nextPortCheck = current_timeMs() + 1000;
 
             // [C++ COMM INSTRUCTION] STEP 4: Read data
             while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
-                // FIXME: this is a little jank -- we should periodically check for ports, but in the cltool, but we only want to check for the same ports that we originally connected on??
-                if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST)
-                    PortManager::getInstance().discoverPorts();
+                // Re-discover ONLY the originally-specified port(s), not every port the
+                // relay/mDNS factories know about. Default `discoverPorts()` uses pattern
+                // "(.+)" which matches all known URLs — for a -ufpkg run targeting a single
+                // TCP/relay device, that opened TCP sockets to every device the relay
+                // exposed (16+ on a fixture testbed) and held them for the duration of the
+                // run, blocking concurrent clients (the bridgeboard enforces "one client
+                // per port"). Passing the resolved comPort scopes the periodic check to
+                // the target we actually care about.
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
+                    PortManager::getInstance().discoverPorts(g_commandLineOptions.comPort);
+                    nextPortCheck = current_timeMs() + 1500;
+                }
 
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
@@ -1004,7 +1306,7 @@ static int cltool_dataStreaming()
                     break;
                 }
 
-                if (g_roverConnection && (g_roverConnection->step() < 0)) {
+                if (g_correctionInput && (g_correctionInput->step() < 0)) {
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
                     break;
                 }
@@ -1028,7 +1330,7 @@ static int cltool_dataStreaming()
 
                     // Collect and print summary list of client messages received
                     display_logger_status(&inertialSenseInterface, refreshDisplay);
-                    display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
+                    display_server_client_status(false, refreshDisplay);
                 }
 
                 if ((current_timeMs() - requestDataSetsTimeMs) > 1000) {
@@ -1049,7 +1351,33 @@ static int cltool_dataStreaming()
                 // Prevent processor overload
                 SLEEP_MS(1);
             }
-        }
+ 
+            // Re-check device-level fwUpdate errors before reporting status. The earlier
+            // exitCode at line ~1219 captures the state when the loop saw isFirmwareUpdateFinished(),
+            // but additional CMD_ERROR statuses can land between then and now. Without this check
+            // we'd print "Firmware update successful!" and then "Exit Status: -5" — contradictory.
+            if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                for (auto device : inertialSenseInterface.getDevices()) {
+                    if (device->fwUpdateState.hasErrors) {
+                        exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
+                        break;
+                    }
+                }
+            }
+
+            // Only report firmware update status if a firmware update was actually initiated.
+            if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST && !g_commandLineOptions.fwUpdateCmds.empty())
+            {
+                if (exitCode == EXIT_CODE_SUCCESS)
+                {
+                    printf("Firmware update successful!\n");
+                }
+                else
+                {
+                    printf("Firmware update failed w/ exit code %d: %s\n", exitCode, getExitCodeDescription(exitCode));
+                }
+            }
+       }
         catch (...)
         {
             cout << "Unknown exception..." << endl;
@@ -1064,16 +1392,6 @@ static int cltool_dataStreaming()
         // Exit Failed to setup communications
         cout << "Failed to setup communications!" << endl;
         exitCode = EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
-    }
-
-    //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-        for (auto device : inertialSenseInterface.getDevices()) {
-            if (device->fwHasError) {
-                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
-                break;
-            }
-        }
     }
 
     return exitCode;
@@ -1103,17 +1421,102 @@ static void sendNmea(port_handle_t port, string nmeaMsg)
     portWrite(port, (unsigned char*)buf, n);
 }
 
+/**
+ * Discovers all available devices and resolves the target device ID to a port name.
+ * On success, sets g_commandLineOptions.comPort to the resolved port and returns true.
+ */
+static bool cltool_resolveDeviceTarget()
+{
+    uint64_t targetId = g_commandLineOptions.targetDeviceId;
+    uint32_t serialNo = (uint32_t)(targetId & 0xFFFFFFFFFFFF);
+    is_hardware_t hdwId = (is_hardware_t)(targetId >> 48);
+
+    // Build port factories identically to cltool_dataStreaming()
+    SerialPortFactory& spf = SerialPortFactory::getInstance();
+    spf.portOptions.defaultBaudRate = g_commandLineOptions.baudRate;
+    spf.portOptions.defaultBlocking = false;
+    TcpPortFactory& tpf = TcpPortFactory::getInstance();
+    tpf.portOptions.defaultBlocking = false;
+
+    std::vector<PortFactory*> portFactories = {&spf, &tpf};
+    if (g_commandLineOptions.useMdns) {
+        ISmDnsPortFactory& mdpf = ISmDnsPortFactory::getInstance();
+        mdpf.portOptions.defaultBlocking = false;
+        mdpf.portOptions.resolvePreference = g_commandLineOptions.mdnsResolvePreference;
+        portFactories.push_back(&mdpf);
+    }
+    if (g_commandLineOptions.useRelay) {
+        portFactories.push_back(&RelayPortFactory::getInstance());
+    }
+
+    {
+        InertialSense is(portFactories, {&CltoolDeviceFactory::getInstance()});
+        is.EnableDeviceValidation(true);
+
+        // Pre-warm mDNS cache if needed
+        if (g_commandLineOptions.useMdns) {
+            printf("Discovering mDNS devices...\n");
+            uint32_t deadline = current_timeMs() + 3000;
+            while (current_timeMs() < deadline) {
+                ISmDnsPortFactory::tick();
+                SLEEP_MS(50);
+            }
+        }
+
+        // Pre-warm relay discovery if needed (shared warmup + enable logic)
+        if (g_commandLineOptions.useRelay) {
+            cltoolWarmRelayDiscovery();
+        }
+
+        // Discover all devices using wildcard
+        if (!is.Open("*", g_commandLineOptions.baudRate)) {
+            printf("Failed to discover any devices.\n");
+            return false;
+        }
+
+        // Search for matching device
+        DeviceManager& dm = DeviceManager::getInstance();
+        device_handle_t target = dm.getDevice(serialNo, hdwId);
+        if (target) {
+            g_commandLineOptions.comPort = target->getPortName();
+            g_commandLineOptions.useMdns = false;   // Resolved to a concrete port URL; mDNS no longer needed
+            printf("Resolved %s to %s\n", target->getIdAsString().c_str(), g_commandLineOptions.comPort.c_str());
+        } else {
+            printf("Device not found. Discovered devices:\n");
+            for (auto& dev : dm) {
+                printf("  %s --> %s\n", dev->getPortName().c_str(), dev->getIdAsString().c_str());
+            }
+            return false;
+        }
+    }   // InertialSense destructor closes all connections
+
+    // Clear singleton state so the subsequent Open() starts fresh
+    DeviceManager::getInstance().clear(true);
+    PortManager::getInstance().clear();
+    PortManager::getInstance().clearPortFactories();
+    DeviceManager::getInstance().clearDeviceFactories();
+
+    return true;
+}
+
 static int inertialSenseMain()
 {
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
     // g_inertialSenseDisplay.Clear();     // clear display
 
+    // Resolve -sn target to a port name before any other operations
+    if (g_commandLineOptions.targetDeviceId != 0) {
+        if (!cltool_resolveDeviceTarget()) {
+            return EXIT_CODE_NO_DEVICES_FOUND;
+        }
+    }
+
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)
     {
         // [REPLAY INSTRUCTION] 1.) Replay data log
-        return cltool_replayDataLog();
+        return cltool_replayDataLog() ? EXIT_CODE_SUCCESS : EXIT_CODE_INVALID_COMMAND_LINE;
     }
 
     // if event parsing return after completeing
@@ -1175,6 +1578,10 @@ static int inertialSenseMain()
 
 int main(int argc, char* argv[])
 {
+
+    // IS_LOG_OUTPUT(stdout);
+    // IS_SET_LOG_LEVEL(IS_LOG_LEVEL_MORE_DEBUG);
+
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))
     {   // parsing failed
@@ -1195,6 +1602,12 @@ int main(int argc, char* argv[])
     }
 
     g_inertialSenseDisplay.ShutDown();
+
+    // Display exit status
+    if (exitCode != EXIT_CODE_SUCCESS)
+    {
+        fprintf(stderr, "Exit Status: %d - %s\n", exitCode, getExitCodeDescription(exitCode));
+    }
 
     return exitCode;
 }

@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <iomanip>
 #include <math.h>
+#include <cstdlib>
 
 #include "DataCSV.h"
 #include "ISConstants.h"
@@ -58,6 +59,9 @@ static bool s_exitProgram;
 
 #if PLATFORM_IS_WINDOWS
 
+// Forward declaration for cleanup function
+static void restoreCursorOnExit();
+
 static bool ctrlHandler(DWORD fdwCtrlType)
 {
     switch (fdwCtrlType)
@@ -67,11 +71,49 @@ static bool ctrlHandler(DWORD fdwCtrlType)
     case CTRL_BREAK_EVENT:
     case CTRL_LOGOFF_EVENT:
     case CTRL_SHUTDOWN_EVENT:
+    {
+        // Restore cursor before exit using both Windows API and ANSI codes
+        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (hOut != INVALID_HANDLE_VALUE)
+        {
+            CONSOLE_CURSOR_INFO cursorInfo;
+            if (GetConsoleCursorInfo(hOut, &cursorInfo))
+            {
+                cursorInfo.bVisible = TRUE;
+                SetConsoleCursorInfo(hOut, &cursorInfo);
+            }
+        }
+        // Also send ANSI escape code as fallback
+        fputs("\x1b[?25h", stdout);
+        fflush(stdout);
+        fflush(stderr);
+        
         s_exitProgram = true;
         return true;
+    }
     default:
         return false;
     }
+}
+
+static void restoreCursorOnExit()
+{
+    // Use both Windows API and ANSI escape codes for maximum compatibility
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE)
+    {
+        CONSOLE_CURSOR_INFO cursorInfo;
+        if (GetConsoleCursorInfo(hOut, &cursorInfo))
+        {
+            cursorInfo.bVisible = TRUE;
+            SetConsoleCursorInfo(hOut, &cursorInfo);
+        }
+    }
+    
+    // Also send ANSI escape code to show cursor (as a fallback/supplement)
+    fputs("\x1b[?25h", stdout);
+    fflush(stdout);
+    fflush(stderr);
 }
 
 #else
@@ -86,7 +128,10 @@ static void signalFunction(int sig)
 
 #endif
 
-
+/**
+ * @brief Constructor for cInertialSenseDisplay.
+ * @param displayMode The display mode to use (e.g., DMODE_PRETTY, DMODE_SCROLL).
+ */
 cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
 {
     m_displayMode = displayMode;
@@ -101,6 +146,9 @@ cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
         std::cout << "Failed to set console ctrl handler!" << endl;
     }
 
+    // Register cleanup function to restore cursor on exit (handles unexpected termination)
+    atexit(restoreCursorOnExit);
+
 #else
 
     signal(SIGINT, signalFunction);
@@ -109,10 +157,18 @@ cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
 
 }
 
+/**
+ * @brief Destructor for cInertialSenseDisplay.
+ */
 cInertialSenseDisplay::~cInertialSenseDisplay()
 {
 
-#if !PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
+
+    // Restore cursor visibility on Windows
+    ShowCursor(true);
+
+#else
 
     if (m_nonblockingkeyboard)
     {   // Revert terminal changes from KeyboardNonBlock();
@@ -123,31 +179,50 @@ cInertialSenseDisplay::~cInertialSenseDisplay()
 
 }
 
-
+/**
+ * @brief Shows or hides the console cursor.
+ * @param visible True to show the cursor, false to hide it.
+ */
 void cInertialSenseDisplay::ShowCursor(bool visible)
 {
 
 #if PLATFORM_IS_WINDOWS
 
-//     m_windowsConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
     m_windowsConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
-    cursorInfo.bVisible = visible;
-    SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+    if (GetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo))
+    {
+        cursorInfo.bVisible = visible ? TRUE : FALSE;
+        SetConsoleCursorInfo(m_windowsConsoleOut, &cursorInfo);
+    }
+    
+    // Also use ANSI escape codes for extra reliability
+    if (visible)
+    {
+        fputs("\x1b[?25h", stdout);  // Show cursor
+    }
+    else
+    {
+        fputs("\x1b[?25l", stdout);  // Hide cursor
+    }
+    fflush(stdout);
 
 #endif
 
 }
 
-
+/**
+ * @brief Performs shutdown operations, such as showing the cursor.
+ */
 void cInertialSenseDisplay::ShutDown()
 {
     ShowCursor(true);
 //     cout << "Shutting down..." << endl;
 }
 
-
+/**
+ * @brief Clears the console screen.
+ */
 void cInertialSenseDisplay::Clear(void)
 {
     if (!m_interactiveMode)
@@ -173,6 +248,9 @@ void cInertialSenseDisplay::Clear(void)
 #endif
 }
 
+/**
+ * @brief Moves the console cursor to the home position (top-left).
+ */
 void cInertialSenseDisplay::Home(void)
 {
     if (!m_interactiveMode)
@@ -193,6 +271,10 @@ void cInertialSenseDisplay::Home(void)
 
 }
 
+/**
+ * @brief Moves the console cursor to a specific row.
+ * @param y The row number.
+ */
 void cInertialSenseDisplay::GoToRow(int y)
 {
 
@@ -209,6 +291,11 @@ void cInertialSenseDisplay::GoToRow(int y)
 
 }
 
+/**
+ * @brief Moves the console cursor to a specific column and row.
+ * @param x The column number.
+ * @param y The row number.
+ */
 void cInertialSenseDisplay::GoToColumnAndRow(int x, int y)
 {
 
@@ -225,17 +312,29 @@ void cInertialSenseDisplay::GoToColumnAndRow(int x, int y)
 
 }
 
-string cInertialSenseDisplay::Header()
+/**
+ * @brief Returns the standard header string for the display.
+ * @return The header string.
+ */
+std::string cInertialSenseDisplay::Header()
 {
     return "$ Inertial Sense.  CTRL-C to terminate.  ";
 }
 
-string cInertialSenseDisplay::Hello()
+/**
+ * @brief Returns the welcome message including the header.
+ * @return The welcome message string.
+ */
+std::string cInertialSenseDisplay::Hello()
 {
     return Header() + "\n";
 }
 
-string cInertialSenseDisplay::Connected()
+/**
+ * @brief Returns a connected status message with elapsed time and port statistics.
+ * @return The connected status string.
+ */
+std::string cInertialSenseDisplay::Connected()
 {
     // Apply this breaking change in Develop and document in change_log.md
     // Uncomment this to prevent printing "Connected" message when outputOnceDid is set.  
@@ -272,12 +371,17 @@ string cInertialSenseDisplay::Connected()
             stream << " (" << (comPort->base.stats->rxBytesPerSec ? std::to_string(comPort->base.stats->rxBytesPerSec) : "--") << " bytes/s)";
         }
     }
-    stream << "     " << endl;
+    stream << "     " << std::endl;
 
     return stream.str();
 }
 
-string cInertialSenseDisplay::Replay(double speed)
+/**
+ * @brief Returns a replay status message.
+ * @param speed The replay speed multiplier.
+ * @return The replay status string.
+ */
+std::string cInertialSenseDisplay::Replay(double speed)
 {
     char buf[BUF_SIZE];
 
@@ -286,13 +390,19 @@ string cInertialSenseDisplay::Replay(double speed)
     return buf;
 }
 
-string cInertialSenseDisplay::Goodbye()
+/**
+ * @brief Returns a goodbye message.
+ * @return The goodbye message string.
+ */
+std::string cInertialSenseDisplay::Goodbye()
 {
     return "\nThanks for using Inertial Sense!\n";
 }
 
 
-
+/**
+ * @brief Sets the keyboard to non-blocking mode.
+ */
 void cInertialSenseDisplay::SetKeyboardNonBlocking()
 {
     m_nonblockingkeyboard = true;
@@ -313,7 +423,9 @@ void cInertialSenseDisplay::SetKeyboardNonBlocking()
 
 }
 
-
+/**
+ * @brief Resets the terminal mode to its original settings.
+ */
 void cInertialSenseDisplay::ResetTerminalMode()
 {
 
@@ -325,7 +437,10 @@ void cInertialSenseDisplay::ResetTerminalMode()
 
 }
 
-
+/**
+ * @brief Checks if a keyboard key has been pressed.
+ * @return True if a key has been pressed, false otherwise.
+ */
 int cInertialSenseDisplay::KeyboardHit()
 {
 
@@ -345,6 +460,10 @@ int cInertialSenseDisplay::KeyboardHit()
 
 }
 
+/**
+ * @brief Reads a character from the keyboard.
+ * @return The character read.
+ */
 int cInertialSenseDisplay::GetChar()
 {
 
@@ -367,19 +486,29 @@ int cInertialSenseDisplay::GetChar()
 
 }
 
-
+/**
+ * @brief Checks if the program should exit.
+ * @return True if the program should exit, false otherwise.
+ */
 bool cInertialSenseDisplay::ExitProgram()
 {
     return s_exitProgram;
 }
 
-
+/**
+ * @brief Sets the flag to indicate that the program should exit.
+ */
 void cInertialSenseDisplay::SetExitProgram()
 {
     s_exitProgram = true;
 }
 
-
+/**
+ * @brief Processes incoming data buffers.
+ * @param data Pointer to the data buffer.
+ * @param enableReplay True if replay is enabled.
+ * @param replaySpeedX Replay speed multiplier.
+ */
 void cInertialSenseDisplay::ProcessData(p_data_buf_t* data, bool enableReplay, double replaySpeedX)
 {
     p_data_t pdata = {};
@@ -390,6 +519,12 @@ void cInertialSenseDisplay::ProcessData(p_data_buf_t* data, bool enableReplay, d
 
 
 // Return true on refresh
+/**
+ * @brief Processes incoming data packets and updates the display.
+ * @param data Pointer to the data packet.
+ * @param enableReplay True if replay is enabled.
+ * @param replaySpeedX Replay speed multiplier.
+ */
 void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, double replaySpeedX)
 {
     if (m_displayMode == DMODE_QUIET)
@@ -425,25 +560,25 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 
             // Time of week - uint32 ms
         case DID_SYS_PARAMS:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
+            msgTimeMs = d.gnssPos.timeOfWeekMs;
             isTowMode = true;
             break;
 
-        case DID_GPS1_POS:
-        case DID_GPS1_RTK_POS:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-            gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+        case DID_GNSS1_POS:
+        case DID_GNSS1_RTK_POS:
+            msgTimeMs = d.gnssPos.timeOfWeekMs;
+            gpsTowMsOffset = (unsigned int)(1000.0 * d.gnssPos.towOffset);
             isTowMode = true;
             break;
 
-        case DID_GPS1_RTK_POS_REL:
-            msgTimeMs = d.gpsRtkRel.timeOfWeekMs;
+        case DID_GNSS1_RTK_POS_REL:
+            msgTimeMs = d.gnssRtkRel.timeOfWeekMs;
             isTowMode = true;
             break;
 
-        case DID_GPS1_RTK_POS_MISC:
-            msgTimeMs = d.gpsPos.timeOfWeekMs;
-            gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
+        case DID_GNSS1_RTK_POS_MISC:
+            msgTimeMs = d.gnssPos.timeOfWeekMs;
+            gpsTowMsOffset = (unsigned int)(1000.0 * d.gnssPos.towOffset);
             isTowMode = false;
             break;
         
@@ -453,8 +588,9 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
         case DID_SYS_SENSORS:
         case DID_PIMU:
         case DID_IMU:
+        case DID_IMUS:
         case DID_INL2_STATES:
-        case DID_GPS_BASE_RAW:
+        case DID_GNSS_BASE_RAW:
             if (isTowMode)
                 msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
             else
@@ -532,7 +668,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 
     case DMODE_RAW_PARSE:   // fallthrough to DMODE_SCROLL
     case DMODE_SCROLL:      // Scroll display
-        cout << DataToString(data) << endl;
+        std::cout << DataToString(data) << std::endl;
         break;
     }
 
@@ -544,6 +680,11 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 }
 
 // Print data to standard out at the following refresh rate.  Return true to refresh display.
+/**
+ * @brief Prints data to standard output at a controlled refresh rate.
+ * @param refreshPeriodMs The minimum time in milliseconds between refreshes.
+ * @return True if the display was refreshed, false otherwise.
+ */
 bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 {
     unsigned int curTimeMs = current_timeMs();
@@ -566,27 +707,27 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
     case DMODE_PRETTY:
         Home();
         if (m_enableReplay)
-            cout << Replay(m_replaySpeedX) << endl;
+            std::cout << Replay(m_replaySpeedX) << std::endl;
         else
-            cout << Connected() << endl;
+            std::cout << Connected() << std::endl;
 
-        cout << VectorToString();
+        std::cout << VectorToString();
         return true;
 
     case DMODE_EDIT:
         Home();
         if (m_enableReplay)
-            cout << Replay(m_replaySpeedX) << endl;
+            std::cout << Replay(m_replaySpeedX) << std::endl;
         else
-            cout << Connected() << endl;
+            std::cout << Connected() << std::endl;
 
         // Generic column format
-        cout << DatasetToString(&m_editData.pData);
+        std::cout << DatasetToString(&m_editData.pData);
         return true;
 
     case DMODE_STATS:
         Home();
-        cout << Connected() << endl;
+            std::cout << Connected() << std::endl;
         PrintStats();
         return true;
 
@@ -597,7 +738,12 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
     return false;
 }
 
-string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
+/**
+ * @brief Prints the IS_COMM status, including packet counts and parse errors.
+ * @param comm Pointer to the is_comm_instance_t structure.
+ * @return A string containing the formatted IS_COMM status.
+ */
+std::string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
     if (comm == NULL)
         return "";
@@ -608,9 +754,9 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
     if (comm->rxErrorCount)
     {
 #define HLINE_DIVIDER "============================================================================"
-        ss << endl;
-        ss << HLINE_DIVIDER << endl;
-        ss << comm->rxErrorCount << " PARSE ERRORS!!!" << endl;
+        ss << std::endl;
+        ss << HLINE_DIVIDER << std::endl;
+        ss << comm->rxErrorCount << " PARSE ERRORS!!!" << std::endl;
         std::string name;
         for (int i=0; i<NUM_EPARSE_ERRORS; i++)
         {
@@ -631,24 +777,28 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
             ss << std::setw(5) << std::right << comm->rxErrorTypeCount[i] << " " << std::setw(20) << std::setfill(' ') << std::left << name << std::right;
             if ((i+1)%3 == 0)
             {   // print three columns
-                ss << endl;
+                ss << std::endl;
             }
         }
-        ss << endl;
-        ss << HLINE_DIVIDER << endl;
+        ss << std::endl;
+        ss << HLINE_DIVIDER << std::endl;
     }
     else
     {
         ss << "   No parse errors.";
     }
-    ss << endl;
+    ss << std::endl;
 
     return ss.str();
 }
 
-string cInertialSenseDisplay::VectorToString()
+/**
+ * @brief Converts the stored vector of DID messages to a single string for display.
+ * @return A concatenated string of all DID messages.
+ */
+std::string cInertialSenseDisplay::VectorToString()
 {
-    stringstream ss;
+    std::stringstream ss;
 
     for (size_t i = 0; i < m_didMsgs.size(); i++)
     {
@@ -661,6 +811,10 @@ string cInertialSenseDisplay::VectorToString()
     return ss.str();
 }
 
+/**
+ * @brief Stores a formatted data string in an internal vector for later display.
+ * @param data Pointer to the data packet.
+ */
 void cInertialSenseDisplay::DataToVector(const p_data_t* data)
 {
     size_t id = data->hdr.id;
@@ -672,6 +826,10 @@ void cInertialSenseDisplay::DataToVector(const p_data_t* data)
     m_didMsgs[id] = DataToString(data);
 }
 
+/**
+ * @brief Updates statistics for a given data ID.
+ * @param data Pointer to the data packet.
+ */
 void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 {
     size_t id = data->hdr.id;
@@ -689,6 +847,9 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
     s.lastTimeMs = curTimeMs;
 }
 
+/**
+ * @brief Prints collected data statistics to the console.
+ */
 void cInertialSenseDisplay::PrintStats()
 {
     // Display stats
@@ -703,7 +864,12 @@ void cInertialSenseDisplay::PrintStats()
     }
 }
 
-string cInertialSenseDisplay::DataToString(const p_data_t* data)
+/**
+ * @brief Converts a data packet to a formatted string based on its DID.
+ * @param data Pointer to the data packet.
+ * @return A formatted string representation of the data.
+ */
+std::string cInertialSenseDisplay::DataToString(const p_data_t* data)
 {
     if (data->hdr.id == 0 || data->hdr.size == 0 || data->ptr == 0)
     {
@@ -720,13 +886,14 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
     }
 
-
-    string str;
+    std::string str;
     switch (data->hdr.id)
     {
         case DID_EVB_DEV_INFO:      // FALL THROUGH
         case DID_GPX_DEV_INFO:      // FALL THROUGH
         case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);            break;
+        case DID_IMUS_RAW:          // FALL THROUGH
+        case DID_IMUS:              str = DataToStringIMUs(d.imus, data->hdr);                  break;
         case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                    break;
         case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);      break;
         case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);                  break;
@@ -736,18 +903,22 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);             break;
         case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);           break;
         case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
-        case DID_GPS1_VERSION:      // FALL THROUGH
-        case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);          break;
-        case DID_GPS1_POS:          // FALL THROUGH
-        case DID_GPS2_POS:          // FALL THROUGH
-        case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);              break;
-        case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);           break;
-        case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);         break;
-        case DID_GPS1_RAW:          // FALL THROUGH
-        case DID_GPS2_RAW:          // FALL THROUGH
-        case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);              break;
+        case DID_GNSS1_VERSION:      // FALL THROUGH
+        case DID_GNSS2_VERSION:      str = DataToStringGnssVersion(d.gnssVer, data->hdr);       break;
+        case DID_GNSS1_POS:          // FALL THROUGH
+        case DID_GNSS2_POS:          // FALL THROUGH
+        case DID_GNSS1_RTK_POS:      str = DataToStringGnssPos(d.gnssPos, data->hdr);           break;
+        case DID_GNSS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gnssRtkRel, data->hdr);         break;
+        case DID_GNSS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gnssRtkMisc, data->hdr);       break;
+        case DID_GNSS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gnssRtkRel, data->hdr);         break;
+        case DID_GNSS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gnssRtkMisc, data->hdr);       break;
+        case DID_GNSS1_RAW:          // FALL THROUGH
+        case DID_GNSS2_RAW:          // FALL THROUGH
+        case DID_GNSS_BASE_RAW:      str = DataToStringRawGNSS(d.gnssRaw, data->hdr);           break;
+        case DID_GNSS1_SAT:
+        case DID_GNSS2_SAT:          str = DataToStringGnssSat(d.gnssSat, data->hdr);           break;
+        // case DID_GNSS1_SIG:
+        // case DID_GNSS2_SIG:          str = DataToStringGnssSig(d.gnssSig, data->hdr);          break;
         case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);          break;
         case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);        break;
         case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);      break;
@@ -783,11 +954,11 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint32_t insStatus, const uint32_t hdwStatus)
 {
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tSTATUS\n");
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GPS (Hdg %d, Pos %d)\n",
-        (hdwStatus & HDW_STATUS_GPS_SATELLITE_RX_VALID) != 0,
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tSatellite Rx %d     Aiding: Mag %d, GNSS (Hdg %d, Pos %d)\n",
+        (hdwStatus & HDW_STATUS_GNSS_SATELLITE_RX_VALID) != 0,
         (insStatus & INS_STATUS_MAG_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_HEADING) != 0,
-        (insStatus & INS_STATUS_GPS_AIDING_POS) != 0);
+        (insStatus & INS_STATUS_GNSS_AIDING_HEADING) != 0,
+        (insStatus & INS_STATUS_GNSS_AIDING_POS) != 0);
     if (insStatus & INS_STATUS_NAV_MODE)
     {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tMode: NAV ");
@@ -855,7 +1026,7 @@ char* cInertialSenseDisplay::InsStatusToSolStatusString(char* ptr, char* ptrEnd,
     return ptr;
 }
 
-string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -906,7 +1077,7 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -956,13 +1127,13 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
             ins2.lla[0],                                    // INS Latitude
             ins2.lla[1],                                    // INS Longitude
             ins2.lla[2]);                                   // INS Ellipsoid altitude (meters)
-        ptr = StatusToString(ptr, ptrEnd, ins2.insStatus, ins2.hdwStatus);
+        ptr = StatusToString(ptr, ptrEnd, ins2.hdwStatus, ins2.hdwStatus);
     }
 
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1018,7 +1189,7 @@ string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1074,7 +1245,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringIMUs(const imus_t &imus, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1082,10 +1253,22 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
     char* ptrEnd = buf + BUF_SIZE;
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
-    return string(buf) + DataToStringIMU(imu, m_displayMode != DMODE_SCROLL);
+    int numDevices = (int)IMUS_T_NUM_DEVICES(hdr.size);
+    return std::string(buf) + DataToStringIMUs(imus, numDevices, m_displayMode != DMODE_SCROLL);
 }
 
-string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
+std::string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    return std::string(buf) + DataToStringIMU(imu, m_displayMode != DMODE_SCROLL);
+}
+
+std::string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
@@ -1099,6 +1282,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
 #else
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imu.time);
 #endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08X", imu.status);
 
     if (!full)
     {   // Single line format
@@ -1127,8 +1311,61 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
     return buf;
 }
 
+std::string cInertialSenseDisplay::DataToStringIMUs(const imus_t &imus, int numDevices, bool full)
+{
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
 
-string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr)
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime = 0;
+    double dtMs = 1000.0*(imus.time - lastTime);
+    lastTime = imus.time;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", imus.time);
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08X", imus.status);
+
+    if (full)
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+
+    for (int i = 0; i < numDevices; i++)
+    {
+        imu_t imu = {};
+        imu.time = imus.time;
+        imu.status = imus.status;
+        imu.I = imus.I[i];
+
+        if (!full)
+        {   // Single line format
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "  IMU%d:", i);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, " pqr[%5.1f,%5.1f,%5.1f]",
+                imu.I.pqr[0] * C_RAD2DEG_F,
+                imu.I.pqr[1] * C_RAD2DEG_F,
+                imu.I.pqr[2] * C_RAD2DEG_F);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, ", acc[%5.1f,%5.1f,%5.1f]",
+                imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
+        }
+        else
+        {   // Spacious format
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU%d\n", i);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tPQR\t");
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
+                imu.I.pqr[0] * C_RAD2DEG_F,
+                imu.I.pqr[1] * C_RAD2DEG_F,
+                imu.I.pqr[2] * C_RAD2DEG_F);
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
+                imu.I.acc[0], imu.I.acc[1], imu.I.acc[2]);
+        }
+    }
+
+    return buf;
+}
+ 
+
+std::string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1168,7 +1405,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, co
     }    return buf;
 }
 
-string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1198,7 +1435,7 @@ string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, con
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1234,7 +1471,7 @@ string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1266,7 +1503,7 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringGnssVersion(const gnss_version_t &ver, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1279,7 +1516,7 @@ string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, c
         ver.swVersion,
         ver.hwVersion);
 
-    for (int i=0; i<GPS_VER_NUM_EXTENSIONS; i++)
+    for (int i=0; i<GNSS_VER_NUM_EXTENSIONS; i++)
     {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s", (char*)&(ver.extension[i]));
     }
@@ -1292,7 +1529,7 @@ string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, c
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringGnssPos(const gnss_pos_t &gnss, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1301,10 +1538,10 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
-    return string(buf) + DataToStringGpsPos(gps, m_displayMode != DMODE_SCROLL);
+    return std::string(buf) + DataToStringGnssPos(gnss, m_displayMode != DMODE_SCROLL);
 }
 
-string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full)
+std::string cInertialSenseDisplay::DataToStringGnssPos(const gnss_pos_t &gnss, bool full)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
@@ -1312,60 +1549,60 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
 
 #if DISPLAY_DELTA_TIME==1
     static int lastTimeMs = 0;
-    int dtMs = gps.timeOfWeekMs - lastTimeMs;
-    lastTimeMs = gps.timeOfWeekMs;
+    int dtMs = gnss.timeOfWeekMs - lastTimeMs;
+    lastTimeMs = gnss.timeOfWeekMs;
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %3dms", dtMs);
 #else
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", gps.timeOfWeekMs);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", gnss.timeOfWeekMs);
 #endif
 
     if (!full)
     {   // Single line format
         ptr += SNPRINTF(ptr, ptrEnd - ptr, ", LLA[%12.7f,%12.7f,%7.1f], %d sats, %4.1f cno, %4.3f hAcc, %4.3f vAcc, %4.3f pDop",
-            gps.lla[0], gps.lla[1], gps.lla[2],
-            gps.status&GPS_STATUS_NUM_SATS_USED_MASK, gps.cnoMean,
-            gps.hAcc, gps.vAcc, gps.pDop);
+            gnss.lla[0], gnss.lla[1], gnss.lla[2],
+            gnss.status&GNSS_STATUS_NUM_SATS_USED_MASK, gnss.cnoMean,
+            gnss.hAcc, gnss.vAcc, gnss.pDop);
     }
     else
     {   // Spacious format
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tSats: %2d,  ",
-            gps.status&GPS_STATUS_NUM_SATS_USED_MASK);    // Satellites used in solution
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gps.status);
-        switch (gps.status&GPS_STATUS_FIX_MASK)
+            gnss.status&GNSS_STATUS_NUM_SATS_USED_MASK);    // Satellites used in solution
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "Status: 0x%08x (", gnss.status);
+        switch (gnss.status&GNSS_STATUS_FIX_MASK)
         {
             default:
-            case GPS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gps.status&GPS_STATUS_FIX_MASK)>>GPS_STATUS_FIX_BIT_OFFSET);    break;
-            case GPS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
-            case GPS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
-            case GPS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
-            case GPS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
-            case GPS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
+            case GNSS_STATUS_FIX_NONE:               ptr += SNPRINTF(ptr, ptrEnd - ptr, "%d", (gnss.status&GNSS_STATUS_FIX_MASK)>>GNSS_STATUS_FIX_BIT_OFFSET);    break;
+            case GNSS_STATUS_FIX_2D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "2D");           break;
+            case GNSS_STATUS_FIX_3D:                 ptr += SNPRINTF(ptr, ptrEnd - ptr, "3D");           break;
+            case GNSS_STATUS_FIX_RTK_SINGLE:         ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Single");   break;
+            case GNSS_STATUS_FIX_RTK_FLOAT:          ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK Float");    break;
+            case GNSS_STATUS_FIX_RTK_FIX:            ptr += SNPRINTF(ptr, ptrEnd - ptr, "RTK FIX");      break;
         }
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, ") \thAcc: %.3f m     cno: %3.1f dBHz\n", gps.hAcc, gps.cnoMean);    // Position accuracy
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, ") \thAcc: %.3f m     cno: %3.1f dBHz\n", gnss.hAcc, gnss.cnoMean);    // Position accuracy
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tLLA: ");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_LLA "    ",
-            gps.lla[0],     // GPS Latitude
-            gps.lla[1],     // GPS Longitude
-            gps.lla[2]);    // GPS Ellipsoid altitude (meters)
+            gnss.lla[0],     // GNSS Latitude
+            gnss.lla[1],     // GNSS Longitude
+            gnss.lla[2]);    // GNSS Ellipsoid altitude (meters)
         bool comma = false;
-        if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED)
+        if (gnss.status&GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED)
         {
-            if (gps.status&GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR)    { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
-            switch (gps.status&GPS_STATUS_FLAGS_ERROR_MASK)
+            if (gnss.status&GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR)  { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Raw error"); }
+            switch (gnss.status&GNSS_STATUS_FLAGS_ERROR_MASK)
             {
-                case GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING:           { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing");    } break;
-                case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING:        { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base");    } break;
-                case GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID:       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");    } break;
+                case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING:           { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Base missing");    } break;
+                case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING:        { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving base");    } break;
+                case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID:       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Moving invalid, ");    } break;
             }
         }
-        if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)
+        if (gnss.status&GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED)
         {
-            if (gps.status&GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED)       { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
+            if (gnss.status&GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED)      { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Compassing"); }
         }
 
         // Spoof/Jamming Dectect
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
-        if (gps.status2&GPS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
+        if (gnss.status2&GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED)                { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Jam detected, "); };
+        if (gnss.status2&GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED)              { AddCommaToString(comma, ptr, ptrEnd); ptr += SNPRINTF(ptr, ptrEnd - ptr, "Spoof detected, "); };
 
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
@@ -1373,7 +1610,106 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, bool full
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats GNSS satellite data for display.
+ * @param sats The GNSS satellite data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing GNSS satellite information.
+ */
+std::string cInertialSenseDisplay::DataToStringGnssSat(const gnss_sat_t &sats, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    return std::string(buf) + DataToStringGnssSat(sats, m_displayMode != DMODE_SCROLL);
+}
+
+/**
+ * @brief Formats GNSS satellite data for display, including sky distribution metrics.
+ *
+ * This function calculates and displays metrics related to the distribution of visible
+ * GNSS satellites across the sky. It computes a "center of mass" vector for the satellites
+ * and derives a distribution percentage and average azimuth/elevation from it.
+ *
+ * The distribution percentage is calculated such that a perfectly uniform distribution
+ * across the visible hemisphere (satellites spread evenly) results in 100%. A clustered
+ * distribution will result in a lower percentage.
+ *
+ * @param sats The GNSS satellite data structure.
+ * @param full If true, provides a more spacious format; otherwise, a single-line format.
+ * @return A formatted string containing GNSS satellite information and distribution metrics.
+ */
+std::string cInertialSenseDisplay::DataToStringGnssSat(const gnss_sat_t &sats, bool full)
+{
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    static const int MAX_CONSTELLATIONS = 9;
+    static const char* constNames[MAX_CONSTELLATIONS] = { "GNSS", "GPS", "SBS", "GAL", "BEI", "QZS", "GLO", "IRN", "IME" };
+
+#if DISPLAY_DELTA_TIME==1
+    static int lastTimeMs = 0;
+    int dtMs = gnss.timeOfWeekMs - lastTimeMs;
+    lastTimeMs = gnss.timeOfWeekMs;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %3dms", dtMs);
+#else
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", sats.timeOfWeekMs);
+#endif
+
+    if (1) // !full)
+    {   // Single line format
+        ixVector3 vec {}, cum {};
+        std::map<int, std::pair<int, double>> consts;
+        for (int i = 0; i < (int)sats.numSats; i++) {
+            std::pair<int, double>& info = consts[sats.sat[i].gnssId];
+            info.first++, info.second += sats.sat[i].cno;
+
+            // Calculate a 3D vector from the azimuth/elevation and add it to the cumulative vector
+            azelToVec3(sats.sat[i].azim * C_DEG2RAD_F, sats.sat[i].elev * C_DEG2RAD_F, vec);
+            add_Vec3_Vec3(cum, cum, vec);
+        }
+        if (sats.numSats > 0) {
+            // Average the cumulative vector to find the center of mass
+            mul_Vec3_X(cum, cum, 1.0f / sats.numSats);
+        }
+        // The magnitude of the average vector indicates how clustered the satellites are.
+        // A magnitude of 0.0 is a perfect distribution. A magnitude of 1.0 is a tight cluster.
+        // We can convert this to a percentage where 100% is a perfect distribution.
+        float mag = MAG_VEC3(cum);
+        float dist_percent = _CLAMP( (1.0f - mag) * 200.0f, 0.0f, 100.0f);
+
+        // Normalize the average vector to get the direction of the center of mass
+        mul_Vec3_X(cum, cum, RECIPNORM_VEC3(cum));
+        float avg_el = asinf(cum[2]) * C_RAD2DEG_F;
+        float avg_az = atan2f(cum[0], cum[1]) * C_RAD2DEG_F;
+        if (avg_az < 0.0f) {
+            avg_az += 360.0f;
+        }
+
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, ", Total Sats: %d, Sky Dist: %0.0f%% (az: %0.0f, el: %0.0f)", sats.numSats, dist_percent, avg_az, avg_el);
+        for (auto& [id, info] : consts) {
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s [%d sats, %4.1f cno]", constNames[id], info.first, info.second / info.first);
+        }
+    }
+    else
+    {   // Spacious format
+    }
+
+    // ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    return buf;
+}
+
+/**
+ * @brief Formats RTK relative position data for display.
+ * @param rel The GNSS RTK relative position data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing RTK relative position information.
+ */
+std::string cInertialSenseDisplay::DataToStringRtkRel(const gnss_rtk_rel_t &rel, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1411,10 +1747,16 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats GNSS RTK miscellaneous data for display.
+ * @param rtk The GNSS RTK miscellaneous data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing GNSS RTK miscellaneous information.
+ */
+std::string cInertialSenseDisplay::DataToStringRtkMisc(const gnss_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
 {
     (void)hdr;
-    string didName = cISDataMappings::DataName(hdr.id);
+    std::string didName = cISDataMappings::DataName(hdr.id);
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
@@ -1435,14 +1777,20 @@ string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, con
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats raw GNSS data for display.
+ * @param raw The raw GNSS data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing raw GNSS information.
+ */
+std::string cInertialSenseDisplay::DataToStringRawGNSS(const gnss_raw_t& raw, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
     const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
-    ptr += SNPRINTF(buf, ptrEnd - ptr, "RAW GPS: receiverIndex=%d, type=%d, count=%d   %s",
+    ptr += SNPRINTF(buf, ptrEnd - ptr, "RAW GNSS: receiverIndex=%d, type=%d, count=%d   %s",
         raw.receiverIndex, raw.dataType, raw.obsCount, terminator);
 
     if (m_displayMode != DMODE_SCROLL)
@@ -1452,7 +1800,13 @@ string cInertialSenseDisplay::DataToStringRawGPS(const gps_raw_t& raw, const p_d
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats survey-in data for display.
+ * @param survey The survey-in data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing survey-in information.
+ */
+std::string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1496,7 +1850,13 @@ string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, co
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats system parameters for display.
+ * @param sys The system parameters data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing system parameters.
+ */
+std::string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1525,7 +1885,13 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats system sensor data for display.
+ * @param sensors The system sensors data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing system sensor information.
+ */
+std::string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1565,25 +1931,43 @@ string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensor
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats RTOS information for display.
+ * @param info The RTOS information structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing RTOS information.
+ */
+std::string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr)
 {
     cDataCSV csv;
-    string csvString;
+    std::string csvString;
     csv.DataToStringCSV(hdr, (const uint8_t*)&info, csvString);
     const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
-    return string("RTOS: ") + csvString + terminator;
+    return std::string("RTOS: ") + csvString + terminator;
 }
 
-string cInertialSenseDisplay::DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats GPX RTOS information for display.
+ * @param info The GPX RTOS information structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing GPX RTOS information.
+ */
+std::string cInertialSenseDisplay::DataToStringGRTOS(const gpx_rtos_info_t& info, const p_data_hdr_t& hdr)
 {
     cDataCSV csv;
-    string csvString;
+    std::string csvString;
     csv.DataToStringCSV(hdr, (const uint8_t*)&info, csvString);
     const char* terminator = (m_displayMode != DMODE_SCROLL ? "\n" : "");
-    return string("RTOS: ") + csvString + terminator;
+    return std::string("RTOS: ") + csvString + terminator;
 }
 
-string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats device information for display.
+ * @param info The device information structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing device information.
+ */
+std::string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1591,24 +1975,36 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
     char* ptrEnd = buf + BUF_SIZE;
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
-    return string(buf) + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
+    return std::string(buf) + " " + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
 }
 
-string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, int flags)
+/**
+ * @brief Formats device information for display.
+ * @param info The device information structure.
+ * @param flags Additional flags for formatting.
+ * @return A formatted string containing device information.
+ */
+std::string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, int flags)
 {
-    return "" + ISDevice::getName(info, flags) + ISDevice::getFirmwareInfo(info, flags);
+    return "" + ISDevice::getName(info) + " " + ISDevice::getFirmwareInfo(info);
 }
 
-string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
+/**
+ * @brief Formats ADC sensor data for display.
+ * @param sensorsADC The ADC sensor data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing ADC sensor information.
+ */
+std::string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
     (void) hdr; // hdr is not used
 
-    stringstream ss;
+    std::stringstream ss;
     ss << "DID_SENSORS_ADC:";
-    ss << fixed;
-    ss << "time " << setprecision(3) << sensorsADC.time << ", ";
-    ss << "bar " << setprecision(2) << sensorsADC.bar << ", ";
-    ss << "barTemp " << setprecision(2) << sensorsADC.barTemp << ", ";
-    ss << "humidity " << setprecision(2) << sensorsADC.humidity << ", ";
+    ss << std::fixed;
+    ss << "time " << std::setprecision(3) << sensorsADC.time << ", ";
+    ss << "bar " << std::setprecision(2) << sensorsADC.bar << ", ";
+    ss << "barTemp " << std::setprecision(2) << sensorsADC.barTemp << ", ";
+    ss << "humidity " << std::setprecision(2) << sensorsADC.humidity << ", ";
 
     if (m_displayMode != DMODE_SCROLL)
     {   // Spacious format
@@ -1617,15 +2013,15 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
         for (size_t i = 0; i < MAX_IMU_DEVICES; ++i)
         {
             auto &imu = sensorsADC.imu[i];
-            ss << "\timu[" << i << "]: " << setprecision(0);
-            ss << "pqr[" << setw(SADC_WIDTH) << imu.pqr[0] << "," << setw(SADC_WIDTH) << imu.pqr[1] << "," << setw(SADC_WIDTH) << imu.pqr[2] << "], ";
-            ss << "acc[" << setw(SADC_WIDTH) << imu.acc[0] << "," << setw(SADC_WIDTH) << imu.acc[1] << "," << setw(SADC_WIDTH) << imu.acc[2] << "], ";
-            ss << "temp " << setprecision(3) << imu.temp << ",";
+            ss << "\timu[" << i << "]: " << std::setprecision(0);
+            ss << "pqr[" << std::setw(SADC_WIDTH) << imu.pqr[0] << "," << std::setw(SADC_WIDTH) << imu.pqr[1] << "," << std::setw(SADC_WIDTH) << imu.pqr[2] << "], ";
+            ss << "acc[" << std::setw(SADC_WIDTH) << imu.acc[0] << "," << std::setw(SADC_WIDTH) << imu.acc[1] << "," << std::setw(SADC_WIDTH) << imu.acc[2] << "], ";
+            ss << "temp " << std::setprecision(3) << imu.temp << ",";
         }
         for (size_t i = 0; i < MAX_MAG_DEVICES; ++i)
         {
             auto &mag = sensorsADC.mag[i];
-            ss << "mag[" << setw(SADC_WIDTH) << mag.mag[0] << "," << setw(SADC_WIDTH) << mag.mag[1] << "," << setw(SADC_WIDTH) << mag.mag[2] << "], ";
+            ss << "mag[" << std::setw(SADC_WIDTH) << mag.mag[0] << "," << std::setw(SADC_WIDTH) << mag.mag[1] << "," << std::setw(SADC_WIDTH) << mag.mag[2] << "], ";
             ss << "\n";
         }
     }
@@ -1634,10 +2030,10 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
         for (size_t i = 0; i < MAX_IMU_DEVICES; ++i)
         {
             auto &imu = sensorsADC.imu[i];
-            ss << "mpu[" << i << "]: " << setprecision(0);
+            ss << "mpu[" << i << "]: " << std::setprecision(0);
             ss << "pqr[" << imu.pqr[0] << "," << imu.pqr[1] << "," << imu.pqr[2] << "], ";
             ss << "acc[" << imu.acc[0] << "," << imu.acc[1] << "," << imu.acc[2] << "], ";
-            ss << "temp " << setprecision(3) << imu.temp << ",";
+            ss << "temp " << std::setprecision(3) << imu.temp << ",";
         }
         for (size_t i = 0; i < MAX_MAG_DEVICES; ++i)
         {
@@ -1649,7 +2045,13 @@ string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &se
     return ss.str();
 }
 
-string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wheel, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats wheel encoder data for display.
+ * @param wheel The wheel encoder data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing wheel encoder information.
+ */
+std::string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wheel, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1678,12 +2080,12 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 }
 
 /**
- * Formats the specified DID (of type gpx_statys_t) into primary components
+ * @brief Formats the specified DID (of type gpx_statys_t) into primary components
  * @param gpxStatus the parsed DID struct to display
  * @param hdr the DID header
  * @return returns a fully formatted string
  */
-string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1711,13 +2113,13 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
 }
 
 /**
- * Formats the specified DID (of type debug_array_t) into its array components of
+ * @brief Formats the specified DID (of type debug_array_t) into its array components of
  * 9 integers, 9 floats, and 3 doubles.
  * @param debug the parsed DID struct to display
  * @param hdr the DID header
  * @return returns a fully formatted string
  */
-string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -1752,13 +2154,13 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 }
 
 /**
- * Formats the specified DID (of type debug_array_t) into its array components of
+ * @brief Formats the specified DID (of type debug_array_t) into its array components of
  * 9 integers, 9 floats, and 3 doubles.
  * @param debug the parsed DID struct to display
  * @param hdr the DID header
  * @return returns a fully formatted string
  */
-string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr)
 {
     static const char *portTypeNames[] = { "???", "SER", "USB", "SPI", "I2C", "CAN" };
 
@@ -1798,7 +2200,13 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr)
+/**
+ * @brief Formats event data for display.
+ * @param event The event data structure.
+ * @param hdr The data packet header.
+ * @return A formatted string containing event information.
+ */
+std::string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const p_data_hdr_t& hdr)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -2011,14 +2419,14 @@ string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, const 
 }
 
 /**
- * Formats the specified DID's raw data as a "hexadecimal view". This can be used with any DID that is not
+ * @brief Formats the specified DID's raw data as a "hexadecimal view". This can be used with any DID that is not
  * otherwise supported.
  * @param raw_data a pointer to the raw DID byte stream
  * @param hdr the DID header
  * @param bytesPerLine the number of hexadecimal bytes to print per line.
  * @return returns a fully formatted string
  */
-string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine)
+std::string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -2050,14 +2458,14 @@ string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_d
 
 
 /**
- * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
+ * @brief Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
  * otherwise supported.
  * @param raw_data a pointer to the raw DID byte stream
  * @param hdr the DID header
  * @param bytesPerLine the number of hexadecimal bytes to print per line.
  * @return returns a fully formatted string
  */
-string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize = true)
+std::string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize = true)
 {
     (void)hdr;
     char buf[BUF_SIZE];
@@ -2112,7 +2520,12 @@ string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_d
 #define DISPLAY_SNPRINTF(f_, ...)    {ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT    "%22s "
 
-string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
+/**
+ * @brief Converts generic data to a formatted string.
+ * @param data Pointer to the data packet.
+ * @return A formatted string representation of the generic data.
+ */
+std::string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 {
     const map_name_to_info_t *mapInfo = cISDataMappings::NameToInfoMap(data->hdr.id);
 
@@ -2138,7 +2551,12 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
     return buf;
 }
 
-string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
+/**
+ * @brief Converts a dataset to a formatted string for editing or display.
+ * @param data Pointer to the data packet.
+ * @return A formatted string representation of the dataset.
+ */
+std::string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
     if (m_editData.mapInfo == NULL || data == NULL ||
         data->ptr == NULL || data->hdr.id == 0 || data->hdr.size == 0)
@@ -2235,6 +2653,9 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 }
 
 
+/**
+ * @brief Handles keyboard input for interactive display modes.
+ */
 void cInertialSenseDisplay::GetKeyboardInput()
 {
     int c = 0;
@@ -2302,6 +2723,11 @@ void cInertialSenseDisplay::GetKeyboardInput()
 }
 
 
+/**
+ * @brief Selects a dataset for editing.
+ * @param did The Data ID of the dataset to edit.
+ * @param readOnlyMode If true, the dataset cannot be modified.
+ */
 void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 {
     m_editData.readOnlyMode = readOnlyMode;
@@ -2341,7 +2767,10 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 }
 
 
-void cInertialSenseDisplay::VarSelectIncrement() 
+/**
+ * @brief Increments the selected variable for editing.
+ */
+void cInertialSenseDisplay::VarSelectIncrement()
 {
     if (m_editData.mapInfo == NULL)
     {
@@ -2377,7 +2806,10 @@ void cInertialSenseDisplay::VarSelectIncrement()
 }
 
 
-void cInertialSenseDisplay::VarSelectDecrement() 
+/**
+ * @brief Decrements the selected variable for editing.
+ */
+void cInertialSenseDisplay::VarSelectDecrement()
 { 
     if (m_editData.mapInfo == NULL)
     {
@@ -2412,6 +2844,9 @@ void cInertialSenseDisplay::VarSelectDecrement()
 }
 
 
+/**
+ * @brief Stops the current editing session.
+ */
 void cInertialSenseDisplay::StopEditing()
 {
     m_editData.editEnabled = false;
@@ -2419,7 +2854,12 @@ void cInertialSenseDisplay::StopEditing()
 }
 
 
-ostream& boldOn(ostream& os)
+/**
+ * @brief Manipulator to turn on bold text in the output stream.
+ * @param os The output stream.
+ * @return The output stream with bold formatting enabled.
+ */
+std::ostream& boldOn(std::ostream& os)
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -2434,7 +2874,12 @@ ostream& boldOn(ostream& os)
 
 }
 
-ostream& boldOff(ostream& os)
+/**
+ * @brief Manipulator to turn off bold text in the output stream.
+ * @param os The output stream.
+ * @return The output stream with bold formatting disabled.
+ */
+std::ostream& boldOff(std::ostream& os)
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -2450,7 +2895,12 @@ ostream& boldOff(ostream& os)
 }
 
 // Bold on with newline
-ostream& endlbOn(ostream& os)
+/**
+ * @brief Manipulator to add a newline and turn on bold text.
+ * @param os The output stream.
+ * @return The output stream with a newline and bold formatting enabled.
+ */
+std::ostream& endlbOn(std::ostream& os)
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -2459,14 +2909,19 @@ ostream& endlbOn(ostream& os)
 
 #else
 
-    return os << endl << boldOn;
+    return os << std::endl << boldOn;
 
 #endif
 
 }
 
 // Bold off with newline
-ostream& endlbOff(ostream& os)
+/**
+ * @brief Manipulator to add a newline and turn off bold text.
+ * @param os The output stream.
+ * @return The output stream with a newline and bold formatting disabled.
+ */
+std::ostream& endlbOff(std::ostream& os)
 {
 
 #if PLATFORM_IS_WINDOWS
@@ -2475,7 +2930,7 @@ ostream& endlbOff(ostream& os)
 
 #else
 
-    return os << endl << boldOff;
+    return os << std::endl << boldOff;
 
 #endif
 

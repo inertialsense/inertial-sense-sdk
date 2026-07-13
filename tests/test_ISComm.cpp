@@ -264,7 +264,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
     {
         data_holder_t td = {};
         ins_1_t ins1 = { 0 };
-        gps_pos_t gps = { 0 };
+        gnss_pos_t gnss = { 0 };
 
         if (i % 16 == 0)
         {   // INS 1
@@ -301,34 +301,34 @@ static void generateData(std::deque<data_holder_t> &testDeque)
         }
 
         if (i % 200 == 0)
-        {   // GPS
-            gps.timeOfWeekMs = i * 1000;
-            gps.week = i * 10;
-            gps.status = i;
-            gps.ecef[0] = (double)i*1.234;
-            gps.ecef[1] = (double)i*2.345;
-            gps.ecef[2] = (double)i*3.456;
-            gps.lla[0] = (double)i*1.234;
-            gps.lla[1] = (double)i*2.345;
-            gps.lla[2] = (double)i*3.456;
-            gps.hAcc = (float)i;
-            gps.cnoMean = (float)i;
-            gps.hMSL = (float)i;
-            gps.pDop = (float)i;
-            gps.towOffset = (double)i*123.4;
-            gps.leapS = (uint8_t)i;
+        {   // GNSS
+            gnss.timeOfWeekMs = i * 1000;
+            gnss.week = i * 10;
+            gnss.status = i;
+            gnss.ecef[0] = (double)i*1.234;
+            gnss.ecef[1] = (double)i*2.345;
+            gnss.ecef[2] = (double)i*3.456;
+            gnss.lla[0] = (double)i*1.234;
+            gnss.lla[1] = (double)i*2.345;
+            gnss.lla[2] = (double)i*3.456;
+            gnss.hAcc = (float)i;
+            gnss.cnoMean = (float)i;
+            gnss.hMSL = (float)i;
+            gnss.pDop = (float)i;
+            gnss.towOffset = (double)i*123.4;
+            gnss.leapS = (uint8_t)i;
 
 #if TEST_PROTO_NMEA
             td.ptype = _PTYPE_NMEA;
-            td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
+            td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gnss);
             if (!generateDataAppend(testDeque, td, byteSize)) return;
 #endif
 
 #if TEST_PROTO_ISB
             td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
-            td.did = DID_GPS1_POS;
-            td.data.set.gpsPos = gps;
-            td.size = sizeof(gps_pos_t);
+            td.did = DID_GNSS1_POS;
+            td.data.set.gnssPos = gnss;
+            td.size = sizeof(gnss_pos_t);
             if (!generateDataAppend(testDeque, td, byteSize)) return;
 #endif
         }
@@ -735,32 +735,32 @@ static int generate_NMEAPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int 
     return nmea_dev_info((char*)buf, buffSize, dev);
 }
 
-static int generate_ISBPkt_gps1Pos(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
+static int generate_ISBPkt_gnss1Pos(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
 {
-    gps_pos_t gps;
+    gnss_pos_t gnss;
 
-    // GPS
-    gps.week = 2270;
-    gps.timeOfWeekMs = 12345678;
-    gps.status = 0x03457834;
-    gps.ecef[0] = 2345.967;
-    gps.ecef[1] = 134.0687;
-    gps.ecef[2] = -8657.2345;
-    gps.lla[0] = 40.330565516;
-    gps.lla[1] = -111.725787806;
-    gps.lla[2] = 1408.565264;
-    gps.hMSL = 1408.565264;
-    gps.hAcc = 0.16546;
-    gps.vAcc = 2.3423;
-    gps.pDop = 1.053;
-    gps.cnoMean = 38.928;
-    gps.towOffset = 7254.0982;
-    gps.leapS = 18;
-    gps.satsUsed = 25;
-    gps.cnoMeanSigma = 2;
-    gps.status2 = 0x05;
+    // GNSS
+    gnss.week = 2270;
+    gnss.timeOfWeekMs = 12345678;
+    gnss.status = 0x03457834;
+    gnss.ecef[0] = 2345.967;
+    gnss.ecef[1] = 134.0687;
+    gnss.ecef[2] = -8657.2345;
+    gnss.lla[0] = 40.330565516;
+    gnss.lla[1] = -111.725787806;
+    gnss.lla[2] = 1408.565264;
+    gnss.hMSL = 1408.565264;
+    gnss.hAcc = 0.16546;
+    gnss.vAcc = 2.3423;
+    gnss.pDop = 1.053;
+    gnss.cnoMean = 38.928;
+    gnss.towOffset = 7254.0982;
+    gnss.leapS = 18;
+    gnss.satsUsed = 25;
+    gnss.cnoMeanSigma = 2;
+    gnss.status2 = 0x05;
 
-    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GPS1_POS, sizeof(gps_pos_t), 0, &gps);
+    return is_comm_write_to_buf(buf, buffSize, comm, PKT_TYPE_DATA, DID_GNSS1_POS, sizeof(gnss_pos_t), 0, &gnss);
 }
 
 static int generate_ISBPkt_ins2(is_comm_instance_t* comm, uint8_t* buf, int buffSize)
@@ -1462,7 +1462,7 @@ TEST(ISComm, TruncatedPackets)
 #define BUFF_PARSE_OUT_BUF_SIZE 600  
 #define BUFF_PARSE_DEV          0  
 #define BUFF_PARSE_DEV_NMEA     1  
-#define BUFF_PARSE_GPS          2  
+#define BUFF_PARSE_GNSS         2  
 #define BUFF_PARSE_IMU          3  
 #define BUFF_PARSE_INS          4  
 
@@ -1477,7 +1477,7 @@ int BufferParse_isb(void* ctx, p_data_t* data, port_handle_t port)
     {
         case DID_DEV_INFO:  s_buffParseMsgInCnt[BUFF_PARSE_DEV]++;  break;
         case DID_INS_2:     s_buffParseMsgInCnt[BUFF_PARSE_INS]++;  break;
-        case DID_GPS1_POS:  s_buffParseMsgInCnt[BUFF_PARSE_GPS]++;  break;
+        case DID_GNSS1_POS:  s_buffParseMsgInCnt[BUFF_PARSE_GNSS]++;  break;
         case DID_IMU:       s_buffParseMsgInCnt[BUFF_PARSE_IMU]++;  break;
     }
 
@@ -1563,9 +1563,9 @@ TEST(ISComm, BufferParse)
                     tmpBufSize = generate_NMEAPkt_DevInfo(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
                     msgOutCnt[BUFF_PARSE_DEV_NMEA]++;
                     break;
-                case BUFF_PARSE_GPS: // GPS
-                    tmpBufSize = generate_ISBPkt_gps1Pos(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
-                    msgOutCnt[BUFF_PARSE_GPS]++;
+                case BUFF_PARSE_GNSS: // GNSS
+                    tmpBufSize = generate_ISBPkt_gnss1Pos(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
+                    msgOutCnt[BUFF_PARSE_GNSS]++;
                     break;
                 case BUFF_PARSE_IMU: // IMU
                     tmpBufSize = generate_ISBPkt_imu(&comm, tmpBuf, BUFF_PARSE_OUT_BUF_SIZE);
@@ -1627,7 +1627,7 @@ TEST(ISComm, BufferParse)
         printf("Bytes parsed: %d\r\n", totalBytes);
         printf("DID_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
         printf("NMEA_DEV_INFO: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
-        printf("DID_GPS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
+        printf("DID_GNSS1_POS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_GNSS], s_buffParseMsgInCnt[BUFF_PARSE_GNSS]);
         printf("DID_IMU: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
         printf("DID_INS: outCnt: %d, inCnt: %d\r\n", msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
     #endif
@@ -1635,7 +1635,7 @@ TEST(ISComm, BufferParse)
     // Check good and bad packet count
     EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV], s_buffParseMsgInCnt[BUFF_PARSE_DEV]);
     EXPECT_EQ(msgOutCnt[BUFF_PARSE_DEV_NMEA], s_buffParseMsgInCnt[BUFF_PARSE_DEV_NMEA]);
-    EXPECT_EQ(msgOutCnt[BUFF_PARSE_GPS], s_buffParseMsgInCnt[BUFF_PARSE_GPS]);
+    EXPECT_EQ(msgOutCnt[BUFF_PARSE_GNSS], s_buffParseMsgInCnt[BUFF_PARSE_GNSS]);
     EXPECT_EQ(msgOutCnt[BUFF_PARSE_IMU], s_buffParseMsgInCnt[BUFF_PARSE_IMU]);
     EXPECT_EQ(msgOutCnt[BUFF_PARSE_INS], s_buffParseMsgInCnt[BUFF_PARSE_INS]);
 }

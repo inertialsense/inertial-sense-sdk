@@ -19,7 +19,7 @@ dependencies = [
     'numpy',
     'pandas',
     'pybind11>=2.12',
-    'pyqt5',
+    'pyqt6',
     'pyserial',
     'scipy',
     'simplekml',

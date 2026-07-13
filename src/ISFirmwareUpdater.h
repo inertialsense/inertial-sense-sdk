@@ -9,21 +9,23 @@
 #include <algorithm>
 #include <deque>
 #include <map>
+#include <mutex>
 
-#include "util/md5.h"
-#include <protocol/FirmwareUpdate.h>
+#include "ISConstants.h"
 
 #include "ISDevice.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
-#include "ISDFUFirmwareUpdater.h"
-#include "ISBootloaderBase.h"
 #include "PortManager.h"
+#include "util/md5.h"
+#include "protocol/FirmwareUpdate.h"
 
 #include "miniz.h"
 
-#ifndef __EMBEDDED__
+#if PLATFORM_IS_EMBEDDED == 0
     #include "yaml-cpp/yaml.h"
+    #include "ISDFUFirmwareUpdater.h"
+    #include "ISBootloaderBase.h"
 #endif
 
 
@@ -41,27 +43,53 @@ extern "C"
 #endif
 
 
+/**
+ * Defines the update policy for a firmware update step/target.
+ */
+enum update_policy_e : int8_t {
+    UPDATE_POLICY_DEFAULT   = 0,   //!< inherit from updater-level default (backward compat)
+    UPDATE_POLICY_SKIP      = 1,   //!< skip this target's step entirely
+    UPDATE_POLICY_IF_NEWER  = 2,   //!< upload only if image version > target's current version
+    UPDATE_POLICY_FORCE     = 3,   //!< always upload (current behavior)
+};
+
+/**
+ * Stores the update policy and image version metadata for a single step/target.
+ */
+struct step_policy_t {
+    update_policy_e policy = UPDATE_POLICY_DEFAULT;
+    uint8_t imageVersion[4] = {};  //!< parsed from manifest "version: x.y.z.w"
+    bool hasImageVersion = false;  //!< true if imageVersion was explicitly set
+};
+
 
 class ISFwUpdaterCmd {
 public:
     enum cmd_status_e : int8_t {
+        CMD_CANCELLED = -3,                                 //!< command was canceled (by the user) before it could complete
         CMD_NOT_EXECUTED = -2,                              //!< command was queued, but ultimately never executed (was skipped due to jumps, etc)
         CMD_ERROR = -1,                                     //!< command failed to execute successfully
         CMD_QUEUED = 0,                                     //!< command is queued, and waiting to be executed
         CMD_IN_PROCESS = 1,                                 //!< command has start execution, but has not completed
         CMD_SUCCESS = 2,                                    //!< command had successfully completed
+        CMD_SUSPENDED = 3,                                  //!< command has been suspended (by the user) - must be moved back into IN_PROCESS to resume
+    };
+    enum cmd_flags_e : int16_t {
+        CMD_FLAGS__PAUSABLE = 1 << 0,                       //!< command can be paused/suspended
+        CMD_FLAGS__CANCELABLE = 1 << 1,                     //!< command can be canceled (by the user)
     };
 
-    std::string step;                                   //!< the step label that this command is executed under
-    std::string cmd;                                    //!< the name of the command
-    cmd_status_e status = CMD_QUEUED;                   //!< a code indicating the state of the command: PENDING, IN_PROCESS, SUCCESS, ERROR, etc.
-    std::map<std::string, std::string> args;            //!< a set of parameters (key-value pairs) to be used by the command
+    std::string step;                                           //!< the step label that this command is executed under
+    std::string cmd;                                        //!< the name of the command
+    cmd_status_e status = CMD_QUEUED;                       //!< a code indicating the state of the command: PENDING, IN_PROCESS, SUCCESS, ERROR, etc.
+    std::map<std::string, std::string> args;                //!< a set of parameters (key-value pairs) to be used by the command
+    cmd_flags_e flags;                                      //!< a bitmask of flags that apply to this command (which are common to all commands)
 
-    std::string resultMsg;                              //!< an optional message to be reported/displayed reflecting the active/last-known state of the command (ie, can still be used when the cmd is in progress).
-    std::vector<std::tuple<uint8_t, std::string>> msgs; //!< a list of messages that occurred doing the execution of this cmd
-    std::chrono::system_clock::time_point timeQueued;   //!< wall-clock time when this command was queued
-    std::chrono::system_clock::time_point timeStarted;  //!< wall-clock time when this command started execution
-    std::chrono::system_clock::time_point timeFinished; //!< wall-clock time when this command finished execution (error or success)
+    std::string resultMsg;                                  //!< an optional message to be reported/displayed reflecting the active/last-known state of the command (ie, can still be used when the cmd is in progress).
+    std::vector<std::tuple<uint8_t, std::string>> msgs;     //!< a list of messages that occurred doing the execution of this cmd
+    std::chrono::system_clock::time_point timeQueued;       //!< wall-clock time when this command was queued
+    std::chrono::system_clock::time_point timeStarted;      //!< wall-clock time when this command started execution
+    std::chrono::system_clock::time_point timeFinished;     //!< wall-clock time when this command finished execution (error or success)
 
     explicit ISFwUpdaterCmd() { }
 
@@ -72,10 +100,12 @@ public:
 
     ISFwUpdaterCmd(const std::string& _step, const std::string& _cmd, const std::string& _args, std::deque<std::string> _keyNames = {}) : ISFwUpdaterCmd(_step, _cmd) {
         static std::map<std::string, std::vector<std::string>> defaultKeys = {
-                {"target", {"target","timeout", "interval", "on-timeout"}},
-                {"waitfor", {"timeout", "interval", "force", "on-timeout"}},
-                {"upload", {"filename", "slot", "force", "interval"}},
-                {"reset", {"type"}},
+                {"target",     {"target","timeout", "interval", "on-timeout"}},
+                {"waitfor",    {"timeout", "interval", "force", "on-timeout"}},
+                {"upload",     {"filename", "slot", "force", "interval"}},
+                {"reset",      {"type"}},
+                {"policy",     {"policy", "target"}},
+                {"depends-on", {"step"}},
         };
 
         auto tmpArgs = utils::split_string(_args, ",");
@@ -123,20 +153,101 @@ public:
     inline std::string getArg(const std::string& k, const std::string& def = "") {
         return (hasArg(k) ? args[k] : def);
     }
-
 };
 
+class ISFwUpdateState {
+public:
+    enum updater_state_e : int8_t {
+        UPDATER_CANCELED = -3,                              //!< no longer running, user cancelled, and not all steps were completed.
+        UPDATER_DONE_WITH_ERRORS = -2,                      //!< no longer running, errors occurred during the update
+        UPDATER_WAITING_TO_CANCEL = -1,                     //!< user requested a cancel, but operations are still pending
+        UPDATER_IDLE = 0,                                   //!< the Updater is idle. Nothing started, nothing to do, etc.
+        UPDATER_CMDS_QUEUED = 1,                            //!< commands are queued, but no commands are in process
+        UDPATER_SUSPENDED = 2,                              //!< commands are queued, IN_PROCESS commands can continue to execute, but no QUEUED commands will be allowed to enter IN_PROCESS
+        UPDATER_IN_PROGRESS = 3,                            //!< commands are queued, and one or more are actively being ran
+        UPDATER_SUCCESSFUL = 4,                             //!< no more queued commands, and no errors reported
+        SUCCESS_WITH_NOTIFICATIONS = 5,                     //!< no more queued commands, but there were notifications/messages reported (but not errors)
+    };
+
+    struct message {
+        std::string target;                                 //!< the target (if any) which was active, if any
+        ISFwUpdaterCmd cmd;                                 //!< the command that generated this message
+        eLogLevel severity;                                 //!< the severity level of the message - use one of IS_LOG_LEVEL_*
+        std::string msg;                                    //!< the fully-formatted message
+
+        message(const std::string& _target, const ISFwUpdaterCmd& _cmd, eLogLevel _severity, const std::string& _msg) : target(_target), cmd(_cmd), severity(_severity), msg(_msg) { };
+    };
+
+    ISFwUpdateState() = default;
+
+    // Copy constructor — copies all data fields but creates a fresh mutex (mutexes are non-copyable).
+    // The source is NOT locked here; callers should use getSnapshot() for thread-safe copies.
+    ISFwUpdateState(const ISFwUpdateState& other)
+        : lastMessage(other.lastMessage), state(other.state), status(other.status),
+          target(other.target), slot(other.slot), progress(other.progress),
+          messages(other.messages), hasErrors(other.hasErrors) { }
+
+    ISFwUpdateState& operator=(const ISFwUpdateState& other) {
+        if (this != &other) {
+            lastMessage = other.lastMessage;
+            state = other.state;
+            status = other.status;
+            target = other.target;
+            slot = other.slot;
+            progress = other.progress;
+            messages = other.messages;
+            hasErrors = other.hasErrors;
+        }
+        return *this;
+    }
+
+    /**
+     * Acquire a lock on this state object. All reads and writes to this state should be done while holding this lock,
+     * to prevent cross-thread data races (e.g., GUI thread reading while IOManager thread writes).
+     */
+    std::unique_lock<std::recursive_mutex> lock() const { return std::unique_lock<std::recursive_mutex>(mtx); }
+
+    /**
+     * Returns a thread-safe snapshot (copy) of the current state. The caller can safely read from the copy
+     * without holding a lock. Prefer this over direct field access from non-owner threads.
+     */
+    ISFwUpdateState getSnapshot() const {
+        auto lk = lock();
+        ISFwUpdateState snapshot(*this);
+        return snapshot;
+    }
+
+    void resetState() {
+        auto lk = lock();
+        lastMessage.clear();
+        messages.clear();
+        target = fwUpdate::TARGET_HOST;
+        status = fwUpdate::NOT_STARTED;
+        slot = 0;
+        progress = 0.f;
+        hasErrors = false;
+    }
+
+    std::string                 lastMessage;                        //!< the current/last/most recent message which should be shown to the user
+    updater_state_e             state = UPDATER_IDLE;               //!< the current/last state of the updater (overall, across all commands)
+    fwUpdate::update_status_e   status = fwUpdate::NOT_STARTED;     //!< the current/last status of the updater (typically more for the current upload/command);
+    fwUpdate::target_t          target = fwUpdate::TARGET_UNKNOWN;  //!< the current/last target device that is/was being updated
+    uint16_t                    slot = 0;                           //!< the current/last target slot that is/was being uploaded to
+    float                       progress = 0.f;                     //!< the current/last progress of the target upload
+    std::vector<message>        messages;                           //!< the collection of all messages that have occurred during the update
+    bool                        hasErrors = false;                  //!< an easy indicator to track errors while still in progress, generally true if msgs contains one more IS_LOG_LEVEL_ERROR messages
+
+private:
+    mutable std::recursive_mutex mtx;                               //!< protects all fields from concurrent read/write across threads
+};
+
+
+
 static ISFwUpdaterCmd nullCmd = ISFwUpdaterCmd();
+static ISFwUpdateState nullState = ISFwUpdateState();
 
 class ISFirmwareUpdater : private fwUpdate::FirmwareUpdateHost {
 public:
-
-    struct update_msgs {
-        std::string target;                                 //!< the target (if any) which was active, if any
-        ISFwUpdaterCmd cmd;                                 //!< the command that generated this message
-        int severity;                                       //!< the severity level of the message - use one of IS_LOG_LEVEL_*
-        std::string msg;                                    //!< the fully-formatted message
-    };
 
     port_handle_t port = nullptr;                           //!< a handle to the comm port which we use to talk to the device - if possible, we should be using the device->port
     device_handle_t device;                                 //!< a handle to the device which is being updated; maybe null in some cases
@@ -148,9 +259,9 @@ public:
      * @param portHandle handle to the port (typically serial) to which the device is connected
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo), activeCmd(&nullCmd) { }
+    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo, ISFwUpdateState& state) : FirmwareUpdateHost(), port(port), devInfo(devInfo), updateState(state), activeCmd(&nullCmd) { }
 
-    explicit ISFirmwareUpdater(device_handle_t device);
+    explicit ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& state);
 
     void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
 
@@ -169,26 +280,23 @@ public:
         devInfo = nullptr;
     };
 
+    void refreshUpdateState();
+
     void setTarget(fwUpdate::target_t _target);
 
     bool setCommands(std::vector<std::string> cmds);
 
-    // bool addCommands(std::vector<std::string> cmds);
-
     bool step();
-
-    // bool isWaitingResponse() { return requestPending; }
 
     bool hasPendingCommands() { for (auto& c :commands) { if ((c.status == ISFwUpdaterCmd::CMD_QUEUED) || (c.status == ISFwUpdaterCmd::CMD_IN_PROCESS)) return true; } return false; }
 
-    // bool hasErrors() { return !stepErrors.empty(); }
     bool hasErrors() { for (auto& c :commands) { if (c.status == ISFwUpdaterCmd::CMD_ERROR) return true; } return false; }
 
     void setLogLevel(eLogLevel level) { logLevel = level; }
 
     eLogLevel getLogLevel() { return logLevel; }
 
-    std::vector<update_msgs> getStepErrors() { return stepErrors; }
+    std::vector<ISFwUpdateState::message> getMessages() { return updateState.messages; }
 
     ISFwUpdaterCmd& getActiveCommand() { return *activeCmd; };
 
@@ -213,6 +321,48 @@ public:
     void clearAllCommands() { commands.clear(); }
 
     /**
+     * Summary info for a unique target device, aggregated across all manifest steps.
+     */
+    struct StepInfo {
+        std::string targetName;                  //!< unique target device name (e.g., "IMX5")
+        std::vector<std::string> stepLabels;     //!< all step labels that reference this target
+        update_policy_e policy;                  //!< effective policy for the first step (shared across all)
+    };
+
+    /**
+     * Returns a summary of unique firmware update targets from the queued commands.
+     * Deduplicates by target name — each target appears once with all associated step labels.
+     * Thread-safe: locks the internal mutex.
+     */
+    std::vector<StepInfo> getStepSummary() const;
+
+    /**
+     * Sets an explicit update policy for a specific step (by exact label name).
+     */
+    void setStepPolicy(const std::string& stepLabel, update_policy_e policy);
+
+    /**
+     * Stores a deferred pattern-based policy override. The pattern is matched (case-insensitive
+     * substring) against step labels during manifest parsing, and against target names at step
+     * transition time. First matching pattern wins.
+     */
+    void setPolicyPattern(const std::string& pattern, update_policy_e policy);
+
+    /**
+     * Sets the updater-wide default policy, used when no step-specific or pattern-matched policy applies.
+     */
+    void setDefaultPolicy(update_policy_e policy);
+
+    /**
+     * Resolves the effective update policy for a given step label, using the following priority:
+     *   1. Exact stepPolicies entry
+     *   2. defaultPolicy (if not DEFAULT)
+     *   3. forceUpdate bool (legacy)
+     *   4. IF_NEWER fallback
+     */
+    update_policy_e getEffectivePolicy(const std::string& stepLabel) const;
+
+    /**
      * Called when an error occurs while processing a command, to perform corrective actions (if possible).
      * Primarily, this checks if there is a failLabel defined and looks for the corresponding command label.
      * Otherwise it logs the message/errorcode, and clears the command stack.
@@ -222,7 +372,7 @@ public:
     void handleCommandError(ISFwUpdaterCmd& cmd, int errCode, const char *errMmsg, ...);
 
     /**
-     * Signals the updater that is should complete any pending commands, and stop processing any further commands. Optionally (if immediately == true), it will
+     * Signals the updater that it should complete any pending commands, and stop processing any further commands. Optionally (if immediately == true), it will
      * no wait for pending commands to complete; this should be avoided do to possibly leaving some devices in an non-bootable state.
      * @param immediately if true (default is false), will not wait for existing actions to complete
      * @return the final update state; this should be fwUpdate::ERR_INTERRUPTED, but maybe any valid state.
@@ -231,6 +381,30 @@ public:
 
     bool isCancelable();
 
+    /**
+     * Signals to the updater that it should complete any pending command, and stop processing any further commands, until later resumed.
+     * This is different from cancel() in that this does not invalidate/skip/cancel any pending/queued commands; it simply falls into
+     * a state where any pending/queued commands are not allowed to start until the updateState exits to the UPDATER_SUSPENDED state,
+     * at which point all remaining commands will proceed. Note that if the current/active command is IN_PROGRESS, it will be allowed
+     * to finish. This does not prevent execution of the state machine or command executor, it only prevents queued commands from being
+     * started.
+     */
+    void suspend() { updateState.state = ISFwUpdateState::UDPATER_SUSPENDED; }
+
+    /**
+     * @return true if the updater is in a suspended state. Note that commands IN_PROGRESS will continue to execute.
+     */
+    bool isSuspended() { return updateState.state == ISFwUpdateState::UDPATER_SUSPENDED; }
+
+    /**
+     * Instructs the updater to exit the SUSPENDED state, and resume processing queued commands.
+     */
+    void resume() { updateState.state = ISFwUpdateState::UPDATER_IN_PROGRESS; }
+
+    /**
+     * @return true if the updater has no pending/queued commands, and the updater has been previously started.
+     *   This means that a call to fwUpdate_isDone() may return false, if the updater was never started.
+     */
     bool fwUpdate_isDone();
 
     /**
@@ -261,23 +435,13 @@ private:
         PKG_ERR_NO_MANIFEST = -12,                          //!< the package does not contain a manifest, or the manifest was invalid.
     };
 
-    std::recursive_mutex mutex;                             //!< make things thread-safe??
+    mutable std::recursive_mutex mutex;                     //!< make things thread-safe??
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;           //!< callback for status updates
     PortManager::port_listener_handle_t portListenerHdl {}; //!< handle to a port listener so we can watch for devices that reboot
 
     /** These are member variables that are indicate the state of this updater (not a specific upload, etc) **/
 
-    enum updater_state_e : int8_t {
-        UPDATER_DONE_WITH_ERRORS = -2,                      //!< no longer running, errors occurred during the update
-        UPDATER_WAITING_TO_CANCEL = -1,                     //!< user requested a cancel, but operations are still pending
-        UPDATER_IDLE = 0,                                   //!< the Updater is idle. Nothing started, nothing to do, etc.
-        UPDATER_CMDS_QUEUED = 1,                            //!< commands are queued, but no commands are in process
-        UPDATER_IN_PROGRESS,                                //!< commands are queued, and one or more are actively being ran
-        UPDATER_SUCCESSFUL,                                 //!< no more queued commands, and no errors reported
-        SUCCESS_WITH_NOTIFICATIONS,                         //!< no more queued commands, but there were notifications/messages reported (but not errors)
-    };
-
-    updater_state_e updateState = UPDATER_IDLE;             //!< true if this update has been cancelled (but may still be waiting for a step to complete)
+    ISFwUpdateState& updateState;                           //!< a reference to an ISFwUpdateState object which will hold the state of this updater
     std::vector<ISFwUpdaterCmd> commands;                   //!< the stack of commands to execute for this update
     std::string activeStep;                                 //!< the name of the currently executing step name, from the manifest when available
     std::string failLabel;                                  //!< a label to jump to, when an error occurs
@@ -285,8 +449,12 @@ private:
     std::string statusMsg;                                  //!< a string the reflects the current state of the updater - this should be "Human Readable" (it generally gets reported directly to the user in the UI, etc).
 
     eLogLevel logLevel = IS_LOG_LEVEL_INFO;                 //!< default log level to show
-    std::vector<update_msgs> stepErrors;                    //!< a list of error messages messages that occurred during the update
-    //bool requestPending = false;                            //!< true if a fwUpdate request has been made, and we're still waiting for a response.
+
+    /** ---- Per-target update policy state ---- **/
+    std::map<std::string, step_policy_t> stepPolicies;      //!< resolved per-step policies, keyed by exact step label
+    std::vector<std::pair<std::string, update_policy_e>> policyPatterns; //!< deferred patterns to match against step labels / target names
+    update_policy_e defaultPolicy = UPDATE_POLICY_DEFAULT;  //!< updater-wide default policy
+    std::map<fwUpdate::target_t, bool> targetUploadPerformed; //!< tracks whether any upload actually occurred for each target
 
 
     /** =========================================================== **/
@@ -294,6 +462,7 @@ private:
 
     // ----  These are for uploads (using fwUpdater)
 
+    char* srcFileBytes = nullptr;                           //!< the pointer to the allocated raw bytes that are wrapped by srcFile - if not null, this should be freed when finished with the stream below is closed.
     std::istream *srcFile = nullptr;                        //!< the file that we are currently sending to a remote device, or nullptr if none
     uint32_t nextStartAttempt = 0;                          //!< the number of millis (uptime?) that we will next attempt to start an upgrade
     int8_t startAttempts = 0;                               //!< the number of attempts that have been made to request that an update be started
@@ -336,7 +505,7 @@ private:
     ISFwUpdaterCmd& getNextQueuedCmd(ISFwUpdaterCmd* curCmd = nullptr);
     ISFwUpdaterCmd& jumpToStep(const std::string& stepLabel);
     ISFwUpdaterCmd& runCommand(ISFwUpdaterCmd& cmd);
-    void cmd_ExtractPackage(ISFwUpdaterCmd& cmd);
+    void cmd_ExtractPackage(ISFwUpdaterCmd cmd);
     void cmd_SetTarget(ISFwUpdaterCmd& cmd);
     void cmd_WaitFor(ISFwUpdaterCmd& cmd);
     void cmd_Delay(ISFwUpdaterCmd& cmd);

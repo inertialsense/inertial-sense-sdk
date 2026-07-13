@@ -101,8 +101,8 @@ protected:
 #endif
 public:
     bool enable = true;                 // Enables/Disables the entire provider - enabled until explicitly disabled
-    bool compassing_enable = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
-    bool positioning_enable = false;    // Enable RTK precision positioning at GPS1
+    bool compassing_enable = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GNSS2
+    bool positioning_enable = false;    // Enable RTK precision positioning at GNSS1
 
     RtkRoverCorrectionProvider* correction_input;
     RtkRoverProvider(YAML::Node node) : ph_((YAML::Node&)node) { configure(node); }

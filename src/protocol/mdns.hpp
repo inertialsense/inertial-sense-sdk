@@ -9,8 +9,9 @@
 #ifndef IS_SDK__MDNS_HPP
 #define IS_SDK__MDNS_HPP
 
-#define MDNS_RECORD_TIMEOUT_MS 5000 // Max time that any record will last for
+#define MDNS_RECORD_TIMEOUT_MS 5000 // Legacy fallback — only used if wire TTL is 0 AND not a goodbye (shouldn't happen in practice)
 #define MDNS_REQUEST_TIMEOUT_MS 1000 // How long to wait for a response
+#define MDNS_TTL_FLOOR_S 2 // Minimum TTL floor (seconds) — wire TTLs below this are clamped up
 
 #include <chrono>
 #include <functional>
@@ -47,7 +48,12 @@ public:
             port = c;
             name = std::move(d);
         }
-        bool operator==(const mdns_record_srv_cpp_t &other) const = default;
+        bool isEqual(const mdns_record_srv_cpp_t &other) const {
+            return priority == other.priority &&
+                   weight == other.weight &&
+                   port == other.port &&
+                   name == other.name;
+        }
 #ifdef _WIN32
         mdns_record_srv_cpp_t& operator=(const mdns_record_srv_cpp_t& other) {
             this->priority = other.priority;
@@ -82,7 +88,9 @@ public:
         explicit mdns_record_ptr_cpp_t(std::string a) {
             name = std::move(a);
         }
-        bool operator==(const mdns_record_ptr_cpp_t &other) const = default;
+        bool isEqual(const mdns_record_ptr_cpp_t &other) const {
+            return name == other.name;
+        }
 
 #ifdef _WIN32
         mdns_record_ptr_cpp_t& operator=(const mdns_record_ptr_cpp_t& other) {
@@ -99,7 +107,7 @@ public:
     struct mdns_record_a_cpp_t {
         struct sockaddr_in addr;
 
-        bool operator==(const mdns_record_a_cpp_t &other) const {
+        bool isEqual(const mdns_record_a_cpp_t &other) const {
             if (addr.sin_family != other.addr.sin_family) return false;
             if (addr.sin_port != other.addr.sin_port) return false;
             if (addr.sin_addr.s_addr != other.addr.sin_addr.s_addr) return false;
@@ -129,7 +137,7 @@ public:
     struct mdns_record_aaaa_cpp_t {
         struct sockaddr_in6 addr;
 
-        bool operator==(const mdns_record_aaaa_cpp_t &other) const {
+        bool isEqual(const mdns_record_aaaa_cpp_t &other) const {
             if (addr.sin6_flowinfo != other.addr.sin6_flowinfo) return false;
             if (addr.sin6_scope_id != other.addr.sin6_scope_id) return false;
             if (addr.sin6_family != other.addr.sin6_family) return false;
@@ -181,7 +189,9 @@ public:
             value = std::move(b);
         }
 
-        bool operator==(const mdns_record_txt_cpp_t &other) const = default;
+        bool isEqual(const mdns_record_txt_cpp_t &other) const {
+            return key == other.key && value == other.value;
+        }
         std::string valueAsString() const { return std::string(value.begin(), value.end()); }
 #ifdef _WIN32
         mdns_record_txt_cpp_t& operator=(const mdns_record_txt_cpp_t& other) {
@@ -240,18 +250,25 @@ public:
             }
         }
         mdns_record_cpp_t() = default;
-        bool operator==(const mdns_record_cpp_t &other) const {
-            if ((name != other.name) || (type != other.type) || (rclass != other.rclass) || (ttl != other.ttl)) return false;
+        bool isEqual(const mdns_record_cpp_t &other) const {
+            // Record identity is (name, type, rclass) per DNS spec.
+            // TTL is metadata, not identity. rdata is included for PTR
+            // (multiple instances per service type) but excluded for TXT
+            // (updated data should replace, not accumulate).
+            if ((name != other.name) || (type != other.type) || (rclass != other.rclass)) return false;
             if (type == MDNS_RECORDTYPE_PTR) {
-                return data.ptr == other.data.ptr;
+                return data.ptr.isEqual(other.data.ptr);
             } else if (type == MDNS_RECORDTYPE_SRV) {
-                return data.srv == other.data.srv;
+                return data.srv.isEqual(other.data.srv);
             } else if (type == MDNS_RECORDTYPE_A) {
-                return data.a == other.data.a;
+                return data.a.isEqual(other.data.a);
             } else if (type == MDNS_RECORDTYPE_AAAA) {
-                return data.aaaa == other.data.aaaa;
+                return data.aaaa.isEqual(other.data.aaaa);
             } else if (type == MDNS_RECORDTYPE_TXT) {
-                return data.txt == other.data.txt;
+                // TXT identity is (name, type, rclass, key) — value is metadata.
+                // When a service re-registers with new port data, the new TXT
+                // record should replace the old one, not accumulate both.
+                return data.txt.key == other.data.txt.key;
             } else {
                 return true; // ANY and IGNORE record types don't have data to compare
             }
@@ -328,16 +345,18 @@ public:
         return seed;
     }
 
-    // We need to write our own hash function to store mdns records in a hashmap
+    // Hash function for mDNS record cache. Must be consistent with isEqual().
+    // TTL is excluded (it's metadata, not identity). TXT value is excluded
+    // so that updated TXT data replaces old entries instead of accumulating.
     struct mdns_record_cpp_tHash {
         std::size_t operator()(const mdns::mdns_record_cpp_t& r) const noexcept {
-            std::size_t hash1 = std::hash<std::string>{}(std::to_string(r.ttl));
-            std::size_t hash2 = std::hash<std::string>{}(std::to_string(r.rclass));
-            hash1 = hash1 ^ (hash2 << 1); // Combine hashes
-            hash2 = std::hash<std::string>{}(std::to_string(r.type));
+            // Base identity: (name, type, rclass)
+            std::size_t hash1 = std::hash<std::string>{}(std::to_string(r.rclass));
+            std::size_t hash2 = std::hash<std::string>{}(std::to_string(r.type));
             hash1 = hash1 ^ (hash2 << 1);
             hash2 = std::hash<std::string>{}(r.name);
             hash1 = hash1 ^ (hash2 << 1);
+            // Include rdata for types where multiple records per name are valid
             if (r.type == MDNS_RECORDTYPE_PTR) {
                 hash2 = std::hash<std::string>{}(r.data.ptr.name);
                 hash1 = hash1 ^ (hash2 << 1);
@@ -371,12 +390,18 @@ public:
                     hash1 = hash1 ^ (hash2 << 1);
                 }
             } else if (r.type == MDNS_RECORDTYPE_TXT) {
-                hash2 = hashVector(r.data.txt.value);
-                hash1 = hash1 ^ (hash2 << 1);
+                // Only hash TXT key, not value — updated port data should
+                // replace old entries, not accumulate alongside them
                 hash2 = std::hash<std::string>{}(r.data.txt.key);
                 hash1 = hash1 ^ (hash2 << 1);
             }
             return hash1;
+        }
+    };
+
+    struct mdns_record_cpp_tKeyEqual {
+        bool operator()(const mdns::mdns_record_cpp_t& lhs, const mdns::mdns_record_cpp_t& rhs) const {
+            return lhs.isEqual(rhs);
         }
     };
 
@@ -406,7 +431,7 @@ private:
     } used_query_id_t;
 
     // Lists
-    inline static std::unordered_map<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>, mdns_record_cpp_tHash> responses;
+    inline static std::unordered_map<mdns_record_cpp_t, std::chrono::time_point<std::chrono::steady_clock>, mdns_record_cpp_tHash, mdns_record_cpp_tKeyEqual> responses;
 
     // Functions
     static int createMdnsSockets();

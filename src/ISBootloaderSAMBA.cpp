@@ -414,7 +414,7 @@ is_operation_result cISBootloaderSAMBA::verify_image(std::string filename)
 
     SAMBA_STATUS("(SAM-BA) Verifying ISB bootloader (may take some time)...", IS_LOG_LEVEL_INFO);
 
-    while (serialPortRead(m_port, buf, 1));
+    while (serialPortRead(m_port, buf, 1) >= 1) { };
 
     for (uint32_t address = SAMBA_FLASH_START_ADDRESS; address < (SAMBA_FLASH_START_ADDRESS + SAMBA_BOOTLOADER_SIZE_24K);)
     {

@@ -14,13 +14,13 @@ extern "C" {
 #include "ISComm.h"
 #include "ISConstants.h"
 
-#ifdef PLATFORM_IS_WINDOWS
-#include <winsock2.h>
-#else
-#include <netinet/in.h>
-#ifdef __unix__ // Unix sockets can do TCP connections via files on Unix systems
-#include <sys/un.h>
-#endif
+#if PLATFORM_IS_WINDOWS
+    #include <winsock2.h>
+#elif !PLATFORM_IS_EMBEDDED
+    #include <netinet/in.h>
+    #ifdef __unix__ // Unix sockets can do TCP connections via files on Unix systems
+    #include <sys/un.h>
+    #endif
 #endif
 
 #define MAX_TCP_PORT_NAME_LENGTH 63
@@ -36,21 +36,17 @@ struct tcp_port_s
 
     port_monitor_set_t stats;
 
-    rmci_t rmci;
-    uint8_t rmciUPMcnt[DID_COUNT];
-    uint8_t rmciNMEAcnt[NMEA_MSG_ID_COUNT];
-
     // the port name (do not modify directly)
-    char* name;
+    char name[MAX_TCP_PORT_NAME_LENGTH + 1];
 
     // Actual socket
     int socket;
 
     // Store an Address type that can connect via TCP
     union {
-#ifdef PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
         ADDRESS_FAMILY domain;
-#else
+#elif !PLATFORM_IS_EMBEDDED
         sa_family_t domain; // Type of socket to use
 #endif
         struct sockaddr generic;

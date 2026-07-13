@@ -170,7 +170,6 @@ static test_port_t* boundPorts[NUM_COM_PORTS] {
         #endif
 };
 
-
 static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
     return ringBufRead(&((test_port_t*)port)->portRingBuf, buf, len);
@@ -210,12 +209,14 @@ void initTestPorts() {
         port.base.ptype = PORT_TYPE__COMM;
         if (portNum <= 1)
             port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
+
         port.base.portRead = testPortRead;
         port.base.portWrite = testPortWrite;
         port.base.portFree = testPortFree;
         port.base.portAvailable = testPortAvailable;
         port.base.portName = testPortName;
         portFlagsSet(&port, PORT_FLAG__VALID);
+        portFlagsSet(&port, PORT_FLAG__OPENED);
 
         ringBufInit(&port.portRingBuf, port.portBuffer, PORT_BUFFER_SIZE, 1);
         SNPRINTF((char *)port.name, 6, "TEST%1d", portNum);

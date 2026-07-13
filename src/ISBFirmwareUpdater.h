@@ -40,7 +40,10 @@ public:
     ISBFirmwareUpdater(fwUpdate::target_t target, const device_handle_t& device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device(device), target_devInfo(), toHost(toHost) { }
 
 
-    ~ISBFirmwareUpdater() override { };
+    ~ISBFirmwareUpdater() override {
+        if (imgBuffer) delete imgBuffer;
+        if (imgStream) delete imgStream;
+    };
 
     /**
      * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.
@@ -122,7 +125,6 @@ public:
      */
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
-
 private:
     typedef enum {
         IS_DEV_TYPE_NONE = 0,
@@ -172,10 +174,10 @@ private:
     inline static PortManager& portManager = PortManager::getInstance();
     inline static DeviceManager& deviceManager = DeviceManager::getInstance();
 
-
-    device_handle_t device;       //!< an ISDevice instance to which are are communicating/updating
+    device_handle_t device;                 //!< an ISDevice instance to which are are communicating/updating
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
     uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
+    uint32_t nextStepMs = 0;                //!< if this time exceeds the current clock (current_timeMs()) fwUpdate_step() will return immediately until this elapses
 
     struct {
         bool isValid = false;               //!< true if the data in this struct is valid
@@ -209,7 +211,7 @@ private:
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
     int is_isb_read_line(ByteBufferStream& byteStream, char line[HEX_BUFFER_SIZE]);
     is_operation_result upload_hex_page(unsigned char* hexData, uint8_t byteCount);
-    is_operation_result upload_hex(unsigned char* hexData, uint16_t charCount);
+    is_operation_result upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent);
     is_operation_result fill_current_page();
     is_operation_result process_hex_stream(ByteBufferStream& byteStream);
 

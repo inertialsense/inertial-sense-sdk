@@ -24,8 +24,8 @@ RED = '\u001b[31m'
 RESET = '\u001b[0m'
 
 INS_STATUS_NAV_MODE                         = 0x00001000
-GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED  = 0x00100000
-GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED   = 0x00400000
+GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED  = 0x00100000
+GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED   = 0x00400000
 
 class Log:
     def __init__(self):
@@ -52,7 +52,7 @@ class Log:
         self.init_vars()
         self.c_log.init(self, directory, serials)
         self.c_log.load()
-        self.serials = self.c_log.getSerialNumbers()
+        self.serials = self.c_log.serialNumbers()
         # self.sanitize()
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
@@ -126,10 +126,10 @@ class Log:
         ins2 = self.data[0, DID_INS_2]
         if len(ins2):
             self.navMode    = (ins2['insStatus'][-1] & INS_STATUS_NAV_MODE) == INS_STATUS_NAV_MODE
-        gps1Pos = self.data[0, DID_GPS1_POS]
+        gps1Pos = self.data[0, DID_GNSS1_POS]
         if len(gps1Pos):
-            self.rtk        = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED) == GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED
-            self.compassing = (gps1Pos['status'][-1] & GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED) == GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED
+            self.rtk        = (gps1Pos['status'][-1] & GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED) == GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED
+            self.compassing = (gps1Pos['status'][-1] & GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED) == GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED
 
         # Reference INS like Novatel may not have all status fields. Find a first device that is not reference
         uINS_device_idx = [n for n in range(self.numDev) if n in self.devIdx and not (n in self.refIdx)]
@@ -138,8 +138,8 @@ class Log:
             # print(RED + "error loading log" + sys.exc_info()[0] + RESET)
         return True
 
-    def getSerialNumbers(self):
-        return self.c_log.getSerialNumbers()
+    def serialNumbers(self):
+        return self.c_log.serialNumbers()
 
     def protocolVersion(self):
         return self.c_log.protocolVersion()
@@ -256,8 +256,8 @@ class Log:
 
             # If we are in compassing mode, then only calculate RMS after all devices have fix
             if self.compassing:
-                # time_of_fix_ms = [self.data[dev, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
-                time_of_fix_ms = [self.data[dev, DID_GPS1_POS]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GPS1_POS]['status'] & 0x08000000)] / 1000.0 for dev in range(self.numDev)]
+                # time_of_fix_ms = [self.data[dev, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GNSS2_RTK_CMP_REL]['arRatio'] > 3.0)] / 1000.0 for dev in range(self.numDev)]
+                time_of_fix_ms = [self.data[dev, DID_GNSS1_POS]['timeOfWeekMs'][np.argmax(self.data[dev, DID_GNSS1_POS]['status'] & 0x08000000)] / 1000.0 for dev in range(self.numDev)]
                 # print time_of_fix_ms
                 self.min_time = max(time_of_fix_ms)
 
@@ -427,18 +427,8 @@ class Log:
                 # Use default value if not all devices use the same hardware
                 hardware = 0
 
-        # Thresholds for uINS-3
-        # Nav
-        thresholdNED = np.array([0.35,  0.35, 0.8])     # (m)   NED
-        thresholdUVW = np.array([0.04,  0.04, 0.07])    # (m/s) UVW
-        thresholdAtt = np.array([0.11,  0.11, 0.3])     # (deg) Att (roll, pitch, yaw)
-        if not self.navMode:
-            # AHRS
-            thresholdAtt[2]  = 2.0  # (deg) Att (yaw)
-
-        # Thresholds for IMX-5
         if hardware == 5:
-            # Nav 
+            # Nav - Thresholds for IMX-5
             thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
             thresholdUVW = np.array([0.035, 0.035, 0.07])   # (m/s) UVW
             thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
@@ -446,6 +436,19 @@ class Log:
                 # AHRS
                 thresholdAtt[:2] = 0.1  # (deg) Att (roll, pitch)
                 thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
+        elif hardware == 6:
+            # Nav - Thresholds for IMX-6
+            thresholdNED = np.array([0.35,  0.35,  0.8])    # (m)   NED
+            thresholdUVW = np.array([0.023, 0.023, 0.047])  # (m/s) UVW
+            thresholdAtt = np.array([0.033, 0.033, 0.11])   # (deg) Att (roll, pitch, yaw)
+            if not self.navMode: 
+                # AHRS
+                thresholdAtt[:2] = 0.09 # (deg) Att (roll, pitch)
+                thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
+        elif hardware != 0:
+            # Unsupported hardware
+            print(RED + "Hardware type " + str(hardware) + " is not supported. Supported hardware types are 5 and 6; 0 may indicate mixed or unknown hardware across devices." + RESET)
+            sys.exit(1)
 
         if self.compassing:
             thresholdNED[:2] = 0.5
@@ -472,7 +475,7 @@ class Log:
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write('** IMX Performance Report - %s - %s\n' % (now, self.directory))
         f.write('\n')
-        mode = ('IMX-5' if hardware == 5 else 'uINS-3')
+        mode = ('MIXED' if hardware == 0 else 'IMX-5' if hardware == 5 else 'IMX-6' if hardware == 6 else 'UNKNOWN')
         mode += (", NAV" if self.navMode else ", AHRS")
         if self.rtk:        mode += ", RTK"
         if self.compassing: mode += ", DUAL GNSS"
@@ -494,7 +497,7 @@ class Log:
 
         for n, dev in enumerate(device_idx):
             devInfo = self.data[dev,DID_DEV_INFO][0]
-            line = '%2d SN%d      ' % (n, devInfo['serialNumber'])
+            line = '%2d SN%-10d ' % (n, devInfo['serialNumber'])
             line += '[ %6.4f  %6.4f  %6.4f ]' % (
             self.RMSAtt[n, 0] * RAD2DEG, self.RMSAtt[n, 1] * RAD2DEG, self.RMSAtt[n, 2] * RAD2DEG)
             if self.navMode:
@@ -564,7 +567,7 @@ class Log:
         f.write('Device       Euler Biases[   (deg)     (deg)     (deg) ]\n')
         for dev in device_idx:
             devInfo = self.data[dev, DID_DEV_INFO][0]
-            f.write('%2d SN%d               [ %7.4f   %7.4f   %7.4f ]\n' % (
+            f.write('%2d SN%-10d          [ %7.4f   %7.4f   %7.4f ]\n' % (
                 n, devInfo['serialNumber'], 
                 self.mount_bias_euler[dev, 0] * RAD2DEG, 
                 self.mount_bias_euler[dev, 1] * RAD2DEG,
@@ -572,11 +575,11 @@ class Log:
         f.write('\n')
 
         f.write("----------------- Average Attitude ---------------------\n")
-        f.write("Dev:  \t[ Roll\t\tPitch\t\tYaw ]\n")
+        f.write("Device  \t[ Roll\t\tPitch\t\tYaw ]\n")
         for i in range(self.numIns):
             qavg = meanOfQuat(self.stateArray[i, :, 7:])[0]
             euler = quat2euler(qavg.T) * 180.0 / np.pi
-            f.write("%d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
+            f.write("%-10d\t%f\t%f\t%f\n" % (self.serials[device_idx[i]], euler[0], euler[1], euler[2]))
 
         # Print Device Information
         f.write('\n')
@@ -629,14 +632,14 @@ class Log:
         sum_delta = None
         sum_count = 1
         for d in range(self.numDev):
-            time = self.data[d, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs']
-            yaw  = self.data[d, DID_GPS2_RTK_CMP_REL]['baseToRoverHeading']
+            time = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
+            yaw  = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
             if len(yaw) == 0:
                 continue
 
             if ref_time is None:
                 # Find reference time and yaw starting at first fix
-                fix_type = self.arRatioToFixType(self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio'])
+                fix_type = self.arRatioToFixType(self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio'])
                 first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
                 ref_time = time[first_fix_index:]
                 ref_yaw = np.copy(yaw[first_fix_index:])
@@ -656,9 +659,9 @@ class Log:
 
         for d in range(self.numDev):
             serial_number = self.data[d, DID_DEV_INFO]['serialNumber'][0]
-            time_ms = self.data[d, DID_GPS2_RTK_CMP_REL]['timeOfWeekMs']
-            yaw = self.data[d, DID_GPS2_RTK_CMP_REL]['baseToRoverHeading']
-            ar_ratio = self.data[d, DID_GPS2_RTK_CMP_REL]['arRatio']
+            time_ms = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
+            yaw = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
+            ar_ratio = self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio']
 
             success = False
             str = "SN%6d    (no data)" % serial_number
@@ -704,7 +707,7 @@ class Log:
             if not success: 
                 failures.append(str)
             f.write(   "[%s] %s\n" % (("PASSED" if success else "FAILED"), str))
-        thresh_str = "Required    (<%ss, <%2.0f%% )    >%3.0f,  <%3.1f°" % (
+        thresh_str = "Required    (<%ss, >%2.0f%% )    >%3.0f,  <%3.1f°" % (
             self.format_minutes_seconds(threshold['timeToFirstFix']), 
             threshold['percentFix'], 
             threshold['arRatio'], 

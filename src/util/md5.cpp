@@ -256,37 +256,37 @@ void md5_hash(md5hash_t& md5, uint32_t data_len, uint8_t* data)
 
 /**
  * Gets the file size and calculated md5sum of the specified file.
- * @param filename the file to validate/fetch details for
+ * @param is [IN] the input stream to validate/fetch details for
  * @param filesize [OUT] the size of the file, as read from the scan
  * @param md5result [OUT] the MD5 checksum calculated for the file
  * @return 0 on success, errno (negative) if error
  */
-int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
+int md5_stream_details(std::istream& is, size_t& filesize, md5hash_t& md5)
 {
     if (!is) return -EINVAL;
-    if (!is->good()) return -errno;
+    if (!is.good()) return -errno;
 
     md5Context_t context;
     md5_init(context);
 
     filesize = 0;
-    is->seekg(ios_base::beg);
-    while (is && (is->tellg() != -1))
+    is.seekg(ios_base::beg);
+    while (is && (is.tellg() != -1))
     {
         uint8_t buff[MD5_BUFF_SIZE] = {};
-        is->read((char *)buff, sizeof(buff));
-        int len = (int)is->gcount();
+        is.read((char *)buff, sizeof(buff));
+        int len = (int)is.gcount();
 
         md5_update(context, (const unsigned char *)buff, (unsigned int)len);
 
-        if (is->eof()) //  || (len != sizeof(buff)))
+        if (is.eof()) //  || (len != sizeof(buff)))
         {
             filesize += len;
             break;
         }
         else
         {
-            int32_t tell = (int32_t)is->tellg();
+            int32_t tell = (int32_t)is.tellg();
             if (tell != -1) {
                 filesize = tell;
             }
@@ -296,9 +296,9 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
     md5_final(context, md5);
 
     // reset back to the start of the stream before returning
-    if (is->fail())
-        is->clear();
-    is->seekg(ios_base::beg);
+    if (is.fail())
+        is.clear();
+    is.seekg(ios_base::beg);
     return 0;
 }
 
@@ -311,7 +311,7 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
  */
 int md5_file_details(const std::string& filename, size_t& filesize, md5hash_t& md5) {
     ifstream file(filename);
-    return md5_file_details(&file, filesize, md5);
+    return md5_stream_details(file, filesize, md5);
 }
 
 

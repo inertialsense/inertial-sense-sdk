@@ -1,21 +1,24 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
-project(ISFirmwareUpdateExample_v2)
+project(CustomVirtual)
 
-set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../../..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 # Include InertialSenseSDK header files
 include_directories(
     ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/core
     ${IS_SDK_DIR}/src/libusb/libusb
+    ${IS_SDK_DIR}/tests/
 )
 
-# Link the InertialSenseSDK static library 
-link_directories(${IS_SDK_DIR})
-
 # Define the executable
-add_executable(${PROJECT_NAME} ISFirmwareUpdateExample_v2.cpp)
+add_executable(${PROJECT_NAME}
+    CustomVirtualExample.cpp
+    CustomVirtualPortFactory.cpp
+    ${IS_SDK_DIR}/tests/test_serial_utils.cpp
+)
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)

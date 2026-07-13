@@ -14,17 +14,19 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdint>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
-#ifdef _WIN32
+
+#include "ISConstants.h"
+
+#if PLATFORM_IS_WINDOWS
 #include <Winsock2.h>
 #include <Ws2tcpip.h>
 #define strncasecmp _strnicmp
-#else
+#elif !PLATFORM_IS_EMBEDDED
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

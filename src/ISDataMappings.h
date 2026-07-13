@@ -15,16 +15,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <any>
 #include <cinttypes>
+#include <cstdio>
 #include <map>
 #include <string>
+#include <typeinfo>
 #include <vector>
 #include <functional>
-#include <yaml-cpp/yaml.h>
-#include "com_manager.h"
-
 #include <type_traits>
 #include <cstdint>
 #include <cstddef>
+
+#include "com_manager.h"
+
+#if PLATFORM_IS_EMBEDDED == 0
+    #include <yaml-cpp/yaml.h>
+#endif
 
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
@@ -78,7 +83,7 @@ typedef enum
     DATA_FLAGS_ANGLE                     = 0x00000200,  // Supports unwrapping angle
     DATA_FLAGS_DECOR_ROLL_MASK           = 0x000F0000,  // Decoration roll
     DATA_FLAGS_INS_STATUS                = 0x00010000,  // "
-    DATA_FLAGS_GPS_STATUS                = 0x00020000,  // "
+    DATA_FLAGS_GNSS_STATUS                = 0x00020000,  // "
 } eDataFlags;
 
 /*
@@ -109,6 +114,8 @@ struct data_info_t
     std::vector<std::string> units;             //!< The Units that this field should be displayed in (after conversion)
     std::vector<std::string> description;       //!< A description for this field; what it means, how to interpret its values, etc.
     double conversion;                          //!< A scalar that the raw value is divided by prior to converting to a string
+    uint64_t bitMask = ~0ULL;                   //!< Bitmask applied to raw integer value before display (default ~0 = all bits pass through)
+    uint8_t  bitShift = 0;                      //!< Right-shift applied after bitMask (default 0 = no shift)
     RenderFunction renderBasic =                //!< A function to render / convert a value to a simple string - VariableToString() calls this function - this should not include newlines, etc.
             [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { (void)info; (void)val; (void)arrayIdx; (void)flags; return ""; };
     RenderFunction renderExtended =             //!< A function to render a value to string using advanced logic and formatting - this may include newlines, html formatting, etc. can be used for tooltips, and useful for bitmasks, etc and other advanced formatting
@@ -230,7 +237,12 @@ public:
 
     ~DataMapper()
     {
-        assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
+        if (totalSize != structSize)
+        {
+            fprintf(stderr, "DataMapper ERROR [%s]: mapped size %u != struct size %u (diff %d bytes)\n",
+                typeid(MAP_TYPE).name(), totalSize, structSize, (int)structSize - (int)totalSize);
+            assert(false && "Size of mapped fields does not match struct size");
+        }
     }
 
     template <typename MemberType>
@@ -690,6 +702,7 @@ public:
     */
     static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
+#if defined(YAML_CPP_API)
     /*** Convert a did data set buffer to a YAML node
     * @param did the data ID
     * @param dataPtr pointer to the did buffer
@@ -708,7 +721,7 @@ public:
     * @return true if successful, false if error
     */
     static bool YamlToData(int did, const YAML::Node& yaml, uint8_t* dataPtr, std::vector<MemoryUsage>* usageVec = nullptr);
-
+#endif
     /**
      * @brief Convert a did data set buffer to a string representation
      *
@@ -778,7 +791,10 @@ protected:
     // on embedded we cannot new up C++ runtime until after free rtos has started
     static cISDataMappings* s_map;
 #else
-    static cISDataMappings s_map;
+    // Heap-allocated pointer (never deleted) to avoid static destruction order fiasco:
+    // other static objects (e.g. cDeviceLog containers) may call NameToInfoMap() during
+    // their own destructors, after a value-typed s_map would have already been destroyed.
+    static cISDataMappings* s_map;
 #endif
 
 private:
@@ -811,4 +827,3 @@ private:
 };
 
 #endif // __ISDATAMAPPINGS_H_
-

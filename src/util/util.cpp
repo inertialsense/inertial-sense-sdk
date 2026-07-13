@@ -17,6 +17,7 @@
 // #include <acc_prof.h>
 
 #include "ISDataMappings.h"
+#include "util/uri.hpp"
 
 
 #ifdef PLATFORM_IS_WINDOWS
@@ -215,22 +216,137 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
     return std::string(buf);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo) {
-    // hardware type & version
-    const char *typeName = "\?\?\?";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
-        default: typeName = "\?\?\?"; break;
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
+    // hardware type & version — resolved via the canonical tables in data_sets.c.
+    const char* typeName = "\?\?\?";
+    const uint8_t t = devInfo.hardwareType;
+    if (t > 0 && t < IS_HARDWARE_TYPE_COUNT) {
+        typeName = g_isHardwareTypeNames[t];
+    } else if (t > IS_HDW_TYPE_PERIPHERAL) {
+        const int peripheralIdx = static_cast<int>(t) - IS_HDW_TYPE_PERIPHERAL - 1;
+        if (peripheralIdx >= 0 && peripheralIdx < IS_HDW_GNSS_TYPE_COUNT) {
+            typeName = g_isGnssHardwareNames[peripheralIdx];
+        }
     }
     std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+    if (!showRev)
+        return out;
+
     if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
         out += utils::string_format(".%u", devInfo.hardwareVer[2]);
         if (devInfo.hardwareVer[3] != 0)
             out += utils::string_format(".%u", devInfo.hardwareVer[3]);
     }
     return out;
+}
+
+// Renders just the type + major + minor captured in an encoded is_hardware_t.
+// Does not include hardwareVer[2]/hardwareVer[3] — those are not part of hdwId.
+std::string utils::getHardwareAsString(is_hardware_t hdwId) {
+    const char *typeName = "\?\?\?";
+    switch (DECODE_HDW_TYPE(hdwId)) {
+        case IS_HARDWARE_TYPE_UINS:    typeName = "uINS"; break;
+        case IS_HARDWARE_TYPE_IMX:     typeName = "IMX";  break;
+        case IS_HARDWARE_TYPE_GPX:     typeName = "GPX";  break;
+        case IS_HDW_GNSS_SONY:         typeName = "CXD";  break;
+        case IS_HDW_GNSS_UBLOX:        typeName = "UBX";  break;
+        case IS_HDW_GNSS_SEPTENTRIO:   typeName = "SEP";  break;
+        case IS_HDW_GNSS_STM_TESSIO:   typeName = "STM";  break;
+        default:                       typeName = "\?\?\?"; break;
+    }
+    return utils::string_format("%s-%u.%u", typeName,
+                                DECODE_HDW_MAJOR(hdwId),
+                                DECODE_HDW_MINOR(hdwId));
+}
+
+bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
+    auto dash = s.find('-');
+    if (dash == std::string::npos || dash == 0) return false;
+
+    const std::string typeName = s.substr(0, dash);
+    uint8_t type = 0;
+    bool matched = false;
+    // Skip index 0 ("UNKNOWN") — it's a placeholder, not a real hardware type.
+    for (int i = 1; i < IS_HARDWARE_TYPE_COUNT; ++i) {
+        if (typeName == g_isHardwareTypeNames[i]) {
+            type = static_cast<uint8_t>(i);
+            matched = true;
+            break;
+        }
+    }
+    if (!matched) {
+        for (int i = 0; i < IS_HDW_GNSS_TYPE_COUNT; ++i) {
+            if (typeName == g_isGnssHardwareNames[i]) {
+                type = static_cast<uint8_t>(IS_HDW_TYPE_PERIPHERAL + 1 + i);
+                matched = true;
+                break;
+            }
+        }
+    }
+    if (!matched) return false;
+
+    uint8_t ver[4] = {0, 0, 0, 0};
+    size_t pos = dash + 1;
+    for (int idx = 0; idx < 4 && pos < s.size(); ++idx) {
+        size_t dot = s.find('.', pos);
+        if (dot == std::string::npos) dot = s.size();
+        const std::string part = s.substr(pos, dot - pos);
+        if (!part.empty()) {
+            try { ver[idx] = static_cast<uint8_t>(std::stoi(part)); } catch (...) { return false; }
+        }
+        pos = dot + 1;
+    }
+
+    devInfo.hardwareType = type;
+    for (int i = 0; i < 4; ++i) devInfo.hardwareVer[i] = ver[i];
+    return true;
+}
+
+bool utils::parseFirmwareFromString(const std::string& s, dev_info_t& devInfo) {
+    // Strip optional "fw" prefix.
+    std::string w = s;
+    if (w.size() >= 2 && (w[0] == 'f' || w[0] == 'F') && (w[1] == 'w' || w[1] == 'W'))
+        w = w.substr(2);
+    if (w.empty()) return false;
+
+    // Split at the first '-' (build-type suffix); everything before is "<M>.<m>.<p>".
+    const size_t dash = w.find('-');
+    const std::string head = (dash == std::string::npos) ? w : w.substr(0, dash);
+    const std::string tail = (dash == std::string::npos) ? ""  : w.substr(dash + 1);
+
+    uint8_t fv[4] = {0, 0, 0, 0};
+    size_t pos = 0;
+    for (int idx = 0; idx < 3 && pos < head.size(); ++idx) {
+        const size_t dot = head.find('.', pos);
+        const size_t end = (dot == std::string::npos) ? head.size() : dot;
+        const std::string part = head.substr(pos, end - pos);
+        if (!part.empty()) {
+            try { fv[idx] = static_cast<uint8_t>(std::stoi(part)); } catch (...) { return false; }
+        }
+        if (dot == std::string::npos) break;
+        pos = dot + 1;
+    }
+
+    // Decode build-type suffix and optional ".<build>" trailing number.
+    char buildType = 0;
+    if (!tail.empty()) {
+        const size_t trailDot = tail.find('.');
+        const std::string label = (trailDot == std::string::npos) ? tail : tail.substr(0, trailDot);
+        if      (label == "alpha") buildType = 'a';
+        else if (label == "beta")  buildType = 'b';
+        else if (label == "rc")    buildType = 'c';
+        else if (label == "devel") buildType = 'd';
+        else if (label == "snap")  buildType = 's';
+        else if (label == "r")     buildType = 0;  // legacy production suffix
+        else buildType = 0; // unknown label — treat as production
+        if (trailDot != std::string::npos) {
+            try { fv[3] = static_cast<uint8_t>(std::stoi(tail.substr(trailDot + 1))); } catch (...) {}
+        }
+    }
+
+    for (int i = 0; i < 4; ++i) devInfo.firmwareVer[i] = fv[i];
+    devInfo.buildType = buildType;
+    return true;
 }
 
 std::string utils::getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix) {
@@ -594,25 +710,37 @@ bool utils::devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2
  *   determine the specific differences between versions.
  */
 int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b) {
+    return compareFirmwareVersions(a, b, 0xFFFF);
+}
+
+int64_t utils::compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b, uint16_t fields) {
     int64_t result = 0;
-    if (a.firmwareVer[0] != b.firmwareVer[0])
-        result |= ((int64_t)(a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
-    if (a.firmwareVer[1] != b.firmwareVer[1])
-        result |= ((int64_t)(a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
-    if (a.firmwareVer[2] != b.firmwareVer[2])
-        result |= ((int64_t)(a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
-    if (a.firmwareVer[3] != b.firmwareVer[3])
-        result |= ((int64_t)(a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
-    uint64_t aDateTime = intDateTimeFromDevInfo(a);
-    uint64_t bDateTime = intDateTimeFromDevInfo(b);
-    if (aDateTime != bDateTime)
-        result |= ((int64_t)(aDateTime - bDateTime) & 0xFF) << 16;
+    if (fields & DV_BIT_FIRMWARE_VER) {
+        if (a.firmwareVer[0] != b.firmwareVer[0])
+            result |= ((int64_t)(a.firmwareVer[0] - b.firmwareVer[0]) & 0xFF) << 56;
+        if (a.firmwareVer[1] != b.firmwareVer[1])
+            result |= ((int64_t)(a.firmwareVer[1] - b.firmwareVer[1]) & 0xFF) << 48;
+        if (a.firmwareVer[2] != b.firmwareVer[2])
+            result |= ((int64_t)(a.firmwareVer[2] - b.firmwareVer[2]) & 0xFF) << 32;
+        if (a.firmwareVer[3] != b.firmwareVer[3])
+            result |= ((int64_t)(a.firmwareVer[3] > b.firmwareVer[3]) & 0xFF) << 24;
 
-    if (a.buildNumber != b.buildNumber)
-        result |= ((int64_t)(a.buildNumber - b.buildNumber) & 0xFF) << 8;
+        if (a.buildType && b.buildType && a.buildType != b.buildType)
+            result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
+    }
 
-    result |= ((int64_t)(a.buildType - b.buildType) & 0xFF);
+    if (fields & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME)) {
+        uint64_t aDateTime = intDateTimeFromDevInfo(a);
+        uint64_t bDateTime = intDateTimeFromDevInfo(b);
+        if (aDateTime != bDateTime)
+            result |= ((int64_t)(aDateTime - bDateTime) & 0xFF) << 16;
+    }
+
+    if (fields & DV_BIT_BUILD_KEY) {
+        if (a.buildNumber != b.buildNumber)
+            result |= ((int64_t)(a.buildNumber - b.buildNumber) & 0xFF) << 8;
+    }
 
     return result;
 }
@@ -717,4 +845,119 @@ bool utils::validDomainName(const std::string& domainName) {
     static const std::regex regexp(R"(^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$)");
     std::smatch match;
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
+}
+
+utils::UriParts utils::parseUri(const std::string& uriStr) {
+    UriParts out;
+    const FIX8::uri uri{uriStr};
+
+    if (uri.has_scheme())
+        out.scheme.assign(uri.get_scheme());
+
+    if (uri.has_host()) {
+        std::string host{uri.get_host()};
+        // IPv6 literals are returned wrapped in brackets (e.g. "[::1]") - strip them
+        if (host.size() > 1 && host.front() == '[' && host.back() == ']')
+            host = host.substr(1, host.size() - 2);
+        out.host = std::move(host);
+    }
+
+    if (uri.has_port()) {
+        // FIX8::uri does not validate that the port is numeric, so guard against a
+        // malformed/out-of-range value (which would otherwise throw out of std::stoi).
+        try {
+            int parsed = std::stoi(std::string{uri.get_port()}, nullptr, 10);
+            if (parsed > 0 && parsed <= 65535)
+                out.port = parsed;
+        } catch (const std::exception&) {
+            // leaves out.port == -1
+        }
+    }
+
+    if (uri.has_user())
+        out.user.assign(uri.get_user());
+    if (uri.has_password())
+        out.password.assign(uri.get_password());
+    if (uri.has_path())
+        out.path.assign(uri.get_path());
+    if (uri.has_query())
+        out.query.assign(uri.get_query());
+
+    return out;
+}
+
+utils::UriParts utils::parseUri(const std::string& uriStr, const std::string& defaultsUri) {
+    UriParts out = parseUri(uriStr);
+    const UriParts def = parseUri(defaultsUri);
+
+    if (!out.hasScheme())       out.scheme = def.scheme;
+    if (!out.hasHost())         out.host = def.host;
+    if (!out.hasPort())         out.port = def.port;
+    if (out.user.empty())       out.user = def.user;
+    if (out.password.empty())   out.password = def.password;
+    if (out.path.empty())       out.path = def.path;
+    if (out.query.empty())      out.query = def.query;
+
+    return out;
+}
+
+std::string utils::encodeSTM32UID(const uint32_t uid[3]) {
+    // STM32 UID is 3x 32-bit registers stored as little-endian.
+    // UUID encoding:
+    //   Field 1 (8 hex): uid[0] bytes in LE order, swapped to BE
+    //   Field 2 (4 hex): first 2 bytes of uid[1] in LE order, swapped to BE
+    //   Field 3 (4 hex): constant 0x8EF4
+    //   Field 4 (4 hex): constant 0x996B
+    //   Field 5 (12 hex): remaining bytes from uid[1] and uid[2]
+
+    uint8_t bytes[12];
+    // Write uid registers as little-endian bytes
+    for (int i = 0; i < 3; i++) {
+        bytes[i * 4 + 0] = (uint8_t)(uid[i] >> 0);
+        bytes[i * 4 + 1] = (uint8_t)(uid[i] >> 8);
+        bytes[i * 4 + 2] = (uint8_t)(uid[i] >> 16);
+        bytes[i * 4 + 3] = (uint8_t)(uid[i] >> 24);
+    }
+
+    // Field 1: uid[0] bytes swapped to big-endian (reverse the 4 LE bytes)
+    // Field 2: first 2 bytes of uid[1] swapped to big-endian (reverse the 2 LE bytes)
+    char buf[48];
+    snprintf(buf, sizeof(buf),
+             "%02x%02x%02x%02x-%02x%02x-8EF4-996B-%02x%02x%02x%02x%02x%02x",
+             bytes[3], bytes[2], bytes[1], bytes[0],    // uid[0] BE
+             bytes[5], bytes[4],                          // uid[1] first 2 bytes BE
+             bytes[6], bytes[7],                          // uid[1] last 2 bytes (remaining)
+             bytes[8], bytes[9], bytes[10], bytes[11]);   // uid[2] all 4 bytes
+
+    return std::string(buf);
+}
+
+std::string utils::generateUUIDv4() {
+    // Simple UUID v4 generator using rand()
+    static bool seeded = false;
+    if (!seeded) {
+        srand((unsigned int)time(nullptr));
+        seeded = true;
+    }
+
+    auto randByte = []() -> uint8_t { return (uint8_t)(rand() & 0xFF); };
+
+    uint8_t bytes[16];
+    for (auto& b : bytes)
+        b = randByte();
+
+    // Set version (4) and variant (10xx)
+    bytes[6] = (bytes[6] & 0x0F) | 0x40;  // version 4
+    bytes[8] = (bytes[8] & 0x3F) | 0x80;  // variant 10xx
+
+    char buf[48];
+    snprintf(buf, sizeof(buf),
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             bytes[0], bytes[1], bytes[2], bytes[3],
+             bytes[4], bytes[5],
+             bytes[6], bytes[7],
+             bytes[8], bytes[9],
+             bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+
+    return std::string(buf);
 }

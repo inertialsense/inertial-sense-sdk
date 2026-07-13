@@ -12,7 +12,12 @@
 #include <vector>
 #include <regex>
 
-#define REMOTE_SOCAT_PORTS      // only does anything on linux
+#if PLATFORM_IS_LINUX
+#   include <dirent.h>
+#   include <sys/stat.h>
+#endif
+
+// #define REMOTE_SOCAT_PORTS      // only does anything on linux
 
 #ifdef REMOTE_SOCAT_PORTS
     #include <filesystem>
@@ -35,11 +40,8 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
     port_handle_t port = (port_handle_t)serialPort;
 
     *serialPort = {};
-    serialPort->base.pnum = (uint16_t)PortManager::getInstance().getPortCount();
-    serialPort->base.ptype = (pType | PORT_TYPE__UART | PORT_TYPE__COMM);
+    serialPortInit(port, (uint16_t)PortManager::getInstance().getPortCount(), (pType | PORT_TYPE__UART | PORT_TYPE__COMM), 0);
     strncpy(serialPort->portName, pName.c_str(), pName.length());
-
-    serialPortPlatformInit(port);
 
     // serialPort->base.portOpen = SerialPortFactory::open_port;
     serialPort->base.portValidate = SerialPortFactory::validate_port;
@@ -50,7 +52,7 @@ port_handle_t SerialPortFactory::bindPort(const std::string& pName, uint16_t pTy
 
     portValidate(port);
 
-    log_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
+    log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new serial port '%s'", portName(port));
     return port;
 }
 
@@ -58,7 +60,7 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    log_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
+    log_more_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
@@ -85,10 +87,8 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
 }
 
 int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *errMsg) {
-#ifdef DEBUG_LOGGING
-    const char* portStr = portName(port);
-    const char* safeErrMsg = errMsg ? errMsg : "";
-#endif
+    // const char* portStr = portName(port);
+    // const char* safeErrMsg = errMsg ? errMsg : "";
 
     static int lastErrorCode = 0;       // the previous error code
     static int repeatCount = 0;         // number of time the same code has repeated
@@ -97,14 +97,15 @@ int SerialPortFactory::onPortError(port_handle_t port, int errCode, const char *
     if (errCode != lastErrorCode) {
         repeatCount = 0;
         lastErrorMs = current_timeMs();
+        lastErrorCode = errCode;
 
-        // Split the printf into two calls (helps avoid inlining inference)
-        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
+        // General errors should already be reported by the underlying port implementation (if IS_LOG_PORT is configured)
+        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s", portStr, errCode, safeErrMsg);
     } else {
         // Split the printf into two calls (helps avoid inlining inference)
-        log_debug(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
+        // log_error(IS_LOG_PORT_FACTORY, "%s :: Error %d : %s (%d count)", portStr, errCode, safeErrMsg, ++repeatCount);
 
-        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount >= 10)){
+        if ((current_timeMs() - lastErrorMs > 30000) && (repeatCount++ >= 10)){
             // any error which repeats for more than 30 seconds, and more than 10 times, close & invalidate
             portClose(port);
             portInvalidate(port);
@@ -196,7 +197,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 
 #elif PLATFORM_IS_LINUX
 
-    struct dirent **namelist;
+    struct dirent **namelist = NULL;
     std::vector<std::string> comList8250;
     const char* sysdir = "/sys/class/tty/";
 
@@ -217,7 +218,7 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 
     // Scan through /sys/class/tty - it contains all tty-devices in the system
     int n = scandir(sysdir, &namelist, NULL, NULL);
-    if (n < 0)
+    if ((n < 0) || (namelist == NULL))
     {
         perror("scandir");
     }
@@ -254,6 +255,9 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/serial.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <unistd.h>
 
 /**
  * Performs an Linux OS-level check to determine the validity of a port, by checking for existence
@@ -263,28 +267,22 @@ int SerialPortFactory::getComPorts(std::vector<std::string>& portNames)
  * @return
  */
 bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& pName) {
-    struct stat st;
-    char buffer[1024];
+    struct stat st = {};
 
     // check first for /dev/<pName> and that its a character device
     if (! (!stat(pName.c_str(), &st) && S_ISCHR(st.st_mode) && st.st_rdev))
         return false;
 
 #ifdef REMOTE_SOCAT_PORTS
-    if (pName.starts_with("/dev/remote"))
+    if (pName.rfind("/dev/remote", 0) == 0)
         return true;
 #endif
 
-    std::string devdir = utils::string_format("/sys/class/tty/%s/device/driver", basename(pName.c_str()));
-    if (! (!lstat(devdir.c_str(), &st) && S_ISLNK(st.st_mode) && st.st_nlink))
-        return false;
-
-    memset(buffer, 0, sizeof(buffer));
-    if (readlink(devdir.c_str(), buffer, sizeof(buffer)) <= 0)
-        return false;
-
-    std::string driver = std::string(basename(buffer));
-    if (driver == "port")
+    // Resolve the real hardware driver (walks past the kernel >= 6.8 "serial-base"
+    // port/ctrl layers). An empty/"port" result means there is no genuine backing
+    // driver, so the port is not valid.
+    std::string driver = get_driver__linux(utils::string_format("/sys/class/tty/%s", basename(pName.c_str())));
+    if (driver.empty() || driver == "port")
         return false;   // these are not valid ports
 
     if (driver == "serial8250") {
@@ -295,26 +293,45 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
 
 std::string SerialPortFactory::get_driver__linux(const std::string& tty)
 {
-    struct stat st;
-    std::string devicedir = tty;
+    struct stat st = {};
+    std::string devlink = tty + "/device";
 
-    // Append '/device' to the tty-path
-    devicedir += "/device";
+    // The tty's "device" entry must be a symlink to the underlying device node
+    if (lstat(devlink.c_str(), &st) != 0 || !S_ISLNK(st.st_mode))
+        return "";
 
-    if (lstat(devicedir.c_str(), &st)==0 && S_ISLNK(st.st_mode))
-    {   // Stat the devicedir and handle it if it is a symlink
-        char buffer[1024];
-        memset(buffer, 0, sizeof(buffer));
+    // Resolve to the real device path so we can walk its parents if needed
+    char real[PATH_MAX] = {};
+    if (realpath(devlink.c_str(), real) == nullptr)
+        return "";
+    std::string devpath(real);
 
-        // Append '/driver' and return basename of the target
-        devicedir += "/driver";
+    // Reads the driver name (basename of the device's "driver" symlink target)
+    auto driver_at = [](const std::string& p) -> std::string {
+        char buffer[1024] = {};
+        std::string driverlink = p + "/driver";
+        if (readlink(driverlink.c_str(), buffer, sizeof(buffer) - 1) <= 0)
+            return "";
+        return basename(buffer);
+    };
 
-        if (readlink(devicedir.c_str(), buffer, sizeof(buffer)) > 0)
-        {
-            return basename(buffer);
-        }
+    std::string driver = driver_at(devpath);
+
+    // Kernels >= 6.8 interpose a "serial-base" bus with intermediate "port" and
+    // "ctrl" devices between the tty and the real controller, so the immediate
+    // driver is always "port". Walk up the device parent chain past those layers
+    // to recover the actual hardware driver (e.g. serial8250, uart-pl011). Older
+    // kernels expose the real driver directly, so this loop is skipped.
+    while (driver == "port" || driver == "ctrl")
+    {
+        size_t slash = devpath.find_last_of('/');
+        if (slash == std::string::npos || slash == 0)
+            break;
+        devpath.resize(slash);
+        driver = driver_at(devpath);
     }
-    return "";
+
+    return driver;
 }
 
 void SerialPortFactory::register_comport__linux(std::vector<std::string>& comList, std::vector<std::string>& comList8250, const std::string& dir)
@@ -339,27 +356,211 @@ void SerialPortFactory::register_comport__linux(std::vector<std::string>& comLis
 
 void SerialPortFactory::probe_serial8250_comports__linux(std::vector<std::string>& comList, std::vector<std::string> comList8250)
 {
-    struct serial_struct serinfo;
-    std::vector<std::string>::iterator it = comList8250.begin();
+    struct serial_struct serinfo = {};
+
+    // The PORT_UNKNOWN filter below exists to reject the legacy static /dev/ttyS0..N
+    // "phantom" nodes that the x86 ISA 8250 driver pre-creates without backing
+    // hardware. Those phantoms only occur on PC/BIOS (non-device-tree) systems.
+    // On a device-tree platform (e.g. Raspberry Pi) a serial8250 port that the
+    // kernel bound a driver to is real hardware, even though its SoC UART reports
+    // TIOCGSERIAL type == PORT_UNKNOWN (it never populates the legacy serial_struct).
+    // So on device-tree systems we accept the port regardless of the reported type.
+    bool deviceTreePlatform = (access("/proc/device-tree", F_OK) == 0);
 
     // Iterate over all serial8250-devices
-    while (it != comList8250.end())
+    for (auto& dev : comList8250)
     {   // Try to open the device
-        int fd = open((*it).c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY);
+        int fd = open(dev.c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY);
 
         if (fd >= 0)
         {   // Get serial_info
-            if (ioctl(fd, TIOCGSERIAL, &serinfo)==0)
+            if (ioctl(fd, TIOCGSERIAL, &serinfo) == 0)
             {
-                if (serinfo.type != PORT_UNKNOWN)
-                {   // device type is no PORT_UNKNOWN we accept the port
-                    comList.push_back(*it);
+                if (serinfo.type != PORT_UNKNOWN || deviceTreePlatform)
+                {   // Accept known port types, or any driver-bound port on a device-tree platform
+                    comList.push_back(dev);
                 }
             }
             close(fd);
         }
-        it ++;
     }
 }
 
 #endif // #if PLATFORM_IS_LINUX
+
+// =======================================================================
+// SpiPortFactory
+// =======================================================================
+
+/**
+ * Parses a "spi://<devpath>[b<hz>,d<gpio>,m<mode>]" port string into a plain device path.
+ * Bracket key-value pairs update the corresponding out-params; absent keys leave the caller's
+ * value unchanged so portOptions defaults flow through unmodified.
+ */
+std::string SpiPortFactory::parseSpiPortString(const std::string& portStr, uint32_t& speedHz, uint8_t& mode, int& dataReadyGpio)
+{
+    std::string dev = portStr;
+    if (dev.size() > 6 && dev.substr(0, 6) == "spi://")
+        dev = dev.substr(6); // strip "spi://", leaving "/dev/spi0.0[...]"
+
+    size_t bracket = dev.find('[');
+    if (bracket != std::string::npos)
+    {
+        std::string opts = dev.substr(bracket + 1);
+        dev = dev.substr(0, bracket);
+        size_t close = opts.find(']');
+        if (close != std::string::npos) opts.resize(close);
+
+        size_t pos = 0;
+        while (pos < opts.size())
+        {
+            size_t comma = opts.find(',', pos);
+            std::string tok = opts.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+            pos = (comma == std::string::npos) ? opts.size() : comma + 1;
+            if (tok.size() < 2) continue;
+            const char* val = tok.c_str() + 1;
+            switch (tok[0])
+            {
+            case 'b': speedHz      = (uint32_t)strtoul(val, nullptr, 10); break;
+            case 'd': dataReadyGpio = (int)strtol(val, nullptr, 10);       break;
+            case 'm': mode         = (uint8_t)strtoul(val, nullptr, 10);  break;
+            }
+        }
+    }
+    return dev;
+}
+
+/**
+ * Allocates a spi_port_t, parsing @p pName for embedded bracket opts that override portOptions
+ * defaults. Wires validate_port as the per-port portValidate callback so PortManager uses
+ * factory-level OS existence checks. Does NOT open the device.
+ */
+port_handle_t SpiPortFactory::bindPort(const std::string& pName, uint16_t pType)
+{
+    uint32_t speedHz      = portOptions.defaultSpeedHz;
+    uint8_t  mode         = portOptions.defaultMode;
+    int      dataReadyGpio = portOptions.dataReadyGpio;
+    std::string devPath   = parseSpiPortString(pName, speedHz, mode, dataReadyGpio);
+
+    if (!validatePort(devPath, pType))
+        return nullptr;
+
+    spi_port_t* spiPort = new spi_port_t;
+    port_handle_t port  = (port_handle_t)spiPort;
+
+    *spiPort = {};
+    spiPortInit(port,
+                (uint16_t)PortManager::getInstance().getPortCount(),
+                devPath.c_str(),
+                speedHz,
+                mode,
+                PORT_TYPE__COMM);
+
+    spiPort->base.portValidate = SpiPortFactory::validate_port;
+
+    if (dataReadyGpio >= 0)
+        spiPortSetDataReady(port, dataReadyGpio);
+
+    portValidate(port);
+
+    log_more_debug(IS_LOG_PORT_FACTORY, "Allocated new SPI port '%s'", portName(port));
+    return port;
+}
+
+/** Frees the spi_port_t allocated by bindPort. Does not flush or close the device. */
+bool SpiPortFactory::releasePort(port_handle_t port)
+{
+    if (!port) return false;
+
+    log_more_debug(IS_LOG_PORT_FACTORY, "Releasing SPI port '%s'", SPI_PORT(port)->name);
+    memset(port, 0, sizeof(spi_port_t));
+    delete (spi_port_t*)port;
+    return true;
+}
+
+/**
+ * Returns true if @p pName exists in the filesystem and is a character device.
+ * @p pName must be a plain device path — call parseSpiPortString() first if the
+ * caller may have a "spi://..." URL.
+ */
+bool SpiPortFactory::validatePort(const std::string& pName, uint16_t pType)
+{
+#if PLATFORM_IS_LINUX
+    struct stat st;
+    return (stat(pName.c_str(), &st) == 0 && S_ISCHR(st.st_mode));
+#else
+    (void)pName; (void)pType;
+    return false;
+#endif
+}
+
+/**
+ * Enumerates SPI devices and invokes @p portCallback for each one matching @p pattern.
+ * If @p pattern carries the "spi://" prefix, it is stripped for device-path matching and
+ * then reconstructed on the matched name before the callback fires, so bindPort receives
+ * the full URL (including bracket opts) and can parse per-port parameters itself.
+ * If @p pattern is a bare device path with brackets (e.g. "/dev/spi0.0[opts]") the brackets
+ * are stripped before regex matching and the opts are still forwarded to bindPort.
+ * A plain device path with no brackets is used as-is for regex matching.
+ */
+void SpiPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback,
+                                  const std::string& pattern, uint16_t pType)
+{
+#if PLATFORM_IS_LINUX
+    static const std::string SPI_PREFIX = "spi://";
+    bool hasSpiPrefix = (pattern.size() > SPI_PREFIX.size() && pattern.substr(0, SPI_PREFIX.size()) == SPI_PREFIX);
+    std::string devPattern = hasSpiPrefix ? pattern.substr(SPI_PREFIX.size()) : pattern;
+    std::string spiOpts;
+
+    // Bracket opts are never part of a device path; strip them unconditionally.
+    // This also handles bare "/dev/spi0.0[opts]" passed without the spi:// prefix.
+    size_t bracket = devPattern.find('[');
+    if (bracket != std::string::npos)
+    {
+        spiOpts    = devPattern.substr(bracket);
+        devPattern = devPattern.substr(0, bracket);
+        hasSpiPrefix = true; // ensure fullName is reconstructed for bindPort
+    }
+
+    std::regex matchPattern(devPattern.empty() ? ".*" : devPattern);
+    getSpiDevices(portNames);
+    for (auto& name : portNames)
+    {
+        if (validatePort(name, PORT_TYPE__SPI) && std::regex_match(name, matchPattern))
+        {
+            // Preserve the full spi:// string so bindPort can parse the opts.
+            std::string fullName = hasSpiPrefix ? (SPI_PREFIX + name + spiOpts) : name;
+            portCallback(this, PORT_TYPE__SPI, fullName);
+        }
+    }
+#else
+    (void)portCallback; (void)pattern; (void)pType;
+#endif
+}
+
+#if PLATFORM_IS_LINUX
+/**
+ * Scans /dev for SPI character devices, populating @p names with their full paths
+ * (e.g. "/dev/spi0.0"). Clears @p names before scanning.
+ * @return number of devices found.
+ */
+int SpiPortFactory::getSpiDevices(std::vector<std::string>& names)
+{
+    names.clear();
+
+    // spidev devices appear as /dev/spidevB.C (bus B, chip-select C)
+    DIR* dir = opendir("/dev");
+    if (!dir) return 0;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr)
+    {
+        if (strncmp(entry->d_name, "spidev", 6) == 0)
+            names.push_back(std::string("/dev/") + entry->d_name);
+    }
+    closedir(dir);
+
+    std::sort(names.begin(), names.end());
+    return (int)names.size();
+}
+#endif

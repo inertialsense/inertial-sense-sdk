@@ -171,58 +171,62 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 }
 
 
-#define INVALID_ACCEL 1.0e-6f
-void errorCheckImu3(imu3_t *di)
+void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 {
-    // Error Checking
-    if (di->time != 0.0) 
+    // Multiple IMU Averaging - optimized for speed
+    int nPqr[3] = {0};
+    int nAcc[3] = {0};
+    imui_t mean = {};
+
+    for (int d=0; d<numDevices; d++)
     {
-        // Compare to a small number much smaller than IMU noise sigma
-        for (int i = 0; i < 3; i++)
+        const imui_t *I = &imus->I[d];
+        uint32_t gyrMask = (IMUS_STATUS_GYR_X_OK << (d*IMUS_STATUS_IMU_OK_BITSIZE));
+        uint32_t accMask = (IMUS_STATUS_ACC_X_OK << (d*IMUS_STATUS_IMU_OK_BITSIZE));
+        
+        for (int a=0; a<3; a++)
         {
-            if (fabs(di->I[i].acc[0]) < INVALID_ACCEL && 
-                fabs(di->I[i].acc[1]) < INVALID_ACCEL && 
-                fabs(di->I[i].acc[2]) < INVALID_ACCEL)
+            if (imus->status & (gyrMask << a))
             {
-                di->status &= ~IMU_STATUS_IMU_OK_MASK;
+                mean.pqr[a] += I->pqr[a];
+                ++nPqr[a];
+            }
+            if (imus->status & (accMask << a))
+            {
+                mean.acc[a] += I->acc[a];
+                ++nAcc[a];
             }
         }
     }
-}
 
-
-int tripleToSingleImu(imu_t *result, const imu3_t *di)
-{
-    imu_t imu = {};
-    imu.time = di->time;
-    imu.status = di->status;
-
-    int cnt = 0;
-
-    for (int d=0; d<3; d++)
+    result->status = imus->status & IMUS_STATUS_SATURATION_MASK;
+    for (int a=0; a<3; a++)
     {
-        uint32_t imuOkBitMask = IMU_STATUS_IMU1_OK<<d;
-        if ((di->status&imuOkBitMask)==imuOkBitMask)
+        STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
+        if (nPqr[a])
         {
-            add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[d].pqr);
-            add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[d].acc);
-            cnt++;
+            result->I.pqr[a] = mean.pqr[a] * inv_count_upto10(nPqr[a]);
+            result->status |= (IMU_STATUS_GYR_X_OK << a);
+        }
+        else
+        {
+            result->I.pqr[a] = 0.0f;
+        }
+        if (nAcc[a])
+        {
+            result->I.acc[a] = mean.acc[a] * inv_count_upto10(nAcc[a]);
+            result->status |= (IMU_STATUS_ACC_X_OK << a);
+        }
+        else
+        {
+            result->I.acc[a] = 0.0f;
         }
     }
-
-    if (cnt)
-    {
-        float div = 1.0f/(float)cnt;
-        mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
-        mul_Vec3_X(imu.I.acc, imu.I.acc, div);
-    }
-
-    *result = imu;
-    return cnt;
+    result->time = imus->time;
 }
 
 
-int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
+int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
 {
     imu_t imu = {};
     imu.time = di->time;
@@ -230,7 +234,7 @@ int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
 
     int cnt = 0;
 
-    for (int idev = 0; idev < 3; idev++)
+    for (int idev = 0; idev < numDevices; idev++)
     {
         if (!exclude[idev])
         {
@@ -251,47 +255,75 @@ int tripleToSingleImuExc(imu_t *result, const imu3_t *di, bool *exclude)
     return cnt;
 }
 
-void tripleToSingleImuAxis(imu_t* result, const imu3_t* di, bool exclude_gyro[3], bool exclude_acc[3], int iaxis)
+void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
 {
     float w = 0.0f, a = 0.0f;
     int cnt_gyro = 0, cnt_acc = 0;
 
-    for (int idev = 0; idev < 3; idev++)
+    for (int idev = 0; idev < numDevices; idev++)
     {
-        if (!exclude_gyro[idev])
+        uint32_t gyrMask = (IMUS_STATUS_GYR_X_OK << (idev*IMUS_STATUS_IMU_OK_BITSIZE));
+        uint32_t accMask = (IMUS_STATUS_ACC_X_OK << (idev*IMUS_STATUS_IMU_OK_BITSIZE));
+
+        if (!exclude_gyro[idev] && (di->status & (gyrMask << iaxis)))
         {
             w += di->I[idev].pqr[iaxis];
             cnt_gyro++;
         }
-        if (!exclude_acc[idev])
+        if (!exclude_acc[idev] && (di->status & (accMask << iaxis)))
         {
             a += di->I[idev].acc[iaxis];
             cnt_acc++;
         }
     }
-    if (cnt_gyro > 0) w = w / (float)cnt_gyro;
-    if (cnt_acc > 0)  a = a / (float)cnt_acc;
+    if (cnt_gyro > 0)
+    { 
+        w *= inv_count_upto10(cnt_gyro);
+        result->status |= (IMU_STATUS_GYR_X_OK << iaxis);
+    }
+    else
+    {   // No valid data
+        result->status &= ~(IMU_STATUS_GYR_X_OK << iaxis);
+    }
+    if (cnt_acc > 0)
+    { 
+        a *= inv_count_upto10(cnt_acc);
+        result->status |= (IMU_STATUS_ACC_X_OK << iaxis);
+    }
+    else
+    {   // No valid data
+        result->status &= ~(IMU_STATUS_ACC_X_OK << iaxis);
+    }
 
     result->I.pqr[iaxis] = w;
     result->I.acc[iaxis] = a;
     result->time = di->time;
-    result->status = di->status;
+    // result->status = di->status & IMUS_STATUS_SATURATION_MASK;
 }
 
 
-void singleToTripleImu(imu3_t *result, imu_t *imu)
+void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices)
 {
     result->time = imu->time;
-    for (int i=0; i<3; i++)
+    result->status = imu->status & IMU_STATUS_SATURATION_MASK;
+    for (int d=0; d<numDevices; d++)
     {
-        cpy_Vec3_Vec3(result->I[i].pqr, imu->I.pqr);
-        cpy_Vec3_Vec3(result->I[i].acc, imu->I.acc);
+        cpy_Vec3_Vec3(result->I[d].pqr, imu->I.pqr);
+        cpy_Vec3_Vec3(result->I[d].acc, imu->I.acc);
+        result->status |= (imu->status & IMU_STATUS_IMU_OK_MASK) << d*IMU_STATUS_IMU_OK_BITSIZE;
     }
-    result->status = imu->status | (IMU_STATUS_IMU1_OK | IMU_STATUS_IMU2_OK | IMU_STATUS_IMU3_OK);
 }
 
 
-int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
+int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt)
+{
+    mul_Vec3_X(imu->pqr, pImu->theta, divDt);
+    mul_Vec3_X(imu->acc, pImu->vel, divDt);
+    return 1;
+}
+
+
+int preintegratedImuToImu(imu_t *imu, const pimu_t *pImu)
 {
     if (pImu->dt == 0.0f)
     {
@@ -300,10 +332,7 @@ int preintegratedImuToIMU(imu_t *imu, const pimu_t *pImu)
 
     imu->time = pImu->time;
     imu->status = pImu->status;
-    float divDt = 1.0f / pImu->dt;
-    mul_Vec3_X(imu->I.pqr, pImu->theta, divDt);
-    mul_Vec3_X(imu->I.acc, pImu->vel, divDt);
-    return 1;
+    return preintegratedImuToImuI(&imu->I, pImu, 1.0f / pImu->dt);
 }
 
 
@@ -352,6 +381,25 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
     //  output->dt += integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last);
 }
 
+/** 
+ * \brief Integrate IMUs (imus_t) into array of preintegrated IMUs (PIMUs).
+ * \param pimuArray      Array of preintegrated IMU outputs to be updated.  Should be initialized to zero and maintained across calls to this function.
+ * \param arraySize      Number of PIMUs to integrate (should be equal to number of IMUs).
+ * \param imuLastArray   Array of previous IMU readings for each IMU.  Should be initialized to zero and maintained across calls to this function.
+ */
+void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES])
+{
+    imu_t imu = {0};
+    imu.time = imusIn->time;
+    for (int i=0; i<arraySize; i++)
+    {
+        imu.I = imusIn->I[i];
+        // Extract per-IMU status bits and preserve both OK and saturation flags
+        const uint32_t perImuOk = IMU_STATUS_IMU_OK_MASK & (imusIn->status >> (i * IMUS_STATUS_IMU_OK_BITSIZE));
+        imu.status = perImuOk | (imusIn->status & IMUS_STATUS_SATURATION_MASK);
+        integratePimu(&pimuArray[i], &imu, &imuLastArray[i]);
+    }
+}
 
 float deltaThetaDeltaVelRiemannSum(pimu_t *output, imu_t *imu, imu_t *imuLast)
 {
@@ -399,7 +447,7 @@ float deltaThetaDeltaVelTrapezoidal(pimu_t *output, imu_t *imu, imu_t *imuLast)
 }
 
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dt)
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imui_t *imu, imui_t *imuLast, int Nsteps, float dt)
 {
     ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
     float dti, Kw, mag_theta2, mag_theta4, div;
@@ -523,7 +571,7 @@ void zeroPimu(pimu_t *pimu)
 {
     pimu->time = 0.0;
     pimu->dt = 0.0f;
-    pimu->status = IMU_STATUS_IMU_OK_MASK;  // IMU OK bits get cleared inside integratePimu() if not OK.
+    pimu->status = 0;
     pimu->theta[2] = pimu->theta[1] = pimu->theta[0] = 0.0f;
     pimu->vel[2]   = pimu->vel[1]   = pimu->vel[0]   = 0.0f;
 }

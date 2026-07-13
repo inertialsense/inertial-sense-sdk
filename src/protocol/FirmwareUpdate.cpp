@@ -19,31 +19,31 @@ namespace fwUpdate {
     };
 
     static const status_strings_t status_names [] = {
-            { .name = "ERR_UNKNOWN", .nice = "Unknown Error" },
-            { .name = "ERR_INTERRUPTED", .nice = "Interrupted by User" },
-            { .name = "ERR_INVALID_TARGET", .nice = "Invalid Target" },
-            { .name = "ERR_INVALID_CHUNK", .nice = "Invalid or Out of Sequence Chunk" },
-            { .name = "ERR_INVALID_IMAGE", .nice = "Invalid Image" },
-            { .name = "ERR_UPDATER_CLOSED", .nice = "Updater Closed" },
-            { .name = "ERR_FLASH_INVALID", .nice = "Flash Invalid" },
-            { .name = "ERR_FLASH_OPEN_FAILURE", .nice = "Flash Open Failure" },
-            { .name = "ERR_FLASH_WRITE_FAILURE", .nice = "Flash Write Failure" },
-            { .name = "ERR_NOT_SUPPORTED", .nice = "Request or Feature Not Supported" },
-            { .name = "ERR_COMMS", .nice = "Communications Error" },
-            { .name = "ERR_CHECKSUM_MISMATCH", .nice = "Checksum Mismatch" },
-            { .name = "ERR_TIMEOUT", .nice = "Communications Timeout" },
-            { .name = "ERR_MAX_CHUNK_SIZE", .nice = "Max Chunk Size Exceeded" },
-            { .name = "ERR_OLDER_FIRMWARE", .nice = "Older Firmware - Downgrade not allowed" },
-            { .name = "ERR_NOT_ENOUGH_MEMORY", .nice = "Not Enough Memory" },
-            { .name = "ERR_NOT_ALLOWED", .nice = "Operation Not Allowed" },
-            { .name = "ERR_INVALID_SLOT", .nice = "Invalid Device Slot" },
-            { .name = "ERR_INVALID_SESSION", .nice = "Invalid Session" },
-            { .name = "NOT_STARTED", .nice = "Not Started" },
-            { .name = "INITIALIZING", .nice = "Initializing" },
-            { .name = "READY", .nice = "Ready" },
-            { .name = "IN_PROGRESS", .nice = "In Progress" },
-            { .name = "FINALIZING", .nice = "Finalizing" },
-            { .name = "FINISHED", .nice = "Finished" },
+            { "ERR_UNKNOWN", "Unknown Error" },
+            { "ERR_INTERRUPTED", "Interrupted by User" },
+            { "ERR_INVALID_TARGET", "Invalid Target" },
+            { "ERR_INVALID_CHUNK", "Invalid or Out of Sequence Chunk" },
+            { "ERR_INVALID_IMAGE", "Invalid Image" },
+            { "ERR_UPDATER_CLOSED", "Updater Closed" },
+            { "ERR_FLASH_INVALID", "Flash Invalid" },
+            { "ERR_FLASH_OPEN_FAILURE", "Flash Open Failure" },
+            { "ERR_FLASH_WRITE_FAILURE", "Flash Write Failure" },
+            { "ERR_NOT_SUPPORTED", "Request or Feature Not Supported" },
+            { "ERR_COMMS", "Communications Error" },
+            { "ERR_CHECKSUM_MISMATCH", "Checksum Mismatch" },
+            { "ERR_TIMEOUT", "Communications Timeout" },
+            { "ERR_MAX_CHUNK_SIZE", "Max Chunk Size Exceeded" },
+            { "ERR_OLDER_FIRMWARE", "Older Firmware - Downgrade not allowed" },
+            { "ERR_NOT_ENOUGH_MEMORY", "Not Enough Memory" },
+            { "ERR_NOT_ALLOWED", "Operation Not Allowed" },
+            { "ERR_INVALID_SLOT", "Invalid Device Slot" },
+            { "ERR_INVALID_SESSION", "Invalid Session" },
+            { "NOT_STARTED", "Not Started" },
+            { "INITIALIZING", "Initializing" },
+            { "READY", "Ready" },
+            { "IN_PROGRESS", "In Progress" },
+            { "FINALIZING", "Finalizing" },
+            { "FINISHED", "Finished" },
     };
 
 #ifdef DEBUG_LOGGING
@@ -156,13 +156,6 @@ namespace fwUpdate {
      * @return returns the total number of bytes in the packet, including aux data if any
      */
     int FirmwareUpdateBase::fwUpdate_mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data) {
-        // TODO: Remove after 2.1.0 release
-        // >=2.0.0.11  versions, the type was changes from a uint16_t to a uint32_t (but had the same packing)
-        // this would result in later version not interpreting the msg_type correctly (having non-zero high-order bits).
-        uint32_t msg_type = (int)(((payload_t*)buffer)->hdr.msg_type) & 0xFFFF;
-        ((payload_t*)buffer)->hdr.msg_type =  (msg_types_e)msg_type;
-        // TODO: End
-
         int payload_size = fwUpdate_getPayloadSize((payload_t *) buffer);
         int aux_len = 0;
 
@@ -326,8 +319,15 @@ namespace fwUpdate {
 
         //target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
         target_t target_masked = payload.hdr.target_device;
-        if (target_masked != session_target)
+        if (target_masked != session_target) {
+#ifdef __ZEPHYR__
+            // SN-7981 diagnostic: distinguish target-mismatch (true forwarding case) from
+            // handler-internal failures so we can tell why the LED-blink/forwarding fires.
+            printk("[FwUpdate] processMessage REJECT target_mismatch: msg_target=0x%x session_target=0x%x msg_type=%d\n",
+                   (unsigned)target_masked, (unsigned)session_target, (int)payload.hdr.msg_type);
+#endif
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
+        }
 
         char *msgStr = fwUpdate_payloadToString(&payload);
         if (msgStr)
@@ -524,20 +524,51 @@ namespace fwUpdate {
      * @param payload the DID payload
      * @return
      */
-    bool FirmwareUpdateDevice::fwUpdate_handleChunk(const payload_t& payload) {
-        if (payload.hdr.msg_type != MSG_UPDATE_CHUNK)
+    bool FirmwareUpdateDevice::
+    fwUpdate_handleChunk(const payload_t& payload) {
+#ifdef __ZEPHYR__
+        // SN-7981 entry trace: print ONLY "interesting" chunks (early ones, any
+        // duplicate/out-of-order). Printing every chunk overflows the RTT buffer
+        // and drops the diagnostic messages we actually care about.
+        bool _trace_early = (payload.data.chunk.chunk_id < 6);
+        bool _trace_dup   = (payload.data.chunk.chunk_id <= (uint16_t)last_chunk_id);
+        if (_trace_early || _trace_dup) {
+            printk("[FwUpdate] handleChunk ENTRY chunk_id=%u session=%u last=%d data_len=%u\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)payload.data.chunk.session_id,
+                   (int)last_chunk_id, (unsigned)payload.data.chunk.data_len);
+        }
+#endif
+        if (payload.hdr.msg_type != MSG_UPDATE_CHUNK) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk REJECT wrong_msg_type: msg_type=%d\n", (int)payload.hdr.msg_type);
+#endif
             return false;
+        }
 
         // if the session id doesn't match our current session id, then ignore this message.
-        if (payload.data.chunk.session_id != session_id)
+        if (payload.data.chunk.session_id != session_id) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk REJECT session_mismatch: msg_session=%u my_session=%u chunk_id=%u\n",
+                   (unsigned)payload.data.chunk.session_id, (unsigned)session_id, (unsigned)payload.data.chunk.chunk_id);
+#endif
             return false;
+        }
 
         // safely ignore receipt of previously received chunks
-        if (payload.data.chunk.chunk_id <= last_chunk_id)
+        if (payload.data.chunk.chunk_id <= last_chunk_id) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk DUPLICATE chunk_id=%u last=%u (returning true)\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)last_chunk_id);
+#endif
             return true;
+        }
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
         if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk RETRY out_of_seq: chunk_id=%u expected=%u (last=%u)\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)(last_chunk_id + 1), (unsigned)last_chunk_id);
+#endif
             fwUpdate_sendRetry(REASON_INVALID_SEQID);
             return false;
         }
@@ -546,12 +577,21 @@ namespace fwUpdate {
         uint16_t mod_size = (session_image_size % session_chunk_size);
         uint16_t expected_size = ((payload.data.chunk.chunk_id == session_total_chunks-1) && (mod_size != 0)) ? mod_size : session_chunk_size;
         if (payload.data.chunk.data_len != expected_size) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk RETRY wrong_size: chunk_id=%u data_len=%u expected=%u\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)payload.data.chunk.data_len, (unsigned)expected_size);
+#endif
             fwUpdate_sendRetry(REASON_INVALID_SIZE);
             return false;
         }
 
         uint32_t chnk_offset = payload.data.chunk.chunk_id * session_chunk_size;
-        if (fwUpdate_writeImageChunk((fwUpdate::target_t) payload.hdr.target_device, session_image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *) &payload.data.chunk.data) < NOT_STARTED) {
+        update_status_e write_st = fwUpdate_writeImageChunk((fwUpdate::target_t) payload.hdr.target_device, session_image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *) &payload.data.chunk.data);
+        if (write_st < NOT_STARTED) {
+#ifdef __ZEPHYR__
+            printk("[FwUpdate] handleChunk RETRY write_error: chunk_id=%u offset=0x%x len=%u writeImageChunk_status=%d\n",
+                   (unsigned)payload.data.chunk.chunk_id, (unsigned)chnk_offset, (unsigned)payload.data.chunk.data_len, (int)write_st);
+#endif
             fwUpdate_sendRetry(REASON_WRITE_ERROR);
             return false;
         }
@@ -625,7 +665,12 @@ namespace fwUpdate {
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_VERSION_INFO_RESP;
-        response.data.version_resp.resTarget = session_target;
+        // Echo back the queried target, not session_target — REQ_VERSION_INFO doesn't
+        // update session_target (only REQ_UPDATE does, around line 305), so a standalone
+        // version-info query would otherwise respond with resTarget=0/TARGET_HOST.
+        // Hosts use resTarget to confirm the response is for their requested target;
+        // a mismatched/zero resTarget causes infinite ping-loop on the host side.
+        response.data.version_resp.resTarget = payload.hdr.target_device;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
         response.data.version_resp.hdwRunState = devInfo.hdwRunState;
@@ -741,7 +786,6 @@ namespace fwUpdate {
         void *aux_data = nullptr;
 
         int msg_len = fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
-        // printf("fwUpdate_processMessage: target: %s, type: %s, len: %d\n", fwUpdate_getTargetName(msg->hdr.target_device), msg_type_names[msg->hdr.msg_type], msg_len);
         if (msg_len <= 0)
             return false;
 

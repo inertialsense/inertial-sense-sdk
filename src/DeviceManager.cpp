@@ -9,6 +9,225 @@
 #include "DeviceManager.h"
 
 /**
+ * Concurrently validates all ports against all registered factories. Each port is probed by
+ * each factory in round-robin, so every factory gets fair time to validate. The first factory
+ * to successfully validate on a port wins that port and allocates the device.
+ *
+ * Total discovery time is bounded by max(factory timeout) rather than (num_ports * num_factories * timeout).
+ */
+bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t options) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    bool result = false;
+    options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+    options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
+
+    // Per-factory validation slot for a single port
+    struct FactorySlot {
+        DeviceFactory* factory;
+        std::unique_ptr<DeviceFactory::ValidationContext> ctx;
+        bool eliminated = false;  // true if this factory timed out or declined this port
+    };
+
+    // Per-port state tracking all factory slots and round-robin position
+    struct PendingPort {
+        port_handle_t port;
+        std::vector<FactorySlot> slots;
+        int activeSlot = 0;
+        bool resolved = false;
+        DeviceFactory* winner = nullptr;
+        dev_info_t devInfo = {};
+    };
+
+    std::vector<PendingPort> pending;
+
+    // Phase 1: For each port, ask each factory to beginValidation
+    for (auto port : portManager.locked_range()) {
+        if (!portIsValid(port))
+            continue;
+
+        // Check if port is already associated with a known device
+        bool alreadyHandled = false;
+        for (auto d : *this) {
+            if (d && d->hasDeviceInfo() && (d->port == port)) {
+                if (options & DISCOVERY__FORCE_REVALIDATION) {
+                    // Clear device info so hasDeviceInfo() returns false,
+                    // forcing full revalidation via Phase 2+3.
+                    d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                    memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                } else {
+                    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                        portClose(port);
+                    result = true;
+                    alreadyHandled = true;
+                    break;
+                }
+            }
+        }
+        if (alreadyHandled)
+            continue;
+
+        // Open port if needed
+        if ((!portIsOpened(port) && (options & DISCOVERY__IGNORE_CLOSED_PORTS)) ||
+            (portOpen(port) != PORT_ERROR__NONE))
+            continue;
+
+        // Only COMM ports can be validated via ISComm protocol
+        if (!(portType(port) & PORT_TYPE__COMM))
+            continue;
+
+        // Check if DeviceManager already has a device for this port
+        device_handle_t existingDev = getDevice(port);
+        if (existingDev && !(options & DISCOVERY__FORCE_REVALIDATION)) {
+            if (existingDev->matchesHdwId(hdwId)) {
+                if (!existingDev->port)
+                    existingDev->assignPort(port);
+                result |= existingDev->validate(timeoutMs);
+            }
+            if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                portClose(port);
+            continue;
+        }
+
+        // Open port if needed (once, before any factory sees it)
+        if (!portIsOpened(port)) {
+            if (portOpen(port) != PORT_ERROR__NONE)
+                continue;
+        }
+
+        // Only COMM ports can be validated via ISComm protocol
+        if (!(portType(port) & PORT_TYPE__COMM))
+            continue;
+
+        // Create ONE shared ISDevice probe per port — all factories share this instance
+        uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
+        auto sharedDevice = std::make_shared<ISDevice>(hdwId, port);
+
+        PendingPort pp;
+        pp.port = port;
+        for (auto f : factories) {
+            auto ctx = f->beginValidation(port, hdwId, effectiveTimeout, sharedDevice);
+            if (ctx) {
+                pp.slots.push_back({f, std::move(ctx), false});
+            }
+        }
+        if (!pp.slots.empty()) {
+            pending.push_back(std::move(pp));
+        }
+    }
+
+    // Phase 2+3: Concurrent validation loop with round-robin across factories per port
+    if (!pending.empty()) {
+        log_debug(IS_LOG_DEVICE_MANAGER, "Concurrently validating %zu port(s) across %zu factory(ies)",
+            pending.size(), factories.size());
+
+        uint32_t loopDeadline = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
+        uint32_t loopStartMs = current_timeMs();
+
+        bool allResolved = false;
+        while (!allResolved) {
+            if ((current_timeMs() - loopStartMs) > loopDeadline) {
+                log_debug(IS_LOG_DEVICE_MANAGER, "Discovery validation loop deadline reached (%dms). Resolving remaining ports.", loopDeadline);
+                for (auto& pp : pending) {
+                    if (!pp.resolved) {
+                        pp.resolved = true;
+                        if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+                            portClose(pp.port);
+                    }
+                }
+                break;
+            }
+            allResolved = true;
+            for (auto& pp : pending) {
+                if (pp.resolved)
+                    continue;
+
+                // Find the active non-eliminated slot
+                int startSlot = pp.activeSlot;
+                bool foundActive = false;
+                do {
+                    if (!pp.slots[pp.activeSlot].eliminated) {
+                        foundActive = true;
+                        break;
+                    }
+                    pp.activeSlot = (pp.activeSlot + 1) % (int)pp.slots.size();
+                } while (pp.activeSlot != startSlot);
+
+                if (!foundActive) {
+                    // All factories eliminated — port failed
+                    log_more_debug(IS_LOG_DEVICE_MANAGER, "All factories eliminated for port '%s'.", portName(pp.port));
+                    pp.resolved = true;
+                    if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+                        portClose(pp.port);
+                    continue;
+                }
+
+                auto& slot = pp.slots[pp.activeSlot];
+                int stepResult = slot.factory->stepValidation(*slot.ctx);
+
+                if (stepResult == 1) {
+                    // Phase 3 inline: this factory validated — check if it claims the device
+                    dev_info_t devInfo;
+                    if (slot.factory->completeValidation(*slot.ctx, devInfo)) {
+                        pp.resolved = true;
+                        pp.winner = slot.factory;
+                        pp.devInfo = devInfo;
+
+                        // Register via deviceHandler
+                        std::function<bool(DeviceFactory*, const dev_info_t&, port_handle_t)> cb =
+                            std::bind(&DeviceManager::deviceHandler, this,
+                                std::placeholders::_1, std::placeholders::_2,
+                                std::placeholders::_3, options);
+                        if (cb(pp.winner, pp.devInfo, pp.port)) {
+                            log_debug(IS_LOG_DEVICE_MANAGER, "deviceHandler accepted %s on port '%s'. DeviceCount=%zu",
+                                ISDevice::getIdAsString(pp.devInfo).c_str(), portName(pp.port), size());
+                            result = true;
+                        } else {
+                            // The winning factory's deviceHandler rejected — try remaining factories
+                            bool handled = false;
+                            for (auto f : factories) {
+                                if (f == pp.winner)
+                                    continue;
+                                if (cb(f, pp.devInfo, pp.port)) {
+                                    log_debug(IS_LOG_DEVICE_MANAGER, "deviceHandler accepted %s via fallback factory on port '%s'. DeviceCount=%zu",
+                                        ISDevice::getIdAsString(pp.devInfo).c_str(), portName(pp.port), size());
+                                    result = true;
+                                    handled = true;
+                                    break;
+                                }
+                            }
+                            if (!handled) {
+                                log_debug(IS_LOG_DEVICE_MANAGER, "deviceHandler REJECTED %s on port '%s' by all factories. DeviceCount=%zu",
+                                    ISDevice::getIdAsString(pp.devInfo).c_str(), portName(pp.port), size());
+                                if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+                                    portClose(pp.port);
+                            }
+                        }
+                    } else {
+                        // Factory validated but rejected the device — eliminate and try others
+                        slot.eliminated = true;
+                    }
+                } else if (stepResult == -1) {
+                    // This factory timed out on this port — eliminate it
+                    slot.eliminated = true;
+                } else {
+                    allResolved = false;
+                }
+
+                // Advance round-robin to next factory for this port's next cycle
+                pp.activeSlot = (pp.activeSlot + 1) % (int)pp.slots.size();
+
+                if (!pp.resolved)
+                    allResolved = false;
+            }
+            if (!allResolved)
+                SLEEP_MS(2);
+        }
+    }
+
+    return result;
+}
+
+/**
  * Registers a previously created ISDevice instance - use this when a device which is manually allocated (statically, etc) needs to be managed
  * @param device
  * @return
@@ -27,6 +246,9 @@ bool DeviceManager::registerDevice(device_handle_t device) {
     }
 
     push_back(device);
+    if (device->port) {
+        portToDeviceMap[device->port] = device;
+    }
     return true;
 }
 
@@ -58,6 +280,9 @@ device_handle_t DeviceManager::registerNewDevice(const ISDevice& device) {
         if (newDevice) {
             if (portIsValid(device.port)) {
                 newDevice->assignPort(device.port);
+                if (newDevice->port) {
+                    portToDeviceMap[newDevice->port] = newDevice;
+                }
                 // device.assignPort(nullptr);
             }
             push_back(newDevice);
@@ -86,6 +311,9 @@ device_handle_t DeviceManager::registerNewDevice(port_handle_t port, dev_info_t 
         if (newDevice) {
             push_back(newDevice);
             newDevice->assignPort(port);
+            if (newDevice->port) {
+                portToDeviceMap[newDevice->port] = newDevice;
+            }
             return newDevice;
         }
     }
@@ -118,6 +346,9 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
         portClose(device->port);
     }
 
+    if (device->port) {
+        portToDeviceMap.erase(device->port);
+    }
     erase(deviceIter); // erase only remove the device_handle_t from the list, but doesn't release/free the instance itself
     device->port = NULL;
 
@@ -190,6 +421,9 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                     break;  // we'll drop out of the 'for' loop, and still update known_devices and call the listeners, etc.
                 } else {
                     device->assignPort(port);
+                    if (device->port) {
+                        portToDeviceMap[device->port] = device;
+                    }
                     notifyListeners(device, DEVICE_PORT_BOUND);    // notify that this device's port has been updated
                 }
 
@@ -219,6 +453,9 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     // log_debug(IS_LOG_DEVICE_MANAGER, "Allocated new device: %s.", device->getDescription().c_str());
     knownDevices.push_back(deviceEntry);
     push_back(deviceEntry.device);
+    if (deviceEntry.device->port) {
+        portToDeviceMap[deviceEntry.device->port] = deviceEntry.device;
+    }
 
     notifyListeners(deviceEntry.device, DEVICE_ADDED);  // notify
 
@@ -228,8 +465,10 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
         portClose(port);
 
-    if (portIsOpened(deviceEntry.device->port))
-        notifyListeners(deviceEntry.device, DEVICE_CONNECTED);  // notify that we've connected (if we are)
+    if (portIsOpened(deviceEntry.device->port)) {
+        if (deviceEntry.device->connect())  // even though the port is opened, we want the device to manage connection initialization
+            notifyListeners(deviceEntry.device, DEVICE_CONNECTED);  // connect() above wont notify, because the port is already opened.
+    }
 
     return true;    // successfully handled
 }
@@ -240,19 +479,30 @@ void DeviceManager::portHandler(uint8_t event, uint16_t pType, std::string pName
     switch ((PortManager::port_event_e)event) {
         case PortManager::PORT_ADDED:
             // TODO: If "automatic device validation" is true, we should use this event to automatically open the port and validate the device.
-            log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_ADDED '%s'", pName.c_str());
+            // log_more_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager::portHandler( PORT_ADDED, '%s' )", pName.c_str());
             break;
         case PortManager::PORT_REMOVED:
-            log_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager-->PortManager::PORT_REMOVED '%s'.", pName.c_str());
             device_handle_t device = getDevice(port);
             if (device) {
-                device->assignPort(nullptr); // revoke the removed port from the device...
+                log_more_debug(IS_LOG_DEVICE_MANAGER, "DeviceManager::portHandler( PORT_REMOVED, '%s' ) - releasing port from %s.", pName.c_str(), device->getIdAsString().c_str());
                 notifyListeners(device, DEVICE_PORT_LOST);
+                device->assignPort(nullptr); // revoke the removed port from the device...
             }
+            portToDeviceMap.erase(port);
             break;
     }
 }
 
+void DeviceManager::clear(bool closePorts) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    auto tmpSet = getDevicesAsVector();
+    for (auto d : tmpSet) releaseDevice(d, closePorts, true);
+
+    // just to make sure we didn't miss anything (though this could cause memory leaks)
+    std::list<device_handle_t>::clear();
+    knownDevices.clear();
+    portToDeviceMap.clear();
+}
 
 /**
  * @returns a vector of available devices
@@ -287,12 +537,23 @@ device_handle_t DeviceManager::getDevice(uint64_t uid) {
  * @returns an device_handle_t instance associated with the specified port, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(port_handle_t port) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    for (auto device : *this) {
-        if (device->port == port)
-            return device;
+    auto it = portToDeviceMap.find(port);
+    if (it != portToDeviceMap.end()) {
+        return it->second;
     }
     return NULL;
+}
+
+/**
+ * @returns an device_handle_t instance at the specified index, or NULL if not found
+ */
+device_handle_t DeviceManager::getDeviceByIndex(int index) {
+    if ((index < 0) || (index >= (int)size())) {
+        return NULL;
+    }
+    auto it = begin();
+    std::advance(it, index);
+    return *it;
 }
 
 /**
@@ -405,7 +666,8 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
     ISFileManager::GetAllFilesInDirectory(firmwarePath, true, "", fwImageFiles);
 
     // build a map of devInfo to files; we want to use a custom sorted map, where the map is ordered by version info
-    std::map<uint16_t, std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>> fwImages;
+    using cmpFn_t = int64_t(*)(const dev_info_t&, const dev_info_t&);
+    std::map<uint16_t, std::map<dev_info_t, std::string, cmpFn_t>> fwImages;
 
     for (auto imgPath : fwImageFiles) {
         std::string imgDir, imgFile, imgExt;
@@ -414,8 +676,8 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
         printf("Evaluating %s\n", imgFile.c_str());
         if (utils::devInfoFromString(imgFile, tmpDevInfo)) {
             auto hdwId = ENCODE_DEV_INFO_TO_HDW_ID(tmpDevInfo);
-            if (!fwImages.contains(hdwId))
-                fwImages[hdwId] = std::map<dev_info_t, std::string, decltype(&utils::compareFirmwareVersions)>(&utils::compareFirmwareVersions);
+            if (fwImages.find(hdwId) != fwImages.end())
+                fwImages[hdwId] = std::map<dev_info_t, std::string, cmpFn_t>(static_cast<cmpFn_t>(&utils::compareFirmwareVersions));
             fwImages[hdwId][tmpDevInfo] = imgPath;
         }
     }
@@ -437,4 +699,51 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
     }
 
     return results;
+}
+
+// ============================================================
+// Device hint seeding
+// ============================================================
+
+void DeviceManager::seedDeviceHint(port_handle_t port, const dev_info_t& hint) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    deviceHints_[port] = hint;
+    log_debug(IS_LOG_DEVICE_MANAGER, "Seeded device hint for port '%s' (SN=%u, hwType=%d)",
+              portName(port), hint.serialNumber, hint.hardwareType);
+
+    // Hint-driven device registration. When a port surfaces a complete device
+    // identity via a relay snapshot (or other authoritative metadata source),
+    // register the device immediately so consumers can render it without first
+    // running an active probe. This is intentionally a "discovery-without-open"
+    // path: deviceHandler() only fires DEVICE_CONNECTED when portIsOpened(), and
+    // relay ports come back from bindPort() in a closed state — so a hint-only
+    // registration produces DEVICE_ADDED + DEVICE_PORT_BOUND only. Real
+    // validation, port-open, and DEVICE_CONNECTED happen later when the user
+    // explicitly opens the port (e.g. Find / Open in the UI).
+    if (port && hint.serialNumber != 0 && hint.hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
+        if (!getDevice(port)) {
+            // Iterate registered factories until one accepts the hint. Pass
+            // options=0 so a non-matching factory doesn't close the port on
+            // its way out — we want the next factory to get a clean shot.
+            for (auto factory : factories) {
+                if (deviceHandler(factory, hint, port, /*options=*/0)) {
+                    log_debug(IS_LOG_DEVICE_MANAGER, "Hint-registered device for port '%s' (no port open, no connect)", portName(port));
+                    break;
+                }
+            }
+        }
+    }
+}
+
+const dev_info_t* DeviceManager::getDeviceHint(port_handle_t port) const {
+    // mutex is not mutable, so we cast away const for the lock (DeviceManager's existing pattern)
+    auto& mutableMutex = const_cast<std::recursive_mutex&>(mutex);
+    std::lock_guard<std::recursive_mutex> lock(mutableMutex);
+    auto it = deviceHints_.find(port);
+    return (it != deviceHints_.end()) ? &it->second : nullptr;
+}
+
+void DeviceManager::clearDeviceHint(port_handle_t port) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    deviceHints_.erase(port);
 }

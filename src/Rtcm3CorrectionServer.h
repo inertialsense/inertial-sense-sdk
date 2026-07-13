@@ -12,25 +12,45 @@
 #include "DeviceManager.h"
 #include "CorrectionService.h"
 #include "TcpServerPortFactory.h"
+#include "util/util.h"
 
-class Rtcm3CorrectionServer : protected CorrectionService, protected TcpServerPortFactory {
+class Rtcm3CorrectionServer : public CorrectionService, protected TcpServerPortFactory {
 public:
+    explicit Rtcm3CorrectionServer(const std::string& portUri, int max_connections = 10) : TcpServerPortFactory() {
+        // Parse the listen URI (e.g. "tcp://[IP]:port"); any omitted component falls back to the defaults.
+        const utils::UriParts uri = utils::parseUri(portUri, "tcp://127.0.0.1:7777");
+        configure(uri.port, uri.host, max_connections);     // configure() already starts the listener; do not call startListening() again
+    }
+
     explicit Rtcm3CorrectionServer(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : TcpServerPortFactory(port, listenAddr, max_connections) {
         startListening();
-    };
+    }
+
+    explicit Rtcm3CorrectionServer(const device_handle_t srcDevice, const std::string& portUri, int max_connections = 10) : Rtcm3CorrectionServer(portUri, max_connections) {
+        setSourceDevice(srcDevice);
+    }
 
     explicit Rtcm3CorrectionServer(const device_handle_t srcDevice, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr, max_connections) {
         setSourceDevice(srcDevice);
-    };
+    }
 
     explicit Rtcm3CorrectionServer(const uint64_t srcDeviceId, int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) : Rtcm3CorrectionServer(port, listenAddr, max_connections) {
         setSourceDevice(srcDeviceId);
-    };
+    }
 
-    ~Rtcm3CorrectionServer() {
+    ~Rtcm3CorrectionServer() override = default;
+
+    void configure(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) {
+        stopListening();
+        TcpServerPortFactory::configure(port, listenAddr, max_connections);
+        startListening();
+    }
+
+    void shutdown() {
         stopListening();        // don't accept new connections
+        for (auto p : ports) portClose(p);  // disconnect all clients when we shutdown
         shutdownAllClients();   // terminate existing connections
-    };
+    }
 
     int step() {
         processPendingConnections([&](const socket_entry_t& e) {
@@ -69,7 +89,14 @@ public:
 
     uint64_t getSourceDeviceID() { return srcDeviceId; }
 
-    port_handle_t getSourcePort() { return (sourceDevice ? sourceDevice->port : nullptr); }
+    int getListenIpPort() { return factoryOptions.listenerPort; }
+
+    std::string getListenIpAddress() { return std::string( inet_ntoa(factoryOptions.listeningAddr.sin_addr) ); }
+
+    int getActiveClients() { return (int)ports.size(); }
+
+    // re-expose the listener-error forensic accessor (TcpServerPortFactory is inherited as protected)
+    using TcpServerPortFactory::getLastListenError;
 
 private:
     uint64_t        srcDeviceId = 0;             // selected device UID (derived from hdwId + SN)

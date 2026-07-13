@@ -20,6 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISDevice.h"
 #include "ISLogFileBase.h"
+#include "ISLogIndex.h"
 #include "ISLogStats.h"
 
 #include "com_manager.h"
@@ -36,12 +37,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 class cDeviceLog {
 public:
-    typedef struct index_record_s {
+    // Legacy v1 .idx record (host-uptime ms + record counter, 16 bytes).
+    // Kept for back-compat readers per D-01 (SN-7879). Writers emit v2
+    // exclusively; the v1 layout is here only so legacy-aware reader
+    // code can deserialize old `.idx` files produced by SDK <= 2.x.
+    typedef struct index_record_v1_s {
         uint32_t time;
         uint32_t offset;
         uint32_t msg_id;
         uint32_t reserved;
-    } index_record_t;
+    } index_record_v1_t;
+
+    // Public spelling now aliases the v2 record. New code uses the v2
+    // fields (timestamp = payload-derived ms, did = data ID, flags
+    // bit 0 = ToW signal, 64-bit offset).
+    using index_record_s = inertial_sense::idx::is_log_idx_record_v2_t;
+    using index_record_t = inertial_sense::idx::is_log_idx_record_v2_t;
 
     cDeviceLog();
 
@@ -99,8 +110,8 @@ public:
     std::string GetNewBaseFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
     std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char *suffix);
 
-    void SetKmlConfig(bool gpsData = true, bool showTracks = true, bool showPoints = true, bool showPointTimestamps = true, double pointUpdatePeriodSec = 1.0, bool altClampToGround = true) {
-        m_enableGpsLogging = gpsData;
+    void SetKmlConfig(bool gnssData = true, bool showTracks = true, bool showPoints = true, bool showPointTimestamps = true, double pointUpdatePeriodSec = 1.0, bool altClampToGround = true) {
+        m_enableGnssLogging = gnssData;
         m_showTracks = showTracks;
         m_showPoints = showPoints;
         m_showPointTimestamps = showPointTimestamps;
@@ -116,8 +127,18 @@ public:
 
     virtual is_comm_instance_t* IsCommInstance() { return NULL; }
 
-    void addIndexRecord();
+    // D-01 / SN-7879: addIndexRecord populates a v2 record from the
+    // packet header / buffer when available, else falls back to a
+    // streaming-path entry with did=0 and timestamp=host-uptime-delta.
+    // The default-args overload preserves the existing void signature
+    // for the streaming-only callers (cDeviceLogRaw) that have no
+    // parsed header.
+    void addIndexRecord(const p_data_hdr_t* dataHdr = nullptr,
+                        const uint8_t* dataBuf = nullptr);
     bool writeIndexChunk();
+    // Rewrites the header at offset 0 with final totals + sets the
+    // FINALIZED flag. Idempotent. Called by CloseAllFiles().
+    bool finalizeIndex();
 
 protected:
     bool OpenNewSaveFile();
@@ -147,16 +168,24 @@ protected:
     uint64_t m_maxDiskSpace;
     uint32_t m_maxFileSize;
     bool m_altClampToGround = true;
-    bool m_enableGpsLogging = true;
+    bool m_enableGnssLogging = true;
     bool m_showTracks = true;
     bool m_showPoints;
     bool m_showPointTimestamps = true;
     double m_pointUpdatePeriodSec = 1.0f;
     cLogStats m_logStats;
-    std::vector<index_record_t> m_indexChunks;      //!< a list of current index records, waiting to be written to disk
-    uint32_t m_lastIndexOffset = 0;                 //!< essentially, the last known size of the log file, as written to disk; this should be updated with each chunk-write to be the new size of the log file
+    std::vector<index_record_t> m_indexChunks;      //!< v2 records buffered in memory, waiting to be flushed via writeIndexChunk()
+    uint64_t m_lastIndexOffset = 0;                 //!< running byte offset into the .raw segment; v2 widened from u32 to u64 since segments can exceed 4GB
     uint32_t m_logStartUpTime = 0;                  //!< the system uptime (in millis) at the moment this index was created
-    uint32_t m_lastIndexTime = 0;                   //!< this is the system uptime (in millis) of the last index record created; we won't create new records if data comes in faster than 1ms, we'll update the last one instead
+    uint32_t m_lastIndexTime = 0;                   //!< system uptime (in ms) of the last index record; v2 still tracks this for the host-uptime fallback path
+
+    // D-01 / SN-7879 v2 .idx bookkeeping. The header at offset 0 of
+    // the .idx file carries these aggregates; finalizeIndex() seeks(0)
+    // and rewrites the header on close.
+    bool     m_idxHeaderWritten = false;            //!< true once the v2 header has been emitted (first writeIndexChunk call)
+    uint64_t m_idxTotalRecords  = 0;                //!< running count of records written to the .idx file
+    uint64_t m_idxFirstTimestampMs = 0;             //!< timestamp of the first record (set on first record)
+    uint64_t m_idxLastTimestampMs  = 0;             //!< timestamp of the most recent record
 
 };
 

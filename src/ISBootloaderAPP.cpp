@@ -10,8 +10,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#ifndef IS_LOG_LEVEL
 #define IS_LOG_LEVEL IS_LOG_LEVEL_MORE_DEBUG
+#endif
+#ifndef IS_ENALBED_FACILITIES
 #define IS_ENABLED_FACILITIES  (IS_LOG_FWUPDATE)
+#endif
 
 #include "ISBootloaderAPP.h"
 #include "ISComm.h"
@@ -68,7 +72,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderAPP::check_is_compatible()");
     logStatus(IS_LOG_LEVEL_MORE_INFO, "(APP) Checking device compatibility...");
 
-    serialPortFlush(m_port);
+    portFlush(m_port);
 
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
@@ -88,21 +92,21 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     // 20 time represents double the imperical
     for (uint8_t i = 0; i < 20; i++)
     {
-        // Once the broad cast has stopped this function will break.
-        if (serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200) == 0)
+        // Once the broadcast has stopped this function will break.
+        if (portReadTimeout(m_port, comm.rxBuf.start, n, 200) == 0)
             break;
     }
 
     for (i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     {
-        if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
+        if (NMEA_CMD_SIZE != portWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
         {
             //serialPortClose(m_port);
             return IS_IMAGE_SIGN_NONE;
         }
     }
     messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, buffer, messageSize))
+    if (messageSize != portWrite(m_port, buffer, messageSize))
     {
         //serialPortClose(m_port);
         return IS_IMAGE_SIGN_NONE;
@@ -111,7 +115,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     protocol_type_t ptype;
     n = is_comm_free(&comm);        // is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
     uint32_t valid_signatures = 0;
-    if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
+    if ((n = portReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
         comm.rxBuf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
@@ -188,13 +192,16 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
+    int portResult = PORT_ERROR__NONE;
 
     for (size_t loop = 0; loop < 10; loop++)
     {
-        if (!serialPortWriteAscii(m_port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
-        if (!serialPortWriteAscii(m_port, m_app.enable_command, 4)) break;
+        if ((portResult = portWriteAscii(m_port, "STPB", 4)) < PORT_ERROR__NONE)
+            break;     // If the write fails, assume the device is now in bootloader mode.
+        if ((portResult = portWriteAscii(m_port, m_app.enable_command, 4)) < PORT_ERROR__NONE)
+            break;
         c = 0;
-        if (serialPortReadCharTimeout(m_port, &c, 13) == 1)
+        if ((portResult = portReadCharTimeout(m_port, &c, 100)) == 1)
         {
             if (c == '$')
             {
@@ -202,16 +209,16 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
                 break;
             }
         }
-        else serialPortFlush(m_port);
+        // else portResult = portFlush(m_port);
     }
 
-    SLEEP_MS(5000); // we need about 5 seconds for the targeted device to reboot back into the IS-bootloader mode
+    // SLEEP_MS(5000); // we need about 5 seconds for the targeted device to reboot back into the IS-bootloader mode
     return IS_OP_OK;
 }
 
 uint32_t cISBootloaderAPP::get_device_info()
 {
-    serialPortFlush(m_port);
+    portFlush(m_port);
 
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderAPP::get_device_info()");
     logStatus(IS_LOG_LEVEL_INFO, "(APP) Requesting device info...");
@@ -223,31 +230,32 @@ uint32_t cISBootloaderAPP::get_device_info()
     int messageSize;
    
     for (int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
+    if (NMEA_CMD_SIZE != portWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
     messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
+    if (messageSize != portWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
     messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_STATUS, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
+    if (messageSize != portWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
 
     // Wait 10ms for messages to come back
-    serialPortSleep(m_port, 10);
+    SLEEP_MS(10);
+    // serialPortSleep(m_port, 10);
 
     protocol_type_t ptype;
     int n = is_comm_free(&comm);
     uint8_t evb_version[4] = {0};
-    if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
+    if ((n = portReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
         comm.rxBuf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)

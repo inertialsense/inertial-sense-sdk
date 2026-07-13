@@ -110,7 +110,7 @@ typedef struct PACKED
 {
     /** WGS84 height above ellipsoid (meters) */
     float                   alt;                                //4 bytes (more than 8 decimal places precision)    
-    /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
+    /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
     uint32_t                status;
 } is_can_ins_alt;
 
@@ -220,11 +220,11 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    /** (see eGpsStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
+    /** (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags */
     uint32_t                status;                                    //4 bytes
     /** Average of all satellite carrier to noise ratios (signal strengths) that non-zero in dBHz */
     uint32_t                cnoMean;                                //4 byte
-} is_can_gps_pos_status;
+} is_can_gnss_pos_status;
 
 typedef struct PACKED
 {
@@ -236,7 +236,7 @@ typedef struct PACKED
     float                   distanceToBase;                            //4 bytes
     /** Angle from north to vectorToBase in local tangent plane. (rad) */
     int16_t                 headingToBase;                            //2 bytes (scaled by 1000 3 decimal places precision)
-} is_can_gps_rtk_rel;
+} is_can_gnss_rtk_rel;
 
 typedef struct PACKED
 {
@@ -271,11 +271,100 @@ typedef union PACKED
     is_can_dual_imu_px dimupx;
     is_can_dual_imu_qy dimuqy;
     is_can_dual_imu_rz dimurz;
-    is_can_gps_pos_status gpspos;
-    is_can_gps_rtk_rel rtkrel;
+    is_can_gnss_pos_status gnsspos;
+    is_can_gnss_rtk_rel rtkrel;
     is_can_roll_rollRate rollrollrate;    
 } is_can_payload;
 
+
+POP_PACK
+
+
+// ============================================================================
+// CAN FD payloads — native float/double precision, one frame per DID
+// Valid CAN FD payload sizes: 0-8, 12, 16, 20, 24, 32, 48, 64 bytes.
+// Structs that don't land on a valid boundary are padded by the driver.
+// ============================================================================
+PUSH_PACK_1
+
+/** FDCID_INS_1: key INS-1 fields in 64 bytes (exact FD DLC) */
+typedef struct PACKED
+{
+    uint32_t    week;           // 4
+    double      timeOfWeek;     // 8
+    uint32_t    insStatus;      // 4
+    uint32_t    hdwStatus;      // 4
+    float       theta[3];       // 12
+    float       uvw[3];         // 12
+    double      lat;            // 8
+    double      lon;            // 8
+    float       alt;            // 4
+} is_canfd_ins1;                // 64 bytes
+
+/** FDCID_INS_2: native-precision NED quaternion */
+typedef struct PACKED
+{
+    float       qn2b[4];        // 16
+} is_canfd_ins2;                // 16 bytes
+
+/** FDCID_INS_3: MSL altitude */
+typedef struct PACKED
+{
+    float       msl;            // 4
+} is_canfd_ins3;                // 4 bytes
+
+/** FDCID_INS_4: ECEF quaternion, ECEF velocity, ECEF position (52 bytes → 64-byte FD frame) */
+typedef struct PACKED
+{
+    float       qe2b[4];        // 16
+    float       ve[3];          // 12
+    double      ecef[3];        // 24
+} is_canfd_ins4;                // 52 bytes
+
+/** FDCID_PIMU: preintegrated IMU in native float (32 bytes exact FD DLC) */
+typedef struct PACKED
+{
+    float       theta[3];       // 12
+    float       vel[3];         // 12
+    float       dt;             // 4
+    uint32_t    status;         // 4
+} is_canfd_pimu;                // 32 bytes
+
+/** FDCID_IMU: IMU angular rate, acceleration, status (28 bytes → 32-byte FD frame) */
+typedef struct PACKED
+{
+    float       pqr[3];         // 12
+    float       acc[3];         // 12
+    uint32_t    status;         // 4
+} is_canfd_imu;                 // 28 bytes
+
+/** FDCID_GNSS1_POS / FDCID_GNSS2_POS: GNSS fix status and mean CNO */
+typedef struct PACKED
+{
+    uint32_t    status;         // 4
+    float       cnoMean;        // 4 — native float (gnss_pos_t.cnoMean is float)
+} is_canfd_gnss_pos;            // 8 bytes
+
+/** FDCID_GNSS1_RTK_POS_REL / FDCID_GNSS2_RTK_CMP_REL: RTK data in native float (16 bytes) */
+typedef struct PACKED
+{
+    float       arRatio;            // 4
+    float       differentialAge;    // 4
+    float       distanceToBase;     // 4
+    float       headingToBase;      // 4
+} is_canfd_gnss_rtk_rel;        // 16 bytes
+
+typedef union PACKED
+{
+    is_canfd_ins1           ins1;
+    is_canfd_ins2           ins2;
+    is_canfd_ins3           ins3;
+    is_canfd_ins4           ins4;
+    is_canfd_pimu           pimu;
+    is_canfd_imu            imu;
+    is_canfd_gnss_pos       gnsspos;
+    is_canfd_gnss_rtk_rel   rtkrel;
+} is_canfd_payload;
 
 POP_PACK
 

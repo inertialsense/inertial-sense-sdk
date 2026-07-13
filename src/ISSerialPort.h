@@ -21,12 +21,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPortPlatform.h"
 
 
-class cISSerialPort : public cISStream
+class cISSerialPort : serial_port_t, public cISStream
 {
 private:
-    cISSerialPort(const cISSerialPort& copy); // disable copy constructor
+    cISSerialPort(const cISSerialPort& copy) = delete; // disable copy constructor
 
-    port_handle_t port;
+    port_handle_t port= this;
     int m_timeout;
     bool m_blocking;
 

@@ -113,7 +113,7 @@ int portWaitForTimeout(port_handle_t port, const unsigned char* waitFor, unsigne
         } else if (bytesWaiting < 0) {
             return 0;   // error while reading
         } else {
-            SLEEP_US(1);
+            SLEEP_US(500);
         }
     }
 

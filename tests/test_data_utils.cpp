@@ -45,23 +45,23 @@ static double s_towOffset                       = 0;
 static const uint32_t s_timePeriodMs            = 10;
 static const uint32_t s_pimuPeriodMs            = 10;
 static const uint32_t s_navPeriodMs             = 100;
-static const uint32_t s_gpsPeriodMs             = 200;
+static const uint32_t s_gnssPeriodMs            = 200;
 
 static pimu_t s_pimu                            = {};
 static ins_1_t s_ins1                           = {};
-static gps_pos_t s_gpsPos                       = {};
-static gps_vel_t s_gpsVel                       = {};
+static gnss_pos_t s_gnssPos                     = {};
+static gnss_vel_t s_gnssVel                     = {};
 
 struct sTimeMs
 {
     uint32_t pimu;
     uint32_t ins1;
-    uint32_t gpsPos;
-    uint32_t gpsVel;
+    uint32_t gnssPos;
+    uint32_t gnssVel;
 
     uint32_t nmeaPImu;
     uint32_t nmeaIns1;
-    uint32_t nmeaGpsPos;
+    uint32_t nmeaGnssPos;
     uint32_t nmeaZda;
     uint32_t nmeaGga;
 
@@ -192,79 +192,79 @@ bool GenerateIns1(test_message_t &msg, ins_1_t &ins1, int i, float f, bool init=
     return true;
 }
 
-bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool init=false)
+bool GenerateGnssPos(test_message_t &msg, gnss_pos_t &gnss, int i, float f, bool init=false)
 {
     if (init)
     {
-        memset(&gps, 0, sizeof(gps_pos_t));
-        gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
-        gps.week = s_gpsWeek;
-        gps.ecef[0] = f*123.4;
-        gps.ecef[1] = f*234.5;
-        gps.ecef[2] = f*345.6;
-        gps.lla[0] =   40.330565516;
-        gps.lla[1] = -111.725787806;
-        gps.lla[2] = 1408.565264;
-        gps.hAcc = (float)i;
-        gps.cnoMean = (float)i;
-        gps.hMSL = (float)i;
-        gps.pDop = (float)i;
-        gps.towOffset = (double)i*123.4;
-        gps.leapS = C_GPS_LEAP_SECONDS;
+        memset(&gnss, 0, sizeof(gnss_pos_t));
+        gnss.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
+        gnss.week = s_gpsWeek;
+        gnss.ecef[0] = f*123.4;
+        gnss.ecef[1] = f*234.5;
+        gnss.ecef[2] = f*345.6;
+        gnss.lla[0] =   40.330565516;
+        gnss.lla[1] = -111.725787806;
+        gnss.lla[2] = 1408.565264;
+        gnss.hAcc = (float)i;
+        gnss.cnoMean = (float)i;
+        gnss.hMSL = (float)i;
+        gnss.pDop = (float)i;
+        gnss.towOffset = (double)i*123.4;
+        gnss.leapS = C_GPS_LEAP_SECONDS;
         return false;
     }
 
-    if (!periodCheck(s_msgTimeMs.gpsPos, s_gpsPeriodMs))
+    if (!periodCheck(s_msgTimeMs.gnssPos, s_gnssPeriodMs))
     {   // Not time yet
         return false;
     }
 
-    gps.timeOfWeekMs    = s_timeMs + s_gpsTowOffsetMs;
-gps.week                = s_gpsWeek;
-gps.status              = i;
-gps.ecef[0]             = f*1.234;
-gps.ecef[1]             = f*2.345;
-gps.ecef[2]             = f*3.456;
-gps.lla[0]              += f*0.001f;
-gps.lla[1]              += f*0.001f;
-gps.lla[2]              += f*0.001f;
-gps.hAcc                = fabsf(f);
-gps.cnoMean             = fabsf(f);
-gps.hMSL                = fabsf(f);
-gps.pDop                = fabsf(f);
-gps.towOffset           = f;
-gps.leapS               = C_GPS_LEAP_SECONDS;
+    gnss.timeOfWeekMs  = s_timeMs + s_gpsTowOffsetMs;
+    gnss.week          = s_gpsWeek;
+    gnss.status        = i;
+    gnss.ecef[0]       = f*1.234;
+    gnss.ecef[1]       = f*2.345;
+    gnss.ecef[2]       = f*3.456;
+    gnss.lla[0]        += f*0.001f;
+    gnss.lla[1]        += f*0.001f;
+    gnss.lla[2]        += f*0.001f;
+    gnss.hAcc          = fabsf(f);
+    gnss.cnoMean       = fabsf(f);
+    gnss.hMSL          = fabsf(f);
+    gnss.pDop          = fabsf(f);
+    gnss.towOffset     = f;
+    gnss.leapS         = C_GPS_LEAP_SECONDS;
 
-    msg.data.gpsPos = gps;
-    msg.dataHdr.id = DID_GPS1_POS;
-    msg.dataHdr.size = sizeof(gps_pos_t);
+    msg.data.gnssPos = gnss;
+    msg.dataHdr.id = DID_GNSS1_POS;
+    msg.dataHdr.size = sizeof(gnss_pos_t);
     return true;
 }
 
-bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool init=false)
+bool GenerateGnssVel(test_message_t &msg, gnss_vel_t &gnss, int i, float f, bool init=false)
 {
     if (init)
     {
-        memset(&gps, 0, sizeof(gps_vel_t));
-        gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
+        memset(&gnss, 0, sizeof(gnss_vel_t));
+        gnss.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
         return false;
     }
 
-    if (!periodCheck(s_msgTimeMs.gpsVel, s_gpsPeriodMs))
+    if (!periodCheck(s_msgTimeMs.gnssVel, s_gnssPeriodMs))
     {   // Not time yet
         return false;
     }
 
-    gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
-    gps.status = i;
-    gps.vel[0] = f*12.34f;
-    gps.vel[1] = f*23.45f;
-    gps.vel[2] = f*34.56f;
-    gps.sAcc = fabsf(f);
+    gnss.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
+    gnss.status = i;
+    gnss.vel[0] = f*12.34f;
+    gnss.vel[1] = f*23.45f;
+    gnss.vel[2] = f*34.56f;
+    gnss.sAcc = fabsf(f);
 
-    msg.data.gpsVel = gps;
-    msg.dataHdr.id = DID_GPS1_VEL;
-    msg.dataHdr.size = sizeof(gps_vel_t);
+    msg.data.gnssVel = gnss;
+    msg.dataHdr.id = DID_GNSS1_VEL;
+    msg.dataHdr.size = sizeof(gnss_vel_t);
     return true;
 }
 
@@ -283,14 +283,14 @@ bool GenerateISB(test_message_t &msg, int i, float f)
         s_timeMs = 0;
         GeneratePimu(msg, s_pimu,   i, f, true);
         GenerateIns1(msg, s_ins1,   i, f, true);
-        GenerateGpsPos(msg, s_gpsPos, i, f, true);
-        GenerateGpsVel(msg, s_gpsVel, i, f, true);
+        GenerateGnssPos(msg, s_gnssPos, i, f, true);
+        GenerateGnssVel(msg, s_gnssVel, i, f, true);
     }
 
     if (GeneratePimu(msg, s_pimu,   i, f))  { return true; }
     if (GenerateIns1(msg, s_ins1,   i, f))  { return true; }
-    if (GenerateGpsPos(msg, s_gpsPos, i, f)) { return true; }
-    if (GenerateGpsVel(msg, s_gpsVel, i, f)) { return true; }
+    if (GenerateGnssPos(msg, s_gnssPos, i, f)) { return true; }
+    if (GenerateGnssVel(msg, s_gnssVel, i, f)) { return true; }
 
     return false;
 }
@@ -315,24 +315,24 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gnssPos))
     {   
-        msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
+        msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gnssPos);
         msg.ptype = _PTYPE_NMEA;
         // printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gnssPos))
     {   
-        msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
+        msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gnssPos);
         msg.ptype = _PTYPE_NMEA;
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gpsPos))
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaGnssPos, s_msgTimeMs.gnssPos))
     {
-        msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos, s_gpsVel);
+        msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gnssPos, s_gnssVel);
         msg.ptype = _PTYPE_NMEA;
         return true;
     }
@@ -351,7 +351,7 @@ bool GenerateUblox(test_message_t &msg, int i, float f)
 {
     (void)f;
 
-    if (periodCheck(s_msgTimeMs.ubxNav, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.ubxNav, s_gnssPeriodMs))
     {
         static int index = 0;
 
@@ -369,7 +369,7 @@ bool GenerateUblox(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (periodCheck(s_msgTimeMs.ubxRxm, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.ubxRxm, s_gnssPeriodMs))
     {   
         static int index = 0;
         if ((index++)%2)
@@ -395,7 +395,7 @@ bool GenerateRTCM3(test_message_t &msg, int i, float f)
 {
     (void)f;
     
-    if (periodCheck(s_msgTimeMs.rtcm1005, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.rtcm1005, s_gnssPeriodMs))
     {   // RTCM3 (0x13 0x3e) 1005
         uint8_t buf[] = { 0xd3,0x0,0x13,0x3e,0xdc,0x2f,0x3,0x7b,0xcd,0x79,0xd5,0x47,0x35,0x77,0x5f,0x93,0x4d,0x49,0x8f,0xf1,0xb3,0x1d,0xff,0x10,0x3d };
         msg.pktSize = sizeof(buf);  memcpy(msg.comm.rxBuf.start, buf, msg.pktSize);
@@ -403,7 +403,7 @@ bool GenerateRTCM3(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (periodCheck(s_msgTimeMs.rtcm1007, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.rtcm1007, s_gnssPeriodMs))
     {   // RTCM3 (0x19 0x3e) 1007
         uint8_t buf[] = { 0xd3,0x0,0x19,0x3e,0xfc,0x2f,0x14,0x41,0x44,0x56,0x4e,0x55,0x4c,0x4c,0x41,0x4e,0x54,0x45,0x4e,0x4e,0x41,0x20,0x20,0x4e,0x4f,0x4e,0x45,0x0,0xc4,0xe,0xe1 };
         msg.pktSize = sizeof(buf);  memcpy(msg.comm.rxBuf.start, buf, msg.pktSize);
@@ -411,7 +411,7 @@ bool GenerateRTCM3(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (periodCheck(s_msgTimeMs.rtcm1033, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.rtcm1033, s_gnssPeriodMs))
     {   // RTCM3 (0x48 0x40) 1033
         uint8_t buf[] = { 0xd3,0x0,0x48,0x40,0x9c,0x2f,0x14,0x41,0x44,0x56,0x4e,0x55,0x4c,0x4c,0x41,0x4e,0x54,0x45,0x4e,0x4e,0x41,0x20,0x20,0x4e,0x4f,0x4e,0x45,0x0,0x0,0xd,0x54,0x52,0x49,0x4d,0x42,0x4c,0x45,0x20,0x4e,0x45,0x54,0x52,0x39,0x14,0x4e,0x61,0x76,0x20,0x34,0x2e,0x36,0x32,0x20,0x2f,0x20,0x42,0x6f,0x6f,0x74,0x20,0x34,0x2e,0x36,0x32,0xa,0x35,0x33,0x32,0x39,0x4b,0x34,0x34,0x33,0x35,0x32,0xfc,0xca,0x3f };
         msg.pktSize = sizeof(buf);  memcpy(msg.comm.rxBuf.start, buf, msg.pktSize);
@@ -419,7 +419,7 @@ bool GenerateRTCM3(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (periodCheck(s_msgTimeMs.rtcm1085, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.rtcm1085, s_gnssPeriodMs))
     {   // RTCM3 (0xcc 0x43) 1085
         uint8_t buf[] = { 0xd3,0x0,0xcc,0x43,0xdc,0x2f,0x82,0x2f,0xc0,0xe2,0x0,0x20,0x4,0x3,0x41,0x0,0x0,0x0,0x0,0x0,0x30,0xc0,0x0,0x0,0x7f,0xff,0xfa,0x4a,0x1a,0x22,0x2a,0x54,0x3,0xdd,0x28,0xec,0x62,0x15,0xe,0xbb,0x90,0x0,0x40,0x1,0x0,0x4,0x0,0x10,0x0,0x75,0x28,0xea,0x45,0xd6,0x33,0xac,0x20,0x91,0x41,0x1d,0xa2,0x6b,0x84,0xcc,0xed,0x28,0xda,0xb,0xb5,0xc3,0x6b,0x87,0x2f,0x3e,0x57,0x1c,0xe3,0x79,0xd9,0x10,0xec,0x21,0xaa,0x47,0xa0,0x90,0xdf,0xff,0xfb,0x5f,0xff,0xee,0x7f,0xff,0xaf,0xff,0xfe,0xaf,0xff,0xfa,0xdf,0xff,0xea,0x0,0x1,0xa2,0x0,0x6,0x68,0x0,0xf,0x40,0x0,0x41,0x0,0x0,0x5c,0x0,0x1,0x68,0x0,0x14,0x9f,0xff,0xaf,0x0,0x1,0x2e,0x0,0x4,0xc0,0x0,0x13,0xe0,0x0,0x52,0x0,0x1,0x8a,0x0,0x6,0x10,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x5f,0x75,0x96,0x67,0x96,0x38,0x65,0x8d,0xd7,0x5f,0x75,0x95,0xd9,0x64,0xd2,0xc0,0x0,0x80,0x1,0x0,0x2,0x0,0x4,0x0,0x8,0x0,0x10,0x0,0x20,0x0,0x40,0x0,0x80,0x1,0x0,0x2,0x0,0x4,0x0,0x8,0x0,0x10,0x0,0x20,0x0,0x40,0x0,0x80,0x1,0x0,0x2,0x0,0x0,0x9d,0xc4,0x6a };
         msg.pktSize = sizeof(buf);  memcpy(msg.comm.rxBuf.start, buf, msg.pktSize);
@@ -427,7 +427,7 @@ bool GenerateRTCM3(test_message_t &msg, int i, float f)
         return true;
     }
 
-    if (periodCheck(s_msgTimeMs.rtcm1095, s_gpsPeriodMs))
+    if (periodCheck(s_msgTimeMs.rtcm1095, s_gnssPeriodMs))
     {   // RTCM3 (0x3a 0x44) 1095
         uint8_t buf[] = { 0xd3,0x1,0x3a,0x44,0x7c,0x2f,0x52,0x3,0x6c,0x22,0x0,0x20,0x34,0x98,0x0,0xc0,0x0,0x0,0x0,0x0,0x4,0x0,0x88,0x80,0x7f,0xff,0xff,0xff,0xac,0x2a,0xad,0x29,0xa9,0xa7,0xa6,0xa7,0x80,0x0,0x0,0x0,0x6e,0x64,0x72,0xc7,0x4a,0xea,0x56,0xa3,0x32,0xfe,0xc0,0x1,0x0,0x4,0x0,0x10,0x0,0x40,0x1,0x0,0x4,0x0,0x10,0x0,0x3,0xf7,0x8,0x96,0x12,0x90,0x23,0xd7,0x25,0xbe,0x66,0xbc,0xd0,0x79,0xb9,0xc,0xbb,0x1b,0x5e,0x37,0x74,0x6d,0xe2,0x1d,0x94,0x45,0xc8,0xa2,0x51,0x5d,0xe3,0x3a,0xc6,0x81,0x8d,0xbb,0x19,0x8e,0x7b,0x5c,0xf3,0xd9,0xf1,0xf3,0xe0,0x6c,0x46,0xde,0x85,0xbd,0x4f,0x7c,0x1f,0x4,0x9e,0x16,0xfc,0x44,0xb8,0x81,0xff,0xff,0xf5,0xff,0xff,0x8f,0xff,0xeb,0xc0,0x0,0x15,0x7f,0xfe,0xe5,0xff,0xfa,0x28,0x0,0x11,0xdf,0xff,0xde,0x7f,0xfe,0xd8,0x0,0x1,0xcf,0xff,0xeb,0xdf,0xff,0xf1,0xff,0xff,0x8,0x0,0x6,0x10,0x0,0x6,0x3f,0xff,0x9c,0x80,0x0,0x47,0xff,0xfe,0xf0,0x0,0x14,0xff,0xff,0xa6,0x0,0x1,0x29,0xff,0xfc,0x58,0x0,0x9,0x0,0x0,0x56,0xff,0xff,0xe5,0xff,0xfb,0x50,0x0,0x12,0x3f,0xff,0xcc,0xff,0xff,0x2b,0xff,0xfb,0x17,0xff,0xfa,0x3f,0xff,0xf1,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x59,0x5e,0x15,0x61,0x6e,0xb7,0x55,0x66,0x35,0xd5,0x56,0x36,0xd9,0x5e,0x36,0x59,0x56,0x15,0xe3,0x7e,0xf8,0x65,0x87,0x19,0x40,0x0,0x80,0x1,0x0,0x2,0x0,0x4,0x0,0x8,0x0,0x10,0x0,0x20,0x0,0x40,0x0,0x80,0x1,0x0,0x2,0x0,0x4,0x0,0x8,0x0,0x10,0x0,0x20,0x0,0x40,0x0,0x80,0x1,0x0,0x2,0x0,0x4,0x0,0x8,0x0,0x10,0x0,0x20,0x0,0x40,0x0,0x80,0x1,0x0,0x2,0x0,0x4,0x0,0x8,0x0,0x10,0x0,0x20,0x0,0x0,0x1d,0x23,0x6c };
         msg.pktSize = sizeof(buf);  memcpy(msg.comm.rxBuf.start, buf, msg.pktSize);
@@ -682,10 +682,10 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
             if ((options & GEN_LOG_OPTIONS_TIMESTAMP_REVERSE) && (pktCount%18 == 0))
             {
                 DEBUG_PRINT("ADDING REVERSAL: \n");
-                s_timeMs -= s_gpsPeriodMs;
-                s_msgTimeMs.gpsPos = 0;
+                s_timeMs -= s_gnssPeriodMs;
+                s_msgTimeMs.gnssPos = 0;
                 s_msgTimeMs.ins1 = 0;
-                s_msgTimeMs.nmeaGpsPos = 0;
+                s_msgTimeMs.nmeaGnssPos = 0;
                 s_msgTimeMs.nmeaZda = 0;
                 s_msgTimeMs.nmeaGga = 0;
                 s_msgTimeMs.nmeaIns1 = 0;

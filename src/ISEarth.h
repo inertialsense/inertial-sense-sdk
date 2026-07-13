@@ -13,14 +13,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef ISEARTH_H_
 #define ISEARTH_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "ISMatrix.h"
 #include "ISConstants.h"
 #include "ISPose.h"
 #include "data_sets.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define DEG2RAD_EARTH_RADIUS_F      111120.0f                    // = DEG2RAD * earth_radius_in_meters
 #define INV_DEG2RAD_EARTH_RADIUS_F  8.99928005759539236861e-6f    // = 1 / (DEG2RAD * earth_radius_in_meters)

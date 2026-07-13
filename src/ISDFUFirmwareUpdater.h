@@ -11,6 +11,7 @@
 
 #include "protocol/FirmwareUpdate.h"
 
+#include <functional>
 #include <mutex>
 #include <queue>
 
@@ -68,8 +69,9 @@ static constexpr uint32_t STM32_PAGE_ERROR_MASK = 0x7FF;
 static constexpr uint16_t STM32_DESCRIPTOR_VENDOR_ID = 0x0483;
 static constexpr uint16_t STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11;
 
-const md5hash_t DFU_FINGERPRINT_STM32L4 = { { 0xFA, 0x45, 0x85, 0x0B, 0xE6, 0x92, 0x56, 0x3A, 0xD6, 0x5C, 0x40, 0x05, 0xDE, 0xBC, 0xB3, 0xF9 } };
-const md5hash_t DFU_FINGERPRINT_STM32U5 = { { 0x82, 0x03, 0x64, 0x70, 0x21, 0x65, 0x55, 0x2A, 0xA2, 0x8B, 0xE7, 0x9D, 0x69, 0xBB, 0xA6, 0x2F } };
+const md5hash_t DFU_FINGERPRINT_STM32L4    = { { 0xFA, 0x45, 0x85, 0x0B, 0xE6, 0x92, 0x56, 0x3A, 0xD6, 0x5C, 0x40, 0x05, 0xDE, 0xBC, 0xB3, 0xF9 } };
+const md5hash_t DFU_FINGERPRINT_STM32U5_1M = { { 0x82, 0x03, 0x64, 0x70, 0x21, 0x65, 0x55, 0x2A, 0xA2, 0x8B, 0xE7, 0x9D, 0x69, 0xBB, 0xA6, 0x2F } };
+const md5hash_t DFU_FINGERPRINT_STM32U5_2M = { { 0xB5, 0xCE, 0xEA, 0xEB, 0xEE, 0xA7, 0x53, 0x3C, 0x4D, 0xCC, 0xBF, 0x30, 0x71, 0x9B, 0xE2, 0xAB } };
 
 typedef enum    // From DFU manual, do not change
 {
@@ -163,6 +165,9 @@ typedef enum    // Internal only, can change as needed
     DFU_ERROR_INVALID_ARG = -6,
     DFU_ERROR_FILE_NOTFOUND = -7,
     DFU_ERROR_FILE_INVALID = -8,
+    DFU_ERROR_RDP_LOCKED = -9,              // SN-8043: chip at RDP Level 1 (RDP > 0xAA); flash writes are silently dropped. Recoverable via erase/RDP-regress.
+    DFU_ERROR_RDP_PERMANENT_LOCKED = -10,   // SN-8043: chip at RDP Level 2 (RDP == 0xCC); permanently locked, cannot be recovered.
+    DFU_ERROR_WRITE_VERIFY_FAILED = -11,    // SN-8043: post-write readback did not match the source image; the write did not land.
 } dfu_error;
 
 typedef enum {
@@ -185,19 +190,48 @@ public:
         fetchDeviceInfo();
     }
 
+    ~DFUDevice() {
+        if (usbHandle) {
+            libusb_release_interface(usbHandle, 0);
+            libusb_close(usbHandle);
+            usbHandle = nullptr;
+        }
+        if (usbDevice) {
+            libusb_unref_device(usbDevice);
+            usbDevice = nullptr;
+        }
+    }
+
     bool isConnected() { return (usbHandle != nullptr) && (libusb_get_device(usbHandle) != nullptr); }
 
     /**
-     * Connect and establish USB DFU status is IDLE
-     * @return
+     * Connect and establish USB DFU status is IDLE.
+     * @param resetDevice when true (default) issue a libusb_reset_device() after opening, forcing a clean
+     *                    USB re-enumeration before the DFU session -- wanted before programming. Pass false
+     *                    for read-only identification (descriptor/fingerprint/OTP reads during discovery):
+     *                    abort()+waitForState(IDLE) still establish a known DFU state, and skipping the
+     *                    reset avoids a ~100-200ms per-device USB re-enumeration on every scan.
+     * @return DFU_ERROR_NONE on success, or a dfu_error describing the failure (open/claim/state)
      */
-    dfu_error open();
+    dfu_error open(bool resetDevice = true);
     dfu_error updateFirmware(std::string filename, uint64_t baseAddress = 0);
     dfu_error updateFirmware(std::istream& stream, uint64_t baseAddress = 0);
     // dfu_error updateFirmware(std::queue<uint8_t>, uint32_t imgSize, uint64_t baseAddress = 0);
     dfu_error finalizeFirmware();
     dfu_error close();
     int reset();
+
+    /**
+     * Issues a single-byte DfuSe class-specific command to the device, sent as a DFU_DNLOAD with
+     * block number 0 (the mechanism ST's DfuSe bootloader uses for its special commands, e.g. the
+     * same transport the internal erase path uses). The caller supplies the command code; this method
+     * performs no interpretation of it. Some commands initiate a long internal operation and/or an
+     * immediate device reset, so a resulting USB disconnect (see isExpectedOptionByteResetError()) is
+     * treated as the expected, successful outcome rather than a failure.
+     * @param cmd the DfuSe command code to send
+     * @return DFU_ERROR_NONE on success (including the expected reset-disconnect); a libusb-tagged error otherwise
+     */
+    dfu_error sendDfuCommand(int cmd);
 
     const char *getDescription();
 
@@ -207,14 +241,83 @@ public:
     uint16_t getHardwareId() { return hardwareId; }
     uint32_t getSerialNo() { return sn; }
 
+    /**
+     * The USB DFU serial-number string from the device's iSerialNumber descriptor (the STM32
+     * factory unique-ID-derived serial). Unlike getSerialNo() (the Inertial Sense OTP serial), this
+     * is read from a plain USB string descriptor, so it is available even when the module's
+     * flash/OTP is read-protected, and it is stable across a flash erase/reprogram cycle. That makes
+     * it the reliable key for re-matching a specific physical module after it resets and re-enumerates.
+     * @return the DFU serial string (empty if the descriptor was unavailable)
+     */
+    const char *getUsbSerial() const { return dfuSerial.c_str(); }
+
+    /**
+     * SN-8193: the raw libusb error code captured the last time this device produced a
+     * DFU_ERROR_LIBUSB. The dfu_error return value only carries the DFU_ERROR_LIBUSB tag, so the
+     * specific libusb code is preserved here for diagnostics.
+     * @return the most recent libusb error code for this device, or LIBUSB_SUCCESS (0) if none has occurred
+     */
+    int getLastLibusbError() const { return lastLibusbError; }
+
+    /**
+     * SN-8193: human-readable name of the most recent libusb error for this device (see getLastLibusbError()).
+     * @return the libusb error name from libusb_error_name() (e.g. "LIBUSB_ERROR_NO_DEVICE")
+     */
+    const char* getLastLibusbErrorName() const { return libusb_error_name(lastLibusbError); }
+
+    eProcessorType getProcessorType() const { return processorType; }
+    uint32_t getTotalFlashSize() const;
+    static const char* getDeviceTypeName(eProcessorType procType, uint32_t totalFlashSize);
+
     void setProgressCb(fwUpdate::pfnProgressCb cbProgress){ progressCb = cbProgress;}
     void setStatusCb(fwUpdate::pfnStatusCb cbStatus) { statusCb = cbStatus;}
 
-    const char* getErrorName(int errNo) { return dfuDeviceErrors[errNo]; }
+    static const char* getErrorName(int errNo);
+
+    /**
+     * Maps a raw STM32 FLASH_OPTR RDP (read-protection) byte to a dfu_error verdict.
+     * Pure decision logic, separated so it can be unit-tested without USB hardware (SN-8043).
+     *   RDP == 0xAA -> DFU_ERROR_NONE (Level 0, unprotected; flash programming allowed)
+     *   RDP == 0xCC -> DFU_ERROR_RDP_PERMANENT_LOCKED (Level 2, permanent)
+     *   otherwise   -> DFU_ERROR_RDP_LOCKED (Level 1; flash writes silently dropped by the ROM bootloader)
+     */
+    static dfu_error rdpVerdict(uint8_t rdpByte);
+
+    /**
+     * SN-8193: classifies a libusb error returned by the Option-Bytes download() in finalizeFirmware().
+     * Writing the STM32 FLASH option bytes triggers a mandatory immediate device reset, so the USB
+     * device disconnects mid-transfer and libusb reports a disconnect-class error. That error is the
+     * EXPECTED successful outcome of finalize, not a failure. Pure decision logic, separated so it can
+     * be unit-tested without USB hardware (same pattern as rdpVerdict()).
+     * @param libusbError a libusb return/error code (e.g. LIBUSB_ERROR_NO_DEVICE)
+     * @return true for the disconnect-class codes (LIBUSB_ERROR_NO_DEVICE / _IO / _PIPE) that are the
+     *         expected result of the option-byte reset; false for success and all other errors
+     *         (e.g. TIMEOUT, ACCESS), which remain real finalize failures
+     */
+    static bool isExpectedOptionByteResetError(int libusbError);
+
+    /**
+     * SN-8193: human-readable name for a libusb error code (thin wrapper over libusb's own
+     * libusb_error_name()). Pure, so it is unit-testable without USB hardware.
+     * @param libusbCode a libusb return/error code
+     * @return the libusb error name (e.g. "LIBUSB_ERROR_NO_DEVICE"); never null
+     */
+    static const char* libusbErrorName(int libusbCode);
 
     int fillDeviceInfo(dev_info_t &devInfo);
 
 protected:
+    /**
+     * SN-8193: records `libusbCode` as this device's last libusb error and returns the
+     * DFU_ERROR_LIBUSB tag. Replaces the old `(dfu_error)(DFU_ERROR_LIBUSB | (code << 16))` packing,
+     * which silently discarded the libusb code: DFU_ERROR_LIBUSB (-4) is sign-extended to all-ones in
+     * the high bits, so OR-ing the shifted code never changed any bit and the result was always -4.
+     * The code is now retrievable via getLastLibusbError() / getLastLibusbErrorName().
+     * @param libusbCode the libusb error code to record for this device
+     * @return DFU_ERROR_LIBUSB
+     */
+    dfu_error libusbError(int libusbCode);
+
     dfu_error fetchDeviceInfo();
 
     int get_string_descriptor_ascii(uint8_t desc_index, char *data, int length);
@@ -225,31 +328,49 @@ protected:
 
     dfu_error writeFlash(const dfu_memory_t& mem, uint32_t& address, uint32_t data_len, uint8_t *data);
 
-private:
-    libusb_device *usbDevice;
-    libusb_device_handle *usbHandle;            // if this is not null, then this should be a valid, open handle.
+    /**
+     * SN-8043: Pre-flight read-protection (RDP) check. STM32U5 only (IMX-6 / GPX-1); a no-op (returns
+     * DFU_ERROR_NONE) for other processors. Reads FLASH_OPTR via the DFU OPTIONS segment (which works
+     * regardless of RDP level) and returns rdpVerdict() of the RDP byte. At RDP Level 1 the ROM
+     * bootloader ACKs every DNLOAD but silently drops the underlying flash programming, so we must
+     * refuse to proceed rather than report a false success.
+     */
+    dfu_error checkReadProtection();
 
-    uint16_t vid;                               // the vendor id for this device (for filtering/selection)
-    uint16_t pid;                               // the product id for this device (for filtering/selection)
-    usb_dfu_func_descriptor funcDescriptor;     // a copy of the DFU functional descriptor
-    std::vector<std::string> dfuDescriptors;    // an array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
+    /**
+     * SN-8043: Post-write readback verification. Uploads the first verifyLen bytes of the just-written
+     * region and compares them against the source image. Returns DFU_ERROR_WRITE_VERIFY_FAILED on
+     * mismatch (the classic RDP-silent-drop signature is an all-0xFF / all-0x00 readback). A readback
+     * transport failure is logged but NOT treated as fatal, to avoid false negatives on good devices.
+     */
+    dfu_error verifyFlashWrite(uint32_t address, const uint8_t *expected, uint32_t verifyLen);
+
+private:
+    libusb_device *usbDevice = nullptr;
+    libusb_device_handle *usbHandle = nullptr;  // if this is not null, then this should be a valid, open handle.
+    int lastLibusbError = LIBUSB_SUCCESS;       //!< SN-8193: raw libusb code from this device's most recent DFU_ERROR_LIBUSB
+
+    uint16_t vid = 0;                           // the vendor id for this device (for filtering/selection)
+    uint16_t pid = 0;                           // the product id for this device (for filtering/selection)
+    usb_dfu_func_descriptor funcDescriptor {};  // a copy of the DFU functional descriptor
+    std::vector<std::string> dfuDescriptors {}; // an array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
 
     std::string dfuManufacturer;                // the extracted manufacturer id/name (as a string) from the iManufacturer descriptor
     std::string dfuProduct;                     // the extracted product id/name (as a string) from the iProduct descriptor
     std::string dfuSerial;                      // the extracted DFU device serial number, from descriptors (see iSerialNumber above)
 
-    uint32_t sn;                                // Inertial Sense serial number (from OTP data)
-    uint16_t hardwareId;                        // Inertial Sense Hardware ID (from OTP data)
-    eProcessorType processorType;               // detected processor type/family
-    dfu_memory_t segments[4];                   // memory segment detail, corresponding with the alternate descriptor ID
+    uint32_t sn = -1;                           // Inertial Sense serial number (from OTP data)
+    uint16_t hardwareId = -1;                   // Inertial Sense Hardware ID (from OTP data)
+    eProcessorType processorType = IS_PROCESSOR_UNKNOWN;          // detected processor type/family
+    dfu_memory_t segments[4] {};                // memory segment detail, corresponding with the alternate descriptor ID
 
-    md5Context_t fingerprint;                      // an MD5 hash of various data/parameters used to uniquely identify this device
+    md5Context_t fingerprint {};                // an MD5 hash of various data/parameters used to uniquely identify this device
 
     uint16_t dlBlockNum = 0;                    // download block count; should be reset for each separate transfer
     uint16_t ulBlockNum = 0;                    // upload block count; should be reset for each separate transfer
 
-    fwUpdate::pfnProgressCb progressCb;
-    fwUpdate::pfnStatusCb statusCb;
+    fwUpdate::pfnProgressCb progressCb = nullptr;
+    fwUpdate::pfnStatusCb statusCb = nullptr;
 
     /**
      * @brief OTP section
@@ -263,9 +384,9 @@ private:
 
     int detach(uint8_t timeout);
 
-    int download(uint16_t& wValue, uint8_t *buf, uint16_t len);
+    int download(uint16_t& wValue, uint8_t *buf, uint16_t len, uint32_t timeout_ms = 5000);
 
-    int upload(uint16_t& wValue, uint8_t *buf, uint16_t len);
+    int upload(uint16_t& wValue, uint8_t *buf, uint16_t len, uint32_t timeout_ms = 5000);
 
     int getStatus(dfu_status *status, uint32_t *delay, dfu_state *state, uint8_t *i_string);
 
@@ -275,11 +396,11 @@ private:
 
     int abort();
 
-    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr);
+    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr, uint32_t timeout_ms = 5000);
 
-    int setAddress(uint16_t& wValue, uint32_t address);
+    int setAddress(uint16_t& wValue, uint32_t address, uint32_t timeout_ms = 5000);
 
-    int readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen);
+    int readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen, uint32_t timeout_ms = 5000);
 
     static DFUDevice::otp_info_t *decodeOTPData(uint8_t *raw, int len);
 
@@ -301,13 +422,90 @@ public:
     ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device = nullptr, uint32_t serialNo = UINT32_MAX);
     ~ISDFUFirmwareUpdater() { };
 
-    static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
+    /** Initialize the libusb context. Call once at application startup before any DFU operations. */
+    static void initLibUSB();
+    /** Tear down the libusb context. Call once at application shutdown. */
+    static void exitLibUSB();
+
+    /**
+     * Lightweight, value-type identity for a discovered DFU device -- safe to hand across threads
+     * (no libusb handles, no ownership). Built from a DFUDevice during enumeration.
+     */
+    struct DfuDeviceInfo {
+        std::string    description;                           //!< human-readable (DFUDevice::getDescription)
+        std::string    typeName;                              //!< "IMX-6"/"GPX-1"/"IMX-5"/"Unknown"
+        std::string    usbSerial;                             //!< USB DFU serial descriptor
+        uint32_t       serialNo = 0xFFFFFFFF;                 //!< IS OTP serial (UINT32_MAX if unreadable)
+        uint16_t       hardwareId = 0xFFFF;                   //!< encoded hardware id (0xFFFF if unknown)
+        eProcessorType processorType = IS_PROCESSOR_UNKNOWN;  //!< processor family from the USB fingerprint
+        uint32_t       totalFlashSize = 0;                    //!< total flash size in bytes (0 if unknown)
+    };
+
+    /** Invoked once per successfully-enumerated device as it is identified (on the calling thread). */
+    typedef std::function<void(const DfuDeviceInfo &info)> pfnDfuDeviceFoundCb;
+
+    /**
+     * Enumerate connected DFU devices.
+     * @param devices       receives one DFUDevice* per enumerated device (caller takes ownership)
+     * @param vid           USB vendor id filter (0 = any)
+     * @param pid           USB product id filter (0 = any)
+     * @param onDeviceFound if provided, called for each device as it is identified, enabling a
+     *                      progressive/streaming UI when this runs on a worker thread
+     * @return the number of devices enumerated into @p devices
+     */
+    static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000,
+                                      pfnDfuDeviceFoundCb onDeviceFound = nullptr);
+
+    static int getNumDevices(uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
     static size_t filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
 
     static size_t filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target);
 
     static bool isDFUDevice(libusb_device *usbDevice, uint16_t vid, uint16_t pid);
+
+    // ---- DFU discovery state machine (step-driven; no internal thread) ----------------------------
+
+    /**
+     * State of the step-driven DFU discovery scan. Reports when the set of attached DFU devices has
+     * SETTLED, so a UI can wait for discovery to complete instead of reacting to the first device that
+     * appears (which yields a partial list with not-yet-enumerated "unknown" entries). Settle detection
+     * is COUNT-based (not identity-based): an unidentifiable DFU device still contributes to the count
+     * being waited on, so it can never deadlock completion. The SDK keeps NO thread -- the caller drives
+     * discoveryStep() from its own loop/worker at whatever cadence it likes (single-thread-friendly).
+     */
+    enum eDfuDiscoveryState {
+        DFU_DISCOVERY_IDLE = 0,    //!< no DFU devices present
+        DFU_DISCOVERY_STARTED,     //!< one or more devices appeared; count not yet stable
+        DFU_DISCOVERY_COMPLETED,   //!< count held steady for >= the settle timeout
+    };
+
+    /**
+     * Caller-owned discovery state. Set vid/pid/settleTimeoutMs once, then call discoveryStep() each
+     * tick and read state/count after. No clock or thread is used internally -- elapsedMs (passed to
+     * discoveryStep) supplies timing, so the cadence is entirely the caller's.
+     */
+    struct DfuDiscoveryContext {
+        // configuration (set by caller before first step):
+        uint16_t           vid = 0x0000;                 //!< count filter (0 = any)
+        uint16_t           pid = 0x0000;                 //!< count filter (0 = any)
+        uint32_t           settleTimeoutMs = 1000;       //!< count must hold steady this long for COMPLETED
+        // observable result (read by caller):
+        eDfuDiscoveryState state = DFU_DISCOVERY_IDLE;   //!< current discovery state
+        int                count = 0;                    //!< device count from the most recent step
+        // internal:
+        int                lastCount = 0;                //!< the count currently being timed for stability
+        uint32_t           stableElapsedMs = 0;          //!< accumulated time the count has held steady
+    };
+
+    /**
+     * Advances the discovery state machine by one poll: counts DFU devices (getNumDevices(vid,pid)) and
+     * updates ctx.state/ctx.count. initLibUSB() must have been called first.
+     * @param ctx       caller-owned discovery context (configuration in, state/count out)
+     * @param elapsedMs time since the previous call (e.g. the caller's poll interval)
+     * @return true iff the state changed this step (so the caller can emit/act on the transition)
+     */
+    static bool discoveryStep(DfuDiscoveryContext &ctx, uint32_t elapsedMs);
 
 
     // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.

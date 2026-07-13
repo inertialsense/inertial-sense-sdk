@@ -139,7 +139,7 @@ class RepositoryInfo:
             f.write(f"#define {prefix}REPO_GIT_COMMIT 0x{self.commit[:8]}\n")
             f.write(f"#define {prefix}REPO_VERSION_NO_META \"{str(self.version).split('+')[0]}\"\n")
             f.write(f"#define {prefix}REPO_VERSION \"{str(self.version)}\"\n")
-            f.write(f"#define {prefix}REPO_VERSION_RELEASE_TYPE {str(self.release_type)}\n")
+            f.write(f"#define {prefix}REPO_VERSION_RELEASE_TYPE {str(self.release_type)}  // 'd'=developer, 'c'=release candidate, 'b'=beta, 'a'=alpha, 0=production, 's'=snapshot\n")
             f.write(f"#define {prefix}REPO_VERSION_MAJOR {str(self.version.major)}\n")
             f.write(f"#define {prefix}REPO_VERSION_MINOR {str(self.version.minor)}\n")
             f.write(f"#define {prefix}REPO_VERSION_REVIS {str(self.version.patch)}\n")
@@ -192,6 +192,8 @@ class RepositoryInfo:
         self.tag = get_env_or_default("0.0.0" if self.repo is None else self.git_cmd.describe(["--tags", "--abbrev=0"]), "REPO_TAG")
 
         try:
+            # Keep raw distance: distance == 0 has special meaning ("on a release tag") in get_latest_version().
+            # The uint8 wrap for dev_info_t.firmwareVer[3] is applied by get_prerelease_number() at the point of use.
             self.distance_from_tag = int(get_env_or_default(None if self.repo is None else self.git_cmd.rev_list(["--count", self.tag + "..HEAD"]), "REPO_DISTANCE"))
         except TypeError:
             self.distance_from_tag = None
@@ -248,9 +250,11 @@ class RepositoryInfo:
                 rel_type = 'snap'
                 latest_ver = latest_ver.replace(prerelease=f'snap.{distance}')
 
+        if latest_ver is None:
+            latest_ver = semver.Version.parse("0.0.0") # Fallback version
+
         latest_ver = latest_ver.replace(prerelease=None) if rel_type is None else latest_ver.replace(prerelease=f'{rel_type}.{distance}' if distance > 0 else f'{rel_type}')
         return latest_ver
-
 
 
     def get_latest_release(self):
@@ -312,7 +316,7 @@ class RepositoryInfo:
 
                 max_depth = max_depth - 1
 
-            except git.NoSuchPathError as err:
+            except (git.NoSuchPathError, git.InvalidGitRepositoryError) as err:
                 warnings.warn(f"Specified path '{path}' references in invalid or corrupt git repository (submodule, etc).")
                 self.name = "BROKEN_GIT!"       # an indicator that there is something wrong with this git repo
                 self.repo = None
@@ -327,15 +331,18 @@ class RepositoryInfo:
         """
 
         self.version = self.get_latest_version()
-        if self.branch == "develop":                                      # Develop
+        # release_type: 0=production, 'c'=release candidate, 'b'=beta, 'a'=alpha, 'd'=developer, 's'=snapshot, '^'=dirty
+        if self.branch == "develop":                                    # Developer
             self.release_type = "'d'"
-        elif re.match(r"\d.\d.\d-rc", self.branch) is not None:  # Release Candidate
+        elif re.match(r"\d.\d.\d-rc", self.branch) is not None:         # Release Candidate
             self.release_type = "'c'"
-        elif re.match(r"\d.\d.\d-b", self.branch) is not None:   # Beta
+        elif re.match(r"\d.\d.\d-b", self.branch) is not None:          # Beta
             self.release_type = "'b'"
-        elif re.match(r"\d.\d.\d-a", self.branch) is not None:   # Alpha
+        elif re.match(r"\d.\d.\d-a", self.branch) is not None:          # Alpha
             self.release_type = "'a'"
-        else:                                                          # Snapshot
+        elif self.version.prerelease is None:                           # Production
+            self.release_type = "0"
+        else:                                                           # Snapshot
             self.release_type = "'s'"
 
 
@@ -446,13 +453,13 @@ class RepositoryInfo:
 
     def get_prerelease_number(self, version=None):
         """Returns the numerical value (as an int) of the prerelease field of a semantic version
-        or 0, if its undefined, or unparsable."""
+        or 0, if its undefined, or unparsable. Wraps to uint8 (0-255) to match value in dev_info_t struct. """
         version = version if version is not None else self.version
         if version is not None and version.prerelease is not None:
             parts = version.prerelease.split('.')
             if len(parts) > 0:
                 try:
-                    return int(parts[-1])
+                    return int(parts[-1]) % 256     # Wrap to uint8 range (0-255) to match size of dev_info_t.firmwareVer[3]
                 except ValueError:
                     return 0
 

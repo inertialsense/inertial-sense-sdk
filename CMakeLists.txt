@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.16.3)
 
 project(InertialSenseSDK)
 
@@ -107,30 +107,35 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         external
 )
 
-# Build using C17 and CXX20
-set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
-set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+# Build using C11 and CXX17 for all platforms
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
-# Add compile options that will propagate to targets linking against the SDK
-# Use INTERFACE to only affect dependent targets (since SDK headers have deprecated code)
 if(NOT WIN32)
-    target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
+	target_compile_options(${PROJECT_NAME} INTERFACE -Wno-deprecated-declarations)
 endif()
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Other settings
 if (WIN32)
     # yamlcpp needs to know it's a static lib.
     add_definitions(-DYAML_CPP_STATIC_DEFINE)
 
-    # Windows specific include dir
-    target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
-    )
+    # Windows specific include dir for libusb config.h
+    if (MSVC)
+        target_include_directories(${PROJECT_NAME} PUBLIC
+            ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+        )
+    elseif (MINGW)
+        target_include_directories(${PROJECT_NAME} PUBLIC
+            ${CMAKE_CURRENT_LIST_DIR}/src/libusb_mingw
+        )
+    endif()
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND cmd /C scripts\\lib\\update_version_files.bat "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND cmd /C scripts\\lib\\update_version_files.bat -p IS_SDK_ "${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -140,7 +145,8 @@ if (WIN32)
 	add_dependencies(${PROJECT_NAME} gen_files)
 
     # We need to ensure windows static libs are found
-    target_link_libraries(${PROJECT_NAME} Ws2_32.lib Iphlpapi.lib)
+    # PUBLIC so consumers of InertialSenseSDK automatically link Winsock
+    target_link_libraries(${PROJECT_NAME} PUBLIC Ws2_32.lib Iphlpapi.lib)
 elseif(APPLE)
     # macOS specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -151,7 +157,7 @@ elseif(APPLE)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND bash -c "scripts/lib/update_version_files.sh -p IS_SDK_ ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -183,7 +189,7 @@ elseif(LINUX)
 
 	add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
-			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			COMMAND bash -c "scripts/lib/update_version_files.sh -p IS_SDK_ ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
 			DEPENDS scripts/lib/version_tools.py
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
@@ -204,5 +210,5 @@ elseif(LINUX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 	# Link in Linux specific packages
-    target_link_libraries(${PROJECT_NAME} ${UDEV_LIBRARIES} m)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${UDEV_LIBRARIES} m)
 endif ()

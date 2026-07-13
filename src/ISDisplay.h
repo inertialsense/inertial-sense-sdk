@@ -13,8 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef IS_DISPLAY_H
 #define IS_DISPLAY_H
 
-#include <stdlib.h>
-#include <inttypes.h>
+#include <cstdlib>
+#include <cinttypes>
 #include <vector>
 #include <string>
 
@@ -27,10 +27,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "serialPortPlatform.h"
 
-#if !PLATFORM_IS_WINDOWS
-
+#if !PLATFORM_IS_WINDOWS && !PLATFORM_IS_EMBEDDED
 #include <termios.h>
-
 #endif
 
 
@@ -108,18 +106,22 @@ public:
     std::string DataToStringINS2(const ins_2_t &ins2, const p_data_hdr_t& hdr);
      std::string DataToStringINS3(const ins_3_t &ins3, const p_data_hdr_t& hdr);
     std::string DataToStringINS4(const ins_4_t &ins4, const p_data_hdr_t& hdr);
+    std::string DataToStringIMUs(const imus_t &imus, const p_data_hdr_t& hdr);
+    static std::string DataToStringIMUs(const imus_t &imus, int numDevices, bool full=false);
     std::string DataToStringIMU(const imu_t &imu, const p_data_hdr_t& hdr);
     static std::string DataToStringIMU(const imu_t &imu, bool full=false);
     std::string DataToStringPreintegratedImu(const pimu_t &imu, const p_data_hdr_t& hdr);
     std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
     std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
     std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
-    std::string DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr);
-    std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr);
-    static std::string DataToStringGpsPos(const gps_pos_t &gps, bool full=false);
-    std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
-    std::string DataToStringRtkMisc(const gps_rtk_misc_t& sol, const p_data_hdr_t& hdr);
-    std::string DataToStringRawGPS(const gps_raw_t& raw, const p_data_hdr_t& hdr);
+    std::string DataToStringGnssVersion(const gnss_version_t &ver, const p_data_hdr_t& hdr);
+    std::string DataToStringGnssPos(const gnss_pos_t &gnss, const p_data_hdr_t& hdr);
+    static std::string DataToStringGnssPos(const gnss_pos_t &gnss, bool full=false);
+    std::string DataToStringRtkRel(const gnss_rtk_rel_t &gnss, const p_data_hdr_t& hdr);
+    std::string DataToStringRtkMisc(const gnss_rtk_misc_t& sol, const p_data_hdr_t& hdr);
+    std::string DataToStringRawGNSS(const gnss_raw_t& raw, const p_data_hdr_t& hdr);
+    std::string DataToStringGnssSat(const gnss_sat_t &gnss, const p_data_hdr_t& hdr);
+    static std::string DataToStringGnssSat(const gnss_sat_t &gnss, bool full=false);
     std::string DataToStringSurveyIn(const survey_in_t &survey, const p_data_hdr_t& hdr);
     std::string DataToStringSysParams(const sys_params_t& sys, const p_data_hdr_t& hdr);
     std::string DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr);

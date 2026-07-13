@@ -48,6 +48,13 @@ extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 #define BAUDRATE_1500000    1500000         //  667 ns    (FTDI 1520, AFR 1500)
 #define BAUDRATE_2000000    2000000         //  500 ns    (FTDI 2080, AVR/ARM 2016)
 #define BAUDRATE_3000000    3000000         //  333 ns    (FTDI 3150, AVR/ARM 3030)
+#define BAUDRATE_4000000    4000000         //  250 ns    (SN-8239)
+
+// SN-8239: maximum baud rate accepted by the SDK serial layer. Standard rates use their termios Bxxx
+// constant; any other rate up to this ceiling is applied via the platform custom-rate path
+// (Linux termios2/BOTHER, macOS IOSSIOSPEED). Actual achievable rate is bounded by the USB-serial
+// bridge/driver, so a successful open does not guarantee the exact line rate.
+#define SERIAL_PORT_BAUDRATE_MAX  10000000
 
 enum eSerialPortOptions
 {
@@ -155,10 +162,10 @@ typedef struct serial_port_s serial_port_t;
 #define SERIAL_PORT(n)  ((serial_port_t*)n)
 
 
-void serialPortInit(port_handle_t, int id, int type, int flags);
+int serialPortInit(port_handle_t, int id, int type, int flags);
 
 // set the port name for a serial port, in case you are opening it later
-void serialPortSetName(port_handle_t port, const char* portName);
+int serialPortSetName(port_handle_t port, const char* portName);
 
 /**
  * returns the name associated with this port (this is usually the OS's identifier)
@@ -262,7 +269,7 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, unsigned int readC
  * @param timeoutMilliseconds
  * @return number of bytes read which is less than or equal to readCount
  */
-int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
+int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, unsigned int readCount, uint32_t timeoutMs);
 
 /**
  * start an async read - not all platforms will support an async read and may call the callback function immediately
@@ -355,10 +362,10 @@ int serialPortGetByteCountAvailableToWrite(port_handle_t port);
 int serialPortSleep(port_handle_t port, int sleepMilliseconds);
 
 // Set the port options
-void serialPortSetOptions(port_handle_t port, uint32_t options);
+int serialPortSetOptions(port_handle_t port, uint32_t options);
 
 // Set the port baud rate
-void serialPortSetBaud(port_handle_t port, int baudRate);
+int serialPortSetBaud(port_handle_t port, int baudRate);
 
 // Set callback for error events
 int serialPortSetErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb);

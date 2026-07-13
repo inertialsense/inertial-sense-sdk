@@ -152,7 +152,6 @@ int comManagerInit(
 
 pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port = NULL);
 
-
 port_handle_t comManagerAllocatePort(int ptype);
 
 
@@ -387,7 +386,7 @@ void comManagerSetErrorHandler(pfnComManagerParseErrorHandler errorCb);
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
-int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+int comManagerProcessRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 class ISComManager {
 public:

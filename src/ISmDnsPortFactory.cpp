@@ -13,13 +13,24 @@
     #endif
 #endif
 
-#include <util.h>
+#include <algorithm>
 #include <chrono>
 #include <regex>
+#include <set>
+#include <thread>
+
+#include "protocol/mdns.hpp"
+#include "util/uri.hpp"
+#include "util/util.h"
 #include "PortManager.h"
-#include "mdns.hpp"
-#include "uri.hpp"
 #include "ISmDnsPortFactory.h"
+#include "TcpPortFactory.h"
+
+#if PLATFORM_IS_WINDOWS
+#include <ws2tcpip.h>
+#elif !PLATFORM_IS_EMBEDDED
+#include <arpa/inet.h>
+#endif
 
 /**
  * Major function from glibc reimplemented as a normal C function instead of as a define
@@ -107,7 +118,7 @@ port_handle_t ISmDnsPortFactory::bindPort(const std::string& pName, uint16_t pTy
  * @return True if successful, false otherwise
  */
 bool ISmDnsPortFactory::releasePort(port_handle_t port) {
-    tick(); // Tick everything to ensure we have the latest data
+    // tick(); // Tick everything to ensure we have the latest data
     if (!port) {
         return false;
     }
@@ -127,7 +138,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
  */
 bool ISmDnsPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     tick(); // Tick everything to ensure we have the latest data
-    if (pType != PORT_TYPE__TCP) return false;
+    if ((pType & PORT_TYPE__TCP) != PORT_TYPE__TCP) return false;
     if (!validatePortName(pName)) return false;
 
     std::pair<std::string, ISmDnsPortFactory::port_t> portPair = parsePortName(pName);
@@ -149,16 +160,65 @@ void ISmDnsPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     tick(); // Tick everything to ensure we have the latest data
     std::regex regexPattern = std::regex(pattern);
 
+    // Track emitted (rdev, tcp_port) tuples to prevent the same physical device from
+    // being emitted multiple times when a single Pi advertises on dual-stack/multiple interfaces.
+    std::set<std::pair<uint32_t, uint16_t>> emittedPorts;
+
     std::unordered_map<std::string, std::vector<port_t>> portsAndHosts = getPorts();
     for (std::pair<std::string, std::vector<port_t>> hostPorts : portsAndHosts) {
         std::string hostname = hostPorts.first;
         std::vector<port_t> ports = hostPorts.second;
+
+        // Resolve hostname to a tcp:// URL host using configured preference (IPv4 > IPv6 > hostname).
+        // resolveName() returns whichever record it finds first, which may not match the
+        // requested preference. Search the cache directly for the specific record type needed.
+        uint8_t resolveFlags = portOptions.resolvePreference;
+        std::string tcpHost;
+
+        // Try IPv4 first (highest precedence)
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV4)) {
+            auto records = mdns::getRecords([&hostname](const mdns::mdns_record_cpp_t& r) {
+                return r.type == MDNS_RECORDTYPE_A && r.name == hostname;
+            });
+            if (!records.empty()) {
+                char ipBuf[INET_ADDRSTRLEN] = {};
+                inet_ntop(AF_INET, &records[0].data.a.addr.sin_addr, ipBuf, sizeof(ipBuf));
+                tcpHost = ipBuf;
+            }
+        }
+        // Try IPv6 second
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_IPV6)) {
+            auto records = mdns::getRecords([&hostname](const mdns::mdns_record_cpp_t& r) {
+                return r.type == MDNS_RECORDTYPE_AAAA && r.name == hostname;
+            });
+            if (!records.empty()) {
+                char ipBuf[INET6_ADDRSTRLEN] = {};
+                inet_ntop(AF_INET6, &records[0].data.aaaa.addr.sin6_addr, ipBuf, sizeof(ipBuf));
+                tcpHost = std::string("[") + ipBuf + "]";
+            }
+        }
+        // Fall back to hostname (TcpPortFactory resolves via getaddrinfo)
+        if (tcpHost.empty() && (resolveFlags & MDNS_RESOLVE_HOSTNAME)) {
+            tcpHost = hostname;
+            if (!tcpHost.empty() && tcpHost.back() == '.') {
+                tcpHost.pop_back();
+            }
+        }
+        if (tcpHost.empty()) continue;
+
         for (port_t port : ports) {
             std::pair<std::string, port_t> portPair = {hostname, port};
             portPair = getCanonicalPortData(portPair);
-            std::string portURL = getPortURL(portPair);
-            if (std::regex_match(portURL, regexPattern)) {
-                portCallback(this, PORT_TYPE__TCP | pType, portURL);
+
+            // Dedupe: skip this (rdev, tcp_port) if already emitted in this locatePorts() call
+            auto portKey = std::make_pair(portPair.second.devid, portPair.second.port);
+            if (!emittedPorts.insert(portKey).second)
+                continue;
+
+            std::string mdnsURL = getPortURL(portPair);
+            std::string tcpURL = "tcp://" + tcpHost + ":" + std::to_string(portPair.second.port);
+            if (std::regex_match(mdnsURL, regexPattern) || std::regex_match(tcpURL, regexPattern)) {
+                portCallback(&TcpPortFactory::getInstance(), PORT_TYPE__TCP | PORT_TYPE__COMM | pType, tcpURL);
             }
         }
     }
@@ -179,6 +239,24 @@ void ISmDnsPortFactory::tick() {
 }
 
 /**
+ * Issues a fresh mDNS query, blocks for the specified timeout while pumping responses,
+ * then returns the current discovered port set.
+ */
+void ISmDnsPortFactory::queryNow(uint32_t timeoutMs) {
+    // Send a fresh PTR query immediately (bypass the tick() rate limiter)
+    mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
+    lastQueryTime = std::chrono::steady_clock::now();
+
+    // Pump mDNS responses until timeout expires
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+    while (std::chrono::steady_clock::now() < deadline) {
+        mdns::tick();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    // Caller should now call locatePorts() or PortManager::discoverPorts() to read the refreshed cache
+}
+
+/**
  * Parse a port's name to get info about the hostname, devnum and port doesn't confirm that the port exists
  * @param pName Name to parse
  * @return pair with first value as server hostname and second value as struct containing devnum and port
@@ -190,10 +268,14 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
     std::string uriPort {uri.get_port()};
     std::string uriPath {uri.get_path()};
 
-    if (!utils::validDomainName(uriHost)) throw std::invalid_argument("Address of URI is not a valid DNS Domain Name");
-    if (!(uriHost.ends_with(".local") || uriHost.ends_with(".local."))) throw std::invalid_argument("Address of URI doesn't end in .local");
+    if (!utils::validDomainName(uriHost))
+        throw std::invalid_argument("Address of URI is not a valid DNS Domain Name");
 
-    if (!uriHost.ends_with(".")) {
+    if (!(  ((uriHost.size() > 6) && (uriHost.substr(uriHost.size() - 6) == ".local")) ||
+            ((uriHost.size() > 7) && (uriHost.substr(uriHost.size() - 7) == ".local.")) ))
+        throw std::invalid_argument("Address of URI doesn't end in .local");
+
+    if (!(uriHost.size() > 1 && uriHost[uriHost.size() - 1] == '.')) {
         uriHost.append(".");
     }
 
@@ -239,7 +321,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::parsePortNa
             devid = makedev(major, minor);
         } else if (std::regex_match(uriPath, match, regexp2)) {
             for (std::pair<uint16_t, std::string> majorPair: majorAtlas) {
-                if (match[1].str().starts_with( majorPair.second)) {
+                if (match[1].str().rfind(majorPair.second, 0) == 0) {
                     major = majorPair.first;
                     try {
                         minor = std::stoi(match[1].str().substr(majorPair.second.size()));
@@ -290,7 +372,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonica
     port_t returnPort = {};
 
     std::unordered_map<std::string, std::vector<port_t>> portsMap = getPorts();
-    if (!portsMap.contains(hostname)) throw std::domain_error("Hostname not found");
+    if (portsMap.find(hostname) == portsMap.end()) throw std::domain_error("Hostname not found");
     std::vector<port_t> ports = portsMap[hostname];
     if (partialPort.port != 0 && partialPort.devid != 0) {
         for (port_t fullPort : ports) {
@@ -308,7 +390,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonica
         }
     } else if (partialPort.port != 0) {
         for (port_t fullPort: ports) {
-            if (partialPort.port == fullPort.devid) {
+            if (partialPort.port == fullPort.port) {
                 returnPort = fullPort;
                 break;
             }
@@ -327,7 +409,7 @@ std::pair<std::string, ISmDnsPortFactory::port_t> ISmDnsPortFactory::getCanonica
  */
 std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPortFactory::port_t>& port) {
     std::string returnValue = "is-mdns://";
-    if (port.first.ends_with(".")) {
+    if (port.first.size() > 1 && port.first[port.first.size() - 1] == '.') {
         returnValue = returnValue.append(port.first.substr(0, port.first.length()-1));
     } else {
         returnValue = returnValue.append(port.first);
@@ -341,7 +423,7 @@ std::string ISmDnsPortFactory::getPortURL(const std::pair<std::string, ISmDnsPor
     if (port.second.devid != 0) {
         returnValue = returnValue.append("/");
         const uint16_t majorVal = major(port.second.devid);
-        if (majorAtlas.contains(majorVal)) {
+        if (majorAtlas.find(majorVal) != majorAtlas.end()) {
             returnValue = returnValue.append("dev/");
             returnValue = returnValue.append(majorAtlas.at(majorVal));
         } else {
@@ -371,9 +453,15 @@ std::unordered_map<std::string, std::vector<ISmDnsPortFactory::port_t>> ISmDnsPo
             return record.type == MDNS_RECORDTYPE_SRV && record.name == PTRrecord.data.ptr.name;
         });
         if (SRVrecords.empty()) {continue;}
+        // Normalize hostname: lowercase + strip trailing dot. This ensures a single Pi
+        // advertising on IPv4 + IPv6 + hostname collapses to one map entry regardless
+        // of case or trailing-dot variations in the SRV target name.
         std::string hostname = SRVrecords[0].data.srv.name;
+        std::transform(hostname.begin(), hostname.end(), hostname.begin(), ::tolower);
+        if (!hostname.empty() && hostname.back() == '.')
+            hostname.pop_back();
         std::vector<mdns::mdns_record_cpp_t> TXTrecords = mdns::getRecords([PTRrecord](const mdns::mdns_record_cpp_t& record) -> bool {
-            if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.starts_with("ports")) {
+            if (record.type == MDNS_RECORDTYPE_TXT && record.name == PTRrecord.data.ptr.name && record.data.txt.key.length() > 5 && record.data.txt.key.rfind("ports", 0) == 0) {
                 std::string txtPortsIndex = record.data.txt.key.substr(5);
                 if (std::find_if(txtPortsIndex.begin(), txtPortsIndex.end(), [](unsigned char c) { return !std::isdigit(c); }) == txtPortsIndex.end()) {
                     return record.data.txt.value.size() % 6 == 0 && record.data.txt.value.size() > 0; // Length of value must be divide by 6 with no remainder and be greater then 0

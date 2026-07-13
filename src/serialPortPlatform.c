@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // cygwin defines FIONREAD in socket.h instead of ioctl.h
 #ifndef FIONREAD
-#include <sys/socket.h>
+#include <sys/socket.hh>
 #endif
 
 #if PLATFORM_IS_LINUX
@@ -55,6 +55,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef B921600
 #define B921600 921600
 #endif
+#ifndef B1000000
+#define B1000000 1000000
+#endif
 #ifndef B1500000
 #define B1500000 1500000
 #endif
@@ -66,6 +69,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 #ifndef B3000000
 #define B3000000 3000000
+#endif
+#ifndef B4000000
+#define B4000000 4000000
 #endif
 
 #endif
@@ -88,9 +94,47 @@ typedef struct
 
 } serialPortHandle;
 
+/**
+ * @brief Sleep for a specified number of milliseconds.
+ * This function is a simple wrapper around the platform-specific sleep function.
+ * On Windows, it uses `Sleep()`, and on other platforms, it uses `usleep()`.
+ *
+ * @param sleepMilliseconds The number of milliseconds to sleep.
+ * @return int 1 on success.
+ */
 static int serialPortSleepPlatform(int sleepMilliseconds);
+/**
+ * @brief Flush the serial port.
+ * This function clears the serial port's receive buffer.
+ * On Windows, it uses `PurgeComm` with `PURGE_RXCLEAR`.
+ * On other platforms, it uses `tcflush` with `TCIOFLUSH`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortFlushPlatform(port_handle_t port);
+/**
+ * @brief Drain the serial port.
+ * This function waits for all written data to be transmitted.
+ * On Windows, it uses `PurgeComm` with `PURGE_TXCLEAR`.
+ * On other platforms, it uses `tcdrain`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortDrainPlatform(port_handle_t port);
+/**
+ * @brief Read from the serial port with a timeout.
+ * This function reads a specified number of bytes from the serial port, with a timeout.
+ * It is a wrapper around the platform-specific read functions.
+ * If the timeout is negative, a default timeout is used.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param timeoutMilliseconds The timeout in milliseconds.
+ * @return int The number of bytes read, or -1 on error.
+ */
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
@@ -114,6 +158,15 @@ typedef struct {
     unsigned char* buffer;
 } readFileExCompletionStruct;
 
+/**
+ * @brief Completion routine for ReadFileEx.
+ * This function is called when an asynchronous read operation completes.
+ * It calls the external completion function and frees the completion structure.
+ *
+ * @param errorCode The error code.
+ * @param bytesTransferred The number of bytes transferred.
+ * @param ov The overlapped structure.
+ */
 static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED ov)
 {
     readFileExCompletionStruct* c = (readFileExCompletionStruct*)ov;
@@ -123,7 +176,18 @@ static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferre
 
 #else
 
-static int validate_baud_rate(int baudRate)
+/**
+ * @brief Map a baud rate to its standard termios Bxxx constant, if one exists.
+ * Returns the corresponding termios speed constant for a known standard rate, or 0 if the rate
+ * has no standard constant. A 0 return does NOT mean "invalid" (see serialPortBaudRateSupported):
+ * it means the rate must be applied via the platform custom-rate path (Linux termios2/BOTHER,
+ * macOS IOSSIOSPEED). SN-8239: added 1000000 and 4000000; note 1220000/1440000 have no Bxxx
+ * constant on Linux and therefore intentionally return 0 (custom path).
+ *
+ * @param baudRate The requested baud rate (bits/sec).
+ * @return int The termios Bxxx constant, or 0 if the rate is not a standard enumerated rate.
+ */
+int serialPortStandardBaudRate(int baudRate)
 {
     switch (baudRate)
     {
@@ -141,30 +205,58 @@ static int validate_baud_rate(int baudRate)
     case 230400:  return B230400;
     case 460800:  return B460800;
     case 921600:  return B921600;
+    case 1000000: return B1000000;
     case 1500000: return B1500000;
     case 2000000: return B2000000;
     case 2500000: return B2500000;
     case 3000000: return B3000000;
+    case 4000000: return B4000000;
     }
 }
 
+/**
+ * @brief Report whether a baud rate is supported by the SDK serial layer.
+ * Accepts any positive rate up to SERIAL_PORT_BAUDRATE_MAX (10 Mbaud). Standard rates are applied
+ * via their Bxxx constant; anything else is applied as a custom rate (Linux termios2/BOTHER,
+ * macOS IOSSIOSPEED). Pure decision logic, separated so it is unit-testable without USB hardware.
+ *
+ * @param baudRate The requested baud rate (bits/sec).
+ * @return int 1 if the rate is supported, 0 otherwise.
+ */
+int serialPortBaudRateSupported(int baudRate)
+{
+    return (baudRate > 0 && baudRate <= SERIAL_PORT_BAUDRATE_MAX) ? 1 : 0;
+}
+
+/**
+ * @brief Configure the serial port.
+ * This function configures the serial port with the specified baud rate and other settings.
+ * It sets the port to 8N1, disables flow control, and sets the port to raw mode.
+ * On Apple platforms, there is a special hack to set high baud rates.
+ *
+ * @param fd The file descriptor.
+ * @param baudRate The baud rate.
+ * @return int 0 on success, -1 on failure.
+ */
 static int configure_serial_port(int fd, int baudRate)
 {
     struct termios tty = {};
 
     if (tcgetattr(fd, &tty) != 0) 
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error getting tty settings: %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error getting tty settings: %s (%d)", strerror(errno), errno);
         return -1;
     }
 
-    // Restrict baudrate to predefined values (standard and high speed)
-    baudRate = validate_baud_rate(baudRate);    
-    if (baudRate == 0)
+    // SN-8239: accept standard rates (mapped to a termios Bxxx constant) and arbitrary custom rates
+    // up to SERIAL_PORT_BAUDRATE_MAX (10 Mbaud). stdBaud == 0 means "no standard constant" -> use the
+    // platform custom-rate path. Note baudRate keeps the raw requested rate throughout.
+    if (!serialPortBaudRateSupported(baudRate))
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: error invalid baudrate: %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: unsupported baudrate: %d (max %d)", baudRate, SERIAL_PORT_BAUDRATE_MAX);
         return -1;
     }
+    int stdBaud = serialPortStandardBaudRate(baudRate);
 
     // Set Baud Rate
 #if PLATFORM_IS_APPLE
@@ -172,23 +264,39 @@ static int configure_serial_port(int fd, int baudRate)
     // HACK: Mac will not allow higher baud rate until after set lower valid rate: e.g. 230400
     cfsetospeed(&tty, 230400);
     cfsetispeed(&tty, 230400);
-    // Now baud rate can be set higher than 230400
-    if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
+    // IOSSIOSPEED takes the actual integer speed, so both standard and custom rates go through here.
+    speed_t appleSpeed = (speed_t)baudRate;
+    if (ioctl(fd, IOSSIOSPEED, &appleSpeed) == -1)
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: error %d from ioctl IOSSIOSPEED\n", errno);
+        // SN-8239: with arbitrary rates now accepted, a rate the hardware can't produce must NOT be
+        // reported as success — propagate the failure so the caller doesn't run at an unintended speed.
+        log_error(IS_LOG_PORT, "config_serial_port():: error %d from ioctl IOSSIOSPEED", errno);
+        return -1;
     }
 
 #else
 
-    cfsetospeed(&tty, baudRate);
-    cfsetispeed(&tty, baudRate);
+    // Linux: standard rates are set here via the Bxxx constant. Custom rates cannot be expressed by
+    // cfsetospeed/cfsetispeed (Bxxx tops out at B4000000), so we set a valid placeholder speed now and
+    // apply the real rate via termios2/BOTHER (serialPortSetCustomBaudLinux) after tcsetattr below.
+    speed_t setSpeed = (stdBaud != 0) ? (speed_t)stdBaud : B38400;
+    if (cfsetospeed(&tty, setSpeed) != 0 || cfsetispeed(&tty, setSpeed) != 0)
+    {
+        // SN-8239: the Bxxx constant was rejected by this platform (e.g. a B4000000 fallback that is
+        // not a real termios speed on this kernel). Don't leave the port at an unintended speed and
+        // report success: apply a safe placeholder and route through the custom-baud path below, which
+        // sets the real rate via termios2/BOTHER and works for any rate.
+        cfsetospeed(&tty, B38400);
+        cfsetispeed(&tty, B38400);
+        stdBaud = 0;
+    }
 
     // Attempt to configure LOW_LATENCY for UART/serial ports - though doesn't appear to improve things much.
     struct serial_struct serial;
     ioctl(fd, TIOCGSERIAL, &serial);
     serial.flags |= ASYNC_LOW_LATENCY;
+    serial.closing_wait = ASYNC_CLOSING_WAIT_NONE;
     ioctl(fd, TIOCSSERIAL, &serial);
-
 
 #endif
 
@@ -223,7 +331,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Save tty settings, also checking for error
     if (tcsetattr(fd, TCSANOW, &tty) != 0) 
     {
-        log_error(IS_LOG_PORT, "config_serial_port():: tcsetattr() : error setting tty settings: %s (%d)\n", strerror(errno), errno);
+        log_error(IS_LOG_PORT, "config_serial_port():: tcsetattr() : error setting tty settings: %s (%d)", strerror(errno), errno);
         return -1;
     } else {
         // TODO: Note that tcsetattr() returns success if any of the requested changes could be successfully carried out.
@@ -234,47 +342,95 @@ static int configure_serial_port(int fd, int baudRate)
         struct termios new_tty = {};
         if (tcgetattr(fd, &new_tty) != 0)
         {
-            log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error confirming successful setting of tty settings: %s (%d)\n", strerror(errno), errno);
+            log_error(IS_LOG_PORT, "config_serial_port():: tcgetattr() : error confirming successful setting of tty settings: %s (%d)", strerror(errno), errno);
             return -1;
         }
         if (memcmp(&new_tty, &tty, sizeof(struct termios)) != 0) {
             // what was set didn't match what was just read back (confirmation failed);
             // Let's figure out what didn't get set correctly...
-            log_error(IS_LOG_PORT, "config_serial_port():: termios confirmation failed to match expected values:\n");
-            if (new_tty.c_iflag != tty.c_iflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_iflag mismatch: expected: %x, actual: %x\n", tty.c_iflag, new_tty.c_iflag); }
-            if (new_tty.c_oflag != tty.c_oflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_oflag mismatch: expected: %x, actual: %x\n", tty.c_oflag, new_tty.c_oflag); }
-            if (new_tty.c_cflag != tty.c_cflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x\n", tty.c_cflag, new_tty.c_cflag); }
-            if (new_tty.c_lflag != tty.c_lflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x\n", tty.c_lflag, new_tty.c_lflag); }
+            log_error(IS_LOG_PORT, "config_serial_port():: termios confirmation failed to match expected values:");
+            if (new_tty.c_iflag != tty.c_iflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_iflag mismatch: expected: %x, actual: %x", tty.c_iflag, new_tty.c_iflag); }
+            if (new_tty.c_oflag != tty.c_oflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_oflag mismatch: expected: %x, actual: %x", tty.c_oflag, new_tty.c_oflag); }
+            if (new_tty.c_cflag != tty.c_cflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x", tty.c_cflag, new_tty.c_cflag); }
+            if (new_tty.c_lflag != tty.c_lflag) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x", tty.c_lflag, new_tty.c_lflag); }
             for (int i = 0; i < 32; i++)
-                if (new_tty.c_cc[i] != tty.c_cc[i]) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
+                if (new_tty.c_cc[i] != tty.c_cc[i]) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d", i, tty.c_cc[i], new_tty.c_cc[i]); }
 
             #if PLATFORM_IS_LINUX
-            if (new_tty.c_line != tty.c_line) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_line mismatch: expected: %d, actual: %d\n", tty.c_line, new_tty.c_line); }
+            if (new_tty.c_line != tty.c_line) { log_error(IS_LOG_PORT, "config_serial_port():: setting c_line mismatch: expected: %d, actual: %d", tty.c_line, new_tty.c_line); }
             #endif
 
             return -1;
         }
     }
 
+#if PLATFORM_IS_LINUX
+    // SN-8239: a custom (non-standard) rate can't be expressed by Bxxx/cfsetospeed, so the flags above
+    // were applied with a placeholder speed; now set the real rate via termios2/BOTHER. This preserves
+    // the just-applied line flags (it reads them back via TCGETS2 and only overrides the speed).
+    if (stdBaud == 0)
+    {
+        if (serialPortSetCustomBaudLinux(fd, baudRate) != 0)
+        {
+            log_error(IS_LOG_PORT, "config_serial_port():: failed to set custom baud %d: %s (%d)", baudRate, strerror(errno), errno);
+            return -1;
+        }
+    }
+#endif
+
     return 0;
 }
 
-// Set the serial port to non-blocking mode so read() and write() return immediately not waiting for hardware. Use modern O_NONBLOCK instead of legacy O_NDELAY.
-// Because of non-blocking mode, we have to retry serial write() to handle partial writes until all data received by the OS.
+/**
+ * @brief configures flow control on the specified file descriptor
+ * @param fd
+ * @param control
+ * @return 0 one success or errno on failure
+ */
+int set_flowcontrol(int fd, int control)
+{
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+    if (tcgetattr(fd, &tty) != 0)
+    {
+        log_more_debug(IS_LOG_PORT, "set_flowcontrol():: error calling tcgetattr : %s (%d)", strerror(errno), errno);
+        return errno;
+    }
+
+    if(control) tty.c_cflag |= CRTSCTS;
+    else tty.c_cflag &= ~CRTSCTS;
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0)
+    {
+        log_more_debug(IS_LOG_PORT, "set_flowcontrol():: error calling tcsetattr : %s (%d)", strerror(errno), errno);
+        return errno;
+    }
+    return 0;
+}
+
+/**
+ * @brief Set the serial port to non-blocking mode.
+ * @brief Use modern O_NONBLOCK instead of legacy O_NDELAY. Because of non-blocking mode, we have to retry serial write() to handle partial writes until all data received by the OS.
+ * This is done by getting the current flags, adding O_NONBLOCK, and then setting the new flags.
+ * It also uses `flock` to get an exclusive, non-blocking lock on the file descriptor.
+ *
+ * @param fd The file descriptor.
+ * @return int 0 on success, errno on failure.
+ */
 int set_nonblocking(int fd) 
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
     {
-        log_error(IS_LOG_PORT, "set_nonblocking():: error fcntl F_GETFL : %s (%d)\n", strerror(errno), errno);
-        return -1;
+        log_error(IS_LOG_PORT, "set_nonblocking():: error fcntl F_GETFL : %s (%d)", strerror(errno), errno);
+        return errno;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) 
     {
-        log_error(IS_LOG_PORT, "set_nonblocking():: error setting O_NONBLOCK : %s (%d)\n", strerror(errno), errno);
-        return -1;
+        log_error(IS_LOG_PORT, "set_nonblocking():: error setting O_NONBLOCK : %s (%d)", strerror(errno), errno);
+        return errno;
     }
 
     // Alternate method - this maybe redundant, but better to be safe, eh?
@@ -285,10 +441,22 @@ int set_nonblocking(int fd)
 
 #endif
 
-// Return 1 on success, 0 on failure
+/**
+ * @brief Open the serial port.
+ * This function opens and configures the serial port with the specified parameters.
+ * On Windows, it handles the `\\\\.\\` prefix for COM ports above 9.
+ * It also sets up the port for overlapped I/O if non-blocking.
+ * On other platforms, it opens the port and then configures it using `configure_serial_port`.
+ *
+ * @param port The port handle.
+ * @param portName The name of the port to open.
+ * @param baudRate The baud rate.
+ * @param blocking 1 for blocking, 0 for non-blocking.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortOpenPlatform(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortOpenPlatform(%s:B%d, %sblocking) called.", portName, baudRate, blocking ? "" : "non-");
+    log_debug(IS_LOG_PORT, "serialPortOpenPlatform(%s:B%d, %sblocking) called.", portName, baudRate, blocking ? "" : "non-");
 
     serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
@@ -305,6 +473,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     void* platformHandle = 0;
     platformHandle = CreateFileA(portName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
+    serialPort->errorCode = (int)GetLastError();
     if (platformHandle == INVALID_HANDLE_VALUE)
     {
         // don't modify the originally requested port value, just create a new value that Windows needs for COM10 and above
@@ -313,7 +482,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
         if (platformHandle == INVALID_HANDLE_VALUE)
         {
-            log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to open port: %d", portName, GetLastError());
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to open port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             return 0;
         }
     }
@@ -353,14 +524,18 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialParams.fRtsControl = RTS_CONTROL_ENABLE;
         if (!SetCommState(platformHandle, &serialParams))
         {
-            log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to set COMM port parameters: %d", portName, GetLastError());
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to set COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             serialPortClose(port);
             return 0;
         }
     }
     else
     {
-        log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to retreive COMM port parameters: %d", portName, GetLastError());
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retreive COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         serialPortClose(port);
         return 0;
     }
@@ -397,7 +572,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
-        log_error(IS_LOG_PORT, "serialPortOpenPlatform(%s) failed to configure COMM port timeouts: %d", portName, GetLastError());
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to configure COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         serialPortClose(port);
         return 0;
     }
@@ -417,17 +594,23 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     int fd = open(portName, O_RDWR | O_NOCTTY | O_NONBLOCK);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        log_error(IS_LOG_PORT, "[%s]serialPortOpenPlatform():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        // Stamp the generic base-port error so cross-transport consumers (e.g. UI
+        // port-status markup) can see "this port failed to open" without having to
+        // know about platform-specific errno values. The platform-specific detail
+        // (errno + strerror) remains in serialPort->errorCode/error.
+        serialPort->base.perror = PORT_ERROR__OPEN_FAILURE;
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error opening port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         return 0;
     }
 
     if (configure_serial_port(fd, baudRate) != 0)
     {
-        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)\n", port, strerror(errno), errno);
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        serialPort->base.perror = PORT_ERROR__OPEN_FAILURE;
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", port, serialPort->error, serialPort->errorCode);
         return 0;
     }
 
@@ -447,7 +630,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     serialPort->handle = handle;
 
     // we're doing a quick and dirty check to make sure we can even attempt to read data successfully.  Some bad devices will fail here if they aren't initialized correctly
-    uint8_t tmp;
+    uint8_t tmp = 0;
     if (serialPortReadTimeoutPlatform(port, &tmp, 1, 10) < 0) {
         if (serialPort->errorCode == ENOENT) {
             serialPortClose(port);
@@ -460,13 +643,22 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     return 1;    // success
 }
 
+/**
+ * @brief Check if the serial port is open.
+ * This function checks if the serial port is open and valid.
+ * On Windows, it uses `GetCommState`.
+ * On other platforms, it uses `fstat`.
+ *
+ * @param port The port handle.
+ * @return int 1 if open, 0 if not.
+ */
 static int serialPortIsOpenPlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortIsOpenPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     if (!serialPort->handle)
         return 0;
+
+    log_more_debug(IS_LOG_PORT, "[%s] serialPortIsOpenPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 
@@ -488,9 +680,17 @@ static int serialPortIsOpenPlatform(port_handle_t port)
 
 }
 
+/**
+ * @brief Close the serial port.
+ * This function closes the serial port and frees the associated handle.
+ * On Windows, it cancels any pending I/O and closes the handle.
+ * On other platforms, it simply closes the file descriptor.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortClosePlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortClosePlatform() called.");
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -499,7 +699,9 @@ static int serialPortClosePlatform(port_handle_t port)
         return 0;
     }
 
-#if PLATFORM_IS_WINDOWS
+    log_debug(IS_LOG_PORT, "[%s] serialPortClosePlatform() called.", portName(port));
+
+    #if PLATFORM_IS_WINDOWS
 
     //DWORD dwRead = 0;
     //DWORD error = 0;
@@ -520,6 +722,28 @@ static int serialPortClosePlatform(port_handle_t port)
 
 #else
 
+    // we need to do some extended checking here... It seems linux/posix close(fd) can block if data is in the TX buffer, but can't be sent
+    if (set_flowcontrol(handle->fd, 0) == 0) {
+        // no point is doing this if the previous call had an error -- this will probably fail too.
+        if (tcflush(handle->fd, TCIOFLUSH) < 0) {
+            // something bad happened...
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            // FIXME: This should *probably* be a silent error - if we're closing a port that was previously closed or lost (USB disconnected, device reset, etc), then do we need to report an error?
+            log_error(IS_LOG_PORT, "[%s] serialPortClosePlatform():: Error flushing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        }
+    }
+
+    // Clear HUPCL so the kernel doesn't drop DTR on close. USB CDC-ACM
+    // devices (IMX-5, GPX-1) treat a DTR transition as a reset, which
+    // used to force a 500 ms settling wait before the port could be
+    // reopened. Preserving DTR across close removes that need.
+    struct termios tty;
+    if (tcgetattr(handle->fd, &tty) == 0) {
+        tty.c_cflag &= ~HUPCL;
+        tcsetattr(handle->fd, TCSANOW, &tty);
+    }
+
     close(handle->fd);
     handle->fd = -1;
 
@@ -531,10 +755,17 @@ static int serialPortClosePlatform(port_handle_t port)
     return 1;
 }
 
+/**
+ * @brief Flush the serial port.
+ * This function clears the serial port's receive buffer.
+ * On Windows, it uses `PurgeComm` with `PURGE_RXCLEAR`.
+ * On other platforms, it uses `tcflush` with `TCIOFLUSH`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortFlushPlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortFlushPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -543,16 +774,16 @@ static int serialPortFlushPlatform(port_handle_t port)
         return 0;
     }
 
+    log_more_debug(IS_LOG_PORT, "[%s] serialPortFlushPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
 
     // Use PurgeComm to clear receive (RX) buffer.
     if (!PurgeComm(handle->platformHandle, PURGE_RXCLEAR))
     {
-        DWORD dwRes = GetLastError();
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName, strerror(errno), errno);
-        serialPort->errorCode = dwRes;
-        serialPort->error = strerror(serialPort->errorCode);
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
         return 0;
     }
 
@@ -561,6 +792,7 @@ static int serialPortFlushPlatform(port_handle_t port)
     if (tcflush(handle->fd, TCIOFLUSH) < 0) {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
     }
 
 #endif
@@ -568,10 +800,17 @@ static int serialPortFlushPlatform(port_handle_t port)
     return 1;
 }
 
+/**
+ * @brief Drain the serial port.
+ * This function waits for all written data to be transmitted.
+ * On Windows, it uses `PurgeComm` with `PURGE_TXCLEAR`.
+ * On other platforms, it uses `tcdrain`.
+ *
+ * @param port The port handle.
+ * @return int 1 on success, 0 on failure.
+ */
 static int serialPortDrainPlatform(port_handle_t port)
 {
-    log_more_debug(IS_LOG_PORT, "serialPortDrainPlatform() called.");
-
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
@@ -580,22 +819,26 @@ static int serialPortDrainPlatform(port_handle_t port)
         return 0;
     }
 
+    log_more_debug(IS_LOG_PORT, "[%s] serialPortDrainPlatform() called.", portName(port));
+
 #if PLATFORM_IS_WINDOWS
 
     // Use PurgeComm to clear transmit (TX) buffer.
     if (!PurgeComm(handle->platformHandle, PURGE_TXCLEAR))
     {
-        DWORD dwRes = GetLastError();
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)\n", portName, strerror(errno), errno);
-        serialPort->errorCode = dwRes;
-        serialPort->error = strerror(serialPort->errorCode);
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
         return 0;
     }
 
 #else
 
-    if (tcdrain(handle->fd) < 0)
+    if (tcdrain(handle->fd) < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+    }
 
 #endif
 
@@ -606,13 +849,16 @@ static int serialPortDrainPlatform(port_handle_t port)
 #if PLATFORM_IS_WINDOWS
 
 /**
- * Reads a specified number of bytes from the serial port with a timeout.
+ * @brief Reads a specified number of bytes from the serial port with a timeout.
+ * This function reads from the serial port, handling both blocking and non-blocking (overlapped) I/O.
+ * For non-blocking I/O, it uses `WaitForSingleObject` to wait for the read to complete.
+ * If the read times out, it cancels the I/O and returns the bytes read so far.
  *
- * @param hSerial   Handle to the COM port (must be opened with FILE_FLAG_OVERLAPPED).
+ * @param handle   Handle to the COM port (must be opened with FILE_FLAG_OVERLAPPED).
  * @param buffer    Pointer to the destination buffer.
- * @param bufSize   The number of bytes requested to read.
- * @param timeoutMs Maximum time to wait in milliseconds.
- * @return          The actual number of bytes read (may be less than bufSize on timeout).
+ * @param readCount   The number of bytes requested to read.
+ * @param timeoutMilliseconds Maximum time to wait in milliseconds.
+ * @return          The actual number of bytes read (may be less than readCount on timeout).
  */
 static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
@@ -662,60 +908,77 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
 
 #else
 
-static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+/**
+ * @brief Read from the serial port with a timeout on Linux.
+ * This function reads from the serial port using `poll` to wait for data to become available.
+ * It loops until the requested number of bytes are read or the timeout is reached.
+ * It handles `EAGAIN` and `EWOULDBLOCK` errors by continuing to try and read.
+ *
+ * When a timeout occurs, this function will return the number of bytes received so far -
+ * this may mean that the function returns 0 or a positive number less than readCount. This
+ * is NOT an error condition, since zero or more bytes, had they been available, could have
+ * been read.
+ *
+ * @param serialPort The serial port.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param timeoutMilliseconds The timeout in milliseconds.
+ * @return int The number of bytes read, or a PORT_ERROR__* code if an error occurred.
+ */
+static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMs)
 {
     int totalRead = 0;
-    int dtMs;
-    int n;
+    int dtMs = 0;
+    int n = 0;
     struct timeval start, curr;
-    if (timeoutMilliseconds > 0)
-    {
-        gettimeofday(&start, NULL);
-    }
 
-    if (!handle || !buffer)
-        return -1;
+    if (!serialPort || !serialPort->handle || !buffer)
+        return PORT_ERROR__INVALID_PARAMETER;
 
-    while (1)
-    {
-        if (timeoutMilliseconds > 0)
-        {
+    serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    gettimeofday(&start, NULL);
+
+    while (1) {
+        if (timeoutMs > 0) {
             struct pollfd fds[1];
             fds[0].fd = handle->fd;
             fds[0].events = POLLIN;
-            int pollrc = poll(fds, 1, timeoutMilliseconds);
-            if (pollrc <= 0 || !(fds[0].revents & POLLIN))
-            {
-                if (fds[0].revents & POLLERR) {
-                    return -1; // more than a timeout occurred.
+
+            // we will poll, for upto timeoutMs for any number of bytes.
+            int pollrc = poll(fds, 1, timeoutMs);
+            if (pollrc <= 0 || !(fds[0].revents & POLLIN)) {
+                if (fds[0].revents & POLLIN) {
+                    // do nothing - we'll fall thru to the read() below...
+                } else if (fds[0].revents & POLLERR) {
+                    return PORT_ERROR__READ_FAILURE; // more than a timeout occurred.
+                } else {
+                    break;  // no data before timeout expired
                 }
-                break;
             }
         }
-        n = read(handle->fd, buffer + totalRead, readCount - totalRead);
-        if (n <= -1)
-        {
+
+        if ((n = read(handle->fd, buffer + totalRead, readCount - totalRead)) < 0) {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                // log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)\n", port, handle->fd, strerror(errno), errno);
+                serialPort->errorCode = errno;
+                serialPort->error = strerror(errno);
+                log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", serialPort->portName, handle->fd, serialPort->error, serialPort->errorCode);
             }
-            return -1;
-        }
-        else if (n != -1)
-        {
+            return PORT_ERROR__TIMEOUT;
+        } else if (n > 0) {
             totalRead += n;
         }
 
-        if (timeoutMilliseconds > 0 && totalRead < readCount)
+        if ((timeoutMs > 0) && (totalRead < readCount))
         {
             gettimeofday(&curr, NULL);
             dtMs = ((curr.tv_sec - start.tv_sec) * 1000) + ((curr.tv_usec - start.tv_usec) / 1000);
-            if (dtMs >= timeoutMilliseconds)
+            if (dtMs >= timeoutMs)
             {
                 break;
             }
 
             // try for another loop around with a lower timeout
-            timeoutMilliseconds = _MAX(0, timeoutMilliseconds - dtMs);
+            timeoutMs = _MAX(0, timeoutMs - dtMs);
         }
         else
         {
@@ -728,48 +991,81 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 
 #endif
 
-static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds)
+/**
+ * @brief Read from the serial port with a timeout.
+ * This function reads a specified number of bytes from the serial port, with a timeout.
+ * It is a wrapper around the platform-specific read functions.
+ * If the timeout is negative, a default timeout is used.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param timeoutMilliseconds The timeout in milliseconds.
+ * @return int The number of bytes read, or -1 on error.
+ */
+static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMs)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortReadTimeoutPlatform() called.");
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() called.", portName(port));
 
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENOENT;
         serialPort->error = "Internal port handle is NULL; Port is closed.";
-        return -1;
+        return PORT_ERROR__NOT_CONNECTED;
     }
 
-    if (timeoutMilliseconds < 0)
+    if (timeoutMs < 0)
     {
-        timeoutMilliseconds = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
+        timeoutMs = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
     }
 
 #if PLATFORM_IS_WINDOWS
-    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMs);
 #else
-    int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
+    int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMs);
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
     } else {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
     }
 
-    log_bombastic(IS_LOG_PORT, "serialPortReadTimeoutPlatform() received %d bytes", result);
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() received %d bytes", portName(port), result);
     debugDumpBuffer("<< ", buffer, result);
     return result;
 }
 
+/**
+ * @brief Read from the serial port.
+ * This function is a convenience wrapper around `serialPortReadTimeoutPlatform` with a timeout of 0.
+ * This means it will return immediately with any available data.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @return int The number of bytes read, or -1 on error.
+ */
 static int serialPortReadPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount) {
     return serialPortReadTimeoutPlatform(port, buffer, readCount, 0);
 }
 
-
+/**
+ * @brief Asynchronously read from the serial port.
+ * This function initiates an asynchronous read from the serial port.
+ * On Windows, it uses `ReadFileEx` and a completion routine.
+ * On other platforms, it performs a simple blocking read and calls the completion routine directly.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to read into.
+ * @param readCount The number of bytes to read.
+ * @param completion The completion routine.
+ * @return int 1 on success, -1 on failure.
+ */
 static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -809,10 +1105,21 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
     return 1;
 }
 
-
+/**
+ * @brief Write to the serial port.
+ * This function writes a buffer of data to the serial port.
+ * On Windows, it handles overlapped I/O for non-blocking writes.
+ * On other platforms, it retries on partial writes and handles `EINTR`, `EAGAIN`, and `EWOULDBLOCK` errors.
+ *
+ * @param port The port handle.
+ * @param buffer The buffer to write from.
+ * @param writeCount The number of bytes to write.
+ * @return int The number of bytes written, or -1 on error.
+ */
 static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, unsigned int writeCount)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortWritePlatform() called.");
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
@@ -829,7 +1136,16 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         DWORD result = GetLastError();
         if (result != ERROR_IO_PENDING)
         {
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error writing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             CancelIo(handle->platformHandle);
+            if (result == ERROR_NOT_SAME_DEVICE) {
+                // this should probably be expanded to include other likely errors, but...
+                // this indicates the handle is invalid. The port should be closed and invalidated.
+                portClose(port);
+                portInvalidate(port);
+            }
             return 0;
         }
     }
@@ -838,13 +1154,23 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     {
         if (!GetOverlappedResult(handle->platformHandle, &handle->ovWrite, &dwWritten, 1))
         {
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(serialPort->errorCode);
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+            DWORD result = GetLastError();  // read this before we call CancelIo
             CancelIo(handle->platformHandle);
+            if (result == 433) {    // 433 is an undocumented "STATUS_NO_SUCH_DEVICE"
+                // this should probably be expanded to include other likely errors, but...
+                // this indicates the handle is invalid. The port should be closed and invalidated.
+                portClose(port);
+                portInvalidate(port);
+            }
             return 0;
         }
     }
 
     if (dwWritten != writeCount)
-        log_bombastic(IS_LOG_PORT, "serialPortWritePlatform() wrote %d bytes (%d requested)", dwWritten, writeCount);
+        log_bombastic(IS_LOG_PORT, "[%s] serialPortWritePlatform() wrote %d bytes (%d requested)", portName(port), dwWritten, writeCount);
 
     debugDumpBuffer(">> ", buffer, dwWritten);
     return dwWritten;
@@ -879,7 +1205,12 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)\n", serialPort->portName, strerror(errno), errno);
+            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
+            if ((errno == ENOENT) || (errno == ENODEV) || (errno ==  EIO)) {
+                // these errors indicate the underlying OS port is bad, and needs to be closed/invalidated - there is usually no other recovery from here.
+                portClose(port);
+                portInvalidate(port);
+            }
             return -1;
         }
         bytes_written += result;
@@ -890,6 +1221,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         int error = tcdrain(handle->fd);
         if (error != 0)
         {   // Drain error
+            // TODO: report the error (probably as a warning)
             return 0;
         }
     }
@@ -901,12 +1233,32 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
 
 }
 
+/**
+ * @brief Get the number of bytes available to read from the serial port.
+ * This function returns the number of bytes available to be read from the serial port.
+ * On Windows, it uses `ClearCommError` and the `COMSTAT` structure.
+ * On other platforms, it uses `poll` and `ioctl` with `FIONREAD`.
+ *
+ * @param port The port handle.
+ * @return int The number of bytes available to read, PORT_ERROR__INVALID if the port
+ *         handle is invalid, or PORT_ERROR__NOT_CONNECTED if the internal handle is NULL
+ *         (i.e., the port has not been opened or has been closed).
+ */
 static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortGetByteCountAvailableToReadPlatform() called.");
+    if (!port || !portIsValid(port))
+        return PORT_ERROR__INVALID;
+
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortGetByteCountAvailableToReadPlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-
+    if (!handle)
+    {
+        serialPort->errorCode = ENOENT;
+        serialPort->error = "Internal port handle is NULL; Port is closed.";
+        return PORT_ERROR__NOT_CONNECTED;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
@@ -949,9 +1301,22 @@ again:
 
 }
 
+/**
+ * @brief Get the number of bytes available to write to the serial port.
+ * This function returns the number of bytes that can be written to the serial port without blocking.
+ * Currently, it returns a fixed value of 65536.
+ * The commented-out code shows how it could be implemented on Linux using `ioctl`.
+ *
+ * @param port The port handle.
+ * @return int The number of bytes available to write, or PORT_ERROR__INVALID on error.
+ */
 static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
 {
-    log_bombastic(IS_LOG_PORT, "serialPortGetByteCountAvailableToWritePlatform() called.");
+    if (!port || !portIsValid(port))
+        return PORT_ERROR__INVALID;
+
+    log_bombastic(IS_LOG_PORT, "[%s] serialPortGetByteCountAvailableToWritePlatform() called.", portName(port));
+
     serial_port_t* serialPort = (serial_port_t*)port;
     // serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     (void)serialPort;
@@ -968,6 +1333,14 @@ static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
     */
 }
 
+/**
+ * @brief Sleep for a specified number of milliseconds.
+ * This function is a simple wrapper around the platform-specific sleep function.
+ * On Windows, it uses `Sleep()`, and on other platforms, it uses `usleep()`.
+ *
+ * @param sleepMilliseconds The number of milliseconds to sleep.
+ * @return int 1 on success.
+ */
 static int serialPortSleepPlatform(int sleepMilliseconds)
 {
 #if PLATFORM_IS_WINDOWS
@@ -983,6 +1356,15 @@ static int serialPortSleepPlatform(int sleepMilliseconds)
     return 1;
 }
 
+/**
+ * @brief Initialize the serial port platform.
+ * This function initializes the serial port structure with platform-specific function pointers.
+ * It also sets the default baud rate and initializes the base port structure.
+ * It is important that the serial port structure is zeroed out before calling this function.
+ *
+ * @param port The port handle.
+ * @return int 0 on success.
+ */
 int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
     serial_port_t* serialPort = (serial_port_t*)port;

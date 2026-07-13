@@ -11,11 +11,8 @@ include_directories(
     ${IS_SDK_DIR}/src/libusb/libusb
 )
 
-# Link the InertialSenseSDK static library 
-link_directories(${IS_SDK_DIR})
-
 # Define the executable
-add_executable(${PROJECT_NAME} ISNtripRoverExample.cpp)
+add_executable(${PROJECT_NAME} ISNtripRoverExampleV3.cpp)
 
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)

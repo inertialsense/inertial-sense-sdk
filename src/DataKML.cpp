@@ -50,9 +50,9 @@ std::string cDataKML::GetDatasetName(int kid)
         default:        return "";
         case KID_INS:   return "ins";
         case KID_REF:   return "ref";
-        case KID_GPS:   return "gps";
-        case KID_GPS1:  return "gps1";
-        case KID_GPS2:  return "gps2";
+        case KID_GNSS:  return "gnss";
+        case KID_GNSS1: return "gnss1";
+        case KID_GNSS2: return "gnss2";
         case KID_RTK:   return "rtk";
     }
 }
@@ -75,26 +75,26 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
             return 0;
 
         case DID_INS_1:
-            deadreckoning = !(d.ins1.insStatus & INS_STATUS_GPS_AIDING_POS);
+            deadreckoning = !(d.ins1.insStatus & INS_STATUS_GNSS_AIDING_POS);
             data = sKmlLogData(d.ins1.timeOfWeek, d.ins1.lla, d.ins1.theta, deadreckoning);
             break;
         case DID_INS_2:
             quat2euler(d.ins2.qn2b, theta);
-            deadreckoning = !(d.ins2.insStatus & INS_STATUS_GPS_AIDING_POS);
+            deadreckoning = !(d.ins2.insStatus & INS_STATUS_GNSS_AIDING_POS);
             data = sKmlLogData(d.ins2.timeOfWeek, d.ins2.lla, theta, deadreckoning);
             break;
         case DID_INS_3:
             quat2euler(d.ins3.qn2b, theta);
-            deadreckoning = !(d.ins3.insStatus & INS_STATUS_GPS_AIDING_POS);
+            deadreckoning = !(d.ins3.insStatus & INS_STATUS_GNSS_AIDING_POS);
             data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
             break;
-        case DID_GPS1_POS:
-        case DID_GPS1_RCVR_POS:
-        case DID_GPS2_POS:
-            data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
+        case DID_GNSS1_POS:
+        case DID_GNSS1_RCVR_POS:
+        case DID_GNSS2_POS:
+            data = sKmlLogData(d.gnssPos.timeOfWeekMs, d.gnssPos.lla);
             break;
-        case DID_GPS1_RTK_POS:
-            data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
+        case DID_GNSS1_RTK_POS:
+            data = sKmlLogData(d.gnssPos.timeOfWeekMs, d.gnssPos.lla);
             break;
     }
 

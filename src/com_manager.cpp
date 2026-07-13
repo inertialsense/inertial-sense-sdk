@@ -64,8 +64,13 @@ int ISComManager::init(
 
     defaultCbs = {};
     defaultCbs.context = this;
-    defaultCbs.all = comManagerProcessBinaryRxPacket;
-    defaultCbs.isbData = pstRxFncCb;
+    defaultCbs.all = comManagerProcessRxPacket;
+    /**
+     * Disable ISComm's ISB data handler to prevent duplicate processing.
+     * ISB data is handled in comManagerProcessRxPacket() instead, allowing
+     * comManager to populate registered data structures before invoking user callbacks.
+     */
+    defaultCbs.isbData = NULL;
 
     if (!portSet) portSet = new std::set<port_handle_t>();
     ports = portSet;
@@ -247,7 +252,6 @@ void stepSendMessages(void)
     s_cm.stepSendMessages();
 }
 
-// __attribute__((optimize("O0")))
 void ISComManager::stepSendMessages()
 {
     if (broadcastMessages == NULL)
@@ -403,7 +407,7 @@ int comManagerSendRaw(port_handle_t port, const void *dataPtr, int dataSize)
 int ISComManager::sendRaw(port_handle_t port, const void* dataPtr, int dataSize)
 {
     // Return 0 on success, -1 on failure.
-    return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) ? 0 : -1);
+    return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) >= PORT_ERROR__NONE ? 0 : -1);  // FIXME: Technically portWrite returning 0 IS VALID - but this may break existing functionality
 }
 
 int comManagerDisableData(port_handle_t port, uint16_t did)
@@ -537,7 +541,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         {
             p_data_get_t *gdata = ((p_data_get_t *) (pkt->data.ptr));
             // Forward to gpx
-            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && gdata->id != DID_GPX_FLASH_CFG &&
+            if (IO_CONFIG_GNSS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GNSS_TYPE_GPX && gdata->id != DID_GPX_FLASH_CFG &&
                 (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || gdata->id == DID_RTK_DEBUG))
             {
                 comManagerGetData(COM0_PORT, gdata->id, gdata->size, gdata->offset, gdata->period);
@@ -606,7 +610,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
     return 0;
 }
 
-int comManagerProcessBinaryRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
+int comManagerProcessRxPacket(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
     return s_cm.processBinaryRxPacket(ptype, pkt, port);
 }
@@ -632,7 +636,6 @@ int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req)
     return s_cm.getDataRequest(port, req);
 }
 
-//__attribute__((optimize("O0")))
 int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
 {
     broadcast_msg_t* msg = NULL;
@@ -711,6 +714,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     {
         dataPtr = NULL;
     }
+    
     is_comm_encode_hdr(pkt, PKT_TYPE_DATA, req->id, req->size, req->offset, dataPtr);
 
     // Prep data if callback exists
@@ -896,8 +900,8 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA))
-    {   // if port is null, set this as the default handler, and also set it for all available ports
+    if (ports && !port && (ptype >= _PTYPE_FIRST_DATA) && (ptype <= _PTYPE_LAST_DATA)) {
+        // if port is null, set this as the default handler, and also set it for all available ports
         defaultCbs.context = this;
         defaultCbs.generic[ptype] = cbHandler;
         defaultCbs.protocolMask = DEFAULT_PORT_PROTO_CFG;

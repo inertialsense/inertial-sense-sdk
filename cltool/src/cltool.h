@@ -59,6 +59,33 @@ enum eExitCodes
     EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS        = -6,
 };
 
+// Exit code descriptions
+static const struct {
+    eExitCodes code;
+    const char* description;
+} g_exitCodeStrings[] = {
+    { EXIT_CODE_SUCCESS,                        "Success" },
+    { EXIT_CODE_INVALID_COMMAND_LINE,           "Invalid command line arguments" },
+    { EXIT_CODE_PARSE_COMMAND_LINE_FAILED,      "Failed to parse command line" },
+    { EXIT_CODE_NO_DEVICES_FOUND,               "No devices found" },
+    { EXIT_CODE_DEVICE_DISCONNECTED,            "Device disconnected" },
+    { EXIT_CODE_FIRMWARE_UPDATE_FAILED,         "Firmware update failed" },
+    { EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS, "Failed to setup communications" },
+};
+
+// Get human-readable description for exit code
+static inline const char* getExitCodeDescription(int exitCode)
+{
+    for (size_t i = 0; i < sizeof(g_exitCodeStrings) / sizeof(g_exitCodeStrings[0]); ++i)
+    {
+        if (g_exitCodeStrings[i].code == exitCode)
+        {
+            return g_exitCodeStrings[i].description;
+        }
+    }
+    return "Unknown exit code";
+}
+
 typedef struct
 {
     eDataIDs    did;
@@ -100,6 +127,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     std::string updateAppFirmwareFilename;     // -uf file_name
     std::string updateBootloaderFilename;     // -ub file_name
     std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
+    std::vector<std::string> fwPolicyOverrides; // -fw-set-policy args
     bool forceBootloaderUpdate;                // -fb
     bool bootloaderVerify;                     // -bv
     bool replayDataLog;
@@ -107,10 +135,10 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     bool magRecal;
     uint32_t magRecalMode;
     survey_in_t surveyIn;
-    bool nmeaRx;
+    bool nmeaRx = false;
     std::string nmeaMessage;                // A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent
-    double replaySpeed;
-    int displayMode;
+    double replaySpeed = 1.0;
+    cInertialSenseDisplay::eDisplayMode displayMode = cInertialSenseDisplay::DMODE_PRETTY;
     int verboseLevel = IS_LOG_LEVEL_INFO;
 
     uint64_t rmcPreset;
@@ -138,6 +166,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t timeoutFlushLoggerSeconds;
     std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
+    bool imxCalUpload = false;
     std::string imxCalUploadFile;
 
     YAML::Node getNode;
@@ -149,10 +178,19 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t updateFirmwareSlot = 0;
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
     bool list_devices = false;              // if true, dumps results of findDevices() including port name.
+    bool listLogDids = false;              // -list-dids: scan replay log and print DID count table
+    bool useMdns = false;                   // if true, registers ISmDnsPortFactory for mDNS network device discovery
+    uint8_t mdnsResolvePreference = 0x07;  // bitmask of MdnsResolveFlags for address resolution preference (default: IPv4|IPv6|hostname)
+    bool useRelay = false;                  // if true, registers RelayPortFactory for HTTP relay-based device discovery
+    bool useRelayList = false;              // -use-relay-list: print discovered hosts and exit after warmup
+    std::vector<std::string> relayUrls;     // -use-relay=<url>[,<url>...]: manual host URLs to add and enable
+    std::vector<std::string> relayOnlyHosts;// -use-relay-only=<host>[,<host>...]: whitelist of mDNS-discovered hostnames to enable (others stay disabled)
     EVFContainer_t evFCont = {0};
     EVMContainer_t evMCont = {0};
     EVOContainer_t evOCont;
 
+    uint64_t targetDeviceId = 0;            // -sn: encoded device identifier (hdwId << 48 | serialNumber). Parsed from "IMX-5.0:SN129495" or just "129495"
+    is_hardware_t filterHdwType = IS_HARDWARE_ANY; // -device: filter to only open ports for this hardware type (e.g. IS_HARDWARE_IMX, IS_HARDWARE_GPX)
     bool disableDeviceValidation = false;   // Keep port(s) open even if no devices response is received.
     bool listenMode = false;                // Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;

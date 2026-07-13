@@ -13,9 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// Removed top-level extern "C" to avoid putting C++ headers into C linkage
 
 #undef _MATH_DEFINES_DEFINED
 #define _MATH_DEFINES_DEFINED
@@ -32,13 +30,17 @@ extern "C" {
 
 #define ENABLE_RTK_PROCESSING       1
 #define RTK_ENGINE_NFREQ            NFREQ   // Set to 1 to disable L5 in RTK without changing NFREQ and data size
-#define CONVERT_RAW_GPS_V2_TO_V1    0       // Allow conversion of raw GPS format from v1 to v2 used for RTK
+#define CONVERT_RAW_GNSS_V2_TO_V1   0       // Allow conversion of raw GNSS format from v1 to v2 used for RTK
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
     #define PLATFORM_IS_WINDOWS 1
     #define PLATFORM_IS_EMBEDDED 0
     #ifndef _CRT_SECURE_NO_DEPRECATE
     #define _CRT_SECURE_NO_DEPRECATE
+    #endif
+
+    #ifndef NOMINMAX
+    #define NOMINMAX    // Windows.h is included somewhere and this prevents it from defining 'max' as a macro which breaks uri.hpp
     #endif
 
     // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
@@ -138,8 +140,14 @@ extern "C" {
 
 
 #if PLATFORM_IS_EMBEDDED
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
     extern void* pvPortMalloc(size_t xWantedSize);
     extern void vPortFree(void* pv);
+    #ifdef __cplusplus
+    }
+    #endif
     #define MALLOC(m) pvPortMalloc(m)
     #define REALLOC(m, size) 0 // not supported
     #define FREE(m) vPortFree(m)
@@ -180,7 +188,8 @@ extern "C" {
 #define STRNCPY(dst, src, maxlen) strncpy_s(dst, maxlen, src, maxlen);
 #endif
 
-#define strncasecmp _strnicmp 
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #else
     #ifndef INLINE
         #define INLINE inline
@@ -197,8 +206,8 @@ extern "C" {
 
 #if defined(__ZEPHYR__)
     #include <zephyr/irq.h>
-    #define BEGIN_CRITICAL_SECTION  irq_lock();
-    #define END_CRITICAL_SECTION    irq_unlock(0);
+    #define BEGIN_CRITICAL_SECTION  uint32_t _irq_state = irq_lock();
+    #define END_CRITICAL_SECTION    irq_unlock(_irq_state);
 #elif !PLATFORM_IS_EMBEDDED
     #define BEGIN_CRITICAL_SECTION
     #define END_CRITICAL_SECTION
@@ -346,9 +355,73 @@ extern "C" {
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
-#ifndef _ISNAN
-#define _ISNAN(a) ((a)!=(a))
+static inline float inv_count_upto10(int n)
+{
+    // n expected 0..10
+    // Table lookup is usually cheaper than float divide on Cortex-M.
+    // If there's any chance n could exceed 10, clamp or fall back.
+    static const float inv[11] = {
+        0.0f,               // 0 -> output 0
+        1.0f,               // 1
+        0.5f,               // 2
+        0.333333343f,       // 3
+        0.25f,              // 4
+        0.2f,               // 5
+        0.166666667f,       // 6
+        0.142857143f,       // 7
+        0.125f,             // 8
+        0.111111111f,       // 9
+        0.1f                // 10
+    };
+
+    return inv[n];
+}
+
+static inline int is_nan_f(float v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
 #endif
+}
+
+static inline int is_nan(double v)
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v != v);
+#else
+    return isnan(v);
+#endif
+}
+
+static inline int is_inf_f(float v)
+{
+    return isinf(v);
+}
+
+static inline int is_inf(double v)
+{
+    return isinf(v);
+}
+
+static inline int is_finite_f(float v)  // Not NaN or INF
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
+}
+
+static inline int is_finite(double v)   // Not NaN or INF
+{
+#if PLATFORM_IS_EMBEDDED
+    return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
+#else
+    return isfinite(v);
+#endif
+}
 
 #ifndef _ARRAY_BYTE_COUNT
 #define _ARRAY_BYTE_COUNT(a) sizeof(a)
@@ -811,18 +884,18 @@ extern "C" {
 #define C_EARTH_RADIUS_MEAN             6371000.0       // (m) Mean radius (used by the IUGG, WGS-84, etc.)
 
 // IMX Operational Limits
-#define INS_MAX_VELOCITY                500.0f          // (m/s) INS operation limit - velocity.  Limited by GPS.
+//#define INS_MAX_VELOCITY                500.0f          // (m/s) INS operation limit - velocity.  Limited by GNSS.
 #define INS_MAX_LATITUDE                C_PIDIV2        // (rad) INS operation limit - latitude
 #define INS_MAX_LATITUDE_DEG            90.0            // (deg) INS operation limit - latitude
 #define INS_MAX_LONGITUDE               C_PI            // (rad) INS operation limit - longitude
 #define INS_MAX_LONGITUDE_DEG           180.0           // (deg) INS operation limit - longitude
-#define INS_MAX_ALTITUDE                50000.0         // (m)   INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
-#define INS_MAX_ECEF                    (INS_MAX_ALTITUDE+C_EARTH_RADIUS_EQUATORIAL)     // (m)   INS operation limit - ECEF
+//#define INS_MAX_ALTITUDE                50000.0         // (m)   INS operation limit - altitude.  Limited by GNSS.  50 km = 164,042 ft, 15 km = 49,212 ft
+//#define INS_MAX_ECEF                    (INS_MAX_ALTITUDE+C_EARTH_RADIUS_EQUATORIAL)     // (m)   INS operation limit - ECEF
 
 #define C_GPS_LEAP_SECONDS              18
 
 typedef float       f_t;
-typedef int            i_t;
+typedef int         i_t;
 typedef double      ixVector2d[2];        // V = | 0 1 |
 typedef f_t         ixVector2[2];         // V = | 0 1 |
 typedef double      ixVector3d[3];        // V = | 0 1 2 |
@@ -840,6 +913,8 @@ typedef f_t         ixMatrix5[25];
 typedef double      ixMatrix3d[9];
 
 typedef enum {
+    IS_OP_NONE = 2,             //!< no operation has been initiated; sentinel for "never started" — distinct from IS_OP_OK ("succeeded")
+    IS_OP_IN_PROGRESS = 1,      //!< operation not started; a prior operation is still running
     IS_OP_OK = 0,
     IS_OP_ERROR = -1,
     IS_OP_CANCELLED = -2,
@@ -861,8 +936,6 @@ typedef struct
 
 POP_PACK
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+// Removed closing extern "C" block to match removal of opening block at top
 
-#endif // CONSTANTS_H_ 
+#endif // CONSTANTS_H_

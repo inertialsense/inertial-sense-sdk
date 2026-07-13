@@ -28,6 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISConstants.h"
 #include "ISDevice.h"
+#include "IS_calibration.h"
 #include "data_sets.h"
 #include "util/util.h"
 
@@ -41,9 +42,9 @@ using namespace std;
 #define SYM_M_PER_S_2       "m/s²"
 #define SYM_DEG_C_PER_S     "°C/s"
 
-const char s_insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GpsMagUsed,Variance,VarianceCoarse]";
-const char s_hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GpsSatRx,Motion]";
-const char s_imuStatusDescription[] = "IMU Status flags [Sensor saturation]";
+const char s_insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GnssMagUsed,Variance,VarianceCoarse]";
+const char s_hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GnssSatRx,Motion]";
+const char s_imuStatusDescription[] = "IMU Status flags [Sensor valid]";
 
 // Stringify the macro value
 #define STRINGIFY(x) #x
@@ -59,6 +60,9 @@ const unsigned char g_asciiToLowerMap[256] =
     189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,
     224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 };
+
+#define STR_ENDS_WITH(str, suffix)  ((str.length() >= suffix.length()) && (str.compare(str.length() - suffix.length(), std::string_view::npos, suffix)) == 0)
+
 
 
 /**
@@ -153,8 +157,8 @@ std::string renderInsStatus(const data_info_t& info, std::any value, int arrayId
         return "";
 
 /*
-    // In dead reckoning mode.  The GPS is not aiding the solution while the position is being estimated.
-    #define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && (((insStatus)&INS_STATUS_GPS_AIDING_POS)==0))
+    // In dead reckoning mode.  The GNSS is not aiding the solution while the position is being estimated.
+    #define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && (((insStatus)&INS_STATUS_GNSS_AIDING_POS)==0))
 
     INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
 
@@ -171,10 +175,10 @@ std::string renderInsStatus(const data_info_t& info, std::any value, int arrayId
     INS_STATUS_SOLUTION_VRS                     = 7,    // System is in VRS mode (no earth relative heading) and roll and pitch are good.
     INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE       = 8,    // System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold.
 
-    // GPS navigation fix type (see eGpsNavFixStatus)
-    INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
-    INS_STATUS_GPS_NAV_FIX_OFFSET               = 24,
-    #define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
+    // GNSS navigation fix type (see eGnssNavFixStatus)
+    INS_STATUS_GNSS_NAV_FIX_MASK                 = (int)0x03000000,
+    INS_STATUS_GNSS_NAV_FIX_OFFSET               = 24,
+    #define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GNSS_NAV_FIX_MASK)>>INS_STATUS_GNSS_NAV_FIX_OFFSET)
 ***/
 
     try {
@@ -192,14 +196,14 @@ std::string renderInsStatus(const data_info_t& info, std::any value, int arrayId
         BIT_MSG(insStatus, INS_STATUS_HDG_ALIGN_FINE                         ,"0x00000010 - Heading estimate is within spec (FINE).");
         BIT_MSG(insStatus, INS_STATUS_VEL_ALIGN_FINE                         ,"0x00000020 - Velocity estimate is within spec (FINE)");
         BIT_MSG(insStatus, INS_STATUS_POS_ALIGN_FINE                         ,"0x00000040 - Position estimate is within spec (FINE)");
-        BIT_MSG(insStatus, INS_STATUS_GPS_AIDING_HEADING                     ,"0x00000080 - Heading aided by GPS");
-        BIT_MSG(insStatus, INS_STATUS_GPS_AIDING_POS                         ,"0x00000100 - Position aided by GPS position");
-        BIT_MSG(insStatus, INS_STATUS_GPS_UPDATE_IN_SOLUTION                 ,"0x00000200 - GPS update event occurred in solution, potentially causing discontinuity in position path");
+        BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_HEADING                     ,"0x00000080 - Heading aided by GNSS");
+        BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_POS                         ,"0x00000100 - Position aided by GNSS position");
+        BIT_MSG(insStatus, INS_STATUS_GNSS_UPDATE_IN_SOLUTION                 ,"0x00000200 - GNSS update event occurred in solution, potentially causing discontinuity in position path");
         BIT_MSG(insStatus, INS_STATUS_EKF_USING_REFERENCE_IMU                ,"0x00000400 - Reference IMU used in EKF");
         BIT_MSG(insStatus, INS_STATUS_MAG_AIDING_HEADING                     ,"0x00000800 - Heading aided by magnetic heading");
         BIT_MSG(insStatus, INS_STATUS_NAV_MODE                               ,"0x00001000 - Nav Mode - estimating velocity and position.");
         BIT_MSG(insStatus, INS_STATUS_STATIONARY_MODE                        ,"0x00002000 - INS in stationary mode.");
-        BIT_MSG(insStatus, INS_STATUS_GPS_AIDING_VEL                         ,"0x00004000 - Velocity aided by GPS velocity");
+        BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_VEL                         ,"0x00004000 - Velocity aided by GNSS velocity");
         BIT_MSG(insStatus, INS_STATUS_KINEMATIC_CAL_GOOD                     ,"0x00008000 - Vehicle kinematic calibration is good");
 
         uint32_t insSol = INS_STATUS_SOLUTION(insStatus);
@@ -214,12 +218,12 @@ std::string renderInsStatus(const data_info_t& info, std::any value, int arrayId
             case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:       buff << "0x000(8)0000 - System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold." << std::endl; break;
         }
 
-        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_UNSET          ,"0x00100000 - GPS compassing antenna offsets are not set in flashCfg.");
-        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_BAD            ,"0x00200000 - GPS antenna baseline specified in flashCfg and measured by GPS do not match.");
+        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_UNSET          ,"0x00100000 - GNSS compassing antenna offsets are not set in flashCfg.");
+        BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_BAD            ,"0x00200000 - GNSS antenna baseline specified in flashCfg and measured by GNSS do not match.");
         BIT_MSG(insStatus, INS_STATUS_MAG_RECALIBRATING                      ,"0x00400000 - Magnetometer is being recalibrated.");
         BIT_MSG(insStatus, INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL  ,"0x00800000 - Magnetometer is experiencing interference or calibration is bad.");
         BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_VALID                   ,"0x04000000 - RTK compassing heading is accurate and aiding INS heading.");
-        BIT_MSG(insStatus, INS_STATUS_RTK_RAW_GPS_DATA_ERROR                 ,"0x08000000 - RTK error: Observations invalid or not received.");
+        BIT_MSG(insStatus, INS_STATUS_RTK_RAW_GNSS_DATA_ERROR                 ,"0x08000000 - RTK error: Observations invalid or not received.");
 
         if (insStatus & INS_STATUS_RTK_ERROR_MASK) {
             uint32_t rtkErr = (insStatus & INS_STATUS_RTK_ERR_BASE_MASK);
@@ -257,22 +261,22 @@ std::string renderHdwStatus(const data_info_t& info, std::any value, int arrayId
         BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_GYR             , "0x00000004 - IMU gyro fault rejection. A Gyro sensor is divergent and being excluded.");
         BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_ACC             , "0x00000008 - IMU accelerometer fault rejection. An accelerometer sensors is divergent and being excluded.");
 
-        BIT_MSG(hdwStatus, HDW_STATUS_GPS_SATELLITE_RX_VALID           , "0x00000010 - GPS satellite signals are being received (antenna and cable are good).");
+        BIT_MSG(hdwStatus, HDW_STATUS_GNSS_SATELLITE_RX_VALID           , "0x00000010 - GNSS satellite signals are being received (antenna and cable are good).");
         BIT_MSG(hdwStatus, HDW_STATUS_STROBE_IN_EVENT                  , "0x00000020 - Event occurred on strobe input pin.");
-        BIT_MSG(hdwStatus, HDW_STATUS_GPS_TIME_OF_WEEK_VALID           , "0x00000040 - GPS time of week is valid and reported.");
+        BIT_MSG(hdwStatus, HDW_STATUS_GNSS_TIME_OF_WEEK_VALID           , "0x00000040 - GNSS time of week is valid and reported.");
         BIT_MSG(hdwStatus, HDW_STATUS_REFERENCE_IMU_RX                 , "0x00000080 - Reference IMU data being received.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_GYR                   , "0x00000100 - Sensor saturation on gyro.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_ACC                   , "0x00000200 - Sensor saturation on accelerometer.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_MAG                   , "0x00000400 - Sensor saturation on magnetometer.");
         BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_BARO                  , "0x00000800 - Sensor saturation on barometric pressure.");
         BIT_MSG(hdwStatus, HDW_STATUS_SYSTEM_RESET_REQUIRED            , "0x00001000 - System Reset is required for proper function.");
-        BIT_MSG(hdwStatus, HDW_STATUS_ERR_GPS_PPS_NOISE                , "0x00002000 - GPS PPS timepulse signal has noise and occurred too frequently.");
+        BIT_MSG(hdwStatus, HDW_STATUS_ERR_GNSS_PPS_NOISE                , "0x00002000 - GNSS PPS timepulse signal has noise and occurred too frequently.");
         BIT_MSG(hdwStatus, HDW_STATUS_MAG_RECAL_COMPLETE               , "0x00004000 - Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).");
         BIT_MSG(hdwStatus, HDW_STATUS_FLASH_WRITE_PENDING              , "0x00008000 - System flash write staging or occurring now.");
         BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_TX_LIMITED               , "0x00010000 - Communications Tx buffer limited.");
         BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_RX_OVERRUN               , "0x00020000 - Communications Rx buffer overrun.");
-        BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GPS_PPS                   , "0x00040000 - GPS PPS timepulse signal has not been received or is in error.");
-        BIT_MSG(hdwStatus, HDW_STATUS_GPS_PPS_TIMESYNC                 , "0x00080000 - Time synchronized by GPS PPS.");
+        BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GNSS_PPS                   , "0x00040000 - GNSS PPS timepulse signal has not been received or is in error.");
+        BIT_MSG(hdwStatus, HDW_STATUS_GNSS_PPS_TIMESYNC                 , "0x00080000 - Time synchronized by GNSS PPS.");
 
     //  BIT_MSG(hdwStatus, HDW_STATUS_COM_PARSE_ERR_COUNT_MASK         , "0x00F00000 - Communications parse error count");
     //  BIT_MSG(hdwStatus, HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET       , = 20,
@@ -318,7 +322,6 @@ std::string renderSysStatus(const data_info_t& info, std::any value, int arrayId
 
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
         BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
-        BIT_MSG(sysStatus, SYS_STATUS_DMA_FAULT_DETECT              , "0x00000002 - DMA Fault Detected.");
         BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
 
         return buff.str();
@@ -341,7 +344,7 @@ std::string renderGenFaultCode(const data_info_t& info, std::any value, int arra
         BIT_MSG(genFault, GFC_INS_STATE_ORUN_LAT        , "0x00000002 - INS state limit overrun - Latitude.");
         BIT_MSG(genFault, GFC_INS_STATE_ORUN_ALT        , "0x00000004 - INS state limit overrun - Altitude.");
         BIT_MSG(genFault, GFC_UNHANDLED_INTERRUPT       , "0x00000010 - Unhandled interrupt.");
-        BIT_MSG(genFault, GFC_GNSS_CRITICAL_FAULT       , "0x00000020 - GNSS receiver critical fault (See the corresponding GPS status fault flags).");
+        BIT_MSG(genFault, GFC_GNSS_CRITICAL_FAULT       , "0x00000020 - GNSS receiver critical fault (See the corresponding GNSS status fault flags).");
         BIT_MSG(genFault, GFC_GNSS_TX_LIMITED           , "0x00000040 - GNSS Tx limited.");
         BIT_MSG(genFault, GFC_GNSS_RX_OVERRUN           , "0x00000080 - GNSS Rx overrun.");
         BIT_MSG(genFault, GFC_INIT_SENSORS              , "0x00000100 - Fault: sensor initialization.");
@@ -361,9 +364,9 @@ std::string renderGenFaultCode(const data_info_t& info, std::any value, int arra
         BIT_MSG(genFault, GFC_INIT_MAGNETOMETER         , "0x00400000 - Fault: Magnetometer initialization.");
         BIT_MSG(genFault, GFC_INIT_I2C                  , "0x00800000 - Fault: I2C initialization.");
         BIT_MSG(genFault, GFC_CHIP_ERASE_INVALID        , "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time.");
-        BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GPS time fault.");
-        BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GPS receiver time fault.");
-        BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags).");
+        BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GNSS time fault.");
+        BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GNSS receiver time fault.");
+        BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags).");
         BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
 
         return buff.str();
@@ -396,31 +399,31 @@ std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayI
             buff << "RTK Base (enabled) (0x000FFFF0)" << std::endl;
             if (rtkCfgBits & RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK) {
                 buff << " -- GNSS1 : UBLOX (0x000000F0)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0) buff << "     -- Ser0 (Enabled) (0x00000010)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER1) buff << "     -- Ser1 (Enabled) (0x00000020)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER2) buff << "     -- Ser2 (Enabled) (0x00000040)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB) buff << "     -- USB (Enabled) (0x00000080)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0) buff << "     -- Ser0 (Enabled) (0x00000010)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1) buff << "     -- Ser1 (Enabled) (0x00000020)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2) buff << "     -- Ser2 (Enabled) (0x00000040)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB) buff << "     -- USB (Enabled) (0x00000080)" << std::endl;
             }
             if ((rtkCfgBits & RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK)) {
                 buff << " -- GNSS1 : RTCM3 (0x00000F00)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER0) buff << "     -- Ser0 (Enabled) (0x00000100)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER1) buff << "     -- Ser1 (Enabled) (0x00000200)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2) buff << "     -- Ser2 (Enabled) (0x00000400)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB) buff << "     -- USB (Enabled) (0x00000800)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0) buff << "     -- Ser0 (Enabled) (0x00000100)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1) buff << "     -- Ser1 (Enabled) (0x00000200)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2) buff << "     -- Ser2 (Enabled) (0x00000400)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB) buff << "     -- USB (Enabled) (0x00000800)" << std::endl;
             }
             if (rtkCfgBits & RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK) {
                 buff << " -- GNSS2 : UBLOX (0x0000F000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER0) buff << "     -- Ser0 (Enabled) (0x00001000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER1) buff << "     -- Ser1 (Enabled) (0x00002000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_SER2) buff << "     -- Ser2 (Enabled) (0x00004000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_UBLOX_USB) buff << "     -- USB (Enabled) (0x00008000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0) buff << "     -- Ser0 (Enabled) (0x00001000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1) buff << "     -- Ser1 (Enabled) (0x00002000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2) buff << "     -- Ser2 (Enabled) (0x00004000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB) buff << "     -- USB (Enabled) (0x00008000)" << std::endl;
             }
             if ((rtkCfgBits & RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK)) {
                 buff << " -- GNSS2 : RTCM3 (0x000F0000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER0) buff << "     -- Ser0 (Enabled) (0x00010000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER1) buff << "     -- Ser1 (Enabled) (0x00020000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_SER2) buff << "     -- Ser2 (Enabled) (0x00040000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GPS2_RTCM3_USB) buff << "     -- USB (Enabled) (0x00080000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0) buff << "     -- Ser0 (Enabled) (0x00010000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1) buff << "     -- Ser1 (Enabled) (0x00020000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2) buff << "     -- Ser2 (Enabled) (0x00040000)" << std::endl;
+                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB) buff << "     -- USB (Enabled) (0x00080000)" << std::endl;
             }
         }
         return buff.str();
@@ -428,6 +431,437 @@ std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayI
         return "";
     }
 }
+
+/**
+ * @brief a custom data renderer for GNSS Status Bits
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGnssStatusBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
+        return "";
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+    try {
+        std::stringstream buff;
+        uint32_t gnssStatusBits = std::any_cast<uint32_t>(value);
+
+        // satCount is to be deprecated - but we'll show it for backwards compatibility
+        uint8_t satCount = (gnssStatusBits & GNSS_STATUS_NUM_SATS_USED_MASK);
+        buff << utils::string_format("0x000000%02X - %d satellites used in solution (deprecated)", satCount, satCount) << std::endl;
+
+        switch (gnssStatusBits & GNSS_STATUS_FIX_MASK) {
+            case GNSS_STATUS_FIX_NONE                : buff << "0x00000000 - No GNSS" << std::endl; break;
+            case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY : buff << "0x00000100 - GNSS Dead Reckoning Only" << std::endl; break;
+            case GNSS_STATUS_FIX_2D                  : buff << "0x00000200 - 2D Fix" << std::endl; break;
+            case GNSS_STATUS_FIX_3D                  : buff << "0x00000300 - 3D Fix" << std::endl; break;
+            case GNSS_STATUS_FIX_GNSS_PLUS_DEAD_RECK : buff << "0x00000400 - 3D Fix + Dead Reckoning" << std::endl; break;
+            case GNSS_STATUS_FIX_TIME_ONLY           : buff << "0x00000500 - Time-Only Fix" << std::endl; break;
+            case GNSS_STATUS_FIX_REF_LLA             : buff << "0x00000600 - Usign Reference LLA" << std::endl; break;
+            case GNSS_STATUS_FIX_UNUSED2             : buff << "0x00000700 - << UNUSED >>" << std::endl; break;
+            case GNSS_STATUS_FIX_DGPS                : buff << "0x00000800 - Using DGPS" << std::endl; break;
+            case GNSS_STATUS_FIX_SBAS                : buff << "0x00000900 - Using SBAS" << std::endl; break;
+            case GNSS_STATUS_FIX_RTK_SINGLE          : buff << "0x00000A00 - RTK Single" << std::endl; break;
+            case GNSS_STATUS_FIX_RTK_FLOAT           : buff << "0x00000B00 - RTK Float" << std::endl; break;
+            case GNSS_STATUS_FIX_RTK_FIX             : buff << "0x00000C00 - RTK Fix" << std::endl; break;
+        }
+
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_FIX_OK                          , "0x00010000 - within limits (e.g. DOP & accuracy)");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_DGPS_USED                       , "0x00020000 - Differential GPS (DGPS) used.");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD                , "0x00040000 - RTK feedback on the integer solutions to drive the float biases towards the resolved integers");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_1                        , "0x00080000 - << UNUSED >>");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED      , "0x00100000 - GNSS1 RTK precision positioning mode enabled");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_STATIC_MODE                     , "0x00200000 - Static mode");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED       , "0x00400000 - GNSS2 RTK moving base mode enabled");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR   , "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
+
+        uint32_t rtkError = (gnssStatusBits & GNSS_STATUS_FLAGS_ERROR_MASK);
+        switch (rtkError) {
+            case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING        : buff << "0x01000000 - GNSS1 RTK error: Either base observations or antenna position have not been received." << std::endl; break;
+            case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING     : buff << "0x02000000 - GNSS1 RTK error: base position moved when it should be stationary" << std::endl; break;
+            case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID    : buff << "0x03000000 - GNSS1 RTK error: base position is invalid or not surveyed well" << std::endl; break;
+        }
+
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID        , "0x04000000 - GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities.");
+        if (gnssStatusBits & GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK) {
+            BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID          , "0x08000000 - GNSS2 RTK moving base heading valid and available in DID_GNSS2_RTK_CMP_REL.");
+            BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD   , "0x00002000 - GNSS2 RTK Compassing Baseline distance is invalid");
+            BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET , "0x00004000 - GNSS2 RTK Compassing Baseline distance is unset (must be > 0)");
+        }
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                  , "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF).");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC               , "0x10000000 - Time is synchronized by GNSS PPS.");
+
+
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_2                       , "0x20000000 - <<UNUSED>>");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_3                       , "0x40000000 - <<UNUSED>>");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_4                       , "0x80000000 - <<UNUSED>>");
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+
+std::string renderGpxStatus_status(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t status = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+    /** Communications parse error count */
+        BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK      , "0x0000000F - Communications parse error count");
+        // BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET    , ""           = 0,
+
+#define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+
+    /** Rx communications not dectected in last 30 seconds */
+        BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED , "0x00000010 - COM0 RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED , "0x00000020 - COM1 RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED , "0x00000040 - COM2 RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED  , "0x00000080 - USB RX traffic not dectected in last 30 seconds.");
+        BIT_MSG(status, GPX_STATUS_UPDATE_CONFIRMED              , "0x00000100 - Update confirmed.");
+
+    /** General Fault mask */
+        // BIT_MSG(status, GPX_STATUS_GENERAL_FAULT_MASK            , "0xFFFF0000 -
+
+    /** RTK buffer filled causing data loss */
+        BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED       , "0x00010000 - RTK buffer overflow.");
+
+    /** GNSS receiver time fault **/
+        BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME          , "0x00100000 - GNSS receiver time fault");
+    /** RTOS task period overrun **/
+        BIT_MSG(status, GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN, "0x00200000 - RTOS task period overrun");
+    /** DMA Fault detected **/
+        BIT_MSG(status, GPX_STATUS_FAULT_DMA                     , "0x00800000 - DMA fault");
+
+    /** Fatal faults - critical failure resulting in CPU reset */
+        //BIT_MSG(status, GPX_STATUS_FATAL_MASK                    , 0x1F000000,
+        //BIT_MSG(status, GPX_STATUS_FATAL_OFFSET                  ,           = 24,
+
+        uint32_t fatalStatus = ((status & GPX_STATUS_FATAL_MASK) >> GPX_STATUS_FATAL_OFFSET);
+        switch (fatalStatus) {
+            case GPX_STATUS_FATAL_RESET_LOW_POW:                buff << "0x01000000 - Reset from low power" << std::endl; break;
+            case GPX_STATUS_FATAL_RESET_BROWN:                  buff << "0x02000000 - Reset from brown out" << std::endl; break;
+            case GPX_STATUS_FATAL_RESET_WATCHDOG:               buff << "0x03000000 - Reset from watchdog" << std::endl; break;
+            case GPX_STATUS_FATAL_CPU_EXCEPTION:                buff << "0x04000000 - CPU exception" << std::endl; break;
+            case GPX_STATUS_FATAL_UNHANDLED_INTERRUPT:          buff << "0x05000000 - Unhandled interrupt" << std::endl; break;
+            case GPX_STATUS_FATAL_STACK_OVERFLOW:               buff << "0x06000000 - Stack overflow" << std::endl; break;
+            case GPX_STATUS_FATAL_KERNEL_OOPS:                  buff << "0x07000000 - Kernel oops" << std::endl; break;
+            case GPX_STATUS_FATAL_KERNEL_PANIC:                 buff << "0x08000000 - Kernel panic" << std::endl; break;
+            case GPX_STATUS_FATAL_UNALIGNED_ACCESS:             buff << "0x09000000 - Unaligned access" << std::endl; break;
+            case GPX_STATUS_FATAL_MEMORY_ERROR:                 buff << "0x0A000000 - Memory error" << std::endl; break;
+            case GPX_STATUS_FATAL_BUS_ERROR:                    buff << "0x0B000000 - Bus error" << std::endl; break;
+            case GPX_STATUS_FATAL_USAGE_ERROR:                  buff << "0x0C000000 - Usage error" << std::endl; break;
+            case GPX_STATUS_FATAL_DIV_ZERO:                     buff << "0x0D000000 - Division by zero" << std::endl; break;
+            case GPX_STATUS_FATAL_SER0_REINIT:                  buff << "0x0E000000 - SER0 reinit" << std::endl; break;
+            case GPX_STATUS_FATAL_UNKNOWN:                      buff << "0x1F000000 - Unknown" << std::endl; break;
+        }
+
+    /** Internal use */
+        BIT_MSG(status, GPX_STATUS_FAULT_RP                     , "0x20000000 - RP fault");
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxStatus_hdwStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "hdwStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t hdwStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_SATELLITE_RX            , "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_SATELLITE_RX            , "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+
+    /** GNSS 1 reset required count */
+    // GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
+    // GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
+#define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
+
+    /** Failed to communicate or setup GNSS receiver 1 */
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS1_INIT              , "0x00000080 - Failed to communicate or setup GNSS receiver 1");
+        // BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
+
+    /** GNSS 2 reset required count */
+    // GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
+    // GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
+#define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
+
+    /** Failed to communicate or setup GNSS receiver 2 */
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS2_INIT              , "0x00000800 - Failed to communicate or setup GNSS receiver 2");
+        // BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED       , "0x00001000 - GNSS is faulting firmware update REQUIRED");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_LED_ENABLED                   , "0x00002000 - Enables LED in Manufacturing TBed");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED         , "0x00004000 - System Reset is Required for proper function");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FLASH_WRITE_PENDING           , "0x00008000 - System flash write staging or occuring now.");
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_TX_LIMITED            , "0x00010000 - Communications Tx buffer limited");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_COM_RX_OVERRUN            , "0x00020000 - Communications Rx buffer overrun");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GNSS1_PPS               , "0x00040000 - GNSS1 PPS timepulse signal has not been received or is in error");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_NO_GNSS2_PPS               , "0x00080000 - GNSS2 PPS timepulse signal has not been received or is in error");
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GNSS1              , "0x00100000 - GNSS1 signal strength low (<20)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_LOW_CNO_GNSS2              , "0x00200000 - GNSS2 signal strength low (<20)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GNSS1_IR               , "0x00400000 - GNSS1 signal irregular. High Cno standard deviation over 5 second period detected.");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_CNO_GNSS2_IR               , "0x00800000 - GNSS2 signal irregular. High Cno standard deviation over 5 second period detected.");
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_RUNNING                   , "0x01000000 - (BIT) Built-in self-test running");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_PASSED                    , "0x02000000 - (BIT) Built-in self-test passed");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_FAULT                     , "0x03000000 - (BIT) Built-in self-test failure");
+        // GPX_HDW_STATUS_BIT_MASK                              = 0x03000000
+        // GPX_HDW_STATUS_BIT_OFFSET                            = 24,
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_TEMPERATURE               , "0x04000000 - Temperature outside spec'd operating range");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_PPS_TIMESYNC              , "0x08000000 - Time synchronized by GNSS PPS");
+
+    /** Cause of system reset */
+        // GPX_HDW_STATUS_RESET_CAUSE_MASK                     = (int)0x70000000,
+
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE       , "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_SOFT              , "0x20000000 - Reset from Software");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_HDW               , "0x40000000 - Reset from Hardware (NRST pin low)");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_SYS_CRITICAL            , "0x80000000 - Critical System Fault, CPU error.");
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxStatus_gnssLastResetCause(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* rstReasons[] = {
+        "Power On", "Watchdog", "ErrOpCode", "ErrorOpCode_FwUp",
+        "ErrorOpCode_init", "UserRequested", "FWUpdate", "SysCmd",
+        "InitTimeout", "Status5", "StatusNot0", "flashUpdate",
+        "RTKEphMissing"
+    };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("lastRstCause"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx < cxdRst_Max) {
+                return std::string(rstReasons[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+std::string renderGpxStatus_gnssInitState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* initStates[] = {
+        "Bootup", "UartSetting", "UartWait", "UartDone",
+        "VersionCheck", "StopPos", "SetL5", "SetSats",
+        "SetSatLimits", "SetOutput", "SetAlgo", "SetPeriod",
+        "SetRtcmMsgs", "SetRtcmTimeMode", "SetPinningMode", "SetVelocitySmoothing",
+        "SetAltituedSmoothing", "SetEphmOutputPeriod", "StartPos", "Done"
+        };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("initState"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx <= 19) {
+                return std::string(initStates[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+std::string renderGpxStatus_gnssRunState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* runStates[] = {
+        "Reset", "Initializing", "Running", "Passthrough",
+        "FwUpdate Init", "FwUpdate", "Error", "Shutdown",
+        "ReInit", "Hard Reset"
+    };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("runState"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx <= kHardReset) {
+                return std::string(runStates[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+
+std::string renderGpxStatus_gnssFwUpdateState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    static const char* fwStates[] = {
+        "LockoutWait", "ResetSet", "ResetWait", "StartSet", "StartWait",
+        "BootModeSet", "BootModeWait", "BaudSet", "BaudWait", "BaudFinish",
+        "InjectWait", "InjectFinish", "ProgramExecutionWait", "ProgramExecutionFinish",
+        "WriteNvmWait", "WriteNvmFinish", "Done",
+    };
+
+    if ((info.type == DATA_TYPE_UINT8) && (info.size == 1) && STR_ENDS_WITH(info.name, std::string("fwUpdateState"))) {
+        try {
+            std::stringstream buff;
+            uint8_t msgIdx = std::any_cast<uint8_t>(value);
+            if (msgIdx < cxdRst_Max) {
+                return std::string(fwStates[msgIdx]);
+            }
+        } catch (std::bad_any_cast& e) {
+        }
+    }
+    return "";
+}
+
+
+std::string renderImxHdwBitStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "hdwBitStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t hdwBitStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_ALL                      ,"0x00000001 - Passed all tests");
+        BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_NO_GNSS                  ,"0x00000002 - Passed without valid GNSS signal");
+        if (HDW_BIT_MODE(hdwBitStatus)) {
+            buff << "0x000000" << std::hex << (hdwBitStatus & HDW_BIT_MODE_MASK) << std::dec
+                 << " - BIT mode: " << HDW_BIT_MODE(hdwBitStatus) << std::endl;
+        }
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_PQR                 ,"0x00000100 - FAULT: Gyro noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_ACC                 ,"0x00000200 - FAULT: Accelerometer noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_MAGNETOMETER              ,"0x00000400 - FAULT: Magnetometer");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_BAROMETER                 ,"0x00000800 - FAULT: Barometer");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_NO_COM               ,"0x00001000 - FAULT: No GNSS serial communications");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_POOR_CNO             ,"0x00002000 - FAULT: Poor GNSS signal strength");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_POOR_ACCURACY        ,"0x00004000 - FAULT: GNSS poor accuracy");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_NOISE                ,"0x00008000 - FAULT: GNSS noise");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_IMU_FAULT_REJECTION       ,"0x00010000 - FAULT: IMU fault rejection failure");
+        BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   ,"0x01000000 - FAULT: Hardware type does not match firmware");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderImxCalBitStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "calBitStatus"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t calBitStatus = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(calBitStatus, CAL_BIT_PASSED_ALL                      ,"0x00000001 - Passed all calibration tests");
+        if (CAL_BIT_MODE(calBitStatus)) {
+            buff << "0x000000" << std::hex << (calBitStatus & CAL_BIT_MODE_MASK) << std::dec
+                 << " - CAL BIT mode: " << CAL_BIT_MODE(calBitStatus) << std::endl;
+        }
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_EMPTY                ,"0x00000100 - FAULT: Temperature calibration not present");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_TSPAN                ,"0x00000200 - FAULT: Temperature calibration range inadequate");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_INCONSISTENT         ,"0x00000400 - FAULT: Temperature calibration inconsistent");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_CORRUPT              ,"0x00000800 - FAULT: Temperature calibration corrupt");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_BIAS             ,"0x00001000 - FAULT: Gyro bias temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_SLOPE            ,"0x00002000 - FAULT: Gyro slope temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_PQR_LIN              ,"0x00004000 - FAULT: Gyro linearity temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_BIAS             ,"0x00008000 - FAULT: Accel bias temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_SLOPE            ,"0x00010000 - FAULT: Accel slope temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_TCAL_ACC_LIN              ,"0x00020000 - FAULT: Accel linearity temp cal");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_CAL_SERIAL_NUM            ,"0x00040000 - FAULT: Calibration serial number mismatch");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_MAG_INVALID          ,"0x00080000 - FAULT: Magnetometer cross-axis alignment invalid");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_EMPTY                ,"0x00100000 - FAULT: Motion calibration not present");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MCAL_IMU_INVALID          ,"0x00200000 - FAULT: IMU cross-axis alignment invalid");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MOTION_PQR                ,"0x00400000 - FAULT: Motion detected on gyros");
+        BIT_MSG(calBitStatus, CAL_BIT_FAULT_MOTION_ACC                ,"0x00800000 - FAULT: Motion detected on accelerometers");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU1_PQR_BIAS            ,"0x01000000 - NOTICE: IMU 1 gyro bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU2_PQR_BIAS            ,"0x02000000 - NOTICE: IMU 2 gyro bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU1_ACC_BIAS            ,"0x10000000 - NOTICE: IMU 1 accel bias offset detected");
+        BIT_MSG(calBitStatus, CAL_BIT_NOTICE_IMU2_ACC_BIAS            ,"0x20000000 - NOTICE: IMU 2 accel bias offset detected");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxBitResults(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "results"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint32_t results = std::any_cast<uint32_t>(value);
+
+#define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
+
+        BIT_MSG(results, GPXBit_resultsBit_PPS1      ,"0x01 - PPS1 test passed");
+        BIT_MSG(results, GPXBit_resultsBit_PPS2      ,"0x02 - PPS2 test passed");
+        BIT_MSG(results, GPXBit_resultsBit_UART      ,"0x04 - UART test passed");
+        BIT_MSG(results, GPXBit_resultsBit_IO        ,"0x08 - IO test passed");
+        BIT_MSG(results, GPXBit_resultsBit_GNSS      ,"0x10 - GNSS test passed");
+        BIT_MSG(results, GPXBit_resultsBit_FINISHED  ,"0x20 - Test finished");
+        BIT_MSG(results, GPXBit_resultsBit_CANCELED  ,"0x40 - Test canceled");
+        BIT_MSG(results, GPXBit_resultsBit_ERROR     ,"0x80 - Test error");
+
+#undef BIT_MSG
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
+std::string renderGpxBitState(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "state"))
+        return "";
+
+    try {
+        std::stringstream buff;
+        uint8_t state = std::any_cast<uint8_t>(value);
+
+        // eGPXBit_state values (from GPXBit.h)
+        switch (state) {
+            case 0: buff << "NOT_RUNNING" << std::endl; break;
+            case 1: buff << "MANUF_INIT" << std::endl; break;
+            case 2: buff << "MANUF_BLINK" << std::endl; break;
+            case 3: buff << "MANUF_UART" << std::endl; break;
+            case 4: buff << "MANUF_IO" << std::endl; break;
+            case 5: buff << "MANUF_PPS" << std::endl; break;
+            case 6: buff << "MANUF_GNSS" << std::endl; break;
+            case 7: buff << "MANUF_REPORT" << std::endl; break;
+            default: buff << "UNKNOWN(" << (int)state << ")" << std::endl; break;
+        }
+
+        return buff.str();
+    } catch (std::bad_any_cast& e) {
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -453,8 +887,9 @@ static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t d
 static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<dev_info_t> mapper(data_set, did);
-    mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT16);
-    mapper.AddMember("hardwareState", &dev_info_t::hdwRunState, DATA_TYPE_UINT8, "", "Hardware state: APP, BOOTLOADER, ");
+    mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("buildFlags", &dev_info_t::buildFlags, DATA_TYPE_UINT8, "", "Build flags: 0x1=debug mode, 0x2=dirty", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("hardwareState", &dev_info_t::hdwRunState, DATA_TYPE_UINT8, "", "Hardware state: APP, BOOTLOADER, ", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 4, {""}, {"Hardware version"}, DATA_FLAGS_READ_ONLY);
@@ -463,7 +898,7 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("protocolVer", &dev_info_t::protocolVer, DATA_TYPE_UINT8, 4, {""}, {"Communications protocol version"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("repoRevision", &dev_info_t::repoRevision, DATA_TYPE_UINT32, "", "Repo revision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("manufacturer", &dev_info_t::manufacturer, DATA_TYPE_STRING, "", "manufacturer", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("buildType", &dev_info_t::buildType, DATA_TYPE_UINT8, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '^'(94)=dirty", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("buildType", &dev_info_t::buildType, DATA_TYPE_UINT8, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, '\0'(0)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '^'(94)=dirty", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildYear", &dev_info_t::buildYear, DATA_TYPE_UINT8, "", "Build year-2000", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildMonth", &dev_info_t::buildMonth, DATA_TYPE_UINT8, "", "Build month", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildDay", &dev_info_t::buildDay, DATA_TYPE_UINT8, "", "Build day", DATA_FLAGS_READ_ONLY);
@@ -494,19 +929,19 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
-    mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("tcPqrBias", &bit_t::tcPqrBias, DATA_TYPE_F32, SYM_DEG_PER_S, "Gyro temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddMember("tcAccBias", &bit_t::tcAccBias, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddMember("hdwBitStatus", &bit_t::hdwBitStatus, DATA_TYPE_UINT32, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxHdwBitStatus;
+    mapper.AddMember("calBitStatus", &bit_t::calBitStatus, DATA_TYPE_UINT32, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxCalBitStatus;
+    mapper.AddMember("tcPqrBias", &bit_t::tcPqrBias, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddMember("tcAccBias", &bit_t::tcAccBias, DATA_TYPE_F32, SYM_M_PER_S_2 "/C", "Gyro temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("tcPqrSlope", &bit_t::tcPqrSlope, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Gyro temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddMember("tcAccSlope", &bit_t::tcAccSlope, DATA_TYPE_F32, SYM_M_PER_S, "Accel temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("tcPqrLinearity", &bit_t::tcPqrLinearity, DATA_TYPE_F32, SYM_M_PER_S "/C", "Accel temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("tcAccLinearity", &bit_t::tcAccLinearity, DATA_TYPE_F32, SYM_M_PER_S "/C", "Accel temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("tcAccSlope", &bit_t::tcAccSlope, DATA_TYPE_F32, SYM_M_PER_S_2 "/C", "Accel temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("tcPqrLinearity", &bit_t::tcPqrLinearity, DATA_TYPE_F32, SYM_DEG_PER_S "/C", "Accel temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddMember("tcAccLinearity", &bit_t::tcAccLinearity, DATA_TYPE_F32, SYM_M_PER_S_2 "/C", "Accel temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("pqr", &bit_t::pqr, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddMember("acc", &bit_t::acc, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("acc", &bit_t::acc, DATA_TYPE_F32, SYM_M_PER_S_2, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("pqrSigma", &bit_t::pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GPS_NOISE) + "=GPS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
+    mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S_2, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GNSS_NOISE) + "=GNSS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
     mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
@@ -514,11 +949,11 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapGpxBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_bit_t> mapper(data_set, did);
-    mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxBitResults;
     mapper.AddMember("command", &gpx_bit_t::command, DATA_TYPE_UINT8, "", "Command (see eGPXBit_CMD)");
     mapper.AddMember("port", &gpx_bit_t::port, DATA_TYPE_UINT8, "", "Port used with the test");
     mapper.AddMember("testMode", &gpx_bit_t::testMode, DATA_TYPE_UINT8, "", "Self-test mode: 102=TxOverflow, 103=RxOverflow (see eGPXBit_test_mode)");
-    mapper.AddMember("state", &gpx_bit_t::state, DATA_TYPE_UINT8, "", "Built-in self-test state (see eGPXBit_state)");
+    mapper.AddMember("state", &gpx_bit_t::state, DATA_TYPE_UINT8, "", "Built-in self-test state (see eGPXBit_state)").renderExtended = renderGpxBitState;
     mapper.AddMember("detectedHardwareId", &gpx_bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("reserved", &gpx_bit_t::reserved, DATA_TYPE_UINT8, 2);
 }
@@ -527,14 +962,42 @@ static void PopulateMapSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_fault_t> mapper(data_set, did);
     int flags = DATA_FLAGS_DISPLAY_HEX;
+    mapper.AddMember("upTime", &system_fault_t::upTime, DATA_TYPE_UINT32, "", "System uptime in milliseconds");
     mapper.AddMember("status", &system_fault_t::status, DATA_TYPE_UINT32, "", "Bits: 23:20[flashMigMrk, code, stkOverflow, malloc] 19:16[busFlt, memMng, usageFlt, hardFlt] 7:4[flashMig, softRst] 3:0[bootldrRst, userRst]", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("g1Task", &system_fault_t::g1Task, DATA_TYPE_UINT32, "", "Active task at fault");
-    mapper.AddMember("g2FileNum", &system_fault_t::g2FileNum, DATA_TYPE_UINT32, "", "File number at fault");
-    mapper.AddMember("g3LineNum", &system_fault_t::g3LineNum, DATA_TYPE_UINT32, "", "Line number at fault");
-    mapper.AddMember("g4", &system_fault_t::g4, DATA_TYPE_UINT32, "", "value at fault", flags);
-    mapper.AddMember("g5Lr", &system_fault_t::g5Lr, DATA_TYPE_UINT32, "", "Load register at fault", flags);
+    mapper.AddMember("fileNum", &system_fault_t::fileNum, DATA_TYPE_UINT32, "", "File number at fault");
+    mapper.AddMember("lineNum", &system_fault_t::lineNum, DATA_TYPE_UINT32, "", "Line number at fault");
+    mapper.AddMember("haltReason", &system_fault_t::haltReason, DATA_TYPE_UINT32, "", "Zephyr halt reason");
+    mapper.AddMember("lr", &system_fault_t::lr, DATA_TYPE_UINT32, "", "Load register at fault", flags);
     mapper.AddMember("pc", &system_fault_t::pc, DATA_TYPE_UINT32, "", "program counter at fault", flags);
-    mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);
+    mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);    
+    mapper.AddMember("taskALastFeed", &system_fault_t::taskALastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task A last ran");
+    mapper.AddMember("taskBLastFeed", &system_fault_t::taskBLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task B last ran");
+    mapper.AddMember("wdtLastFeed", &system_fault_t::wdtLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since WDT last fed");
+    mapper.AddMember("var0", &system_fault_t::var0, DATA_TYPE_UINT32, "", "var0 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var1", &system_fault_t::var1, DATA_TYPE_UINT32, "", "var1 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var2", &system_fault_t::var2, DATA_TYPE_UINT32, "", "var2 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
+} 
+
+static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<system_fault_t> mapper(data_set, did);
+    int flags = DATA_FLAGS_DISPLAY_HEX;
+    mapper.AddMember("upTime", &system_fault_t::upTime, DATA_TYPE_UINT32, "", "System uptime in milliseconds");
+    mapper.AddMember("status", &system_fault_t::status, DATA_TYPE_UINT32, "", "Bits: 23:20[flashMigMrk, code, stkOverflow, malloc] 19:16[busFlt, memMng, usageFlt, hardFlt] 7:4[flashMig, softRst] 3:0[bootldrRst, userRst]", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("fileNum", &system_fault_t::fileNum, DATA_TYPE_UINT32, "", "File number at fault");
+    mapper.AddMember("lineNum", &system_fault_t::lineNum, DATA_TYPE_UINT32, "", "Line number at fault");
+    mapper.AddMember("haltReason", &system_fault_t::haltReason, DATA_TYPE_UINT32, "", "Zephyr halt reason");
+    mapper.AddMember("lr", &system_fault_t::lr, DATA_TYPE_UINT32, "", "Load register at fault", flags);
+    mapper.AddMember("pc", &system_fault_t::pc, DATA_TYPE_UINT32, "", "program counter at fault", flags);
+    mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);    
+    mapper.AddMember("taskALastFeed", &system_fault_t::taskALastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task A last ran");
+    mapper.AddMember("taskBLastFeed", &system_fault_t::taskBLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since task B last ran");
+    mapper.AddMember("wdtLastFeed", &system_fault_t::wdtLastFeed, DATA_TYPE_UINT32, "", "Milliseconds since WDT last fed");
+    mapper.AddMember("var0", &system_fault_t::var0, DATA_TYPE_UINT32, "", "var0 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var1", &system_fault_t::var1, DATA_TYPE_UINT32, "", "var1 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var2", &system_fault_t::var2, DATA_TYPE_UINT32, "", "var2 at fault (usage depends on fault type, see var1, var2, var3)");
+    mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 }
 
 void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -576,17 +1039,21 @@ static void PopulateMapImu(data_set_t data_set[DID_COUNT], uint32_t did, string 
     mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateMapImu3(data_set_t data_set[DID_COUNT], uint32_t did, string description)
+static void PopulateMapImus(data_set_t data_set[DID_COUNT], uint32_t did, string description)
 {
-    DataMapper<imu3_t> mapper(data_set, did);
-    mapper.AddMember("time", &imu3_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &imu3_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray2("I0.pqr", offsetof(imu3_t, I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 1 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I0.acc", offsetof(imu3_t, I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 1 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I1.pqr", offsetof(imu3_t, I[1].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 2 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I1.acc", offsetof(imu3_t, I[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 2 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray2("I2.pqr", offsetof(imu3_t, I[2].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 3 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray2("I2.acc", offsetof(imu3_t, I[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 3 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    DataMapper<imus_t> mapper(data_set, did);
+    mapper.AddMember("time", &imus_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("status", &imus_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray2("I0.pqr", offsetof(imus_t, I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 1 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I0.acc", offsetof(imus_t, I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 1 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I1.pqr", offsetof(imus_t, I[1].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 2 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I1.acc", offsetof(imus_t, I[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 2 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I2.pqr", offsetof(imus_t, I[2].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 3 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I2.acc", offsetof(imus_t, I[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 3 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I3.pqr", offsetof(imus_t, I[3].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 4 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I3.acc", offsetof(imus_t, I[3].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 4 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray2("I4.pqr", offsetof(imus_t, I[4].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"IMU 5 angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+    mapper.AddArray2("I4.acc", offsetof(imus_t, I[4].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"IMU 5 linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -595,14 +1062,14 @@ static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs",        &sys_params_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("insStatus",           &sys_params_t::insStatus, DATA_TYPE_UINT32, "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS).renderExtended = renderInsStatus;
     mapper.AddMember("hdwStatus",           &sys_params_t::hdwStatus, DATA_TYPE_UINT32, "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderHdwStatus;
-    mapper.AddMember("imuTemp",             &sys_params_t::imuTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("baroTemp",            &sys_params_t::baroTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("mcuTemp",             &sys_params_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("imuTemp",             &sys_params_t::imuTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("baroTemp",            &sys_params_t::baroTemp, DATA_TYPE_F32, SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("mcuTemp",             &sys_params_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("sysStatus",           &sys_params_t::sysStatus, DATA_TYPE_UINT32, "", "System Status Flags (See eSysStatusFlags)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderSysStatus;
     mapper.AddMember("imuSamplePeriodMs",   &sys_params_t::imuSamplePeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample period. Zero disables sensor sampling");
     mapper.AddMember("navOutputPeriodMs",   &sys_params_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter ouput period");
     mapper.AddMember("navUpdatePeriodMs",   &sys_params_t::navUpdatePeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter update period", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("sensorTruePeriod",    &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "us", "Actual sample period relative to GPS PPS", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, 1.0e6);
+    mapper.AddMember("sensorTruePeriod",    &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "us", "Actual sample period relative to GNSS PPS", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, 1.0e6);
     mapper.AddMember("flashCfgChecksum",    &sys_params_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config checksum used with host SDK synchronization", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("genFaultCode",        &sys_params_t::genFaultCode, DATA_TYPE_UINT32, "", "General fault code descriptor", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGenFaultCode;
     mapper.AddMember("upTime",              &sys_params_t::upTime, DATA_TYPE_F64, "s", "Local time since startup", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
@@ -692,98 +1159,98 @@ static void PopulateMapIns4(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddVec3Xyz("ecef", offsetof(ins_4_t,ecef), DATA_TYPE_F64, "m", "position in ECEF (earth-centered earth-fixed) frame", flags);
 }
 
-static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssPos(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_pos_t> mapper(data_set, did);
-    mapper.AddMember("week", &gps_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("timeOfWeekMs", &gps_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
-    mapper.AddArray("ecef", &gps_pos_t::ecef, DATA_TYPE_F64, 3, {"m"}, {"Position in ECEF {x,y,z}"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddLlaDegM("lla", offsetof(gps_pos_t, lla), "", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("hMSL", &gps_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("hAcc", &gps_pos_t::hAcc, DATA_TYPE_F32, "m", "Position horizontal accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("vAcc", &gps_pos_t::vAcc, DATA_TYPE_F32, "m", "Position vertical accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("pDop", &gps_pos_t::pDop, DATA_TYPE_F32, "m", "Position dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("cnoMean", &gps_pos_t::cnoMean, DATA_TYPE_F32, "dBHz", "Average of non-zero satellite carrier to noise ratios (signal strengths)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("towOffset", &gps_pos_t::towOffset, DATA_TYPE_F64, "sec", "Time sync offset from local clock", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
-    mapper.AddMember("leapS", &gps_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("satsUsed", &gps_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("cnoMeanSigma", &gps_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status2", &gps_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGpsStatus2) GPS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
+    DataMapper<gnss_pos_t> mapper(data_set, did);
+    mapper.AddMember("week", &gnss_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("timeOfWeekMs", &gnss_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("status", &gnss_pos_t::status, DATA_TYPE_UINT32, "", "GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GNSS_STATUS).renderExtended = renderGnssStatusBits;
+    mapper.AddArray("ecef", &gnss_pos_t::ecef, DATA_TYPE_F64, 3, {"m"}, {"Position in ECEF {x,y,z}"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddLlaDegM("lla", offsetof(gnss_pos_t, lla), "", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("hMSL", &gnss_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("hAcc", &gnss_pos_t::hAcc, DATA_TYPE_F32, "m", "Position horizontal accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("vAcc", &gnss_pos_t::vAcc, DATA_TYPE_F32, "m", "Position vertical accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("pDop", &gnss_pos_t::pDop, DATA_TYPE_F32, "m", "Position dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("cnoMean", &gnss_pos_t::cnoMean, DATA_TYPE_F32, "dBHz", "Average of non-zero satellite carrier to noise ratios (signal strengths)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("towOffset", &gnss_pos_t::towOffset, DATA_TYPE_F64, "sec", "Time sync offset from local clock", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
+    mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GNSS leap seconds (GNSS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GNSS time.", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
-static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssVel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_vel_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &gps_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("vel", &gps_vel_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0 or 1"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddMember("sAcc", &gps_vel_t::sAcc, DATA_TYPE_F32, "m/s", "Speed accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddMember("status", &gps_vel_t::status, DATA_TYPE_UINT32, "", "GPS status: NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    DataMapper<gnss_vel_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &gnss_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("vel", &gnss_vel_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GNSS_STATUS_FLAGS_GNSS_NMEA_DATA = 0 or 1"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("sAcc", &gnss_vel_t::sAcc, DATA_TYPE_F32, "m/s", "Speed accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("status", &gnss_vel_t::status, DATA_TYPE_UINT32, "", "GNSS status: NMEA input if status flag GNSS_STATUS_FLAGS_GNSS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssStatusBits;;
 }
 
-static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssSat(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_sat_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &gps_sat_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("numSats", &gps_sat_t::numSats, DATA_TYPE_UINT32, "", "Number of satellites in sky", DATA_FLAGS_READ_ONLY);
+    DataMapper<gnss_sat_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &gnss_sat_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("numSats", &gnss_sat_t::numSats, DATA_TYPE_UINT32, "", "Number of satellites in sky", DATA_FLAGS_READ_ONLY);
 
     for (int n=0; n<MAX_NUM_SATELLITES; n++)
     {
-        mapper.AddMember2("sat" + std::to_string(n) + ".gnssId",    n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].gnssId),    DATA_TYPE_UINT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".svId",      n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].svId),      DATA_TYPE_UINT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".elev",      n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].elev),      DATA_TYPE_INT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".azim",      n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].azim),      DATA_TYPE_INT16);
-        mapper.AddMember2("sat" + std::to_string(n) + ".cno",       n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].cno),       DATA_TYPE_UINT8);
-        mapper.AddMember2("sat" + std::to_string(n) + ".status",    n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].status),    DATA_TYPE_UINT16);
+        mapper.AddMember2("sat" + std::to_string(n) + ".gnssId",    n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].gnssId),    DATA_TYPE_UINT8);
+        mapper.AddMember2("sat" + std::to_string(n) + ".svId",      n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].svId),      DATA_TYPE_UINT8);
+        mapper.AddMember2("sat" + std::to_string(n) + ".elev",      n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].elev),      DATA_TYPE_INT8);
+        mapper.AddMember2("sat" + std::to_string(n) + ".azim",      n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].azim),      DATA_TYPE_INT16);
+        mapper.AddMember2("sat" + std::to_string(n) + ".cno",       n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].cno),       DATA_TYPE_UINT8);
+        mapper.AddMember2("sat" + std::to_string(n) + ".status",    n*sizeof(gnss_sat_sv_t) + offsetof(gnss_sat_t, sat[0].status),    DATA_TYPE_UINT16);
     }
 }
 
-static void PopulateMapGpsSig(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssSig(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_sig_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &gps_sig_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("numSigs", &gps_sig_t::numSigs, DATA_TYPE_UINT32, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
+    DataMapper<gnss_sig_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &gnss_sig_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("numSigs", &gnss_sig_t::numSigs, DATA_TYPE_UINT32, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
 
     for (int n=0; n<MAX_NUM_SAT_SIGNALS; n++)
     {
-        mapper.AddMember2("sig" + std::to_string(n) + ".gnssId",    n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].gnssId),    DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".svId",      n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].svId),      DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".sigId",     n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].sigId),     DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".cno",       n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].cno),       DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".quality",   n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].quality),   DATA_TYPE_UINT8);
-        mapper.AddMember2("sig" + std::to_string(n) + ".status",    n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].status),    DATA_TYPE_UINT16);
+        mapper.AddMember2("sig" + std::to_string(n) + ".gnssId",    n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].gnssId),    DATA_TYPE_UINT8);
+        mapper.AddMember2("sig" + std::to_string(n) + ".svId",      n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].svId),      DATA_TYPE_UINT8);
+        mapper.AddMember2("sig" + std::to_string(n) + ".sigId",     n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].sigId),     DATA_TYPE_UINT8);
+        mapper.AddMember2("sig" + std::to_string(n) + ".cno",       n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].cno),       DATA_TYPE_UINT8);
+        mapper.AddMember2("sig" + std::to_string(n) + ".quality",   n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].quality),   DATA_TYPE_UINT8);
+        mapper.AddMember2("sig" + std::to_string(n) + ".status",    n*sizeof(gnss_sig_sv_t) + offsetof(gnss_sig_t, sig[0].status),    DATA_TYPE_UINT16);
     }
 }
 
-static void PopulateMapGpsVersion(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssVersion(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_version_t> mapper(data_set, did);
-    mapper.AddMember("swVersion", &gps_version_t::swVersion, DATA_TYPE_STRING, "", "Software version");
-    mapper.AddMember("hwVersion", &gps_version_t::hwVersion, DATA_TYPE_STRING, "", "Hardware version");
-    mapper.AddArray("extension", &gps_version_t::extension, DATA_TYPE_STRING, GPS_VER_NUM_EXTENSIONS, {""}, {"Extension 30 bytes array description."});
+    DataMapper<gnss_version_t> mapper(data_set, did);
+    mapper.AddMember("swVersion", &gnss_version_t::swVersion, DATA_TYPE_STRING, "", "Software version");
+    mapper.AddMember("hwVersion", &gnss_version_t::hwVersion, DATA_TYPE_STRING, "", "Hardware version");
+    mapper.AddArray("extension", &gnss_version_t::extension, DATA_TYPE_STRING, GNSS_VER_NUM_EXTENSIONS, {""}, {"Extension 30 bytes array description."});
 }
 
-static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_timepulse_t> mapper(data_set, did);
-    mapper.AddMember("towOffset", &gps_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("towGps", &gps_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("timeMcu", &gps_timepulse_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("msgTimeMs", &gps_timepulse_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
-    mapper.AddMember("plsTimeMs", &gps_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
-    mapper.AddMember("syncCount", &gps_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
-    mapper.AddMember("badPulseAgeCount", &gps_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
-    mapper.AddMember("ppsInterruptReinitCount", &gps_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GPS PPS interrupt re-initalization.");
-    mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GPS PPS via GPIO, not interrupt.");
-    mapper.AddMember("lastSyncTimeMs", &gps_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
-    mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
+    DataMapper<gnss_timepulse_t> mapper(data_set, did);
+    mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("timeMcu", &gnss_timepulse_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("msgTimeMs", &gnss_timepulse_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
+    mapper.AddMember("plsTimeMs", &gnss_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
+    mapper.AddMember("syncCount", &gnss_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
+    mapper.AddMember("badPulseAgeCount", &gnss_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
+    mapper.AddMember("ppsInterruptReinitCount", &gnss_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GNSS PPS interrupt re-initalization.");
+    mapper.AddMember("plsCount", &gnss_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GNSS PPS via GPIO, not interrupt.");
+    mapper.AddMember("lastSyncTimeMs", &gnss_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
+    mapper.AddMember("sinceLastSyncTimeMs", &gnss_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
 }
 
 static void PopulateMapMagnetometer(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<magnetometer_t> mapper(data_set, did);
     mapper.AddMember("time", &magnetometer_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, {SYM_M_PER_S}, {"Normalized gauss"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, {"uT"}, {"Magnetic field in microtesla"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapBarometer(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -846,20 +1313,22 @@ static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
 
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-        mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        mapper.AddArray2("imu" + std::to_string(i) + ".pqr", i*sizeof(imui_t) + offsetof(infield_cal_t, imu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Sampled angular rate.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+        mapper.AddArray2("imu" + std::to_string(i) + ".acc", i*sizeof(imui_t) + offsetof(infield_cal_t, imu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Sampled linear acceleration.  IMU bias when state=INFIELD_CAL_STATE_SAVED_AND_FINISHED"}, DATA_FLAGS_FIXED_DECIMAL_4);
     }
 
     for (int i=0; i<3; i++)
     {
-        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[0].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[1].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".down.dev[2].acc", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.dev[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddMember2("calData" + std::to_string(i) + ".down.yaw",        i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[0].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[1].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[1].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddArray2("calData" + std::to_string(i) + ".up.dev[2].acc",   i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.dev[2].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
-        mapper.AddMember2("calData" + std::to_string(i) + ".up.yaw",          i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+        for (int d=0; d<MAX_IMU_DEVICES; d++)
+        {
+            mapper.AddArray2( "calData" + std::to_string(i) + ".down.dev[" + std::to_string(d) + "].acc", i*sizeof(infield_cal_vaxis_t) + d*sizeof(imu_acc_t) + offsetof(infield_cal_t, calData[0].down.dev[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        }
+        mapper.AddMember2("calData" + std::to_string(i) + ".down.yaw", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].down.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+        for (int d=0; d<MAX_IMU_DEVICES; d++)
+        {
+            mapper.AddArray2( "calData" + std::to_string(i) + ".up.dev[" + std::to_string(d) + "].acc", i*sizeof(infield_cal_vaxis_t) + d*sizeof(imu_acc_t) + offsetof(infield_cal_t, calData[0].up.dev[0].acc),   DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration"}, DATA_FLAGS_FIXED_DECIMAL_4);
+        }
+        mapper.AddMember2("calData" + std::to_string(i) + ".up.yaw", i*sizeof(infield_cal_vaxis_t) + offsetof(infield_cal_t, calData[0].up.yaw), DATA_TYPE_F32, SYM_DEG, "Yaw angle. >=999 means two samples have been averaged.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     }
 }
 
@@ -906,25 +1375,25 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     string str;
     mapper.AddMember("startupImuDtMs", &nvm_flash_cfg_t::startupImuDtMs, DATA_TYPE_UINT32, "ms", "IMU sample (system input data) period set on startup. Cannot be larger than startupInsDtMs. Zero disables sensor/IMU sampling.");
     mapper.AddMember("startupNavDtMs", &nvm_flash_cfg_t::startupNavDtMs, DATA_TYPE_UINT32, "ms", "Nav filter (system output data) update period set on startup. 1ms min (1KHz max).");
-    mapper.AddMember("startupGPSDtMs", &nvm_flash_cfg_t::startupGPSDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
+    mapper.AddMember("startupGnssDtMs", &nvm_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GNSS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &nvm_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &nvm_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
     mapper.AddVec3Rpy("insRotation", offsetof(nvm_flash_cfg_t, insRotation), DATA_TYPE_F32, SYM_DEG, "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.", 0, C_RAD2DEG);
     mapper.AddVec3Xyz("insOffset", offsetof(nvm_flash_cfg_t, insOffset), DATA_TYPE_F32, "m", "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.");
-    mapper.AddVec3Xyz("gps1AntOffset", offsetof(nvm_flash_cfg_t,gps1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS1 antenna.");
-    mapper.AddVec3Xyz("gps2AntOffset", offsetof(nvm_flash_cfg_t,gps2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS2 antenna.");
+    mapper.AddVec3Xyz("gnss1AntOffset", offsetof(nvm_flash_cfg_t,gnss1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GNSS1 antenna.");
+    mapper.AddVec3Xyz("gnss2AntOffset", offsetof(nvm_flash_cfg_t,gnss2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GNSS2 antenna.");
 
-    mapper.AddMember("gpsTimeSyncPeriodMs", &nvm_flash_cfg_t::gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.", 0, 1.0);
-    mapper.AddMember("gpsTimeUserDelay", &nvm_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
-    mapper.AddMember("gpsMinimumElevation", &nvm_flash_cfg_t::gpsMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    mapper.AddMember("gnssTimeSyncPeriodMs", &nvm_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.", 0, 1.0);
+    mapper.AddMember("gnssTimeUserDelay", &nvm_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
+    mapper.AddMember("gnssMinimumElevation", &nvm_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GNSS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0);
 
     mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0);
     str = "AutobaudOff [0x1=Ser0, 0x2=Ser1], 0x4=AutoMagRecal, 0x8=DisableMagDecEst, ";
     str += "0x10=DisableLeds, ";
     str += "0x100=1AxisMagRecal, ";
-    str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GPS], ";
+    str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GNSS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
     mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
     str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
@@ -942,7 +1411,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
 
     mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
-    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GPS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GNSS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("lastLlaTimeOfWeekMs", &nvm_flash_cfg_t::lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, "ms", "Last LLA update time since Sunday morning");
     mapper.AddMember("lastLlaWeek", &nvm_flash_cfg_t::lastLlaWeek, DATA_TYPE_UINT32, "week", "Last LLA update Weeks since Jan 6, 1980");
     mapper.AddMember("lastLlaUpdateDistance", &nvm_flash_cfg_t::lastLlaUpdateDistance, DATA_TYPE_F32, "m", "Distance between current and last LLA that triggers an update of lastLLA)");
@@ -1002,17 +1471,17 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser0BaudRate", &gpx_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &gpx_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &gpx_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
-    mapper.AddMember("startupGPSDtMs", &gpx_flash_cfg_t::startupGPSDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
-    str = " offset from Sensor Frame origin to GPS1 antenna.";
-    mapper.AddArray("gps1AntOffset", &gpx_flash_cfg_t::gps1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
-    str = " offset from Sensor Frame origin to GPS2 antenna.";
-    mapper.AddArray("gps2AntOffset", &gpx_flash_cfg_t::gps2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
+    mapper.AddMember("startupGnssDtMs", &gpx_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GNSS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
+    str = " offset from Sensor Frame origin to GNSS1 antenna.";
+    mapper.AddArray("gnss1AntOffset", &gpx_flash_cfg_t::gnss1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
+    str = " offset from Sensor Frame origin to GNSS2 antenna.";
+    mapper.AddArray("gnss2AntOffset", &gpx_flash_cfg_t::gnss2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist");
     mapper.AddMember("debug", &gpx_flash_cfg_t::debug, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("gpsTimeSyncPeriodMs", &gpx_flash_cfg_t::gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.");
-    mapper.AddMember("gpsTimeUserDelay", &gpx_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("gpsMinimumElevation", &gpx_flash_cfg_t::gpsMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    mapper.AddMember("gnssTimeSyncPeriodMs", &gpx_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.");
+    mapper.AddMember("gnssTimeUserDelay", &gpx_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("gnssMinimumElevation", &gpx_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GNSS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
     str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
@@ -1035,8 +1504,8 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_status_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gpx_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "General status flags (see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("hdwStatus",    &gpx_status_t::hdwStatus,    DATA_TYPE_UINT32, "", "Hardware status flags (see eGPXHdwStatusFlags)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "General status flags (see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxStatus_status;;
+    mapper.AddMember("hdwStatus",    &gpx_status_t::hdwStatus,    DATA_TYPE_UINT32, "", "Hardware status flags (see eGPXHdwStatusFlags)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxStatus_hdwStatus;
     mapper.AddMember("grmcBitsSer0", &gpx_status_t::grmcBitsSer0, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer1", &gpx_status_t::grmcBitsSer1, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer2", &gpx_status_t::grmcBitsSer2, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -1058,10 +1527,10 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<GNSS_RECEIVER_COUNT; i++)
     {
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".lastRstCause", i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].lastRstCause), DATA_TYPE_UINT8, "", "GNSS last reset cause (see eGnssResetCause)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".fwUpdateState",  i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].fwUpdateState),  DATA_TYPE_UINT8, "", "GNSS FW update status (see FirmwareUpdateState)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)");
-        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",       i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),       DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)");
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)").renderExtended = renderGpxStatus_gnssInitState;
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",       i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),       DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)").renderExtended = renderGpxStatus_gnssRunState;
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".fwUpdateState",  i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].fwUpdateState),  DATA_TYPE_UINT8, "", "GNSS FW update status (see FirmwareUpdateState)").renderExtended = renderGpxStatus_gnssFwUpdateState;
+        mapper.AddMember2("gnssStatus" + std::to_string(i) + ".lastRstCause", i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].lastRstCause), DATA_TYPE_UINT8, "", "GNSS last reset cause (see eGnssResetCause)").renderExtended = renderGpxStatus_gnssLastResetCause;
     }
     mapper.AddMember("gpxSourcePort", &gpx_status_t::gpxSourcePort, DATA_TYPE_UINT8, "", "Port", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("upTime", &gpx_status_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
@@ -1234,7 +1703,7 @@ static void PopulateMapEvbLunaFlashCfg(data_set_t data_set[DID_COUNT], uint32_t 
 static void PopulateMapCoyoteStatus(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_status_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GNSS time of week (since Sunday morning).");
     mapper.AddMember("evbLunaStatus", evbLunaStatus, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("motorState", motorState, DATA_TYPE_UINT32, "", "");
     mapper.AddMember("remoteKillMode", remoteKillMode, DATA_TYPE_UINT32, "", "Motor state (eLunaMotorState)");
@@ -1244,7 +1713,7 @@ static void PopulateMapCoyoteStatus(data_set_t data_set[DID_COUNT], uint32_t did
 static void PopulateMapEvbLunaSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_sensors_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GNSS time of week (since Sunday morning).");
     mapper.AddMember("proxSensorOutput[0]", proxSensorOutput[0], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("proxSensorOutput[1]", proxSensorOutput[1], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("proxSensorOutput[2]", proxSensorOutput[2], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1317,74 +1786,74 @@ static void PopulateMapEvbLunaAuxCmd(data_set_t data_set[DID_COUNT], uint32_t di
 
 #endif
 
-static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_rtk_rel_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &gps_rtk_rel_t::timeOfWeekMs, DATA_TYPE_UINT32,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("baseToRoverVector", &gps_rtk_rel_t::baseToRoverVector, DATA_TYPE_F32, 3, {"m"}, {"Vector from base to rover in ECEF."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
-    mapper.AddMember("differentialAge", &gps_rtk_rel_t::differentialAge, DATA_TYPE_F32, "s", "Age of differential signal received.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("arRatio", &gps_rtk_rel_t::arRatio, DATA_TYPE_F32, "", "Ambiguity resolution ratio factor for validation.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("baseToRoverDistance", &gps_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("baseToRoverHeading", &gps_rtk_rel_t::baseToRoverHeading, DATA_TYPE_F32, SYM_DEG, "Angle from north to baseToRoverVector in local tangent plane.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
-    mapper.AddMember("baseToRoverHeadingAcc", &gps_rtk_rel_t::baseToRoverHeadingAcc, DATA_TYPE_F32, SYM_DEG, "Accuracy of baseToRoverHeading.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_6, C_RAD2DEG);
-    mapper.AddMember("status", &gps_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
+    DataMapper<gnss_rtk_rel_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &gnss_rtk_rel_t::timeOfWeekMs, DATA_TYPE_UINT32,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("baseToRoverVector", &gnss_rtk_rel_t::baseToRoverVector, DATA_TYPE_F32, 3, {"m"}, {"Vector from base to rover in ECEF."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("differentialAge", &gnss_rtk_rel_t::differentialAge, DATA_TYPE_F32, "s", "Age of differential signal received.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("arRatio", &gnss_rtk_rel_t::arRatio, DATA_TYPE_F32, "", "Ambiguity resolution ratio factor for validation.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("baseToRoverDistance", &gnss_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("baseToRoverHeading", &gnss_rtk_rel_t::baseToRoverHeading, DATA_TYPE_F32, SYM_DEG, "Angle from north to baseToRoverVector in local tangent plane.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    mapper.AddMember("baseToRoverHeadingAcc", &gnss_rtk_rel_t::baseToRoverHeadingAcc, DATA_TYPE_F32, SYM_DEG, "Accuracy of baseToRoverHeading.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_6, C_RAD2DEG);
+    mapper.AddMember("status", &gnss_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GNSS_STATUS).renderExtended = renderGnssStatusBits;
 }
 
-static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_rtk_misc_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &gps_rtk_misc_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("timeToFirstFixMs", &gps_rtk_misc_t::timeToFirstFixMs, DATA_TYPE_UINT32, "ms", "Time to first RTK fix", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("accuracyPos", &gps_rtk_misc_t::accuracyPos, DATA_TYPE_F32, 3, {"m"}, {"Accuracy in meters north, east, up (standard deviation)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("accuracyCov", &gps_rtk_misc_t::accuracyCov, DATA_TYPE_F32, 3, {"m"}, {"Absolute value of means square root of estimated covariance NE, EU, UN"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("arThreshold", &gps_rtk_misc_t::arThreshold, DATA_TYPE_F32, "", "Ambiguity resolution threshold for validation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("gDop", &gps_rtk_misc_t::gDop, DATA_TYPE_F32, "m", "Geomatic dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("hDop", &gps_rtk_misc_t::hDop, DATA_TYPE_F32, "m", "Horizontal dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("vDop", &gps_rtk_misc_t::vDop, DATA_TYPE_F32, "m", "Vertical dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddLlaDegM("baseLla", offsetof(gps_rtk_misc_t, baseLla), "Base position", "altitude", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("cycleSlipCount", &gps_rtk_misc_t::cycleSlipCount, DATA_TYPE_UINT32, "int", "Cycle slip counter", DATA_FLAGS_READ_ONLY);
+    DataMapper<gnss_rtk_misc_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &gnss_rtk_misc_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("timeToFirstFixMs", &gnss_rtk_misc_t::timeToFirstFixMs, DATA_TYPE_UINT32, "ms", "Time to first RTK fix", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("accuracyPos", &gnss_rtk_misc_t::accuracyPos, DATA_TYPE_F32, 3, {"m"}, {"Accuracy in meters north, east, up (standard deviation)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddArray("accuracyCov", &gnss_rtk_misc_t::accuracyCov, DATA_TYPE_F32, 3, {"m"}, {"Absolute value of means square root of estimated covariance NE, EU, UN"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("arThreshold", &gnss_rtk_misc_t::arThreshold, DATA_TYPE_F32, "", "Ambiguity resolution threshold for validation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("gDop", &gnss_rtk_misc_t::gDop, DATA_TYPE_F32, "m", "Geomatic dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("hDop", &gnss_rtk_misc_t::hDop, DATA_TYPE_F32, "m", "Horizontal dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("vDop", &gnss_rtk_misc_t::vDop, DATA_TYPE_F32, "m", "Vertical dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddLlaDegM("baseLla", offsetof(gnss_rtk_misc_t, baseLla), "Base position", "altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("cycleSlipCount", &gnss_rtk_misc_t::cycleSlipCount, DATA_TYPE_UINT32, "int", "Cycle slip counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverGpsObservationCount", &gps_rtk_misc_t::roverGpsObservationCount, DATA_TYPE_UINT32, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGpsObservationCount", &gps_rtk_misc_t::baseGpsObservationCount, DATA_TYPE_UINT32, "int", "Base gps observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("roverGlonassObservationCount", &gps_rtk_misc_t::roverGlonassObservationCount, DATA_TYPE_UINT32, "int", "Rover glonass observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGlonassObservationCount", &gps_rtk_misc_t::baseGlonassObservationCount, DATA_TYPE_UINT32, "int", "Base glonass observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGpsObservationCount", &gnss_rtk_misc_t::roverGpsObservationCount, DATA_TYPE_UINT32, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGpsObservationCount", &gnss_rtk_misc_t::baseGpsObservationCount, DATA_TYPE_UINT32, "int", "Base gps observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGlonassObservationCount", &gnss_rtk_misc_t::roverGlonassObservationCount, DATA_TYPE_UINT32, "int", "Rover glonass observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGlonassObservationCount", &gnss_rtk_misc_t::baseGlonassObservationCount, DATA_TYPE_UINT32, "int", "Base glonass observation element counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverGalileoObservationCount", &gps_rtk_misc_t::roverGalileoObservationCount, DATA_TYPE_UINT32, "int", "Rover galileo observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGalileoObservationCount", &gps_rtk_misc_t::baseGalileoObservationCount, DATA_TYPE_UINT32, "int", "Base galileo observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("roverBeidouObservationCount", &gps_rtk_misc_t::roverBeidouObservationCount, DATA_TYPE_UINT32, "int", "Rover beidou observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseBeidouObservationCount", &gps_rtk_misc_t::baseBeidouObservationCount, DATA_TYPE_UINT32, "int", "Base beidou observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGalileoObservationCount", &gnss_rtk_misc_t::roverGalileoObservationCount, DATA_TYPE_UINT32, "int", "Rover galileo observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGalileoObservationCount", &gnss_rtk_misc_t::baseGalileoObservationCount, DATA_TYPE_UINT32, "int", "Base galileo observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverBeidouObservationCount", &gnss_rtk_misc_t::roverBeidouObservationCount, DATA_TYPE_UINT32, "int", "Rover beidou observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseBeidouObservationCount", &gnss_rtk_misc_t::baseBeidouObservationCount, DATA_TYPE_UINT32, "int", "Base beidou observation element counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverQzsObservationCount", &gps_rtk_misc_t::roverQzsObservationCount, DATA_TYPE_UINT32, "int", "Rover qzs observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseQzsObservationCount", &gps_rtk_misc_t::baseQzsObservationCount, DATA_TYPE_UINT32, "int", "Base qzs observation element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("roverGpsEphemerisCount", &gps_rtk_misc_t::roverGpsEphemerisCount, DATA_TYPE_UINT32, "int", "Rover gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGpsEphemerisCount", &gps_rtk_misc_t::baseGpsEphemerisCount, DATA_TYPE_UINT32, "int", "Base gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverQzsObservationCount", &gnss_rtk_misc_t::roverQzsObservationCount, DATA_TYPE_UINT32, "int", "Rover qzs observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseQzsObservationCount", &gnss_rtk_misc_t::baseQzsObservationCount, DATA_TYPE_UINT32, "int", "Base qzs observation element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGpsEphemerisCount", &gnss_rtk_misc_t::roverGpsEphemerisCount, DATA_TYPE_UINT32, "int", "Rover gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGpsEphemerisCount", &gnss_rtk_misc_t::baseGpsEphemerisCount, DATA_TYPE_UINT32, "int", "Base gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverGlonassEphemerisCount", &gps_rtk_misc_t::roverGlonassEphemerisCount, DATA_TYPE_UINT32, "int", "Rover glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGlonassEphemerisCount", &gps_rtk_misc_t::baseGlonassEphemerisCount, DATA_TYPE_UINT32, "int", "Base glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("roverGalileoEphemerisCount", &gps_rtk_misc_t::roverGalileoEphemerisCount, DATA_TYPE_UINT32, "int", "Rover galileo ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseGalileoEphemerisCount", &gps_rtk_misc_t::baseGalileoEphemerisCount, DATA_TYPE_UINT32, "int", "Base galileo ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGlonassEphemerisCount", &gnss_rtk_misc_t::roverGlonassEphemerisCount, DATA_TYPE_UINT32, "int", "Rover glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGlonassEphemerisCount", &gnss_rtk_misc_t::baseGlonassEphemerisCount, DATA_TYPE_UINT32, "int", "Base glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverGalileoEphemerisCount", &gnss_rtk_misc_t::roverGalileoEphemerisCount, DATA_TYPE_UINT32, "int", "Rover galileo ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseGalileoEphemerisCount", &gnss_rtk_misc_t::baseGalileoEphemerisCount, DATA_TYPE_UINT32, "int", "Base galileo ephemeris element counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverBeidouEphemerisCount", &gps_rtk_misc_t::roverBeidouEphemerisCount, DATA_TYPE_UINT32, "int", "Rover beidou ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseBeidouEphemerisCount", &gps_rtk_misc_t::baseBeidouEphemerisCount, DATA_TYPE_UINT32, "int", "Base beidou ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("roverQzsEphemerisCount", &gps_rtk_misc_t::roverQzsEphemerisCount, DATA_TYPE_UINT32, "int", "Rover qzs ephemeris element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseQzsEphemerisCount", &gps_rtk_misc_t::baseQzsEphemerisCount, DATA_TYPE_UINT32, "int", "Base qzs ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverBeidouEphemerisCount", &gnss_rtk_misc_t::roverBeidouEphemerisCount, DATA_TYPE_UINT32, "int", "Rover beidou ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseBeidouEphemerisCount", &gnss_rtk_misc_t::baseBeidouEphemerisCount, DATA_TYPE_UINT32, "int", "Base beidou ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverQzsEphemerisCount", &gnss_rtk_misc_t::roverQzsEphemerisCount, DATA_TYPE_UINT32, "int", "Rover qzs ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseQzsEphemerisCount", &gnss_rtk_misc_t::baseQzsEphemerisCount, DATA_TYPE_UINT32, "int", "Base qzs ephemeris element counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("roverSbasCount", &gps_rtk_misc_t::roverSbasCount, DATA_TYPE_UINT32, "int", "Rover sbas element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseSbasCount", &gps_rtk_misc_t::baseSbasCount, DATA_TYPE_UINT32, "int", "Base sbas element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("baseAntennaCount", &gps_rtk_misc_t::baseAntennaCount, DATA_TYPE_UINT32, "int", "Base antenna position element counter", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("ionUtcAlmCount", &gps_rtk_misc_t::ionUtcAlmCount, DATA_TYPE_UINT32, "int", "Ion model / utc / alm element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("roverSbasCount", &gnss_rtk_misc_t::roverSbasCount, DATA_TYPE_UINT32, "int", "Rover sbas element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseSbasCount", &gnss_rtk_misc_t::baseSbasCount, DATA_TYPE_UINT32, "int", "Base sbas element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("baseAntennaCount", &gnss_rtk_misc_t::baseAntennaCount, DATA_TYPE_UINT32, "int", "Base antenna position element counter", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("ionUtcAlmCount", &gnss_rtk_misc_t::ionUtcAlmCount, DATA_TYPE_UINT32, "int", "Ion model / utc / alm element counter", DATA_FLAGS_READ_ONLY);
 
-    mapper.AddMember("correctionChecksumFailures", &gps_rtk_misc_t::correctionChecksumFailures, DATA_TYPE_UINT32, "int", "Correction input checksum failures", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("correctionChecksumFailures", &gnss_rtk_misc_t::correctionChecksumFailures, DATA_TYPE_UINT32, "int", "Correction input checksum failures", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapGpsRaw(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssRaw(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gps_raw_t> mapper(data_set, did);
-    mapper.AddMember("receiveIndex", &gps_raw_t::receiverIndex, DATA_TYPE_UINT8, "", "Receiver index (1=Rover, 2=Base). RTK positioning or RTK compassing must be enabled to stream raw GPS data.", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("dataType", &gps_raw_t::dataType, DATA_TYPE_UINT8, "", "Type of data (eRawDataType: 1=observations, 2=ephemeris, 3=glonassEphemeris, 4=SBAS, 5=baseAntenna, 6=IonosphereModel)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("obsCount", &gps_raw_t::obsCount, DATA_TYPE_UINT8, "", "Number of observations in array (obsd_t) when dataType==1", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved", &gps_raw_t::reserved, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember2("dataBuf", offsetof(gps_raw_t, data.buf), DATA_TYPE_BINARY, "", "", 0, 1.0, GPS_RAW_MESSAGE_BUF_SIZE);
+    DataMapper<gnss_raw_t> mapper(data_set, did);
+    mapper.AddMember("receiveIndex", &gnss_raw_t::receiverIndex, DATA_TYPE_UINT8, "", "Receiver index (1=Rover, 2=Base). RTK positioning or RTK compassing must be enabled to stream raw GNSS data.", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("dataType", &gnss_raw_t::dataType, DATA_TYPE_UINT8, "", "Type of data (eRawDataType: 1=observations, 2=ephemeris, 3=glonassEphemeris, 4=SBAS, 5=baseAntenna, 6=IonosphereModel)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("obsCount", &gnss_raw_t::obsCount, DATA_TYPE_UINT8, "", "Number of observations in array (obsd_t) when dataType==1", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reserved", &gnss_raw_t::reserved, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember2("dataBuf", offsetof(gnss_raw_t, data.buf), DATA_TYPE_BINARY, "", "", 0, 1.0, GNSS_RAW_MESSAGE_BUF_SIZE);
 }
 
 static void PopulateMapStrobeInTime(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1396,53 +1865,47 @@ static void PopulateMapStrobeInTime(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("count", &strobe_in_time_t::count, DATA_TYPE_UINT16, "", "STROBE input serial index number", DATA_FLAGS_READ_ONLY);
 }
 
+template <typename TMapper>
+static void PopulateRtosTaskMapMembers(TMapper& mapper, int taskCount)
+{
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT8, "", "Number of times task took too long"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 2x in a row"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".quadGapCount",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].quadGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long 4x in a row"); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
+    for (int i=0; i<taskCount; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
+}
+
+template <typename TData, typename TMapper>
+static void PopulateRtosHeapSummaryMembers(TMapper& mapper)
+{
+    mapper.AddMember("freeHeapSize", &TData::freeHeapSize, DATA_TYPE_UINT32, "", "Heap unused bytes (high-water mark)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("mallocSize", &TData::mallocSize, DATA_TYPE_UINT32, "", "Total memory allocated using malloc()", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("freeSize", &TData::freeSize, DATA_TYPE_UINT32, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
+}
+
 static void PopulateMapRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<rtos_info_t> mapper(data_set, did);
-    mapper.AddMember("freeHeapSize", &rtos_info_t::freeHeapSize, DATA_TYPE_UINT32, "", "Heap unused bytes (high-water mark)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("mallocSize", &rtos_info_t::mallocSize, DATA_TYPE_UINT32, "", "Total memory allocated using malloc()", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("freeSize", &rtos_info_t::freeSize, DATA_TYPE_UINT32, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
-
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long twice in a row"); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
+    PopulateRtosHeapSummaryMembers<rtos_info_t>(mapper);
+    PopulateRtosTaskMapMembers(mapper, IMX_RTOS_NUM_TASKS);
 }
 
 static void PopulateMapGpxRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_rtos_info_t> mapper(data_set, did);
-    mapper.AddMember("freeHeapSize", &gpx_rtos_info_t::freeHeapSize, DATA_TYPE_UINT32, "", "Heap unused bytes (high-water mark)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("mallocSize", &gpx_rtos_info_t::mallocSize, DATA_TYPE_UINT32, "", "Total memory allocated using malloc()", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("freeSize", &gpx_rtos_info_t::freeSize, DATA_TYPE_UINT32, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
-
-
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_0); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_0); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long twice in a row"); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
-    for (int i=0; i<GPX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
+    PopulateRtosHeapSummaryMembers<gpx_rtos_info_t>(mapper);
+    PopulateRtosTaskMapMembers(mapper, GPX_RTOS_NUM_TASKS);
 }
 
 static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1471,10 +1934,10 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("can_period_mult[CIDDUAL_PX]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_PX, DATA_TYPE_UINT16, "", "Period multiplier for INS dual PX");
     mapper.AddMember2("can_period_mult[CIDDUAL_QY]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_QY, DATA_TYPE_UINT16, "", "Period multiplier for INS dual QY");
     mapper.AddMember2("can_period_mult[CIDDUAL_RZ]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_RZ, DATA_TYPE_UINT16, "", "Period multiplier for INS dual RZ");
-    mapper.AddMember2("can_period_mult[CIDGPS1_POS]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS1_POS, DATA_TYPE_UINT16, "", "Period multiplier for GPS1 position");
-    mapper.AddMember2("can_period_mult[CIDGPS2_POS]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS2_POS, DATA_TYPE_UINT16, "", "Period multiplier for GPS2 position");
-    mapper.AddMember2("can_period_mult[CIDGPS1_RTK_POS_REL]",       offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "Period multiplier for GPS1 RTK position relative");
-    mapper.AddMember2("can_period_mult[CIDGPS2_RTK_CMP_REL]",       offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GPS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "Period multiplier for GPS2 RTK compass relative");
+    mapper.AddMember2("can_period_mult[CIDGNSS1_POS]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS1_POS, DATA_TYPE_UINT16, "", "Period multiplier for GNSS1 position");
+    mapper.AddMember2("can_period_mult[CIDGNSS2_POS]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS2_POS, DATA_TYPE_UINT16, "", "Period multiplier for GNSS2 position");
+    mapper.AddMember2("can_period_mult[CIDGNSS1_RTK_POS_REL]",      offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "Period multiplier for GNSS1 RTK position relative");
+    mapper.AddMember2("can_period_mult[CIDGNSS2_RTK_CMP_REL]",      offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "Period multiplier for GNSS2 RTK compass relative");
     mapper.AddMember2("can_period_mult[CIDROLL_ROLLRATE]",          offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT16, "", "Period multiplier for roll rate");
     mapper.AddMember2("cantransmit_address[CID_INS_TIME]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_TIME, DATA_TYPE_UINT32, "", "Address for INS time", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_INS_STATUS]",        offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_STATUS, DATA_TYPE_UINT32, "", "Address for INS Status", DATA_FLAGS_DISPLAY_HEX);
@@ -1498,13 +1961,55 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("cantransmit_address[CID_DUAL_PX]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_PX, DATA_TYPE_UINT32, "", "Address for dual IMU PX", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_DUAL_QY]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_QY, DATA_TYPE_UINT32, "", "Address for INS dual IMU QY", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_DUAL_RZ]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_RZ, DATA_TYPE_UINT32, "", "Address for INS dual IMU RZ", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS1_POS]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS1_POS, DATA_TYPE_UINT32, "", "Address for GPS1_POS", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS2_POS]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS2_POS, DATA_TYPE_UINT32, "", "Address for GPS2 POS", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS1_RTK_POS_REL]",  offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GPS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GPS2_RTK_CMP_REL]",  offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GPS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GPS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS1_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_POS, DATA_TYPE_UINT32, "", "Address for GNSS1_POS", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS2_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_POS, DATA_TYPE_UINT32, "", "Address for GNSS2 POS", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GNSS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GNSS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate");
+    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate in kbps (bits 14:0; bit 15 = FD enable flag)")
+        .bitMask = 0x7FFF;
+    {
+        data_info_t& fdInfo = mapper.AddMember2("can_fd_enabled", offsetof(can_config_t, can_baudrate_kbps), DATA_TYPE_UINT16, "", "CAN FD enabled (0=disabled, 1=enabled; bit 15 of can_baudrate_kbps)", DATA_FLAGS_READ_ONLY);
+        fdInfo.bitMask = 0x8000;
+        fdInfo.bitShift = 15;
+    }
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
+}
+
+static void PopulateMapCanFdConfig(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<can_config_t> mapper(data_set, did);
+
+    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate in kbps (bits 14:0; bit 15 = FD enable flag)")
+        .bitMask = 0x7FFF;
+    {
+        data_info_t& fdInfo = mapper.AddMember2("can_fd_enabled", offsetof(can_config_t, can_baudrate_kbps), DATA_TYPE_UINT16, "", "CAN FD enabled (0=disabled, 1=enabled; bit 15 of can_baudrate_kbps)", DATA_FLAGS_READ_ONLY);
+        fdInfo.bitMask = 0x8000;
+        fdInfo.bitShift = 15;
+    }
+    mapper.AddMember("can_receive_address",  &can_config_t::can_receive_address,  DATA_TYPE_UINT32, "",     "CAN receive address", DATA_FLAGS_DISPLAY_HEX);
+
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_1]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_1,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-1");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_2]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_2,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-2 quaternion");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_3]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_3,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-3 MSL");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_4]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_4,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-4");
+    mapper.AddMember2("can_fd_period_mult[FDCID_PIMU]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_PIMU,              DATA_TYPE_UINT16, "", "FD period multiplier for PIMU");
+    mapper.AddMember2("can_fd_period_mult[FDCID_IMU]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_IMU,               DATA_TYPE_UINT16, "", "FD period multiplier for IMU");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS1_POS]",         offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS1_POS,         DATA_TYPE_UINT16, "", "FD period multiplier for GNSS1 position");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS2_POS]",         offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS2_POS,         DATA_TYPE_UINT16, "", "FD period multiplier for GNSS2 position");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS1 RTK relative");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS2 RTK compassing relative");
+
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_1]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_1,             DATA_TYPE_UINT32, "", "FD transmit address for INS-1",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_2]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_2,             DATA_TYPE_UINT32, "", "FD transmit address for INS-2",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_3]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_3,             DATA_TYPE_UINT32, "", "FD transmit address for INS-3",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_4]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_4,             DATA_TYPE_UINT32, "", "FD transmit address for INS-4",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_PIMU]",              offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_PIMU,              DATA_TYPE_UINT32, "", "FD transmit address for PIMU",                     DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_IMU]",               offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_IMU,               DATA_TYPE_UINT32, "", "FD transmit address for IMU",                      DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_POS,         DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 position",            DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_POS,         DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 position",            DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 RTK relative",       DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 RTK compassing relative", DATA_FLAGS_DISPLAY_HEX);
 }
 
 static void PopulateMapDiagMsg(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1539,14 +2044,14 @@ static void PopulateMapSensorsWTemp(data_set_t data_set[DID_COUNT], uint32_t did
 {
     DataMapper<sensors_w_temp_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
-    mapper.AddMember2("imu3.time",   offsetof(sensors_w_temp_t, imu3.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember2("imu3.status", offsetof(sensors_w_temp_t, imu3.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("imus.time",   offsetof(sensors_w_temp_t, imus.time), DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember2("imus.status", offsetof(sensors_w_temp_t, imus.status), DATA_TYPE_UINT32, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
-        mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
-        mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imus_t) + offsetof(sensors_w_temp_t, imu3.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
+        mapper.AddArray2("imu" + to_string(i) + ".pqr", i*sizeof(imui_t) + offsetof(sensors_w_temp_t, imus.I[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Uncalibrated sensor output."}, flags, C_RAD2DEG);
+        mapper.AddArray2("imu" + to_string(i) + ".acc", i*sizeof(imui_t) + offsetof(sensors_w_temp_t, imus.I[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Uncalibrated sensor output."}, flags);
     }
-    mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, 3, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
+    mapper.AddArray("temp", &sensors_w_temp_t::temp, DATA_TYPE_F32, MAX_IMU_DEVICES, {SYM_DEG_C}, {"Uncalibrated sensor output."}, flags);
     for (int i=0; i<MAX_MAG_DEVICES; i++)
     {
         mapper.AddArray2("mag" + to_string(i) + ".xyz", i*sizeof(mag_xyz_t) + offsetof(sensors_w_temp_t, mag[0].xyz), DATA_TYPE_F32, 3, {""}, {"Uncalibrated sensor output."}, flags);
@@ -1557,13 +2062,209 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sensors_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GNSS time of week (since Sunday morning).");
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Temperature compensation bias"}, flags);
         mapper.AddArray2("acc" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Temperature compensation bias"}, flags);
         mapper.AddArray2("mag" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].mag), DATA_TYPE_F32, 3, {""}, {"Temperature compensation bias"}, flags);
     }
+}
+
+static void PopulateMapSensorTCalGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_group_t> mapper(data_set, did);
+
+    // Gyros
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("gyr" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_t, gyr[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("gyr" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, gyr[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("gyr" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, gyr[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+
+    // Accels
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("acc" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_t, acc[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("acc" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, acc[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("acc" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, acc[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+
+    // Magnetometers
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddMember2("mag" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_group_t, mag[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("mag" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, mag[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("mag" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_group_t, mag[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+}
+
+static void PopulateMapSensorSCalInfo(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_cal_info_t> mapper(data_set, did);
+
+    mapper.AddMember2("size",       offsetof(sensor_cal_info_t, size), DATA_TYPE_UINT32, "", "Size of this struct", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember2("checksum",   offsetof(sensor_cal_info_t, checksum), DATA_TYPE_UINT32, "", "XOR of all bytes in this struct excluding size and checksum", DATA_FLAGS_READ_ONLY);
+
+    mapper.AddArray2 ("version",    offsetof(sensor_cal_info_t, version), DATA_TYPE_UINT8, 4, {""}, {"Calibration version [major, mid, minor, unused]"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddArray2 ("calDate",    offsetof(sensor_cal_info_t, calDate), DATA_TYPE_UINT8, 4, {""}, {"Calibration date [year-2000, month, day, unused]"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddArray2 ("calTime",    offsetof(sensor_cal_info_t, calTime), DATA_TYPE_UINT8, 4, {""}, {"Calibration time [hour, minute, second, unused]"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember2("devSerialNum", offsetof(sensor_cal_info_t, devSerialNum), DATA_TYPE_UINT32, "", "Device serial number", DATA_FLAGS_READ_ONLY);
+}
+
+static void PopulateMapSensorTCalGyrGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_gyr_group_t> mapper(data_set, did);
+
+    // Can be Gyros, Accel, or Magnetometer 
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_gyr_group_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_gyr_group_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_gyr_group_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+}
+
+static void PopulateMapSensorTCalAccGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_acc_group_t> mapper(data_set, did);
+
+    // Can be Gyros, Accel, or Magnetometer 
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_acc_group_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_acc_group_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_acc_group_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+}
+
+static void PopulateMapSensorTCalMagGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_tcal_mag_group_t> mapper(data_set, did);
+
+    // Can be Gyros, Accel, or Magnetometer 
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddMember2("sensor" + std::to_string(i) + ".numPts", i*sizeof(nvm_sensor_tcal_3axis_t) + offsetof(sensor_tcal_mag_group_t, sensor[0].numPts), DATA_TYPE_UINT32, "", "Number of points");
+        for (int p = 0; p < TCAL_MAX_NUM_POINTS; p++)
+        {
+            mapper.AddMember2("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".temp", i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_mag_group_t, sensor[0].pt[0].temp), DATA_TYPE_F32, "", "Temperature");
+            mapper.AddArray2 ("sensor" + std::to_string(i) + ".pt" + std::to_string(p) + ".ss",   i*sizeof(nvm_sensor_tcal_3axis_t) + p*sizeof(sensor_tcal_3axis_pt_t) + offsetof(sensor_tcal_mag_group_t, sensor[0].pt[0].ss), DATA_TYPE_F32, 3, {""}, {"Steady state bias X axis"});
+        }
+    }
+}
+
+static void PopulateMapSensorMCalGyrGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_gyr_group_t> mapper(data_set, did);
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_gyr_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Gyr ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_gyr_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Gyr biases (additive to temp comp)"});
+    }
+}
+
+static void PopulateMapSensorMCalAccGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_acc_group_t> mapper(data_set, did);
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_acc_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Acc ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_acc_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Acc biases (additive to temp comp)"});
+    }
+}
+
+static void PopulateMapSensorMCalMagGroup(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_mcal_mag_group_t> mapper(data_set, did);
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddArray2("sensor" + std::to_string(i) + ".orth", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_mag_group_t, sensor[0].orth), DATA_TYPE_F32, 9, {""}, {"Mag ortho-normalization (cross-axis scalars)"});
+        mapper.AddArray2("sensor" + std::to_string(i) + ".bias", i*sizeof(sensor_motion_cal_t) + offsetof(sensor_mcal_mag_group_t, sensor[0].bias), DATA_TYPE_F32, 3, {""}, {"Mag biases (additive to temp comp)"});
+    }
+}
+
+static void PopulateMapSensorCompensation(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<sensor_compensation_t> mapper(data_set, did);
+    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
+    std::string str = 
+        std::to_string(SC_RUNTIME) + "=Runtime, Tcal[" +
+        std::to_string(SC_TCAL_INIT) + "=Init, " +
+        std::to_string(SC_TCAL_RUNNING) + "=Running, " +
+        std::to_string(SC_TCAL_STOP) + "=Stop, " +
+        std::to_string(SC_TCAL_DONE) + "=Done], MCAL[" +
+        std::to_string(SC_MCAL_SAMPLE_INIT) + "=Init, " +
+        std::to_string(SC_MCAL_SAMPLE_MEAN_UCAL) + "=UCAL, " +
+        std::to_string(SC_MCAL_SAMPLE_MEAN_TCAL) + "=TCAL, " +
+        std::to_string(SC_MCAL_SAMPLE_MEAN_MCAL) + "=MCAL, " +
+        std::to_string(SC_LPF_SAMPLE) + "=LPF 0.01Hz, " +
+        std::to_string(SC_LPF_SAMPLE_FAST) + "=LPF 1Hz ";
+
+    mapper.AddMember("timeMs", &sensor_compensation_t::timeMs, DATA_TYPE_UINT32, "ms", "Time since boot up", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("calState", &sensor_compensation_t::calState, DATA_TYPE_UINT32, "", str);
+    mapper.AddMember("status", &sensor_compensation_t::status, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sampleCount", &sensor_compensation_t::sampleCount, DATA_TYPE_UINT32, "", "Used in averaging");
+    mapper.AddArray("alignAccel", &sensor_compensation_t::alignAccel, DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Alignment acceleration"}, flags);
+    // Gyros
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("pqr" + std::to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfLsb), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Low-pass filtered LSB"}, flags, C_RAD2DEG);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
+        mapper.AddArray2("pqr" + std::to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].k), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Slope"}, flags, C_RAD2DEG);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tempRampRate), DATA_TYPE_F32, SYM_DEG_C_PER_S, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("pqr" + std::to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, pqr[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    }
+    // Accels
+    for (int i=0; i<MAX_IMU_DEVICES; i++)
+    {
+        mapper.AddArray2("acc" + std::to_string(i) + ".lpfLsb",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfLsb), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Low-pass filtered LSB"}, flags);
+        mapper.AddMember2("acc" + std::to_string(i) + ".lpfTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
+        mapper.AddArray2("acc" + std::to_string(i) + ".k",              i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].k), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Slope"}, flags);
+        mapper.AddMember2("acc" + std::to_string(i) + ".temp",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddMember2("acc" + std::to_string(i) + ".tempRampRate",   i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tempRampRate), DATA_TYPE_F32, SYM_M_PER_S_2, "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+        mapper.AddMember2("acc" + std::to_string(i) + ".tci",            i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("acc" + std::to_string(i) + ".numTcPts",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("acc" + std::to_string(i) + ".dtTemp",         i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, acc[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    }
+
+    // Magnetometers
+    for (int i=0; i<MAX_MAG_DEVICES; i++)
+    {
+        mapper.AddArray2("mag" + std::to_string(i) + ".lpfLsb",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfLsb), DATA_TYPE_F32, 3, {""}, {"Low-pass filtered LSB"}, flags);
+        mapper.AddMember2("mag" + std::to_string(i) + ".lpfTemp",       i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].lpfTemp), DATA_TYPE_F32, SYM_DEG_C, "Low-pass filtered temperature", flags);
+        mapper.AddArray2("mag" + std::to_string(i) + ".k",             i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].k), DATA_TYPE_F32, 3, {""}, {"Slope"}, flags);
+        mapper.AddMember2("mag" + std::to_string(i) + ".temp",          i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].temp), DATA_TYPE_F32, SYM_DEG_C, "Temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+        mapper.AddMember2("mag" + std::to_string(i) + ".tempRampRate",  i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tempRampRate), DATA_TYPE_F32, "", "Temperature ramp rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+        mapper.AddMember2("mag" + std::to_string(i) + ".tci",           i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].tci), DATA_TYPE_UINT32, "", "Temp comp index", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("mag" + std::to_string(i) + ".numTcPts",      i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].numTcPts), DATA_TYPE_UINT32, "", "Number of temp comp points", DATA_FLAGS_READ_ONLY);
+        mapper.AddMember2("mag" + std::to_string(i) + ".dtTemp",        i*sizeof(sensor_comp_unit_t) + offsetof(sensor_compensation_t, mag[0].dtTemp), DATA_TYPE_F32, SYM_DEG_C, "Delta from last tc point to current temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    }
+
+    // Reference IMU
+    mapper.AddArray2("referenceImu.pqr", offsetof(sensor_compensation_t, referenceImu.pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Reference IMU angular rate"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
+    mapper.AddArray2("referenceImu.acc", offsetof(sensor_compensation_t, referenceImu.acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Reference IMU linear acceleration"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    // Reference Mag
+    mapper.AddArray("referenceMag", &sensor_compensation_t::referenceMag, DATA_TYPE_F32, 3, {""}, {"Reference magnetometer"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1575,14 +2276,14 @@ static void PopulateMapInl2MagObsInfo(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("calibrated", &inl2_mag_obs_info_t::calibrated, DATA_TYPE_UINT32, "", "Calibration data present");
     mapper.AddMember("auto_recal", &inl2_mag_obs_info_t::auto_recal, DATA_TYPE_UINT32, "", "Allow mag to auto-recalibrate");
     mapper.AddMember("outlier", &inl2_mag_obs_info_t::outlier, DATA_TYPE_UINT32, "", "Bad sample data");
-    mapper.AddMember("magHdg", &inl2_mag_obs_info_t::magHdg, DATA_TYPE_F32, "deg", "Heading from magnetometer", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
-    mapper.AddMember("insHdg", &inl2_mag_obs_info_t::insHdg, DATA_TYPE_F32, "deg", "Heading from INS", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
-    mapper.AddMember("magInsHdgDelta", &inl2_mag_obs_info_t::magInsHdgDelta, DATA_TYPE_F32, "deg", "Difference between magHdg and insHdg", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE);
+    mapper.AddMember("magHdg", &inl2_mag_obs_info_t::magHdg, DATA_TYPE_F32, "deg", "Heading from magnetometer", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE, C_RAD2DEG);
+    mapper.AddMember("insHdg", &inl2_mag_obs_info_t::insHdg, DATA_TYPE_F32, "deg", "Heading from INS", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE, C_RAD2DEG);
+    mapper.AddMember("magInsHdgDelta", &inl2_mag_obs_info_t::magInsHdgDelta, DATA_TYPE_F32, "deg", "Difference between magHdg and insHdg", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_ANGLE, C_RAD2DEG);
     mapper.AddMember("nis", &inl2_mag_obs_info_t::nis, DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_5);
     mapper.AddMember("nis_threshold", &inl2_mag_obs_info_t::nis_threshold, DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray("Wcal", &inl2_mag_obs_info_t::Wcal, DATA_TYPE_F32, 9, {""}, {""}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("activeCalSet", &inl2_mag_obs_info_t::activeCalSet, DATA_TYPE_UINT32, "", "Active calibration set (0 or 1)");
-    mapper.AddMember("magHdgOffset", &inl2_mag_obs_info_t::magHdgOffset, DATA_TYPE_F32, "deg", "Offset from mag heading to ins heading estimate", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("magHdgOffset", &inl2_mag_obs_info_t::magHdgOffset, DATA_TYPE_F32, "deg", "Offset from mag heading to ins heading estimate", DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
     mapper.AddMember("Tcal", &inl2_mag_obs_info_t::Tcal, DATA_TYPE_F32, "", "Scaled computed variance of calibrated magnetometer samples. Above 5 is bad.", DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray("bias_cal", &inl2_mag_obs_info_t::bias_cal, DATA_TYPE_F32, 3, {""}, {""}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
@@ -1631,7 +2332,7 @@ static void PopulateMapRosCovariancePoseTwist(data_set_t data_set[DID_COUNT], ui
 #if PLATFORM_IS_EMBEDDED
 cISDataMappings* cISDataMappings::s_map;
 #else
-cISDataMappings cISDataMappings::s_map;
+cISDataMappings* cISDataMappings::s_map = nullptr;
 #endif
 
 const char* const cISDataMappings::m_dataIdNames[] =
@@ -1642,32 +2343,32 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_PIMU",                         // 3
     "DID_INS_1",                        // 4
     "DID_INS_2",                        // 5
-    "DID_GPS1_RCVR_POS",                // 6
+    "DID_GNSS1_RCVR_POS",                // 6
     "DID_SYS_CMD",                      // 7
     "DID_NMEA_BCAST_PERIOD",            // 8
     "DID_RMC",                          // 9
     "DID_SYS_PARAMS",                   // 10
     "DID_SYS_SENSORS",                  // 11
     "DID_FLASH_CONFIG",                 // 12
-    "DID_GPS1_POS",                     // 13
-    "DID_GPS2_POS",                     // 14
-    "DID_GPS1_SAT",                     // 15
-    "DID_GPS2_SAT",                     // 16
-    "DID_GPS1_VERSION",                 // 17
-    "DID_GPS2_VERSION",                 // 18
+    "DID_GNSS1_POS",                     // 13
+    "DID_GNSS2_POS",                     // 14
+    "DID_GNSS1_SAT",                     // 15
+    "DID_GNSS2_SAT",                     // 16
+    "DID_GNSS1_VERSION",                 // 17
+    "DID_GNSS2_VERSION",                 // 18
     "DID_MAG_CAL",                      // 19
-    "DID_UNUSED_20",                    // 20
-    "DID_GPS1_RTK_POS_REL",             // 21
-    "DID_GPS1_RTK_POS_MISC",            // 22
+    "DID_IMUS",                         // 20
+    "DID_GNSS1_RTK_POS_REL",             // 21
+    "DID_GNSS1_RTK_POS_MISC",            // 22
     "DID_FEATURE_BITS",                 // 23
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
     "DID_SENSORS_TC_BIAS",              // 26
-    "DID_GPS2_TIMEPULSE",               // 27
+    "DID_GNSS2_TIMEPULSE",               // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
-    "DID_GPS1_VEL",                     // 30
-    "DID_GPS2_VEL",                     // 31
+    "DID_GNSS1_VEL",                     // 30
+    "DID_GNSS2_VEL",                     // 31
     "DID_HDW_PARAMS",                   // 32
     "DID_NVR_MANAGE_USERPAGE",          // 33
     "DID_NVR_USERPAGE_SN",              // 34
@@ -1677,11 +2378,11 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_RTOS_INFO",                    // 38
     "DID_DEBUG_ARRAY",                  // 39
     "DID_SENSORS_MCAL",                 // 40
-    "DID_GPS1_TIMEPULSE",               // 41
+    "DID_GNSS1_TIMEPULSE",               // 41
     "DID_CAL_SC",                       // 42
-    "DID_CAL_TEMP_COMP",                // 43
-    "DID_CAL_MOTION",                   // 44
-    "DID_GPS1_SIG",                     // 45
+    "DID_UNUSED_43",                    // 43
+    "DID_CANFD_CONFIG",                 // 44
+    "DID_GNSS1_SIG",                     // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
     "DID_REFERENCE_MAGNETOMETER",       // 47
     "DID_INL2_STATES",                  // 48
@@ -1690,14 +2391,14 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_INL2_MISC",                    // 51
     "DID_MAGNETOMETER",                 // 52
     "DID_BAROMETER",                    // 53
-    "DID_GPS1_RTK_POS",                 // 54
+    "DID_GNSS1_RTK_POS",                 // 54
     "DID_ROS_COVARIANCE_POSE_TWIST",    // 55
     "DID_COMMUNICATIONS_LOOPBACK",      // 56
-    "DID_IMU3_UNCAL",                   // 57
+    "DID_IMUS_UNCAL",                   // 57
     "DID_IMU",                          // 58
     "DID_INL2_MAG_OBS_INFO",            // 59
-    "DID_GPS_BASE_RAW",                 // 60
-    "DID_GPS_RTK_OPT",                  // 61
+    "DID_GNSS_BASE_RAW",                 // 60
+    "DID_GNSS_RTK_OPT",                  // 61
     "DID_REFERENCE_PIMU",               // 62
     "DID_MANUFACTURING_INFO",           // 63
     "DID_BIT",                          // 64
@@ -1705,12 +2406,12 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_INS_4",                        // 66
     "DID_INL2_NED_SIGMA",               // 67
     "DID_STROBE_IN_TIME",               // 68
-    "DID_GPS1_RAW",                     // 69
-    "DID_GPS2_RAW",                     // 70
+    "DID_GNSS1_RAW",                     // 69
+    "DID_GNSS2_RAW",                     // 70
     "DID_WHEEL_ENCODER",                // 71
     "DID_DIAGNOSTIC_MESSAGE",           // 72
     "DID_SURVEY_IN",                    // 73
-    "DID_CAL_SC_INFO",                  // 74
+    "DID_UNUSED_74",                  // 74
     "DID_PORT_MONITOR",                 // 75
     "DID_RTK_STATE",                    // 76
     "DID_RTK_PHASE_RESIDUAL",           // 77
@@ -1720,41 +2421,41 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_FLASH_CFG",                // 81
     "DID_EVB_DEBUG_ARRAY",              // 82
     "DID_EVB_RTOS_INFO",                // 83
-    "DID_GPS2_SIG",                     // 84
+    "DID_GNSS2_SIG",                     // 84
     "DID_IMU_MAG",                      // 85
     "DID_PIMU_MAG",                     // 86
     "DID_GROUND_VEHICLE",               // 87
     "DID_POSITION_MEASUREMENT",         // 88
     "DID_RTK_DEBUG_2",                  // 89
     "DID_CAN_CONFIG",                   // 90
-    "DID_GPS2_RTK_CMP_REL",             // 91
-    "DID_GPS2_RTK_CMP_MISC",            // 92
+    "DID_GNSS2_RTK_CMP_REL",             // 91
+    "DID_GNSS2_RTK_CMP_MISC",            // 92
     "DID_EVB_DEV_INFO",                 // 93
     "DID_INFIELD_CAL",                  // 94 
     "DID_REFERENCE_IMU",                // 95 
-    "DID_IMU3_RAW",                     // 96 
+    "DID_IMUS_RAW",                     // 96 
     "DID_IMU_RAW",                      // 97 
     "DID_FIRMWARE_UPDATE",              // 98 
     "DID_RUNTIME_PROFILER",             // 99 
-    "UNUSED_100",                       // 100
-    "UNUSED_101",                       // 101
-    "UNUSED_102",                       // 102
-    "UNUSED_103",                       // 103
-    "UNUSED_104",                       // 104
-    "UNUSED_105",                       // 105
+    "DID_CAL_TEMP_COMP_GYR",            // 100
+    "DID_CAL_TEMP_COMP_ACC",            // 101
+    "DID_CAL_TEMP_COMP_MAG",            // 102
+    "DID_CAL_MOTION_GYR",               // 103
+    "DID_CAL_MOTION_ACC",               // 104
+    "DID_CAL_MOTION_MAG",               // 105
     "UNUSED_106",                       // 106
     "UNUSED_107",                       // 107
     "UNUSED_108",                       // 108
     "UNUSED_109",                       // 109
-    "DID_EVB_LUNA_FLASH_CFG",           // 110
-    "DID_EVB_LUNA_STATUS",              // 111
-    "DID_EVB_LUNA_SENSORS",             // 112
-    "DID_EVB_LUNA_REMOTE_KILL",         // 113
-    "DID_EVB_LUNA_VELOCITY_CONTROL",    // 114
-    "DID_EVB_LUNA_VELOCITY_COMMAND",    // 115
-    "DID_EVB_LUNA_AUX_COMMAND",         // 116
-    "",                                 // 117
-    "",                                 // 118
+    "UNUSED_110",                       // 110
+    "UNUSED_111",                       // 111
+    "UNUSED_112",                       // 112
+    "UNUSED_113",                       // 113
+    "UNUSED_114",                       // 114
+    "UNUSED_115",                       // 115
+    "UNUSED_116",                       // 116
+    "UNUSED_117",                       // 117
+    "UNUSED_118",                       // 118
     "DID_EVENT",                        // 119
     "DID_GPX_DEV_INFO",                 // 120
     "DID_GPX_FLASH_CFG",                // 121
@@ -1764,7 +2465,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_BIT",                      // 125
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
-    "",                                 // 128
+    "DID_GPX_SYS_FAULT",                // 128
     "",                                 // 129
     "",                                 // 130
     ""                                  // 131
@@ -1804,9 +2505,11 @@ cISDataMappings::cISDataMappings()
     // SENSORS
     PopulateMapPimu(m_data_set, DID_PIMU, "Preintegrated IMU.");
     PopulateMapImu(m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
-    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
-    PopulateMapImu3(m_data_set, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
-    PopulateMapImu3(m_data_set, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
+    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMUS_RAW.");
+    PopulateMapImus(m_data_set, DID_IMUS_RAW, "5 IMU data calibrated from DID_IMUS_UNCAL.");
+    PopulateMapImus(m_data_set, DID_IMUS_UNCAL, "5 IMU data directly from sensor (uncalibrated).");
+
+    PopulateMapImus(m_data_set, DID_IMUS, "5 IMU data down-sampled from IMU rate to navigation rate.");
 
     PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
     PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
@@ -1816,33 +2519,33 @@ cISDataMappings::cISDataMappings()
     PopulateMapBarometer(m_data_set, DID_BAROMETER);
     PopulateMapWheelEncoder(m_data_set, DID_WHEEL_ENCODER);
 
-    PopulateMapGpsPos(m_data_set, DID_GPS1_RTK_POS);
-    PopulateMapGpsRtkRel(m_data_set, DID_GPS1_RTK_POS_REL);
-    PopulateMapGpsRtkMisc(m_data_set, DID_GPS1_RTK_POS_MISC);
-    PopulateMapGpsRtkRel(m_data_set, DID_GPS2_RTK_CMP_REL);
-    PopulateMapGpsRtkMisc(m_data_set, DID_GPS2_RTK_CMP_MISC);
+    PopulateMapGnssPos(m_data_set, DID_GNSS1_RTK_POS);
+    PopulateMapGnssRtkRel(m_data_set, DID_GNSS1_RTK_POS_REL);
+    PopulateMapGnssRtkMisc(m_data_set, DID_GNSS1_RTK_POS_MISC);
+    PopulateMapGnssRtkRel(m_data_set, DID_GNSS2_RTK_CMP_REL);
+    PopulateMapGnssRtkMisc(m_data_set, DID_GNSS2_RTK_CMP_MISC);
 
-    PopulateMapGpsPos(m_data_set, DID_GPS1_POS);
-    PopulateMapGpsPos(m_data_set, DID_GPS2_POS);
-    PopulateMapGpsVel(m_data_set, DID_GPS1_VEL);
-    PopulateMapGpsVel(m_data_set, DID_GPS2_VEL);
-    PopulateMapGpsPos(m_data_set, DID_GPS1_RCVR_POS);
+    PopulateMapGnssPos(m_data_set, DID_GNSS1_POS);
+    PopulateMapGnssPos(m_data_set, DID_GNSS2_POS);
+    PopulateMapGnssVel(m_data_set, DID_GNSS1_VEL);
+    PopulateMapGnssVel(m_data_set, DID_GNSS2_VEL);
+    PopulateMapGnssPos(m_data_set, DID_GNSS1_RCVR_POS);
 
 #if 0    // Too much data, we don't want to log this. WHJ
-    PopulateMapGpsSat(m_data_set, DID_GPS1_SAT);
-    PopulateMapGpsSat(m_data_set, DID_GPS2_SAT);
-    PopulateMapGpsSig(m_data_set, DID_GPS1_SIG);
-    PopulateMapGpsSig(m_data_set, DID_GPS2_SIG);
+    PopulateMapGnssSat(m_data_set, DID_GNSS1_SAT);
+    PopulateMapGnssSat(m_data_set, DID_GNSS2_SAT);
+    PopulateMapGnssSig(m_data_set, DID_GNSS1_SIG);
+    PopulateMapGnssSig(m_data_set, DID_GNSS2_SIG);
 #endif
 
-    PopulateMapGpsVersion(m_data_set, DID_GPS1_VERSION);
-    PopulateMapGpsVersion(m_data_set, DID_GPS2_VERSION);
-    PopulateMapGpsTimepulse(m_data_set, DID_GPS1_TIMEPULSE);
-    PopulateMapGpsTimepulse(m_data_set, DID_GPS2_TIMEPULSE);
+    PopulateMapGnssVersion(m_data_set, DID_GNSS1_VERSION);
+    PopulateMapGnssVersion(m_data_set, DID_GNSS2_VERSION);
+    PopulateMapGnssTimepulse(m_data_set, DID_GNSS1_TIMEPULSE);
+    PopulateMapGnssTimepulse(m_data_set, DID_GNSS2_TIMEPULSE);
 
-    PopulateMapGpsRaw(m_data_set, DID_GPS1_RAW);
-    PopulateMapGpsRaw(m_data_set, DID_GPS2_RAW);
-    PopulateMapGpsRaw(m_data_set, DID_GPS_BASE_RAW);
+    PopulateMapGnssRaw(m_data_set, DID_GNSS1_RAW);
+    PopulateMapGnssRaw(m_data_set, DID_GNSS2_RAW);
+    PopulateMapGnssRaw(m_data_set, DID_GNSS_BASE_RAW);
 
     PopulateMapStrobeInTime(m_data_set, DID_STROBE_IN_TIME);
     PopulateMapSysSensors(m_data_set, DID_SYS_SENSORS);
@@ -1869,12 +2572,14 @@ cISDataMappings::cISDataMappings()
     PopulateMapRtosInfo(            m_data_set, DID_RTOS_INFO);
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
+    PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
     PopulateMapPortMonitor(m_data_set, DID_GPX_PORT_MONITOR);
     PopulateMapNmeaMsgs(m_data_set, DID_NMEA_BCAST_PERIOD);
     PopulateMapCanConfig(m_data_set, DID_CAN_CONFIG);
+    PopulateMapCanFdConfig(m_data_set, DID_CANFD_CONFIG);
     PopulateMapRmc(m_data_set, DID_RMC);
     PopulateMapRmc(m_data_set, DID_GPX_RMC);
     PopulateMapISEvent(m_data_set, DID_EVENT);
@@ -1892,6 +2597,14 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
+    PopulateMapSensorSCalInfo(       m_data_set, DID_CAL_SC);
+    PopulateMapSensorTCalGyrGroup(   m_data_set, DID_CAL_TEMP_COMP_GYR);
+    PopulateMapSensorTCalAccGroup(   m_data_set, DID_CAL_TEMP_COMP_ACC);
+    PopulateMapSensorTCalMagGroup(   m_data_set, DID_CAL_TEMP_COMP_MAG);
+    PopulateMapSensorMCalGyrGroup(   m_data_set, DID_CAL_MOTION_GYR);
+    PopulateMapSensorMCalAccGroup(   m_data_set, DID_CAL_MOTION_ACC);
+    PopulateMapSensorMCalMagGroup(   m_data_set, DID_CAL_MOTION_MAG);
+    PopulateMapSensorCompensation(   m_data_set, DID_SCOMP);
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)
@@ -1912,11 +2625,14 @@ data_set_t* cISDataMappings::DataSet(uint32_t did)
     {
         s_map = new cISDataMappings();
     }
+#else
+    if (s_map == nullptr)
+    {
+        s_map = new cISDataMappings();
+    }
+#endif
 
     return &(s_map->m_data_set[did]);
-#else
-    return &(s_map.m_data_set[did]);
-#endif
 }
 
 const char* cISDataMappings::DataName(uint32_t did)
@@ -2012,10 +2728,10 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     switch (did)
     {
     case DID_DEV_INFO:
-    case DID_GPS1_VERSION:
-    case DID_GPS2_VERSION:
-    case DID_GPS1_TIMEPULSE:
-    case DID_GPS2_TIMEPULSE:
+    case DID_GNSS1_VERSION:
+    case DID_GNSS2_VERSION:
+    case DID_GNSS1_TIMEPULSE:
+    case DID_GNSS2_TIMEPULSE:
     case DID_SYS_SENSORS:
     case DID_SENSORS_ADC:
     case DID_SENSORS_ADC_SIGMA:
@@ -2031,10 +2747,13 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_NVR_USERPAGE_G0:
     case DID_NVR_USERPAGE_G1:
     case DID_FLASH_CONFIG:
-    case DID_CAL_SC_INFO:
     case DID_CAL_SC:
-    case DID_CAL_TEMP_COMP:
-    case DID_CAL_MOTION:
+    case DID_CAL_TEMP_COMP_GYR:
+    case DID_CAL_TEMP_COMP_ACC:
+    case DID_CAL_TEMP_COMP_MAG:
+    case DID_CAL_MOTION_GYR:
+    case DID_CAL_MOTION_ACC:
+    case DID_CAL_MOTION_MAG:
     case DID_RTOS_INFO:
     case DID_SYS_CMD:
     case DID_NMEA_BCAST_PERIOD:
@@ -2049,6 +2768,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_SURVEY_IN:
     case DID_PORT_MONITOR:
     case DID_CAN_CONFIG:
+    case DID_CANFD_CONFIG:
     case DID_INFIELD_CAL:
     case DID_REFERENCE_IMU:
     case DID_REFERENCE_PIMU:
@@ -2240,6 +2960,18 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         flags &= (~DATA_FLAGS_FIXED_DECIMAL_MASK);
     }
 
+    // Apply bitmask/bitshift for integer types (used to display packed bit-fields as separate fields)
+    uint8_t maskedBuffer[8] = {};
+    if (info.bitMask != ~0ULL || info.bitShift != 0)
+    {
+        uint64_t rawVal = 0;
+        uint32_t sz = (info.size < (uint32_t)sizeof(rawVal)) ? info.size : (uint32_t)sizeof(rawVal);
+        memcpy(&rawVal, ptr, sz);
+        rawVal = (rawVal & info.bitMask) >> info.bitShift;
+        memcpy(maskedBuffer, &rawVal, sz);
+        ptr = maskedBuffer;
+    }
+
     return VariableToString(info.type, (eDataFlags)flags, ptr, info.size, stringBuffer, conversion, json);
 }
 
@@ -2374,6 +3106,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
     return true;
 }
 
+#if defined(YAML_CPP_API)
 bool cISDataMappings::DataToYaml(int did, const uint8_t* dataPtr, YAML::Node& output)
 {
     return DataToYaml(did, dataPtr, output, YAML::Node());
@@ -2510,6 +3243,7 @@ bool cISDataMappings::YamlToData(int did, const YAML::Node& yaml, uint8_t* dataP
 
     return success;
 }
+#endif
 
 void cISDataMappings::AppendMemoryUsage(std::vector<MemoryUsage>& usageVec, void* newPtr, size_t newSize)
 {
@@ -2791,9 +3525,9 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
     }
     
     // raw data types with observation use a custom timestamp function
-    if (hdr->id == DID_GPS1_RAW || hdr->id == DID_GPS2_RAW || hdr->id == DID_GPS_BASE_RAW)
+    if (hdr->id == DID_GNSS1_RAW || hdr->id == DID_GNSS2_RAW || hdr->id == DID_GNSS_BASE_RAW)
     {
-        gps_raw_t* raw = (gps_raw_t*)buf;
+        gnss_raw_t* raw = (gnss_raw_t*)buf;
         if (raw->dataType == eRawDataType::raw_data_type_observation && raw->obsCount>0)
         {
             const obsd_t& obs = raw->data.obs[0];

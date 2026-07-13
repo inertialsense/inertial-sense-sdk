@@ -94,15 +94,13 @@ namespace utils {
      * @param args
      * @return
      */
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Wformat-security"
+    inline std::string string_format(const std::string& format) {
+        return format;
+    }
+
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {
-        if constexpr (sizeof...(args) == 0) {
-            return format;  // If no arguments, return the format string as is
-        }
-
-        int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+        int size_s = std::snprintf((char*)nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
         if (size_s <= 0) {
             throw std::runtime_error("Error during formatting.");
         }
@@ -112,7 +110,6 @@ namespace utils {
         std::snprintf(buf.get(), size, format.c_str(), args ...);
         return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
     }
-//#pragma GCC diagnostic pop
 
     /**
      * Combine all elements of a container denoted by the start and ending iterators, to join into a
@@ -226,9 +223,21 @@ namespace utils {
         DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
     };
 
-    std::string getHardwareAsString(const dev_info_t& devInfo);
+    std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
+    std::string getHardwareAsString(is_hardware_t hdwId);
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
     std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
+
+    /// Parse a hardware identity string (inverse of getHardwareAsString). Accepts "<TYPE>-<major>.<minor>[.<p2>[.<p3>]]"
+    /// e.g. "IMX-5.0", "GPX-1.0.2", "uINS-3.2". Populates devInfo.hardwareType and hardwareVer[0..3].
+    /// Returns false on unrecognized type prefix or malformed version — caller should leave devInfo unchanged.
+    bool parseHardwareFromString(const std::string& s, dev_info_t& devInfo);
+
+    /// Parse a firmware version string (inverse of getFirmwareAsString). Accepts optional "fw" prefix followed by
+    /// "<M>.<m>.<p>" and an optional build-type suffix "-alpha|-beta|-rc|-devel|-snap" with optional ".<build>".
+    /// Populates devInfo.firmwareVer[0..3] and buildType ('a'|'b'|'c'|'d'|'s'|0 for production/no suffix).
+    /// The legacy "-r" suffix and unknown suffixes are normalized to 0 (production). Returns false on malformed input.
+    bool parseFirmwareFromString(const std::string& s, dev_info_t& devInfo);
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 
     std::string getCurrentTimestamp();
@@ -241,6 +250,7 @@ namespace utils {
     bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
     int64_t compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
+    int64_t compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b, uint16_t fields);
 
     // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
     // bool devInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
@@ -272,6 +282,73 @@ namespace utils {
     uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
 
     bool validDomainName(const std::string& domainName);
+
+    /**
+     * @brief Normalized components of a parsed URI, ready for direct use by the SDK.
+     *
+     * Wraps FIX8::uri parsing and centralizes the conventions that were previously
+     * duplicated across the port factories and correction services: IPv6 literal hosts
+     * are returned with their surrounding brackets stripped (e.g. "::1", not "[::1]"),
+     * and the port is converted to a validated integer (1..65535) rather than a raw
+     * string, with -1 indicating an absent, malformed, or out-of-range port.
+     */
+    struct UriParts {
+        std::string scheme;     //!< URI scheme as provided (e.g. "tcp", "ntrip"); empty if absent
+        std::string host;       //!< host with IPv6 brackets stripped; empty if absent
+        int         port = -1;  //!< port number 1..65535, or -1 if absent/malformed/out-of-range
+        std::string user;       //!< userinfo username; empty if absent
+        std::string password;   //!< userinfo password; empty if absent
+        std::string path;       //!< path component (e.g. an NTRIP mountpoint); empty if absent
+        std::string query;      //!< query component; empty if absent
+
+        bool hasScheme() const { return !scheme.empty(); }     //!< true if a scheme was present
+        bool hasHost() const { return !host.empty(); }         //!< true if a host was present
+        bool hasPort() const { return port >= 0; }             //!< true if a valid port was present
+        bool hasUserinfo() const { return !user.empty() || !password.empty(); } //!< true if userinfo was present
+    };
+
+    /**
+     * @brief Parse a URI string into its normalized components.
+     *
+     * This is the single, codebase-wide entry point for breaking a URI into its parts; prefer it
+     * over calling FIX8::uri directly so the IPv6-bracket and port-validation conventions stay
+     * consistent. Note that FIX8::uri requires an authority introducer ("//") for the host/port
+     * to be parsed (e.g. "tcp://host:port", not "tcp:host:port").
+     *
+     * @param uriStr the URI to parse (e.g. "tcp://[::1]:7777", "ntrip://user:pass@host:2101/MOUNT")
+     * @return a UriParts with each present component populated; absent components are left empty (port == -1)
+     */
+    UriParts parseUri(const std::string& uriStr);
+
+    /**
+     * @brief Parse a URI, falling back to a second "defaults" URI for any component the primary omits.
+     *
+     * Each component absent from @p uriStr (scheme, host, port, user, password, path, query) is filled
+     * from the corresponding component of @p defaultsUri. This lets callers express their defaults as a
+     * URI string instead of patching individual fields — e.g. parseUri(arg, "tcp://127.0.0.1:7777")
+     * yields the host/port the caller wants whenever @p uriStr leaves them out.
+     *
+     * @param uriStr      the URI to parse
+     * @param defaultsUri a URI supplying default values for any component @p uriStr omits
+     * @return a UriParts with present components from @p uriStr and the remainder from @p defaultsUri
+     */
+    UriParts parseUri(const std::string& uriStr, const std::string& defaultsUri);
+
+    /**
+     * Encodes the 3x uint32_t STM32 UID registers into the UUID format required by the calibration-db API.
+     * Encoding: UID registers as LE uint32_t bytes, swapped to BE for UUID fields 1 & 2,
+     * field 3 = 0x8EF4, field 4 prefix = 0x99 0x6B.
+     * Example: SN522807 → "20313933-534B-8EF4-996B-5016002b0016"
+     * @param uid Array of 3 uint32_t values from manufacturing_info_t.uid[0..2]
+     * @return UUID string formatted as "xxxxxxxx-xxxx-8EF4-996B-xxxxxxxxxxxx"
+     */
+    std::string encodeSTM32UID(const uint32_t uid[3]);
+
+    /**
+     * Generates a random UUID v4 string.
+     * @return UUID string formatted as "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+     */
+    std::string generateUUIDv4();
 };
 
 class ByteBuffer : public std::streambuf {
@@ -370,8 +447,10 @@ private:
 };
 
 
+// #define FN_PROFILER_ENABLED
 class FnProfiler {
 public:
+#ifdef FN_PROFILER_ENABLED
     // Constructor records the start time and function name
     FnProfiler(const std::string& functionName, uint32_t threshold = 100) : m_functionName(functionName), m_threshold(threshold), m_startTime(std::chrono::high_resolution_clock::now()) { }
 
@@ -382,13 +461,12 @@ public:
         if (duration.count() < m_threshold)
             return;
 
-        std::cout << utils::string_format("'%s' executed in %lluus", m_functionName.c_str(), duration.count()) << std::endl;
+        log_debug(IS_LOG_FN_PROFILER, "'%s' executed in %lluus", m_functionName.c_str(), duration.count());
         auto lastMark = m_startTime;
-        for (auto [m, msg] : markers) {
+        for (const auto& [m, msg] : markers) {
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(m - m_startTime);
             auto span = std::chrono::duration_cast<std::chrono::microseconds>(m - lastMark);
-            float pct = ((float)span.count() / (float)duration.count()) * 100.0f;
-            std::cout << utils::string_format("    %7uus (%7uus, %4.1f%%) ::  %s", elapsed, span, pct, msg.c_str()) << std::endl;
+            log_debug(IS_LOG_FN_PROFILER, "    %7uus (%7uus, %5.1f%%) ::  %s", elapsed, span, ((float)span.count() / (float)duration.count()) * 100.0f, msg.c_str());
             lastMark = m;
         }
     }
@@ -402,6 +480,25 @@ private:
     uint32_t m_threshold;
     std::chrono::high_resolution_clock::time_point m_startTime;
     std::vector<std::pair<std::chrono::high_resolution_clock::time_point, std::string>> markers;
+#else
+    FnProfiler(const std::string& functionName, uint32_t threshold = 100) { (void) functionName; (void) threshold; }
+
+    // Destructor calculates and prints the duration
+    ~FnProfiler() { }
+
+    void mark(const std::string& msg) { (void) msg; }
+#endif
 };
 
+template <typename F>
+class Finalizer {
+    F f;
+public:
+    explicit Finalizer(F f) : f(std::move(f)) {}
+    ~Finalizer() { f(); }
+
+    // Delete copy/move to prevent accidental double-execution
+    Finalizer(const Finalizer&) = delete;
+    Finalizer& operator=(const Finalizer&) = delete;
+};
 #endif //IS_SDK__UTIL_H
