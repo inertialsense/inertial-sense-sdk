@@ -121,18 +121,11 @@ VERSION="$(git -C "${REPO_ROOT}" describe --tags --abbrev=0 2>/dev/null || true)
 # Build source INPUT list (absolute paths, space-separated for Doxygen)
 # ---------------------------------------------------------------------------
 
-INPUT_DIRS=""
-for rel_dir in src cltool/src; do
-    abs_dir="${REPO_ROOT}/${rel_dir}"
-    if [[ -d "${abs_dir}" ]]; then
-        INPUT_DIRS="${INPUT_DIRS} ${abs_dir}"
-    else
-        echo "WARNING: source directory not found, skipping: ${abs_dir}" >&2
-    fi
-done
-INPUT_DIRS="${INPUT_DIRS# }"   # strip leading space
+# Only the SDK's own src/ is documented.  cltool/ and ExampleProjects/ are
+# intentionally excluded — they have their own documentation scope.
+INPUT_DIRS="${REPO_ROOT}/src"
 
-[[ -n "${INPUT_DIRS}" ]] || die "No source directories found under ${REPO_ROOT}"
+[[ -d "${INPUT_DIRS}" ]] || die "SDK src/ directory not found: ${INPUT_DIRS}"
 
 # ---------------------------------------------------------------------------
 # Compute USE_MDFILE_AS_MAINPAGE (only if README.md exists at repo root)

@@ -106,25 +106,16 @@ set "VERSION="
 for /f "delims=" %%v in ('git -C "%REPO_ROOT%" describe --tags --abbrev=0 2^>nul') do set "VERSION=%%v"
 
 :: ---------------------------------------------------------------------------
-:: Resolve source INPUT directories
+:: Resolve source INPUT directory
+:: Only the SDK's own src\ is documented.  cltool\ and ExampleProjects\ are
+:: intentionally excluded -- they have their own documentation scope.
 :: ---------------------------------------------------------------------------
 
-set "INPUT_DIRS="
-if exist "%REPO_ROOT%\src" (
-    set "INPUT_DIRS=%REPO_ROOT%\src"
-)
-if exist "%REPO_ROOT%\cltool\src" (
-    if defined INPUT_DIRS (
-        set "INPUT_DIRS=!INPUT_DIRS! %REPO_ROOT%\cltool\src"
-    ) else (
-        set "INPUT_DIRS=%REPO_ROOT%\cltool\src"
-    )
-)
-
-if not defined INPUT_DIRS (
-    echo ERROR: No source directories found under %REPO_ROOT%
+if not exist "%REPO_ROOT%\src" (
+    echo ERROR: SDK src\ directory not found: %REPO_ROOT%\src
     exit /b 1
 )
+set "INPUT_DIRS=%REPO_ROOT%\src"
 
 :: ---------------------------------------------------------------------------
 :: Status output

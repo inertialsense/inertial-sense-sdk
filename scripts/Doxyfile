@@ -48,10 +48,18 @@ FILE_PATTERNS          = *.h \
 
 EXCLUDE                =
 
+# Exclude vendored/third-party libraries bundled inside src/.
+# Only Inertial Sense-authored code should appear in the reference docs.
 EXCLUDE_PATTERNS       = */yaml-cpp/* \
                          */libusb/* \
                          */miniz* \
-                         */httplib*
+                         */httplib* \
+                         */json.hpp \
+                         */tinyxml* \
+                         */tinystr* \
+                         */uri.hpp \
+                         */md5.h \
+                         */md5.cpp
 
 EXCLUDE_SYMBOLS        =
 
