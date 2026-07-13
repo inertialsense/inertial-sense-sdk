@@ -584,8 +584,8 @@ std::string renderGpxStatus_hdwStatus(const data_info_t& info, std::any value, i
 
         BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_SATELLITE_RX            , "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)");
         BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_SATELLITE_RX            , "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
-        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+        BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
 
     /** GNSS 1 reset required count */
     // GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
@@ -1173,7 +1173,7 @@ static void PopulateMapGnssPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("pDop", &gnss_pos_t::pDop, DATA_TYPE_F32, "m", "Position dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("cnoMean", &gnss_pos_t::cnoMean, DATA_TYPE_F32, "dBHz", "Average of non-zero satellite carrier to noise ratios (signal strengths)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("towOffset", &gnss_pos_t::towOffset, DATA_TYPE_F64, "sec", "Time sync offset from local clock", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
-    mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GNSS leap seconds (GNSS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GNSS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
@@ -1233,8 +1233,8 @@ static void PopulateMapGnssVersion(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapGnssTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_timepulse_t> mapper(data_set, did);
-    mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("timeMcu", &gnss_timepulse_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("msgTimeMs", &gnss_timepulse_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
     mapper.AddMember("plsTimeMs", &gnss_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
@@ -1703,7 +1703,7 @@ static void PopulateMapEvbLunaFlashCfg(data_set_t data_set[DID_COUNT], uint32_t 
 static void PopulateMapCoyoteStatus(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_status_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GNSS time of week (since Sunday morning).");
     mapper.AddMember("evbLunaStatus", evbLunaStatus, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("motorState", motorState, DATA_TYPE_UINT32, "", "");
     mapper.AddMember("remoteKillMode", remoteKillMode, DATA_TYPE_UINT32, "", "Motor state (eLunaMotorState)");
@@ -1713,7 +1713,7 @@ static void PopulateMapCoyoteStatus(data_set_t data_set[DID_COUNT], uint32_t did
 static void PopulateMapEvbLunaSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_sensors_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GNSS time of week (since Sunday morning).");
     mapper.AddMember("proxSensorOutput[0]", proxSensorOutput[0], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("proxSensorOutput[1]", proxSensorOutput[1], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("proxSensorOutput[2]", proxSensorOutput[2], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -2020,7 +2020,7 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sensors_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GNSS time of week (since Sunday morning).");
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Temperature compensation bias"}, flags);
