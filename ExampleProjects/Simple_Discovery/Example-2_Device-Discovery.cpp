@@ -55,6 +55,8 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
  * that for us.  We only need to open a connection to the device and start communicating.
  */
 int main_discovery(const char* portPattern) {
+    std::cout << "Simple Discovery started" << std::endl;
+    
     std::shared_ptr<ISDevice> device = nullptr; // this will be our discovered device... but null for now.
 
     // Both DeviceManager & PortManager are singletons, but we'll make a local reference to both to keep the code clean
