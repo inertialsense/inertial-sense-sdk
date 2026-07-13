@@ -20,20 +20,8 @@ jobs:
       - name: Install Doxygen
         run: sudo apt-get install -y doxygen
 
-      - name: Get version tag
-        id: version
-        run: |
-          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
-          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Detected version: ${VERSION}"
-
       - name: Generate documentation
-        run: bash scripts/generate-doxygen.sh -o ./build/docs
-        env:
-          # Make the version available to the script via the Doxyfile override
-          # (the script already calls `git describe` internally; this env var
-          # is a belt-and-suspenders fallback for shallow clones on forks).
-          IS_SDK_VERSION: ${{ steps.version.outputs.VERSION }}
+        run: python3 scripts/generate_doxygen.py -o ./build/docs
 
       - name: Upload HTML documentation artifact
         uses: actions/upload-artifact@v4

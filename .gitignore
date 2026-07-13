@@ -53,7 +53,7 @@ ExampleProjects/InertialSense_log_reader_RegCmp/Log/
 ExampleProjects/InertialSense_log_reader_RegCmp/CMakeSettings.json
 ExampleProjects/IS_SPI_Dev_Example/IS_SPI_Dev_Example_local
 
-# Doxygen generated documentation
-docs/
-/docs/
+# Doxygen generated HTML output (the Doxyfile in docs/ is committed)
+docs/html/
+docs/latex/
 
