@@ -85,6 +85,7 @@ ISExpected<ISLogWriter> ISLogWriter::create(Options opts) {
     w.idxOutPath_     = idxOut;
     w.rawTmpPath_     = rawTmp;
     w.idxTmpPath_     = idxTmp;
+    w.overwrite_      = opts.overwrite;
     w.sourceDeviceId_ = opts.sourceDeviceId;
     w.lineageNote_    = std::move(opts.lineageNote);
     w.header_         = idx::makeDefaultHeader(kProducerVersion,
@@ -316,6 +317,14 @@ ISExpected<void> ISLogWriter::finalize() {
     idxStream_.close();
 
     std::error_code ec;
+    // std::filesystem::rename won't overwrite an existing destination on
+    // Windows; when overwrite was requested, clear the destination first so
+    // the rename succeeds on all platforms (POSIX rename overwrites anyway).
+    if (overwrite_) {
+        std::filesystem::remove(rawOutPath_, ec);
+        std::filesystem::remove(idxOutPath_, ec);
+        ec.clear();
+    }
     std::filesystem::rename(rawTmpPath_, rawOutPath_, ec);
     if (ec) {
         return fail(ISErrorCode::Io,

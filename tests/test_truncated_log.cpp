@@ -126,6 +126,7 @@ TEST_F(TruncatedLogTest, MidPacketTruncation_StopsAtLastValidRecord) {
     // Delete the .idx so the reader rebuilds and exercises the
     // truncation-detection path (the existing .idx still claims the
     // full count and would mask the truncation in this test).
+    ASSERT_FALSE(f_.idxFile.empty());   // guard: fs::remove("") is implementation-defined
     fs::remove(f_.idxFile);
 
     auto r = ISLogReader::openSegment(f_.rawFile);
@@ -160,6 +161,7 @@ TEST_F(TruncatedLogTest, MidPacketTruncation_StopsAtLastValidRecord) {
 TEST_F(TruncatedLogTest, MissingIdx_RebuildsAndPersists) {
     f_ = buildFixture("missing");
     ASSERT_FALSE(f_.rawFile.empty());
+    ASSERT_FALSE(f_.idxFile.empty());   // buildFixture only sets idxFile when an .idx was found
     ASSERT_TRUE(fs::exists(f_.idxFile));
 
     fs::remove(f_.idxFile);
@@ -255,6 +257,7 @@ TEST_F(TruncatedLogTest, CleanFixture_NoTruncationNoWarnings) {
 TEST_F(TruncatedLogTest, RebuildLeavesNoTmpFile) {
     f_ = buildFixture("atomic");
     ASSERT_FALSE(f_.rawFile.empty());
+    ASSERT_FALSE(f_.idxFile.empty());   // guard: fs::remove("") is implementation-defined
 
     fs::remove(f_.idxFile);
     auto r = ISLogReader::openSegment(f_.rawFile);

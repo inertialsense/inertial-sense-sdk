@@ -35,6 +35,11 @@ ISExpected<ISDeviceLog>
                     "ISDeviceLog::fromSegments: empty segment list");
     }
 
+    // Stable, deterministic order: fromSegments uses lexicographic path order as
+    // the tiebreaker when segment start-times are equal/missing, so sort up front
+    // (openDirectory already sorts, but this is a public entry point).
+    std::sort(segmentPaths.begin(), segmentPaths.end());
+
     // Open each segment.
     std::vector<ISLogReader> readers;
     readers.reserve(segmentPaths.size());
@@ -42,7 +47,7 @@ ISExpected<ISDeviceLog>
         auto r = ISLogReader::openSegment(path);
         if (!r) {
             log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
-                      path.c_str(), r.error().message.c_str());
+                      path.string().c_str(), r.error().message.c_str());
             return tl::unexpected<ISError>{ r.error() };
         }
         readers.push_back(std::move(*r));
@@ -54,11 +59,11 @@ ISExpected<ISDeviceLog>
         const uint64_t got = readers[i].deviceId();
         if (got != expected) {
             log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: device-id "
-                      "mismatch — first segment is SN%lu, segment %zu (%s) "
-                      "is SN%lu",
-                      static_cast<unsigned long>(expected), i,
-                      segmentPaths[i].filename().c_str(),
-                      static_cast<unsigned long>(got));
+                      "mismatch — first segment is SN%llu, segment %zu (%s) "
+                      "is SN%llu",
+                      static_cast<unsigned long long>(expected), i,
+                      segmentPaths[i].filename().string().c_str(),
+                      static_cast<unsigned long long>(got));
             return fail(ISErrorCode::Corrupted,
                 std::string{"ISDeviceLog::fromSegments: device-id mismatch — "
                             "first segment is SN"} + std::to_string(expected)
@@ -83,9 +88,9 @@ ISExpected<ISDeviceLog>
     out.segments_ = std::move(readers);
     out.deviceId_ = expected;
     out.buildIndex();
-    log_more_info(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: device 0x%016lx, "
+    log_more_info(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: device 0x%016llx, "
                   "%zu segment(s), %zu record(s)",
-                  static_cast<unsigned long>(out.deviceId_),
+                  static_cast<unsigned long long>(out.deviceId_),
                   out.segments_.size(), out.total_);
     return out;
 }

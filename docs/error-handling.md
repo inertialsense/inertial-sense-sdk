@@ -28,7 +28,7 @@ The failure type is a small POD:
 ```cpp
 enum class ISErrorCode : uint16_t {
     Ok, InvalidArgument, NotFound, PermissionDenied,
-    Io, Corrupted, Truncated, Unsupported, Internal,
+    Io, Corrupted, Truncated, Unsupported, Internal, LegacyFormat,
 };
 struct ISError {
     ISErrorCode code;

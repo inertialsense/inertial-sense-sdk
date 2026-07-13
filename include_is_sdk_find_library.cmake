@@ -64,22 +64,25 @@ if(SDK_LIBRARY_PATH)
     # link via `InertialSenseSDK` regardless of whether it was prebuilt or
     # built from source.
     add_library(InertialSenseSDK STATIC IMPORTED GLOBAL)
+    # Mirror the PUBLIC include dirs from the SDK's own CMakeLists so that
+    # targets linking InertialSenseSDK get the same paths whether the library
+    # was built from source (where CMake propagates them automatically via
+    # target_include_directories PUBLIC) or consumed as a prebuilt IMPORTED
+    # target (where they must be set explicitly). Build as a proper CMake list
+    # (one entry per set() arg) so no newline/indentation leaks into a path.
+    set(_is_sdk_interface_includes
+        "${IS_SDK_DIR}/src"
+        "${IS_SDK_DIR}/src/util"
+        "${IS_SDK_DIR}/src/protocol"
+        "${IS_SDK_DIR}/src/libusb"
+        "${IS_SDK_DIR}/src/libusb/libusb"
+        "${IS_SDK_DIR}/src/yaml-cpp"
+        "${IS_SDK_DIR}/src/tl-expected"
+        "${IS_SDK_DIR}/tests/runtime"
+    )
     set_target_properties(InertialSenseSDK PROPERTIES
         IMPORTED_LOCATION "${SDK_LIBRARY_PATH}"
-        # Mirror the PUBLIC include dirs from the SDK's own CMakeLists so
-        # that targets linking InertialSenseSDK get the same paths whether
-        # the library was built from source (where CMake propagates them
-        # automatically via target_include_directories PUBLIC) or consumed
-        # as a prebuilt IMPORTED target (where they must be set explicitly).
-        INTERFACE_INCLUDE_DIRECTORIES
-            "${IS_SDK_DIR}/src;\
-${IS_SDK_DIR}/src/util;\
-${IS_SDK_DIR}/src/protocol;\
-${IS_SDK_DIR}/src/libusb;\
-${IS_SDK_DIR}/src/libusb/libusb;\
-${IS_SDK_DIR}/src/yaml-cpp;\
-${IS_SDK_DIR}/src/tl-expected;\
-${IS_SDK_DIR}/tests/runtime"
+        INTERFACE_INCLUDE_DIRECTORIES "${_is_sdk_interface_includes}"
     )
     message(STATUS "Using prebuilt InertialSenseSDK at: ${SDK_LIBRARY_PATH}")
 else()

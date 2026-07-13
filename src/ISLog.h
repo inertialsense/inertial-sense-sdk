@@ -61,8 +61,9 @@ public:
     /**
      * @param deviceId  Device id to look up.
      * @return          Reference to the device-log, lifetime tied to
-     *                  this `ISLog`. Behavior undefined for an id not
-     *                  in `deviceIds()`; callers should check first.
+     *                  this `ISLog`. Throws `std::out_of_range` for an
+     *                  id not in `deviceIds()`; check membership first.
+     * @throws std::out_of_range if `deviceId` is not present.
      */
     const ISDeviceLog& device(uint64_t deviceId) const;
 

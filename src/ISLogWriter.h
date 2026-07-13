@@ -271,6 +271,11 @@ private:
     std::filesystem::path rawTmpPath_;
     std::filesystem::path idxTmpPath_;
 
+    // When true, finalize() removes any pre-existing destination before the
+    // rename. std::filesystem::rename does not overwrite an existing file on
+    // Windows, so this is required to honor Options::overwrite there.
+    bool overwrite_ = false;
+
     std::ofstream rawStream_;
     std::ofstream idxStream_;
 
