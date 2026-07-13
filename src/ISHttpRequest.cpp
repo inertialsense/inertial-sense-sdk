@@ -228,11 +228,32 @@ ISHttpRequest::Response ISHttpRequest::sendRequest(const std::string& url, const
     std::string serverUrl = "tcp://" + host + ":" + std::to_string(port);
     port_handle_t tcpPort = TcpPortFactory::getInstance().bindPort(serverUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
 
-    if (!tcpPort || (portOpen(tcpPort) != PORT_ERROR__NONE))
+    if (!tcpPort)
     {
         log_error(IS_LOG_HTTP_REQUEST, "Failed to connect to %s:%d", host.c_str(), port);
-        if (tcpPort)
-            TcpPortFactory::getInstance().releasePort(tcpPort);
+        return resp;
+    }
+
+    // tcpPortOpen() performs a NON-BLOCKING connect(): it returns PORT_ERROR__NONE
+    // as soon as the handshake is initiated (EINPROGRESS) WITHOUT setting the port's
+    // opened flag. This is a synchronous client, so we must poll portOpen() until the
+    // port actually reports opened (EISCONN) before writing -- otherwise the write
+    // below lands on a socket still mid-handshake and fails with EAGAIN.
+    uint32_t connectStartMs = current_timeMs();
+    while (!portIsOpened(tcpPort) && (current_timeMs() - connectStartMs) < (uint32_t)timeoutMs)
+    {
+        if (portOpen(tcpPort) != PORT_ERROR__NONE)
+            break;  // hard connect failure
+        if (portIsOpened(tcpPort))
+            break;  // handshake completed
+        SLEEP_MS(1);
+    }
+
+    if (!portIsOpened(tcpPort))
+    {
+        log_error(IS_LOG_HTTP_REQUEST, "Failed to connect to %s:%d", host.c_str(), port);
+        portClose(tcpPort);
+        TcpPortFactory::getInstance().releasePort(tcpPort);
         return resp;
     }
 
