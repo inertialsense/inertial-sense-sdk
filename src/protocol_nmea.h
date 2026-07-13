@@ -13,7 +13,7 @@
  * number of bytes written (negative on failure).
  *
  * @author Inertial Sense, Inc.
- * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
  */
 
 #ifndef PROTOCOL_NMEA_H_

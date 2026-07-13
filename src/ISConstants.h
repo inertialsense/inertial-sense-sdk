@@ -27,7 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * it includes winsock2.h before any other Windows headers.
  *
  * @author Inertial Sense, Inc.
- * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
  */
 
 #ifndef CONSTANTS_H_

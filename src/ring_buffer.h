@@ -7,7 +7,7 @@
  * not allocate memory; the caller supplies the backing buffer via ringBufInit().
  *
  * @author Walt Johnson
- * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
  */
 
 #ifndef _RING_BUFFER_H_
