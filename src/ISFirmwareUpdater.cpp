@@ -477,7 +477,13 @@ bool ISFirmwareUpdater::step() {
     if (device && (device->port != port))
         port = device->port;
 
-    if (!port && (nextPortCheck < current_timeMs())) {
+    // Re-discover the device's port whenever it is not valid (portIsValid() also covers the null case).
+    // This matters on a fixed/non-re-enumerating serial link: when the device reboots into, or back out
+    // of, the ISbl bootloader during a firmware update, disconnect(true) invalidates the handle but the
+    // OS node persists, so discovery never re-adds it on its own. Retrying on !portIsValid() keeps
+    // attempting discovery until the rebooted device responds again (previously this was `!port`, which
+    // is false for an invalidated-but-non-null handle, so re-discovery never ran and the update stalled).
+    if (!portIsValid(port) && (nextPortCheck < current_timeMs())) {
         nextPortCheck = current_timeMs() + 1000;    // check every second.
         PortManager& portManager = PortManager::getInstance();
         DeviceManager& deviceManager = DeviceManager::getInstance();
