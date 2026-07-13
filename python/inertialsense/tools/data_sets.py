@@ -47,7 +47,7 @@ DID_SENSORS_MCAL                = 40
 DID_GNSS1_TIMEPULSE              = 41
 # DID_UNUSED                    = 42
 # DID_UNUSED                    = 43
-# DID_UNUSED                    = 44
+DID_CANFD_CONFIG                = 44
 DID_SENSORS_ADC_SIGMA           = 46
 DID_REFERENCE_MAGNETOMETER      = 47
 DID_INL2_STATES                 = 48
@@ -197,6 +197,7 @@ did_name_lookup = {
  DID_EVB_DEBUG_ARRAY : "evbDebugArray",
  DID_EVB_RTOS_INFO : "evbRtosInfo",
  DID_RTK_DEBUG_2 : "rtkDebug2",
+ DID_CANFD_CONFIG : "canfdconfig",
  DID_CAN_CONFIG : "canconfig",
  DID_EVB_DEV_INFO : "evbDevInfo",
  DID_REFERENCE_IMU : "referenceImu",

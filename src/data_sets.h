@@ -81,7 +81,7 @@ typedef uint32_t eDataIDs;
 #define DID_GNSS1_TIMEPULSE             (eDataIDs)41    /** (gnss_timepulse_t) GNSS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42    /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_UNUSED_43                   (eDataIDs)43    /** unused */
-#define DID_UNUSED_44                   (eDataIDs)44    /** unused */
+#define DID_CANFD_CONFIG                (eDataIDs)44    /** (can_config_t) CAN FD configuration: FD message broadcast rates, transmit addresses, and baud rate. Shares the same data structure as DID_CAN_CONFIG. */
 #define DID_GNSS1_SIG                   (eDataIDs)45    /** (gnss_sig_t) GNSS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46    /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47    /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
@@ -2215,6 +2215,55 @@ typedef struct PACKED
     uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
 
 }rmcNmea_t;
+
+
+enum can_cid_t
+{
+    CID_INS_TIME = 0,
+    CID_INS_STATUS,
+    CID_INS_EULER,
+    CID_INS_QUATN2B,
+    CID_INS_QUATE2B,
+    CID_INS_UVW,
+    CID_INS_VE,
+    CID_INS_LAT,
+    CID_INS_LON,
+    CID_INS_ALT,
+    CID_INS_NORTH_EAST,
+    CID_INS_DOWN,
+    CID_INS_ECEF_X,
+    CID_INS_ECEF_Y,
+    CID_INS_ECEF_Z,
+    CID_INS_MSL,
+    CID_PREINT_PX,
+    CID_PREINT_QY,
+    CID_PREINT_RZ,
+    CID_DUAL_PX,
+    CID_DUAL_QY,
+    CID_DUAL_RZ,
+    CID_GNSS1_POS,
+    CID_GNSS2_POS,
+    CID_GNSS1_RTK_POS_REL,
+    CID_GNSS2_RTK_CMP_REL,
+    CID_ROLL_ROLLRATE,
+    NUM_CIDS
+};
+
+/** CAN FD message IDs — one frame per source DID, using native float/double precision */
+enum canfd_cid_t
+{
+    FDCID_INS_1 = 0,           // DID_INS_1: full INS-1 data in 64 bytes
+    FDCID_INS_2,                // DID_INS_2: native-precision qn2b quaternion (16 bytes)
+    FDCID_INS_3,                // DID_INS_3: MSL altitude (4 bytes)
+    FDCID_INS_4,                // DID_INS_4: qe2b + ve + ecef (52 bytes in 64-byte frame)
+    FDCID_PIMU,                 // DID_PIMU: theta + vel + dt + status (32 bytes)
+    FDCID_IMU,                  // DID_IMU: pqr + acc + status (28 bytes in 32-byte frame)
+    FDCID_GNSS1_POS,            // DID_GNSS1_POS: status + cnoMean (8 bytes)
+    FDCID_GNSS2_POS,            // DID_GNSS2_POS: status + cnoMean (8 bytes)
+    FDCID_GNSS1_RTK_POS_REL,   // DID_GNSS1_RTK_POS_REL: native float (16 bytes)
+    FDCID_GNSS2_RTK_CMP_REL,   // DID_GNSS2_RTK_CMP_REL: native float (16 bytes)
+    NUM_FDCIDS
+};
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
@@ -5887,37 +5936,6 @@ typedef struct
 } runtime_profiler_t;
 
 
-enum
-{
-    CID_INS_TIME,
-    CID_INS_STATUS,
-    CID_INS_EULER,
-    CID_INS_QUATN2B,
-    CID_INS_QUATE2B,
-    CID_INS_UVW,
-    CID_INS_VE,
-    CID_INS_LAT,
-    CID_INS_LON,
-    CID_INS_ALT,
-    CID_INS_NORTH_EAST,
-    CID_INS_DOWN,
-    CID_INS_ECEF_X,
-    CID_INS_ECEF_Y,
-    CID_INS_ECEF_Z,
-    CID_INS_MSL,
-    CID_PREINT_PX,
-    CID_PREINT_QY,
-    CID_PREINT_RZ,
-    CID_DUAL_PX,
-    CID_DUAL_QY,
-    CID_DUAL_RZ,
-    CID_GNSS1_POS,
-    CID_GNSS2_POS,
-    CID_GNSS1_RTK_POS_REL,
-    CID_GNSS2_RTK_CMP_REL,
-    CID_ROLL_ROLLRATE,
-    NUM_CIDS
-};
 
 /** Valid baud rates for Inertial Sense hardware */
 enum can_baudrate_t
@@ -5936,19 +5954,37 @@ enum can_baudrate_t
     CAN_BAUDRATE_COUNT      = 10
 };
 
+/** Bit packed into can_config_t.can_baudrate_kbps (a uint16_t; valid baud rate values
+ *  only use bits 0-9). When set, enables CAN-FD on FDCAN-capable hardware (IMX-6,
+ *  GPX-1): frames with a payload > 8 bytes are sent using CAN FD framing with bit-rate
+ *  switching (BRS). When clear (default), CAN runs classic-only (payload <= 8 bytes),
+ *  matching legacy IMX-5 (bxCAN) behavior. Ignored on IMX-5, which has no FD hardware. */
+#define CAN_BAUDRATE_KBPS_FD_ENABLE     (uint16_t)0x8000
+/** Mask isolating the baud rate (in kbps) from can_baudrate_kbps, excluding the
+ *  CAN_BAUDRATE_KBPS_FD_ENABLE flag bit. */
+#define CAN_BAUDRATE_KBPS_MASK          (uint16_t)0x7FFF
+
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
-    /** Broadcast period multiple - CAN time message. 0 to disable. */
+    /** Broadcast period multiple for each CAN message. 0 disables the message.
+     *  Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values.
+     *  In CAN-FD mode the same array is reused: indices 0..NUM_FDCIDS-1
+     *  correspond to canfd_cid_t values (FDCID_INS_1=0, FDCID_INS_2=1, …).
+     *  NUM_FDCIDS < NUM_CIDS so there is no overlap. */
     uint16_t                can_period_mult[NUM_CIDS];
 
-    /** Transmit address. */
+    /** Transmit address for each CAN message.
+     *  Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values.
+     *  In CAN-FD mode indices 0..NUM_FDCIDS-1 correspond to canfd_cid_t values
+     *  and are validated / defaulted by CAN_init() when FD is enabled. */
     uint32_t                can_transmit_address[NUM_CIDS];
 
-    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
+    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates). Bit 15
+     *  (CAN_BAUDRATE_KBPS_FD_ENABLE) enables CAN-FD on capable hardware. */
     uint16_t                can_baudrate_kbps;
 
-    /** Receive address. */
+    /** Receive address */
     uint32_t                can_receive_address;
 
 } can_config_t;
