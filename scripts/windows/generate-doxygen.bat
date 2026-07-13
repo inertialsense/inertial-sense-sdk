@@ -115,7 +115,12 @@ if not exist "%REPO_ROOT%\src" (
     echo ERROR: SDK src\ directory not found: %REPO_ROOT%\src
     exit /b 1
 )
+:: USE_MDFILE_AS_MAINPAGE requires README.md to be in the INPUT list.
+:: Include it explicitly alongside src\ so it appears as the main page.
 set "INPUT_DIRS=%REPO_ROOT%\src"
+if exist "%REPO_ROOT%\README.md" (
+    set "INPUT_DIRS=%REPO_ROOT%\src %REPO_ROOT%\README.md"
+)
 
 :: ---------------------------------------------------------------------------
 :: Status output

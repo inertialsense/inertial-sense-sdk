@@ -123,17 +123,19 @@ VERSION="$(git -C "${REPO_ROOT}" describe --tags --abbrev=0 2>/dev/null || true)
 
 # Only the SDK's own src/ is documented.  cltool/ and ExampleProjects/ are
 # intentionally excluded — they have their own documentation scope.
-INPUT_DIRS="${REPO_ROOT}/src"
+SRC_DIR="${REPO_ROOT}/src"
+[[ -d "${SRC_DIR}" ]] || die "SDK src/ directory not found: ${SRC_DIR}"
 
-[[ -d "${INPUT_DIRS}" ]] || die "SDK src/ directory not found: ${INPUT_DIRS}"
-
-# ---------------------------------------------------------------------------
-# Compute USE_MDFILE_AS_MAINPAGE (only if README.md exists at repo root)
-# ---------------------------------------------------------------------------
-
-MAINPAGE_OVERRIDE=""
-if [[ -f "${REPO_ROOT}/README.md" ]]; then
-    MAINPAGE_OVERRIDE="USE_MDFILE_AS_MAINPAGE = ${REPO_ROOT}/README.md"
+# USE_MDFILE_AS_MAINPAGE requires the target file to be in the INPUT list.
+# Include README.md explicitly so Doxygen scans it and uses it as the main
+# page, while keeping src/ as the only code directory.
+README="${REPO_ROOT}/README.md"
+if [[ -f "${README}" ]]; then
+    INPUT_DIRS="${SRC_DIR} ${README}"
+    MAINPAGE_OVERRIDE="USE_MDFILE_AS_MAINPAGE = ${README}"
+else
+    INPUT_DIRS="${SRC_DIR}"
+    MAINPAGE_OVERRIDE=""
 fi
 
 # ---------------------------------------------------------------------------
