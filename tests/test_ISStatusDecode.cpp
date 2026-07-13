@@ -210,7 +210,7 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
         case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY : buff << "0x00000100 - GNSS Dead Reckoning Only" << std::endl; break;
         case GNSS_STATUS_FIX_2D                  : buff << "0x00000200 - 2D Fix" << std::endl; break;
         case GNSS_STATUS_FIX_3D                  : buff << "0x00000300 - 3D Fix" << std::endl; break;
-        case GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK  : buff << "0x00000400 - 3D Fix + Dead Reckoning" << std::endl; break;
+        case GNSS_STATUS_FIX_GNSS_PLUS_DEAD_RECK  : buff << "0x00000400 - 3D Fix + Dead Reckoning" << std::endl; break;
         case GNSS_STATUS_FIX_TIME_ONLY           : buff << "0x00000500 - Time-Only Fix" << std::endl; break;
         case GNSS_STATUS_FIX_REF_LLA             : buff << "0x00000600 - Usign Reference LLA" << std::endl; break;
         case GNSS_STATUS_FIX_UNUSED2             : buff << "0x00000700 - << UNUSED >>" << std::endl; break;
@@ -228,7 +228,7 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED       , "0x00100000 - GNSS1 RTK precision positioning mode enabled");
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_STATIC_MODE                     , "0x00200000 - Static mode");
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED        , "0x00400000 - GNSS2 RTK moving base mode enabled");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR     , "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR     , "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
 
     uint32_t rtkError = (gpsStatusBits & GNSS_STATUS_FLAGS_ERROR_MASK);
     switch (rtkError) {
@@ -790,9 +790,9 @@ TEST(ISStatusDecode, GnssStatus_RoundTrip_RtkErrorMaskQuirk)
         GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING,
         GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING,
         GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID,
-        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR,
-        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR | GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING,
-        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR | GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR | GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING,
+        GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR | GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID,
     };
     for (uint32_t v : cases) {
         EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGnssStatusBitsReference(v))

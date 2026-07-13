@@ -397,7 +397,7 @@ status_field_decode_t buildGnssStatusDecode()
             fix(GNSS_STATUS_FIX_DEAD_RECKONING_ONLY, "Dead reckoning only",  "0x00000100 - GNSS Dead Reckoning Only"),
             fix(GNSS_STATUS_FIX_2D,                  "2D fix",               "0x00000200 - 2D Fix"),
             fix(GNSS_STATUS_FIX_3D,                  "3D fix",               "0x00000300 - 3D Fix"),
-            fix(GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK,  "3D + dead reckoning",  "0x00000400 - 3D Fix + Dead Reckoning"),
+            fix(GNSS_STATUS_FIX_GNSS_PLUS_DEAD_RECK,  "3D + dead reckoning",  "0x00000400 - 3D Fix + Dead Reckoning"),
             fix(GNSS_STATUS_FIX_TIME_ONLY,           "Time only",            "0x00000500 - Time-Only Fix"),
             fix(GNSS_STATUS_FIX_REF_LLA,             "Reference LLA",        "0x00000600 - Usign Reference LLA"),
             fix(GNSS_STATUS_FIX_UNUSED2,             "Unused",               "0x00000700 - << UNUSED >>"),
@@ -424,7 +424,7 @@ status_field_decode_t buildGnssStatusDecode()
         "0x00200000 - Static mode"));
     d.subfields.push_back(bitField("GNSS2 RTK compassing enabled", GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED, false,
         "0x00400000 - GNSS2 RTK moving base mode enabled"));
-    d.subfields.push_back(bitField("GNSS1 RTK raw data error", GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR, true,
+    d.subfields.push_back(bitField("GNSS1 RTK raw data error", GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR, true,
         "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)"));
 
     // RTK base error (Enum). Legacy switches on (value & FLAGS_ERROR_MASK), which folds in the

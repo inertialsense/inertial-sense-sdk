@@ -3186,16 +3186,18 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
-    def allanVarianceImusPqr(self, fig=None, axs=None):
-        self.allanVariancePqr(did=DID_IMUS, fig=fig, axs=axs)
-    def allanVarianceImusAcc(self, fig=None, axs=None):
-        self.allanVarianceAcc(did=DID_IMUS, fig=fig, axs=axs)
+    def allanDeviationImusPqr(self, fig=None, axs=None):
+        self.allanDeviationPqr(did=DID_IMUS, fig=fig, axs=axs)
+    def allanDeviationImusAcc(self, fig=None, axs=None):
+        self.allanDeviationAcc(did=DID_IMUS, fig=fig, axs=axs)
 
-    def allanVariancePqr(self, did=DID_IMU, fig=None, axs=None):
+    def allanDeviationPqr(self, did=DID_IMU, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadGyros(0, did=did)
+        if not len(sensors):
+            return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve the initial sensors list for later use in subplot configuration and CSV writing
@@ -3252,13 +3254,13 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumARW[i][n])), 'Allan Variance (°/hr)')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $\degree/hr$, ARW: %.3g $\degree/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumARW[i][n])), 'Allan Deviation (°/hr)')
                     totalARW.append(sumARW[i][n])
                     totalBI.append(sumBI[i][n])
 
         arw = self._aggregate_allan_metric(totalARW)
         bi = self._aggregate_allan_metric(totalBI)
-        fig.suptitle(r'$\bf{PQR\ Allan\ Var.:}$ ' + os.path.basename(os.path.normpath(self.log.directory)) + r', $\bf{BI:}$ %.3g $\degree/hr$, $\bf{ARW:}$ %.3g $\degree/\sqrt{hr}$' % (bi, arw))
+        fig.suptitle(r'$\bf{PQR\ Allan\ Dev.:}$ ' + os.path.basename(os.path.normpath(self.log.directory)) + r', $\bf{BI:}$ %.3g $\degree/hr$, $\bf{ARW:}$ %.3g $\degree/\sqrt{hr}$' % (bi, arw))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3267,8 +3269,8 @@ class logPlot:
 
         self.setup_and_wire_legend()
 
-        with open(self.log.directory + '/allan_variance_pqr.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R,BI-X\n')
+        with open(self.log.directory + '/allan_deviation_pqr.csv', 'w') as f:
+            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R\n')
             f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
             today = date.today()
             for idx, d in enumerate(included_devs_pqr):
@@ -3286,11 +3288,13 @@ class logPlot:
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
     
-    def allanVarianceAcc(self, did=DID_IMU, fig=None, axs=None):
+    def allanDeviationAcc(self, did=DID_IMU, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
 
         (name, time, dt, sensors) = self.loadAccels(0, did=did)
+        if not len(sensors):
+            return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
         # Preserve initial sensors for subplot configuration and CSV writing.
@@ -3355,7 +3359,7 @@ class logPlot:
 
         vrw = self._aggregate_allan_metric(totalVRW, include_std=True)
         bi = self._aggregate_allan_metric(totalBI)
-        fig.suptitle(r'$\bf{Accel\ Allan\ Var.:}$ ' + os.path.basename(os.path.normpath(self.log.directory)) + r', $\bf{BI:}$ %.3g $µg$, $\bf{VRW:}$ %.3g $m/s/\sqrt{hr}$' % (bi, vrw))
+        fig.suptitle(r'$\bf{Accel\ Allan\ Dev.:}$ ' + os.path.basename(os.path.normpath(self.log.directory)) + r', $\bf{BI:}$ %.3g $µg$, $\bf{VRW:}$ %.3g $m/s/\sqrt{hr}$' % (bi, vrw))
 
         for i in range(len(initial_sensors)):
             for d in range(3):
@@ -3364,8 +3368,8 @@ class logPlot:
 
         self.setup_and_wire_legend()
 
-        with open(self.log.directory + '/allan_variance_acc.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,ARW-X,ARW-Y,ARW-Z\n')
+        with open(self.log.directory + '/allan_deviation_acc.csv', 'w') as f:
+            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,VRW-X,VRW-Y,VRW-Z\n')
             f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
             today = date.today()
             for idx, d in enumerate(included_devs_acc):

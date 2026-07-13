@@ -14,6 +14,7 @@
 #include <cerrno>
 #include <iostream>
 #include <set>
+#include <utility>
 
 #include "ISConstants.h"
 
@@ -33,6 +34,20 @@
 #include "core/msg_logger.h"
 #include "core/tcpPort.h"
 #include "PortFactory.h"
+
+/**
+ * Context codes identifying which step of TcpServerPortFactory::startListening() failed; returned as the
+ * first element of getLastListenError().  This is intentionally separate from the PORT_ERROR__* / base_port_t
+ * framework, which applies to accepted client connections rather than the listening socket itself.
+ */
+enum eTcpListenErrorContext {
+    TCP_LISTEN_CTX__NONE      = 0,      //!< no listener-setup failure recorded (listener is up)
+    TCP_LISTEN_CTX__SOCKET    = 1,      //!< socket() failed
+    TCP_LISTEN_CTX__GETFLAGS  = 2,      //!< fcntl(F_GETFL) failed
+    TCP_LISTEN_CTX__NONBLOCK  = 3,      //!< fcntl(F_SETFL, O_NONBLOCK) / ioctlsocket(FIONBIO) failed
+    TCP_LISTEN_CTX__BIND      = 4,      //!< bind() failed
+    TCP_LISTEN_CTX__LISTEN    = 5,      //!< listen() failed
+};
 
 /**
  * Unlike other PortFactories, TcpServerPortFactory is NOT a singleton - since there may be multiple instances which listen an unique ports, etc.
@@ -94,6 +109,17 @@ public:
 
     void shutdownAllClients();
 
+    /**
+     * Forensic accessor for listener-setup failures.  Intentionally separate from the PORT_ERROR__* /
+     * base_port_t framework (which tracks accepted client connections); this reports only on the
+     * listening socket itself.
+     * @return a {context, error} pair for the most recent startListening() failure: .first is the
+     *  eTcpListenErrorContext step that failed, .second is the platform socket error (errno on POSIX,
+     *  WSAGetLastError() on Windows).  Returns {TCP_LISTEN_CTX__NONE, 0} when the listener was last
+     *  set up successfully.
+     */
+    std::pair<eTcpListenErrorContext, int> getLastListenError() const { return lastListenError; }
+
 protected:
     struct socket_entry_t {
         int socket = 0;
@@ -150,10 +176,19 @@ protected:
     bool processPendingConnections(std::function<void(const socket_entry_t&)> cb);
 
 private:
+    /**
+     * Captures the platform socket error (errno / WSAGetLastError()) together with the supplied
+     * failure context into lastListenError, and logs it.  Called by startListening() before it tears
+     * the half-open socket back down, so the forensic detail survives the cleanup.
+     * @param context the eTcpListenErrorContext step that failed
+     */
+    void recordListenError(eTcpListenErrorContext context);
+
     std::set<socket_entry_t> knownSockets;
     std::set<socket_entry_t> prevSockets;
 
     int listen_fd = 0; /* listener socket */
+    std::pair<eTcpListenErrorContext, int> lastListenError { TCP_LISTEN_CTX__NONE, 0 };   //!< {context, error} of the last startListening() failure; {NONE, 0} when the listener is up
 };
 
 

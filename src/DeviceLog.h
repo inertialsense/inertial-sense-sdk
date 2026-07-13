@@ -110,8 +110,8 @@ public:
     std::string GetNewBaseFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix);
     std::string GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char *suffix);
 
-    void SetKmlConfig(bool gpsData = true, bool showTracks = true, bool showPoints = true, bool showPointTimestamps = true, double pointUpdatePeriodSec = 1.0, bool altClampToGround = true) {
-        m_enableGpsLogging = gpsData;
+    void SetKmlConfig(bool gnssData = true, bool showTracks = true, bool showPoints = true, bool showPointTimestamps = true, double pointUpdatePeriodSec = 1.0, bool altClampToGround = true) {
+        m_enableGnssLogging = gnssData;
         m_showTracks = showTracks;
         m_showPoints = showPoints;
         m_showPointTimestamps = showPointTimestamps;
@@ -168,7 +168,7 @@ protected:
     uint64_t m_maxDiskSpace;
     uint32_t m_maxFileSize;
     bool m_altClampToGround = true;
-    bool m_enableGpsLogging = true;
+    bool m_enableGnssLogging = true;
     bool m_showTracks = true;
     bool m_showPoints;
     bool m_showPointTimestamps = true;

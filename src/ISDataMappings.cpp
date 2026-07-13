@@ -43,8 +43,8 @@ using namespace std;
 #define SYM_M_PER_S_2       "m/s²"
 #define SYM_DEG_C_PER_S     "°C/s"
 
-const char s_insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GpsMagUsed,Variance,VarianceCoarse]";
-const char s_hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GpsSatRx,Motion]";
+const char s_insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GnssMagUsed,Variance,VarianceCoarse]";
+const char s_hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GnssSatRx,Motion]";
 const char s_imuStatusDescription[] = "IMU Status flags [Sensor valid]";
 
 // Stringify the macro value
@@ -530,7 +530,7 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("acc", &bit_t::acc, DATA_TYPE_F32, SYM_M_PER_S_2, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("pqrSigma", &bit_t::pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S_2, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GNSS_NOISE) + "=GPS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
+    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GNSS_NOISE) + "=GNSS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
     mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
@@ -642,7 +642,7 @@ static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuSamplePeriodMs",   &sys_params_t::imuSamplePeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample period. Zero disables sensor sampling");
     mapper.AddMember("navOutputPeriodMs",   &sys_params_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter ouput period");
     mapper.AddMember("navUpdatePeriodMs",   &sys_params_t::navUpdatePeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter update period", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("sensorTruePeriod",    &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "us", "Actual sample period relative to GPS PPS", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, 1.0e6);
+    mapper.AddMember("sensorTruePeriod",    &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "us", "Actual sample period relative to GNSS PPS", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, 1.0e6);
     mapper.AddMember("flashCfgChecksum",    &sys_params_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config checksum used with host SDK synchronization", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("genFaultCode",        &sys_params_t::genFaultCode, DATA_TYPE_UINT32, "", "General fault code descriptor", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGenFaultCode;
     mapper.AddMember("upTime",              &sys_params_t::upTime, DATA_TYPE_F64, "s", "Local time since startup", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
@@ -732,7 +732,7 @@ static void PopulateMapIns4(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddVec3Xyz("ecef", offsetof(ins_4_t,ecef), DATA_TYPE_F64, "m", "position in ECEF (earth-centered earth-fixed) frame", flags);
 }
 
-static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssPos(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_pos_t> mapper(data_set, did);
     mapper.AddMember("week", &gnss_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
@@ -752,7 +752,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
 }
 
-static void PopulateMapGpsVel(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssVel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_vel_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1030,7 +1030,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
         });
 }
 
-static void PopulateMapGpsVersion(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssVersion(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_version_t> mapper(data_set, did);
     mapper.AddMember("swVersion", &gnss_version_t::swVersion, DATA_TYPE_STRING, "", "Software version");
@@ -1038,7 +1038,7 @@ static void PopulateMapGpsVersion(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("extension", &gnss_version_t::extension, DATA_TYPE_STRING, GNSS_VER_NUM_EXTENSIONS, {""}, {"Extension 30 bytes array description."});
 }
 
-static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_timepulse_t> mapper(data_set, did);
     mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1048,8 +1048,8 @@ static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("plsTimeMs", &gnss_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
     mapper.AddMember("syncCount", &gnss_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
     mapper.AddMember("badPulseAgeCount", &gnss_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
-    mapper.AddMember("ppsInterruptReinitCount", &gnss_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GPS PPS interrupt re-initalization.");
-    mapper.AddMember("plsCount", &gnss_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GPS PPS via GPIO, not interrupt.");
+    mapper.AddMember("ppsInterruptReinitCount", &gnss_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GNSS PPS interrupt re-initalization.");
+    mapper.AddMember("plsCount", &gnss_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GNSS PPS via GPIO, not interrupt.");
     mapper.AddMember("lastSyncTimeMs", &gnss_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
     mapper.AddMember("sinceLastSyncTimeMs", &gnss_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
 }
@@ -1183,7 +1183,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     string str;
     mapper.AddMember("startupImuDtMs", &nvm_flash_cfg_t::startupImuDtMs, DATA_TYPE_UINT32, "ms", "IMU sample (system input data) period set on startup. Cannot be larger than startupInsDtMs. Zero disables sensor/IMU sampling.");
     mapper.AddMember("startupNavDtMs", &nvm_flash_cfg_t::startupNavDtMs, DATA_TYPE_UINT32, "ms", "Nav filter (system output data) update period set on startup. 1ms min (1KHz max).");
-    mapper.AddMember("startupGnssDtMs", &nvm_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
+    mapper.AddMember("startupGnssDtMs", &nvm_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GNSS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &nvm_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &nvm_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
@@ -1192,16 +1192,16 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddVec3Xyz("gnss1AntOffset", offsetof(nvm_flash_cfg_t,gnss1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GNSS1 antenna.");
     mapper.AddVec3Xyz("gnss2AntOffset", offsetof(nvm_flash_cfg_t,gnss2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GNSS2 antenna.");
 
-    mapper.AddMember("gnssTimeSyncPeriodMs", &nvm_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.", 0, 1.0);
-    mapper.AddMember("gnssTimeUserDelay", &nvm_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
-    mapper.AddMember("gnssMinimumElevation", &nvm_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    mapper.AddMember("gnssTimeSyncPeriodMs", &nvm_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.", 0, 1.0);
+    mapper.AddMember("gnssTimeUserDelay", &nvm_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
+    mapper.AddMember("gnssMinimumElevation", &nvm_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GNSS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0);
 
     mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0);
     str = "AutobaudOff [0x1=Ser0, 0x2=Ser1], 0x4=AutoMagRecal, 0x8=DisableMagDecEst, ";
     str += "0x10=DisableLeds, ";
     str += "0x100=1AxisMagRecal, ";
-    str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GPS], ";
+    str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GNSS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
     mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
     str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
@@ -1219,7 +1219,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
 
     mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
-    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GPS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GNSS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("lastLlaTimeOfWeekMs", &nvm_flash_cfg_t::lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, "ms", "Last LLA update time since Sunday morning");
     mapper.AddMember("lastLlaWeek", &nvm_flash_cfg_t::lastLlaWeek, DATA_TYPE_UINT32, "week", "Last LLA update Weeks since Jan 6, 1980");
     mapper.AddMember("lastLlaUpdateDistance", &nvm_flash_cfg_t::lastLlaUpdateDistance, DATA_TYPE_F32, "m", "Distance between current and last LLA that triggers an update of lastLLA)");
@@ -1279,7 +1279,7 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser0BaudRate", &gpx_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &gpx_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &gpx_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
-    mapper.AddMember("startupGnssDtMs", &gpx_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
+    mapper.AddMember("startupGnssDtMs", &gpx_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GNSS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     str = " offset from Sensor Frame origin to GNSS1 antenna.";
     mapper.AddArray("gnss1AntOffset", &gpx_flash_cfg_t::gnss1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     str = " offset from Sensor Frame origin to GNSS2 antenna.";
@@ -1287,9 +1287,9 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist");
     mapper.AddMember("debug", &gpx_flash_cfg_t::debug, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("gnssTimeSyncPeriodMs", &gpx_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.");
-    mapper.AddMember("gnssTimeUserDelay", &gpx_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("gnssMinimumElevation", &gpx_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    mapper.AddMember("gnssTimeSyncPeriodMs", &gpx_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.");
+    mapper.AddMember("gnssTimeUserDelay", &gpx_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("gnssMinimumElevation", &gpx_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GNSS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
     str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
     str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
@@ -1594,7 +1594,7 @@ static void PopulateMapEvbLunaAuxCmd(data_set_t data_set[DID_COUNT], uint32_t di
 
 #endif
 
-static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_rtk_rel_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_rtk_rel_t::timeOfWeekMs, DATA_TYPE_UINT32,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1607,7 +1607,7 @@ static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("status", &gnss_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GNSS_STATUS).renderExtended = renderGnssStatusBits;
 }
 
-static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_rtk_misc_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_rtk_misc_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1654,10 +1654,10 @@ static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("correctionChecksumFailures", &gnss_rtk_misc_t::correctionChecksumFailures, DATA_TYPE_UINT32, "int", "Correction input checksum failures", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapGpsRaw(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssRaw(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_raw_t> mapper(data_set, did);
-    mapper.AddMember("receiveIndex", &gnss_raw_t::receiverIndex, DATA_TYPE_UINT8, "", "Receiver index (1=Rover, 2=Base). RTK positioning or RTK compassing must be enabled to stream raw GPS data.", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("receiveIndex", &gnss_raw_t::receiverIndex, DATA_TYPE_UINT8, "", "Receiver index (1=Rover, 2=Base). RTK positioning or RTK compassing must be enabled to stream raw GNSS data.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("dataType", &gnss_raw_t::dataType, DATA_TYPE_UINT8, "", "Type of data (eRawDataType: 1=observations, 2=ephemeris, 3=glonassEphemeris, 4=SBAS, 5=baseAntenna, 6=IonosphereModel)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("obsCount", &gnss_raw_t::obsCount, DATA_TYPE_UINT8, "", "Number of observations in array (obsd_t) when dataType==1", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &gnss_raw_t::reserved, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_READ_ONLY);
@@ -1742,10 +1742,10 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("can_period_mult[CIDDUAL_PX]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_PX, DATA_TYPE_UINT16, "", "Period multiplier for INS dual PX");
     mapper.AddMember2("can_period_mult[CIDDUAL_QY]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_QY, DATA_TYPE_UINT16, "", "Period multiplier for INS dual QY");
     mapper.AddMember2("can_period_mult[CIDDUAL_RZ]",                offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_DUAL_RZ, DATA_TYPE_UINT16, "", "Period multiplier for INS dual RZ");
-    mapper.AddMember2("can_period_mult[CIDGPS1_POS]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS1_POS, DATA_TYPE_UINT16, "", "Period multiplier for GNSS1 position");
-    mapper.AddMember2("can_period_mult[CIDGPS2_POS]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS2_POS, DATA_TYPE_UINT16, "", "Period multiplier for GNSS2 position");
-    mapper.AddMember2("can_period_mult[CIDGPS1_RTK_POS_REL]",       offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "Period multiplier for GNSS1 RTK position relative");
-    mapper.AddMember2("can_period_mult[CIDGPS2_RTK_CMP_REL]",       offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "Period multiplier for GNSS2 RTK compass relative");
+    mapper.AddMember2("can_period_mult[CIDGNSS1_POS]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS1_POS, DATA_TYPE_UINT16, "", "Period multiplier for GNSS1 position");
+    mapper.AddMember2("can_period_mult[CIDGNSS2_POS]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS2_POS, DATA_TYPE_UINT16, "", "Period multiplier for GNSS2 position");
+    mapper.AddMember2("can_period_mult[CIDGNSS1_RTK_POS_REL]",      offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "Period multiplier for GNSS1 RTK position relative");
+    mapper.AddMember2("can_period_mult[CIDGNSS2_RTK_CMP_REL]",      offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "Period multiplier for GNSS2 RTK compass relative");
     mapper.AddMember2("can_period_mult[CIDROLL_ROLLRATE]",          offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT16, "", "Period multiplier for roll rate");
     mapper.AddMember2("cantransmit_address[CID_INS_TIME]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_TIME, DATA_TYPE_UINT32, "", "Address for INS time", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_INS_STATUS]",        offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_INS_STATUS, DATA_TYPE_UINT32, "", "Address for INS Status", DATA_FLAGS_DISPLAY_HEX);
@@ -1769,10 +1769,10 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("cantransmit_address[CID_DUAL_PX]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_PX, DATA_TYPE_UINT32, "", "Address for dual IMU PX", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_DUAL_QY]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_QY, DATA_TYPE_UINT32, "", "Address for INS dual IMU QY", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_DUAL_RZ]",           offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_DUAL_RZ, DATA_TYPE_UINT32, "", "Address for INS dual IMU RZ", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GNSS1_POS]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_POS, DATA_TYPE_UINT32, "", "Address for GPS1_POS", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GNSS2_POS]",          offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_POS, DATA_TYPE_UINT32, "", "Address for GNSS2 POS", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GNSS1_RTK_POS_REL]",  offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GNSS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember2("cantransmit_address[CID_GNSS2_RTK_CMP_REL]",  offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GNSS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS1_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_POS, DATA_TYPE_UINT32, "", "Address for GNSS1_POS", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS2_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_POS, DATA_TYPE_UINT32, "", "Address for GNSS2 POS", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GNSS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("cantransmit_address[CID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GNSS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate");
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
@@ -2285,17 +2285,17 @@ cISDataMappings::cISDataMappings()
     PopulateMapBarometer(m_data_set, DID_BAROMETER);
     PopulateMapWheelEncoder(m_data_set, DID_WHEEL_ENCODER);
 
-    PopulateMapGpsPos(m_data_set, DID_GNSS1_RTK_POS);
-    PopulateMapGpsRtkRel(m_data_set, DID_GNSS1_RTK_POS_REL);
-    PopulateMapGpsRtkMisc(m_data_set, DID_GNSS1_RTK_POS_MISC);
-    PopulateMapGpsRtkRel(m_data_set, DID_GNSS2_RTK_CMP_REL);
-    PopulateMapGpsRtkMisc(m_data_set, DID_GNSS2_RTK_CMP_MISC);
+    PopulateMapGnssPos(m_data_set, DID_GNSS1_RTK_POS);
+    PopulateMapGnssRtkRel(m_data_set, DID_GNSS1_RTK_POS_REL);
+    PopulateMapGnssRtkMisc(m_data_set, DID_GNSS1_RTK_POS_MISC);
+    PopulateMapGnssRtkRel(m_data_set, DID_GNSS2_RTK_CMP_REL);
+    PopulateMapGnssRtkMisc(m_data_set, DID_GNSS2_RTK_CMP_MISC);
 
-    PopulateMapGpsPos(m_data_set, DID_GNSS1_POS);
-    PopulateMapGpsPos(m_data_set, DID_GNSS2_POS);
-    PopulateMapGpsVel(m_data_set, DID_GNSS1_VEL);
-    PopulateMapGpsVel(m_data_set, DID_GNSS2_VEL);
-    PopulateMapGpsPos(m_data_set, DID_GNSS1_RCVR_POS);
+    PopulateMapGnssPos(m_data_set, DID_GNSS1_POS);
+    PopulateMapGnssPos(m_data_set, DID_GNSS2_POS);
+    PopulateMapGnssVel(m_data_set, DID_GNSS1_VEL);
+    PopulateMapGnssVel(m_data_set, DID_GNSS2_VEL);
+    PopulateMapGnssPos(m_data_set, DID_GNSS1_RCVR_POS);
 
     // SN-8068: SAT/SIG are array-of-struct DIDs. Previously disabled ("too much data") because
     // the old flat model emitted ~300/600 entries per DID; the array-of-struct model exposes
@@ -2306,14 +2306,14 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsSig(m_data_set, DID_GNSS1_SIG);
     PopulateMapGpsSig(m_data_set, DID_GNSS2_SIG);
 
-    PopulateMapGpsVersion(m_data_set, DID_GNSS1_VERSION);
-    PopulateMapGpsVersion(m_data_set, DID_GNSS2_VERSION);
-    PopulateMapGpsTimepulse(m_data_set, DID_GNSS1_TIMEPULSE);
-    PopulateMapGpsTimepulse(m_data_set, DID_GNSS2_TIMEPULSE);
+    PopulateMapGnssVersion(m_data_set, DID_GNSS1_VERSION);
+    PopulateMapGnssVersion(m_data_set, DID_GNSS2_VERSION);
+    PopulateMapGnssTimepulse(m_data_set, DID_GNSS1_TIMEPULSE);
+    PopulateMapGnssTimepulse(m_data_set, DID_GNSS2_TIMEPULSE);
 
-    PopulateMapGpsRaw(m_data_set, DID_GNSS1_RAW);
-    PopulateMapGpsRaw(m_data_set, DID_GNSS2_RAW);
-    PopulateMapGpsRaw(m_data_set, DID_GNSS_BASE_RAW);
+    PopulateMapGnssRaw(m_data_set, DID_GNSS1_RAW);
+    PopulateMapGnssRaw(m_data_set, DID_GNSS2_RAW);
+    PopulateMapGnssRaw(m_data_set, DID_GNSS_BASE_RAW);
 
     PopulateMapStrobeInTime(m_data_set, DID_STROBE_IN_TIME);
     PopulateMapSysSensors(m_data_set, DID_SYS_SENSORS);

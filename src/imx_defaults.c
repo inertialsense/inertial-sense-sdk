@@ -110,8 +110,8 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     }
 
     // GPS type: ZED-F9P
-    SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-    SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+    SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+    SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
 }
 
 void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2, uint32_t platformConfig)
@@ -130,8 +130,8 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_EVB2_G2:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER1);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER2);
-        SET_IO_CFG_GNSS1_TYPE(  *ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-        SET_IO_CFG_GNSS2_TYPE(  *ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+        SET_IO_CFG_GNSS1_TYPE(  *ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(  *ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         break;
     case PLATFORM_CFG_TYPE_RUG3_G1:
     case PLATFORM_CFG_TYPE_RUG3_G2:
@@ -141,16 +141,16 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_IG1_G1:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
-        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         break;
 
     case PLATFORM_CFG_TYPE_IG1_0_G2:
     case PLATFORM_CFG_TYPE_IG1_G2:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER2);
-        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         break;
 
     case PLATFORM_CFG_TYPE_IG2:
@@ -166,23 +166,23 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     case PLATFORM_CFG_TYPE_LAMBDA_G1:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER1);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
-        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         break;
 
     case PLATFORM_CFG_TYPE_LAMBDA_G2:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER1);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER2);
-        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         break;
 
     case PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA:
     case PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER2);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
-        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
-        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBX_F9P);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         *ioConfig |= IO_CONFIG_GNSS1_NO_INIT;
         *ioConfig |= IO_CONFIG_GNSS2_NO_INIT;
         break;
