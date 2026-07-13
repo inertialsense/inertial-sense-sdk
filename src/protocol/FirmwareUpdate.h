@@ -131,9 +131,6 @@ namespace fwUpdate {
         TARGET_SONY_CXD5610__ALL = 0x12F,
 
         TARGET_SEPTENTRIO = 0x130,
-        TARGET_SEPTENTRIO__1 = 0x131,
-        TARGET_SEPTENTRIO__2 = 0x132,
-        TARGET_SEPTENTRIO__ALL = 0x13F,
 
         TARGET_MAXNUM,
         TARGET_UNKNOWN = 0xFFFFFFFF,
