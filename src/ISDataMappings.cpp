@@ -746,7 +746,7 @@ static void PopulateMapGnssPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("pDop", &gnss_pos_t::pDop, DATA_TYPE_F32, "m", "Position dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("cnoMean", &gnss_pos_t::cnoMean, DATA_TYPE_F32, "dBHz", "Average of non-zero satellite carrier to noise ratios (signal strengths)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("towOffset", &gnss_pos_t::towOffset, DATA_TYPE_F64, "sec", "Time sync offset from local clock", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
-    mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GPS leap seconds (GPS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GPS time.", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GNSS leap seconds (GNSS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GNSS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
@@ -1041,8 +1041,8 @@ static void PopulateMapGnssVersion(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapGnssTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_timepulse_t> mapper(data_set, did);
-    mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("timeMcu", &gnss_timepulse_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("msgTimeMs", &gnss_timepulse_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
     mapper.AddMember("plsTimeMs", &gnss_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
@@ -1511,7 +1511,7 @@ static void PopulateMapEvbLunaFlashCfg(data_set_t data_set[DID_COUNT], uint32_t 
 static void PopulateMapCoyoteStatus(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_status_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GNSS time of week (since Sunday morning).");
     mapper.AddMember("evbLunaStatus", evbLunaStatus, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("motorState", motorState, DATA_TYPE_UINT32, "", "");
     mapper.AddMember("remoteKillMode", remoteKillMode, DATA_TYPE_UINT32, "", "Motor state (eLunaMotorState)");
@@ -1521,7 +1521,7 @@ static void PopulateMapCoyoteStatus(data_set_t data_set[DID_COUNT], uint32_t did
 static void PopulateMapEvbLunaSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_sensors_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GNSS time of week (since Sunday morning).");
     mapper.AddMember("proxSensorOutput[0]", proxSensorOutput[0], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("proxSensorOutput[1]", proxSensorOutput[1], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("proxSensorOutput[2]", proxSensorOutput[2], DATA_TYPE_F32, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1774,8 +1774,50 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("cantransmit_address[CID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GNSS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GNSS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate");
+    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate in kbps (bits 14:0; bit 15 = FD enable flag)")
+        .bitMask = 0x7FFF;
+    {
+        data_info_t& fdInfo = mapper.AddMember2("can_fd_enabled", offsetof(can_config_t, can_baudrate_kbps), DATA_TYPE_UINT16, "", "CAN FD enabled (0=disabled, 1=enabled; bit 15 of can_baudrate_kbps)", DATA_FLAGS_READ_ONLY);
+        fdInfo.bitMask = 0x8000;
+        fdInfo.bitShift = 15;
+    }
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
+}
+
+static void PopulateMapCanFdConfig(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<can_config_t> mapper(data_set, did);
+
+    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate in kbps (bits 14:0; bit 15 = FD enable flag)")
+        .bitMask = 0x7FFF;
+    {
+        data_info_t& fdInfo = mapper.AddMember2("can_fd_enabled", offsetof(can_config_t, can_baudrate_kbps), DATA_TYPE_UINT16, "", "CAN FD enabled (0=disabled, 1=enabled; bit 15 of can_baudrate_kbps)", DATA_FLAGS_READ_ONLY);
+        fdInfo.bitMask = 0x8000;
+        fdInfo.bitShift = 15;
+    }
+    mapper.AddMember("can_receive_address",  &can_config_t::can_receive_address,  DATA_TYPE_UINT32, "",     "CAN receive address", DATA_FLAGS_DISPLAY_HEX);
+
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_1]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_1,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-1");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_2]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_2,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-2 quaternion");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_3]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_3,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-3 MSL");
+    mapper.AddMember2("can_fd_period_mult[FDCID_INS_4]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_4,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-4");
+    mapper.AddMember2("can_fd_period_mult[FDCID_PIMU]",              offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_PIMU,              DATA_TYPE_UINT16, "", "FD period multiplier for PIMU");
+    mapper.AddMember2("can_fd_period_mult[FDCID_IMU]",               offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_IMU,               DATA_TYPE_UINT16, "", "FD period multiplier for IMU");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS1_POS]",         offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS1_POS,         DATA_TYPE_UINT16, "", "FD period multiplier for GNSS1 position");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS2_POS]",         offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS2_POS,         DATA_TYPE_UINT16, "", "FD period multiplier for GNSS2 position");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS1 RTK relative");
+    mapper.AddMember2("can_fd_period_mult[FDCID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT16, "", "FD period multiplier for GNSS2 RTK compassing relative");
+
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_1]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_1,             DATA_TYPE_UINT32, "", "FD transmit address for INS-1",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_2]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_2,             DATA_TYPE_UINT32, "", "FD transmit address for INS-2",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_3]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_3,             DATA_TYPE_UINT32, "", "FD transmit address for INS-3",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_INS_4]",             offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_INS_4,             DATA_TYPE_UINT32, "", "FD transmit address for INS-4",                    DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_PIMU]",              offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_PIMU,              DATA_TYPE_UINT32, "", "FD transmit address for PIMU",                     DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_IMU]",               offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_IMU,               DATA_TYPE_UINT32, "", "FD transmit address for IMU",                      DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_POS,         DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 position",            DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_POS,         DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 position",            DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 RTK relative",       DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 RTK compassing relative", DATA_FLAGS_DISPLAY_HEX);
 }
 
 static void PopulateMapDiagMsg(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1828,7 +1870,7 @@ static void PopulateMapSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sensors_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GPS time of week (since Sunday morning).");
+    mapper.AddMember("time", &sensors_t::time, DATA_TYPE_F64, "s", "GNSS time of week (since Sunday morning).");
     for (int i=0; i<MAX_IMU_DEVICES; i++)
     {
         mapper.AddArray2("pqr" + to_string(i), i*sizeof(sensors_mpu_t) + offsetof(sensors_t, mpu[0].pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Temperature compensation bias"}, flags);
@@ -2147,7 +2189,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GNSS1_TIMEPULSE",               // 41
     "DID_CAL_SC",                       // 42
     "DID_UNUSED_43",                    // 43
-    "DID_UNUSED_44",                    // 44
+    "DID_CANFD_CONFIG",                 // 44
     "DID_GNSS1_SIG",                     // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
     "DID_REFERENCE_MAGNETOMETER",       // 47
@@ -2347,6 +2389,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapPortMonitor(m_data_set, DID_GPX_PORT_MONITOR);
     PopulateMapNmeaMsgs(m_data_set, DID_NMEA_BCAST_PERIOD);
     PopulateMapCanConfig(m_data_set, DID_CAN_CONFIG);
+    PopulateMapCanFdConfig(m_data_set, DID_CANFD_CONFIG);
     PopulateMapRmc(m_data_set, DID_RMC);
     PopulateMapRmc(m_data_set, DID_GPX_RMC);
     PopulateMapISEvent(m_data_set, DID_EVENT);
@@ -2535,6 +2578,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_SURVEY_IN:
     case DID_PORT_MONITOR:
     case DID_CAN_CONFIG:
+    case DID_CANFD_CONFIG:
     case DID_INFIELD_CAL:
     case DID_REFERENCE_IMU:
     case DID_REFERENCE_PIMU:
@@ -2724,6 +2768,18 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
     {   // Don't convert units or reduce precision.  Used for CSV logs. (WHJ)
         conversion = 1.0;
         flags &= (~DATA_FLAGS_FIXED_DECIMAL_MASK);
+    }
+
+    // Apply bitmask/bitshift for integer types (used to display packed bit-fields as separate fields)
+    uint8_t maskedBuffer[8] = {};
+    if (info.bitMask != ~0ULL || info.bitShift != 0)
+    {
+        uint64_t rawVal = 0;
+        uint32_t sz = (info.size < (uint32_t)sizeof(rawVal)) ? info.size : (uint32_t)sizeof(rawVal);
+        memcpy(&rawVal, ptr, sz);
+        rawVal = (rawVal & info.bitMask) >> info.bitShift;
+        memcpy(maskedBuffer, &rawVal, sz);
+        ptr = maskedBuffer;
     }
 
     return VariableToString(info.type, (eDataFlags)flags, ptr, info.size, stringBuffer, conversion, json);

@@ -195,9 +195,9 @@ public:
             if (dt < dtMin) { dtMin = dt;  dtMinTime = time; APPEND_DEBUG_MSG("dtMin %.3f  ", dtMin); }
             if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; APPEND_DEBUG_MSG("dtMax %.3f  ", dtMax); }
 
-            if (std::isnan(dtLast)) {   // First sample
+            if (std::isnan(dtLast)) {   // First dt sample -- initialize ddt stats (NOT dtMax, which was just set above)
                 ddtMin = INVALID_DDT_MIN_STAT;
-                dtMax = -INVALID_DDT_MIN_STAT;
+                ddtMax = -INVALID_DDT_MIN_STAT;
             } else {
                 ddt = dt - dtLast;
                 double alphaLocal = 1.0 / (1.0 + ddtCnt);
@@ -205,8 +205,8 @@ public:
                 ddtAvg = betaLocal * ddtAvg + alphaLocal * ddt;
                 ddtCnt++;
 
-                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; APPEND_DEBUG_MSG("dtMin %.3f  ", dtMin); }
-                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; APPEND_DEBUG_MSG("dtMax %.3f  ", dtMax); }
+                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; APPEND_DEBUG_MSG("ddtMin %.3f  ", ddtMin); }
+                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; APPEND_DEBUG_MSG("ddtMax %.3f  ", ddtMax); }
             }
 
             rate = (dt != 0) ? (1.0 / dt) : 0;

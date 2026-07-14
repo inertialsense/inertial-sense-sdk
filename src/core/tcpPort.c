@@ -64,13 +64,20 @@ int tcpPortValidate(port_handle_t port) {
  */
 int tcpPortOpen(port_handle_t port) {
     tcp_port_t* tcpPort = TCP_PORT(port);
-    if (tcpPort->socket < 0) { // The socket is already open, we don't need to do anything
+    if (tcpPort->socket < 0) { // No socket yet -- create one and begin connecting.
         // Create new socket
         tcpPort->socket = socket(tcpPort->addr.domain, SOCK_STREAM, IPPROTO_TCP);
         if (tcpPort->socket < 0) {
             portFlagsClear(port, PORT_FLAG__OPENED);
             HANDLE_SOCKET_ERROR(tcpPort);
         }
+        // Force the socket into non-blocking mode BEFORE connect(). Otherwise a
+        // connect() to an unreachable/filtered host stalls the calling thread for
+        // the full kernel SYN timeout (~1-2 min), regardless of tcpPort->blocking.
+        // (A freshly created socket defaults to blocking, so assert that here to
+        // guarantee tcpPortSetBlocking() actually issues the FIONBIO ioctl.)
+        tcpPort->blocking_internal = true;
+        tcpPortSetBlocking(port, false);
     }
 
     // Connect socket to remote (use family-specific address length)
@@ -82,14 +89,32 @@ int tcpPortOpen(port_handle_t port) {
     }
     int retval = connect(tcpPort->socket, &tcpPort->addr.generic, addrlen);
     if (retval != 0) {
-        if (errno != EISCONN) {
+#ifdef PLATFORM_IS_WINDOWS
+        int err = WSAGetLastError();
+        bool connected = (err == WSAEISCONN);
+        bool pending   = (err == WSAEWOULDBLOCK) || (err == WSAEALREADY) || (err == WSAEINPROGRESS) || (err == WSAEINVAL);
+#else
+        int err = errno;
+        bool connected = (err == EISCONN);
+        // Non-blocking connect that hasn't finished the handshake yet -- the first
+        // call returns EINPROGRESS, subsequent polls (portOpen is re-invoked by the
+        // caller until the port opens) return EALREADY. Neither is an error.
+        bool pending   = (err == EINPROGRESS) || (err == EALREADY) || (err == EWOULDBLOCK);
+#endif
+        if (pending) {
+            // Handshake still in flight. Leave the socket intact and report success
+            // WITHOUT setting PORT_FLAG__OPENED, so the caller keeps polling until the
+            // connection either completes (EISCONN below) or hard-fails.
+            tcpPort->base.perror = 0;
+            return PORT_ERROR__NONE;
+        }
+        if (!connected) {
             portFlagsClear(port, PORT_FLAG__OPENED);
             HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
         }
     }
 
-    // Set socket mode
-    tcpPort->blocking_internal = true;
+    // Connection established -- apply the caller's desired blocking mode.
     tcpPortSetBlocking(port, tcpPort->blocking);
 
     portFlagsSet(port, PORT_FLAG__OPENED);

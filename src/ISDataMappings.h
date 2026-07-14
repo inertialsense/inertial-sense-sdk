@@ -114,6 +114,8 @@ struct data_info_t
     std::vector<std::string> units;             //!< The Units that this field should be displayed in (after conversion)
     std::vector<std::string> description;       //!< A description for this field; what it means, how to interpret its values, etc.
     double conversion;                          //!< A scalar that the raw value is divided by prior to converting to a string
+    uint64_t bitMask = ~0ULL;                   //!< Bitmask applied to raw integer value before display (default ~0 = all bits pass through)
+    uint8_t  bitShift = 0;                      //!< Right-shift applied after bitMask (default 0 = no shift)
     RenderFunction renderBasic =                //!< A function to render / convert a value to a simple string - VariableToString() calls this function - this should not include newlines, etc.
             [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { (void)info; (void)val; (void)arrayIdx; (void)flags; return ""; };
     RenderFunction renderExtended =             //!< A function to render a value to string using advanced logic and formatting - this may include newlines, html formatting, etc. can be used for tooltips, and useful for bitmasks, etc and other advanced formatting
