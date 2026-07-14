@@ -233,6 +233,21 @@ public:
     static constexpr int64_t OFFLINE_EVICT_MS = 30000;
 
     /**
+     * Override the offline eviction threshold at runtime. The default is OFFLINE_EVICT_MS (30 s).
+     * Intended for unit tests that need a short timeout to avoid long waits; not for production use.
+     * @param ms  new threshold in milliseconds
+     */
+    void setOfflineEvictMs(int64_t ms) { offlineEvictMs_ = ms; }
+
+    /**
+     * Override the per-step base for the escalating reconnect backoff. The default is 6000 ms
+     * (so the first step past the eviction window is 6 s). Intended for unit tests only.
+     * In production the value is tuned so the cadence reaches LOST_BACKOFF_MAX_MS (~10 min).
+     * @param ms  new per-step base in milliseconds
+     */
+    void setLostBackoffBaseMs(int64_t ms) { lostBackoffBaseMs_ = ms; }
+
+    /**
      * SN-8177: escalating reconnect backoff for a "lost" manually-configured host. The probe
      * interval grows roughly each minute the host has been silent, capping here (~10 min in).
      * Keeps a dead-but-maybe-returning relay from being hammered (and blocking the IO thread).
@@ -293,6 +308,8 @@ private:
     std::map<std::string, std::unique_ptr<RelayHost>> relayHosts_;
     mutable std::recursive_mutex mutex_;
     std::chrono::milliseconds pollInterval_ = std::chrono::seconds(1);
+    int64_t offlineEvictMs_ = OFFLINE_EVICT_MS;    //!< mutable threshold used by tick() and reconnectInterval(); override via setOfflineEvictMs()
+    int64_t lostBackoffBaseMs_ = 6000;             //!< per-step multiplier for escalating backoff; override via setLostBackoffBaseMs()
     std::chrono::steady_clock::time_point lastMdnsQueryTime_ = {}; //!< rate-limit mDNS queries
 
     /**
