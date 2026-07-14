@@ -17,13 +17,34 @@ Note these are local to this folder.
 
 #### SDK Files
 
+* [com_manager.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/com_manager.h)
 * [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h)
 * [core/msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h)
 * [ISUtilities.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISUtilities.h)
 * [PortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/PortFactory.h)
-
+* [ring_buffer.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ring_buffer.h)
 
 Note paths relative to SDK src/ folder.
+
+## Purpose and Design
+This project is constructed as both a walk-through and a template for users wishing to learn how to make use of two modules of the SDK that would be important pieces for communications management.  
+
+One is the `base_port` which is a C struct object that provides a data-in and data-out genericized interface to layer on top of the data transportation channel underneath that the user creates, custom to their application.  It “knows the essential things” about a port.  It provides a framework for maintaining port status and performing port operations.  Many channel implementations can be used and the header file provides port definitions used across the entire product line & SDK.  
+
+The other is the `PortFactory` which is an abstract C++ class that is responsible for discovery of available ports of a particular type.  There should be one implementation for each type of discoverable port.  This does NOT return a port, only a name or some other identifier that can be used by the port implementation to create the port.  Each factory is responsible for identifying & validating possible ports of a particular type.  Also responsible for allocating, configuring, and deallocating a port of that type, by its name.  As an abstract class, this allows for third-party locators to be implemented for custom port types.
+
+In this example we use a simple virtual serial test port for our `base_port` implementation, which is built upon the SDK's ring buffer.  Loopback and internally bridged test ports are available, but the loopback ports are used by default in this example.  Our custom `PortFactory` then binds to this port and we demonstrate the usage of the required minimum port factory operations.
+
+In the Implementation section of this README, you will find a series of sub-sections called Steps, which you may follow in order.  These Steps accomplish two purposes:  one is to provide a guided tour of the project files by reference and sample, and the second is to outline a process for how a user might go about creating their own versions of a custom port and port factory for their purposes.  This is done by explaining what has been created for you already by way of demonstration, and why each piece is critical. Thus, as you proceed through the Step sub-sections you will find that you are not being instructed to generate any new code, as it is a fully functional example already, but rather being introduced to how something similar could be created.
+
+Each Step is part of a project-level process, will reference one or more of the code files, and describe actions the user can take in the custom port or port factory creation.  Each file in the local project folder will contain one or more commented sections each associated with a README Step section, and the Step sections in a given file may start at any Step number depending on when in the project-level process that files contents come into play.
+
+The parts of the code associated with a given README Step are tagged like this:
+```C++
+/** STEP 6: 
+```
+
+
 
 ## Documentation
 Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions if that suits you, but all information is contained in this document plus the files listed above.  
