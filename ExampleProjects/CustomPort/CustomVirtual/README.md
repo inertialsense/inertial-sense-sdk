@@ -57,7 +57,7 @@ The parts of the code associated with a given README Step are tagged like this:
 Here is a visual representation example to help navigate:
 ```mermaid
 flowchart LR
-    A[Implmentation Section <br> ... <br> Step 3 <br> Step 4 <br> ... ] --> B[Code File X <br> ... <br> /** STEP 3 <br> ... <br> /** STEP 4]
+    A[Implementation Section <br> ... <br> Step 3 <br> Step 4 <br> ... ] --> B[Code File X <br> ... <br> /** STEP 3 <br> ... <br> /** STEP 4]
     A --> C[Code File Y <br> ... <br> /** STEP 3 ... <br>]
 ```
 
