@@ -978,7 +978,7 @@ ISDeviceCal::AsyncState ISDeviceCal::uploadSensorCalStep(port_handle_t port, int
 
     if (!sendV1p3 && !sendV1p4)
     {
-        log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: unresolved hardware version (hardwareVer[0]=%d); refusing upload. Device must be in app mode.", hwMajor);
+        log_error(IS_LOG_CALIBRATION, "[%s] uploadSensorCalStep: unresolved hardware version (hardwareVer[0]=%d); refusing upload. Device must be in app mode.", ISDevice::getIdAsString(devInfo).c_str(), hwMajor);
         return ASYNC_STATE__FAILURE;
     }
 
@@ -995,7 +995,7 @@ ISDeviceCal::AsyncState ISDeviceCal::uploadSensorCalStep(port_handle_t port, int
     // Returns 0 (pending) on send failure; aborts with -1 after MAX_UPLOAD_SEND_RETRIES consecutive failures on the current step.
     auto sendFail = [&]() -> AsyncState {
         if (++ctx.retryCount > MAX_UPLOAD_SEND_RETRIES) {
-            log_error(IS_LOG_CALIBRATION, "uploadSensorCalStep: send failed %d times on step %d; aborting upload.", ctx.retryCount, calUploadState);
+            log_error(IS_LOG_CALIBRATION, "[%s] uploadSensorCalStep: send failed %d times on step %d; aborting upload.", ISDevice::getIdAsString(devInfo).c_str(), ctx.retryCount, calUploadState);
             return ASYNC_STATE__FAILURE;
         }
         return ASYNC_STATE__PENDING;
@@ -1184,7 +1184,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
         { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = "Received valid JSON response from server, but no suitable calibration found (Has this device ever been calibrated?)."; return r; }
     }
 
-    log_info(IS_LOG_CALIBRATION, "Found calibration UUID: %s (date: %s)", bestUuid.c_str(), bestDateTime.c_str());
+    log_info(IS_LOG_CALIBRATION, "[%s] Found calibration UUID: %s (date: %s)", ISDevice::getIdAsString(devInfo).c_str(), bestUuid.c_str(), bestDateTime.c_str());
 
     // Step 3: Fetch full calibration JSON
     std::string calUrl = restBaseUrl + "/api/calibration/" + bestUuid;
@@ -1192,14 +1192,14 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
 
     if (calResp.statusCode == -1)
     {
-        std::string msg = utils::string_format("Failed to fetch calibration data from %s", calUrl.c_str());
+        std::string msg = utils::string_format("[%s] Failed to fetch calibration data from %s", ISDevice::getIdAsString(devInfo).c_str(), calUrl.c_str());
         log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
         { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = msg; return r; }
     }
 
     if (calResp.statusCode != 200)
     {
-        std::string msg = utils::string_format("Calibration DB returned HTTP %d for UUID %s: %s", calResp.statusCode, bestUuid.c_str(), calResp.statusMessage.c_str());
+        std::string msg = utils::string_format("[%s] Calibration DB returned HTTP %d for UUID %s: %s", ISDevice::getIdAsString(devInfo).c_str(), calResp.statusCode, bestUuid.c_str(), calResp.statusMessage.c_str());
         log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
         { ISHttpRequest::Response r; r.statusCode = calResp.statusCode; r.statusMessage = msg; return r; }
     }
