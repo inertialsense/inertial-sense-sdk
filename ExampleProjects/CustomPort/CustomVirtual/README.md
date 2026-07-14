@@ -33,17 +33,33 @@ One is the `base_port` which is a C struct object that provides a data-in and da
 
 The other is the `PortFactory` which is an abstract C++ class that is responsible for discovery of available ports of a particular type.  There should be one implementation for each type of discoverable port.  This does NOT return a port, only a name or some other identifier that can be used by the port implementation to create the port.  Each factory is responsible for identifying & validating possible ports of a particular type.  Also responsible for allocating, configuring, and deallocating a port of that type, by its name.  As an abstract class, this allows for third-party locators to be implemented for custom port types.
 
-In this example we use a simple virtual serial test port for our `base_port` implementation, which is built upon the SDK's ring buffer.  Loopback and internally bridged test ports are available, but the loopback ports are used by default in this example.  Our custom `PortFactory` then binds to this port and we demonstrate the usage of the required minimum port factory operations.
+In this example we use a simple virtual serial test port for our `base_port` implementation, which is built upon the SDK's ring buffer.  Loopback and internally bridged test ports are available, but the loopback ports are used by default in this example.  Our custom `PortFactory` then binds to this port and we demonstrate the usage of the required minimum port factory operations.  The application main provides an entry point for the user to identify the port and calls on the port factory to find and bind it.  Then, a simple data write/read/compare is performed through the loopback port, demonstrating the `base_port` interface.  See this dependency diagram for an overview:
+
+```mermaid
+graph TD
+    A[CustomVirtualExample] -.-> B[CustomVirtualPortFactory]
+    B[CustomVirtualPortFactory] -.-> C[CustomVirtualPort]
+    C[CustomVirtualPort] -.-> D[base_port]
+    B[CustomVirtualPortFactory] -.-> E[PortFactory]
+    A[CustomVirtualExample] --> F(Loopback Test)
+    F(Loopback Test) <--> C[CustomVirtualPort]
+```
 
 In the Implementation section of this README, you will find a series of sub-sections called Steps, which you may follow in order.  These Steps accomplish two purposes:  one is to provide a guided tour of the project files by reference and sample, and the second is to outline a process for how a user might go about creating their own versions of a custom port and port factory for their purposes.  This is done by explaining what has been created for you already by way of demonstration, and why each piece is critical. Thus, as you proceed through the Step sub-sections you will find that you are not being instructed to generate any new code, as it is a fully functional example already, but rather being introduced to how something similar could be created.
 
-Each Step is part of a project-level process, will reference one or more of the code files, and describe actions the user can take in the custom port or port factory creation.  Each file in the local project folder will contain one or more commented sections each associated with a README Step section, and the Step sections in a given file may start at any Step number depending on when in the project-level process that files contents come into play.
+Each Step is part of a project-level process, will reference one or more of the code files, and describe actions the user can take in the custom port or port factory creation.  Each code file in the local project folder will contain one or more commented sections each associated with a README Step section, and the Step sections in a given file may start at any Step number depending on when in the project-level process that file's contents come into play.
 
 The parts of the code associated with a given README Step are tagged like this:
 ```C++
 /** STEP 6: 
 ```
 
+Here is a visual representation example to help navigate:
+```mermaid
+flowchart LR
+    A[Implmentation Section <br> ... <br> Step 3 <br> Step 4 <br> ... ] --> B[Code File X <br> ... <br> /** STEP 3 <br> ... <br> /** STEP 4]
+    A --> C[Code File Y <br> ... <br> /** STEP 3 ... <br>]
+```
 
 
 ## Documentation
