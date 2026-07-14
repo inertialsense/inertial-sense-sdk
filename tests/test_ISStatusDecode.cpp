@@ -42,14 +42,14 @@ std::string legacyRenderInsStatusReference(uint32_t insStatus)
     BIT_MSG(insStatus, INS_STATUS_HDG_ALIGN_FINE                         ,"0x00000010 - Heading estimate is within spec (FINE).");
     BIT_MSG(insStatus, INS_STATUS_VEL_ALIGN_FINE                         ,"0x00000020 - Velocity estimate is within spec (FINE)");
     BIT_MSG(insStatus, INS_STATUS_POS_ALIGN_FINE                         ,"0x00000040 - Position estimate is within spec (FINE)");
-    BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_HEADING                    ,"0x00000080 - Heading aided by GPS");
-    BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_POS                        ,"0x00000100 - Position aided by GPS position");
-    BIT_MSG(insStatus, INS_STATUS_GNSS_UPDATE_IN_SOLUTION                ,"0x00000200 - GPS update event occurred in solution, potentially causing discontinuity in position path");
+    BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_HEADING                    ,"0x00000080 - Heading aided by GNSS");
+    BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_POS                        ,"0x00000100 - Position aided by GNSS position");
+    BIT_MSG(insStatus, INS_STATUS_GNSS_UPDATE_IN_SOLUTION                ,"0x00000200 - GNSS update event occurred in solution, potentially causing discontinuity in position path");
     BIT_MSG(insStatus, INS_STATUS_EKF_USING_REFERENCE_IMU               ,"0x00000400 - Reference IMU used in EKF");
     BIT_MSG(insStatus, INS_STATUS_MAG_AIDING_HEADING                    ,"0x00000800 - Heading aided by magnetic heading");
     BIT_MSG(insStatus, INS_STATUS_NAV_MODE                              ,"0x00001000 - Nav Mode - estimating velocity and position.");
     BIT_MSG(insStatus, INS_STATUS_STATIONARY_MODE                       ,"0x00002000 - INS in stationary mode.");
-    BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_VEL                       ,"0x00004000 - Velocity aided by GPS velocity");
+    BIT_MSG(insStatus, INS_STATUS_GNSS_AIDING_VEL                       ,"0x00004000 - Velocity aided by GNSS velocity");
     BIT_MSG(insStatus, INS_STATUS_KINEMATIC_CAL_GOOD                    ,"0x00008000 - Vehicle kinematic calibration is good");
 
     uint32_t insSol = INS_STATUS_SOLUTION(insStatus);
@@ -64,8 +64,8 @@ std::string legacyRenderInsStatusReference(uint32_t insStatus)
         case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:       buff << "0x000(8)0000 - System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold." << std::endl; break;
     }
 
-    BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_UNSET         ,"0x00100000 - GPS compassing antenna offsets are not set in flashCfg.");
-    BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_BAD           ,"0x00200000 - GPS antenna baseline specified in flashCfg and measured by GPS do not match.");
+    BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_UNSET         ,"0x00100000 - GNSS compassing antenna offsets are not set in flashCfg.");
+    BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_BASELINE_BAD           ,"0x00200000 - GNSS antenna baseline specified in flashCfg and measured by GNSS do not match.");
     BIT_MSG(insStatus, INS_STATUS_MAG_RECALIBRATING                     ,"0x00400000 - Magnetometer is being recalibrated.");
     BIT_MSG(insStatus, INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL ,"0x00800000 - Magnetometer is experiencing interference or calibration is bad.");
     BIT_MSG(insStatus, INS_STATUS_RTK_COMPASSING_VALID                  ,"0x04000000 - RTK compassing heading is accurate and aiding INS heading.");
@@ -98,22 +98,22 @@ std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
     BIT_MSG(hdwStatus, HDW_STATUS_MOTION_ACC                       , "0x00000002 - Accelerometer motion detected.");
     BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_GYR             , "0x00000004 - IMU gyro fault rejection. A Gyro sensor is divergent and being excluded.");
     BIT_MSG(hdwStatus, HDW_STATUS_IMU_FAULT_REJECT_ACC             , "0x00000008 - IMU accelerometer fault rejection. An accelerometer sensors is divergent and being excluded.");
-    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_SATELLITE_RX_VALID          , "0x00000010 - GPS satellite signals are being received (antenna and cable are good).");
+    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_SATELLITE_RX_VALID          , "0x00000010 - GNSS satellite signals are being received (antenna and cable are good).");
     BIT_MSG(hdwStatus, HDW_STATUS_STROBE_IN_EVENT                  , "0x00000020 - Event occurred on strobe input pin.");
-    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_TIME_OF_WEEK_VALID          , "0x00000040 - GPS time of week is valid and reported.");
+    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_TIME_OF_WEEK_VALID          , "0x00000040 - GNSS time of week is valid and reported.");
     BIT_MSG(hdwStatus, HDW_STATUS_REFERENCE_IMU_RX                 , "0x00000080 - Reference IMU data being received.");
     BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_GYR                   , "0x00000100 - Sensor saturation on gyro.");
     BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_ACC                   , "0x00000200 - Sensor saturation on accelerometer.");
     BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_MAG                   , "0x00000400 - Sensor saturation on magnetometer.");
     BIT_MSG(hdwStatus, HDW_STATUS_SATURATION_BARO                  , "0x00000800 - Sensor saturation on barometric pressure.");
     BIT_MSG(hdwStatus, HDW_STATUS_SYSTEM_RESET_REQUIRED            , "0x00001000 - System Reset is required for proper function.");
-    BIT_MSG(hdwStatus, HDW_STATUS_ERR_GNSS_PPS_NOISE               , "0x00002000 - GPS PPS timepulse signal has noise and occurred too frequently.");
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_GNSS_PPS_NOISE               , "0x00002000 - GNSS PPS timepulse signal has noise and occurred too frequently.");
     BIT_MSG(hdwStatus, HDW_STATUS_MAG_RECAL_COMPLETE              , "0x00004000 - Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).");
     BIT_MSG(hdwStatus, HDW_STATUS_FLASH_WRITE_PENDING              , "0x00008000 - System flash write staging or occurring now.");
     BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_TX_LIMITED              , "0x00010000 - Communications Tx buffer limited.");
     BIT_MSG(hdwStatus, HDW_STATUS_ERR_COM_RX_OVERRUN             , "0x00020000 - Communications Rx buffer overrun.");
-    BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GNSS_PPS                 , "0x00040000 - GPS PPS timepulse signal has not been received or is in error.");
-    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_PPS_TIMESYNC               , "0x00080000 - Time synchronized by GPS PPS.");
+    BIT_MSG(hdwStatus, HDW_STATUS_ERR_NO_GNSS_PPS                 , "0x00040000 - GNSS PPS timepulse signal has not been received or is in error.");
+    BIT_MSG(hdwStatus, HDW_STATUS_GNSS_PPS_TIMESYNC               , "0x00080000 - Time synchronized by GNSS PPS.");
 
     uint8_t parseErrCount = (uint8_t)HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus);
     if (parseErrCount) {
@@ -164,7 +164,7 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     BIT_MSG(genFault, GFC_INS_STATE_ORUN_LAT        , "0x00000002 - INS state limit overrun - Latitude.");
     BIT_MSG(genFault, GFC_INS_STATE_ORUN_ALT        , "0x00000004 - INS state limit overrun - Altitude.");
     BIT_MSG(genFault, GFC_UNHANDLED_INTERRUPT       , "0x00000010 - Unhandled interrupt.");
-    BIT_MSG(genFault, GFC_GNSS_CRITICAL_FAULT       , "0x00000020 - GNSS receiver critical fault (See the corresponding GPS status fault flags).");
+    BIT_MSG(genFault, GFC_GNSS_CRITICAL_FAULT       , "0x00000020 - GNSS receiver critical fault (See the corresponding GNSS status fault flags).");
     BIT_MSG(genFault, GFC_GNSS_TX_LIMITED           , "0x00000040 - GNSS Tx limited.");
     BIT_MSG(genFault, GFC_GNSS_RX_OVERRUN           , "0x00000080 - GNSS Rx overrun.");
     BIT_MSG(genFault, GFC_INIT_SENSORS              , "0x00000100 - Fault: sensor initialization.");
@@ -184,9 +184,9 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     BIT_MSG(genFault, GFC_INIT_MAGNETOMETER         , "0x00400000 - Fault: Magnetometer initialization.");
     BIT_MSG(genFault, GFC_INIT_I2C                  , "0x00800000 - Fault: I2C initialization.");
     BIT_MSG(genFault, GFC_CHIP_ERASE_INVALID        , "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time.");
-    BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GPS time fault.");
-    BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GPS receiver time fault.");
-    BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags).");
+    BIT_MSG(genFault, GFC_EKF_GNSS_TIME_FAULT       , "0x02000000 - Fault: EKF GNSS time fault.");
+    BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GNSS receiver time fault.");
+    BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags).");
     BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
 #undef BIT_MSG
     return buff.str();
@@ -243,8 +243,8 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
         BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD   , "0x00002000 - GNSS2 RTK Compassing Baseline distance is invalid");
         BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET , "0x00004000 - GNSS2 RTK Compassing Baseline distance is unset (must be > 0)");
     }
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GPS velocity is NED (not ECEF).");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GPS PPS.");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF).");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GNSS PPS.");
 
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_2                        , "0x20000000 - <<UNUSED>>");
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_3                        , "0x40000000 - <<UNUSED>>");
@@ -299,8 +299,8 @@ std::string legacyRenderGpxHdwStatusReference(uint32_t hdwStatus)
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_SATELLITE_RX            , "0x00000001 - GNSS1 satellite signals are being received (antenna and cable are good)");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_SATELLITE_RX            , "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)");
-    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
-    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID      , "0x00000004 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID      , "0x00000008 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time.");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS1_INIT              , "0x00000080 - Failed to communicate or setup GNSS receiver 1");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_FAULT_GNSS2_INIT              , "0x00000800 - Failed to communicate or setup GNSS receiver 2");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED       , "0x00001000 - GNSS is faulting firmware update REQUIRED");
@@ -319,7 +319,7 @@ std::string legacyRenderGpxHdwStatusReference(uint32_t hdwStatus)
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_PASSED                    , "0x02000000 - (BIT) Built-in self-test passed");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_BIT_FAULT                     , "0x03000000 - (BIT) Built-in self-test failure");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_ERR_TEMPERATURE               , "0x04000000 - Temperature outside spec'd operating range");
-    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_PPS_TIMESYNC             , "0x08000000 - Time synchronized by GPS PPS");
+    BIT_MSG(hdwStatus, GPX_HDW_STATUS_GNSS_PPS_TIMESYNC             , "0x08000000 - Time synchronized by GNSS PPS");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE       , "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_SOFT              , "0x20000000 - Reset from Software");
     BIT_MSG(hdwStatus, GPX_HDW_STATUS_RESET_CAUSE_HDW               , "0x40000000 - Reset from Hardware (NRST pin low)");
@@ -382,7 +382,7 @@ std::string legacyRenderImxHdwBitReference(uint32_t hdwBitStatus)
     std::stringstream buff;
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
     BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_ALL                      ,"0x00000001 - Passed all tests");
-    BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_NO_GNSS                   ,"0x00000002 - Passed without valid GPS signal");
+    BIT_MSG(hdwBitStatus, HDW_BIT_PASSED_NO_GNSS                   ,"0x00000002 - Passed without valid GNSS signal");
     if (HDW_BIT_MODE(hdwBitStatus)) {
         buff << "0x000000" << std::hex << (hdwBitStatus & HDW_BIT_MODE_MASK) << std::dec
              << " - BIT mode: " << HDW_BIT_MODE(hdwBitStatus) << std::endl;
@@ -391,10 +391,10 @@ std::string legacyRenderImxHdwBitReference(uint32_t hdwBitStatus)
     BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_NOISE_ACC                 ,"0x00000200 - FAULT: Accelerometer noise");
     BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_MAGNETOMETER              ,"0x00000400 - FAULT: Magnetometer");
     BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_BAROMETER                 ,"0x00000800 - FAULT: Barometer");
-    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_NO_COM                ,"0x00001000 - FAULT: No GPS serial communications");
-    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_POOR_CNO              ,"0x00002000 - FAULT: Poor GPS signal strength");
-    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_POOR_ACCURACY         ,"0x00004000 - FAULT: GPS poor accuracy");
-    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_NOISE                 ,"0x00008000 - FAULT: GPS noise");
+    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_NO_COM                ,"0x00001000 - FAULT: No GNSS serial communications");
+    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_POOR_CNO              ,"0x00002000 - FAULT: Poor GNSS signal strength");
+    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_POOR_ACCURACY         ,"0x00004000 - FAULT: GNSS poor accuracy");
+    BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_GNSS_NOISE                 ,"0x00008000 - FAULT: GNSS noise");
     BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_IMU_FAULT_REJECTION       ,"0x00010000 - FAULT: IMU fault rejection failure");
     BIT_MSG(hdwBitStatus, HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   ,"0x01000000 - FAULT: Hardware type does not match firmware");
 #undef BIT_MSG
@@ -444,7 +444,7 @@ std::string legacyRenderGpxBitResultsReference(uint32_t results)
     BIT_MSG(results, GPXBit_resultsBit_PPS2      ,"0x02 - PPS2 test passed");
     BIT_MSG(results, GPXBit_resultsBit_UART      ,"0x04 - UART test passed");
     BIT_MSG(results, GPXBit_resultsBit_IO        ,"0x08 - IO test passed");
-    BIT_MSG(results, GPXBit_resultsBit_GNSS       ,"0x10 - GPS test passed");
+    BIT_MSG(results, GPXBit_resultsBit_GNSS       ,"0x10 - GNSS test passed");
     BIT_MSG(results, GPXBit_resultsBit_FINISHED  ,"0x20 - Test finished");
     BIT_MSG(results, GPXBit_resultsBit_CANCELED  ,"0x40 - Test canceled");
     BIT_MSG(results, GPXBit_resultsBit_ERROR     ,"0x80 - Test error");

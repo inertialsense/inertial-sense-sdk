@@ -67,11 +67,11 @@ status_field_decode_t buildInsStatusDecode()
     d.subfields.push_back(bitField("Position align (fine)", INS_STATUS_POS_ALIGN_FINE, false,
         "0x00000040 - Position estimate is within spec (FINE)"));
     d.subfields.push_back(bitField("GNSS heading aiding", INS_STATUS_GNSS_AIDING_HEADING, false,
-        "0x00000080 - Heading aided by GPS"));
+        "0x00000080 - Heading aided by GNSS"));
     d.subfields.push_back(bitField("GNSS position aiding", INS_STATUS_GNSS_AIDING_POS, false,
-        "0x00000100 - Position aided by GPS position"));
+        "0x00000100 - Position aided by GNSS position"));
     d.subfields.push_back(bitField("GNSS update in solution", INS_STATUS_GNSS_UPDATE_IN_SOLUTION, false,
-        "0x00000200 - GPS update event occurred in solution, potentially causing discontinuity in position path"));
+        "0x00000200 - GNSS update event occurred in solution, potentially causing discontinuity in position path"));
     d.subfields.push_back(bitField("Reference IMU in EKF", INS_STATUS_EKF_USING_REFERENCE_IMU, false,
         "0x00000400 - Reference IMU used in EKF"));
     d.subfields.push_back(bitField("Mag heading aiding", INS_STATUS_MAG_AIDING_HEADING, false,
@@ -81,7 +81,7 @@ status_field_decode_t buildInsStatusDecode()
     d.subfields.push_back(bitField("Stationary mode", INS_STATUS_STATIONARY_MODE, false,
         "0x00002000 - INS in stationary mode."));
     d.subfields.push_back(bitField("GNSS velocity aiding", INS_STATUS_GNSS_AIDING_VEL, false,
-        "0x00004000 - Velocity aided by GPS velocity"));
+        "0x00004000 - Velocity aided by GNSS velocity"));
     d.subfields.push_back(bitField("Kinematic cal good", INS_STATUS_KINEMATIC_CAL_GOOD, false,
         "0x00008000 - Vehicle kinematic calibration is good"));
 
@@ -108,9 +108,9 @@ status_field_decode_t buildInsStatusDecode()
     }
 
     d.subfields.push_back(bitField("RTK compassing baseline unset", INS_STATUS_RTK_COMPASSING_BASELINE_UNSET, true,
-        "0x00100000 - GPS compassing antenna offsets are not set in flashCfg."));
+        "0x00100000 - GNSS compassing antenna offsets are not set in flashCfg."));
     d.subfields.push_back(bitField("RTK compassing baseline bad", INS_STATUS_RTK_COMPASSING_BASELINE_BAD, true,
-        "0x00200000 - GPS antenna baseline specified in flashCfg and measured by GPS do not match."));
+        "0x00200000 - GNSS antenna baseline specified in flashCfg and measured by GNSS do not match."));
     d.subfields.push_back(bitField("Mag recalibrating", INS_STATUS_MAG_RECALIBRATING, false,
         "0x00400000 - Magnetometer is being recalibrated."));
     d.subfields.push_back(bitField("Mag interference / bad cal", INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL, true,
@@ -169,11 +169,11 @@ status_field_decode_t buildHdwStatusDecode()
     d.subfields.push_back(bitField("IMU accel fault reject", HDW_STATUS_IMU_FAULT_REJECT_ACC, true,
         "0x00000008 - IMU accelerometer fault rejection. An accelerometer sensors is divergent and being excluded."));
     d.subfields.push_back(bitField("GNSS satellite RX valid", HDW_STATUS_GNSS_SATELLITE_RX_VALID, false,
-        "0x00000010 - GPS satellite signals are being received (antenna and cable are good)."));
+        "0x00000010 - GNSS satellite signals are being received (antenna and cable are good)."));
     d.subfields.push_back(bitField("Strobe input event", HDW_STATUS_STROBE_IN_EVENT, false,
         "0x00000020 - Event occurred on strobe input pin."));
     d.subfields.push_back(bitField("GNSS ToW valid", HDW_STATUS_GNSS_TIME_OF_WEEK_VALID, false,
-        "0x00000040 - GPS time of week is valid and reported."));
+        "0x00000040 - GNSS time of week is valid and reported."));
     d.subfields.push_back(bitField("Reference IMU RX", HDW_STATUS_REFERENCE_IMU_RX, false,
         "0x00000080 - Reference IMU data being received."));
     d.subfields.push_back(bitField("Saturation: gyro", HDW_STATUS_SATURATION_GYR, true,
@@ -187,7 +187,7 @@ status_field_decode_t buildHdwStatusDecode()
     d.subfields.push_back(bitField("System reset required", HDW_STATUS_SYSTEM_RESET_REQUIRED, false,
         "0x00001000 - System Reset is required for proper function."));
     d.subfields.push_back(bitField("GNSS PPS noise", HDW_STATUS_ERR_GNSS_PPS_NOISE, true,
-        "0x00002000 - GPS PPS timepulse signal has noise and occurred too frequently."));
+        "0x00002000 - GNSS PPS timepulse signal has noise and occurred too frequently."));
     d.subfields.push_back(bitField("Mag recal complete", HDW_STATUS_MAG_RECAL_COMPLETE, false,
         "0x00004000 - Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset)."));
     d.subfields.push_back(bitField("Flash write pending", HDW_STATUS_FLASH_WRITE_PENDING, false,
@@ -197,9 +197,9 @@ status_field_decode_t buildHdwStatusDecode()
     d.subfields.push_back(bitField("COM Rx overrun", HDW_STATUS_ERR_COM_RX_OVERRUN, true,
         "0x00020000 - Communications Rx buffer overrun."));
     d.subfields.push_back(bitField("GNSS PPS not received", HDW_STATUS_ERR_NO_GNSS_PPS, true,
-        "0x00040000 - GPS PPS timepulse signal has not been received or is in error."));
+        "0x00040000 - GNSS PPS timepulse signal has not been received or is in error."));
     d.subfields.push_back(bitField("GNSS PPS timesync", HDW_STATUS_GNSS_PPS_TIMESYNC, false,
-        "0x00080000 - Time synchronized by GPS PPS."));
+        "0x00080000 - Time synchronized by GNSS PPS."));
 
     // COM parse-error count (Count). Legacy used utils::string_format with a %d.
     {
@@ -297,7 +297,7 @@ status_field_decode_t buildGenFaultCodeDecode()
     d.subfields.push_back(bitField("Unhandled interrupt", GFC_UNHANDLED_INTERRUPT, true,
         "0x00000010 - Unhandled interrupt."));
     d.subfields.push_back(bitField("GNSS critical fault", GFC_GNSS_CRITICAL_FAULT, true,
-        "0x00000020 - GNSS receiver critical fault (See the corresponding GPS status fault flags)."));
+        "0x00000020 - GNSS receiver critical fault (See the corresponding GNSS status fault flags)."));
     d.subfields.push_back(bitField("GNSS Tx limited", GFC_GNSS_TX_LIMITED, true,
         "0x00000040 - GNSS Tx limited."));
     d.subfields.push_back(bitField("GNSS Rx overrun", GFC_GNSS_RX_OVERRUN, true,
@@ -337,11 +337,11 @@ status_field_decode_t buildGenFaultCodeDecode()
     d.subfields.push_back(bitField("Chip erase invalid", GFC_CHIP_ERASE_INVALID, true,
         "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time."));
     d.subfields.push_back(bitField("EKF GPS time fault", GFC_EKF_GNSS_TIME_FAULT, true,
-        "0x02000000 - Fault: EKF GPS time fault."));
+        "0x02000000 - Fault: EKF GNSS time fault."));
     d.subfields.push_back(bitField("GPS receiver time fault", GFC_GNSS_RECEIVER_TIME, true,
-        "0x04000000 - Fault: GPS receiver time fault."));
+        "0x04000000 - Fault: GNSS receiver time fault."));
     d.subfields.push_back(bitField("GNSS general fault", GFC_GNSS_GENERAL_FAULT, true,
-        "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GPS status fault flags)."));
+        "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags)."));
     d.subfields.push_back(bitField("EKF invalid IMU input", GFC_EKF_INPUT_INVALID_IMU, true,
         "0x10000000 - Fault: Invalid IMU input rejected by EKF."));
 
@@ -470,9 +470,9 @@ status_field_decode_t buildGnssStatusDecode()
     }
 
     d.subfields.push_back(bitField("NMEA data", GNSS_STATUS_FLAGS_GNSS_NMEA_DATA, false,
-        "0x00008000 - Data from NMEA message. GPS velocity is NED (not ECEF)."));
+        "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF)."));
     d.subfields.push_back(bitField("PPS timesync", GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC, false,
-        "0x10000000 - Time is synchronized by GPS PPS."));
+        "0x10000000 - Time is synchronized by GNSS PPS."));
     d.subfields.push_back(bitField("Unused 2", GNSS_STATUS_FLAGS_UNUSED_2, false, "0x20000000 - <<UNUSED>>"));
     d.subfields.push_back(bitField("Unused 3", GNSS_STATUS_FLAGS_UNUSED_3, false, "0x40000000 - <<UNUSED>>"));
     d.subfields.push_back(bitField("Unused 4", GNSS_STATUS_FLAGS_UNUSED_4, false, "0x80000000 - <<UNUSED>>"));
@@ -564,9 +564,9 @@ status_field_decode_t buildGpxHdwStatusDecode()
     d.subfields.push_back(gbit("GNSS2 satellite RX", GPX_HDW_STATUS_GNSS2_SATELLITE_RX,
         "0x00000002 - GNSS2 satellite signals are being received (antenna and cable are good)"));
     d.subfields.push_back(gbit("GNSS1 ToW valid", GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID,
-        "0x00000004 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time."));
+        "0x00000004 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time."));
     d.subfields.push_back(gbit("GNSS2 ToW valid", GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID,
-        "0x00000008 - GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time."));
+        "0x00000008 - GNSS time of week is valid and reported.  Otherwise the timeOfWeek is local system time."));
     d.subfields.push_back(gbit("GNSS1 init fault", GPX_HDW_STATUS_FAULT_GNSS1_INIT,
         "0x00000080 - Failed to communicate or setup GNSS receiver 1"));
     d.subfields.push_back(gbit("GNSS2 init fault", GPX_HDW_STATUS_FAULT_GNSS2_INIT,
@@ -604,7 +604,7 @@ status_field_decode_t buildGpxHdwStatusDecode()
     d.subfields.push_back(gbit("Temperature error", GPX_HDW_STATUS_ERR_TEMPERATURE,
         "0x04000000 - Temperature outside spec'd operating range"));
     d.subfields.push_back(gbit("GNSS PPS timesync", GPX_HDW_STATUS_GNSS_PPS_TIMESYNC,
-        "0x08000000 - Time synchronized by GPS PPS"));
+        "0x08000000 - Time synchronized by GNSS PPS"));
     d.subfields.push_back(gbit("Reset cause: backup mode", GPX_HDW_STATUS_RESET_CAUSE_BACKUP_MODE,
         "0x10000000 - Reset from Backup mode (low-power state w/ CPU off)"));
     d.subfields.push_back(gbit("Reset cause: software", GPX_HDW_STATUS_RESET_CAUSE_SOFT,
@@ -699,7 +699,7 @@ status_field_decode_t buildImxHdwBitDecode()
     d.subfields.push_back(bitField("Passed all", HDW_BIT_PASSED_ALL, false,
         "0x00000001 - Passed all tests"));
     d.subfields.push_back(bitField("Passed without GPS", HDW_BIT_PASSED_NO_GNSS, false,
-        "0x00000002 - Passed without valid GPS signal"));
+        "0x00000002 - Passed without valid GNSS signal"));
     {
         const uint32_t mask = (uint32_t)HDW_BIT_MODE_MASK;
         status_subfield_t s;
@@ -720,13 +720,13 @@ status_field_decode_t buildImxHdwBitDecode()
     d.subfields.push_back(bitField("FAULT: barometer", HDW_BIT_FAULT_BAROMETER, true,
         "0x00000800 - FAULT: Barometer"));
     d.subfields.push_back(bitField("FAULT: no GPS comms", HDW_BIT_FAULT_GNSS_NO_COM, true,
-        "0x00001000 - FAULT: No GPS serial communications"));
+        "0x00001000 - FAULT: No GNSS serial communications"));
     d.subfields.push_back(bitField("FAULT: poor GPS C/No", HDW_BIT_FAULT_GNSS_POOR_CNO, true,
-        "0x00002000 - FAULT: Poor GPS signal strength"));
+        "0x00002000 - FAULT: Poor GNSS signal strength"));
     d.subfields.push_back(bitField("FAULT: poor GPS accuracy", HDW_BIT_FAULT_GNSS_POOR_ACCURACY, true,
-        "0x00004000 - FAULT: GPS poor accuracy"));
-    d.subfields.push_back(bitField("FAULT: GPS noise", HDW_BIT_FAULT_GNSS_NOISE, true,
-        "0x00008000 - FAULT: GPS noise"));
+        "0x00004000 - FAULT: GNSS poor accuracy"));
+    d.subfields.push_back(bitField("FAULT: GNSS noise", HDW_BIT_FAULT_GNSS_NOISE, true,
+        "0x00008000 - FAULT: GNSS noise"));
     d.subfields.push_back(bitField("FAULT: IMU fault rejection", HDW_BIT_FAULT_IMU_FAULT_REJECTION, true,
         "0x00010000 - FAULT: IMU fault rejection failure"));
     d.subfields.push_back(bitField("FAULT: wrong hardware type", HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE, true,
@@ -810,7 +810,7 @@ status_field_decode_t buildGpxBitResultsDecode()
     d.subfields.push_back(bitField("PPS2 passed", GPXBit_resultsBit_PPS2, false,     "0x02 - PPS2 test passed"));
     d.subfields.push_back(bitField("UART passed", GPXBit_resultsBit_UART, false,     "0x04 - UART test passed"));
     d.subfields.push_back(bitField("IO passed",   GPXBit_resultsBit_IO,   false,     "0x08 - IO test passed"));
-    d.subfields.push_back(bitField("GPS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GPS test passed"));
+    d.subfields.push_back(bitField("GPS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GNSS test passed"));
     d.subfields.push_back(bitField("Finished",    GPXBit_resultsBit_FINISHED, false, "0x20 - Test finished"));
     d.subfields.push_back(bitField("Canceled",    GPXBit_resultsBit_CANCELED, false, "0x40 - Test canceled"));
     d.subfields.push_back(bitField("Error",       GPXBit_resultsBit_ERROR, true,     "0x80 - Test error"));
