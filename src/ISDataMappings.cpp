@@ -767,7 +767,17 @@ static void PopulateMapGnssVel(data_set_t data_set[DID_COUNT], uint32_t did)
 // cISDataMappings construction (singleton); read by the static accessors below.
 // Additive: existing nameToInfo entries, indexToInfo, and ElementCount iteration
 // order are untouched — the "<struct>.<field>" views go into nameToInfo only.
-static std::map<uint32_t, std::vector<array_struct_info_t>> s_arrayStructInfo;
+//
+// Construct-on-first-use: the singleton whose constructor populates this registry
+// (cISDataMappingsInternal::s_map) is a value-typed static defined in a different
+// translation unit, so plain file-scope static init here is not guaranteed to run
+// first. A function-local static is initialized on first access, closing that
+// static-initialization-order hole.
+static std::map<uint32_t, std::vector<array_struct_info_t>>& s_arrayStructInfo()
+{
+    static std::map<uint32_t, std::vector<array_struct_info_t>> registry;
+    return registry;
+}
 
 namespace
 {
@@ -884,7 +894,7 @@ namespace
                              const std::vector<StructArrayFieldDecl>& fields)
     {
         // Idempotent against accidental re-registration of the same struct on a DID.
-        auto& vec = s_arrayStructInfo[did];
+        auto& vec = s_arrayStructInfo()[did];
         for (const auto& existing : vec)
             if (existing.structName == structName) return;
 
@@ -922,8 +932,9 @@ namespace
 const std::vector<array_struct_info_t>* cISDataMappings::ArrayStructFields(uint32_t did)
 {
     DataSet(did);   // ensure the singleton (and thus the array-struct registry) has been built
-    auto it = s_arrayStructInfo.find(did);
-    return (it != s_arrayStructInfo.end()) ? &it->second : nullptr;
+    auto& registry = s_arrayStructInfo();
+    auto it = registry.find(did);
+    return (it != registry.end()) ? &it->second : nullptr;
 }
 
 uint32_t cISDataMappings::ElementCountForRecord(const array_struct_info_t& info, const uint8_t* recordBuf)
