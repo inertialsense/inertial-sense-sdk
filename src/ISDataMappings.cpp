@@ -1966,7 +1966,7 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("cantransmit_address[CID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GNSS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GNSS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("can_setting", &can_config_t::can_setting, DATA_TYPE_UINT16, "", "CAN baud rate and mode. Bits 14:0 = baud rate in kbps (e.g. 0x01F4 = 500 kbps, see can_baudrate_t). Bit 15 (0x8000) = CAN-FD enable on capable hardware (IMX-6, GPX-1); set to enable FD framing with bit-rate switching.", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("can_setting", &can_config_t::can_setting, DATA_TYPE_UINT16, "", "CAN baud rate and mode (displayed/entered as hex). Bits 14:0 = baud rate in kbps (e.g. 0x01F4 = 500 kbps, see can_baudrate_t). Bit 15 (0x8000) = CAN-FD enable on capable hardware (IMX-6, GPX-1); e.g. 0x81F4 = 500 kbps with FD enabled.", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
 }
 
