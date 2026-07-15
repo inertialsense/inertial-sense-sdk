@@ -1,0 +1,43 @@
+name: "Generate and Publish SDK Documentation"
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history needed so `git describe` can find version tags
+          fetch-depth: 0
+
+      - name: Install Doxygen
+        run: sudo apt-get install -y doxygen
+
+      - name: Generate documentation
+        run: python3 scripts/generate_doxygen.py -o ./build/docs
+
+      - name: Upload HTML documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-docs
+          path: ./build/docs/html
+          retention-days: 30
+
+      # TODO SN-XXXX: configure publish destination (GitHub Pages, hosted site, etc.)
+      # Example GitHub Pages deploy (uncomment and configure when ready):
+      # - name: Deploy to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v4
+      #   if: github.ref == 'refs/heads/develop'
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./build/docs/html
+
+      - name: Write job summary
+        run: echo "Docs generated. See artifacts." >> "$GITHUB_STEP_SUMMARY"

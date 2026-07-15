@@ -49,8 +49,8 @@ private:
 
 public:
     double dt = 0;                          //!< the delta in time between the previous 2 samples, in seconds,
-    double dtMin = INVALID_DDT_MIN_STAT;    //!< the lowest dt from all samples, in seconds
-    double dtMax = -INVALID_DDT_MIN_STAT;   //!< the largest dt from all samples, in seconds
+    double dtMin = 0;                       //!< the lowest dt from all samples, in seconds (0 until first dt)
+    double dtMax = 0;                       //!< the largest dt from all samples, in seconds (0 until first dt)
     double dtMinTime = 0;                   //!< the sample time of the lowest dt
     double dtMaxTime = 0;                   //!< the sample time of the largest dt
     double dtAvg = 0;                       //!< the average dt across all samples (in seconds)
@@ -59,8 +59,8 @@ public:
 
     double dtLast = NAN;                    //!< timestamp of the last dt sample, used for ddt calculations
     double ddt = 0;
-    double ddtMin = INVALID_DDT_MIN_STAT;
-    double ddtMax = -INVALID_DDT_MIN_STAT;
+    double ddtMin = 0;
+    double ddtMax = 0;
     double ddtMinTime = 0;
     double ddtMaxTime = 0;
     double ddtAvg = 0;
@@ -137,8 +137,8 @@ public:
         localTimeTs = (std::chrono::high_resolution_clock::time_point::min)();     // this should initialize to the clocks epoch, and ALSO make Windows min/max macros happy.
 
         dt = 0;
-        dtMin = INVALID_DDT_MIN_STAT;
-        dtMax = -INVALID_DDT_MIN_STAT;
+        dtMin = 0;
+        dtMax = 0;
         dtMinTime = 0;
         dtMaxTime = 0;
         dtAvg = 0;
@@ -147,8 +147,8 @@ public:
 
         dtLast = NAN;
         ddt = 0;
-        ddtMin = INVALID_DDT_MIN_STAT;
-        ddtMax = -INVALID_DDT_MIN_STAT;
+        ddtMin = 0;
+        ddtMax = 0;
         ddtMinTime = 0;
         ddtMaxTime = 0;
         ddtAvg = 0;
@@ -176,9 +176,9 @@ public:
 
         cnt++;
         if (std::isnan(timeLast))
-        {   // First sample
-            dtMin = INVALID_DDT_MIN_STAT;
-            dtMax = -INVALID_DDT_MIN_STAT;
+        {   // First sample -- no dt yet; leave dt stats at 0
+            dtMin = 0;
+            dtMax = 0;
         }
         else
         {
@@ -192,12 +192,12 @@ public:
             APPEND_DEBUG_MSG("dt %.4f  ", dt);
             APPEND_DEBUG_MSG("avg %.4f  ", dtAvg);
 
-            if (dt < dtMin) { dtMin = dt;  dtMinTime = time; APPEND_DEBUG_MSG("dtMin %.3f  ", dtMin); }
-            if (dt > dtMax) { dtMax = dt;  dtMaxTime = time; APPEND_DEBUG_MSG("dtMax %.3f  ", dtMax); }
+            if (dtCnt == 1 || dt < dtMin) { dtMin = dt;  dtMinTime = time; APPEND_DEBUG_MSG("dtMin %.3f  ", dtMin); }
+            if (dtCnt == 1 || dt > dtMax) { dtMax = dt;  dtMaxTime = time; APPEND_DEBUG_MSG("dtMax %.3f  ", dtMax); }
 
-            if (std::isnan(dtLast)) {   // First dt sample -- initialize ddt stats (NOT dtMax, which was just set above)
-                ddtMin = INVALID_DDT_MIN_STAT;
-                ddtMax = -INVALID_DDT_MIN_STAT;
+            if (std::isnan(dtLast)) {   // First dt sample -- no ddt yet; leave ddt stats at 0 (NOT dtMax, which was just set above)
+                ddtMin = 0;
+                ddtMax = 0;
             } else {
                 ddt = dt - dtLast;
                 double alphaLocal = 1.0 / (1.0 + ddtCnt);
@@ -205,8 +205,8 @@ public:
                 ddtAvg = betaLocal * ddtAvg + alphaLocal * ddt;
                 ddtCnt++;
 
-                if (ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; APPEND_DEBUG_MSG("ddtMin %.3f  ", ddtMin); }
-                if (ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; APPEND_DEBUG_MSG("ddtMax %.3f  ", ddtMax); }
+                if (ddtCnt == 1 || ddt < ddtMin) { ddtMin = ddt,  ddtMinTime = time; APPEND_DEBUG_MSG("ddtMin %.3f  ", ddtMin); }
+                if (ddtCnt == 1 || ddt > ddtMax) { ddtMax = ddt,  ddtMaxTime = time; APPEND_DEBUG_MSG("ddtMax %.3f  ", ddtMax); }
             }
 
             rate = (dt != 0) ? (1.0 / dt) : 0;
