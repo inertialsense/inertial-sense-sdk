@@ -1,0 +1,202 @@
+# Doxyfile for Inertial Sense SDK
+#
+# This file is the base Doxygen configuration.  The generate-doxygen.sh (or
+# .bat) wrapper injects runtime overrides by piping this file together with
+# additional KEY=VALUE lines into `doxygen -`, so any setting here can be
+# overridden without editing this file.
+#
+# Tag style: @ (Javadoc-compatible, e.g. @brief, @param, @return)
+
+#---------------------------------------------------------------------------
+# Project metadata
+#---------------------------------------------------------------------------
+
+PROJECT_NAME           = "Inertial Sense SDK"
+
+# Left blank intentionally — the build script injects PROJECT_NUMBER at
+# run time via: echo "PROJECT_NUMBER=<version>" | doxygen -
+PROJECT_NUMBER         =
+
+PROJECT_BRIEF          = "C/C++ SDK for Inertial Sense IMU/INS devices"
+
+PROJECT_LOGO           =
+
+#---------------------------------------------------------------------------
+# Output locations
+# OUTPUT_DIRECTORY is overridden by the wrapper script at build time.
+#---------------------------------------------------------------------------
+
+OUTPUT_DIRECTORY       = docs
+
+CREATE_SUBDIRS         = NO
+
+#---------------------------------------------------------------------------
+# Input / scanning
+# INPUT is overridden by the wrapper script to use absolute paths so the
+# build works from any working directory.
+#---------------------------------------------------------------------------
+
+INPUT                  = src
+
+RECURSIVE              = YES
+
+FILE_PATTERNS          = *.h \
+                         *.hpp \
+                         *.md
+
+EXCLUDE                =
+
+# Exclude vendored/third-party libraries bundled inside src/.
+# Only Inertial Sense-authored code should appear in the reference docs.
+EXCLUDE_PATTERNS       = */yaml-cpp/* \
+                         */libusb/* \
+                         */miniz* \
+                         */httplib* \
+                         */json.hpp \
+                         */tinyxml* \
+                         */tinystr* \
+                         */uri.hpp \
+                         */md5.h \
+                         */md5.cpp
+
+EXCLUDE_SYMBOLS        =
+
+EXTENSION_MAPPING      =
+
+#---------------------------------------------------------------------------
+# Source parsing
+#---------------------------------------------------------------------------
+
+OPTIMIZE_OUTPUT_FOR_C  = NO
+JAVADOC_AUTOBRIEF      = NO
+QT_AUTOBRIEF           = NO
+MARKDOWN_SUPPORT       = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+BUILTIN_STL_SUPPORT    = YES
+
+#---------------------------------------------------------------------------
+# Extraction / visibility
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_PRIV_VIRTUAL   = NO
+EXTRACT_PACKAGE        = NO
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = NO
+
+#---------------------------------------------------------------------------
+# Sorting and display
+#---------------------------------------------------------------------------
+
+SORT_MEMBER_DOCS       = NO
+SORT_BRIEF_DOCS        = NO
+SORT_MEMBERS_CTORS_1ST = NO
+
+SHOW_USED_FILES        = NO
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+
+#---------------------------------------------------------------------------
+# Warnings
+#---------------------------------------------------------------------------
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+WARN_LOGFILE           =
+
+#---------------------------------------------------------------------------
+# HTML output
+#---------------------------------------------------------------------------
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE        = AUTO_LIGHT
+HTML_TIMESTAMP         = NO
+HTML_DYNAMIC_SECTIONS  = NO
+
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 250
+
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+
+#---------------------------------------------------------------------------
+# LaTeX / PDF output
+# GENERATE_LATEX is set to NO here; the wrapper script overrides it to YES
+# when --pdf is requested.
+#---------------------------------------------------------------------------
+
+GENERATE_LATEX         = NO
+LATEX_OUTPUT           = latex
+LATEX_CMD_NAME         = latex
+COMPACT_LATEX          = NO
+PAPER_TYPE             = a4
+
+#---------------------------------------------------------------------------
+# Other output formats (all disabled by default)
+#---------------------------------------------------------------------------
+
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+GENERATE_AUTOGEN_DEF   = NO
+GENERATE_PERLMOD       = NO
+
+#---------------------------------------------------------------------------
+# Dot / graph generation
+# HAVE_DOT = NO avoids a Graphviz dependency in CI.  Enable locally if
+# Graphviz is installed for richer call/include graphs.
+#---------------------------------------------------------------------------
+
+HAVE_DOT               = NO
+CLASS_DIAGRAMS         = YES
+COLLABORATION_GRAPH    = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+
+#---------------------------------------------------------------------------
+# Source browsing
+#---------------------------------------------------------------------------
+
+SOURCE_BROWSER         = NO
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+VERBATIM_HEADERS       = NO
+
+#---------------------------------------------------------------------------
+# Preprocessing
+#---------------------------------------------------------------------------
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           =
+PREDEFINED             =
+EXPAND_AS_DEFINED      =
+SKIP_FUNCTION_MACROS   = YES
+
+#---------------------------------------------------------------------------
+# Aliases for IS-specific documentation patterns
+#
+# Usage examples (in source comments, use @ prefix):
+#
+#   @is_data_id  DID_GPS1_POS    Links to the data ID reference.
+#   @is_units    m/s             Documents the unit of a field/parameter.
+#   @is_fw_ver   1.2.3           Minimum firmware version requirement.
+#   @is_note     Some note text  Renders an "IS Note" callout box in HTML.
+#---------------------------------------------------------------------------
+
+ALIASES               += "is_data_id{1}=@par Data ID:\n<tt>\1</tt>"
+ALIASES               += "is_units{1}=@par Units:\n\1"
+ALIASES               += "is_fw_ver{1}=@par Minimum firmware version:\n\1"
+ALIASES               += "is_note{1}=@note <b>IS Note:</b> \1"

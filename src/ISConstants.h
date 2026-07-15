@@ -10,6 +10,26 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISConstants.h
+ * @brief Platform detection macros, portability shims, and math/utility helpers.
+ *
+ * Defines compiler- and OS-specific abstractions used throughout the IS SDK:
+ *  - Platform identification (Windows, Linux, macOS, embedded ARM, EVB-2, Zephyr, etc.)
+ *  - Memory allocation wrappers (MALLOC/REALLOC/FREE, pvPortMalloc on RTOS targets)
+ *  - Structure packing pragmas (PUSH_PACK_1, POP_PACK, etc.)
+ *  - Cross-compiler inline, assert, and snprintf shims
+ *  - Bit-manipulation macros (_MAX, _MIN, _CLAMP, SWAP16/32/64, MASK/UNMASK, etc.)
+ *  - Numeric utility functions (NaN/Inf checks, reciprocal lookup table)
+ *  - Physical unit conversion constants (distances, angles, time, etc.)
+ *
+ * This header must be included early in every translation unit on Windows because
+ * it includes winsock2.h before any other Windows headers.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
+ */
+
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
@@ -355,11 +375,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define _ROUNDUP(numToRound, multiple) ((((numToRound) + (multiple) - 1) / (multiple)) * (multiple))
 #endif
 
+/**
+ * @brief Return the reciprocal (1/n) of a small integer using a lookup table.
+ *
+ * Avoids floating-point division on Cortex-M targets where division is expensive.
+ * The argument @p n must be in the range [0, 10]; behavior is undefined outside that range.
+ *
+ * @param n Integer divisor in the range [0, 10]. Passing 0 returns 0.0f.
+ * @return 1.0f / n for n in [1, 10], or 0.0f for n == 0.
+ */
 static inline float inv_count_upto10(int n)
 {
-    // n expected 0..10
-    // Table lookup is usually cheaper than float divide on Cortex-M.
-    // If there's any chance n could exceed 10, clamp or fall back.
     static const float inv[11] = {
         0.0f,               // 0 -> output 0
         1.0f,               // 1
@@ -377,6 +403,11 @@ static inline float inv_count_upto10(int n)
     return inv[n];
 }
 
+/**
+ * @brief Test whether a single-precision float is NaN.
+ * @param v Value to test.
+ * @return Non-zero if @p v is NaN, 0 otherwise.
+ */
 static inline int is_nan_f(float v)
 {
 #if PLATFORM_IS_EMBEDDED
@@ -386,6 +417,11 @@ static inline int is_nan_f(float v)
 #endif
 }
 
+/**
+ * @brief Test whether a double-precision float is NaN.
+ * @param v Value to test.
+ * @return Non-zero if @p v is NaN, 0 otherwise.
+ */
 static inline int is_nan(double v)
 {
 #if PLATFORM_IS_EMBEDDED
@@ -395,17 +431,32 @@ static inline int is_nan(double v)
 #endif
 }
 
+/**
+ * @brief Test whether a single-precision float is infinite.
+ * @param v Value to test.
+ * @return Non-zero if @p v is +Inf or -Inf, 0 otherwise.
+ */
 static inline int is_inf_f(float v)
 {
     return isinf(v);
 }
 
+/**
+ * @brief Test whether a double-precision float is infinite.
+ * @param v Value to test.
+ * @return Non-zero if @p v is +Inf or -Inf, 0 otherwise.
+ */
 static inline int is_inf(double v)
 {
     return isinf(v);
 }
 
-static inline int is_finite_f(float v)  // Not NaN or INF
+/**
+ * @brief Test whether a single-precision float is finite (neither NaN nor infinite).
+ * @param v Value to test.
+ * @return Non-zero if @p v is a finite number, 0 if NaN or infinite.
+ */
+static inline int is_finite_f(float v)
 {
 #if PLATFORM_IS_EMBEDDED
     return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
@@ -414,7 +465,12 @@ static inline int is_finite_f(float v)  // Not NaN or INF
 #endif
 }
 
-static inline int is_finite(double v)   // Not NaN or INF
+/**
+ * @brief Test whether a double-precision float is finite (neither NaN nor infinite).
+ * @param v Value to test.
+ * @return Non-zero if @p v is a finite number, 0 if NaN or infinite.
+ */
+static inline int is_finite(double v)
 {
 #if PLATFORM_IS_EMBEDDED
     return (v == v) && (v + v != v);   // exclude NaN; false for +/-Inf
@@ -925,6 +981,7 @@ typedef enum {
 
 PUSH_PACK_8
 
+/** High-precision GPS time representation: integer seconds plus a sub-second fraction. */
 typedef struct
 {
     /** time (s) expressed by standard time_t */
