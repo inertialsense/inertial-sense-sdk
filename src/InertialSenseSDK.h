@@ -10,6 +10,18 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file InertialSenseSDK.h
+ * @brief Top-level convenience include for the Inertial Sense SDK.
+ *
+ * Including this header is equivalent to including InertialSense.h directly.
+ * It provides a stable, product-named entry point so consumers do not need to
+ * depend on the implementation-detail file name.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
+ */
+
 #ifndef __INERTIAL_SENSE_SDK__
 #define __INERTIAL_SENSE_SDK__
 
