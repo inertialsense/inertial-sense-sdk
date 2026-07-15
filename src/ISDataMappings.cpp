@@ -1966,13 +1966,7 @@ static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("cantransmit_address[CID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "Adress for GNSS1 RTK POS REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "Address for GNSS2 RTK CMP REL", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("cantransmit_address[CID_ROLL_ROLLRATE]",     offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * CID_ROLL_ROLLRATE, DATA_TYPE_UINT32, "", "Address for Roll Rate", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate in kbps (bits 14:0; bit 15 = FD enable flag)")
-        .bitMask = 0x7FFF;
-    {
-        data_info_t& fdInfo = mapper.AddMember2("can_fd_enabled", offsetof(can_config_t, can_baudrate_kbps), DATA_TYPE_UINT16, "", "CAN FD enabled (0=disabled, 1=enabled; bit 15 of can_baudrate_kbps)", DATA_FLAGS_READ_ONLY);
-        fdInfo.bitMask = 0x8000;
-        fdInfo.bitShift = 15;
-    }
+    mapper.AddMember("can_setting", &can_config_t::can_setting, DATA_TYPE_UINT16, "", "CAN baud rate and mode (displayed/entered as hex). Bits 14:0 = baud rate in kbps (e.g. 0x01F4 = 500 kbps, see can_baudrate_t). Bit 15 (0x8000) = CAN-FD enable on capable hardware (IMX-6, GPX-1); e.g. 0x81F4 = 500 kbps with FD enabled.", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
 }
 
@@ -1980,13 +1974,7 @@ static void PopulateMapCanFdConfig(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<can_config_t> mapper(data_set, did);
 
-    mapper.AddMember("can_baudrate_kbps", &can_config_t::can_baudrate_kbps, DATA_TYPE_UINT16, "kbps", "CAN baud rate in kbps (bits 14:0; bit 15 = FD enable flag)")
-        .bitMask = 0x7FFF;
-    {
-        data_info_t& fdInfo = mapper.AddMember2("can_fd_enabled", offsetof(can_config_t, can_baudrate_kbps), DATA_TYPE_UINT16, "", "CAN FD enabled (0=disabled, 1=enabled; bit 15 of can_baudrate_kbps)", DATA_FLAGS_READ_ONLY);
-        fdInfo.bitMask = 0x8000;
-        fdInfo.bitShift = 15;
-    }
+    mapper.AddMember("can_setting",          &can_config_t::can_setting,    DATA_TYPE_UINT16, "", "CAN FD baud rate and mode. Bits 14:0 = baud rate in kbps (e.g. 0x01F4 = 500 kbps, see can_baudrate_t). Bit 15 (0x8000) = CAN-FD enable; when set, payloads > 8 bytes use FD framing with bit-rate switching (BRS).", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("can_receive_address",  &can_config_t::can_receive_address,  DATA_TYPE_UINT32, "",     "CAN receive address", DATA_FLAGS_DISPLAY_HEX);
 
     mapper.AddMember2("can_fd_period_mult[FDCID_INS_1]",             offsetof(can_config_t, can_period_mult) + sizeof(uint16_t) * FDCID_INS_1,             DATA_TYPE_UINT16, "", "FD period multiplier for INS-1");
@@ -2958,18 +2946,6 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
     {   // Don't convert units or reduce precision.  Used for CSV logs. (WHJ)
         conversion = 1.0;
         flags &= (~DATA_FLAGS_FIXED_DECIMAL_MASK);
-    }
-
-    // Apply bitmask/bitshift for integer types (used to display packed bit-fields as separate fields)
-    uint8_t maskedBuffer[8] = {};
-    if (info.bitMask != ~0ULL || info.bitShift != 0)
-    {
-        uint64_t rawVal = 0;
-        uint32_t sz = (info.size < (uint32_t)sizeof(rawVal)) ? info.size : (uint32_t)sizeof(rawVal);
-        memcpy(&rawVal, ptr, sz);
-        rawVal = (rawVal & info.bitMask) >> info.bitShift;
-        memcpy(maskedBuffer, &rawVal, sz);
-        ptr = maskedBuffer;
     }
 
     return VariableToString(info.type, (eDataFlags)flags, ptr, info.size, stringBuffer, conversion, json);
