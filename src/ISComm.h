@@ -10,6 +10,44 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISComm.h
+ * @brief Inertial Sense Binary (ISB) framing, multi-protocol parser, and low-level
+ *        port communication interface.
+ *
+ * Defines the packet structures, protocol type enumeration, and the stateful
+ * is_comm_instance_t parser used by all IS SDK layers.  The parser supports
+ * simultaneous detection of ISB, NMEA, u-blox, RTCM3, SPARTN, Sony, and
+ * Septentrio protocols from a single byte stream.
+ *
+ * ### Quick-start (byte-by-byte parsing)
+ * @code
+ * is_comm_instance_t comm;
+ * uint8_t buffer[PKT_BUF_SIZE];
+ * is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+ *
+ * uint8_t c;
+ * protocol_type_t ptype;
+ * while (mySerialPortRead(&c, 1)) {
+ *     if ((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE) {
+ *         // process ptype, comm.rxPkt, etc.
+ *     }
+ * }
+ * @endcode
+ *
+ * ### Quick-start (bulk-read parsing)
+ * @code
+ * int n = is_comm_free(&comm);
+ * if ((n = mySerialPortRead(comm.rxBuf.tail, n)) > 0) {
+ *     comm.rxBuf.tail += n;
+ *     while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE) { ... }
+ * }
+ * @endcode
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
+ */
+
 #ifndef IS_COMM_H
 #define IS_COMM_H
 
@@ -42,37 +80,32 @@ extern "C" {
 // ****** Binary messages                                                 ******
 // *****************************************************************************
 
-/** INS/AHRS */
-#define _DID_INS_LLA_EULER_NED  DID_INS_1                   /** (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA */
-#define _DID_INS_LLA_QN2B       DID_INS_2                   /** (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m) */
-#define _DID_INS_LLA_QN2B_MSL   DID_INS_3                   /** (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude */
-#define _DID_INS_ECEF_QE2B      DID_INS_4                   /** (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF */
+#define _DID_INS_LLA_EULER_NED  DID_INS_1                   //!< (see ins_1_t) INS/AHRS output: euler from NED, LLA (degrees,m), NED pos (m) and vel (m/s) from refLLA
+#define _DID_INS_LLA_QN2B       DID_INS_2                   //!< (see ins_2_t) INS/AHRS output: quaternion from NED, LLA (degrees,m)
+#define _DID_INS_LLA_QN2B_MSL   DID_INS_3                   //!< (see ins_3_t) INS/AHRS output: quaternion from NED, LLA (degrees,m), and MSL altitude
+#define _DID_INS_ECEF_QE2B      DID_INS_4                   //!< (see ins_4_t) INS output: ECEF position (m) and velocity (m/s), quaternion from ECEF
 
-/** IMU */
-#define _DID_IMU                DID_IMU                     /** (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2) */
-#define _DID_PIMU               DID_PIMU                    /** (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate. */    
+#define _DID_IMU                DID_IMU                     //!< (see imu_t) IMU output: angular rate (rad/s) and linear acceleration (m/s^2)
+#define _DID_PIMU               DID_PIMU                    //!< (see pimu_t) IMU output: Coning and sculling integrated at IMU update rate
 
-/** GPS */
-#define _DID_GNSS1_POS           DID_GNSS1_POS                /** (see gnss_pos_t) GPS output */
+#define _DID_GNSS1_POS          DID_GNSS1_POS               //!< (see gnss_pos_t) GPS output
 
-/** Magnetometer, Barometer, and other Sensor */
-#define _DID_MAG_CAL            DID_MAG_CAL                 /** (see mag_cal_t) Magnetometer calibration */
-#define _DID_MAGNETOMETER       DID_MAGNETOMETER            /** (see magnetometer_t) Magnetometer sensor output */
-#define _DID_BAROMETER          DID_BAROMETER               /** (see barometer_t) Barometric pressure sensor data */
-#define _DID_WHEEL_ENCODER      DID_WHEEL_ENCODER           /** (see wheel_encoder_t) Wheel encoder sensor data */
-#define _DID_POS_MEASUREMENT    DID_POSITION_MEASUREMENT    /** (see pos_measurement_t) Position Measurement data*/
+#define _DID_MAG_CAL            DID_MAG_CAL                 //!< (see mag_cal_t) Magnetometer calibration
+#define _DID_MAGNETOMETER       DID_MAGNETOMETER            //!< (see magnetometer_t) Magnetometer sensor output
+#define _DID_BAROMETER          DID_BAROMETER               //!< (see barometer_t) Barometric pressure sensor data
+#define _DID_WHEEL_ENCODER      DID_WHEEL_ENCODER           //!< (see wheel_encoder_t) Wheel encoder sensor data
+#define _DID_POS_MEASUREMENT    DID_POSITION_MEASUREMENT    //!< (see pos_measurement_t) Position Measurement data
 
-/** Utilities */
-#define _DID_DEV_INFO           DID_DEV_INFO                /** (see dev_info_t) Device information */
-#define _DID_BIT                DID_BIT                     /** (see bit_t) System built-in self-test */
-#define _DID_STROBE_IN_TIME     DID_STROBE_IN_TIME          /** (see strobe_in_time_t) Timestamp for input strobe */
+#define _DID_DEV_INFO           DID_DEV_INFO                //!< (see dev_info_t) Device information
+#define _DID_BIT                DID_BIT                     //!< (see bit_t) System built-in self-test
+#define _DID_STROBE_IN_TIME     DID_STROBE_IN_TIME          //!< (see strobe_in_time_t) Timestamp for input strobe
 
-/** Configuration */
-#define _DID_FLASH_CONFIG       DID_FLASH_CONFIG            /** (see nvm_flash_cfg_t) Flash memory configuration */
-#define _DID_RMC                DID_RMC                    /** (see rmc_t) Realtime message controller */
+#define _DID_FLASH_CONFIG       DID_FLASH_CONFIG            //!< (see nvm_flash_cfg_t) Flash memory configuration
+#define _DID_RMC                DID_RMC                     //!< (see rmc_t) Realtime message controller
 
-#define ZEPHYR_SUCCESS_CODE     0
+#define ZEPHYR_SUCCESS_CODE     0                           //!< Return code for success on Zephyr RTOS (equivalent to 0 on other platforms)
 
+/** Default protocol enable mask for a new port (ISB + NMEA + u-blox + RTCM3). */
 #define DEFAULT_PORT_PROTO_CFG  (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
 /** Protocol Type */
@@ -90,11 +123,12 @@ typedef enum
     _PTYPE_SONY                 = 9,    /** Protocol Type: Sony binary */
     _PTYPE_SEPTENTRIO_SBF       = 10,   /** Protocol Type: Septentrio binary */
     _PTYPE_SEPTENTRIO_REPLY     = 11,   /** Protocol Type: Septentrio reply msg */
-    _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
-    _PTYPE_LAST_DATA            = _PTYPE_SEPTENTRIO_REPLY,
-    _PTYPE_SIZE                 = _PTYPE_LAST_DATA + 1,
+    _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,  //!< First protocol type that carries data payload
+    _PTYPE_LAST_DATA            = _PTYPE_SEPTENTRIO_REPLY,      //!< Last protocol type that carries data payload
+    _PTYPE_SIZE                 = _PTYPE_LAST_DATA + 1,         //!< Total number of protocol type values
 } protocol_type_t;
 
+/** Default protocol enable mask used by is_comm_init() when no explicit mask is set. */
 #define DEFAULT_PROTO_MASK (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
 /** The maximum allowable dataset size */
@@ -133,12 +167,12 @@ typedef enum
 // #define PROTOCOL_VERSION_CHAR1      .   // Breaking changes (Payload)       (defined in data_sets.h)
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
-#define PROTOCOL_VERSION_CHAR2      0   // Non-breaking changes (Packet)
+#define PROTOCOL_VERSION_CHAR2      0   //!< Non-breaking protocol version increment (packet layer)
 // #define PROTOCOL_VERSION_CHAR3      .   // Non-breaking changes (Payload)   (defined in data_sets.h)
 
-#define UBLOX_HEADER_SIZE           6
-#define RTCM3_HEADER_SIZE           3
-#define MAX_MSG_LENGTH_NMEA         200
+#define UBLOX_HEADER_SIZE           6   //!< Byte size of the u-blox binary packet header
+#define RTCM3_HEADER_SIZE           3   //!< Byte size of the RTCM3 packet header
+#define MAX_MSG_LENGTH_NMEA         200 //!< Maximum byte length of a single NMEA sentence
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
@@ -168,11 +202,12 @@ typedef enum
     IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
 
+/** Serial port framing options. */
 typedef struct
 {
-    uint32_t    baudRate;
-    uint8_t     parity;
-    uint8_t     stopBits;
+    uint32_t    baudRate;   //!< Baud rate (see @ref baud_rate_t for valid values)
+    uint8_t     parity;     //!< Parity setting: 0 = none, 1 = odd, 2 = even
+    uint8_t     stopBits;   //!< Number of stop bits: 1 or 2
 } serial_options_t;
 
 /** List of valid baud rates */
@@ -204,24 +239,25 @@ n-1             Packet end byte
 // Packet IDs
 // typedef uint32_t ePacketIDs;
 
+/** ISB packet type identifiers and header flag bits. The lower nibble of packet_hdr_t::flags holds the type; the upper nibble holds the flags. */
 typedef enum
 {
-    PKT_TYPE_INVALID                        = 0,    // Invalid packet id
-    PKT_TYPE_ACK                            = 1,    // (ACK) received valid packet
-    PKT_TYPE_NACK                           = 2,    // (NACK) received invalid packet
-    PKT_TYPE_GET_DATA                       = 3,    // Request for data to be broadcast, response is PKT_TYPE_DATA. See data structures for list of possible broadcast data.
-    PKT_TYPE_DATA                           = 4,    // Data sent in response to PKT_TYPE_GET_DATA (no PKT_TYPE_ACK is sent)
-    PKT_TYPE_SET_DATA                       = 5,    // Data sent, such as configuration options.  PKT_TYPE_ACK is sent in response.
-    PKT_TYPE_STOP_BROADCASTS_ALL_PORTS      = 6,    // Stop all data broadcasts on all ports. Responds with an ACK
-    PKT_TYPE_STOP_DID_BROADCAST             = 7,    // Stop a specific broadcast
-    PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT   = 8,    // Stop all data broadcasts on current port. Responds with an ACK
-    PKT_TYPE_COUNT                          = 9,    // The number of packet identifiers, keep this at the end!
-    PKT_TYPE_MAX_COUNT                      = 16,   // The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK)
-    PKT_TYPE_MASK                           = 0x0F, // ISB packet type bitmask
+    PKT_TYPE_INVALID                        = 0,    //!< Invalid packet id
+    PKT_TYPE_ACK                            = 1,    //!< Positive acknowledgement of a received packet
+    PKT_TYPE_NACK                           = 2,    //!< Negative acknowledgement (parse or checksum error)
+    PKT_TYPE_GET_DATA                       = 3,    //!< Request to broadcast a data set; response is PKT_TYPE_DATA
+    PKT_TYPE_DATA                           = 4,    //!< Data packet sent in response to PKT_TYPE_GET_DATA; no ACK sent
+    PKT_TYPE_SET_DATA                       = 5,    //!< Write data to the device; device responds with PKT_TYPE_ACK
+    PKT_TYPE_STOP_BROADCASTS_ALL_PORTS      = 6,    //!< Stop all data broadcasts on all ports; responds with ACK
+    PKT_TYPE_STOP_DID_BROADCAST             = 7,    //!< Stop a specific DID broadcast
+    PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT   = 8,    //!< Stop all data broadcasts on the current port; responds with ACK
+    PKT_TYPE_COUNT                          = 9,    //!< Total number of defined packet types
+    PKT_TYPE_MAX_COUNT                      = 16,   //!< Maximum supported packet type count (4-bit type field)
+    PKT_TYPE_MASK                           = 0x0F, //!< Bitmask for the packet type field in the flags byte
 
-    ISB_FLAGS_MASK                          = 0xF0, // ISB packet flags bitmask (4 bits upper nibble)
-    ISB_FLAGS_EXTENDED_PAYLOAD              = 0x10, // Payload is larger than 2048 bytes and extends into next packet.
-    ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x20, // The first two bytes of the payload are the byte offset of the payload data into the data set.
+    ISB_FLAGS_MASK                          = 0xF0, //!< Bitmask for the packet flags field (upper nibble)
+    ISB_FLAGS_EXTENDED_PAYLOAD              = 0x10, //!< Payload exceeds 2048 bytes and continues in the next packet
+    ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x20, //!< First two bytes of the payload contain the data-set byte offset
 } eISBPacketFlags;
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
@@ -288,10 +324,10 @@ enum ePktSpecialChars
     /** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
     PSC_NMEA_START_BYTE = 0x24,
 
-    /** Carriage return (\r), used by NMEA protocol to signify one byte before end of message (10) */
+    /** Carriage return (CR, 0x0D), used by NMEA protocol to signify one byte before end of message */
     PSC_NMEA_PRE_END_BYTE = 0x0D,
 
-    /** New line (\n), used by NMEA protocol to signify end of message (10) */
+    /** New line (LF, 0x0A), used by NMEA protocol to signify end of message */
     PSC_NMEA_END_BYTE = 0x0A,
 
     /** Inertial Sense Binary packet preamble (start) byte 1 (239) */
@@ -376,8 +412,8 @@ typedef struct
     uint16_t            offset;
 } p_data_hdr_t;
 
-#define ISB_MIN_PACKET_SIZE             (sizeof(packet_hdr_t) + 2)                                      // Packet header + checksum, no payload
-#define ISB_HDR_TO_PACKET_SIZE(hdr)     ((hdr).size + ISB_MIN_PACKET_SIZE + ((hdr).offset ? 2 : 0))     // Convert ISB header to packet size
+#define ISB_MIN_PACKET_SIZE             (sizeof(packet_hdr_t) + 2)                                      //!< Minimum ISB packet size: header + 2-byte checksum, no payload
+#define ISB_HDR_TO_PACKET_SIZE(hdr)     ((hdr).size + ISB_MIN_PACKET_SIZE + ((hdr).offset ? 2 : 0))     //!< Compute total ISB packet byte size from a packet_hdr_t
 
 /** Represents a packet header and body */
 typedef struct
@@ -436,6 +472,7 @@ typedef struct
     }                   payload;
 } packet_buf_t;
 
+/** ISB data packet: pointer form — header plus a pointer to an external payload buffer. */
 typedef struct
 {
     /** Header with id, size and offset */
@@ -445,6 +482,7 @@ typedef struct
     uint8_t             *ptr;
 } p_data_t;
 
+/** ISB data packet: buffer form — header plus an inline payload buffer up to @ref MAX_DATASET_SIZE bytes. */
 typedef struct
 {
     /** Header with id, size and offset */
@@ -496,7 +534,8 @@ typedef struct
         uint8_t         buf[sizeof(p_data_hdr_t)];
         p_data_hdr_t    dataHdr;
     }                   body;
-} p_ack_t, p_nack_t;
+} p_ack_t,
+  p_nack_t; //!< Alias for p_ack_t used when the packet represents a negative acknowledgement
 
 /** Ublox binary packet header */
 typedef struct
@@ -516,13 +555,14 @@ typedef struct
 } ubx_pkt_hdr_t;
 
 
+/** Septentrio SBF binary packet header. */
 typedef struct
 {
-    uint8_t syncChar1;      // 0x24
-    uint8_t syncChar2;      // 0x40
-    uint16_t crc;           // CRC16 checksum of the payload
-    uint16_t msgID;         // Message ID
-    uint16_t payloadSize;   // Size of the payload in bytes
+    uint8_t syncChar1;      //!< First sync byte, always 0x24 ('$')
+    uint8_t syncChar2;      //!< Second sync byte, always 0x40 ('@')
+    uint16_t crc;           //!< CRC-CCITT checksum of the payload bytes
+    uint16_t msgID;         //!< SBF block identifier
+    uint16_t payloadSize;   //!< Size of the payload in bytes
 } sept_pkt_hdr_t;
 
 /** Sony binary packet header */
@@ -542,6 +582,7 @@ typedef struct
 
 } sony_pkt_hdr_t;
 
+/** Sliding-window receive buffer used by is_comm_instance_t to accumulate inbound bytes. */
 typedef struct
 {
     /** Start of available buffer */
@@ -567,40 +608,44 @@ typedef struct
 
 } is_comm_buffer_t;
 
+/** Bitmask constants for enabling/disabling protocol parsers in is_comm_instance_t::cb::protocolMask. */
 typedef enum
 {
-    ENABLE_PROTOCOL_ISB         = (0x00000001 << _PTYPE_INERTIAL_SENSE_DATA),
-    ENABLE_PROTOCOL_NMEA        = (0x00000001 << _PTYPE_NMEA),
-    ENABLE_PROTOCOL_UBLOX       = (0x00000001 << _PTYPE_UBLOX),
-    ENABLE_PROTOCOL_RTCM3       = (0x00000001 << _PTYPE_RTCM3),
-    ENABLE_PROTOCOL_SPARTN      = (0x00000001 << _PTYPE_SPARTN),
-    ENABLE_PROTOCOL_SONY        = (0x00000001 << _PTYPE_SONY),
-    ENABLE_PROTOCOL_SBF         = (0x00000001 << _PTYPE_SEPTENTRIO_SBF),
-    ENABLE_PROTOCOL_SEPT_REPLY  = (0x00000001 << _PTYPE_SEPTENTRIO_REPLY),
-    ENABLE_PROTOCOL_SEPT        = (ENABLE_PROTOCOL_SBF| ENABLE_PROTOCOL_SEPT_REPLY),
+    ENABLE_PROTOCOL_ISB         = (0x00000001 << _PTYPE_INERTIAL_SENSE_DATA),  //!< Enable ISB parser
+    ENABLE_PROTOCOL_NMEA        = (0x00000001 << _PTYPE_NMEA),                 //!< Enable NMEA parser
+    ENABLE_PROTOCOL_UBLOX       = (0x00000001 << _PTYPE_UBLOX),                //!< Enable u-blox binary parser
+    ENABLE_PROTOCOL_RTCM3       = (0x00000001 << _PTYPE_RTCM3),                //!< Enable RTCM3 parser
+    ENABLE_PROTOCOL_SPARTN      = (0x00000001 << _PTYPE_SPARTN),               //!< Enable SPARTN parser
+    ENABLE_PROTOCOL_SONY        = (0x00000001 << _PTYPE_SONY),                 //!< Enable Sony GNSS binary parser
+    ENABLE_PROTOCOL_SBF         = (0x00000001 << _PTYPE_SEPTENTRIO_SBF),       //!< Enable Septentrio SBF parser
+    ENABLE_PROTOCOL_SEPT_REPLY  = (0x00000001 << _PTYPE_SEPTENTRIO_REPLY),     //!< Enable Septentrio reply parser
+    ENABLE_PROTOCOL_SEPT        = (ENABLE_PROTOCOL_SBF| ENABLE_PROTOCOL_SEPT_REPLY), //!< Enable all Septentrio parsers
 } eProtocolMask;
 
+/** Parse error type codes stored in is_comm_instance_t::rxErrorType. */
 typedef enum {
-    EPARSE_INVALID_PREAMBLE,
-    EPARSE_INVALID_SIZE,
-    EPARSE_INVALID_CHKSUM,
-    EPARSE_INVALID_DATATYPE,
-    EPARSE_MISSING_EOS_MARKER,      //!< Invalid End-of-Stream/End-of-Sentence(NMEA) marker
-    EPARSE_INCOMPLETE_PACKET,       //!< Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
-    EPARSE_INVALID_HEADER,
-    EPARSE_INVALID_PAYLOAD,
-    EPARSE_RXBUFFER_FLUSHED,        //!< RX buffer flushed during parse, packet too large to fit
-    EPARSE_STREAM_UNPARSABLE,
-    NUM_EPARSE_ERRORS
+    EPARSE_INVALID_PREAMBLE,        //!< Packet preamble bytes were not recognized
+    EPARSE_INVALID_SIZE,            //!< Declared payload size exceeds buffer limits
+    EPARSE_INVALID_CHKSUM,          //!< Checksum verification failed
+    EPARSE_INVALID_DATATYPE,        //!< Data type/DID is outside the valid range
+    EPARSE_MISSING_EOS_MARKER,      //!< End-of-sentence marker (NMEA CRLF) was not found
+    EPARSE_INCOMPLETE_PACKET,       //!< Stream/sentence is too short to be a valid packet
+    EPARSE_INVALID_HEADER,          //!< Packet header fields are malformed
+    EPARSE_INVALID_PAYLOAD,         //!< Payload content failed validation
+    EPARSE_RXBUFFER_FLUSHED,        //!< RX buffer was flushed because the packet exceeded its capacity
+    EPARSE_STREAM_UNPARSABLE,       //!< Byte stream does not match any supported protocol
+    NUM_EPARSE_ERRORS               //!< Sentinel: total number of parse error types
 } eParseErrorType;
 
-typedef struct  
+/** Internal per-protocol parser state used by is_comm_instance_t. */
+typedef struct
 {
-    int16_t     state;
-    uint16_t    size;
-    uint32_t    timeMs;        // Time of last parse
+    int16_t     state;      //!< Protocol-specific parser FSM state variable
+    uint16_t    size;       //!< Byte count accumulated by the active parser
+    uint32_t    timeMs;     //!< Timestamp of the last byte received (ms), used for gap detection
 } is_comm_parser_t;
 
+/** Internal function pointer type for per-protocol packet parsing steps. */
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 // broadcast message handler
@@ -633,15 +678,15 @@ typedef int(*pfnIsCommGenMsgHandler)(void* ctx, const unsigned char* msg, int ms
 typedef int(*pfnIsCommHandler)(void* ctx, protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 
-// Callback functions are called when the specific message is received and callback pointer is not null:
+/** Set of per-protocol callback functions attached to an is_comm_instance_t. */
 typedef struct
 {
-    /** A bitmask (each bit position corresponding to the _PTYPE_* protocol value) which forces parsing of that protocol (alternative to callbacks) */
+    /** Bitmask of enabled protocol types (see @ref eProtocolMask). Each bit enables parsing of the corresponding @ref protocol_type_t. */
     uint32_t                        protocolMask;
-    void*                           context;
-    pfnIsCommHandler                all;
-    pfnIsCommIsbDataHandler         isbData;
-    pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE];
+    void*                           context;            //!< User context pointer passed to every callback
+    pfnIsCommHandler                all;                //!< Called for every parsed packet of any protocol; NULL to skip
+    pfnIsCommIsbDataHandler         isbData;            //!< Called for every ISB data packet; NULL to skip
+    pfnIsCommGenMsgHandler          generic[_PTYPE_SIZE]; //!< Per-protocol callbacks indexed by @ref protocol_type_t; NULL entries are skipped
 } is_comm_callbacks_t;
 
 
@@ -687,6 +732,12 @@ typedef struct
 
 static const uint8_t COMM_PORT_FLAG__EXPLICIT_READ  = 0x01;     //!< When set, ISComm::is_comm_port_parse_messages() will not read/parse from this port; the operator must readPort() and then is_comm_buffer_parse_messages in separate, explicit steps.
 
+/**
+ * @brief Composite port type that bundles a base_port_t with an embedded ISComm parser instance.
+ *
+ * comm_port_t is layout-compatible with base_port_t (first member), so a pointer to
+ * comm_port_t can be cast to base_port_t* and used with the generic port API.
+ */
 typedef struct {
     base_port_t base;
     is_comm_instance_t comm;                //!< Comm instance
@@ -699,47 +750,137 @@ typedef struct {
     uint8_t flags;                          //!< COMM_PORT flags (ie, EXPLICIT, etc)
 #endif
 } comm_port_t;
-#define COMM_PORT(n)    ((comm_port_t*)(n))
+#define COMM_PORT(n)    ((comm_port_t*)(n))  //!< Cast a port_handle_t to a comm_port_t pointer
 
 
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
 POP_PACK
 
 /**
-* Init simple communications interface - call this before doing anything else
-* @param instance communications instance, please ensure that you have set the buffer and bufferSize
-*/
+ * @brief Initialize an is_comm_instance_t. Call this before using any other is_comm_* functions.
+ * @param instance   ISComm instance to initialize.
+ * @param buffer     Caller-provided receive buffer; must remain valid for the lifetime of @p instance.
+ * @param bufferSize Size of @p buffer in bytes; should be at least @ref PKT_BUF_SIZE.
+ * @param pktHandler Optional: called for every fully parsed packet; may be NULL.
+ */
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler);
 
+/**
+ * @brief Initialize an is_comm_instance_t embedded inside a comm_port_t.
+ * @param port       comm_port_t to initialize; the embedded is_comm_instance_t and
+ *                   the internal buffer are configured automatically.
+ * @param pktHandler Optional packet handler called for every fully parsed packet; may be NULL.
+ */
 void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler);
 
+/**
+ * @brief Retrieve the is_comm_instance_t embedded in a port handle.
+ * @param port Port handle previously initialized with is_comm_port_init() or equivalent.
+ * @return Pointer to the embedded is_comm_instance_t, or NULL if @p port is NULL.
+ */
 is_comm_instance_t* is_comm_get_port_instance(port_handle_t port);
 
+/**
+ * @brief Register a handler called for every successfully parsed packet (any protocol).
+ * @param comm      ISComm instance to configure.
+ * @param cbHandler New handler function; replaces any previously registered all-protocol handler.
+ * @return The previously registered all-protocol handler, or NULL if none was set.
+ */
 pfnIsCommHandler is_comm_register_all_handler(is_comm_instance_t* comm, pfnIsCommHandler cbHandler);
 
+/**
+ * @brief Register a handler called for every received ISB data packet.
+ * @param comm      ISComm instance to configure.
+ * @param cbHandler New ISB data handler; replaces any previously registered handler.
+ * @return The previously registered ISB data handler, or NULL if none was set.
+ */
 pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler);
 
+/**
+ * @brief Register an ISB data handler on a port handle.
+ * @param port      Port handle whose embedded is_comm_instance_t is configured.
+ * @param cbHandler New ISB data handler.
+ * @return The previously registered ISB data handler, or NULL if none was set.
+ */
 pfnIsCommIsbDataHandler is_comm_register_port_isb_handler(port_handle_t port, pfnIsCommIsbDataHandler cbHandler);
 
+/**
+ * @brief Register a handler for a specific non-ISB protocol type.
+ * @param comm      ISComm instance to configure.
+ * @param ptype     Protocol type to handle (see @ref protocol_type_t; must not be _PTYPE_INERTIAL_SENSE_DATA).
+ * @param cbHandler New handler for @p ptype; replaces any previously registered handler for that type.
+ * @return The previously registered handler for @p ptype, or NULL if none was set.
+ */
 pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler);
 
+/**
+ * @brief Register a protocol-specific handler on a port handle.
+ * @param port      Port handle whose embedded is_comm_instance_t is configured.
+ * @param ptype     Protocol type to handle (see @ref protocol_type_t).
+ * @param cbHandler New handler for @p ptype.
+ * @return The previously registered handler for @p ptype, or NULL if none was set.
+ */
 pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int ptype, pfnIsCommGenMsgHandler cbHandler);
 
+/**
+ * @brief Replace the full callback table on an ISComm instance.
+ * @param instance  ISComm instance to configure.
+ * @param callbacks Pointer to a caller-owned callback structure copied into @p instance.
+ */
 void is_comm_register_callbacks(is_comm_instance_t* instance, is_comm_callbacks_t *callbacks);
 
+/**
+ * @brief Replace the full callback table on a port handle.
+ * @param port      Port handle whose embedded is_comm_instance_t is configured.
+ * @param callbacks Pointer to a caller-owned callback structure.
+ */
 void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks);
 
+/**
+ * @brief Enable parsing of a specific protocol type on an ISComm instance.
+ * @param instance ISComm instance to modify.
+ * @param ptype    Protocol type to enable (sets the corresponding bit in protocolMask).
+ */
 void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype);
 
+/**
+ * @brief Disable parsing of a specific protocol type on an ISComm instance.
+ * @param instance ISComm instance to modify.
+ * @param ptype    Protocol type to disable (clears the corresponding bit in protocolMask).
+ */
 void is_comm_disable_protocol(is_comm_instance_t* instance, protocol_type_t ptype);
 
+/**
+ * @brief Set the complete protocol enable bitmask on an ISComm instance.
+ * @param instance     ISComm instance to modify.
+ * @param protocolMask Bitmask of enabled protocol types (see @ref eProtocolMask).
+ */
 void is_comm_set_protocol_mask(is_comm_instance_t* instance, uint32_t protocolMask);
 
+/**
+ * @brief Get the current protocol enable bitmask from an ISComm instance.
+ * @param instance ISComm instance to query.
+ * @return Current protocolMask value (see @ref eProtocolMask).
+ */
 uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance);
 
-
-// void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
+/**
+ * @brief Parse a pre-filled byte buffer for complete packets, invoking registered callbacks.
+ * @param buf      Pointer to the byte buffer to parse.
+ * @param buf_size Number of valid bytes in @p buf.
+ * @param comm     ISComm instance that holds parser state and callbacks.
+ */
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
+
+/**
+ * @brief Read available bytes from a port and parse for complete packets.
+ *
+ * Reads from the port's hardware buffer into the ISComm receive buffer, then
+ * invokes registered callbacks for any complete packets found.
+ *
+ * @param port Port handle to read and parse.  The embedded is_comm_instance_t
+ *             must have been initialized via is_comm_port_init() or equivalent.
+ */
 void is_comm_port_parse_messages(port_handle_t port);
 
 /**
@@ -790,12 +931,16 @@ static inline protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, u
 }
 
 /**
-* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
-* @param instance the comm instance passed to is_comm_init
-* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
-* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
-* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-*/
+ * @brief Parse the next complete packet from the ISComm buffer, applying a receive timeout.
+ *
+ * Returns the protocol type when a full packet is available; otherwise returns @ref _PTYPE_NONE.
+ * On return, comm->rxPkt contains the parsed packet and comm->rxPkt.data.ptr points to the payload.
+ *
+ * @param c      ISComm instance (initialized with is_comm_init()).
+ * @param timeMs Current time in milliseconds. If non-zero and > MAX_PARSER_GAP_TIME_MS since the
+ *               last received byte, the parser state is reset to prevent stale partial packets.
+ * @return Protocol type of the completed packet, or @ref _PTYPE_NONE (0) if no complete packet yet.
+ */
 protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 
 /**
@@ -856,15 +1001,27 @@ static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
- * @brief Same as is_comm_write_to_buf() except for writing packet to serial port.
- * @param portWrite Serial port callback function used send packet.
- * @param port Serial port number packet will be written to.
+ * @brief Encode and write an ISB packet directly to a port.
+ * @param port      Port handle to write the packet to.
+ * @param flags     ISB packet flags including packet type (see @ref eISBPacketFlags).
+ * @param did       Data ID of the payload.
+ * @param data_size Size of the payload in bytes.
+ * @param offset    Byte offset into the data set structure; 0 for no offset.
+ * @param data      Pointer to the payload data; may be NULL for packets with no body.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
- * @brief Same as is_comm_write() except passing in pointer to Tx packet structure.  
- * @param txPkt Pointer to packet_t structure used to organize message sent.
+ * @brief Encode and write an ISB packet to a port, using a pre-allocated packet_t.
+ * @param port      Port handle to write to.
+ * @param txPkt     Caller-provided packet_t used as workspace for encoding.
+ * @param flags     ISB packet flags including packet type (see @ref eISBPacketFlags).
+ * @param did       Data ID of the payload.
+ * @param data_size Size of the payload in bytes.
+ * @param offset    Byte offset into the data set structure; 0 for no offset.
+ * @param data      Pointer to the payload data.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
@@ -876,23 +1033,28 @@ int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16
 int is_comm_free(is_comm_instance_t* instance);
 
 /**
- * @brief Encode a binary packet to get data from the device - puts the data ready to send into the buffer passed into is_comm_init
- * @param instance the comm instance passed to is_comm_init
- * @param dataId the data id to request (see DID_* at top of this file)
- * @param size the length into data from offset to request. Set size and offset to 0 to request entire data structure.
- * @param offset the offset into data to request. Set offset and length to 0 for entire data structure.
- * @param periodMultiple how often you want the data to stream out, 0 for a one time message and turn off.
- * @return int Number of bytes written on success or -1 on failure
- * @remarks pass an offset and length of 0 to request the entire data structure
+ * @brief Encode a GET_DATA request packet into a caller-provided buffer.
+ * @param buf            Destination buffer for the encoded packet.
+ * @param buf_size       Capacity of @p buf in bytes.
+ * @param comm           ISComm instance (provides the Tx packet counter).
+ * @param did            Data ID to request (see DID_* in data_sets.h).
+ * @param size           Number of bytes to request from @p offset; 0 = full structure.
+ * @param offset         Byte offset into the data structure; 0 = start.
+ * @param periodMultiple Broadcast period multiplier; 0 = one-shot (stop after one packet).
+ * @return Number of bytes written on success, or -1 on failure.
  */
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
- * @brief Same as is_comm_get_data_to_buf() except for writing packet to serial port.
- * @param portWrite Call back function for serial port write
- * @param port Port number for serial port
+ * @brief Encode and write a GET_DATA request packet directly to a port.
+ * @param port           Port handle to write the request to.
+ * @param did            Data ID to request.
+ * @param size           Number of bytes to request from @p offset; 0 = full structure.
+ * @param offset         Byte offset into the data structure; 0 = start.
+ * @param periodMultiple Broadcast period multiplier; 0 = one-shot.
+ * @return Number of bytes written on success, or -1 on failure.
  */
-int is_comm_get_data(port_handle_t port,uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
+int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
  * @brief Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
@@ -912,44 +1074,68 @@ static inline int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_co
 }    
 
 /**
- * @brief Same as is_comm_set_data_to_buf() except for writing packet to serial port.
- * @param portWrite Call back function for serial port write
- * @param port Port number for serial port
+ * @brief Encode and write a SET_DATA packet to a port. Device responds with an ACK.
+ * @param port   Port handle to send to.
+ * @param did    Data ID of the structure to set.
+ * @param size   Number of bytes to send from @p data; 0 = full structure.
+ * @param offset Byte offset into the data structure; 0 = start.
+ * @param data   Pointer to the data to send.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 static inline int is_comm_set_data(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
     return is_comm_write(port, PKT_TYPE_SET_DATA, did, size, offset, data);
-}    
+}
 
 /**
- * Same as is_comm_set_data_buf() except NO acknowledge packet is sent in response to this packet.
+ * @brief Encode a DATA packet into a buffer (no ACK sent by device).
+ * @param buf      Destination buffer.
+ * @param buf_size Capacity of @p buf.
+ * @param comm     ISComm instance.
+ * @param did      Data ID.
+ * @param size     Payload size in bytes.
+ * @param offset   Byte offset into the data structure.
+ * @param data     Pointer to payload data.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 static inline int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_DATA, did, size, offset, data);    
-}    
+    return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_DATA, did, size, offset, data);
+}
 
 /**
- * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
+ * @brief Encode and write a DATA packet to a port (no ACK sent by device).
+ * @param port   Port handle to send to.
+ * @param did    Data ID.
+ * @param size   Payload size in bytes.
+ * @param offset Byte offset into the data structure.
+ * @param data   Pointer to payload data.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 static inline int is_comm_data(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
     return is_comm_write(port, PKT_TYPE_DATA, did, size, offset, data);
-}    
+}
 
 /**
- * @brief Same as is_comm_data() except passing in pointer to Tx packet structure.  
- * @param txPkt Pointer to packet_t structure used to organize message sent.
+ * @brief Encode and write a DATA packet using a pre-allocated packet_t.
+ * @param port   Port handle to send to.
+ * @param txPkt  Caller-provided packet_t used as workspace.
+ * @param did    Data ID.
+ * @param size   Payload size in bytes.
+ * @param offset Byte offset into the data structure.
+ * @param data   Pointer to payload data.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 static inline int is_comm_data_pkt(port_handle_t port, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
     return is_comm_write_pkt(port, txPkt, PKT_TYPE_DATA, did, size, offset, data);
-}    
+}
 
 /**
- * Encode a binary packet to stop all messages being broadcast on the device on all ports
- * @param comm the comm instance passed to is_comm_init
- * @return 0 if success, otherwise an error code
+ * @brief Send a command to stop all broadcasts on all ports.
+ * @param port Port handle to send the stop command to.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 static inline int is_comm_stop_broadcasts_all_ports(port_handle_t port)
 {
@@ -957,9 +1143,9 @@ static inline int is_comm_stop_broadcasts_all_ports(port_handle_t port)
 }
 
 /**
- * Encode a binary packet to stop all messages being broadcast on the device on this port
- * @param comm the comm instance passed to is_comm_init
- * @return 0 if success, otherwise an error code
+ * @brief Send a command to stop all broadcasts on the current port only.
+ * @param port Port handle to send the stop command to.
+ * @return Number of bytes written on success, or -1 on failure.
  */
 static inline int is_comm_stop_broadcasts_current_port(port_handle_t port)
 {
@@ -994,7 +1180,7 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
  */
 uint16_t crc_ccitt(const uint8_t *data, size_t length);
 
-#define is_comm_isb_checksum16  is_comm_fletcher16
+#define is_comm_isb_checksum16  is_comm_fletcher16  //!< Checksum algorithm used for ISB packets (currently Fletcher-16)
 // #define is_comm_isb_checksum16  is_comm_xor16
 
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -1013,39 +1199,106 @@ uint16_t crc_ccitt(const uint8_t *data, size_t length);
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
- * @brief Updates the checksum for a precomputed InertialSense binary (ISB) packet and writes it to the specified serial port.
- * @param portWrite Callback function for serial port write
- * @param port Port number for serial port
- * @param comm IS comm instance used to increment Tx packet counter statistic
- * @param pkt Pointer to precomputed ISB packet
- * @return int Number of bytes written on success or -1 on failure
+ * @brief Write a precomputed ISB packet to a port after updating its checksum.
+ * @param port Port handle to write to.
+ * @param pkt  Pointer to a precomputed packet_t (header and data must already be filled in).
+ * @return Number of bytes written on success, or -1 on failure.
  */
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt);
 
+/**
+ * @brief Compute a 24-bit CRC using the QUALCOMM polynomial.
+ * @param buffer Data buffer to checksum.
+ * @param len    Number of bytes in @p buffer.
+ * @return 24-bit CRC value.
+ */
 unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len);
+
+/**
+ * @brief Extract an arbitrary bit field from a byte buffer as a uint32_t.
+ * @param buffer Source byte buffer.
+ * @param pos    Bit position (0 = LSB of first byte) at which to start extraction.
+ * @param len    Number of bits to extract (1 to 32).
+ * @return Extracted value right-justified in a uint32_t.
+ */
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
 
+/**
+ * @brief Validate that a baud rate is supported by IS hardware.
+ * @param baudRate Baud rate to check.
+ * @return 0 if valid, -1 if not a recognized IS baud rate.
+ */
 int validateBaudRate(unsigned int baudRate);
 
-/** Copies data structure into packet data.  Data copied is limited to the size and offset specified in p_data_t *data.  Returns 0 on success, -1 on failure. */
+/**
+ * @brief Copy from a data structure into a p_data_t packet payload.
+ *
+ * Only the region described by data->hdr.size and data->hdr.offset is copied
+ * from @p sptr; the copy is bounds-checked against @p maxsize.
+ *
+ * @param data    Destination packet data (hdr.size/offset must be set by caller).
+ * @param sptr    Source data structure pointer.
+ * @param maxsize Total size of the source structure for bounds checking.
+ * @return 0 on success, -1 on failure (e.g., out-of-range offset/size).
+ */
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize);
 
-/** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
+/**
+ * @brief Copy from a p_data_t packet payload into a data structure.
+ * @param sptr    Destination data structure pointer.
+ * @param data    Source packet data.
+ * @param maxsize Total size of the destination structure for bounds checking.
+ * @return 0 on success, -1 on failure.
+ */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
+
+/**
+ * @brief Copy from a p_data_buf_t packet buffer into a data structure.
+ * @param sptr    Destination data structure pointer.
+ * @param data    Source packet buffer.
+ * @param maxsize Total size of the destination structure for bounds checking.
+ * @return 0 on success, -1 on failure.
+ */
 char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize);
-/** Copies from packet data to packet data.  Returns 0 on success, -1 on failure. */
+
+/**
+ * @brief Copy from one p_data_t payload into another.
+ * @param dst     Destination packet data (hdr must describe the desired copy region).
+ * @param src     Source packet data.
+ * @param maxsize Maximum bytes to copy (bounds check).
+ * @return 0 on success, -1 on failure.
+ */
 char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int maxsize);
 
-/** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
+/**
+ * @brief Copy from a separate header + buffer pair into a data structure.
+ * @param sptr    Destination data structure pointer.
+ * @param dataHdr Header describing the data ID, size, and offset.
+ * @param dataBuf Raw payload bytes corresponding to @p dataHdr.
+ * @param maxsize Total size of the destination structure for bounds checking.
+ * @return 0 on success, -1 on failure.
+ */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
-/** Indicates whether there is overlap in the data received and the backing data structure */
+/**
+ * @brief Test whether a received data region overlaps with a backing data structure region.
+ * @param dstOffset Byte offset of the destination region within the data structure.
+ * @param dstSize   Byte size of the destination region.
+ * @param src       Source p_data_t describing the received data's offset and size.
+ * @return Non-zero if the regions overlap, 0 if they do not.
+ */
 static inline uint8_t dataOverlap(uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
     return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
 }
 
-/** Reset parser state */
+/**
+ * @brief Reset the protocol parser to its initial state.
+ *
+ * Discards any partially accumulated packet and repositions the scan pointer.
+ *
+ * @param c ISComm instance to reset.
+ */
 static inline void is_comm_reset_parser(is_comm_instance_t* c)
 {
     c->parser.state = 0;
@@ -1054,10 +1307,20 @@ static inline void is_comm_reset_parser(is_comm_instance_t* c)
     c->processPkt = NULL;
 }
 
-/** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
+/**
+ * @brief Copy data from is_comm_instance_t into a caller-provided structure.
+ * @param sptr    Destination structure pointer.
+ * @param comm    Source ISComm instance.
+ * @param maxsize Total byte size of the destination structure (bounds check).
+ * @return 0 on success, -1 on failure.
+ */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *comm, const unsigned int maxsize);
 
-/** Get ISB p_data_t from is_comm_instance_t */
+/**
+ * @brief Extract the most recently parsed ISB p_data_t from an is_comm_instance_t.
+ * @param comm  ISComm instance containing the parsed receive packet.
+ * @param data  Output p_data_t populated with the DID, offset, size, and data pointer.
+ */
 static inline void is_comm_to_isb_p_data(const is_comm_instance_t *comm, p_data_t *data)
 {
     data->hdr.id        = comm->rxPkt.dataHdr.id;
@@ -1066,13 +1329,17 @@ static inline void is_comm_to_isb_p_data(const is_comm_instance_t *comm, p_data_
     data->ptr           = comm->rxPkt.data.ptr;
 }
 
-/** Get ISB packet type from is_comm_instance */
+/**
+ * @brief Extract the ISB packet type from an is_comm_instance_t's most recent receive packet.
+ * @param comm ISComm instance containing the parsed receive packet.
+ * @return ISB packet type flags (see @ref eISBPacketFlags).
+ */
 static inline eISBPacketFlags is_comm_to_isb_pkt_type(const is_comm_instance_t *comm)
 {
     return (eISBPacketFlags)(comm->rxPkt.hdr.flags&PKT_TYPE_MASK);
 }
 
-/** Returns -1 if the baudrate is not a standard baudrate. */
+/** @brief Validate that a baud rate is in the IS-supported standard range; returns -1 if not. */
 int validateBaudRate(unsigned int baudRate);
 
 #ifdef __cplusplus
