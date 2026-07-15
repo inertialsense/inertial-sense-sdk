@@ -83,16 +83,29 @@ public:
                 res.set_content("{\"error\":\"offline\"}", "application/json");
                 return;
             }
-            json body = {
-                {"host", "fake.local"},
-                {"server_instance_id", instanceId_},
-                {"snapshot_id", snapshotId_.load()},
-                {"devices", snapshotDevices()},
-            };
+            json body;
+            {
+                // instanceId_/devices_ are mutated under mutex_ by emitAdded/emitRemoved/restart;
+                // take the lock here too so this handler doesn't race them.
+                std::lock_guard<std::mutex> lock(mutex_);
+                body = {
+                    {"host", "fake.local"},
+                    {"server_instance_id", instanceId_},
+                    {"snapshot_id", snapshotId_.load()},
+                    {"devices", snapshotDevices()},
+                };
+            }
             res.set_content(body.dump(), "application/json");
         });
 
         server_.Get("/api/events/devices", [this](const httplib::Request& req, httplib::Response& res) {
+            if (offline_.load()) {
+                // Reject new connection attempts outright (503) — matches the polling endpoint's
+                // offline behavior. An already-open stream is handled separately in handleStream().
+                res.status = 503;
+                res.set_content("{\"error\":\"offline\"}", "application/json");
+                return;
+            }
             const std::string lastId = req.get_header_value("Last-Event-ID");
             res.set_chunked_content_provider("text/event-stream",
                 [this, lastId](size_t /*offset*/, httplib::DataSink& sink) {
@@ -160,8 +173,11 @@ public:
     /// Override: serve SSE with a 500 status so transport-fallback tests can force retries.
     void setFailSse(bool fail) { failSse_ = fail; }
 
-    /// Simulate a complete relay outage: both HTTP and SSE endpoints return 503. Thread-safe.
-    /// Call setOffline(false) to restore normal operation.
+    /// Simulate a complete relay outage: new /api/availableDevices requests and new SSE
+    /// connection attempts both get an HTTP 503. An already-open SSE stream is NOT forcibly
+    /// closed by this call — it just goes silent (no further bytes) — mirroring a real relay's
+    /// hard power loss, where the peer sends no FIN/RST and the socket looks alive but idle.
+    /// Thread-safe. Call setOffline(false) to restore normal operation.
     void setOffline(bool offline) {
         offline_.store(offline);
         if (offline) {

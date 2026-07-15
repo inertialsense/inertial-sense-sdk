@@ -242,15 +242,18 @@ public:
     /**
      * Override the per-step base for the escalating reconnect backoff. The default is 6000 ms
      * (so the first step past the eviction window is 6 s). Intended for unit tests only.
-     * In production the value is tuned so the cadence reaches LOST_BACKOFF_MAX_MS (~10 min).
+     * In production, with this default, the interval reaches the LOST_BACKOFF_MAX_MS cap after
+     * ~10 minutes of being lost.
      * @param ms  new per-step base in milliseconds
      */
     void setLostBackoffBaseMs(int64_t ms) { lostBackoffBaseMs_ = ms; }
 
     /**
-     * SN-8177: escalating reconnect backoff for a "lost" manually-configured host. The probe
-     * interval grows roughly each minute the host has been silent, capping here (~10 min in).
-     * Keeps a dead-but-maybe-returning relay from being hammered (and blocking the IO thread).
+     * SN-8177: ceiling on the escalating reconnect backoff interval for a "lost"
+     * manually-configured host — 60 s. With the default lostBackoffBaseMs_ (6000 ms), the
+     * probe interval grows roughly one step per minute the host has been silent (6 s, 12 s,
+     * ...), reaching this 60 s cap after ~10 minutes lost. Keeps a dead-but-maybe-returning
+     * relay from being hammered (and blocking the IO thread).
      */
     static constexpr int64_t LOST_BACKOFF_MAX_MS = 60000;
 

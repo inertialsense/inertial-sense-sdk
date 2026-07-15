@@ -610,9 +610,12 @@ std::chrono::milliseconds RelayPortFactory::reconnectInterval(
     if (silentMs < offlineEvictMs_) {
         return pollInterval_;
     }
-    // Lost: grow ~ one step per minute, capped at LOST_BACKOFF_MAX_MS (reached by ~10 min).
+    // Lost: grow ~ one step per minute, capped at LOST_BACKOFF_MAX_MS (60s). With the default
+    // lostBackoffBaseMs_ (6000ms): 6s, 12s, ... -> 60s cap, reached by ~10 min lost. Tests may
+    // override the base via setLostBackoffBaseMs() for a faster cadence; the cap and the
+    // one-step-per-minute growth shape are unaffected.
     int64_t minutesLost = silentMs / 60000;
-    int64_t backoffMs = lostBackoffBaseMs_ * (minutesLost + 1);   // 6s, 12s, ... -> 60s
+    int64_t backoffMs = lostBackoffBaseMs_ * (minutesLost + 1);
     if (backoffMs > LOST_BACKOFF_MAX_MS) backoffMs = LOST_BACKOFF_MAX_MS;
     return std::chrono::milliseconds(backoffMs);
 }
