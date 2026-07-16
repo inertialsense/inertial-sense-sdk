@@ -5954,13 +5954,13 @@ enum can_baudrate_t
     CAN_BAUDRATE_COUNT      = 10
 };
 
-/** Bit packed into can_config_t.can_baudrate_kbps (a uint16_t; valid baud rate values
+/** Bit packed into can_config_t.can_setting (a uint16_t; valid baud rate values
  *  only use bits 0-9). When set, enables CAN-FD on FDCAN-capable hardware (IMX-6,
  *  GPX-1): frames with a payload > 8 bytes are sent using CAN FD framing with bit-rate
  *  switching (BRS). When clear (default), CAN runs classic-only (payload <= 8 bytes),
  *  matching legacy IMX-5 (bxCAN) behavior. Ignored on IMX-5, which has no FD hardware. */
 #define CAN_BAUDRATE_KBPS_FD_ENABLE     (uint16_t)0x8000
-/** Mask isolating the baud rate (in kbps) from can_baudrate_kbps, excluding the
+/** Mask isolating the baud rate (in kbps) from can_setting, excluding the
  *  CAN_BAUDRATE_KBPS_FD_ENABLE flag bit. */
 #define CAN_BAUDRATE_KBPS_MASK          (uint16_t)0x7FFF
 
@@ -5982,7 +5982,7 @@ typedef struct PACKED
 
     /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates). Bit 15
      *  (CAN_BAUDRATE_KBPS_FD_ENABLE) enables CAN-FD on capable hardware. */
-    uint16_t                can_baudrate_kbps;
+    uint16_t                can_setting;
 
     /** Receive address */
     uint32_t                can_receive_address;
