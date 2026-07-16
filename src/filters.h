@@ -531,7 +531,7 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 
 float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
 float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
-float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
+float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast);
 
 /** 
  * \brief Compute coning and sculling integrals from gyro and accelerometer samples
