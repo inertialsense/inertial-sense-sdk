@@ -14,7 +14,7 @@ include_directories(
 
 # Define the executable
 add_executable(${PROJECT_NAME}
-    CustomVirtualExample.cpp
+    main.cpp
     CustomVirtualPortFactory.cpp
     CustomVirtualPort.cpp
 )
