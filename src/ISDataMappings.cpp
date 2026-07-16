@@ -1817,6 +1817,13 @@ static void PopulateMapCanFdConfig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_POS]",         offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_POS,         DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 position",            DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS1_RTK_POS_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS1_RTK_POS_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS1 RTK relative",       DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember2("can_fd_transmit_address[FDCID_GNSS2_RTK_CMP_REL]", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * FDCID_GNSS2_RTK_CMP_REL, DATA_TYPE_UINT32, "", "FD transmit address for GNSS2 RTK compassing relative", DATA_FLAGS_DISPLAY_HEX);
+
+    // can_config_t is shared with DID_CAN_CONFIG, whose arrays are sized NUM_CIDS (27). CAN-FD
+    // only uses the first NUM_FDCIDS (10) slots of each array, so the mappings above cover just
+    // that subset. The DataMapper invariant requires the mapped fields to span the whole struct,
+    // so account for the FD-unused tail of both arrays as reserved regions.
+    mapper.AddMember2("can_fd_period_mult_reserved",      offsetof(can_config_t, can_period_mult)      + sizeof(uint16_t) * NUM_FDCIDS, DATA_TYPE_BINARY, "", "Reserved (classic-CAN period-mult slots unused in FD mode)",      DATA_FLAGS_READ_ONLY, 1.0, (uint32_t)(sizeof(uint16_t) * (NUM_CIDS - NUM_FDCIDS)));
+    mapper.AddMember2("can_fd_transmit_address_reserved", offsetof(can_config_t, can_transmit_address) + sizeof(uint32_t) * NUM_FDCIDS, DATA_TYPE_BINARY, "", "Reserved (classic-CAN transmit-address slots unused in FD mode)", DATA_FLAGS_READ_ONLY, 1.0, (uint32_t)(sizeof(uint32_t) * (NUM_CIDS - NUM_FDCIDS)));
 }
 
 static void PopulateMapDiagMsg(data_set_t data_set[DID_COUNT], uint32_t did)
