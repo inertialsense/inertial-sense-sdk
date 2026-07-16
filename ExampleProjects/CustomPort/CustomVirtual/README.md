@@ -176,7 +176,7 @@ We will later show where this init function would be called by your new custom p
 
 
 ### Step 4: Create New Port Factory Project Files
-Create two new files, named something like YOURNAMEPortFactory.h and YOURNAMEPortFactory.cpp.  This example uses the `CustomVirtualPortFactory` derived class.  With these files we will derive a new port factory from the SDK `PortFactory` class.
+This uses the `CustomVirtualPortFactory` derived class.  We create two new files, CustomVirtualPortFactory.h and CustomVirtualPortFactory.cpp.   With these files we will derive a new port factory from the SDK `PortFactory` class.
 
 Example headers for .h file:
 ```C++
@@ -243,9 +243,9 @@ initTestPorts();
 Add in additional support functions to the CustomVirtualPortFactory.cpp file as needed for the application.  For example, for our virtual comm port we use this function:
 ```C++
 /**
- * Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
+ * @brief Populates a vector of string identifiers for all available virtual ports from custom_serial_utils.
  * For this example, it will be a number of virtual ports defined in the data_sets.h header used by the 
- * test_serial_utils definitions.
+ * custom_serial_utils definitions.
  * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
  * @return the number of ports found on the host
  */

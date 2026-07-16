@@ -27,14 +27,6 @@
  */
 class CustomVirtualPortFactory : public PortFactory {
 public:
-    /** (optional) Default port config options for the factory, customized to the type of port you create;
-     *  In this example we are using virtual ports and will not make use of these
-     */
-    struct {
-        int defaultBaudRate = BAUDRATE_921600;
-        bool defaultBlocking = false;
-    } portOptions = {};
-
     /** We need a way to get an instance of the singleton port factory */
     static CustomVirtualPortFactory& getInstance() {
         static CustomVirtualPortFactory instance;
@@ -54,11 +46,6 @@ public:
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
     bool releasePort(port_handle_t port) override;
 
-    /** (optional) Functions for setting the port config options, customized to the type of port you create
-     *  In this example we are using virtual ports and will not make use of these
-     */
-    CustomVirtualPortFactory& setBaudRate(uint32_t baud) { portOptions.defaultBaudRate = baud; return *this; }
-    CustomVirtualPortFactory& setBlocking(bool block) { portOptions.defaultBlocking = block; return *this; }
 
 private:
     /** Make these private for our singleton pattern */

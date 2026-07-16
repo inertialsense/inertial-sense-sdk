@@ -130,9 +130,9 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
 
 
 /**
- * @brief Populates a vector of string identifiers for all available virtual ports from test_serial_utils.
+ * @brief Populates a vector of string identifiers for all available virtual ports from custom_serial_utils.
  * For this example, it will be a number of virtual ports defined in the data_sets.h header used by the 
- * test_serial_utils definitions.
+ * custom_serial_utils definitions.
  * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
  * @return the number of ports found on the host
  */
