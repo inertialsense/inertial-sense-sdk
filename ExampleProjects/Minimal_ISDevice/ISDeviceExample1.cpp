@@ -1,5 +1,5 @@
 /**
- * @file ISDeviceExample1.cpp 
+ * @file ISDeviceExample1.cpp
  * @brief An application that demonstrates to mode basic C++ example of connecting to an Inertial Sense device and streaming data from it.
  *
  * @author Kyle Mallory on 6/3/25.
@@ -7,11 +7,21 @@
  */
 
 #include <iostream>
+#include <signal.h>
 
 #include "PortFactory.h"
 #include "ISDevice.h"
 #include "ISDisplay.h"
+#include "ISLogger.h"
 
+// Volatile flag to ensure safe modification inside the signal handler
+volatile sig_atomic_t keep_running = 1;
+
+// The signal handler function
+void handle_sigint(int sig) {
+    // Only use async-signal-safe functions inside handlers
+    keep_running = 0;
+}
 
 /** this is a global instance of a utility class that handles printing/formatting of various data sets received from the device */
 cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::DMODE_PRETTY);
@@ -30,6 +40,65 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
 
     if ((data->hdr.id == DID_SYS_PARAMS) || (data->hdr.id == DID_GNSS1_POS) || (data->hdr.id == DID_INS_1))
         std::cout << isDisplay.DataToString((const p_data_t*)data);
+    return 0;
+}
+
+/**
+ * This is a callback handler that we will register with the ISDevice once its created, and which will be called any time there is an error parsing data.
+ *   In order to identify the nature of the error (which is not passed here), we can inspect the ISComm instances associated with the port and extract
+ *   the last reported parse error.
+ * @param ctx this is an opaque context pointer for this message - in this example, it will be the ISDevice* that received it the message - the ISDevice
+ *   still need to process the data that it receives, so we dereference this, and call OnIsbDataHandler()
+ * @param msg a pointer to a unsigned char *, which represents the buffer of data received which caused the error. This will very and is not always
+ *   useful, but is provided to allow inspection of the data to determine a possible cause for the error.  In some cases, this could be
+ * @param msgSize the number of bytes in the msg payload
+ * @param port the port_handle_t that this data was received from
+ * @returns 0 if this message was successfully processed by a protocol-specific handler, and should not be further processed, otherwise return !0
+ */
+int errorHandler(void* ctx, const unsigned char* msg, int msgSize, port_handle_t port) {
+    if ((portType(port) & PORT_TYPE__COMM) != PORT_TYPE__COMM)
+    {
+        // if the port isn't a COMM port, there is a problem... this should never happen, but we'll guard against it anyway
+        return 0;   // acknowledge the error, but we really can't do anything with it.
+    }
+
+    std::string rawMsgData = utils::raw_hexdump((const char*)msg, msgSize, 64);
+
+    // We'll extract the ISComm instance associated with the port in order to gain access to the parser details
+    comm_port_t* commPort = COMM_PORT(port);
+    switch (commPort->comm.rxErrorType)
+    {
+    case EPARSE_INVALID_PREAMBLE:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an invalid preamble:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_INVALID_SIZE:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an invalid payload size:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_INVALID_CHKSUM:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an invalid checksum:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_INVALID_DATATYPE:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an invalid datatype:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_MISSING_EOS_MARKER:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm could not identify an valid EOS marker:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_INCOMPLETE_PACKET:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an incomplete packet/payload:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_INVALID_HEADER:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an invalid packet header:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_INVALID_PAYLOAD:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm parsed an invalid payload:  %s", rawMsgData.c_str());
+        break;
+    case EPARSE_RXBUFFER_FLUSHED:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm forced a flush of te RX buffer; data may be lossed: %s", rawMsgData.c_str());
+        break;
+    case EPARSE_STREAM_UNPARSABLE:
+        log_warn(IS_LOG_FACILITY_NONE, "ISComm reported an error parsing the byte stream: %s", rawMsgData.c_str());
+        break;
+    }
     return 0;
 }
 
@@ -65,7 +134,10 @@ int main_explained(const char* portStr) {
     }
 
     // With a valid, opened port, we can instance an ISDevice - in this case, an IMX-5.0 and associate the port to it.
-    ISDevice* device = new ISDevice(IS_HARDWARE_IMX_5_0, port);
+    // NOTE: ISDevice derives from std::enable_shared_from_this, and several of its methods (connect/validate/step)
+    // call shared_from_this() internally. It MUST therefore be owned by a std::shared_ptr - allocating it with a raw
+    // 'new' would leave it without a control block and throw std::bad_weak_ptr at the first such call.
+    std::shared_ptr<ISDevice> device = std::make_shared<ISDevice>(IS_HARDWARE_IMX_5_0, port);
 
     if (!device->isConnected())
         exit(3); // this is another way we can confirm the connected status of the device
@@ -125,26 +197,79 @@ int main_explained(const char* portStr) {
  */
 int main_minimal(const char* portStr) {
     // get a port handle for the specified serial port
+    SerialPortFactory::getInstance().portOptions.defaultBaudRate = 115200;
     port_handle_t port = SerialPortFactory::getInstance().bindPort(portStr);
 
     // create a new IMX-5.0 device and bind the associated port
-    ISDevice* device = new ISDevice(IS_HARDWARE_IMX_5_0, port);
+    // NOTE: ISDevice uses shared_from_this() internally, so it must be owned by a std::shared_ptr (make_shared),
+    // not a raw 'new' - otherwise connect()/validate()/step() throw std::bad_weak_ptr.
+    std::shared_ptr<ISDevice> device = std::make_shared<ISDevice>(IS_HARDWARE_IMX_5_0, port);
 
-    // connect to the device
-    if (!device->connect()) {
+    // connect to the device; by default the connect will ALSO validate the device; but we'll skip that for this example
+    if (!device->connect(false)) {                              // false == bypass validation
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
         exit(1);
     }
 
-    device->validate();
-    device->StopBroadcasts(true);                       // stop all other messages
-    device->registerIsbDataHandler(isbDataHandler);     // register our data handler
-    device->BroadcastBinaryData(DID_SYS_PARAMS, 500);   // request the data of interest at the specified interval
-    while (portIsOpened(device->port)) {                // and then spin as long as the port is open
-        device->step();                                 // this processes all incoming data, and calls out handler, etc
+    // once we've got a good connection, now let's make sure we're talking to an Inertial Sense device
+    if (!device->validate())
+    {
+        std::cerr << "Could not validate an Inertial Sense device on port " << device->getPortName() << std::endl;
+        exit(1);
+    }
+
+    // now that we've validated, we're free to do all our regular things...
+
+    // first, let's setup a data logger so we can capture data to log for any troubleshooting
+    cISLogger logger;
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::LOGTYPE_RAW;
+    logger.InitSave("test_log", options);
+    auto devLog = logger.registerDevice(device);   // if you know this information, you can pass it, but it's not important that it match your actual hardware.
+    logger.EnableLogging(true);
+
+    device->StopBroadcasts(true);                                // stop all other messages
+    SLEEP_MS(10);                                                       // wait for the device to process this message before we do anything more
+
+    device->registerIsbDataHandler(isbDataHandler);                     // register our data handler
+    device->registerProtocolHandler(_PTYPE_PARSE_ERROR, errorHandler);  // register a handler for parse errors
+    device->BroadcastBinaryData(DID_SYS_PARAMS, 500);       // request the data of interest at the specified interval
+    while (portIsOpened(device->port) && keep_running) {                // and then spin as long as the port is open, and our "keep_running" variable is true
+        device->step();                                                 // this processes all incoming data, and calls out handler, etc
         SLEEP_MS(1);
     }
+
+    device->disconnect();
+    logger.CloseAllFiles();
     return 0;
+}
+
+int initSignalHandler()
+{
+    // first things first - let's setup a signal handler so you can use 'CTRL-C' to exit out of this example...
+    struct sigaction act;
+
+    // Set the handler function
+    act.sa_handler = handle_sigint;
+
+    // Clear the mask to block no additional signals during execution
+    sigemptyset(&act.sa_mask);
+
+    // No special flags needed
+    act.sa_flags = 0;
+
+    // Register the handler for SIGINT
+    if (sigaction(SIGINT, &act, NULL) < 0) {
+        perror("sigaction");
+        return EXIT_FAILURE;
+    }
+
+    if (sigaction(SIGTERM, &act, NULL) < 0) {
+        perror("sigaction");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 /**
@@ -154,6 +279,13 @@ int main_minimal(const char* portStr) {
  * @return
  */
 int main(int argc, const char** argv) {
+    IS_SET_LOG_LEVEL(IS_LOG_LEVEL_MORE_DEBUG);
+    IS_LOG_OUTPUT(stdout);
+
+    if (initSignalHandler() != EXIT_SUCCESS)
+    {
+        log_warn(IS_LOG_FACILITY_NONE, "Unable to register signal handler - we'll stop after 15 seconds.");
+    }
 
 #if PLATFORM_IS_LINUX
     const char* portArg = "/dev/ttyACM0";
