@@ -413,7 +413,7 @@ bool cDeviceLog::writeIndexChunk() {
             TimestampUnits::HostUptimeMs,
             HeaderTimeSource::Mixed);
         auto r = writeHeader(indexFile, hdr);
-        if (r != IsLogIndexResult::Ok) {
+        if (!r) {
             return false;
         }
         m_idxHeaderWritten = true;
@@ -421,7 +421,7 @@ bool cDeviceLog::writeIndexChunk() {
 
     for (const auto& rec : m_indexChunks) {
         auto r = writeRecord(indexFile, rec);
-        if (r != IsLogIndexResult::Ok) {
+        if (!r) {
             // writing error; whole file should be considered bad.
             return false;
         }
@@ -462,7 +462,7 @@ bool cDeviceLog::finalizeIndex() {
     hdr.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED;
 
     auto r = writeHeader(indexFile, hdr);
-    if (r != IsLogIndexResult::Ok) {
+    if (!r) {
         return false;
     }
     return true;

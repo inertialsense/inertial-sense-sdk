@@ -129,6 +129,104 @@ TEST(test_utils, parse_devInfo_from_filename) {
 
 }
 
+// ============================================================
+// hdwIdToString — packed-id renderer for the SeriesId/device-label path.
+// ============================================================
+
+TEST(test_utils, hdwIdToString_renders_imx_5_0) {
+    EXPECT_EQ(utils::hdwIdToString(IS_HARDWARE_IMX_5_0), "IMX-5.0");
+}
+
+TEST(test_utils, hdwIdToString_renders_imx_6_0) {
+    EXPECT_EQ(utils::hdwIdToString(IS_HARDWARE_IMX_6_0), "IMX-6.0");
+}
+
+TEST(test_utils, hdwIdToString_renders_gpx_1_0) {
+    EXPECT_EQ(utils::hdwIdToString(IS_HARDWARE_GPX_1_0), "GPX-1.0");
+}
+
+TEST(test_utils, hdwIdToString_renders_uins_3_2) {
+    EXPECT_EQ(utils::hdwIdToString(IS_HARDWARE_UINS_3_2), "uINS-3.2");
+}
+
+TEST(test_utils, hdwIdToString_renders_peripherals) {
+    EXPECT_EQ(utils::hdwIdToString(IS_HDW_SONY_CXD5610),  "CXD-5.6");
+    EXPECT_EQ(utils::hdwIdToString(IS_HDW_TESSIO_6),      "STM-6.0");
+}
+
+TEST(test_utils, hdwIdToString_unknown_type_renders_question_marks) {
+    // type=63 isn't in eIsHardwareType, so the type-name table falls
+    // through to the placeholder. Major/minor still render.
+    const uint16_t hdwId = ENCODE_HDW_ID(63, 9, 17);
+    EXPECT_EQ(utils::hdwIdToString(hdwId), "\?\?\?-9.17");
+}
+
+TEST(test_utils, hdwIdToString_zero_renders_unknown_zero) {
+    // IS_HARDWARE_NONE — type=UNKNOWN renders as "???"
+    EXPECT_EQ(utils::hdwIdToString(IS_HARDWARE_NONE), "\?\?\?-0.0");
+}
+
+TEST(test_utils, hdwIdToString_matches_getHardwareAsString_when_no_subrev) {
+    // The packed-id form drops sub-rev bytes 2/3; getHardwareAsString
+    // with showRev=true must agree when those bytes are zero. This is
+    // the contract that lets the refactor inline hdwIdToString.
+    dev_info_t info{};
+    info.hardwareType   = IS_HARDWARE_TYPE_IMX;
+    info.hardwareVer[0] = 5;
+    info.hardwareVer[1] = 0;
+    info.hardwareVer[2] = 0;
+    info.hardwareVer[3] = 0;
+    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/true),
+              utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(info)));
+}
+
+TEST(test_utils, getHardwareAsString_still_renders_subrev_when_present) {
+    // The refactor must not regress sub-rev rendering.
+    dev_info_t info{};
+    info.hardwareType   = IS_HARDWARE_TYPE_IMX;
+    info.hardwareVer[0] = 5;
+    info.hardwareVer[1] = 0;
+    info.hardwareVer[2] = 1;
+    info.hardwareVer[3] = 0;
+    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/true), "IMX-5.0.1");
+
+    info.hardwareVer[3] = 7;
+    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/true), "IMX-5.0.1.7");
+
+    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/false), "IMX-5.0");
+}
+
+// ============================================================
+// deviceIdString — the canonical "<hdw>::SN<n>" composer.
+// ============================================================
+
+TEST(test_utils, deviceIdString_canonical_format) {
+    EXPECT_EQ(utils::deviceIdString(IS_HARDWARE_IMX_5_0, 519465u),
+              "IMX-5.0::SN519465");
+}
+
+TEST(test_utils, deviceIdString_zero_serial_renders_zero) {
+    EXPECT_EQ(utils::deviceIdString(IS_HARDWARE_GPX_1_0, 0u),
+              "GPX-1.0::SN0");
+}
+
+TEST(test_utils, deviceIdString_unknown_hdw_with_serial) {
+    // Filename-fallback path: serial known, hdwId unknown (zero).
+    EXPECT_EQ(utils::deviceIdString(0u, 12345u), "\?\?\?-0.0::SN12345");
+}
+
+TEST(test_utils, deviceIdString_max_uint64_serial) {
+    // Sanity: large serials don't overflow the std::to_string path.
+    const uint64_t big = static_cast<uint64_t>(1) << 40;
+    EXPECT_EQ(utils::deviceIdString(IS_HARDWARE_IMX_5_0, big),
+              "IMX-5.0::SN1099511627776");
+}
+
+// ============================================================
+// parseHardwareFromString / parseFirmwareFromString — round-trip
+// (added on develop in SN-7891 firmware-update durability work).
+// ============================================================
+
 TEST(test_utils, parseHardwareFromString_roundtrip) {
     dev_info_t devInfo = {};
 
