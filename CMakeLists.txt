@@ -103,6 +103,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         src/libusb
         src/libusb/libusb
         src/yaml-cpp
+        src/tl-expected   # D-10 / SN-7881 — header-only tl::expected (CC0). Resolves <tl/expected.hpp>.
         tests/runtime
         external
 )
@@ -117,10 +118,24 @@ endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# D-04 (SN-7895): when ON (default), ISLogReader's scan-rebuild path
+# persists a fresh v2 .idx next to the .raw. Set OFF for tests, or for
+# customers that don't want surprise writes to log directories.
+option(IS_LOG_READER_PERSIST_INDEX
+       "Persist rebuilt v2 .idx sidecars next to .raw files" ON)
+if(NOT IS_LOG_READER_PERSIST_INDEX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC IS_LOG_READER_NO_PERSIST_INDEX)
+endif()
+
 # Other settings
 if (WIN32)
-    # yamlcpp needs to know it's a static lib.
-    add_definitions(-DYAML_CPP_STATIC_DEFINE)
+    # yamlcpp needs to know it's a static lib. PUBLIC so consumers of
+    # InertialSenseSDK (e.g. Logalyzer) inherit the define — without
+    # it, yaml-cpp headers emit __declspec(dllimport) symbols that the
+    # linker can't satisfy against the SDK's static lib (LNK2019 on
+    # YAML::Node::AssignData and similar). add_definitions() is
+    # directory-scoped and doesn't propagate to consumers.
+    target_compile_definitions(${PROJECT_NAME} PUBLIC YAML_CPP_STATIC_DEFINE)
 
     # Windows specific include dir for libusb config.h
     if (MSVC)
