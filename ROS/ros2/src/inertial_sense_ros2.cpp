@@ -2490,8 +2490,11 @@ rclcpp::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, c
         }
         // Publish with ROS time
         double ros_time = INS_local_offset_ + timeOfWeek;
-        uint64_t sec = static_cast<uint64_t>(ros_time);
-        uint64_t nsec = static_cast<uint64_t>((ros_time - sec) * 1e9);
+        double sec_floor = floor(ros_time);
+        uint64_t sec = static_cast<uint64_t>(sec_floor);
+        uint64_t nsec = static_cast<uint64_t>((ros_time - sec_floor) * 1e9);
+        // Normalize in case floating-point rounding pushes nsec to 1e9 (rclcpp::Time requires nsec < 1e9)
+        if (nsec >= 1000000000ULL) { sec += nsec / 1000000000ULL; nsec %= 1000000000ULL; }
         rostime = rclcpp::Time(sec, nsec);
     }
     return rostime;
