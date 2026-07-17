@@ -2489,40 +2489,20 @@ rclcpp::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, c
             INS_local_offset_ = 0.005 * y_offset + 0.995 * INS_local_offset_;
         }
         // Publish with ROS time
-        rostime = rclcpp::Time(INS_local_offset_ + timeOfWeek);
+        double ros_time = INS_local_offset_ + timeOfWeek;
+        double sec_floor = floor(ros_time);
+        uint64_t sec = static_cast<uint64_t>(sec_floor);
+        uint64_t nsec = static_cast<uint64_t>((ros_time - sec_floor) * 1e9);
+        // Normalize in case floating-point rounding pushes nsec to 1e9 (rclcpp::Time requires nsec < 1e9)
+        if (nsec >= 1000000000ULL) { sec += nsec / 1000000000ULL; nsec %= 1000000000ULL; }
+        rostime = rclcpp::Time(sec, nsec);
     }
     return rostime;
 }
 
 rclcpp::Time InertialSenseROS::ros_time_from_start_time(const double time)
 {
-    rclcpp::Time rostime(0, 0);
-
-    //  If we have a GPS fix, then use it to set timestamp
-    if (abs(GPS_towOffset_) > 0.001)
-    {
-        double timeOfWeek = time + GPS_towOffset_;
-        uint64_t sec = (uint64_t)(UNIX_TO_GPS_OFFSET + floor(timeOfWeek) + GPS_week_ * 7 * 24 * 3600);
-        uint64_t nsec = (uint64_t)((timeOfWeek - floor(timeOfWeek)) * 1.0e9);
-        rostime = rclcpp::Time(sec, nsec);
-    }
-    else
-    {
-        // Otherwise, estimate the IMX boot time and offset the messages
-        if (!got_first_message_)
-        {
-            got_first_message_ = true;
-            INS_local_offset_ = nh_->now().seconds() - time;
-        }
-        else // low-pass filter offset to account for drift
-        {
-            double y_offset = nh_->now().seconds() - time;
-            INS_local_offset_ = 0.005 * y_offset + 0.995 * INS_local_offset_;
-        }
-        // Publish with ROS time
-        rostime = rclcpp::Time(INS_local_offset_ + time);
-    }
-    return rostime;
+    return ros_time_from_week_and_tow(GPS_week_, time + GPS_towOffset_);
 }
 
 rclcpp::Time InertialSenseROS::ros_time_from_tow(const double tow)
