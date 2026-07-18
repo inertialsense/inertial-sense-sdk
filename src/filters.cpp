@@ -31,15 +31,16 @@ float integrateDeltaThetaVelRoscoe(
 
 void init_iir_filter(iif_filter_t *f)
 {
-    int gama;
-    int alpha;
+    int gama, alpha;
     float TsFc;
 
-//    if (f->opt.n_channels > MAX_NUMBER_IIR_CHANNELS)
-//    {
-//         dg_printf("IIR channels exceeded max number: %d.  Consider increasing max number", MAX_NUMBER_IIR_CHANNELS);
-//         exit(1);
-//    }
+    if (f->opt.n_channels > MAX_NUMBER_IIR_CHANNELS)
+    {
+#if !PLATFORM_IS_EMBEDDED
+        dg_printf("IIR channels exceeded max number: %d.  Consider increasing max number", MAX_NUMBER_IIR_CHANNELS);
+#endif
+        exit(1);
+    }
 
     f->opt.bit_shift = (ACCUM_WORD_NBITS-1-f->opt.sig_word_nbits)/2;
     
