@@ -103,6 +103,10 @@ include_dirs = [
     'inertialsense/logs/include',
     os.path.join(sdk_path, "src"),
     os.path.join(sdk_path, "src", "libusb", "libusb"),
+    # D-10 (SN-7881): vendored tl::expected lives in src/tl-expected/
+    # and ISError.h includes "tl/expected.hpp", which needs this dir
+    # on the search path.
+    os.path.join(sdk_path, "src", "tl-expected"),
     pybind11.get_include(), # Path to pybind11 headers
 ]
 

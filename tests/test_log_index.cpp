@@ -4,7 +4,7 @@
 //   * Round-trip — serialize a header + N records, parse them back,
 //     all fields match.
 //   * Legacy detection — synthetic v1 byte stream (no magic) must
-//     report IsLogIndexResult::LegacyFormat, not silently misparse.
+//     report ISErrorCode::LegacyFormat, not silently misparse.
 //   * Malformed — wrong magic / unsupported version / impossible
 //     header_size each return a distinct error code.
 //   * Layout discipline — sizeof / static asserts.
@@ -34,16 +34,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <string>
+#include <unistd.h>
 #include <vector>
-
-#ifdef _WIN32
-    #include <process.h>
-    #define getpid _getpid
-#else
-    #include <unistd.h>
-#endif
 
 using namespace inertial_sense;
 using namespace inertial_sense::idx;
@@ -52,7 +45,7 @@ namespace {
 
 is_log_idx_header_t makeRoundTripHeader() {
     auto h = makeDefaultHeader(0x02010000u,
-                               TimestampUnits::GNSSTowMs,
+                               TimestampUnits::GpsTowMs,
                                HeaderTimeSource::PayloadToW);
     h.total_records       = 42;
     h.first_timestamp_ms  = 100ULL;
@@ -86,20 +79,19 @@ TEST(IdxRoundTrip, HeaderSerializeAndParse) {
     EXPECT_EQ(buf[2], 'I');
     EXPECT_EQ(buf[3], 'X');
 
-    is_log_idx_header_t parsed{};
-    ASSERT_EQ(parseHeader(buf, parsed), IsLogIndexResult::Ok)
-        << "parse failed";
+    auto parsed = parseHeader(buf);
+    ASSERT_TRUE(parsed.has_value()) << "parse failed: " << parsed.error().message;
 
-    EXPECT_EQ(parsed.version,             src.version);
-    EXPECT_EQ(parsed.header_size,         src.header_size);
-    EXPECT_EQ(parsed.producer_version,    src.producer_version);
-    EXPECT_EQ(parsed.total_records,       src.total_records);
-    EXPECT_EQ(parsed.first_timestamp_ms,  src.first_timestamp_ms);
-    EXPECT_EQ(parsed.last_timestamp_ms,   src.last_timestamp_ms);
-    EXPECT_EQ(parsed.sync_point_count,    src.sync_point_count);
-    EXPECT_EQ(parsed.ts_units,            src.ts_units);
-    EXPECT_EQ(parsed.ts_source,           src.ts_source);
-    EXPECT_EQ(parsed.flags,               src.flags);
+    EXPECT_EQ(parsed->version,             src.version);
+    EXPECT_EQ(parsed->header_size,         src.header_size);
+    EXPECT_EQ(parsed->producer_version,    src.producer_version);
+    EXPECT_EQ(parsed->total_records,       src.total_records);
+    EXPECT_EQ(parsed->first_timestamp_ms,  src.first_timestamp_ms);
+    EXPECT_EQ(parsed->last_timestamp_ms,   src.last_timestamp_ms);
+    EXPECT_EQ(parsed->sync_point_count,    src.sync_point_count);
+    EXPECT_EQ(parsed->ts_units,            src.ts_units);
+    EXPECT_EQ(parsed->ts_source,           src.ts_source);
+    EXPECT_EQ(parsed->flags,               src.flags);
 }
 
 TEST(IdxRoundTrip, RecordSerializeAndParse) {
@@ -144,9 +136,9 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
         serializeRecord(buf.data() + IS_LOG_IDX_HEADER_SIZE + i * IS_LOG_IDX_RECORD_V2_SIZE, r);
     }
 
-    is_log_idx_header_t parsedHdr{};
-    ASSERT_EQ(parseHeader(buf.data(), parsedHdr), IsLogIndexResult::Ok);
-    EXPECT_EQ(parsedHdr.total_records, N);
+    auto parsedHdr = parseHeader(buf.data());
+    ASSERT_TRUE(parsedHdr.has_value());
+    EXPECT_EQ(parsedHdr->total_records, N);
 
     for (std::size_t i = 0; i < N; ++i) {
         const auto p = parseRecord(
@@ -173,8 +165,9 @@ TEST(IdxLegacyDetection, V1FileReturnsLegacyFormat) {
         v1Buf[i] = static_cast<uint8_t>(i);
     }
 
-    is_log_idx_header_t hdr{};
-    EXPECT_EQ(parseHeader(v1Buf, hdr), IsLogIndexResult::LegacyFormat);
+    auto r = parseHeader(v1Buf);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().code, ISErrorCode::LegacyFormat);
 }
 
 TEST(IdxMalformed, WrongMagicNonV1ByteSequence) {
@@ -182,8 +175,9 @@ TEST(IdxMalformed, WrongMagicNonV1ByteSequence) {
     // only recognized non-v2 format). Same code path as v1 detection.
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE]{};
     buf[0] = 'X';  buf[1] = 'X';  buf[2] = 'X';  buf[3] = 'X';
-    is_log_idx_header_t hdr{};
-    EXPECT_EQ(parseHeader(buf, hdr), IsLogIndexResult::LegacyFormat);
+    auto r = parseHeader(buf);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().code, ISErrorCode::LegacyFormat);
 }
 
 TEST(IdxMalformed, UnsupportedVersionFromValidMagic) {
@@ -194,8 +188,9 @@ TEST(IdxMalformed, UnsupportedVersionFromValidMagic) {
     h.version = 99;
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     serializeHeader(buf, h);
-    is_log_idx_header_t hdr{};
-    EXPECT_EQ(parseHeader(buf, hdr), IsLogIndexResult::Unsupported);
+    auto r = parseHeader(buf);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().code, ISErrorCode::Unsupported);
 }
 
 TEST(IdxMalformed, ImpossibleHeaderSizeReportsCorrupted) {
@@ -205,8 +200,9 @@ TEST(IdxMalformed, ImpossibleHeaderSizeReportsCorrupted) {
     h.header_size = 32;  // < 64
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     serializeHeader(buf, h);
-    is_log_idx_header_t hdr{};
-    EXPECT_EQ(parseHeader(buf, hdr), IsLogIndexResult::Corrupted);
+    auto r = parseHeader(buf);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().code, ISErrorCode::Corrupted);
 }
 
 // ---------------------------------------------------------------------------
@@ -218,15 +214,13 @@ TEST(IdxMalformed, ImpossibleHeaderSizeReportsCorrupted) {
 
 namespace {
 
-// Returns a unique tmp path under the platform temp dir. Deleted by
-// the caller (or by the OS — these are smoke tests, not
-// crash-resilient).
+// Returns a unique tmp path under /tmp. Deleted by the caller (or by
+// the OS on reboot — these are smoke tests, not crash-resilient).
 std::string makeTmpPath(const char* tag) {
-    char buf[128];
-    std::snprintf(buf, sizeof(buf), "test_log_index_%s_%d_%ld.idx",
+    char buf[256];
+    std::snprintf(buf, sizeof(buf), "/tmp/test_log_index_%s_%d_%ld.idx",
                   tag, ::getpid(), static_cast<long>(::time(nullptr)));
-    const auto p = std::filesystem::temp_directory_path() / buf;
-    return p.string();
+    return std::string{buf};
 }
 
 } // namespace
@@ -239,38 +233,38 @@ TEST(IdxFileIO, HeaderAndRecordRoundTripViaCISLogFile) {
 
         auto hdr = makeRoundTripHeader();
         hdr.total_records = 3;
-        ASSERT_EQ(writeHeader(out, hdr), IsLogIndexResult::Ok);
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
 
         is_log_idx_record_v2_t r1{ 1000, 0,    0xAAA, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0 };
         is_log_idx_record_v2_t r2{ 2000, 100,  0xBBB, 0,                            0 };
         is_log_idx_record_v2_t r3{ 3000, 4096, 0xCCC, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0 };
-        ASSERT_EQ(writeRecord(out, r1), IsLogIndexResult::Ok);
-        ASSERT_EQ(writeRecord(out, r2), IsLogIndexResult::Ok);
-        ASSERT_EQ(writeRecord(out, r3), IsLogIndexResult::Ok);
+        ASSERT_TRUE(writeRecord(out, r1).has_value());
+        ASSERT_TRUE(writeRecord(out, r2).has_value());
+        ASSERT_TRUE(writeRecord(out, r3).has_value());
     }
 
     {
         cISLogFile in(path, "rb");
         ASSERT_TRUE(in.isOpened());
-        is_log_idx_header_t hdrR{};
-        ASSERT_EQ(readHeader(in, hdrR), IsLogIndexResult::Ok);
-        EXPECT_EQ(hdrR.version, IS_LOG_IDX_VERSION_V2);
-        EXPECT_EQ(hdrR.total_records, 3u);
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+        EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2);
+        EXPECT_EQ(hdrR->total_records, 3u);
 
-        is_log_idx_record_v2_t a{};
-        ASSERT_EQ(readRecord(in, a), IsLogIndexResult::Ok);
-        EXPECT_EQ(a.did, 0xAAAu);
-        EXPECT_EQ(a.flags, IS_LOG_IDX_REC_FLAG_HAS_TOW);
+        auto a = readRecord(in);
+        ASSERT_TRUE(a.has_value());
+        EXPECT_EQ(a->did, 0xAAAu);
+        EXPECT_EQ(a->flags, IS_LOG_IDX_REC_FLAG_HAS_TOW);
 
-        is_log_idx_record_v2_t b{};
-        ASSERT_EQ(readRecord(in, b), IsLogIndexResult::Ok);
-        EXPECT_EQ(b.did, 0xBBBu);
-        EXPECT_EQ(b.flags, 0u);
+        auto b = readRecord(in);
+        ASSERT_TRUE(b.has_value());
+        EXPECT_EQ(b->did, 0xBBBu);
+        EXPECT_EQ(b->flags, 0u);
 
-        is_log_idx_record_v2_t c{};
-        ASSERT_EQ(readRecord(in, c), IsLogIndexResult::Ok);
-        EXPECT_EQ(c.did, 0xCCCu);
-        EXPECT_EQ(c.offset, 4096u);
+        auto c = readRecord(in);
+        ASSERT_TRUE(c.has_value());
+        EXPECT_EQ(c->did, 0xCCCu);
+        EXPECT_EQ(c->offset, 4096u);
     }
     std::remove(path.c_str());
 }
@@ -288,8 +282,9 @@ TEST(IdxFileIO, TruncatedHeaderReturnsTruncated) {
 
     cISLogFile in(path, "rb");
     ASSERT_TRUE(in.isOpened());
-    is_log_idx_header_t hdr{};
-    EXPECT_EQ(readHeader(in, hdr), IsLogIndexResult::Truncated);
+    auto r = readHeader(in);
+    ASSERT_FALSE(r.has_value());
+    EXPECT_EQ(r.error().code, ISErrorCode::Truncated);
 
     std::remove(path.c_str());
 }
@@ -300,7 +295,7 @@ TEST(IdxFileIO, TruncatedRecordReturnsTruncated) {
         cISLogFile out(path, "wb");
         ASSERT_TRUE(out.isOpened());
         auto hdr = makeRoundTripHeader();
-        ASSERT_EQ(writeHeader(out, hdr), IsLogIndexResult::Ok);
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
         // Write only 12 bytes of a 24-byte record.
         uint8_t partial[12]{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
         ASSERT_EQ(out.write(partial, sizeof(partial)), sizeof(partial));
@@ -308,10 +303,10 @@ TEST(IdxFileIO, TruncatedRecordReturnsTruncated) {
 
     cISLogFile in(path, "rb");
     ASSERT_TRUE(in.isOpened());
-    is_log_idx_header_t hdr{};
-    ASSERT_EQ(readHeader(in, hdr), IsLogIndexResult::Ok);
-    is_log_idx_record_v2_t rec{};
-    EXPECT_EQ(readRecord(in, rec), IsLogIndexResult::Truncated);
+    ASSERT_TRUE(readHeader(in).has_value());
+    auto rec = readRecord(in);
+    ASSERT_FALSE(rec.has_value());
+    EXPECT_EQ(rec.error().code, ISErrorCode::Truncated);
 
     std::remove(path.c_str());
 }
@@ -347,9 +342,9 @@ TEST(IdxFinalize, FinalizedFlagSemantics) {
     h.flags = IS_LOG_IDX_HDR_FLAG_FINALIZED;
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     serializeHeader(buf, h);
-    is_log_idx_header_t p{};
-    ASSERT_EQ(parseHeader(buf, p), IsLogIndexResult::Ok);
-    EXPECT_EQ(p.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED,
+    auto p = parseHeader(buf);
+    ASSERT_TRUE(p.has_value());
+    EXPECT_EQ(p->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED,
               IS_LOG_IDX_HDR_FLAG_FINALIZED);
 }
 
@@ -419,26 +414,26 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
     cISLogFile in(baseNoExt + ".idx", "rb");
     ASSERT_TRUE(in.isOpened());
 
-    is_log_idx_header_t hdrR{};
-    ASSERT_EQ(readHeader(in, hdrR), IsLogIndexResult::Ok);
-    EXPECT_EQ(hdrR.version, IS_LOG_IDX_VERSION_V2);
-    EXPECT_EQ(hdrR.total_records, 3u);
-    EXPECT_NE(hdrR.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+    auto hdrR = readHeader(in);
+    ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+    EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2);
+    EXPECT_EQ(hdrR->total_records, 3u);
+    EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
         << "finalizeIndex must set the FINALIZED flag";
-    EXPECT_NE(hdrR.producer_version, 0u)
+    EXPECT_NE(hdrR->producer_version, 0u)
         << "producer_version must be filled from PROTOCOL_VERSION_CHAR0..3";
 
-    is_log_idx_record_v2_t rec1{};
-    ASSERT_EQ(readRecord(in, rec1), IsLogIndexResult::Ok);
-    EXPECT_EQ(rec1.did, static_cast<uint32_t>(DID_DEV_INFO));
+    auto rec1 = readRecord(in);
+    ASSERT_TRUE(rec1.has_value());
+    EXPECT_EQ(rec1->did, static_cast<uint32_t>(DID_DEV_INFO));
 
-    is_log_idx_record_v2_t rec2{};
-    ASSERT_EQ(readRecord(in, rec2), IsLogIndexResult::Ok);
-    EXPECT_EQ(rec2.did, static_cast<uint32_t>(DID_INS_1));
+    auto rec2 = readRecord(in);
+    ASSERT_TRUE(rec2.has_value());
+    EXPECT_EQ(rec2->did, static_cast<uint32_t>(DID_INS_1));
 
-    is_log_idx_record_v2_t rec3{};
-    ASSERT_EQ(readRecord(in, rec3), IsLogIndexResult::Ok);
-    EXPECT_EQ(rec3.did, static_cast<uint32_t>(DID_GNSS1_POS));
+    auto rec3 = readRecord(in);
+    ASSERT_TRUE(rec3.has_value());
+    EXPECT_EQ(rec3->did, static_cast<uint32_t>(DID_GNSS1_POS));
 
     std::remove((baseNoExt + ".idx").c_str());
 }
@@ -479,12 +474,11 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     GenerateRawLogData(messages, 1.0f);
     ASSERT_FALSE(messages.empty());
 
-    char dirBuf[128];
+    char dirBuf[256];
     std::snprintf(dirBuf, sizeof(dirBuf),
-                  "test_log_idx_e2e_%d_%ld",
+                  "/tmp/test_log_idx_e2e_%d_%ld",
                   ::getpid(), static_cast<long>(::time(nullptr)));
-    const string logPath =
-        (std::filesystem::temp_directory_path() / dirBuf).string();
+    const string logPath = dirBuf;
     ISFileManager::DeleteDirectory(logPath);
 
     // -- Write phase: feed packets through cISLogger (the real framework).
@@ -527,24 +521,25 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
         cISLogFile in(idxInfo.name, "rb");
         ASSERT_TRUE(in.isOpened()) << "could not open " << idxInfo.name;
 
-        is_log_idx_header_t hdrR{};
-        ASSERT_EQ(readHeader(in, hdrR), IsLogIndexResult::Ok)
-            << idxInfo.name;
-        EXPECT_EQ(hdrR.version, IS_LOG_IDX_VERSION_V2)
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value())
+            << idxInfo.name << ": " << hdrR.error().message;
+        EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2)
             << idxInfo.name << ": framework must emit v2 sidecar";
-        EXPECT_NE(hdrR.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+        EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
             << idxInfo.name << ": clean shutdown via CloseAllFiles must "
                                 "set FINALIZED";
-        EXPECT_NE(hdrR.producer_version, 0u)
+        EXPECT_NE(hdrR->producer_version, 0u)
             << idxInfo.name << ": producer_version must be filled in";
-        EXPECT_GT(hdrR.total_records, 0u)
+        EXPECT_GT(hdrR->total_records, 0u)
             << idxInfo.name << ": some ISB packets should have been indexed";
 
-        for (uint32_t i = 0; i < hdrR.total_records; ++i) {
-            is_log_idx_record_v2_t recR{};
-            ASSERT_EQ(readRecord(in, recR), IsLogIndexResult::Ok)
-                << idxInfo.name << " record " << i;
-            allIdxRecords.push_back(recR);
+        for (uint32_t i = 0; i < hdrR->total_records; ++i) {
+            auto recR = readRecord(in);
+            ASSERT_TRUE(recR.has_value())
+                << idxInfo.name << " record " << i << ": "
+                << recR.error().message;
+            allIdxRecords.push_back(*recR);
         }
     }
     ASSERT_FALSE(allIdxRecords.empty());
@@ -585,8 +580,8 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     }
 
     // -- Sanity: at least one record carries a payload-ToW timestamp
-    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GNSS
-    // messages with real GNSS-ToW fields, which the writer's payload-ToW
+    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GPS
+    // messages with real GPS-ToW fields, which the writer's payload-ToW
     // path is supposed to capture.
     bool sawTowFlag = false;
     for (const auto& r : allIdxRecords) {
@@ -594,7 +589,7 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     }
     EXPECT_TRUE(sawTowFlag)
         << "expected at least one indexed record to carry a payload-ToW "
-           "timestamp from a GNSS/INS DID";
+           "timestamp from a GPS/INS DID";
 
     // -- One-line summary of what the framework actually produced.
     std::printf("[idx-e2e] %zu source msgs -> %zu .raw seg(s), %zu .idx record(s), "
@@ -641,12 +636,11 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
     GenerateRawLogData(messages, 8.0f);  // ~8 MB ⇒ 2+ default-size segments
     ASSERT_FALSE(messages.empty());
 
-    char dirBuf[128];
+    char dirBuf[256];
     std::snprintf(dirBuf, sizeof(dirBuf),
-                  "test_log_idx_multiseg_%d_%ld",
+                  "/tmp/test_log_idx_multiseg_%d_%ld",
                   ::getpid(), static_cast<long>(::time(nullptr)));
-    const string logPath =
-        (std::filesystem::temp_directory_path() / dirBuf).string();
+    const string logPath = dirBuf;
     ISFileManager::DeleteDirectory(logPath);
 
     {
@@ -681,22 +675,24 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
     for (const auto& f : idxFiles) {
         cISLogFile in(f.name, "rb");
         ASSERT_TRUE(in.isOpened()) << f.name;
-        is_log_idx_header_t hdrR{};
-        ASSERT_EQ(readHeader(in, hdrR), IsLogIndexResult::Ok) << f.name;
-        EXPECT_EQ(hdrR.version, IS_LOG_IDX_VERSION_V2) << f.name;
-        EXPECT_NE(hdrR.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value())
+            << f.name << ": " << hdrR.error().message;
+        EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2) << f.name;
+        EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
             << f.name << ": each segment must be finalized";
 
         const size_t expectedFromSize =
             (f.size - IS_LOG_IDX_HEADER_SIZE) / IS_LOG_IDX_RECORD_V2_SIZE;
-        EXPECT_EQ(hdrR.total_records, expectedFromSize)
+        EXPECT_EQ(hdrR->total_records, expectedFromSize)
             << f.name << ": header total_records must match on-disk record count "
                          "(= file_size - header) / record_size";
 
-        for (uint32_t i = 0; i < hdrR.total_records; ++i) {
-            is_log_idx_record_v2_t rec{};
-            ASSERT_EQ(readRecord(in, rec), IsLogIndexResult::Ok)
-                << f.name << " record " << i << "/" << hdrR.total_records;
+        for (uint32_t i = 0; i < hdrR->total_records; ++i) {
+            auto rec = readRecord(in);
+            ASSERT_TRUE(rec.has_value())
+                << f.name << " record " << i << "/" << hdrR->total_records
+                << ": " << rec.error().message;
         }
     }
 

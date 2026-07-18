@@ -114,8 +114,6 @@ struct data_info_t
     std::vector<std::string> units;             //!< The Units that this field should be displayed in (after conversion)
     std::vector<std::string> description;       //!< A description for this field; what it means, how to interpret its values, etc.
     double conversion;                          //!< A scalar that the raw value is divided by prior to converting to a string
-    uint64_t bitMask = ~0ULL;                   //!< Bitmask applied to raw integer value before display (default ~0 = all bits pass through)
-    uint8_t  bitShift = 0;                      //!< Right-shift applied after bitMask (default 0 = no shift)
     RenderFunction renderBasic =                //!< A function to render / convert a value to a simple string - VariableToString() calls this function - this should not include newlines, etc.
             [](const data_info_t& info, std::any val, int arrayIdx, int flags) -> std::string { (void)info; (void)val; (void)arrayIdx; (void)flags; return ""; };
     RenderFunction renderExtended =             //!< A function to render a value to string using advanced logic and formatting - this may include newlines, html formatting, etc. can be used for tooltips, and useful for bitmasks, etc and other advanced formatting
@@ -534,6 +532,43 @@ private:
 };
 
 
+/**
+ * SN-8068: Array-of-struct element model + generic per-DID element identity.
+ *
+ * Some DIDs carry a fixed-capacity array of an inner struct whose populated count
+ * varies message-to-message (e.g. DID_GNSS1_SAT's gnss_sat_sv_t sat[MAX_NUM_SATELLITES],
+ * DID_PORT_MONITOR's port_stats_t port[NUM_SERIAL_PORTS]). Rather than registering one
+ * flat field per (slot, member) pair, the inner fields are exposed ONCE as
+ * "<struct>.<field>" and consumers fan a single field out across every populated element.
+ *
+ * Crucially the fan-out is keyed by a STABLE element IDENTITY (a satellite's PRN, a port's
+ * id) rather than its array slot, because a given satellite migrates between sat[] slots
+ * across messages. This is additive: existing mappings, names, and iteration order are
+ * untouched.
+ */
+struct element_identity_t
+{
+    uint64_t    keyId = 0;          //!< Stable identity of this element across messages (e.g. gnssId<<8|svId, or port index). The array slot is NOT stable; this is.
+    std::string label;              //!< Human label for legends / tables (e.g. "G14", "ser0").
+    bool        valid = false;      //!< False when the slot is not populated or its identity cannot be decoded.
+};
+
+/** Given the raw record buffer and an element slot index, return that element's identity. */
+using ElementIdentityFn = std::function<element_identity_t(const uint8_t* recordBuf, uint32_t slot)>;
+
+/** Describes one array-of-struct member of a DID and how to address / identify its elements. */
+struct array_struct_info_t
+{
+    std::string         structName;                     //!< Inner struct member name, e.g. "sat", "sig", "port".
+    uint32_t            arrayBaseOffset = 0;            //!< Byte offset of element[0] within the DID struct.
+    uint32_t            elementStride = 0;              //!< sizeof(inner element struct).
+    uint32_t            maxElements = 0;                //!< Array capacity (fixed).
+    uint32_t            countOffset = 0;                //!< Byte offset of the live-count field (numSats / numSigs / activePorts).
+    eDataType           countType = DATA_TYPE_UINT32;   //!< Type of the live-count field.
+    ElementIdentityFn   identity;                       //!< Per-element identity decoder (never null; default decoder keys on the slot index).
+};
+
+
 class cISDataMappings
 {
 public:
@@ -620,6 +655,32 @@ public:
     * @return number of elements or 0 if not found or unknown
     */
     static uint32_t ElementCount(uint32_t did);
+
+    /**
+    * SN-8068: Array-of-struct members of a DID (additive). These expose inner struct
+    * fields once as "<struct>.<field>" and carry the metadata needed to fan a field out
+    * across every populated element, keyed by identity.
+    * @return pointer to the DID's array-struct descriptors, or NULL if the DID has none.
+    */
+    static const std::vector<array_struct_info_t>* ArrayStructFields(uint32_t did);
+
+    /**
+    * SN-8068: Number of populated elements in a specific record (reads the live-count
+    * field named by info.countOffset/countType, clamped to info.maxElements).
+    * @param info    an array-struct descriptor (from ArrayStructFields)
+    * @param recordBuf pointer to the start of the decoded DID struct for one record
+    * @return live element count, clamped to [0, maxElements]
+    */
+    static uint32_t ElementCountForRecord(const array_struct_info_t& info, const uint8_t* recordBuf);
+
+    /**
+    * SN-8068: Identity (stable keyId + human label) of one element slot in a record.
+    * @param info    an array-struct descriptor (from ArrayStructFields)
+    * @param recordBuf pointer to the start of the decoded DID struct for one record
+    * @param slot    element index in [0, maxElements)
+    * @return the element's identity; .valid is false if the slot is unpopulated/undecodable
+    */
+    static element_identity_t ElementIdentity(const array_struct_info_t& info, const uint8_t* recordBuf, uint32_t slot);
 
     /**
     * Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  

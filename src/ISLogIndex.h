@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include "ISError.h"
+
 #include <cstddef>
 #include <cstdint>
 
@@ -30,32 +32,6 @@ class cISLogFileBase;  // forward — defined in ISLogFileBase.h
 
 namespace inertial_sense {
 namespace idx {
-
-// ----- Result codes ---------------------------------------------------------
-//
-// Self-contained status enum scoped to ISLogIndex. The broader SDK
-// error-handling convention (D-10 / `tl::expected` + `ISError`) is
-// deferred to the 3.1 release alongside the new reader stack —
-// keeping 3.0's writer-side change footprint minimal.
-
-/// Outcome of a parse / read / write call. `Ok` = success; everything
-/// else describes a specific failure mode that callers (and tests)
-/// can pattern-match on.
-enum class IsLogIndexResult : uint8_t {
-    Ok           = 0,
-    /// Magic absent at offset 0 — almost certainly a v1 `.idx`.
-    /// Callers can fall back to a legacy-aware reader.
-    LegacyFormat = 1,
-    /// Magic present but the version isn't v2 (e.g. v3+ written by a
-    /// future SDK).
-    Unsupported  = 2,
-    /// Header fields are impossible (e.g. `header_size` < 64).
-    Corrupted    = 3,
-    /// Underlying file write/read returned an unexpected count.
-    Io           = 4,
-    /// Fewer bytes available than required (header / record).
-    Truncated    = 5,
-};
 
 // ----- File identification --------------------------------------------------
 
@@ -79,7 +55,7 @@ inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_SIZE = 24;
 /// other unit) doesn't re-break the world.
 enum class TimestampUnits : uint8_t {
     HostUptimeMs   = 0,  ///< Milliseconds since `m_logStartUpTime` on the writer host.
-    GNSSTowMs       = 1,  ///< GNSS time-of-week in ms (resets every Sunday 00:00:00 UTC).
+    GpsTowMs       = 1,  ///< GPS time-of-week in ms (resets every Sunday 00:00:00 UTC).
     UnixEpochMs    = 2,  ///< Milliseconds since 1970-01-01T00:00:00Z.
     Mixed          = 3,  ///< Mixed across records — readers must check per-record `flags`.
 };
@@ -181,17 +157,14 @@ void serializeHeader(uint8_t out[IS_LOG_IDX_HEADER_SIZE],
 /**
  * @brief Parse a 64-byte little-endian buffer into a header.
  *
- * Returns `Ok` on success, with `out` populated. Otherwise:
- * - `LegacyFormat` if the magic is absent (almost certainly v1).
- * - `Unsupported` if magic is present but the version isn't v2.
- * - `Corrupted` if `header_size` is impossible (< minimum).
- *
- * Callers pattern-match on the error code to fall back to a v1
- * reader when `LegacyFormat` is reported. `out` is left unspecified
- * on non-`Ok` returns.
+ * Returns `LegacyFormat` if the magic is absent (almost certainly v1),
+ * `Unsupported` if the magic is present but the version isn't v2, and
+ * `Corrupted` if `header_size` is impossible (< minimum). Callers
+ * pattern-match on the error code to fall back to a v1 reader when
+ * `LegacyFormat` is reported.
  */
-IsLogIndexResult parseHeader(const uint8_t in[IS_LOG_IDX_HEADER_SIZE],
-                              is_log_idx_header_t& out) noexcept;
+ISExpected<is_log_idx_header_t> parseHeader(
+    const uint8_t in[IS_LOG_IDX_HEADER_SIZE]) noexcept;
 
 /**
  * @brief Serialize a v2 record to a 24-byte little-endian buffer.
@@ -217,13 +190,13 @@ is_log_idx_record_v2_t parseRecord(
  * @return `Ok` on success, `Io` if the underlying write didn't consume
  *         the full 64 bytes.
  */
-IsLogIndexResult writeHeader(cISLogFileBase& file, const is_log_idx_header_t& hdr);
+ISExpected<void> writeHeader(cISLogFileBase& file, const is_log_idx_header_t& hdr);
 
 /**
  * @brief Append a single v2 record to an open `cISLogFileBase`.
  * @return `Ok` on success, `Io` on short write.
  */
-IsLogIndexResult writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t& rec);
+ISExpected<void> writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t& rec);
 
 /**
  * @brief Read and validate a header from an open `cISLogFileBase`.
@@ -237,14 +210,14 @@ IsLogIndexResult writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t&
  * - `Corrupted` — magic + version OK but `header_size` is impossible.
  * - `Io` — underlying read returned an unexpected count.
  */
-IsLogIndexResult readHeader(cISLogFileBase& file, is_log_idx_header_t& out);
+ISExpected<is_log_idx_header_t> readHeader(cISLogFileBase& file);
 
 /**
  * @brief Read a single v2 record from the current file position.
  * @return `Truncated` if fewer than 24 bytes remained; `Io` on
  *         underlying read error.
  */
-IsLogIndexResult readRecord(cISLogFileBase& file, is_log_idx_record_v2_t& out);
+ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file);
 
 // ----- Convenience constructors --------------------------------------------
 
