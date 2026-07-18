@@ -224,11 +224,13 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 
 int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
 {
+    STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
+
     imu_t imu = {};
     imu.time = di->time;
     imu.status = di->status;
 
-    int cnt = 0;
+    int ndev = 0;
 
     for (int idev = 0; idev < numDevices; idev++)
     {
@@ -236,24 +238,25 @@ int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, b
         {
             add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
             add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
-            cnt++;
+            ndev++;
         }
     }
 
-    if (cnt > 0)
+    if (ndev > 0)
     {
-        float div = 1.0f / (float)cnt;
-        mul_Vec3_X(imu.I.pqr, imu.I.pqr, div);
-        mul_Vec3_X(imu.I.acc, imu.I.acc, div);
+        mul_Vec3_X(imu.I.pqr, imu.I.pqr, inv_count_upto10(ndev));
+        mul_Vec3_X(imu.I.acc, imu.I.acc, inv_count_upto10(ndev));
     }
 
     *result = imu;
-    return cnt;
+    return ndev;
 }
 
 
 void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
 {
+    STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
+
     float mean, y;
     int ndev;
     const bool *excl;
