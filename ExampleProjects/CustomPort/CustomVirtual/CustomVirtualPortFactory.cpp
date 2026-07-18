@@ -21,11 +21,8 @@
  */
 #include "ISUtilities.h"
 
-/**
- * Include the SDK PortManager if desired for building and maintaining a list of all ports by name 
- */
-//for example, #include "PortManager.h"
-
+//debug
+#include <iostream>
 
 /** STEP 5: Implement the required functions for a Port Factory
  */
@@ -42,6 +39,7 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
      *  and present the only ports utilized in this simple example
      */
     custom_port_t* customPort;
+
     if (pName == "TEST0") {
         customPort = TEST0_PORT;
     }
@@ -53,11 +51,11 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
 
     /** Need a port_handle_t reference to our port to use for our own validation and to return from bind */
     port_handle_t port = (port_handle_t) customPort;
-    *customPort = {};
-
+    
     /** This init routine assigns the base port functions of the underlying port implementation
      */
-    initCustomPorts();
+    //*customPort = {};
+    //initCustomPorts();
 
     /** Open and validate and configure the port as needed for the port implementation here; in this virtual port
      * example, do not need to open or configure
@@ -123,6 +121,11 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);
         if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
+
+            //debug
+            std::cout << "callback for this port " << name.length() << std::endl;
+            //
+            
             portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
         }
     }
@@ -152,7 +155,24 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
     // won't assume the test port names are null-terminated
     for (auto& str : portNames) {
         str = std::string( reinterpret_cast<const char*>(g_customPorts[i].name), nlen );
+
+        // Find the last character that is NOT a null terminator, space, tab, carriage return, or newline
+        //size_t endpos = str.find_last_not_of("\0 \t\r\n", str.length() - 1);
+        size_t endpos = str.find_last_not_of( std::string("\0 \t\r\n", 5) );
+    
+        if (endpos != std::string::npos) {
+            str.resize(endpos + 1); // Trim everything after the last valid character
+        } else {
+            str.clear(); // The string was entirely whitespace or nulls
+        }
+    
+        
         log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Found port '%s'", str.c_str());
+
+        //debug
+        std::cout << "portName added name of len " << str.length() << std::endl;
+        //
+        
         ++i;
     }
 

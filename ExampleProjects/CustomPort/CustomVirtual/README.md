@@ -28,7 +28,7 @@ graph TD
 
 #### Project Files
 
-* [CustomVirtualExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualExample.cpp)
+* [main.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualExample.cpp)
 * [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp)
 * [CustomVirtualPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.h)
 * [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp)
@@ -53,17 +53,17 @@ In the [Implementation](#implementation) section of this README, you will find a
 
 Each Step is part of a project-level process, will reference one or more of the code files, and describe actions the user can take in the custom port or port factory creation.  Each code file in the local project folder will contain one or more commented sections each associated with a README Step section, and the Step sections in a given file may start at any Step number depending on when in the project-level process that file's contents come into play.
 
-The parts of the code associated with a given README Step are tagged like this:
-```C++
-/** STEP 6: 
-```
-
 Here is a visual representation of the STEP concept to help navigate:
 ```mermaid
 flowchart LR
     A[Implementation Section <br> Step 1 <br> Step 2 <br> Step 3 <br> ... ] --> B[Code File X <br> ... <br> /** STEP 2 <br> ... <br> /** STEP 3 <br> ... ]
     A --> C[Code File Y <br> ... <br> /** STEP 3 <br> ...]
     A --> D[Code File Z <br> .. <br> /** STEP 1 <br>  ...]
+```
+
+The parts of the code associated with a given README Step are tagged like this:
+```C++
+/** STEP 6: 
 ```
 
 Doxygen style comments are ubiquitous throughout the three example Project Files.  You may build the Doxygen HTML documentation by creating a Doxyfile and following standard Doxygen build instructions if that suits you, but all information is contained in this document plus the files listed above.  

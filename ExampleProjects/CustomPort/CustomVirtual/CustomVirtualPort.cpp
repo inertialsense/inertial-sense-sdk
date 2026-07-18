@@ -100,6 +100,8 @@ void initCustomPorts() {
 
         ringBufInit(&port.portRingBuf, port.portBuffer, PORT_BUFFER_SIZE, 1);
         SNPRINTF((char *)port.name, 6, "TEST%1d", portNum);
+        //SNPRINTF((char *)port.name, 6, "TEST%1d", portNum % 10);  //replace inherited magic number?
+        
 
         portNum++;
     }
