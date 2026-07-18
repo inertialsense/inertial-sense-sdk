@@ -36,9 +36,7 @@ void init_iir_filter(iif_filter_t *f)
 
     if (f->opt.n_channels > MAX_NUMBER_IIR_CHANNELS)
     {
-#if !PLATFORM_IS_EMBEDDED
-        dg_printf("IIR channels exceeded max number: %d.  Consider increasing max number", MAX_NUMBER_IIR_CHANNELS);
-#endif
+        //dg_printf("IIR channels exceeded max number: %d.  Consider increasing max number", MAX_NUMBER_IIR_CHANNELS); // NOTE: dg_printf is undefined
         exit(1);
     }
 
