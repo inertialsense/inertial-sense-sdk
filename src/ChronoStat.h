@@ -46,6 +46,7 @@ private:
     double timeLast = NAN;                  //!< the last time that a sample was taken
     std::chrono::high_resolution_clock::time_point localTimeTs;     // this should initialize to the clocks epoch
     std::string label;
+    double dtM2 = 0;                        //!< Welford's algorithm running sum of squared differences from the mean, used to derive dtVariance
 
 public:
     double dt = 0;                          //!< the delta in time between the previous 2 samples, in seconds,
@@ -54,6 +55,7 @@ public:
     double dtMinTime = 0;                   //!< the sample time of the lowest dt
     double dtMaxTime = 0;                   //!< the sample time of the largest dt
     double dtAvg = 0;                       //!< the average dt across all samples (in seconds)
+    double dtVariance = 0;                  //!< the (population) variance of dt across all samples, computed online via Welford's algorithm
     int dtCnt = 0;                          //!< the number of dt samples (should always be cnt - 1)
     double duration = 0;                    //!< the sum of all dt's - effectively the total time between the first and last sample.
 
@@ -142,6 +144,8 @@ public:
         dtMinTime = 0;
         dtMaxTime = 0;
         dtAvg = 0;
+        dtVariance = 0;
+        dtM2 = 0;
         dtCnt = 0;
         duration = 0;
 
@@ -185,7 +189,11 @@ public:
             dt = time - timeLast;
             double alpha = 1.0 / (1.0 + dtCnt);
             double beta = 1.0 - alpha;
+            double dtDelta = dt - dtAvg;              // dtAvg is still the mean of the previous dtCnt samples here
             dtAvg = beta * dtAvg + alpha * dt;
+            double dtDelta2 = dt - dtAvg;              // dtAvg is now the updated mean
+            dtM2 += dtDelta * dtDelta2;                 // Welford's algorithm running sum of squares
+            dtVariance = dtM2 / (dtCnt + 1);            // population variance over all dt samples so far
             dtCnt++;
             duration += dt;
 
@@ -217,6 +225,11 @@ public:
         END_DEBUG_MSG(log_more_debug);
     };
 
+
+    /**
+     * @returns the (population) standard deviation of dt across all samples, in the same units as dt.
+     */
+    inline double dtStdDev() { return std::sqrt(dtVariance); }
 
     /**
      * @brief a utility function to generate a summary of the stat values
