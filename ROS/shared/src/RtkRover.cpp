@@ -101,12 +101,20 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
     // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
     std::string RTK_connection = get_connection_string();
 
+    // TODO(SDK): InertialSense::OpenConnectionToServer() does not exist in the current SDK
+    // (removed as part of the InertialSense -> ISDevice/CorrectionService refactor; no
+    // replacement has been implemented yet as of SDK 3.0.1 / develop). RTK NTRIP client
+    // connections are disabled until that lands. See CorrectionService.h for what currently
+    // exists (getActiveConnections()) -- it does not yet expose a way to open/create a new
+    // client connection to an NTRIP server.
+    ROS_ERROR_STREAM("RTK NTRIP client connections are not currently supported by this SDK build (OpenConnectionToServer is unimplemented). Skipping " << RTK_connection << ".");
+
     int RTK_connection_attempt_count = 0;
     while (RTK_connection_attempt_count < connection_attempt_limit_)
     {
         ++RTK_connection_attempt_count;
 
-        bool connected = is_->OpenConnectionToServer(RTK_connection);
+        bool connected = false;
 
         if (connected)
         {
@@ -144,7 +152,11 @@ void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback(
     if (connecting_ && (is_ != nullptr))
         return;
 
-    int latest_byte_count = is_->ClientServerByteCount();
+    // TODO(SDK): InertialSense::ClientServerByteCount() does not exist in the current SDK (see
+    // note in connect_rtk_client() above). Since RTK client connections never actually connect
+    // right now, this watchdog has nothing real to monitor; report 0 so the interruption-count
+    // logic below behaves consistently rather than reading an undefined value.
+    int latest_byte_count = 0;
     if (traffic_total_byte_count_ == latest_byte_count)
     {
         ++data_transmission_interruption_count_;
@@ -233,4 +245,3 @@ void RtkRoverCorrectionProvider_EVB::configure(YAML::Node& node) {
         ROS_ERROR("Unable to configure RtkRoverCorrectionProvider_EVB. The YAML node was null or undefined.");
     }
 }
-
