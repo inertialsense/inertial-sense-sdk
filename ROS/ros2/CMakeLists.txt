@@ -26,17 +26,17 @@ set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../inertial-sense-sdk/script
 get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
 message(ABSOLUTE_SCRIPT_PATH="${ABSOLUTE_SCRIPT_PATH}")
 
-add_custom_command(OUTPUT ${RESOLVED_ROS_DIR}/../../build/libInertialSenseSDK.a
+add_custom_command(OUTPUT ${RESOLVED_ROS_DIR}/../inertial-sense-sdk/build/libInertialSenseSDK.a
     COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
     COMMENT "Running custom shell script..."
     VERBATIM
 )
 
-add_custom_target(build_InertialSenseSDK DEPENDS ${RESOLVED_ROS_DIR}/../../build/libInertialSenseSDK.a)
+add_custom_target(build_InertialSenseSDK DEPENDS ${RESOLVED_ROS_DIR}/../inertial-sense-sdk/build/libInertialSenseSDK.a)
 
 add_library(InertialSenseSDK STATIC IMPORTED GLOBAL)
 add_dependencies(InertialSenseSDK build_InertialSenseSDK)
-set_target_properties(InertialSenseSDK PROPERTIES IMPORTED_LOCATION ${RESOLVED_ROS_DIR}/../../build/libInertialSenseSDK.a)
+set_target_properties(InertialSenseSDK PROPERTIES IMPORTED_LOCATION ${RESOLVED_ROS_DIR}/../inertial-sense-sdk/build/libInertialSenseSDK.a)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/GTime.msg"
@@ -69,10 +69,10 @@ include_directories(
     shared/include
     ${XMLRPC_INCLUDE_DIRS}
     ${YAML_CPP_INCLUDE_DIR}
-    ../../src #This line of CMakeList.txt stays in .external file to reference submodule
-    ../../src/libusb/libusb
-    ../../src/libusb/linux
-    ../../src/yaml-cpp
+    ../inertial-sense-sdk/src #This line of CMakeList.txt stays in .external file to reference submodule
+    ../inertial-sense-sdk/src/libusb/libusb
+    ../inertial-sense-sdk/src/libusb/linux
+    ../inertial-sense-sdk/src/yaml-cpp
     ../ros2/build/inertial_sense_ros2/rosidl_generator_cpp/
     /opt/ros/jazzy/include
     /opt/ros/jazzy/include/sensor_msgs
