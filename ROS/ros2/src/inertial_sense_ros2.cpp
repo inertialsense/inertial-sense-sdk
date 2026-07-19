@@ -21,6 +21,7 @@
 #include <chrono>
 #include <stddef.h>
 #include <unistd.h>
+#include <set>
 //#include <ISPose.h>
 //#include <duration.hpp>
 #include "ISEarth.h"
@@ -30,6 +31,9 @@
 //#include "ISMatrix.h"
 
 #include "ParamHelper.h"
+
+// Single active instance -- see comment above s_instance_'s declaration in inertial_sense_ros.h
+InertialSenseROS* InertialSenseROS::s_instance_ = nullptr;
 
 #define STREAMING_CHECK(streaming, DID)      if (!streaming){ streaming = true; rclcpp::Logger logger_IS_resp_rec = rclcpp::get_logger("IS_response_received"); logger_IS_resp_rec.set_level(rclcpp::Logger::Level::Debug); RCLCPP_DEBUG(logger_IS_resp_rec,"InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
 //#define STREAMING_CHECK(streaming, DID)      if (!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::DataName(DID)); }
@@ -49,6 +53,8 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_"))
 {
+    s_instance_ = this;
+
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
     rs_.did_ins1.topic = "did_ins1";
@@ -83,7 +89,11 @@ void InertialSenseROS::initialize(bool configFlashParameters)
 void InertialSenseROS::terminate()
 {
     IS_.Close();
-    IS_.CloseServerConnection();
+    // TODO(SDK): InertialSense::CloseServerConnection() does not exist in the current SDK (see
+    // note in connect_rtk_client() above -- the whole RTK NTRIP client/server connection
+    // subsystem is unimplemented right now). Since OpenConnectionToServer()/CreateHost() are
+    // themselves stubbed to no-ops, no server connection is ever actually opened, so there is
+    // nothing here that needs closing.
     sdk_connected_ = false;
 
     // ROS equivalent to shutdown advertisers, etc.
@@ -605,16 +615,16 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
-                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
+                msg_NavSatFix2.status.service |= NavSatFixService::SERVICE_GPS;
             }
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GLO) {
-                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GLONASS;
+                msg_NavSatFix2.status.service |= NavSatFixService::SERVICE_GLONASS;
             }
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_BDS) {
-                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_COMPASS; // includes BeiDou.
+                msg_NavSatFix2.status.service |= NavSatFixService::SERVICE_COMPASS; // includes BeiDou.
             }
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GAL) {
-                msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GALILEO;
+                msg_NavSatFix2.status.service |= NavSatFixService::SERVICE_GALILEO;
             }
         }
         NavSatFixConfigured = true;
@@ -693,7 +703,28 @@ bool InertialSenseROS::connect(float timeout)
             RCLCPP_ERROR(rclcpp::get_logger("open_port_error"),"InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sleep(1); // is this a good idea?
         } else {
-            RCLCPP_INFO(rclcpp::get_logger("serial_port_connected_info"),"InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            // Device discovery/validation happens asynchronously, driven by IS_.Update(); give it
+            // a brief bounded window to find and validate the ISDevice on the port we just opened.
+            //
+            // NOTE: InertialSense::DeviceByPortName() and DeviceByPort() are declared in
+            // InertialSense.h but have no implementation anywhere in the SDK (link error:
+            // undefined reference). Using IS_.getDevices() instead, which is defined inline in
+            // the header (returns deviceManager directly) and is guaranteed to link. Since
+            // IS_.Open() only ever opens a single port/device in this node's design, taking the
+            // first (only) entry once the list is non-empty is safe and correct here.
+            for (int attempt = 0; !device_ && attempt < 100; attempt++) {
+                IS_.Update();
+                auto& devices = IS_.getDevices();
+                if (!devices.empty())
+                    device_ = devices.front();
+                if (!device_) usleep(20000); // 20ms
+            }
+            if (device_) {
+                registerIsbDispatch();
+                RCLCPP_INFO(rclcpp::get_logger("serial_port_connected_info"),"InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", device_->DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            } else {
+                RCLCPP_WARN(rclcpp::get_logger("serial_port_connected_info"),"InertialSenseROS: Connected on \"%s\", at %d baud, but no ISDevice was found/validated on that port within the timeout.", cur_port.c_str(), baudrate_);
+            }
             port_ = cur_port;
             break;
         }
@@ -706,15 +737,58 @@ bool InertialSenseROS::connect(float timeout)
     return sdk_connected_;
 }
 
+// Static trampoline required by pfnIsCommIsbDataHandler's plain C function pointer signature
+// (int(*)(void* ctx, p_data_t* data, port_handle_t port)). ISDevice binds its own `this` as ctx,
+// not ours, so we route through the single active instance (s_instance_) instead -- see the
+// comment on s_instance_'s declaration in inertial_sense_ros.h.
+//
+// Chains to whatever handler was previously installed (ISDevice::processIsbMsgs) FIRST, so
+// ISDevice's own internal bookkeeping (sysParams, flash config sync, etc.) keeps working exactly
+// as it did before we installed our own handler on top of it. Only then do we dispatch to
+// whichever per-DID callback SET_CALLBACK registered for this message's DID.
+int InertialSenseROS::isbDispatchThunk(void* ctx, p_data_t* data, port_handle_t port)
+{
+    if (!s_instance_)
+        return 0;
+    if (s_instance_->prev_isb_handler_)
+        s_instance_->prev_isb_handler_(ctx, data, port);
+    s_instance_->callback(data);
+    return 0;
+}
+
+// Installs isbDispatchThunk on device_'s port, capturing whatever handler was previously
+// installed there (ISDevice's own processIsbMsgs) into prev_isb_handler_ so it can still be
+// called. Must be called after device_ is set (see connect()).
+void InertialSenseROS::registerIsbDispatch()
+{
+    if (!device_)
+        return;
+    prev_isb_handler_ = device_->registerIsbDataHandler(&InertialSenseROS::isbDispatchThunk);
+}
+
+// Looks up data->hdr.id in did_callbacks_ (populated by SET_CALLBACK) and invokes the matching
+// per-DID callback, if one is registered for that DID. Called from isbDispatchThunk() for every
+// message received on device_'s port, after ISDevice's own internal handler has already run.
+void InertialSenseROS::callback(p_data_t *data)
+{
+    auto it = did_callbacks_.find(data->hdr.id);
+    if (it != did_callbacks_.end())
+        it->second(data);
+}
+
 bool InertialSenseROS::firmware_compatiblity_check()
 {
+    if (!device_) {
+        RCLCPP_WARN(rclcpp::get_logger("firmware_compatiblity_check"),"InertialSenseROS: No connected ISDevice; skipping firmware/protocol compatibility check.");
+        return false;
+    }
     char local_protocol[4] = { PROTOCOL_VERSION_CHAR0, PROTOCOL_VERSION_CHAR1, PROTOCOL_VERSION_CHAR2, PROTOCOL_VERSION_CHAR3 };
     char diff_protocol[4] = { 0, 0, 0, 0 };
-    for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.DeviceInfo().protocolVer[i];
+    for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - device_->DeviceInfo().protocolVer[i];
 
     char local_firmware[3] = { IS_SDK_VERSION_MAJOR, IS_SDK_VERSION_MINOR, IS_SDK_VERSION_REVIS };
     char diff_firmware[3] = { 0, 0 ,0 };
-    for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.DeviceInfo().firmwareVer[i];
+    for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - device_->DeviceInfo().firmwareVer[i];
 
     rclcpp::Logger::Level protocol_fault = rclcpp::Logger::Level::Debug; // none
     if (diff_protocol[0] != 0) protocol_fault = rclcpp::Logger::Level::Fatal; // major protocol changes -- BREAKING
@@ -739,13 +813,13 @@ bool InertialSenseROS::firmware_compatiblity_check()
   //         IS_SDK_VERSION_MAJOR,
   //         IS_SDK_VERSION_MINOR,
   //         IS_SDK_VERSION_REVIS,
-  //         IS_.DeviceInfo().protocolVer[0],
-  //         IS_.DeviceInfo().protocolVer[1],
-  //         IS_.DeviceInfo().protocolVer[2],
-  //         IS_.DeviceInfo().protocolVer[3],
-  //         IS_.DeviceInfo().firmwareVer[0],
-  //         IS_.DeviceInfo().firmwareVer[1],
-  //         IS_.DeviceInfo().firmwareVer[2]
+  //         device_->DeviceInfo().protocolVer[0],
+  //         device_->DeviceInfo().protocolVer[1],
+  //         device_->DeviceInfo().protocolVer[2],
+  //         device_->DeviceInfo().protocolVer[3],
+  //         device_->DeviceInfo().firmwareVer[0],
+  //         device_->DeviceInfo().firmwareVer[1],
+  //         device_->DeviceInfo().firmwareVer[2]
   //);
     if (final_fault != rclcpp::Logger::Level::Debug) {
         RCLCPP_INFO(rclcpp::get_logger("final_fault_logger"), "Protocol version mismatch: \n"
@@ -758,13 +832,13 @@ bool InertialSenseROS::firmware_compatiblity_check()
             IS_SDK_VERSION_MAJOR,
             IS_SDK_VERSION_MINOR,
             IS_SDK_VERSION_REVIS,
-            IS_.DeviceInfo().protocolVer[0],
-            IS_.DeviceInfo().protocolVer[1],
-            IS_.DeviceInfo().protocolVer[2],
-            IS_.DeviceInfo().protocolVer[3],
-            IS_.DeviceInfo().firmwareVer[0],
-            IS_.DeviceInfo().firmwareVer[1],
-            IS_.DeviceInfo().firmwareVer[2]);
+            device_->DeviceInfo().protocolVer[0],
+            device_->DeviceInfo().protocolVer[1],
+            device_->DeviceInfo().protocolVer[2],
+            device_->DeviceInfo().protocolVer[3],
+            device_->DeviceInfo().firmwareVer[0],
+            device_->DeviceInfo().firmwareVer[1],
+            device_->DeviceInfo().firmwareVer[2]);
     }
     return final_fault == rclcpp::Logger::Level::Debug; // true if they match, false if they don't.
 }
@@ -876,7 +950,14 @@ void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& conf
     int RTK_connection_attempt_count = 0;
     while (++RTK_connection_attempt_count < config.connection_attempt_limit_)
     {
-        config.connected_ = IS_.OpenConnectionToServer(RTK_connection);
+        // TODO(SDK): InertialSense::OpenConnectionToServer() does not exist in the current SDK
+        // (removed as part of the InertialSense -> ISDevice/CorrectionService refactor; no
+        // replacement has been implemented yet as of SDK 3.0.1 / develop). RTK NTRIP client
+        // connections are disabled until that lands. See CorrectionService.h for what currently
+        // exists (getActiveConnections()) -- it does not yet expose a way to open/create a new
+        // client connection to an NTRIP server.
+        RCLCPP_ERROR(rclcpp::get_logger("rtk_client_not_implemented"),"InertialSenseROS: RTK NTRIP client connections are not currently supported by this SDK build (OpenConnectionToServer is unimplemented). Skipping.");
+        config.connected_ = false;
 
         int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
         if (config.connected_) {
@@ -909,7 +990,11 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback()
         return;
     }
 
-    int latest_byte_count = IS_.ClientServerByteCount();
+    // TODO(SDK): InertialSense::ClientServerByteCount() does not exist in the current SDK (see
+    // note in connect_rtk_client() above). Since RTK client connections never actually connect
+    // right now, this watchdog has nothing real to monitor; report 0 so the interruption-count
+    // logic below behaves consistently rather than reading an undefined value.
+    int latest_byte_count = 0;
     if (config.traffic_total_byte_count_ == latest_byte_count)
     {
         ++config.data_transmission_interruption_count_;
@@ -971,10 +1056,11 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
 {
     // [type]:[ip/url]:[port]
     std::string RTK_connection = config.get_connection_string();
-    if (IS_.CreateHost(RTK_connection))
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("started_rtk_ntrip_server"),"InertialSenseROS: Successfully started RTK Base NTRIP correction server at" << RTK_connection);
-    else
-        RCLCPP_ERROR_STREAM(rclcpp::get_logger("failed_to_start_ntrip_server"),"InertialSenseROS: Failed to start RTK Base NTRIP correction server at " << RTK_connection);
+    // TODO(SDK): InertialSense::CreateHost() does not exist in the current SDK (see note in
+    // connect_rtk_client() above). RTK NTRIP base/server hosting is disabled until a replacement
+    // lands (likely on CorrectionService, which currently only exposes getActiveConnections()).
+    (void)RTK_connection;
+    RCLCPP_ERROR(rclcpp::get_logger("rtk_server_not_implemented"),"InertialSenseROS: RTK NTRIP base/server hosting is not currently supported by this SDK build (CreateHost is unimplemented). Skipping.");
 }
 
 
@@ -1604,6 +1690,45 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gnss_pos_t *const ms
             msg_gps2.pdop = msg->pDop;
             publishGPS2();
         }
+
+        // NOTE: rs_.gps2_navsatfix has its own publisher (created in initialize() at line 168 in
+        // the original) but, in the upstream code, was never actually published to -- only
+        // rs_.gps1_navsatfix.pub_nsf was ever used (see the primaryGpsDid block below), so
+        // gps2's NavSatFix would never publish regardless of its own "enable" setting. This
+        // mirrors the same logic gps1 uses, independently, using GNSS2's own data and publisher.
+        if (rs_.gps2_navsatfix.enabled && msg->status & GNSS_STATUS_FIX_MASK)
+        {
+            msg_NavSatFix2.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs / 1.0e3);
+            msg_NavSatFix2.header.frame_id = frame_id_;
+            msg_NavSatFix2.status.status = -1;                            // Assume no Fix
+            if (msg->status & GNSS_STATUS_FIX_MASK >= GNSS_STATUS_FIX_2D) // Check for fix and set
+            {
+                msg_NavSatFix2.status.status = NavSatFixStatusFixType::STATUS_FIX;
+            }
+
+            if (msg->status & GNSS_STATUS_FIX_SBAS) // Check for SBAS only fix
+            {
+                msg_NavSatFix2.status.status = NavSatFixStatusFixType::STATUS_SBAS_FIX;
+            }
+
+            if (msg->status & GNSS_STATUS_FIX_MASK >= GNSS_STATUS_FIX_RTK_SINGLE) // Check for any RTK fix
+            {
+                msg_NavSatFix2.status.status = NavSatFixStatusFixType::STATUS_GBAS_FIX;
+            }
+
+            // .status.service was set once at startup, above, from the device's configured satellite constellation.
+            msg_NavSatFix2.latitude = msg->lla[0];
+            msg_NavSatFix2.longitude = msg->lla[1];
+            msg_NavSatFix2.altitude = msg->lla[2];
+
+            const double varH2 = pow(msg->hAcc / 1000.0, 2);
+            const double varV2 = pow(msg->vAcc / 1000.0, 2);
+            msg_NavSatFix2.position_covariance[0] = varH2;
+            msg_NavSatFix2.position_covariance[4] = varH2;
+            msg_NavSatFix2.position_covariance[8] = varV2;
+            msg_NavSatFix2.position_covariance_type = COVARIANCE_TYPE_DIAGONAL_KNOWN;
+            rs_.gps2_navsatfix.pub_nsf->publish(msg_NavSatFix2);
+        }
         break;
     }
 
@@ -1915,27 +2040,27 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gnss_rtk_rel_t *cons
         uint32_t fixStatus = msg->status & GNSS_STATUS_FIX_MASK;
         if (fixStatus == GNSS_STATUS_FIX_3D)
         {
-            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GNSS_STATUS_FIX_3D;
+            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GPS_STATUS_FIX_3D;
             fixStatusString = "GNSS_STATUS_FIX_3D";
         }
         else if (fixStatus == GNSS_STATUS_FIX_RTK_SINGLE)
         {
-            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GNSS_STATUS_FIX_RTK_SINGLE;
+            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GPS_STATUS_FIX_RTK_SINGLE;
             fixStatusString = "GNSS_STATUS_FIX_RTK_SINGLE";
         }
         else if (fixStatus == GNSS_STATUS_FIX_RTK_FLOAT)
         {
-            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GNSS_STATUS_FIX_RTK_FLOAT;
+            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GPS_STATUS_FIX_RTK_FLOAT;
             fixStatusString = "GNSS_STATUS_FIX_RTK_FLOAT";
         }
         else if (fixStatus == GNSS_STATUS_FIX_RTK_FIX)
         {
-            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GNSS_STATUS_FIX_RTK_FIX;
+            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GPS_STATUS_FIX_RTK_FIX;
             fixStatusString = "GNSS_STATUS_FIX_RTK_FIX";
         }
         else if (msg->status & GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD)
         {
-            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD;
+            rtk_rel.e_gps_status_fix = inertial_sense_ros2::msg::RTKRel::GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD;
             fixStatusString = "GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD";
         }
 
@@ -2375,7 +2500,7 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Requ
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
     is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
-    std::vector<port_handle_t> ports = IS_.getPorts();
+    std::set<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
     
@@ -2412,7 +2537,7 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
     is_comm_enable_protocol(&comm, _PTYPE_NMEA);
 
-    std::vector<port_handle_t> ports = IS_.getPorts();
+    std::set<port_handle_t> ports = IS_.getPorts();
     uint8_t inByte;
     int n;
 

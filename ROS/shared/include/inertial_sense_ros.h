@@ -25,6 +25,9 @@
 #include <algorithm>
 #include <string>
 #include <cstdlib>
+#include <memory>
+#include <unordered_map>
+#include <functional>
 #include <yaml-cpp/yaml.h>
 
 #include "data_sets.h"
@@ -113,14 +116,29 @@ using namespace std::chrono_literals;
 #define LEAP_SECONDS 18           // GPS time does not have leap seconds, UNIX does (as of 1/1/2017 - next one is probably in 2020 sometime unless there is some crazy earthquake or nuclear blast)
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
 
-// TODO: Replace this macro with an equivelent method in ISDevice::registerDataHandler(uint8_t dataId, callback) and update project.
-//#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
-//    IS_.BroadcastBinaryData((eDataIDs)(DID), (int)(__periodmultiple),                                           \
-//                            [this](InertialSense *i, p_data_t *data, void *port)                                \
-//                            {                                                                                   \
-//                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */  \
-//                                this->__cb_fun((eDataIDs)DID, reinterpret_cast<__type *>(data->ptr));           \
-//                            })
+// SET_CALLBACK: registers a per-DID callback and enables streaming for that DID.
+//
+// The original design (InertialSense::BroadcastBinaryData(id, period, callback)) was removed
+// from the SDK's live API (the 3-arg overload with a callback is compiled out via #if 0 in
+// InertialSense.cpp) as part of the InertialSense -> ISDevice refactor. There is currently no
+// SDK-provided per-DID callback registration (ISDevice::registerDataHandler does not exist yet).
+//
+// Replacement mechanism: ISDevice already installs its own internal ISB handler
+// (ISDevice::processIsbMsgs, via registerIsbDataHandler()) on connect to keep its own state
+// (sysParams, flash config sync, etc.) up to date. We install our OWN handler on top of that,
+// via device_->registerIsbDataHandler(), which returns the PREVIOUSLY installed handler. Our
+// handler (isbDispatchThunk, in inertial_sense_ros2.cpp) calls that previous handler first
+// (so ISDevice's own internal bookkeeping keeps working exactly as before), then dispatches to
+// whichever per-DID lambda SET_CALLBACK registered into did_callbacks_, based on data->hdr.id.
+// See registerIsbDispatch() / isbDispatchThunk() / callback() in inertial_sense_ros2.cpp.
+#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                            \
+    do {                                                                                                  \
+        this->did_callbacks_[(uint32_t)(DID)] = [this](p_data_t *data)                                    \
+        {                                                                                                 \
+            this->__cb_fun((eDataIDs)(DID), reinterpret_cast<__type *>(data->ptr));                       \
+        };                                                                                                \
+        if (this->device_) this->device_->BroadcastBinaryData((uint32_t)(DID), (int)(__periodmultiple));  \
+    } while(0)
 
 
 class InertialSenseROS //: SerialListener
@@ -484,6 +502,7 @@ public:
     msg::GPS msg_gps1;
     msg::GPS msg_gps2;
     sensor_msgs::msg::NavSatFix msg_NavSatFix;
+    sensor_msgs::msg::NavSatFix msg_NavSatFix2;
 
     geometry_msgs::msg::Vector3Stamped gps1_velEcef;
     geometry_msgs::msg::Vector3Stamped gps2_velEcef;
@@ -518,6 +537,35 @@ public:
     // Connection to the uINS
     InertialSense IS_;
 
+    // The connected ISDevice (shared_ptr<ISDevice>), set in connect() after IS_.Open() succeeds.
+    // Needed because DeviceInfo(), BroadcastBinaryData(), and registerIsbDataHandler() now live
+    // on ISDevice rather than InertialSense (see comment above SET_CALLBACK).
+    device_handle_t device_;
+
+    // DID -> callback dispatch table populated by SET_CALLBACK, consulted by callback() every
+    // time a message arrives (see isbDispatchThunk()).
+    std::unordered_map<uint32_t, std::function<void(p_data_t*)>> did_callbacks_;
+
+    // The ISB handler that was installed on device_ before we installed our own (this is
+    // ISDevice::processIsbMsgs). We call it first, from isbDispatchThunk(), so ISDevice's own
+    // internal state (sysParams, flash config sync, etc.) keeps working exactly as it did
+    // before we chained onto it.
+    pfnIsCommIsbDataHandler prev_isb_handler_ = nullptr;
+
+    // Single active instance, used by the static isbDispatchThunk() trampoline to get back to
+    // "this". (The C-style pfnIsCommIsbDataHandler signature has no user ctx parameter we can
+    // rely on being our own pointer -- ISDevice binds its own `this` as ctx -- so we use this
+    // instead. Safe because this node only ever constructs one InertialSenseROS.)
+    static InertialSenseROS* s_instance_;
+
+    // Installs isbDispatchThunk on device_, capturing whatever handler was previously installed
+    // (ISDevice's own) into prev_isb_handler_. Call once, after device_ is set in connect().
+    void registerIsbDispatch();
+
+    // Static trampoline matching pfnIsCommIsbDataHandler's plain C function pointer signature.
+    // Chains to prev_isb_handler_ first, then dispatches via callback().
+    static int isbDispatchThunk(void* ctx, p_data_t* data, port_handle_t port);
+
     // Flash parameters
     // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
     // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
@@ -546,6 +594,3 @@ public:
 };
 
 #endif
-
-
-
