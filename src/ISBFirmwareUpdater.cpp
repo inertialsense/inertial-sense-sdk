@@ -9,6 +9,15 @@
 #include "ISBFirmwareUpdater.h"
 #include "InertialSense.h"
 
+// IMX-5 (STM32L4) flash geometry — mirrors the bootloader constants in
+// hw-libs/mcu/STM32L4/drivers/d_flash.h. Used to bound-check an image against the
+// target ISbl's writable flash window before erasing (SN-8314).
+#define IMX5_FLASH_START_ADDR       0x08000000u
+#define IMX5_LOGICAL_PAGE_SIZE      0x10000u    //!< 64K ISbl "logical page" (select_page granularity)
+#define IMX5_ISBL_PAGES_LEGACY      7           //!< v6g and earlier expose logical pages 0..6
+#define IMX5_ISBL_PAGES_EXPANDED    8           //!< v6j and later expose logical pages 0..7
+#define IMX5_WRP_RESERVED           0x8000u     //!< top 32K of the 8-page window is WRP calibration/config (not app-writable; see SN-8313)
+
 
 /**
  * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -186,8 +195,30 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     if ((session_status >= fwUpdate::READY) && (session_status <= fwUpdate::FINALIZING)) {
         switch (updateState) {
             case UPLOADING: // transfer
-                if (transferProgress >= 1.0f)
+                if (transferProgress >= 1.0f) {
+                    // SN-8314: Preflight the fully-buffered image against the target ISbl's writable
+                    // flash window BEFORE erasing. Erasing invalidates the existing APP; if the new
+                    // image then can't be written (e.g. it needs a logical page this bootloader
+                    // rejects), the device would be stranded in ISbl with no valid firmware. This is
+                    // the earliest point at which BOTH the ISbl version and the complete image are known.
+                    uint32_t imageTop = calcFinalImageTopAddress();
+                    uint32_t flashTop = getWritableFlashTopAddress();
+                    if (imageTop > flashTop) {
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
+                            "(ISB) Firmware image is too large for %s bootloader (ISbl v%1d%c): image writes up to 0x%08X, but writable flash ends at 0x%08X (%u bytes over). Aborting before erase; flash is left unmodified.",
+                            device->getIdAsString().c_str(),
+                            device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1],
+                            imageTop, flashTop, (unsigned)(imageTop - flashTop));
+                        // NOTE: The device is left in ISbl and cannot be returned to APP from here. On
+                        // entry to ISbl the bootloader invalidates the app-validity header (hash), and
+                        // it is only re-validated by an actual write -- there is no protocol command to
+                        // re-hash the existing (unmodified) flash. Recover by flashing a compatible
+                        // (smaller) image. See SN-8314.
+                        session_status = fwUpdate::ERR_NOT_ENOUGH_MEMORY;
+                        break;
+                    }
                     updateState = ERASING;
+                }
                 session_status = fwUpdate::IN_PROGRESS;
                 break;
             case ERASING: // prepare for erase
@@ -1210,6 +1241,85 @@ is_operation_result ISBFirmwareUpdater::process_hex_stream(ByteBufferStream& byt
     }
 
     return (lineLength == 0 ? IS_OP_CLOSED : IS_OP_OK);
+}
+
+
+/**
+ * Scans the buffered Intel-HEX image for the highest absolute flash address that will be written.
+ * See the header declaration for the full rationale. The scan seeks to the start of the buffered
+ * image, reads it record-by-record, and restores the original stream position on exit so it does
+ * not disturb the subsequent write pass.
+ *
+ * @return the exclusive top absolute flash address written by the image, or 0 if no image is buffered.
+ */
+uint32_t ISBFirmwareUpdater::calcFinalImageTopAddress() {
+    if (!imgStream)
+        return 0;
+
+    const std::size_t savedPos = imgStream->tellg();    // preserve the write pass's read position
+    imgStream->clear();
+    imgStream->seekg(0);
+
+    /** Parses n hex digits at p into an unsigned value (n <= 8). */
+    auto parseHex = [](const char* p, int n) -> uint32_t {
+        char tmp[9];
+        memcpy(tmp, p, n);
+        tmp[n] = '\0';
+        return (uint32_t)strtoul(tmp, nullptr, 16);
+    };
+
+    char line[HEX_BUFFER_SIZE];
+    uint32_t ela = 0;           // current Extended-Linear-Address (upper 16 bits of the flash address)
+    uint32_t topAddr = 0;       // highest exclusive end address seen so far
+    int lineLength;
+
+    // Intel-HEX record: ':' LL(2) AAAA(4) TT(2) DATA(2*LL) CC(2) -- minimum valid length is 11 chars.
+    while ((lineLength = is_isb_read_line(*imgStream, line)) != 0) {
+        if ((lineLength < 11) || (line[0] != ':'))
+            continue;
+
+        uint32_t byteCount = parseHex(line + 1, 2);
+        uint32_t offset16  = parseHex(line + 3, 4);
+        uint32_t recType   = parseHex(line + 7, 2);
+
+        if (recType == 0x04) {          // Extended Linear Address: sets the page base for following data
+            ela = parseHex(line + 9, 4);
+        } else if (recType == 0x00) {   // Data: contributes (ela<<16 | offset16) .. +byteCount
+            uint32_t end = ((ela << 16) | offset16) + byteCount;
+            if (end > topAddr)
+                topAddr = end;
+        }
+    }
+
+    imgStream->clear();
+    imgStream->seekg(savedPos);
+    return topAddr;
+}
+
+/**
+ * Determines the writable APP flash window for the targeted device from its bootloader version.
+ * Only IMX-5 (STM32L4) has a version-dependent window; for any other target this returns the full
+ * 8-page window so the caller's bounds check is effectively a no-op.
+ *
+ * The IMX-5 ISbl gates page selection on a number-of-pages derived from its compiled application
+ * size: v6g (and earlier) expose 7 logical pages (0..6, top 0x08070000); v6j (and later) expose 8
+ * (0..7). v6h/v6i were never released, so anything past v6g is treated as the expanded window. For
+ * the expanded window the top 32K is write-protected calibration/config (see SN-8313) and is
+ * therefore excluded from the app-writable region.
+ *
+ * @return the exclusive top absolute address of writable APP flash for the current target.
+ */
+uint32_t ISBFirmwareUpdater::getWritableFlashTopAddress() {
+    if (m_isb_props.processor != IS_PROCESSOR_STM32L4)
+        return IMX5_FLASH_START_ADDR + (IMX5_ISBL_PAGES_EXPANDED * IMX5_LOGICAL_PAGE_SIZE);
+
+    const uint8_t major = device->devInfo.firmwareVer[0];
+    const uint8_t minor = device->devInfo.firmwareVer[1];
+
+    if ((major < 6) || ((major == 6) && (minor <= 'g')))
+        return IMX5_FLASH_START_ADDR + (IMX5_ISBL_PAGES_LEGACY * IMX5_LOGICAL_PAGE_SIZE);    // 0x08070000
+
+    return IMX5_FLASH_START_ADDR + (IMX5_ISBL_PAGES_EXPANDED * IMX5_LOGICAL_PAGE_SIZE) - IMX5_WRP_RESERVED;   // 0x08078000
 }
 
 
