@@ -416,7 +416,7 @@ static void integrateDeltaThetaVelRoscoe(
     ixVector3 alpha_last,
     ixVector3 veloc_last,
     ixVector3 delta_alpha_last,
-    ixVector3 delta_veloc_last
+    ixVector3 delta_veloc_last,
     float dt;
 )
 {
