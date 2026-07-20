@@ -360,11 +360,15 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
     output->status |= imu->status;                                                      // Bitwise OR to preserve IMU status
     output->status &= (~IMU_STATUS_IMU_OK_MASK) | (imu->status&IMU_STATUS_IMU_OK_MASK); // Clear OK bits in PIMU status if not set in IMU status
 
-    //  output->dt += deltaThetaDeltaVelRiemannSum(output, imu, imuLast);
-    //  output->dt += deltaThetaDeltaVelTrapezoidal(output, imu, imuLast);
+    float dti = (float)(imu->time - imuLast->time); // integration time
 
     // Numerical integration of coning and sculling integrals using Bortz's rotation vector formula
-    output->dt += deltaThetaDeltaVelBortz(output, imu, imuLast);
+    integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), dti);
+
+    output->dt += dti;
+
+    // Update history
+    copyImu(imuLast, imu);
             
     //  // Roscoe integral
     //  static ixVector3 alpha_last = { 0 };
@@ -490,21 +494,6 @@ static void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 dvel, imui_t 
     for (int i = 0; i < 3; i++) {
         dvel[i] += (imu->acc[i] + thxab[i] + 0.5f * thxthxab[i]) * dt;
     }
-}
-
-
-/* Direct numerical integration of coning and sculling integrals using Bortz's formula */
-float deltaThetaDeltaVelBortz(pimu_t *output, imu_t *imu, imu_t *imuLast)
-{
-    float dt = (float)(imu->time - imuLast->time);
-
-    // IMU
-    integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), dt);
-
-    // Update history
-    copyImu(imuLast, imu);
-
-    return dt;
 }
 
 
