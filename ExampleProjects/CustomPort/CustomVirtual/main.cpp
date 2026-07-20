@@ -92,6 +92,8 @@ int main(int argc, char* argv[])
         rbytes = 0;
         wbytes = 0;
 
+        log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Attempting to send msg '%s'", wbuf);
+                        
         // write fixed message if space available
         if (portFree(port) >= wlen) {
             wbytes = portWrite(port, wbuf, wlen);
@@ -103,15 +105,21 @@ int main(int argc, char* argv[])
         if (portAvailable(port) > 0) {
             rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
         }
-
+        
+        // Verification and logging of results
+        bool test_success = false;
+        
         if ( (wbytes > 0) && (rbytes == wbytes) ) {
             if ( memcmp(rbuf, wbuf, wlen) == 0 ) {
-                log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s'", portName(port));
-            }
-            else {
-                log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test FAIL on comm port '%s'", portName(port));
+                log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s', %d bytes sent/recvd", portName(port), rbytes);
+                test_success = true;
             }
         }
+
+        if ( !test_success ) {
+            log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test FAIL on comm port '%s', wrote %d, read %d", portName(port), wbytes, rbytes);
+        }
+        
     } //while
 
 

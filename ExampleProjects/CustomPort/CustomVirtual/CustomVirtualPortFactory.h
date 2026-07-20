@@ -40,7 +40,7 @@ public:
     /** We are using virtual ports, so rather than an external driver init process we rely on, we init the ports
      * here in the constructor */
     CustomVirtualPortFactory() {
-        /** This init routine assigns the base port functions of the underlying port implementation
+        /** This init routine assigns the base port functions of the underlying port implementation, for all virtual ports
          */
         initCustomPorts();
     }

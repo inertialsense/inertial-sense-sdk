@@ -78,7 +78,8 @@ static const char* customPortName(port_handle_t port) {
     return (const char*)((custom_port_t*)port)->name;
 }
 
-/** Implementations of our support functions for this custom virtual port
+/** Implementations of our support functions for this custom virtual port go here; for now we have an
+ * initializer that configures all the virtual ports in one loop
  */
 void initCustomPorts() {
     int portNum = 0;
