@@ -52,20 +52,14 @@ int main(int argc, char* argv[])
     /** STEP 7: Initialize and open comms port, which is virtual loopback in this case */
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
 
-
-    ///////////////////////
     // Singleton PortManager, but we'll make a local reference, and we register the virtual port factory
     PortManager& pm = PortManager::getInstance();
     pm.addPortFactory(&vpf);
 
-    // 
+    /** We are interested in finding all ports matching a certain name pattern, but then we'll reference the one
+     specifically indicated on the command line */
     pm.discoverPorts(R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
-    port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);  //would be same args to bindPort
-    //////////////////
-    
-    //port_handle_t port = vpf.bindPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
-
-
+    port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);    
     
     if (port == nullptr) {
         printf("Failed to allocate port\r\n");
@@ -123,18 +117,8 @@ int main(int argc, char* argv[])
         }
     } //while
 
-    /** STEP 9:  Demonstrate the locatePorts function, which is given a callback to help target a different port among
-     * those available, using a name search pattern in regex
-     */
-    //auto cb = std::bind(portHandler, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    //vpf.locatePorts(cb, R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK );
 
-
-    /** Demonstrate the releasePorts function
-     */
-    //if ( vpf.releasePort(port) )
-        printf("Program complete, see inertial_sense.log for results\r\n");
-        //else
-        //printf("Program complete (w/errors), see inertial_sense.log for results\r\n");
+    printf("Program complete, see inertial_sense.log for results\r\n");
+    
     
 } //main

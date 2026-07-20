@@ -34,6 +34,7 @@
 
 #define COM_BUFFER_SIZE     4096
 #define PORT_BUFFER_SIZE    8192
+#define PORT_NAME_SIZE      6
 
 /** STEP 2: Create your custom port declaration, extending base_port_t
  */
@@ -46,13 +47,12 @@ typedef struct custom_port_s {
     // Used to simulate serial ports
     ring_buf_t      portRingBuf;
     uint8_t         portBuffer[PORT_BUFFER_SIZE];
-    uint8_t         name[6];  //replace magic number inherited from original?
+    uint8_t         name[PORT_NAME_SIZE];  //replace magic number inherited from original?
 } custom_port_t;
 
 /** These are defined in the .cpp file
  */
 extern custom_port_t g_customPorts[NUM_COM_PORTS];
-extern std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg;
 
 /** Macros that give us an easy way to reference the various custom test ports
  */
@@ -64,8 +64,6 @@ extern std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg;
 #define TEST4_PORT       TEST_PORT(4)
 #define TEST5_PORT       TEST_PORT(5)
 
-#define TEST_ENABLE_MANUAL_TX   0       // Set to 0 for normal loopback testing
-#define TEST_ENABLE_MANUAL_RX   0       // Set to 0 for normal loopback testing
 
 /** Declarations for the core port functions which will provide the underlying implementation for the base_port
  */

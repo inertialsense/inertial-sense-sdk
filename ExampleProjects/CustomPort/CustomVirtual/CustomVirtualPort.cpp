@@ -26,10 +26,8 @@
  */
 custom_port_t g_customPorts[NUM_COM_PORTS] = {};
 
-std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
 
-
-/** This indexes pointers to the custom ports
+/** This indexes pointers to the custom ports, AKA test ports
  */
 static custom_port_t* boundPorts[NUM_COM_PORTS] {
         #if (NUM_COM_PORTS > 0)
@@ -99,7 +97,7 @@ void initCustomPorts() {
         portFlagsSet(&port, PORT_FLAG__OPENED);
 
         ringBufInit(&port.portRingBuf, port.portBuffer, PORT_BUFFER_SIZE, 1);
-        SNPRINTF((char *)port.name, 6, "TEST%1d", portNum);
+        SNPRINTF((char *)port.name, PORT_NAME_SIZE, "TEST%1d", portNum);
         //SNPRINTF((char *)port.name, 6, "TEST%1d", portNum % 10);  //replace inherited magic number?
         
 

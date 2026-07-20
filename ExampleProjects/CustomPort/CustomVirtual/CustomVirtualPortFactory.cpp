@@ -51,11 +51,6 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
 
     /** Need a port_handle_t reference to our port to use for our own validation and to return from bind */
     port_handle_t port = (port_handle_t) customPort;
-    
-    /** This init routine assigns the base port functions of the underlying port implementation
-     */
-    //*customPort = {};
-    //initCustomPorts();
 
     /** Open and validate and configure the port as needed for the port implementation here; in this virtual port
      * example, do not need to open or configure
@@ -133,9 +128,7 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
 
 
 /**
- * @brief Populates a vector of string identifiers for all available virtual ports from custom_serial_utils.
- * For this example, it will be a number of virtual ports defined in the data_sets.h header used by the 
- * custom_serial_utils definitions.
+ * @brief Populates a vector of string identifiers for all available virtual ports from CustomVirtualPorts.
  * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
  * @return the number of ports found on the host
  */
@@ -158,7 +151,7 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
 
         // Find the last character that is NOT a null terminator, space, tab, carriage return, or newline
         //size_t endpos = str.find_last_not_of("\0 \t\r\n", str.length() - 1);
-        size_t endpos = str.find_last_not_of( std::string("\0 \t\r\n", 5) );
+        size_t endpos = str.find_last_not_of( std::string("\0 \t\r\n", PORT_NAME_SIZE-1) );
     
         if (endpos != std::string::npos) {
             str.resize(endpos + 1); // Trim everything after the last valid character
