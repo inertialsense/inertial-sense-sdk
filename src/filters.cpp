@@ -498,7 +498,7 @@ static void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 dvel, imui_t 
 
 
 #if 0
-void integrateDeltaThetaVelRoscoe(
+static void integrateDeltaThetaVelRoscoe(
     pimu_t *output, 
     imu_t *imu, 
     imu_t *imuLast,     
