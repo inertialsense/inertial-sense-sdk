@@ -950,6 +950,8 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
         else if (targetName == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
         else if (targetName == "CXD1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
         else if (targetName == "CXD2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
+        else if (targetName == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);        // TODO: Remove this 06/30/2027 - obsoleted by CXD1
+        else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);        // TODO: Remove this 06/30/2027 - obsoleted by CXD2
         else if (targetName == "SEPT") setTarget(fwUpdate::TARGET_SEPTENTRIO);
         else {
             handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT)", targetName.c_str());
