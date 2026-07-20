@@ -59,12 +59,6 @@ private:
     /** Make this private for our singleton pattern */
     ~CustomVirtualPortFactory() = default;
 
-    /** Demonstrates optional methods for the base_port hooks here, as opposed to within the base_port channel implementation;
-     * for this port we have a validation_ but not an open_
-     */
-    static int validate_port(port_handle_t port) { return CustomVirtualPortFactory::getInstance().validatePort(portName(port), portType(port)); }
-    //for example, static int open_port(port_handle_t port) { return serialPortOpen(port, SERIAL_PORT(port)->portName, SERIAL_PORT(port)->baudRate, SERIAL_PORT(port)->blocking); }
-
 };
 
 

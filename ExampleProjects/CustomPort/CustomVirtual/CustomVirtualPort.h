@@ -72,7 +72,8 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
 static int customPortFree(port_handle_t port);
 static int customPortAvailable(port_handle_t port);
 static const char* customPortName(port_handle_t port);
-
+static int customPortValidate(port_handle_t port);
+    
 /** Other internal support functions, not hooked to the base_port API
  */
 void initCustomPorts();

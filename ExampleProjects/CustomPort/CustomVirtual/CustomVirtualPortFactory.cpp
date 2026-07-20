@@ -31,6 +31,7 @@
  * @brief  Required minimum method, validates name and type, locates and/or instantiates new port
  */
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType) {
+    /** Calls the port factory validation, prior to binding, to make sure we can bind */
     if (!validatePort(pName, pType))
         return nullptr;
    
@@ -53,12 +54,11 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
     port_handle_t port = (port_handle_t) customPort;
 
     /** Open and validate and configure the port as needed for the port implementation here; in this virtual port
-     * example, do not need to open or configure
+     * example, do not need to open or configure, but we use the port's own validation method
      */
-    customPort->base.portValidate = CustomVirtualPortFactory::validate_port;
     portValidate(port);
        
-    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Allocated new comm port '%s'", portName(port));
+    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bound new comm port '%s'", portName(port));
     return port;
 }
 
@@ -100,9 +100,6 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
         log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port name validation failed: '%s'", pName.c_str() );
         return false;
     }
-    
-    /** Add here any other custom validation that could/should be done on this port type
-     */
      
     return true;
 }
