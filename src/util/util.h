@@ -223,6 +223,42 @@ namespace utils {
         DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
     };
 
+    /**
+     * Renders the type-major-minor portion of a packed hardware id as
+     * a printable string, e.g. `"IMX-5.0"`, `"GPX-1.0"`, `"UBX-5.9"`.
+     *
+     * Decodes via `DECODE_HDW_TYPE` / `DECODE_HDW_MAJOR` /
+     * `DECODE_HDW_MINOR` and maps the type field through the same
+     * type-name table `getHardwareAsString` uses. Unknown types
+     * render as `"???-<major>.<minor>"`.
+     *
+     * The packed `uint16_t` form does not carry the sub-rev bytes
+     * (`hardwareVer[2..3]`) — those come from a `dev_info_t`. Use
+     * `getHardwareAsString(devInfo, true)` when you need the sub-rev.
+     *
+     * @param hdwId  Packed hardware id (`is_hardware_t`), typically
+     *               obtained via `ENCODE_HDW_ID` or
+     *               `DECODE_UNIQUE_ID_TO_HDW_ID`.
+     * @return       String of the form `"<TYPE>-<major>.<minor>"`.
+     */
+    std::string hdwIdToString(uint16_t hdwId);
+
+    /**
+     * Composes the canonical "device-id" display string from a packed
+     * hardware id and a serial number, of the form
+     * `"<hdwIdString>::SN<serial>"` (e.g. `"IMX-5.0::SN519465"`).
+     *
+     * This is the canonical builder used by Logalyzer's `SeriesId` and
+     * any other call site that wants a stable, parseable device label.
+     * Inlining the format string at call sites is discouraged — call
+     * this so the format stays consistent.
+     *
+     * @param hdwId   Packed hardware id (`is_hardware_t`).
+     * @param serial  Serial number; rendered as decimal.
+     * @return        `"<hdwIdString>::SN<serial>"`.
+     */
+    std::string deviceIdString(uint16_t hdwId, uint64_t serial);
+
     std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
     std::string getHardwareAsString(is_hardware_t hdwId);
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");

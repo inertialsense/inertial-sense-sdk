@@ -90,14 +90,15 @@ void serializeHeader(uint8_t out[IS_LOG_IDX_HEADER_SIZE],
     // out[44..63] left zero from memset.
 }
 
-IsLogIndexResult parseHeader(const uint8_t in[IS_LOG_IDX_HEADER_SIZE],
-                              is_log_idx_header_t& out) noexcept {
+ISExpected<is_log_idx_header_t> parseHeader(
+    const uint8_t in[IS_LOG_IDX_HEADER_SIZE]) noexcept {
     // First 4 bytes are the v1/v2 discriminator. v1 had no magic; its
     // first 4 bytes are the start of the first record's u32 `time`
     // field, which is essentially never going to read as "ISIX" by
     // accident. So: magic mismatch → assume v1.
     if (in[0] != 'I' || in[1] != 'S' || in[2] != 'I' || in[3] != 'X') {
-        return IsLogIndexResult::LegacyFormat;
+        return fail(ISErrorCode::LegacyFormat,
+                    "v1 .idx — no v2 magic at offset 0");
     }
 
     is_log_idx_header_t hdr{};
@@ -119,15 +120,16 @@ IsLogIndexResult parseHeader(const uint8_t in[IS_LOG_IDX_HEADER_SIZE],
     std::memcpy(hdr.reserved, in + 44, sizeof(hdr.reserved));
 
     if (hdr.version != IS_LOG_IDX_VERSION_V2) {
-        return IsLogIndexResult::Unsupported;
+        return fail(ISErrorCode::Unsupported,
+                    "magic OK but version != 2 (probably v3+ written by newer SDK)");
     }
     if (hdr.header_size < IS_LOG_IDX_HEADER_SIZE) {
         // A v2 reader REQUIRES at least 64 bytes of header. Less than
         // that means the bytes are corrupted or truncated mid-write.
-        return IsLogIndexResult::Corrupted;
+        return fail(ISErrorCode::Corrupted,
+                    "header_size < 64 — corrupted header");
     }
-    out = hdr;
-    return IsLogIndexResult::Ok;
+    return hdr;
 }
 
 void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_SIZE],
@@ -152,43 +154,44 @@ is_log_idx_record_v2_t parseRecord(
 
 // ----- cISLogFileBase wrappers ---------------------------------------------
 
-IsLogIndexResult writeHeader(cISLogFileBase& file, const is_log_idx_header_t& hdr) {
+ISExpected<void> writeHeader(cISLogFileBase& file, const is_log_idx_header_t& hdr) {
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     serializeHeader(buf, hdr);
     const std::size_t written = file.write(buf, IS_LOG_IDX_HEADER_SIZE);
     if (written != IS_LOG_IDX_HEADER_SIZE) {
-        return IsLogIndexResult::Io;
+        return fail(ISErrorCode::Io, "short write on .idx header");
     }
-    return IsLogIndexResult::Ok;
+    return {};
 }
 
-IsLogIndexResult writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t& rec) {
+ISExpected<void> writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t& rec) {
     uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
     serializeRecord(buf, rec);
     const std::size_t written = file.write(buf, IS_LOG_IDX_RECORD_V2_SIZE);
     if (written != IS_LOG_IDX_RECORD_V2_SIZE) {
-        return IsLogIndexResult::Io;
+        return fail(ISErrorCode::Io, "short write on .idx record");
     }
-    return IsLogIndexResult::Ok;
+    return {};
 }
 
-IsLogIndexResult readHeader(cISLogFileBase& file, is_log_idx_header_t& out) {
+ISExpected<is_log_idx_header_t> readHeader(cISLogFileBase& file) {
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     const std::size_t got = file.read(buf, IS_LOG_IDX_HEADER_SIZE);
     if (got < IS_LOG_IDX_HEADER_SIZE) {
-        return IsLogIndexResult::Truncated;
+        return fail(ISErrorCode::Truncated,
+                    "fewer than 64 bytes available — truncated or empty .idx");
     }
-    return parseHeader(buf, out);
+    return parseHeader(buf);
 }
 
-IsLogIndexResult readRecord(cISLogFileBase& file, is_log_idx_record_v2_t& out) {
+ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file) {
     uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
     const std::size_t got = file.read(buf, IS_LOG_IDX_RECORD_V2_SIZE);
     if (got < IS_LOG_IDX_RECORD_V2_SIZE) {
-        return IsLogIndexResult::Truncated;
+        return fail(ISErrorCode::Truncated,
+                    "short read on .idx record");
     }
-    out = parseRecord(buf);
-    return IsLogIndexResult::Ok;
+    return parseRecord(buf);
 }
 
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
