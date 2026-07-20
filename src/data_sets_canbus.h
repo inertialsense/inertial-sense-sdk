@@ -231,20 +231,20 @@ typedef union PACKED
 {
     is_can_time time;                          //!< GMT week/time-of-week
     is_can_ins_status insstatus;               //!< INS/hardware status flags
-    is_can_ins_euler euler;                    //!< Euler angles (NED)
+    is_can_ins_euler euler;                    //!< Euler angles, radians (NED)
     is_can_ins_quatn2b quatn2b;                //!< Quaternion body rotation (NED)
     is_can_ins_quate2b quate2b;                //!< Quaternion body rotation (ECEF)
-    is_can_uvw uvw;                            //!< Body-frame velocity
-    is_can_ve ve;                              //!< ECEF velocity
-    is_can_ins_lat lat;                        //!< WGS84 latitude
-    is_can_ins_lon lon;                        //!< WGS84 longitude
-    is_can_ins_alt alt;                        //!< WGS84 altitude + GNSS status
-    is_can_north_east ne;                      //!< North/East offset from reference LLA
-    is_can_down down;                          //!< Down offset from reference LLA + INS status
-    is_can_ecef_x ecefx;                       //!< ECEF X position
-    is_can_ecef_y ecefy;                       //!< ECEF Y position
-    is_can_ecef_z ecefz;                       //!< ECEF Z position
-    is_can_msl msl;                            //!< Height above mean sea level
+    is_can_uvw uvw;                            //!< Body-frame velocity, m/s
+    is_can_ve ve;                              //!< ECEF velocity, m/s
+    is_can_ins_lat lat;                        //!< WGS84 latitude, degrees
+    is_can_ins_lon lon;                        //!< WGS84 longitude, degrees
+    is_can_ins_alt alt;                        //!< WGS84 altitude, meters + GNSS status
+    is_can_north_east ne;                      //!< North/East offset from reference LLA, meters
+    is_can_down down;                          //!< Down offset from reference LLA, meters + INS status
+    is_can_ecef_x ecefx;                       //!< ECEF X position, meters
+    is_can_ecef_y ecefy;                       //!< ECEF Y position, meters
+    is_can_ecef_z ecefz;                       //!< ECEF Z position, meters
+    is_can_msl msl;                            //!< Height above mean sea level, meters
     is_can_preint_imu_px pimupx;               //!< Preintegrated IMU, X axis
     is_can_preint_imu_qy pimuqy;                //!< Preintegrated IMU, Y axis
     is_can_preint_imu_rz pimurz;                //!< Preintegrated IMU, Z axis
@@ -253,7 +253,7 @@ typedef union PACKED
     is_can_dual_imu_rz dimurz;                  //!< Dual-rate IMU, Z axis
     is_can_gnss_pos_status gnsspos;             //!< GNSS position fix status
     is_can_gnss_rtk_rel rtkrel;                 //!< RTK relative-positioning quality metrics
-    is_can_roll_rollRate rollrollrate;          //!< INS roll + per-IMU roll rates
+    is_can_roll_rollRate rollrollrate;          //!< INS roll + per-IMU roll rates, radians / radians per second
 } is_can_payload;
 
 
@@ -339,10 +339,10 @@ typedef union PACKED
 {
     is_canfd_ins1           ins1;       //!< INS-1 fields
     is_canfd_ins2           ins2;       //!< NED quaternion
-    is_canfd_ins3           ins3;       //!< MSL altitude
-    is_canfd_ins4           ins4;       //!< ECEF quaternion/velocity/position
-    is_canfd_pimu           pimu;       //!< Preintegrated IMU
-    is_canfd_imu            imu;        //!< IMU angular rate/acceleration/status
+    is_canfd_ins3           ins3;       //!< MSL altitude, meters
+    is_canfd_ins4           ins4;       //!< ECEF quaternion, velocity (m/s), and position (meters)
+    is_canfd_pimu           pimu;       //!< Preintegrated IMU (delta theta radians, delta velocity m/s)
+    is_canfd_imu            imu;        //!< IMU angular rate (radians/second), acceleration (m/s^2), and status
     is_canfd_gnss_pos       gnsspos;    //!< GNSS position fix status
     is_canfd_gnss_rtk_rel   rtkrel;     //!< RTK relative-positioning quality metrics
 } is_canfd_payload;
