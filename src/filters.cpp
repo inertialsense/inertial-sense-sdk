@@ -375,7 +375,7 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
     //  static ixVector3 veloc_last = { 0 };
     //  static ixVector3 delta_alpha_last = { 0 };
     //  static ixVector3 delta_veloc_last = { 0 };
-    //  output->dt += integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last);
+    //  integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last, dti);
 }
 
 /** 
@@ -498,7 +498,7 @@ static void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 dvel, imui_t 
 
 
 #if 0
-float integrateDeltaThetaVelRoscoe(
+void integrateDeltaThetaVelRoscoe(
     pimu_t *output, 
     imu_t *imu, 
     imu_t *imuLast,     
@@ -506,10 +506,10 @@ float integrateDeltaThetaVelRoscoe(
     ixVector3 veloc_last,
     ixVector3 delta_alpha_last,
     ixVector3 delta_veloc_last
+    float dt;
 )
 {
     ixVector3 tmp3;
-    float dt = (float)(imu->time - imuLast->time);
         
     // Roscoe (EQ-32) coning integral
     ixVector3 term1;
@@ -544,11 +544,6 @@ float integrateDeltaThetaVelRoscoe(
     add_Vec3_Vec3(output->uvw, output->uvw, term2);                            //...                ...   +[(1/2)*(veloc_last+(1/6)*delta_veloc_last)><delta_alpha]
     cpy_Vec3_Vec3(veloc_last, veloc);                                        //veloc_last        <-- veloc           {age veloc}
     cpy_Vec3_Vec3(delta_veloc_last, delta_veloc);                            //delta_veloc_last  <-- delta_veloc     {age delta_veloc}
-    
-    // Update history
-    copyImu(imuLast, imu);
-    
-    return dt;
 }
 #endif
 
