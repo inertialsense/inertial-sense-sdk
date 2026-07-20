@@ -89,9 +89,18 @@ bool CustomVirtualPortFactory::releasePort(port_handle_t port) {
 bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t pType) {
     /** Check port type to make sure it is allowed, in this case both these types
      */
-    if (pType != (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) )           
-            return false;   // we can only validate this port type - all others fail
-        
+    if (pType != (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) {
+        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port type validation failed: %d", pType );
+        return false;   // we can only validate this port type - all others fail
+    }
+
+    /** Check port name to make sure it would be found, matching the naming described in the custom port definition */
+    const std::regex pattern("^TEST[0-5]$");
+    if (! std::regex_match(pName, pattern) ) {
+        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port name validation failed: '%s'", pName.c_str() );
+        return false;
+    }
+    
     /** Add here any other custom validation that could/should be done on this port type
      */
      
@@ -107,33 +116,9 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
 
     log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Locating ports with regex pattern '%s'", pattern.c_str());
 
-    /** Call user implemented function to populate portNames as present on system; can use count returned if desired
+    /** User implementation to populate names of ports as present on system
      */
-    getComPorts(portNames);
-
-    /** For each port that is found by name matching search pattern, validate it and call user-defined callback function
-     */
-    for (auto& name : portNames) {
-        auto match = std::regex_match(name, matchPattern);
-        if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
-
-            //debug
-            std::cout << "callback for this port " << name.length() << std::endl;
-            //
-            
-            portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
-        }
-    }
-}
-
-
-/**
- * @brief Populates a vector of string identifiers for all available virtual ports from CustomVirtualPorts.
- * @param portNames a reference to a vector of strings, which will be populated with names identifiers of available ports
- * @return the number of ports found on the host
- */
-int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
-{
+    std::vector<std::string> portNames = {};
     portNames.clear();
     portNames.resize(NUM_COM_PORTS);
 
@@ -169,6 +154,18 @@ int CustomVirtualPortFactory::getComPorts(std::vector<std::string>& portNames)
         ++i;
     }
 
-    return portNames.size();
-} //getComPorts
+    /** For each port that is found by name matching search pattern, validate it and call user-defined callback function
+     */
+    for (auto& name : portNames) {
+        auto match = std::regex_match(name, matchPattern);
+        if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
+
+            //debug
+            std::cout << "callback for this port " << name.length() << std::endl;
+            //
+            
+            portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
+        }
+    }
+} //locatePorts
 

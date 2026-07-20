@@ -37,6 +37,14 @@ public:
     CustomVirtualPortFactory(CustomVirtualPortFactory const &) = delete;
     CustomVirtualPortFactory& operator=(CustomVirtualPortFactory const&) = delete;
 
+    /** We are using virtual ports, so rather than an external driver init process we rely on, we init the ports
+     * here in the constructor */
+    CustomVirtualPortFactory() {
+        /** This init routine assigns the base port functions of the underlying port implementation
+         */
+        initCustomPorts();
+    }
+    
     /**
      * These four functions will be required for your implementation, can be 
      * defined in your .cpp file for this class 
@@ -48,24 +56,8 @@ public:
 
 
 private:
-    /** Make these private for our singleton pattern */
-    CustomVirtualPortFactory() = default;
+    /** Make this private for our singleton pattern */
     ~CustomVirtualPortFactory() = default;
-
-    /** These are the possible names allowed for identifying the base ports of this port factory
-     * and users must implement a function to populate according to system setup
-     */
-    std::vector<std::string> portNames = {};
-
-    /**
-     * An internal static function which identifies all available serial ports on the host device. It populates a referenced
-     * std::vector<std::string> with their names, as suitable identifiers. This does NOT do any port_handle allocation, validation,
-     * or other operations necessary to USE the port - it merely identifies them.
-     * @param portNames a reference to a vector of strings which will be cleared, and populated with virtual ports known to
-     *  the application.
-     * @return the number of port names populated into the vector.
-     */
-    static int getComPorts(std::vector<std::string>& portNames);   
 
     /** Demonstrates optional methods for the base_port hooks here, as opposed to within the base_port channel implementation;
      * for this port we have a validation_ but not an open_

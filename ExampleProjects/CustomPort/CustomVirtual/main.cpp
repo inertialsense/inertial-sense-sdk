@@ -45,14 +45,11 @@ int main(int argc, char* argv[])
 
     printf("Attempting to allocate and open virtual port %s\r\n", argv[1]);
 
-    /** This init routine assigns the base port functions of the underlying port implementation
-     */
-    initCustomPorts();
     
     /** STEP 7: Initialize and open comms port, which is virtual loopback in this case */
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
 
-    // Singleton PortManager, but we'll make a local reference, and we register the virtual port factory
+    /** Singleton PortManager, but we'll make a local reference, and we register the virtual port factory */
     PortManager& pm = PortManager::getInstance();
     pm.addPortFactory(&vpf);
 
@@ -66,7 +63,7 @@ int main(int argc, char* argv[])
         return -2;
     }
 
-    // Binding a port does not open a port.. so let's open it using base_port functions
+    /** Binding a port does not open a port.. so let's open it using base_port functions */
     if (!portIsOpened(port) && (portOpen(port) != PORT_ERROR__NONE)) {
         printf("Failed to open port\r\n");
         return -3;
