@@ -568,7 +568,7 @@ void RelayPortFactory::tick() {
             RelayHost& host = *hostPtr;
             if (!host.enabled) continue;
             auto silentMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastContact).count();
-            if (silentMs > OFFLINE_EVICT_MS && (!host.devices.empty() || !host.knownPortUrls.empty())) {
+            if (silentMs > self.offlineEvictMs_ && (!host.devices.empty() || !host.knownPortUrls.empty())) {
                 log_warn(IS_LOG_PORT_FACTORY,
                          "RelayPortFactory: relay '%s' silent %lldms; evicting %zu port(s)",
                          host.url.c_str(), (long long)silentMs, host.knownPortUrls.size());
@@ -607,12 +607,15 @@ std::chrono::milliseconds RelayPortFactory::reconnectInterval(
     auto silentMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastContact).count();
     // Healthy / recently-lost (still inside the eviction grace): normal cadence so a brief
     // blip recovers quickly.
-    if (silentMs < OFFLINE_EVICT_MS) {
+    if (silentMs < offlineEvictMs_) {
         return pollInterval_;
     }
-    // Lost: grow ~ one step per minute, capped at LOST_BACKOFF_MAX_MS (reached by ~10 min).
+    // Lost: grow ~ one step per minute, capped at LOST_BACKOFF_MAX_MS (60s). With the default
+    // lostBackoffBaseMs_ (6000ms): 6s, 12s, ... -> 60s cap, reached by ~10 min lost. Tests may
+    // override the base via setLostBackoffBaseMs() for a faster cadence; the cap and the
+    // one-step-per-minute growth shape are unaffected.
     int64_t minutesLost = silentMs / 60000;
-    int64_t backoffMs = 6000 * (minutesLost + 1);   // 6s, 12s, ... -> 60s
+    int64_t backoffMs = lostBackoffBaseMs_ * (minutesLost + 1);
     if (backoffMs > LOST_BACKOFF_MAX_MS) backoffMs = LOST_BACKOFF_MAX_MS;
     return std::chrono::milliseconds(backoffMs);
 }
@@ -686,7 +689,7 @@ void RelayPortFactory::discoverRelayHostsViaMdns(
         RelayHost& host = *it->second;
         const bool recordGone = host.viaMdns && advertisedUrls.find(host.url) == advertisedUrls.end();
         auto silentMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - host.lastContact).count();
-        if (recordGone && !host.streamConnected.load() && silentMs > OFFLINE_EVICT_MS) {
+        if (recordGone && !host.streamConnected.load() && silentMs > offlineEvictMs_) {
             log_info(IS_LOG_PORT_FACTORY,
                      "RelayPortFactory: mDNS relay host '%s' announcement expired; dropping (%zu port(s))",
                      host.url.c_str(), host.knownPortUrls.size());

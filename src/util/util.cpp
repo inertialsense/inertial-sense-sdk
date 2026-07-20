@@ -216,19 +216,44 @@ std::string utils::did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, in
     return std::string(buf);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
-    // hardware type & version — resolved via the canonical tables in data_sets.c.
-    const char* typeName = "\?\?\?";
-    const uint8_t t = devInfo.hardwareType;
-    if (t > 0 && t < IS_HARDWARE_TYPE_COUNT) {
-        typeName = g_isHardwareTypeNames[t];
-    } else if (t > IS_HDW_TYPE_PERIPHERAL) {
-        const int peripheralIdx = static_cast<int>(t) - IS_HDW_TYPE_PERIPHERAL - 1;
+namespace {
+
+// Canonical type-name lookup for a hardware-type byte. Sourced from the
+// tables in data_sets.c (g_isHardwareTypeNames + g_isGnssHardwareNames)
+// so any new hardware type added there flows through automatically.
+// Type 0 (UNKNOWN) renders as "???" rather than the table's "UNKNOWN"
+// to preserve the legacy display string used by hdwIdToString.
+const char* hardwareTypeName(uint8_t type) {
+    if (type > 0 && type < IS_HARDWARE_TYPE_COUNT) {
+        return g_isHardwareTypeNames[type];
+    }
+    if (type > IS_HDW_TYPE_PERIPHERAL) {
+        const int peripheralIdx = static_cast<int>(type) - IS_HDW_TYPE_PERIPHERAL - 1;
         if (peripheralIdx >= 0 && peripheralIdx < IS_HDW_GNSS_TYPE_COUNT) {
-            typeName = g_isGnssHardwareNames[peripheralIdx];
+            return g_isGnssHardwareNames[peripheralIdx];
         }
     }
-    std::string out = utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+    return "\?\?\?";
+}
+
+} // namespace
+
+std::string utils::hdwIdToString(uint16_t hdwId) {
+    return utils::string_format("%s-%u.%u",
+                                hardwareTypeName(static_cast<uint8_t>(DECODE_HDW_TYPE(hdwId))),
+                                static_cast<unsigned>(DECODE_HDW_MAJOR(hdwId)),
+                                static_cast<unsigned>(DECODE_HDW_MINOR(hdwId)));
+}
+
+std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
+    return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
+}
+
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
+    // Type-major-minor portion comes from the canonical packed-id renderer.
+    // The dev_info_t carries two extra sub-rev bytes (hardwareVer[2..3]) that
+    // the uint16 hdwId form can't represent — append them here when present.
+    std::string out = utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
     if (!showRev)
         return out;
 
@@ -240,23 +265,11 @@ std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) 
     return out;
 }
 
-// Renders just the type + major + minor captured in an encoded is_hardware_t.
-// Does not include hardwareVer[2]/hardwareVer[3] — those are not part of hdwId.
+// Type-major-minor only — the hdwId form doesn't carry hardwareVer[2..3].
+// Kept as an alias for callers that prefer the historical name; the
+// canonical builder is hdwIdToString.
 std::string utils::getHardwareAsString(is_hardware_t hdwId) {
-    const char *typeName = "\?\?\?";
-    switch (DECODE_HDW_TYPE(hdwId)) {
-        case IS_HARDWARE_TYPE_UINS:    typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX:     typeName = "IMX";  break;
-        case IS_HARDWARE_TYPE_GPX:     typeName = "GPX";  break;
-        case IS_HDW_GNSS_SONY:         typeName = "CXD";  break;
-        case IS_HDW_GNSS_UBLOX:        typeName = "UBX";  break;
-        case IS_HDW_GNSS_SEPTENTRIO:   typeName = "SEP";  break;
-        case IS_HDW_GNSS_STM_TESSIO:   typeName = "STM";  break;
-        default:                       typeName = "\?\?\?"; break;
-    }
-    return utils::string_format("%s-%u.%u", typeName,
-                                DECODE_HDW_MAJOR(hdwId),
-                                DECODE_HDW_MINOR(hdwId));
+    return hdwIdToString(static_cast<uint16_t>(hdwId));
 }
 
 bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
