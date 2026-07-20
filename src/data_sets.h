@@ -4315,7 +4315,7 @@ enum eGpxStatus
     GPX_STATUS_FATAL_UNHANDLED_INTERRUPT        = (int)5,   //!< Fatal cause: unhandled interrupt
     GPX_STATUS_FATAL_STACK_OVERFLOW             = (int)6,   //!< Fatal cause: stack overflow
     GPX_STATUS_FATAL_KERNEL_OOPS                = (int)7,   //!< Fatal cause: kernel oops
-    GPX_STATUS_FATAL_KERNEL_PANIC                = (int)8,   //!< Fatal cause: kernel panic
+    GPX_STATUS_FATAL_KERNEL_PANIC               = (int)8,   //!< Fatal cause: kernel panic
     GPX_STATUS_FATAL_UNALIGNED_ACCESS           = (int)9,   //!< Fatal cause: unaligned memory access
     GPX_STATUS_FATAL_MEMORY_ERROR               = (int)10,  //!< Fatal cause: memory error
     GPX_STATUS_FATAL_BUS_ERROR                  = (int)11,  //!< Fatal cause: bus error (bad pointer or malloc)
