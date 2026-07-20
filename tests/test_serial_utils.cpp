@@ -37,6 +37,13 @@ test_port_t g_testPorts[NUM_COM_PORTS] = {};
 std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
 
 #if PLATFORM_IS_EMBEDDED
+/**
+ * @brief Writes a buffer to a serial port in successive pieces of doubling size (1, 2, 4, 8, ... bytes), used to stress-test the serial driver with varying write sizes rather than a single contiguous write.
+ *
+ * @param port - serial port to write to
+ * @param buf - data buffer to write
+ * @param length - number of bytes in buf to write
+ */
 void serWriteInPieces(port_handle_t port, const unsigned char *buf, int length)
 {
     int left = length; 
@@ -170,17 +177,36 @@ static test_port_t* boundPorts[NUM_COM_PORTS] {
         #endif
 };
 
+/**
+ * @brief Reads data out of a test port's ring buffer. Registered as the port_handle_t's portRead callback for test ports.
+ *
+ * @param port - test port to read from (cast internally to test_port_t*)
+ * @param buf - [out] buffer to receive the read data
+ * @param len - maximum number of bytes to read into buf
+ *
+ * @return number of bytes actually read
+ */
 static int testPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
     return ringBufRead(&((test_port_t*)port)->portRingBuf, buf, len);
 }
 
+/**
+ * @brief Writes data into the ring buffer of the test port bound (loopback-paired) to the given port, simulating one test port transmitting to another. Registered as the port_handle_t's portWrite callback for test ports.
+ * @note On ring buffer overflow, throws std::out_of_range (except on IS_IMX/GPX_1 builds, which cannot support exceptions) in addition to returning an error code.
+ *
+ * @param port - source test port whose bound destination port (via boundPorts[]) will receive the data
+ * @param buf - data to write
+ * @param len - number of bytes in buf
+ *
+ * @return number of bytes written (equal to len) on success, or PORT_ERROR__WRITE_FAILURE if the destination ring buffer overflowed
+ */
 static int testPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
 {
     test_port_t* destPort = boundPorts[portId(port)];
 
     if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
-    {   
+    {
         // Buffer overflow
 #if !defined(IS_IMX) && !defined(GPX_1)
             throw new std::out_of_range(utils::string_format("testPortWrite ring buffer overflow on %s: %d !!!\n", portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
@@ -190,18 +216,42 @@ static int testPortWrite(port_handle_t port, const unsigned char* buf, unsigned 
     return len;
 }
 
+/**
+ * @brief Returns the amount of free space remaining in a test port's ring buffer. Registered as the port_handle_t's portFree callback for test ports.
+ *
+ * @param port - test port to query (cast internally to test_port_t*)
+ *
+ * @return number of free bytes available in the port's ring buffer
+ */
 static int testPortFree(port_handle_t port) {
     return ringBufFree(&((test_port_t*)port)->portRingBuf);
 }
 
+/**
+ * @brief Returns the number of unread bytes currently available in a test port's ring buffer. Registered as the port_handle_t's portAvailable callback for test ports.
+ *
+ * @param port - test port to query (cast internally to test_port_t*)
+ *
+ * @return number of bytes available to read
+ */
 static int testPortAvailable(port_handle_t port) {
     return ringBufUsed(&((test_port_t*)port)->portRingBuf);
 }
 
+/**
+ * @brief Returns a test port's name string. Registered as the port_handle_t's portName callback for test ports.
+ *
+ * @param port - test port to query (cast internally to test_port_t*)
+ *
+ * @return pointer to the port's null-terminated name string
+ */
 static const char* testPortName(port_handle_t port) {
     return (const char*)((test_port_t*)port)->name;
 }
 
+/**
+ * @brief Initializes the global g_testPorts array: assigns port numbers, marks ports 0 and 1 as loopback ports, wires up the testPortRead/Write/Free/Available/Name callbacks, marks each port valid and opened, and initializes each port's ring buffer and name string ("TESTn").
+ */
 void initTestPorts() {
     int portNum = 0;
     for (test_port_t& port : g_testPorts) {

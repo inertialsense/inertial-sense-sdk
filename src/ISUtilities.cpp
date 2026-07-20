@@ -48,11 +48,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 static const string s_base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/**
+ * @brief Checks whether a character is a valid Base64 alphabet character (alphanumeric, '+', or '/').
+ *
+ * @param c - character to test
+ *
+ * @return true if c is a Base64 alphabet character, false otherwise
+ */
 static inline bool is_base64(unsigned char c)
 {
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
+/**
+ * @brief Encodes a buffer of raw bytes into a Base64-encoded string, padding with '=' as needed.
+ *
+ * @param bytes_to_encode - pointer to the raw byte buffer to encode
+ * @param in_len - number of bytes in bytes_to_encode
+ *
+ * @return the Base64-encoded string
+ */
 string base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len)
 {
     string ret;
@@ -105,6 +121,13 @@ string base64Encode(const unsigned char* bytes_to_encode, unsigned int in_len)
 
 }
 
+/**
+ * @brief Decodes a Base64-encoded string back into its original byte sequence (returned as a string of raw bytes).
+ *
+ * @param encoded_string - Base64-encoded input string
+ *
+ * @return the decoded raw bytes, packed into a std::string
+ */
 string base64Decode(const string& encoded_string)
 {
     int in_len = (int)encoded_string.size();
@@ -157,6 +180,15 @@ string base64Decode(const string& encoded_string)
     return ret;
 }
 
+/**
+ * @brief Splits a string into substrings on a delimiter character and appends the pieces to a result vector.
+ *
+ * @param str - string to split
+ * @param delimiter - character used to separate fields
+ * @param result - [out] vector cleared and filled with the split substrings, in order
+ *
+ * @return number of substrings placed in result
+ */
 size_t splitString(const string str, const char delimiter, vector<string>& result)
 {
     result.clear();
@@ -169,7 +201,14 @@ size_t splitString(const string str, const char delimiter, vector<string>& resul
     return result.size();
 }
 
-void joinStrings(const vector<string>& v, const char c, string& result) 
+/**
+ * @brief Joins a vector of strings into a single string, inserting a separator character between elements.
+ *
+ * @param v - strings to join, in order
+ * @param c - separator character inserted between consecutive elements
+ * @param result - [out] cleared and set to the joined string
+ */
+void joinStrings(const vector<string>& v, const char c, string& result)
 {
     result.clear();
 
@@ -189,6 +228,11 @@ extern "C" {
 
 #if PLATFORM_IS_WINDOWS
 
+    /**
+     * @brief Windows implementation of POSIX usleep(): suspends the calling thread for the given number of microseconds using a waitable timer.
+     *
+     * @param usec - number of microseconds to sleep
+     */
     void usleep(__int64 usec)
     {
         HANDLE timer;
@@ -228,6 +272,12 @@ double current_timeSecD() {
 #endif
 }
 
+/**
+ * @brief Returns the current system time, in seconds.
+ * @note Platform behavior differs: on Windows this returns just the local wall-clock seconds field (0-59); on other platforms it returns whole seconds since the Unix epoch.
+ *
+ * @return current time in seconds (interpretation is platform-dependent, see note)
+ */
 unsigned int current_timeSec() {
 #if PLATFORM_IS_WINDOWS
     SYSTEMTIME st;
@@ -327,6 +377,11 @@ uint32_t current_uptimeMs() {
     return upTimeMs;
 }
 
+/**
+ * @brief Captures a timestamp (in microseconds) suitable for pairing with timerUsEnd() to measure elapsed time.
+ *
+ * @return platform-specific timestamp in microseconds
+ */
 uint64_t timerUsStart() {
 #if PLATFORM_IS_WINDOWS
     LARGE_INTEGER StartingTime;
@@ -340,6 +395,13 @@ uint64_t timerUsStart() {
 #endif
 }
 
+/**
+ * @brief Computes the elapsed time in microseconds since a timestamp previously captured by timerUsStart().
+ *
+ * @param start - timestamp returned by a prior call to timerUsStart()
+ *
+ * @return elapsed time in microseconds
+ */
 uint64_t timerUsEnd(uint64_t start)
 {
 
@@ -369,6 +431,12 @@ uint64_t timerUsEnd(uint64_t start)
 
 }
 
+/**
+ * @brief Captures a raw platform timer count suitable for pairing with timerRawEnd() to measure elapsed ticks.
+ * @note Unlike timerUsStart(), the returned value is not normalized to microseconds on Windows (it is raw QueryPerformanceCounter ticks); on non-Windows platforms it is microseconds since the epoch.
+ *
+ * @return platform-specific raw timer value
+ */
 uint64_t timerRawStart()
 {
 
@@ -388,6 +456,13 @@ uint64_t timerRawStart()
 
 }
 
+/**
+ * @brief Computes the elapsed raw timer value since a timestamp previously captured by timerRawStart().
+ *
+ * @param start - timestamp returned by a prior call to timerRawStart()
+ *
+ * @return elapsed value in the same (platform-specific) units returned by timerRawStart()
+ */
 uint64_t timerRawEnd(uint64_t start)
 {
 
@@ -409,6 +484,11 @@ uint64_t timerRawEnd(uint64_t start)
 
 }
 
+/**
+ * @brief Returns a monotonically increasing system tick count in milliseconds, used for measuring elapsed time.
+ *
+ * @return tick count in milliseconds, or 0 if the underlying clock call fails (non-Windows, non-embedded platforms)
+ */
 uint64_t getTickCount(void)
 {
 
@@ -429,6 +509,17 @@ uint64_t getTickCount(void)
 
 }
 
+/**
+ * @brief Advances a persistent phase accumulator by one time step and returns the resulting sine wave sample.
+ * @note The phase angle is unwrapped (wrapped back into [-pi, pi]) each call to prevent unbounded growth of *sig_gen.
+ *
+ * @param sig_gen - [in/out] pointer to the persistent phase angle (radians) accumulated across calls
+ * @param freqHz - signal frequency in Hz
+ * @param amplitude - output amplitude
+ * @param periodSec - time step duration in seconds since the last call
+ *
+ * @return the sine wave sample for this step, amplitude * sin(*sig_gen)
+ */
 float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSec)
 {
     *sig_gen += freqHz * periodSec * C_TWOPI_F;
@@ -442,6 +533,14 @@ float step_sinwave(float *sig_gen, float freqHz, float amplitude, float periodSe
     return amplitude * sinf(*sig_gen);
 }
 
+/**
+ * @brief Opens a file, using the secure fopen_s() on MSVC builds and fopen() elsewhere.
+ *
+ * @param path - path to the file to open
+ * @param mode - fopen-style mode string (e.g. "rb", "w")
+ *
+ * @return handle to the opened file, or NULL/0 on failure
+ */
 FILE* openFile(const char* path, const char* mode)
 {
     FILE* file = 0;
@@ -460,6 +559,12 @@ FILE* openFile(const char* path, const char* mode)
 
 }
 
+/**
+ * @brief Returns the platform's temporary directory path.
+ * @note On Windows the result is cached in a static buffer after the first call.
+ *
+ * @return pointer to a null-terminated string containing the temp directory path (including trailing separator)
+ */
 const char* tempPath()
 {
 
@@ -480,17 +585,40 @@ const char* tempPath()
 
 }
 
+/**
+ * @brief Returns a pointer to a static lookup table mapping a 4-bit nibble value (0-15) to its uppercase hex character.
+ *
+ * @return pointer to a 16-entry static array of hex digit characters ('0'-'9', 'A'-'F')
+ */
 const unsigned char* getHexLookupTable()
 {
     static const unsigned char s_hexLookupTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
     return s_hexLookupTable;
 }
 
+/**
+ * @brief Converts a single ASCII hex character ('0'-'9', 'A'-'F', or 'a'-'f') to its 4-bit numeric value.
+ * @note Uses bit arithmetic on the ASCII code rather than a table lookup; behavior is undefined if hex is not a valid hex digit.
+ *
+ * @param hex - ASCII character representing a hex digit
+ *
+ * @return numeric value (0-15) represented by hex
+ */
 uint8_t getHexValue(unsigned char hex)
 {
     return 9 * (hex >> 6) + (hex & 017);
 }
 
+/**
+ * @brief Creates and starts a new thread running the given function, using the platform's native threading API.
+ * @note On embedded platforms this is a no-op that returns NULLPTR (threading unsupported). On Linux with C++11 threads and glibc >= 2.12, threadName is applied to the OS thread via pthread_setname_np().
+ *
+ * @param function - thread entry point function, called with info as its argument
+ * @param info - opaque pointer passed to function when the thread starts
+ * @param threadName - optional human-readable name assigned to the thread (Linux/glibc only); may be ignored on other platforms
+ *
+ * @return opaque handle to the created thread, or NULLPTR on embedded platforms
+ */
 void* threadCreateAndStart(void(*function)(void*), void* info, const char* threadName)
 {
 #if PLATFORM_IS_EMBEDDED
@@ -514,6 +642,11 @@ void* threadCreateAndStart(void(*function)(void*), void* info, const char* threa
 #endif
 }
 
+/**
+ * @brief Waits for a thread to finish and releases the resources associated with its handle.
+ *
+ * @param handle - thread handle previously returned by threadCreateAndStart(); if NULL, the function does nothing
+ */
 void threadJoinAndFree(void* handle)
 {
     if (handle == NULL)
@@ -547,6 +680,11 @@ void threadJoinAndFree(void* handle)
 
 }
 
+/**
+ * @brief Allocates and initializes a new mutex using the platform's native synchronization primitive.
+ *
+ * @return opaque handle to the created mutex, or NULLPTR on embedded platforms (mutexes unsupported)
+ */
 void* mutexCreate(void)
 {
 
@@ -574,6 +712,11 @@ void* mutexCreate(void)
 
 }
 
+/**
+ * @brief Locks (acquires) a mutex previously created by mutexCreate(), blocking until it is available.
+ *
+ * @param handle - mutex handle returned by mutexCreate()
+ */
 void mutexLock(void* handle)
 {
 
@@ -597,6 +740,11 @@ void mutexLock(void* handle)
 
 }
 
+/**
+ * @brief Unlocks (releases) a mutex previously locked via mutexLock().
+ *
+ * @param handle - mutex handle returned by mutexCreate()
+ */
 void mutexUnlock(void* handle)
 {
 
@@ -620,6 +768,11 @@ void mutexUnlock(void* handle)
 
 }
 
+/**
+ * @brief Destroys a mutex and releases the resources associated with its handle.
+ *
+ * @param handle - mutex handle previously returned by mutexCreate(); if NULL, the function does nothing
+ */
 void mutexFree(void* handle)
 {
     if (handle == NULL)
@@ -649,6 +802,15 @@ void mutexFree(void* handle)
 
 }
 
+/**
+ * @brief Converts a calendar date (year/month/day) to a Modified Julian Date (MJD).
+ *
+ * @param year - calendar year (e.g. 2024)
+ * @param month - calendar month (1-12)
+ * @param day - day of month (1-31)
+ *
+ * @return the Modified Julian Date corresponding to the given calendar date
+ */
 int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day)
 {
     return
@@ -661,12 +823,28 @@ int32_t convertDateToMjd(int32_t year, int32_t month, int32_t day)
         - 2400000;
 }
 
+/**
+ * @brief Converts a GPS week number and time-of-week (in seconds) to a Modified Julian Date (MJD).
+ *
+ * @param gpsWeek - GPS week number (weeks since the GPS epoch, January 6, 1980)
+ * @param gpsSeconds - time of week in seconds
+ *
+ * @return the Modified Julian Date corresponding to the given GPS time
+ */
 int32_t convertGpsToMjd(int32_t gpsWeek, int32_t gpsSeconds)
 {
     uint32_t gpsDays = gpsWeek * 7 + (gpsSeconds / 86400);
     return convertDateToMjd(1980, 1, 6) + gpsDays;
 }
 
+/**
+ * @brief Converts a Modified Julian Date (MJD) to a calendar year, month, and day.
+ *
+ * @param mjd - Modified Julian Date to convert
+ * @param year - [out] calendar year
+ * @param month - [out] calendar month (1-12)
+ * @param day - [out] day of month (1-31)
+ */
 void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day)
 {
     int32_t j, c, y, m;
@@ -683,6 +861,14 @@ void convertMjdToDate(int32_t mjd, int32_t* year, int32_t* month, int32_t* day)
     *year = 100 * (c - 49) + y + j;
 }
 
+/**
+ * @brief Converts a GPS time-of-week value (in seconds) into hours, minutes, and seconds of the current day.
+ *
+ * @param gpsSeconds - time of week in seconds (values beyond a single day are reduced modulo 86400)
+ * @param hour - [out] hour of day (0-23)
+ * @param minutes - [out] minute of hour (0-59)
+ * @param seconds - [out] second of minute (0-59)
+ */
 void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_t* seconds)
 {
     // shave off days
@@ -694,6 +880,15 @@ void convertGpsToHMS(int32_t gpsSeconds, int32_t* hour, int32_t* minutes, int32_
     *seconds = gpsSeconds % 60;
 }
 
+/**
+ * @brief Computes the day of the week for a given calendar date using a Zeller's-congruence-style calculation.
+ *
+ * @param ul_year - calendar year
+ * @param ul_month - calendar month (1-12)
+ * @param ul_day - day of month (1-31)
+ *
+ * @return day of week as a 1-based index (numbering determined by the algorithm's internal constants)
+ */
 uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day)
 {
     uint32_t ul_week;
@@ -715,26 +910,43 @@ uint32_t dateToWeekDay(uint32_t ul_year, uint32_t ul_month, uint32_t ul_day)
 } // extern C
 #endif
 
+/**
+ * @brief Constructs a cMutex, creating the underlying platform mutex handle.
+ */
 cMutex::cMutex()
 {
     m_handle = mutexCreate();
 }
 
+/**
+ * @brief Destroys the cMutex, releasing the underlying platform mutex handle.
+ */
 cMutex::~cMutex()
 {
     mutexFree(m_handle);
 }
 
+/**
+ * @brief Locks the underlying platform mutex, blocking until it is available.
+ */
 void cMutex::Lock()
 {
     mutexLock(m_handle);
 }
 
+/**
+ * @brief Unlocks the underlying platform mutex.
+ */
 void cMutex::Unlock()
 {
     mutexUnlock(m_handle);
 }
 
+/**
+ * @brief Constructs a cMutexLocker that immediately locks the given mutex (RAII-style scoped lock).
+ *
+ * @param mutex - mutex to lock for the lifetime of this cMutexLocker; must not be NULLPTR
+ */
 cMutexLocker::cMutexLocker(cMutex* mutex)
 {
     assert(mutex != NULLPTR);
@@ -742,12 +954,19 @@ cMutexLocker::cMutexLocker(cMutex* mutex)
     m_mutex->Lock();
 }
 
+/**
+ * @brief Destroys the cMutexLocker, unlocking the mutex that was locked in the constructor.
+ */
 cMutexLocker::~cMutexLocker()
 {
     m_mutex->Unlock();
 }
 
-void advance_cursor(void) 
+/**
+ * @brief Prints a rotating ASCII "spinner" character (/, -, \, |) to stdout to indicate progress, advancing at most once every 50ms.
+ * @note Uses static state (last-update time and spinner position) shared across all calls, so it is not reentrant/thread-safe.
+ */
+void advance_cursor(void)
 {
     static unsigned int timeLast = current_timeMs();
     if (current_timeMs() - timeLast < 50U) return; 

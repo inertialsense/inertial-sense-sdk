@@ -18,6 +18,14 @@
 #define TIMECONV_DAYS_IN_NOV 30
 #define TIMECONV_DAYS_IN_DEC 31
 
+/**
+ * @brief Converts a GPS time of week to the UTC time-of-day fields (hour/minute/second/millisecond).
+ * @note Only the time-of-day fields are populated; date fields are not computed by this function.
+ *
+ * @param gpsTimeOfWeekMs - GPS time of week, in milliseconds
+ * @param gpsLeapS - GPS-UTC leap second offset to subtract, in seconds
+ * @param time - [out] receives the computed UTC hour, minute, second, and millisecond
+ */
 void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time)
 {
     int leapMs = gpsLeapS * 1000;
@@ -33,6 +41,16 @@ void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time)
     time->millisecond = todayMs % 1000;
 }
 
+/**
+ * @brief Converts GPS week and time of week to a UTC calendar date and time.
+ *
+ * @param gpsWeek - GPS week number
+ * @param gpsTowMs - GPS time of week, in milliseconds
+ * @param gpsLeapS - GPS-UTC leap second offset, in seconds
+ * @param date - [out] receives the computed UTC year, month, day, and weekday
+ * @param time - [out] receives the computed UTC hour, minute, second (millisecond is written to the separate milliseconds output)
+ * @param milliseconds - [out] receives the computed UTC millisecond
+ */
 void gpsWeekTowMsToUtcDateTime(uint32_t gpsWeek, uint32_t gpsTowMs, int gpsLeapS, utc_date_t *date, utc_time_t *time, uint32_t *milliseconds)
 {
     double julian = gpsToJulian(gpsWeek, gpsTowMs, gpsLeapS);
@@ -47,6 +65,14 @@ void gpsWeekTowMsToUtcDateTime(uint32_t gpsWeek, uint32_t gpsTowMs, int gpsLeapS
     date->weekday = gpsTowMsToUtcWeekday(gpsTowMs, gpsLeapS);
 }
 
+/**
+ * @brief Converts a UTC weekday and time-of-day to a GPS time of week in milliseconds.
+ *
+ * @param time - UTC hour, minute, second, and millisecond
+ * @param utcWeekday - UTC day index within the week (0 = start of week), matching the convention used by gpsTowMsToUtcWeekday()
+ * @param gpsTimeOfWeekMs - [out] receives the computed GPS time of week, in milliseconds
+ * @param gpsLeapS - GPS-UTC leap second offset to add, in seconds
+ */
 void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS)
 {
     int towMs = 
@@ -70,6 +96,14 @@ void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeek
     *gpsTimeOfWeekMs = towMs;
 }
 
+/**
+ * @brief Computes the UTC weekday index for a given GPS time of week.
+ *
+ * @param gpsTowMs - GPS time of week, in milliseconds
+ * @param leapS - GPS-UTC leap second offset to subtract, in seconds
+ *
+ * @return UTC day index within the week (0 = start of week)
+ */
 int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS)
 {
     int utcTowMs = gpsTowMs - (leapS*1000);
@@ -85,6 +119,10 @@ int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS)
 #if !PLATFORM_IS_EMBEDDED
 static std::string s_savedTZ;
 
+/**
+ * @brief Sets the process time zone to UTC, saving the previous TZ environment variable so it can be restored later by RevertUtcTimeZone().
+ * @note Only has effect on Linux (PLATFORM_IS_LINUX); on other non-embedded platforms this is a no-op.
+ */
 void SetUtcTimeZone()
 {
 #if PLATFORM_IS_LINUX
@@ -96,6 +134,10 @@ void SetUtcTimeZone()
 #endif
 }
 
+/**
+ * @brief Restores the process time zone that was saved by SetUtcTimeZone(), or unsets TZ if none was previously set.
+ * @note Only has effect on Linux (PLATFORM_IS_LINUX); on other non-embedded platforms this is a no-op.
+ */
 void RevertUtcTimeZone()
 {
 #if PLATFORM_IS_LINUX
@@ -113,7 +155,16 @@ void RevertUtcTimeZone()
 }
 #endif
 
-std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int leapSeconds) 
+/**
+ * @brief Converts GPS week and seconds of week to a UTC calendar date/time using std::tm and the C standard library time functions.
+ *
+ * @param gpsSecondsOfWeek - GPS time of week, in seconds
+ * @param gpsWeek - GPS week number since January 6th, 1980
+ * @param leapSeconds - GPS-UTC leap second offset to subtract, in seconds
+ *
+ * @return UTC date/time as std::tm
+ */
+std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int leapSeconds)
 {
     std::tm gpsEpoch = {};
     gpsEpoch.tm_year = 80;  // Year 1980
@@ -134,6 +185,15 @@ std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int
     return *utcTime;
 }
 
+/**
+ * @brief Converts a UTC std::tm date/time to GPS week and seconds of week.
+ * @note This function is roughly 8x more computationally intensive than UtcDateTimeToGpsTime() due to its use of std::mktime()/std::difftime().
+ *
+ * @param utcTime - UTC date/time
+ * @param leapSeconds - GPS-UTC leap second offset to add, in seconds
+ * @param gpsSecondsOfWeek - [out] receives the computed GPS time of week, in seconds
+ * @param gpsWeek - [out] receives the computed GPS week number since January 6th, 1980
+ */
 void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &gpsSecondsOfWeek, uint32_t &gpsWeek)
 {
     std::tm gpsEpoch = {};
@@ -163,6 +223,14 @@ void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &
 * return : gtime_t struct
 * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
 *-----------------------------------------------------------------------------*/
+/**
+ * @brief Converts a calendar date/time array to a gtime_t struct (integer seconds since the Unix epoch plus a fractional-second remainder).
+ * @note Valid only for years 1970-2099; returns a zeroed gtime_t if the year or month is out of range.
+ *
+ * @param ep - input array of 7 ints: {year, month, day, hour, minute, second, millisecond}
+ *
+ * @return gtime_t struct representing the given date/time
+ */
 gtime_t epochToTime(const int *ep)
 {
     const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
@@ -194,6 +262,15 @@ static const gtime_t gpsRefT0 = { 315964800, 0 };    // (gtime) gps reference ti
 *          int    *week     IO  week number in gps time (NULL: no output)
 * return : time of week in gps time (s)
 *-----------------------------------------------------------------------------*/
+/**
+ * @brief Converts a gtime_t struct to GPS week number and time of week, measured relative to the GPS epoch (January 6th, 1980).
+ * @note Does not apply a leap-second correction; the caller is responsible for ensuring t already represents GPS time if that distinction matters.
+ *
+ * @param t - input gtime_t struct
+ * @param week - [out] receives the GPS week number; pass NULL to skip this output
+ *
+ * @return GPS time of week, in seconds (including fractional seconds from t.sec)
+ */
 double timeToGpst(gtime_t t, int *week)
 {
     time_t sec = t.time - gpsRefT0.time;
@@ -203,6 +280,15 @@ double timeToGpst(gtime_t t, int *week)
     return (double)(sec - (double)w * C_SECONDS_PER_WEEK) + t.sec;
 }
 
+/**
+ * @brief Converts a UTC date/time array to GPS time of week (in milliseconds) and GPS week number.
+ * @note This function is equivalent to, and computationally faster than, stdUtcDateTimeToGpsTime().
+ *
+ * @param dateTime - input array of 7 ints at GMT time zone: {year, month, day, hour, minute, second, millisecond}
+ * @param leapSeconds - GPS-UTC leap second offset to add, in seconds
+ * @param gpsTowMs - [out] receives the computed GPS time of week, in milliseconds
+ * @param gpsWeek - [out] receives the computed GPS week number
+ */
 void UtcDateTimeToGpsTime(const int dateTime[7], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
 {
     gtime_t gtm = epochToTime(dateTime);
@@ -214,6 +300,19 @@ void UtcDateTimeToGpsTime(const int dateTime[7], int leapSeconds, uint32_t &gpsT
     gpsWeek = week;
 }
 
+/**
+ * @brief Converts a Julian date to a Gregorian calendar date and time-of-day.
+ * @note Millisecond values are rounded, and the rounding is cascaded upward through second, minute, hour, day, month, and year on rollover (e.g. .9996s rounds to the next second, with correct handling of month length and February leap years).
+ *
+ * @param julian - Julian date, in days
+ * @param year - [out] receives the computed calendar year
+ * @param month - [out] receives the computed calendar month (1-12)
+ * @param day - [out] receives the computed calendar day of month
+ * @param hour - [out] receives the computed hour
+ * @param minute - [out] receives the computed minute
+ * @param second - [out] receives the computed second
+ * @param millisecond - [out] receives the computed millisecond
+ */
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond) {
     // Adjust from Julian date to a more computationally-friendly epoch
     double jd = julian + 0.5;
@@ -303,6 +402,15 @@ void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day,
     }
 }
 
+/**
+ * @brief Converts GPS week and time of week to Unix epoch time.
+ *
+ * @param gpsWeek - GPS week number
+ * @param gpsTimeofWeekMs - GPS time of week, in milliseconds
+ * @param leapSeconds - GPS-UTC leap second offset to subtract, in seconds
+ *
+ * @return Unix time (seconds since January 1st, 1970 UTC), including a fractional-second component
+ */
 double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMs, uint8_t leapSeconds)
 {
     uint32_t gpsTow = gpsTimeofWeekMs / 1000;
@@ -316,6 +424,15 @@ double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMs, uint8_t leapSeconds
     return unixSeconds;
 }
 
+/**
+ * @brief Converts GPS week and time of week to a Julian date.
+ *
+ * @param gpsWeek - GPS week number
+ * @param gpsMilliseconds - GPS time of week, in milliseconds
+ * @param leapSeconds - GPS-UTC leap second offset to subtract, in seconds (18 seconds as of December 31, 2016)
+ *
+ * @return Julian date, in days
+ */
 double gpsToJulian(uint32_t gpsWeek, uint32_t gpsMilliseconds, uint32_t leapSeconds)
 {
     double gpsDays = (double)(gpsWeek * 7);

@@ -66,6 +66,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 /* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m) */
+/**
+ * @brief Converts an ECEF (earth-centered, earth-fixed) position to geodetic latitude, longitude, and altitude above the WGS-84 ellipsoid, using an iterative/closed-form solution selected at compile time by ECEF2LLA_METHOD.
+ * @note Includes numerical-stability handling near the poles, where the standard formulas become ill-conditioned.
+ *
+ * @param Pe - ECEF position [x, y, z] in meters
+ * @param LLA - [out] resulting geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ */
 void ecef2lla(const double *Pe, double *LLA)
 {
     int iter = 0;
@@ -222,6 +229,13 @@ void ecef2lla(const double *Pe, double *LLA)
 #endif
 }
 
+/**
+ * @brief Single-precision version of ecef2lla(): converts an ECEF (earth-centered, earth-fixed) position to geodetic latitude, longitude, and altitude above the WGS-84 ellipsoid.
+ * @note Includes numerical-stability handling near the poles, where the standard formulas become ill-conditioned.
+ *
+ * @param Pe - ECEF position [x, y, z] in meters
+ * @param LLA - [out] resulting geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ */
 void ecef2lla_f(const float *Pe, float *LLA)
 {
     int iter = 0;
@@ -381,6 +395,12 @@ void ecef2lla_f(const float *Pe, float *LLA)
 
 
 /* Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates */
+/**
+ * @brief Converts a geodetic latitude/longitude/altitude position (WGS-84) to an ECEF (earth-centered, earth-fixed) position.
+ *
+ * @param LLA - geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ * @param Pe - [out] resulting ECEF position [x, y, z] in meters
+ */
 void lla2ecef(const double *LLA, double *Pe)
 {
     //double e = 0.08181919084262;  // Earth first eccentricity: e = sqrt((R^2-b^2)/R^2);
@@ -413,6 +433,14 @@ void lla2ecef(const double *LLA, double *Pe)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
+/**
+ * @brief Converts a geodetic position to a local NED (north, east, down) offset relative to a reference geodetic position, using a flat-earth approximation scaled by the earth's radius at the reference latitude.
+ * @note Longitude difference is unwrapped to handle crossing the +/-180 degree boundary.
+ *
+ * @param llaRef - reference geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ * @param lla - geodetic position to convert [latitude (rad), longitude (rad), altitude (m)]
+ * @param result - [out] resulting local offset [north, east, down] in meters, relative to llaRef
+ */
 void lla2ned(ixVector3 llaRef, ixVector3 lla, ixVector3 result)
 {
     ixVector3 deltaLLA;
@@ -437,6 +465,14 @@ void lla2ned(ixVector3 llaRef, ixVector3 lla, ixVector3 result)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
+/**
+ * @brief Double-precision-input version of lla2ned(): converts a geodetic position to a local NED (north, east, down) offset relative to a reference geodetic position, using a flat-earth approximation.
+ * @note Longitude difference is unwrapped to handle crossing the +/-180 degree boundary.
+ *
+ * @param llaRef - reference geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ * @param lla - geodetic position to convert [latitude (rad), longitude (rad), altitude (m)]
+ * @param result - [out] resulting local offset [north, east, down] in meters, relative to llaRef
+ */
 void lla2ned_d(double llaRef[3], double lla[3], ixVector3 result)
 {
     ixVector3 deltaLLA;
@@ -459,6 +495,14 @@ void lla2ned_d(double llaRef[3], double lla[3], ixVector3 result)
  *  lla[0] = latitude (deg)
  *  lla[1] = longitude (deg)
  *  lla[2] = msl altitude (m)
+ */
+/**
+ * @brief Degrees variant of lla2ned_d(): converts a geodetic position (lat/lon in degrees) to a local NED (north, east, down) offset relative to a reference geodetic position, using a flat-earth approximation.
+ * @note Longitude difference is unwrapped (in degrees) to handle crossing the +/-180 degree boundary.
+ *
+ * @param llaRef - reference geodetic position [latitude (deg), longitude (deg), altitude (m)]
+ * @param lla - geodetic position to convert [latitude (deg), longitude (deg), altitude (m)]
+ * @param result - [out] resulting local offset [north, east, down] in meters, relative to llaRef
  */
 void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result)
 {
@@ -484,6 +528,13 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
  */
+/**
+ * @brief Converts a local NED (north, east, down) offset from a reference geodetic position back into an absolute geodetic position, the inverse of lla2ned().
+ *
+ * @param ned - local offset [north, east, down] in meters
+ * @param llaRef - reference geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ * @param result - [out] resulting absolute geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ */
 void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result)
 {
     ixVector3 deltaLLA;
@@ -502,6 +553,13 @@ void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result)
  *  lla[0] = latitude (rad)
  *  lla[1] = longitude (rad)
  *  lla[2] = msl altitude (m)
+ */
+/**
+ * @brief Double-precision-output version of ned2lla(): converts a local NED (north, east, down) offset from a reference geodetic position back into an absolute geodetic position.
+ *
+ * @param ned - local offset [north, east, down] in meters
+ * @param llaRef - reference geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ * @param result - [out] resulting absolute geodetic position [latitude (rad), longitude (rad), altitude (m)]
  */
 void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3])
 {
@@ -522,6 +580,13 @@ void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3])
 *  lla[1] = longitude (degrees)
 *  lla[2] = msl altitude (m)
 */
+/**
+ * @brief Degrees variant of ned2lla_d(): converts a local NED (north, east, down) offset from a reference geodetic position back into an absolute geodetic position with lat/lon in degrees.
+ *
+ * @param ned - local offset [north, east, down] in meters
+ * @param llaRef - reference geodetic position [latitude (deg), longitude (deg), altitude (m)]
+ * @param result - [out] resulting absolute geodetic position [latitude (deg), longitude (deg), altitude (m)]
+ */
 void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
 {
     double deltaLLA[3];
@@ -541,6 +606,13 @@ void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
  *  baroKPa = (kPa) barometric pressure in kilopascals
  *  return = (m) msl altitude in meters
  */
+/**
+ * @brief Estimates mean-sea-level altitude from barometric pressure using the standard atmosphere barometric formula.
+ *
+ * @param pKPa - barometric pressure in kilopascals
+ *
+ * @return estimated altitude above mean sea level in meters, or 0 if pKPa is non-positive
+ */
 f_t baro2msl(f_t pKPa)
 {
     if (pKPa <= _ZERO)
@@ -554,6 +626,14 @@ f_t baro2msl(f_t pKPa)
  *  Find linear distance between lat,lon,alt (rad,rad,m) coordinates.
  *
  *  return = (m) distance in meters
+ */
+/**
+ * @brief Computes the straight-line (3D) distance between two geodetic positions given in radians, by converting the second position into a local NED offset from the first and taking its magnitude.
+ *
+ * @param lla1 - first geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ * @param lla2 - second geodetic position [latitude (rad), longitude (rad), altitude (m)]
+ *
+ * @return distance between lla1 and lla2 in meters
  */
 f_t llaRadDistance(double lla1[3], double lla2[3])
 {
@@ -569,6 +649,14 @@ f_t llaRadDistance(double lla1[3], double lla2[3])
  *
  *  return = (m) distance in meters
  */
+/**
+ * @brief Computes the straight-line (3D) distance between two geodetic positions given in degrees, by converting the second position into a local NED offset from the first and taking its magnitude.
+ *
+ * @param lla1 - first geodetic position [latitude (deg), longitude (deg), altitude (m)]
+ * @param lla2 - second geodetic position [latitude (deg), longitude (deg), altitude (m)]
+ *
+ * @return distance between lla1 and lla2 in meters
+ */
 f_t llaDegDistance(double lla1[3], double lla2[3])
 {
     ixVector3 ned;
@@ -578,6 +666,13 @@ f_t llaDegDistance(double lla1[3], double lla2[3])
     return _SQRT(ned[0]*ned[0] + ned[1]*ned[1] + ned[2]*ned[2]);
 }
 
+/**
+ * @brief Converts a local NED (north, east, down) offset at a reference latitude into the corresponding delta latitude/longitude/altitude (radians, radians, meters), using a flat-earth approximation with the local radius of curvature.
+ *
+ * @param ned - local offset [north, east, down] in meters
+ * @param llaRef - reference geodetic position [latitude (rad), longitude (rad), altitude (m)] the NED offset is relative to
+ * @param deltaLLA - [out] resulting position delta [d-latitude (rad), d-longitude (rad), d-altitude (m)]
+ */
 void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA)
 {
     deltaLLA[0] =  ned[0] * INV_EARTH_RADIUS_F;
@@ -585,6 +680,13 @@ void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA)
     deltaLLA[2] = -ned[2];
 }
 
+/**
+ * @brief Double-precision version of ned2DeltaLla(): converts a local NED (north, east, down) offset at a reference latitude into the corresponding delta latitude/longitude/altitude (radians, radians, meters).
+ *
+ * @param ned - local offset [north, east, down] in meters
+ * @param llaRef - reference geodetic position [latitude (rad), longitude (rad), altitude (m)] the NED offset is relative to
+ * @param deltaLLA - [out] resulting position delta [d-latitude (rad), d-longitude (rad), d-altitude (m)]
+ */
 void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 {
     deltaLLA[0] = (double)(ned[0] * INV_EARTH_RADIUS_F);
@@ -592,6 +694,13 @@ void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
     deltaLLA[2] = (double)(-ned[2]);
 }
 
+/**
+ * @brief Degrees variant of ned2DeltaLla_d(): converts a local NED (north, east, down) offset at a reference latitude into the corresponding delta latitude/longitude (degrees) and altitude (meters).
+ *
+ * @param ned - local offset [north, east, down] in meters
+ * @param llaRef - reference geodetic position [latitude (deg), longitude (deg), altitude (m)] the NED offset is relative to
+ * @param deltaLLA - [out] resulting position delta [d-latitude (deg), d-longitude (deg), d-altitude (m)]
+ */
 void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 {
     deltaLLA[0] = (double)(ned[0] * INV_EARTH_RADIUS_F * C_RAD2DEG_F);
@@ -600,6 +709,12 @@ void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 }
 
 // Convert LLA from radians to degrees
+/**
+ * @brief Converts a latitude/longitude/altitude position from radians to degrees (altitude is passed through unchanged).
+ *
+ * @param result - [out] resulting position [latitude (deg), longitude (deg), altitude (m)]
+ * @param lla - input position [latitude (rad), longitude (rad), altitude (m)]
+ */
 void lla_Rad2Deg_d(double result[3], double lla[3])
 {
     result[0] = C_RAD2DEG * lla[0];
@@ -608,6 +723,12 @@ void lla_Rad2Deg_d(double result[3], double lla[3])
 }
 
 // Convert LLA from degrees to radians
+/**
+ * @brief Converts a latitude/longitude/altitude position from degrees to radians (altitude is passed through unchanged).
+ *
+ * @param result - [out] resulting position [latitude (rad), longitude (rad), altitude (m)]
+ * @param lla - input position [latitude (deg), longitude (deg), altitude (m)]
+ */
 void lla_Deg2Rad_d(double result[3], double lla[3])
 {
     result[0] = C_DEG2RAD * lla[0];
@@ -615,6 +736,14 @@ void lla_Deg2Rad_d(double result[3], double lla[3])
     result[2] = lla[2];
 }
 
+/**
+ * @brief Converts a latitude/longitude pair from degrees to radians and packs it with a passthrough altitude into a latitude/longitude/altitude array.
+ *
+ * @param result - [out] resulting position [latitude (rad), longitude (rad), altitude (m)]
+ * @param lat - latitude in degrees
+ * @param lon - longitude in degrees
+ * @param alt - altitude in meters, passed through unchanged
+ */
 void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt)
 {
     result[0] = C_DEG2RAD * lat;
@@ -627,6 +756,14 @@ void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt)
  *
  *  return 1 on success, 0 on failure.
  */
+/**
+ * @brief Checks whether a latitude/longitude pair (in degrees) falls within valid geographic bounds.
+ * @note Only latitude and longitude are range-checked; the altitude range check is present in the source but currently disabled.
+ *
+ * @param lla - geodetic position [latitude (deg), longitude (deg), altitude (m)] to validate
+ *
+ * @return 1 if latitude is within +/-90 degrees and longitude is within +/-180 degrees, 0 otherwise
+ */
 int llaDegValid(double lla[3])
 {
     return 
@@ -637,6 +774,14 @@ int llaDegValid(double lla[3])
 
 
 /* IGF-80 gravity model with WGS-84 ellipsoid refinement */
+/**
+ * @brief Computes local gravitational acceleration at a given latitude and altitude using the International Gravity Formula 1980 (IGF-80), refined with a WGS-84 free-air altitude correction.
+ *
+ * @param lat_rad - geodetic latitude in radians
+ * @param alt - altitude above the ellipsoid in meters
+ *
+ * @return local gravity magnitude in m/s^2
+ */
 float gravity_igf80(float lat_rad, float alt)
 {
     float g0, sinmu2;
@@ -684,6 +829,14 @@ float gravity_igf80(float lat_rad, float alt)
 
 
 /* Attitude quaternion for NED frame in ECEF */
+/**
+ * @brief Computes the attitude quaternion that rotates from the ECEF (earth-centered, earth-fixed) frame to the local NED (north, east, down) frame at a given latitude and longitude.
+ * @note Equivalent to (but faster than) building the Euler angles [0, -lat - pi/2, lon] and calling euler2quat().
+ *
+ * @param lat - geodetic latitude in radians
+ * @param lon - longitude in radians
+ * @param qe2n - [out] resulting rotation quaternion [w, x, y, z] from ECEF to NED
+ */
 void quat_ecef2ned(float lat, float lon, float *qe2n)
 {
     //eul[0] = 0.0f;
@@ -711,6 +864,14 @@ void quat_ecef2ned(float lat, float lon, float *qe2n)
 /*
 * Convert ECEF quaternion to NED euler at specified ECEF
 */
+/**
+ * @brief Converts a body attitude quaternion expressed with respect to ECEF (earth-centered, earth-fixed) into NED (north, east, down) Euler roll/pitch/yaw angles, given the vehicle's ECEF position.
+ * @note Internally converts ecef to geodetic LLA and delegates to qe2b2EulerNedLLA().
+ *
+ * @param eul - [out] resulting Euler angles [roll, pitch, yaw] in radians, body with respect to NED
+ * @param qe2b - body attitude quaternion [w, x, y, z] with respect to ECEF
+ * @param ecef - vehicle position in ECEF coordinates [x, y, z] meters, used to determine the local NED frame
+ */
 void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ecef)
 {
     ixVector3d lla;
@@ -801,7 +962,12 @@ void rangeBearing_from_lla(const ixVector3d lla1, const ixVector3d lla2, ixVecto
 }
 
 /* Coordinate transformation matrix from NED to ECEF frame */
-
+/**
+ * @brief Builds the 3x3 rotation matrix that transforms a vector from the local NED (north, east, down) frame to the ECEF (earth-centered, earth-fixed) frame at a given latitude/longitude.
+ *
+ * @param latlon - reference position [latitude (rad), longitude (rad)]
+ * @param R - [out] resulting 3x3 rotation matrix (row-major, 9 floats) from NED to ECEF
+ */
 void rotMat_ned2ecef(const double *latlon, float *R)
 {
     double Smu, Cmu, Sl, Cl;
@@ -824,6 +990,16 @@ void rotMat_ned2ecef(const double *latlon, float *R)
 }
 
 // vertVel is positive in the up direction
+/**
+ * @brief Converts ground speed, heading, and vertical velocity at a given position into a velocity vector expressed in ECEF (earth-centered, earth-fixed) coordinates.
+ * @note vertVel is positive in the up direction (opposite of the NED down convention used internally).
+ *
+ * @param gndSpeed - horizontal ground speed in m/s
+ * @param hdg - heading in radians, measured from north
+ * @param vertVel - vertical velocity in m/s, positive up
+ * @param lla - reference geodetic position [latitude (rad), longitude (rad), altitude (m)] used to build the local NED-to-ECEF rotation
+ * @param velEcef - [out] resulting velocity vector [x, y, z] in ECEF coordinates, m/s
+ */
 void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVel, const ixVector3d lla, ixVector3 velEcef)
 {
     ixVector3 velNed;
@@ -865,6 +1041,14 @@ static double leaps[MAXLEAPS + 1][7] = { /* leap seconds (y,m,d,h,m,s,utc-gpst) 
     {0}
 };
 
+/**
+ * @brief Converts a calendar epoch (year, month, day, hour, minute, second) to the internal gtime_t time representation (seconds since 1970-01-01 plus a fractional-second remainder).
+ * @note Valid for years 1970-2099; years outside that range, or an invalid month, yield a zero-initialized gtime_t.
+ *
+ * @param ep - calendar epoch array [year, month, day, hour, minute, second]
+ *
+ * @return equivalent gtime_t time
+ */
 gtime_t ISepoch2time(const double *ep)
 {
     const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
@@ -882,6 +1066,14 @@ gtime_t ISepoch2time(const double *ep)
     return time;
 }
 
+/**
+ * @brief Adds a number of seconds (possibly fractional) to a gtime_t time, normalizing the fractional-second remainder back into [0,1).
+ *
+ * @param t - base time
+ * @param sec - number of seconds to add (may be negative or fractional)
+ *
+ * @return t + sec as a normalized gtime_t
+ */
 gtime_t IStimeadd(gtime_t t, double sec)
 {
     double tt;
@@ -892,11 +1084,27 @@ gtime_t IStimeadd(gtime_t t, double sec)
     return t;
 }
 
+/**
+ * @brief Computes the difference between two gtime_t times, in seconds.
+ *
+ * @param t1 - first time
+ * @param t2 - second time
+ *
+ * @return t1 - t2, in seconds
+ */
 double IStimediff(gtime_t t1, gtime_t t2)
 {
     return ((double)(t1.time - t2.time)) + (t1.sec - t2.sec);
 }
 
+/**
+ * @brief Converts a UTC time to GPS time by adding the appropriate accumulated leap-second offset, looked up from the static leaps[] table.
+ * @note Times before the earliest table entry (or if the table has no applicable entry) are returned unchanged.
+ *
+ * @param t - UTC time
+ *
+ * @return equivalent GPS time
+ */
 gtime_t ISutc2gpst(gtime_t t)
 {
     int i;
@@ -909,6 +1117,15 @@ gtime_t ISutc2gpst(gtime_t t)
     return t;
 }
 
+/**
+ * @brief Converts a GPS week number and time-of-week (seconds) into a gtime_t time.
+ * @note sec values outside +/-1E9 are treated as 0 (guards against garbage input).
+ *
+ * @param week - GPS week number, relative to the GPS time epoch (1980-01-06)
+ * @param sec - time of week in seconds
+ *
+ * @return equivalent gtime_t time
+ */
 gtime_t ISgpst2time(int week, double sec)
 {
     gtime_t t = ISepoch2time(gpst0);
@@ -920,6 +1137,14 @@ gtime_t ISgpst2time(int week, double sec)
     return t;
 }
 
+/**
+ * @brief Converts a gtime_t GPS time into a GPS week number and time-of-week (seconds).
+ *
+ * @param t - GPS time
+ * @param week - [out] resulting GPS week number (may be NULL if not needed)
+ *
+ * @return time of week in seconds
+ */
 double IStime2gpst(gtime_t t, int *week)
 {
     gtime_t t0 = ISepoch2time(gpst0);

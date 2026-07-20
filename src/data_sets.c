@@ -19,6 +19,11 @@ const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT] = {"UBX", "CXD", "SEP"
 
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function
+/**
+ * @brief Reverses (byte-swaps) the 4 bytes at the given address in place, converting a 32-bit value between little-endian and big-endian byte order.
+ *
+ * @param ptr - [in/out] pointer to the 4-byte value whose bytes are reversed in place
+ */
 void flipFloat(uint8_t* ptr)
 {
     uint8_t tmp1 = *ptr++;
@@ -31,6 +36,13 @@ void flipFloat(uint8_t* ptr)
     *ptr = tmp4;
 }
 
+/**
+ * @brief Returns a byte-order-reversed copy of a 32-bit float, converting the value between little-endian and big-endian representation.
+ *
+ * @param val - value whose bytes are to be reversed
+ *
+ * @return copy of val with its 4 bytes in reversed order
+ */
 float flipFloatCopy(float val)
 {
     float flippedFloat;
@@ -47,6 +59,11 @@ float flipFloatCopy(float val)
     return flippedFloat;
 }
 
+/**
+ * @brief Reverses (byte-swaps) the two 32-bit words that make up a 64-bit double at the given address in place, converting the value between little-endian and big-endian byte order.
+ *
+ * @param ptr - [in/out] pointer to the 8-byte double value whose byte order is reversed in place
+ */
 void flipDouble(void* ptr)
 {
     const uint32_t* w = (const uint32_t*)(ptr);
@@ -60,6 +77,13 @@ void flipDouble(void* ptr)
     *(double*)ptr = u.v;
 }
 
+/**
+ * @brief Returns a byte-order-reversed copy of a 64-bit double, converting the value between little-endian and big-endian representation.
+ *
+ * @param val - value whose bytes are to be reversed
+ *
+ * @return copy of val with its 8 bytes in reversed order
+ */
 double flipDoubleCopy(double val)
 {
     union
@@ -73,6 +97,13 @@ double flipDoubleCopy(double val)
     return u2.v;
 }
 
+/**
+ * @brief Byte-swaps every 32-bit word in a buffer in place, converting the whole buffer between little-endian and big-endian representation.
+ * @note If dataLength is not a multiple of 4, the function is a no-op (data must be 4-byte aligned to swap endianness).
+ *
+ * @param data - [in/out] buffer of 32-bit words to be byte-swapped in place
+ * @param dataLength - length of data in bytes; must be a multiple of 4
+ */
 void flipEndianess32(uint8_t* data, int dataLength)
 {
     // data must be 4 byte aligned to swap endian-ness
@@ -90,6 +121,16 @@ void flipEndianess32(uint8_t* data, int dataLength)
     }
 }
 
+/**
+ * @brief Byte-swaps the 8-byte (double or 64-bit int) fields within a data buffer at the positions described by an offsets table, converting them between little-endian and big-endian representation.
+ * @note Each offset entry has its high bit (0x8000) tested to select the swap method: bit clear means the field is a double (flipDouble), bit set means it is treated as a raw 64-bit integer swap; the bit is then masked off and offset subtracted to get the field's byte position. Entries that land outside [0, dataLength-8] are skipped.
+ *
+ * @param data - [in/out] buffer whose 8-byte fields are byte-swapped in place
+ * @param dataLength - length of data in bytes
+ * @param offset - byte offset subtracted from each table entry to locate the field within data
+ * @param offsets - table of field offsets (optionally OR'd with 0x8000 to flag a raw 64-bit int instead of a double) to process
+ * @param offsetsLength - number of entries in offsets
+ */
 void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength)
 {
     uint16_t* doubleOffsetsEnd = offsets + offsetsLength;
@@ -114,6 +155,15 @@ void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
     }
 }
 
+/**
+ * @brief Byte-swaps (as 32-bit words) each string field within a data buffer at the positions described by an offset/length table, used to fix up embedded fixed-length string fields when a struct's endianness is converted.
+ *
+ * @param data - [in/out] buffer whose string fields are byte-swapped in place
+ * @param dataLength - length of data in bytes
+ * @param offset - byte offset subtracted from each table entry to locate the field within data
+ * @param offsets - table of (byte offset, string length) pairs describing each string field to process
+ * @param offsetsLength - number of uint16_t entries in offsets (2 per string field)
+ */
 void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength)
 {
     uint16_t* stringOffsetsEnd = offsets + offsetsLength;
@@ -135,6 +185,15 @@ void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 #pragma warning(disable: 4267)
 #endif
 
+/**
+ * @brief Looks up the table of byte offsets to the double-precision (8-byte) fields within a given data set's struct, for use when byte-swapping that data set's endianness.
+ * @note The returned pointer refers to a static per-dataId table; the leading element (element count) is consumed internally and not part of the returned array.
+ *
+ * @param dataId - data set identifier (eDataIDs) to look up
+ * @param offsetsLength - [out] number of entries in the returned offsets array
+ *
+ * @return pointer to the static array of double-field byte offsets for dataId, or NULL if dataId is out of range or has no double fields
+ */
 uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 {
     /* Offset arrays contain:
@@ -418,6 +477,15 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 #pragma warning(pop)
 #endif
 
+/**
+ * @brief Looks up the table of (byte offset, length) pairs describing the string fields within a given data set's struct, for use when byte-swapping that data set's endianness.
+ * @note The returned pointer refers to a static per-dataId table; the leading element (pair count) is consumed internally and not part of the returned array.
+ *
+ * @param dataId - data set identifier (eDataIDs) to look up
+ * @param offsetsLength - [out] number of (offset, length) pairs in the returned array
+ *
+ * @return pointer to the static array of string field offset/length pairs for dataId, or NULL if dataId is out of range or has no string fields
+ */
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 {
     /* Offset arrays contain:
@@ -603,6 +671,14 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
     return 0;
 }
 
+/**
+ * @brief Computes a simple XOR checksum over a buffer, treated as an array of 32-bit words.
+ *
+ * @param data - buffer to checksum
+ * @param count - length of data in bytes; must be a positive multiple of 4
+ *
+ * @return XOR of all 32-bit words in data, or 0 if count is not a positive multiple of 4
+ */
 uint32_t checksum32(const void* data, int count)
 {
     if (count < 1 || count % 4 != 0)
@@ -623,12 +699,28 @@ uint32_t checksum32(const void* data, int count)
 }
 
 // This function skips the first 4 bytes (one 4 byte word), which are assumed to be the checksum in the serial number flash memory data structure.
+/**
+ * @brief Computes the XOR checksum32() of a serial number flash memory structure, skipping the leading 4-byte checksum field itself.
+ *
+ * @param data - pointer to the serial number flash memory structure (checksum field first)
+ * @param size - total size of data in bytes, including the leading checksum field
+ *
+ * @return XOR checksum of data+4 over (size-4) bytes
+ */
 uint32_t serialNumChecksum32(const void* data, int size)
 {
     return checksum32((const uint8_t*)data + 4, size - 4);
 }
 
 // This function skips the first 8 bytes (two 4 byte words), which are assumed to be the size and checksum in flash memory data structures.
+/**
+ * @brief Computes the XOR checksum32() of a flash memory structure, skipping the leading 8-byte size and checksum fields themselves.
+ *
+ * @param data - pointer to the flash memory structure (size field then checksum field first)
+ * @param size - total size of data in bytes, including the leading size and checksum fields
+ *
+ * @return XOR checksum of data+8 over (size-8) bytes
+ */
 uint32_t flashChecksum32(const void* data, int size)
 {
     return checksum32((const uint8_t*)data + 8, size - 8);
@@ -690,6 +782,16 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_SYS_FAULT]         = RMC_BITS_GPX_SYS_FAULT,
 };
 
+/**
+ * @brief Maps a data set ID to its corresponding RMC (real-time message controller) bitmask, using the g_didToRmcBit lookup table.
+ * @note DID_DEV_INFO is special-cased to always return devInfoRmcBits so device info can be enabled instantly upon connection; data sets with no table entry fall back to defaultRmcBits.
+ *
+ * @param dataId - data set identifier (eDataIDs) to map
+ * @param defaultRmcBits - bitmask to return when dataId has no entry in g_didToRmcBit
+ * @param devInfoRmcBits - bitmask to return when dataId is DID_DEV_INFO
+ *
+ * @return RMC bitmask corresponding to dataId
+ */
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
 {
     if (dataId == DID_DEV_INFO)     { return devInfoRmcBits; }        // This allows the dev info to respond instantly when first connected.
@@ -801,6 +903,13 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
 #ifndef GPX_1
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/
+/**
+ * @brief Converts a u-blox GNSS system ID (as used in UBX protocol messages) to the corresponding internal RTKLIB-style satellite system identifier (SYS_GPS, SYS_GLO, etc).
+ *
+ * @param gnssID - u-blox GNSS system identifier (0=GPS, 1=SBAS, 2=Galileo, 3=BeiDou, 5=QZSS, 6=GLONASS)
+ *
+ * @return internal satellite system identifier (SYS_*), or 0 if gnssID is not recognized
+ */
 int ubxSys(int gnssID)
 {
     switch (gnssID) {
@@ -820,6 +929,14 @@ int ubxSys(int gnssID)
 *          int    prn       I   satellite prn/slot number
 * return : satellite number (0:error)
 *-----------------------------------------------------------------------------*/
+/**
+ * @brief Maps a (satellite system, PRN/slot number) pair to RTKLIB's unified satellite numbering scheme, where each system occupies a contiguous numeric range.
+ *
+ * @param sys - satellite system identifier (SYS_GPS, SYS_GLO, SYS_GAL, SYS_QZS, SYS_CMP, SYS_IRN, SYS_LEO, SYS_SBS)
+ * @param prn - PRN or slot number within the system
+ *
+ * @return unified satellite number, or 0 if prn is out of range for the given system or sys is not recognized
+ */
 int satNo(int sys, int prn)
 {
     if (prn <= 0) return 0;
@@ -860,6 +977,14 @@ int satNo(int sys, int prn)
 *          int    svID       I   satellite vehicle ID within system
 * return : satellite number (0:error)
 *-----------------------------------------------------------------------------*/
+/**
+ * @brief Maps a u-blox (gnssID, svID) pair to RTKLIB's unified satellite numbering scheme by converting gnssID to the internal system ID and applying the QZSS PRN offset before calling satNo().
+ *
+ * @param gnssID - u-blox GNSS system identifier (see ubxSys())
+ * @param svID - satellite vehicle ID within the system
+ *
+ * @return unified satellite number, or 0 if not recognized
+ */
 int satNumCalc(int gnssID, int svID) {
     int sys = ubxSys(gnssID);
     int prn = svID + (sys == SYS_QZS ? 192 : 0);
@@ -870,6 +995,13 @@ int satNumCalc(int gnssID, int svID) {
 
 #define ENABLE_PROFILER 1
 
+/**
+ * @brief Marks the beginning of a profiled code section: records the period since the previous start and updates the start timestamp.
+ * @note Compiled out entirely (no-op) when ENABLE_PROFILER is 0.
+ *
+ * @param p - [in/out] profile record being updated
+ * @param timeUs - current time in microseconds
+ */
 void profiler_start(runtime_profile_t *p, uint32_t timeUs)
 {
 #if ENABLE_PROFILER
@@ -878,6 +1010,13 @@ void profiler_start(runtime_profile_t *p, uint32_t timeUs)
 #endif
 }
 
+/**
+ * @brief Marks the end of a profiled code section: computes the elapsed run time since profiler_start() and updates the running maximum run time.
+ * @note Compiled out entirely (no-op) when ENABLE_PROFILER is 0.
+ *
+ * @param p - [in/out] profile record being updated
+ * @param timeUs - current time in microseconds
+ */
 void profiler_stop(runtime_profile_t *p, uint32_t timeUs)
 {
 #if ENABLE_PROFILER
@@ -886,6 +1025,12 @@ void profiler_stop(runtime_profile_t *p, uint32_t timeUs)
 #endif
 }
 
+/**
+ * @brief Periodic maintenance for the runtime profiler, intended to be called at a regular interval; every 5th call it resets each profile entry's running maximum run time back to its most recent run time so the max reported reflects a recent window rather than the lifetime peak.
+ * @note Compiled out entirely (no-op) when ENABLE_PROFILER is 0.
+ *
+ * @param p - [in/out] profiler containing the array of profile entries to be reset
+ */
 void profiler_maintenance_1s(runtime_profiler_t *p)
 {
 #if ENABLE_PROFILER
@@ -968,6 +1113,15 @@ int decodeGSV(char* a, int aSize)
 
 #define UINT32_MATCH(u1,u2) ((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
 
+/**
+ * @brief Identifies the NMEA message ID (eNmeaMsgId) of a message by matching its talker/sentence prefix (e.g. "GNGGA", "PIMU").
+ * @note GSV sentences are delegated to decodeGSV() to further decode frequency-band information encoded after the prefix.
+ *
+ * @param msg - buffer containing the NMEA message, starting at the leading '$' character
+ * @param msgSize - length of msg in bytes
+ *
+ * @return message ID (see eNmeaMsgId) on success, -2 if msgSize is too short, or -1 if the prefix is not recognized
+ */
 int getNmeaMsgId(const void *msg, int msgSize)
 {
     if (msgSize < 5)     // five characters required (i.e. "$INFO")
@@ -1028,6 +1182,15 @@ int getNmeaMsgId(const void *msg, int msgSize)
     return -1;
 }
 
+/**
+ * @brief Converts an NMEA message ID (eNmeaMsgId) back into its null-terminated talker/sentence prefix string (e.g. NMEA_MSG_ID_GNGGA -> "GNGGA").
+ *
+ * @param msgId - NMEA message ID (see eNmeaMsgId) to convert
+ * @param buf - [out] output buffer that receives the null-terminated talker string
+ * @param bufSize - size of buf in bytes; must be at least 5
+ *
+ * @return 0 on success, or -1 if bufSize is too small or msgId is not recognized
+ */
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
 {
     if (bufSize < 5)
@@ -1074,6 +1237,15 @@ int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
     return 0;
 }
 
+/**
+ * @brief Extracts an unsigned integer from a bit-packed buffer, reading len bits starting at bit offset pos in most-significant-bit-first order.
+ *
+ * @param buff - buffer of packed bits to read from
+ * @param pos - starting bit offset within buff (0 = MSB of the first byte)
+ * @param len - number of bits to extract (must be <= 32)
+ *
+ * @return the extracted bits, right-aligned as an unsigned integer
+ */
 unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
 {
     unsigned int bits = 0;

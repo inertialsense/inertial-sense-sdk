@@ -59,7 +59,12 @@ void Decode(uint32_t *output, const unsigned char *input, unsigned int len);
  (a) += (b); \
   }
 
-// MD5 initialization
+/**
+ * @brief Initializes an MD5 context to its starting state, ready to accept data via md5_update().
+ * @note Must be called before the first md5_update()/md5_final() call for a given hash computation; also resets the running byte counters used to compute the final message length.
+ *
+ * @param context - [out] MD5 context to initialize
+ */
 void md5_init(md5Context_t& context) {
     context.count[0] = context.count[1] = 0;
 
@@ -70,7 +75,14 @@ void md5_init(md5Context_t& context) {
     context.state.dwords[3] = 0x10325476;
 }
 
-// MD5 block update operation
+/**
+ * @brief Feeds additional input bytes into an in-progress MD5 hash computation, buffering partial 64-byte blocks and running the compression transform on each complete block.
+ * @note May be called multiple times with successive chunks of data before calling md5_final(); the context's bit counters and internal 64-byte buffer track state between calls.
+ *
+ * @param context - [in/out] MD5 context previously initialized by md5_init(), updated with the new input
+ * @param input - pointer to the bytes to add to the hash
+ * @param inputLen - number of bytes pointed to by input
+ */
 void md5_update(md5Context_t& context, const unsigned char *input, size_t inputLen) {
     size_t i, index, partLen;
 
@@ -106,7 +118,13 @@ void md5_update(md5Context_t& context, const unsigned char *input, size_t inputL
     memcpy(&context.buffer[index], &input[i], inputLen - i);
 }
 
-// MD5 finalization
+/**
+ * @brief Finishes an MD5 hash computation: applies the standard MD5 padding and appends the encoded message bit-length, then outputs the resulting 128-bit digest.
+ * @note After this call the context's internal state reflects the padding/length block having been processed; the context should be re-initialized with md5_init() before starting a new hash.
+ *
+ * @param context - [in/out] MD5 context previously fed with all input data via md5_update()
+ * @param hash - [out] resulting 128-bit MD5 digest
+ */
 void md5_final(md5Context_t& context, md5hash_t& hash) {
     unsigned char bits[8];
     unsigned int index, padLen;
@@ -130,7 +148,13 @@ void md5_final(md5Context_t& context, md5hash_t& hash) {
     // memset(context, 0, sizeof(*context));
 }
 
-// MD5 basic transformation
+/**
+ * @brief Runs the MD5 compression function on a single 64-byte block: mixes the block's 16 32-bit words into the 4-word hash state across the four standard MD5 rounds (FF, GG, HH, II), then adds the result back into state.
+ * @note This is the core per-block MD5 algorithm step; it is called once per full 64-byte block of (possibly padded) message data by md5_update()/md5_final() and should not be called directly by callers computing a hash.
+ *
+ * @param state - [in/out] 4-word (128-bit) running MD5 hash state, updated in place with this block's contribution
+ * @param block - 64-byte input block of message data to mix into state
+ */
 void MD5Transform(uint32_t state[4], const unsigned char block[64]) {
     uint32_t a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 
@@ -218,7 +242,13 @@ void MD5Transform(uint32_t state[4], const unsigned char block[64]) {
     memset(x, 0, sizeof(x));
 }
 
-// Encodes input (uint32_t) into output (unsigned char)
+/**
+ * @brief Serializes an array of 32-bit words into a byte buffer in little-endian order, as required by the MD5 wire format.
+ *
+ * @param output - [out] destination byte buffer, must be at least len bytes
+ * @param input - array of 32-bit words to serialize
+ * @param len - number of output bytes to produce (must be a multiple of 4)
+ */
 void Encode(unsigned char *output, const uint32_t *input, unsigned int len) {
     unsigned int i, j;
 
@@ -230,7 +260,13 @@ void Encode(unsigned char *output, const uint32_t *input, unsigned int len) {
     }
 }
 
-// Decodes input (unsigned char) into output (uint32_t)
+/**
+ * @brief Reassembles a byte buffer into an array of 32-bit words, interpreting the bytes as little-endian, as required by the MD5 wire format.
+ *
+ * @param output - [out] destination array of 32-bit words, must hold at least len/4 entries
+ * @param input - source byte buffer
+ * @param len - number of input bytes to consume (must be a multiple of 4)
+ */
 void Decode(uint32_t *output, const unsigned char *input, unsigned int len) {
     unsigned int i, j;
 
@@ -315,7 +351,13 @@ int md5_file_details(const std::string& filename, size_t& filesize, md5hash_t& m
 }
 
 
-// Converts md5 hexadecimal char array to binary integer 
+/**
+ * @brief Converts a 32-character ASCII hex string (as raw chars, not necessarily null-terminated) into a 16-byte binary MD5 hash.
+ * @note Uses a fast non-standard hex-nibble decode ((c <= '9') ? c - '0' : (c & 0x7) + 9) that assumes hashStr contains only valid hex digit characters; behavior is undefined for other input. hashStr must contain at least 32 characters.
+ *
+ * @param md5 - [out] resulting 16-byte binary MD5 hash
+ * @param hashStr - 32-character hex string (no separators) representing the MD5 hash
+ */
 void md5_from_char_array(md5hash_t& md5, const char hashStr[])
 {
     for (int i=0; i<16; i++)
@@ -329,7 +371,15 @@ void md5_from_char_array(md5hash_t& md5, const char hashStr[])
     }
 }
 
-// Converts md5 binary integer to char array hexadecimal 
+/**
+ * @brief Converts a 16-byte binary MD5 hash into a 32-character lowercase hex string, written into the caller-supplied buffer.
+ *
+ * @param md5 - binary MD5 hash to convert
+ * @param hashStr - [out] destination buffer for the hex string
+ * @param hashStrMaxLen - size of hashStr in bytes; must be greater than 32 to accommodate the hex digits plus null terminator
+ *
+ * @return true on success, false if hashStrMaxLen is too small (<= 32)
+ */
 bool md5_to_char_array(const md5hash_t& md5, char hashStr[], int hashStrMaxLen)
 {
     if (hashStrMaxLen <= 32)
@@ -548,7 +598,13 @@ int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
 #endif // USE_ALTERNATE_MD5_IMPL
 
 
-// Converts md5 hexadecimal string to binary integer
+/**
+ * @brief Converts an MD5 hash represented as a hexadecimal string into its binary form.
+ *
+ * @param hashStr - hex string representing the MD5 hash; must be at least 32 characters
+ *
+ * @return the decoded binary MD5 hash, or a zero-initialized md5hash_t if hashStr is shorter than 32 characters
+ */
 md5hash_t md5_from_string(string hashStr)
 {
     if (hashStr.size() < 32)
@@ -559,7 +615,13 @@ md5hash_t md5_from_string(string hashStr)
     return md5;
 }
 
-// Converts md5 binary integer to char string hexadecimal 
+/**
+ * @brief Converts a binary MD5 hash into its 32-character lowercase hexadecimal string representation.
+ *
+ * @param md5hash - binary MD5 hash to convert
+ *
+ * @return the hex string representation of md5hash
+ */
 string md5_to_string(const md5hash_t& md5hash)
 {
     char array[33]; // Include extra byte for null termination
@@ -569,13 +631,24 @@ string md5_to_string(const md5hash_t& md5hash)
     return str.assign(array, 32);
 }
 
-// Converts md5 binary integer to char string hexadecimal 
-string md5_to_string_u32(uint32_t hash[4]) 
-{ 
+/**
+ * @brief Converts an MD5 hash stored as a raw array of four 32-bit words into its hexadecimal string representation.
+ *
+ * @param hash - pointer to 4 uint32_t words holding the binary MD5 hash
+ *
+ * @return the hex string representation of hash
+ */
+string md5_to_string_u32(uint32_t hash[4])
+{
     return md5_to_string(*(md5hash_t*)hash); 
 }
 
 #ifndef ARM
+/**
+ * @brief Writes the hexadecimal string representation of an MD5 hash to stdout (via std::cout), with no trailing newline.
+ *
+ * @param md5 - binary MD5 hash to print
+ */
 void md5_print(md5hash_t& md5)
 {
 #if 1

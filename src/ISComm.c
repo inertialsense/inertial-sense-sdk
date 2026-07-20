@@ -101,6 +101,16 @@ unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len)
     return crc;
 }
 
+/**
+ * @brief Computes/continues a Fletcher-16 checksum over a block of data.
+ * @note Pass the checksum returned from a prior call as cksum_init to accumulate the checksum across multiple non-contiguous buffers.
+ *
+ * @param cksum_init - initial/running 16-bit checksum value (0 to start a new checksum)
+ * @param data - buffer of bytes to checksum
+ * @param size - number of bytes in data to checksum
+ *
+ * @return updated 16-bit Fletcher checksum value
+ */
 uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size)
 {
     checksum16_u cksum;
@@ -113,6 +123,16 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
     return cksum.ck;
 }
 
+/**
+ * @brief Computes/continues a 16-bit XOR-based checksum over a block of data, using the same running two-byte accumulator pattern as is_comm_fletcher16().
+ * @note Pass the checksum returned from a prior call as cksum_init to accumulate the checksum across multiple non-contiguous buffers.
+ *
+ * @param cksum_init - initial/running 16-bit checksum value (0 to start a new checksum)
+ * @param data - buffer of bytes to checksum
+ * @param size - number of bytes in data to checksum
+ *
+ * @return updated 16-bit XOR checksum value
+ */
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
 {
     checksum16_u cksum;
@@ -126,6 +146,14 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
 }
 
 #define CRC_CCITT_POLY  0x1021  // x^16 + x^12 + x^5 + x^0
+/**
+ * @brief Computes a 16-bit CRC-CCITT (polynomial 0x1021, initial value 0) checksum over a block of data.
+ *
+ * @param data - buffer of bytes to checksum
+ * @param length - number of bytes in data to checksum
+ *
+ * @return 16-bit CRC-CCITT value
+ */
 uint16_t crc_ccitt(const uint8_t *data, size_t length) 
 {
     uint16_t crc = 0;
@@ -161,6 +189,14 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
     return bits;
 }
 
+/**
+ * @brief Checks whether a baud rate value is within the acceptable range/allow-list for this build configuration.
+ * @note Currently (see #if block) any baud rate within IS_BAUDRATE_STANDARD_MIN..IS_BAUDRATE_MAX is accepted; the alternate #else branch restricts standard rates to the g_validBaudRates table.
+ *
+ * @param baudRate - baud rate value to validate, in bits per second
+ *
+ * @return 0 if baudRate is valid, -1 if invalid
+ */
 int validateBaudRate(unsigned int baudRate)
 {
 #if 1   // TODO: Remove after debug.  Used to debug possible cause of GPX no Rx comms.
@@ -209,6 +245,15 @@ int is_comm_reset_buffer(is_comm_instance_t* c)
     return c->rxBuf.size;
 }
 
+/**
+ * @brief Initializes a comm instance and its associated receive buffer, clearing state and installing the packet handler callback.
+ * @note Zeroes both the is_comm_instance_t struct and the caller-supplied buffer before wiring up the buffer pointers.
+ *
+ * @param c - comm instance to initialize
+ * @param buffer - receive buffer memory to associate with the comm instance
+ * @param bufferSize - size of buffer in bytes
+ * @param pktHandler - callback invoked for all received packets (stored as c->cb.all)
+ */
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
@@ -231,12 +276,25 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsC
     c->cb.all = pktHandler;
 }
 
+/**
+ * @brief Initializes the comm instance embedded in a comm-type port, if the port is a valid comm port.
+ *
+ * @param port - port whose embedded comm instance should be initialized
+ * @param pktHandler - callback invoked for all received packets
+ */
 void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler) {
     if (port && (portType((port_handle_t)port) & PORT_TYPE__COMM)) {
         is_comm_init(&port->comm, port->buffer, sizeof(port->buffer), pktHandler);
     }
 }
 
+/**
+ * @brief Retrieves the is_comm_instance_t embedded in a port handle, if the port is a valid comm port.
+ *
+ * @param port - port handle to query
+ *
+ * @return pointer to the port's comm instance, or NULL if port is not a valid comm-type port
+ */
 is_comm_instance_t* is_comm_get_port_instance(port_handle_t port) {
     if (port && (portType((port_handle_t)port) & PORT_TYPE__COMM)) {
         return &COMM_PORT(port)->comm;
@@ -318,31 +376,68 @@ pfnIsCommGenMsgHandler is_comm_register_port_msg_handler(port_handle_t port, int
     return NULL;
 }
 
+/**
+ * @brief Replaces a comm instance's entire callback set with the provided callbacks struct.
+ *
+ * @param c - comm instance whose callbacks are being set
+ * @param callbacks - callback set to copy into c->cb; ignored if NULL
+ */
 void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
     if (callbacks)
         c->cb = *callbacks;
 }
 
+/**
+ * @brief Replaces the callback set of the comm instance embedded in a port, if the port is valid.
+ *
+ * @param port - port whose comm instance callbacks are being set
+ * @param callbacks - callback set to install
+ */
 void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks) {
     if (port)
         is_comm_register_callbacks(&COMM_PORT(port)->comm, callbacks);
 }
 
+/**
+ * @brief Sets the bit for the given protocol type in the comm instance's protocol mask, enabling parsing of that protocol.
+ *
+ * @param instance - comm instance to modify
+ * @param ptype - protocol type to enable
+ */
 void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
     if (instance)
         instance->cb.protocolMask |= (0x01 << ptype);
 }
 
+/**
+ * @brief Clears the bit for the given protocol type in the comm instance's protocol mask, disabling parsing of that protocol.
+ *
+ * @param instance - comm instance to modify
+ * @param ptype - protocol type to disable
+ */
 void is_comm_disable_protocol(is_comm_instance_t* instance, protocol_type_t ptype) {
     if (instance)
         instance->cb.protocolMask &= ~(0x01 << ptype);
 }
 
+/**
+ * @brief Overwrites the comm instance's entire protocol mask with the given value.
+ *
+ * @param instance - comm instance to modify
+ * @param protocolMask - bitmask of enabled protocol types (bit position = protocol_type_t value)
+ */
 void is_comm_set_protocol_mask(is_comm_instance_t* instance, uint32_t protocolMask) {
     if (instance)
         instance->cb.protocolMask = protocolMask;
 }
 
+/**
+ * @brief Returns the comm instance's active protocol mask, deriving it from registered callbacks if no mask has been explicitly set.
+ *
+ * @param instance - comm instance to query
+ *
+ * @return bitmask of enabled protocol types (bit position = protocol_type_t value)
+ */
 uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
     uint32_t protocols = 0;
     if (instance->cb.protocolMask)
@@ -356,6 +451,12 @@ uint32_t is_comm_get_protocol_mask(is_comm_instance_t* instance) {
     return protocols;
 }
 
+/**
+ * @brief Marks the parser as actively parsing a packet: moves the buffer head to the current scan position and installs the per-protocol parse function to be called on subsequent bytes.
+ *
+ * @param c - comm instance whose parser state is being started
+ * @param processPkt - per-protocol byte-parsing function to invoke until the packet completes or errors
+ */
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
     is_comm_parser_t *p = &(c->parser);
@@ -364,6 +465,14 @@ void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
     c->processPkt = processPkt;
 }
 
+/**
+ * @brief Records a parse error on the comm instance (incrementing error counters) the first time an error occurs since the last valid packet, suppressing duplicate error reports while already in an error state.
+ *
+ * @param c - comm instance to update
+ * @param errorType - category of parse error being reported
+ *
+ * @return _PTYPE_PARSE_ERROR if this is a newly reported error, _PTYPE_NONE if already in an error state
+ */
 static inline protocol_type_t reportParseError(is_comm_instance_t* c, eParseErrorType errorType)
 {
     if (!c->rxErrorState)
@@ -377,6 +486,14 @@ static inline protocol_type_t reportParseError(is_comm_instance_t* c, eParseErro
     return _PTYPE_NONE;
 }
 
+/**
+ * @brief Resets the packet parser state machine and reports a parse error in one step; used by the per-protocol parsers whenever they encounter invalid data.
+ *
+ * @param c - comm instance whose parser is being reset
+ * @param errorType - category of parse error being reported
+ *
+ * @return _PTYPE_PARSE_ERROR if this is a newly reported error, _PTYPE_NONE if already in an error state
+ */
 static inline protocol_type_t parseErrorResetState(is_comm_instance_t* c, eParseErrorType errorType)
 {
     is_comm_reset_parser(c);
@@ -384,6 +501,12 @@ static inline protocol_type_t parseErrorResetState(is_comm_instance_t* c, eParse
 }
 
 
+/**
+ * @brief Advances the receive buffer head past a successfully parsed packet, clears the in-progress parse handler, increments the received-packet count, and clears the error state.
+ *
+ * @param c - comm instance to update
+ * @param pktSize - size in bytes of the packet just consumed, used to advance rxBuf.head
+ */
 static inline void validPacketReset(is_comm_instance_t* c, int pktSize)
 {
     c->rxBuf.head = c->rxBuf.head + pktSize;
@@ -392,6 +515,14 @@ static inline void validPacketReset(is_comm_instance_t* c, int pktSize)
     c->rxErrorState = 0;
 }
 
+/**
+ * @brief Populates the comm instance's rxPkt with a newly found packet's location/size/id, then advances the buffer past it via validPacketReset().
+ *
+ * @param c - comm instance to update
+ * @param pktSize - total size in bytes of the packet (used to advance rxBuf.head)
+ * @param dataSize - size in bytes of the packet's data payload
+ * @param id - message/packet id of the packet found
+ */
 static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int dataSize, uint16_t id)
 {
     // Update data pointer and info
@@ -405,6 +536,14 @@ static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int data
     validPacketReset(c, pktSize);
 }
 
+/**
+ * @brief Byte-driven state machine that parses an Inertial Sense binary (ISB) packet from the receive buffer one scanned byte at a time, validating the preamble, header size, and checksum, and classifying the packet type once complete.
+ * @note Called once per scanned byte via c->processPkt while a potential ISB packet is in progress; returns _PTYPE_NONE until a complete valid/invalid packet is found, at which point the parser state is reset to 0.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return protocol type of the completed packet (e.g. _PTYPE_INERTIAL_SENSE_DATA/_CMD/_ACK), _PTYPE_PARSE_ERROR on a parse failure, or _PTYPE_NONE if the packet is not yet complete
+ */
 static protocol_type_t processIsbPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -561,6 +700,14 @@ static protocol_type_t processIsbPkt(void* v)
     return parseErrorResetState(c, EPARSE_INVALID_DATATYPE);
 }
 
+/**
+ * @brief Byte-driven state machine that parses an NMEA sentence ('$'...'*hh'\r\n) from the receive buffer one scanned byte at a time, validating length and the trailing hex XOR checksum.
+ * @note Called once per scanned byte via c->processPkt while a potential NMEA sentence is in progress.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return _PTYPE_NMEA once a valid sentence is found, _PTYPE_PARSE_ERROR on a parse failure, or _PTYPE_NONE if the sentence is not yet complete
+ */
 static protocol_type_t processNmeaPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -775,6 +922,14 @@ static protocol_type_t processSeptentrioSBFPkt(void* v)
     return _PTYPE_SEPTENTRIO_SBF;
 }
 
+/**
+ * @brief Disambiguates which ASCII-based protocol (Septentrio SBF, Septentrio reply, or NMEA) a message starting with '$' belongs to based on its second byte, then hands parsing off to the matching protocol-specific parser.
+ * @note Restores rxBuf.head to the '$' preamble byte (since setParserStart() advances head to the second byte) before recursively invoking the selected parser, so the full packet including the preamble is captured.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return protocol type returned by the selected protocol parser, or a parse error if no end-of-packet marker is found
+ */
 static protocol_type_t processPreAsciiPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -829,6 +984,14 @@ enum
     UBX_PARSE_STATE_LENGTH_2    = 5,
 };
 
+/**
+ * @brief Byte-driven state machine that parses a u-blox UBX packet from the receive buffer one scanned byte at a time, validating the two-byte preamble, header, and trailing Fletcher-16 checksum.
+ * @note Called once per scanned byte via c->processPkt while a potential UBX packet is in progress.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return _PTYPE_UBLOX once a valid packet is found, _PTYPE_PARSE_ERROR on a parse failure, or _PTYPE_NONE if the packet is not yet complete
+ */
 static protocol_type_t processUbloxPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -899,6 +1062,14 @@ static protocol_type_t processUbloxPkt(void* v)
     return _PTYPE_UBLOX;
 }
 
+/**
+ * @brief Byte-driven state machine that parses an RTCM3 message from the receive buffer one scanned byte at a time, decoding the payload length from the header bit field and validating the trailing 24-bit CRC.
+ * @note Called once per scanned byte via c->processPkt while a potential RTCM3 message is in progress.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return _PTYPE_RTCM3 once a valid message is found, _PTYPE_PARSE_ERROR on a parse failure, or _PTYPE_NONE if the message is not yet complete
+ */
 static protocol_type_t processRtcm3Pkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -995,6 +1166,14 @@ static const uint8_t u8CRC_4_TABLE[] = {
     0x02U, 0x09U, 0x07U, 0x0CU, 0x08U, 0x03U, 0x0DU, 0x06U
 };
 
+/**
+ * @brief Computes a 4-bit CRC-CCITT checksum over a block of data using a precomputed lookup table; used to validate the SPARTN packet header.
+ *
+ * @param buf - buffer of bytes to checksum
+ * @param numBytes - number of bytes in buf to checksum
+ *
+ * @return 4-bit CRC value (lower nibble only; upper nibble always 0)
+ */
 static uint8_t computeCrc4Ccitt(const uint8_t *buf, const uint32_t numBytes)
 {
     // Initialize local variables
@@ -1012,6 +1191,14 @@ static uint8_t computeCrc4Ccitt(const uint8_t *buf, const uint32_t numBytes)
     return remainder & 0x0FU;
 }
 
+/**
+ * @brief Byte-driven state machine that parses a Sony-format packet from the receive buffer one scanned byte at a time, validating the header checksum and the trailing data checksum (both simple 8-bit sums).
+ * @note Called once per scanned byte via c->processPkt while a potential Sony packet is in progress.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return _PTYPE_SONY once a valid packet is found, _PTYPE_PARSE_ERROR on a parse failure, or _PTYPE_NONE if the packet is not yet complete
+ */
 static protocol_type_t processSonyByte(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -1085,6 +1272,14 @@ static protocol_type_t processSonyByte(void* v)
     return _PTYPE_SONY;
 }
 
+/**
+ * @brief Byte-driven state machine that parses a SPARTN message from the receive buffer, decoding the variable-length header (timestamp size, encryption/authentication flags) to compute total payload length, validating the header's CRC4, then waiting for the remaining payload bytes.
+ * @note Called once per scanned byte via c->processPkt while a potential SPARTN message is in progress. Once the payload length is known, p->state is set to a negative countdown value (-payloadLen) and incremented toward 0 as remaining bytes arrive; state 0 signals a complete, valid packet.
+ *
+ * @param v - is_comm_instance_t* for the port being parsed, passed as void* to match the pFnProcessPkt signature
+ *
+ * @return _PTYPE_SPARTN once a valid message is found, _PTYPE_PARSE_ERROR on a parse failure/invalid header, or _PTYPE_NONE if the message is not yet complete
+ */
 static protocol_type_t processSpartnByte(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -1311,6 +1506,15 @@ int is_comm_free(is_comm_instance_t* c)
     return bytesFree;
 }
 
+/**
+ * @brief Appends a single received byte to the comm instance's receive buffer (freeing buffer space first if needed) and attempts to parse a packet from the buffer.
+ *
+ * @param c - comm instance receiving the byte
+ * @param byte - newly received byte to add to the buffer
+ * @param timeMs - current time in milliseconds, used for parser timeout detection
+ *
+ * @return protocol type of a packet found by parsing, or _PTYPE_NONE if no complete packet is available yet
+ */
 protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, uint32_t timeMs)
 {
     // Reset buffer if needed.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
@@ -1323,6 +1527,15 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, 
     return is_comm_parse_timeout(c, timeMs);
 }
 
+/**
+ * @brief Scans the comm instance's receive buffer for a complete packet of any enabled protocol, advancing the scan pointer byte by byte and dispatching to the appropriate protocol parser; also detects and recovers from parser timeouts.
+ * @note If PKT_PARSER_TIMEOUT_MS is nonzero and a partially-parsed packet has stalled longer than that timeout, the parser is reset and scanning resumes past the stuck byte.
+ *
+ * @param c - comm instance whose receive buffer should be scanned
+ * @param timeMs - current time in milliseconds, used for parser timeout detection
+ *
+ * @return protocol type of a packet found, _PTYPE_PARSE_ERROR if the byte stream is unparsable, or _PTYPE_NONE if no complete packet is available in the buffered data
+ */
 protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 {
     is_comm_buffer_t *buf = &(c->rxBuf);
@@ -1382,6 +1595,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
+/**
+ * @brief Repeatedly parses packets out of a comm instance's buffer and dispatches each one to its registered protocol-specific and catch-all callbacks.
+ *
+ * @param comm - comm instance to parse and dispatch packets from
+ * @param port - port associated with comm, passed through to callbacks (may be NULL)
+ */
 static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
 {
     if (!comm)
@@ -1439,6 +1658,13 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
 #endif
 }
 
+/**
+ * @brief Copies as much of an externally-supplied byte buffer as will fit into the comm instance's receive buffer, then parses and dispatches any complete packets found.
+ *
+ * @param buf - source buffer of newly received bytes
+ * @param buf_size - number of bytes available in buf
+ * @param comm - comm instance to receive the data and parse packets from
+ */
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
 {
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
@@ -1453,6 +1679,12 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
     parse_messages(comm, NULL);
 }
 
+/**
+ * @brief Reads any available bytes from a port into its comm instance's receive buffer, then parses and dispatches any complete packets found.
+ * @note Does nothing if the port is not a valid, open comm-type port, or if the port is flagged for explicit (caller-driven) reads via COMM_PORT_FLAG__EXPLICIT_READ.
+ *
+ * @param port - port to read from and parse packets for
+ */
 void is_comm_port_parse_messages(port_handle_t port)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
@@ -1480,6 +1712,19 @@ void is_comm_port_parse_messages(port_handle_t port)
     parse_messages(comm, port);
 }
 
+/**
+ * @brief Builds and writes a PKT_TYPE_GET_DATA request packet (requesting a data set by id) into a caller-supplied buffer, rather than to a port.
+ *
+ * @param buf - output buffer to receive the encoded packet
+ * @param buf_size - size of buf in bytes
+ * @param comm - comm instance used to track the transmit packet count
+ * @param did - data identifier being requested
+ * @param size - number of bytes of the data set being requested
+ * @param offset - byte offset into the data set being requested
+ * @param periodMultiple - broadcast period multiplier (0 = one-shot request)
+ *
+ * @return number of bytes written to buf on success, or -1 if the packet does not fit
+ */
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
@@ -1492,6 +1737,17 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
+/**
+ * @brief Builds and sends a PKT_TYPE_GET_DATA request packet (requesting a data set by id) directly to a port.
+ *
+ * @param port - port to send the request to
+ * @param did - data identifier being requested
+ * @param size - number of bytes of the data set being requested
+ * @param offset - byte offset into the data set being requested
+ * @param periodMultiple - broadcast period multiplier (0 = one-shot request)
+ *
+ * @return number of bytes written on success, or -1 on failure
+ */
 int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
@@ -1504,6 +1760,17 @@ int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t o
     return is_comm_write(port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
+/**
+ * @brief Fills in an ISB packet's header fields (preamble, flags, id, payload size), attaches the payload pointer/size, and precomputes the header checksum.
+ * @note If offset is nonzero, ISB_FLAGS_PAYLOAD_W_OFFSET is set and payloadSize is increased by 2 bytes to account for the offset field written ahead of the data.
+ *
+ * @param pkt - packet structure to populate (output)
+ * @param flags - packet type/flag bits to set in the header
+ * @param did - data identifier for the header id field
+ * @param data_size - size in bytes of the payload data
+ * @param offset - byte offset into the destination data set; 0 if no offset is needed
+ * @param data - pointer to the payload data (not copied; only referenced via pkt->data.ptr)
+ */
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     // Header
@@ -1529,12 +1796,30 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
 
+/**
+ * @brief Copies a block of bytes to a destination pointer (advancing it past the copied data) while folding the copied bytes into a running checksum.
+ *
+ * @param dstBuf - [in/out] pointer to destination write pointer; advanced by len bytes
+ * @param srcBuf - source buffer to copy from
+ * @param len - number of bytes to copy
+ * @param checksum - [in/out] running ISB checksum, updated with the copied bytes
+ */
 void memcpyIncUpdateChecksum(uint8_t **dstBuf, const uint8_t* srcBuf, int len, uint16_t *checksum)
 {
     *checksum = is_comm_isb_checksum16(*checksum, srcBuf, len);
     MEMCPY_INC(*dstBuf, srcBuf, len);
 }
 
+/**
+ * @brief Serializes a packet (using its precomputed header checksum) into a caller-supplied buffer: header, optional offset field, payload, and trailing checksum footer.
+ *
+ * @param buf - output buffer to receive the encoded packet
+ * @param buf_size - size of buf in bytes
+ * @param comm - comm instance whose transmit packet count is incremented on success
+ * @param pkt - packet to serialize; pkt->checksum is updated as the packet is built
+ *
+ * @return number of bytes written (pkt->size) on success, or -1 if the packet does not fit in buf
+ */
 int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
 {
     if (pkt->size > buf_size)
@@ -1561,12 +1846,31 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
+/**
+ * @brief Writes a block of bytes to a port while folding the written bytes into a running checksum.
+ *
+ * @param port - port to write to
+ * @param buf - buffer of bytes to write
+ * @param len - number of bytes to write
+ * @param checksum - [in/out] running ISB checksum, updated with the written bytes
+ *
+ * @return number of bytes written to the port, or a negative value on write failure
+ */
 int portWriteUpdateChecksum(port_handle_t port, const uint8_t* buf, int len, uint16_t *checksum)
 {
     *checksum = is_comm_isb_checksum16(*checksum, buf, len);
     return portWrite(port, buf, len);
 }
 
+/**
+ * @brief Serializes a packet (using its precomputed header checksum) and writes it directly to a port, either as a single write call or (under GPX_1) as multiple sequential writes.
+ * @note The single-write path assembles the full packet in a stack buffer first so a preemption/interruption cannot interleave another write on the same port and sever the packet; the GPX_1 legacy path writes header/offset/payload/footer as separate calls.
+ *
+ * @param port - port to write the packet to
+ * @param pkt - packet to serialize; pkt->checksum is updated as the packet is built
+ *
+ * @return number of bytes written on success, or -1 if the port is invalid/closed, the packet is too large, or the bytes written don't match the expected packet size
+ */
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
@@ -1626,6 +1930,20 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     return (n == pkt->size) ? n : -1;
 }
 
+/**
+ * @brief Encodes an ISB packet header/checksum for the given fields and serializes the resulting packet into a caller-supplied buffer.
+ *
+ * @param buf - output buffer to receive the encoded packet
+ * @param buf_size - size of buf in bytes
+ * @param comm - comm instance whose transmit packet count is incremented on success
+ * @param flags - packet type/flag bits for the header
+ * @param did - data identifier for the header id field
+ * @param data_size - size in bytes of the payload data
+ * @param offset - byte offset into the destination data set; 0 if no offset is needed
+ * @param data - pointer to the payload data to encode
+ *
+ * @return number of bytes written to buf on success, or -1 if the packet does not fit
+ */
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     packet_t txPkt;
@@ -1637,6 +1955,18 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
+/**
+ * @brief Encodes an ISB packet header/checksum for the given fields and writes the resulting packet directly to a port.
+ *
+ * @param port - port to write the packet to
+ * @param flags - packet type/flag bits for the header
+ * @param did - data identifier for the header id field
+ * @param data_size - size in bytes of the payload data
+ * @param offset - byte offset into the destination data set; 0 if no offset is needed
+ * @param data - pointer to the payload data to encode
+ *
+ * @return number of bytes written on success, or -1 on failure
+ */
 int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     packet_t txPkt;
@@ -1645,6 +1975,19 @@ int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data
     return is_comm_write_pkt(port, &txPkt, flags, did, data_size, offset, data);
 }
 
+/**
+ * @brief Encodes an ISB packet header/checksum into a caller-supplied packet_t and writes it directly to a port, letting the caller retain the packet structure (e.g. for reuse via is_comm_write_isb_precomp_to_port()).
+ *
+ * @param port - port to write the packet to
+ * @param txPkt - packet structure to populate and transmit (output)
+ * @param flags - packet type/flag bits for the header
+ * @param did - data identifier for the header id field
+ * @param data_size - size in bytes of the payload data
+ * @param offset - byte offset into the destination data set; 0 if no offset is needed
+ * @param data - pointer to the payload data to encode
+ *
+ * @return number of bytes written on success, or -1 if the port is invalid/closed
+ */
 int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
@@ -1659,6 +2002,15 @@ int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16
     return is_comm_write_isb_precomp_to_port(port, txPkt);
 }
 
+/**
+ * @brief Copies a field out of a source data structure into a p_data_t payload buffer, using the header's offset/size to locate the field within the structure.
+ *
+ * @param data - destination packet data (data->hdr.offset/size select the region within sptr to copy, and data->ptr receives the bytes)
+ * @param sptr - source data structure to copy from
+ * @param maxsize - size in bytes of the sptr structure, used to bounds-check the copy
+ *
+ * @return 0 on success, -1 if offset+size exceeds maxsize
+ */
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
 {
     if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
@@ -1672,6 +2024,15 @@ char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int max
     }
 }
 
+/**
+ * @brief Copies a p_data_t payload into a destination data structure, using the header's offset/size to locate the field within the structure.
+ *
+ * @param sptr - destination data structure to copy into
+ * @param data - source packet data (data->hdr.offset/size select the region within sptr, and data->ptr is the source of the bytes)
+ * @param maxsize - size in bytes of the sptr structure, used to bounds-check the copy
+ *
+ * @return 0 on success, -1 if offset+size exceeds maxsize
+ */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize)
 {
     if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
@@ -1685,6 +2046,15 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
     }
 }
 
+/**
+ * @brief Copies a p_data_buf_t payload (data with an inline byte buffer) into a destination data structure, using the header's offset/size to locate the field within the structure.
+ *
+ * @param sptr - destination data structure to copy into
+ * @param data - source packet data with inline buffer (data->hdr.offset/size select the region within sptr, and data->buf is the source of the bytes)
+ * @param maxsize - size in bytes of the sptr structure, used to bounds-check the copy
+ *
+ * @return 0 on success, -1 if offset+size exceeds maxsize
+ */
 char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize)
 {
     if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
@@ -1698,6 +2068,15 @@ char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned 
     }
 }
 
+/**
+ * @brief Copies one p_data_t packet's header and payload bytes into another p_data_t.
+ *
+ * @param dst - destination packet data (output)
+ * @param src - source packet data to copy from
+ * @param maxsize - maximum number of payload bytes permitted, used to bounds-check the copy
+ *
+ * @return 0 on success, -1 if src->hdr.size exceeds maxsize
+ */
 char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int maxsize)
 {
     if (src->hdr.size <= maxsize)

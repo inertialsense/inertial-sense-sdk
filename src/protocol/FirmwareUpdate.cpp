@@ -54,8 +54,20 @@ namespace fwUpdate {
      * Firmware Base Implementation goes here                                           *
      *==================================================================================*/
 
+    /**
+     * @brief Constructs a FirmwareUpdateBase instance. Performs no initialization beyond default member construction.
+     */
     FirmwareUpdateBase::FirmwareUpdateBase() { };
 
+    /**
+     * @brief Computes the size, in bytes, of a payload_t message based on its msg_type, optionally including any variable-length auxiliary data.
+     * @note For MSG_UPDATE_CHUNK and MSG_UPDATE_PROGRESS, when include_aux is true the variable-length data length is added (minus the one byte already reserved in the struct); when include_aux is false, 1 byte is subtracted to exclude that reserved byte entirely.
+     *
+     * @param payload - message whose header msg_type determines which payload size to compute
+     * @param include_aux - if true, include the size of variable-length auxiliary data (chunk data or progress message text) present in the payload
+     *
+     * @return the computed payload size in bytes, or 0 if msg_type is not recognized
+     */
     size_t FirmwareUpdateBase::fwUpdate_getPayloadSize(const payload_t* payload, bool include_aux) {
         switch (payload->hdr.msg_type) {
             case MSG_REQ_RESET:
@@ -188,6 +200,14 @@ namespace fwUpdate {
         return fwUpdate_writeToWire((fwUpdate::target_t) payload.hdr.target_device, build_buffer, payload_len);
     }
 
+    /**
+     * @brief Formats a human-readable, single-line description of a payload_t message for debug logging.
+     * @note Only compiled when DEBUG_LOGGING is defined; otherwise always returns nullptr. Uses a static internal buffer, so the returned pointer is only valid until the next call and this function is not reentrant/thread-safe. Also returns nullptr for MSG_UPDATE_CHUNK, since chunk payloads are too frequent/large to usefully log.
+     *
+     * @param payload - message to format
+     *
+     * @return pointer to a static buffer containing the formatted description, or nullptr if DEBUG_LOGGING is not defined or the message type is MSG_UPDATE_CHUNK
+     */
     char* FirmwareUpdateBase::fwUpdate_payloadToString(const payload_t* payload) {
         #ifdef DEBUG_LOGGING
         static char tmp[256];
@@ -362,6 +382,14 @@ namespace fwUpdate {
         return result;
     }
 
+    /**
+     * @brief Maps a raw byte buffer received from the comms system onto a payload_t message and dispatches it to fwUpdate_processMessage(const payload_t&).
+     *
+     * @param buffer - pointer to the raw byte buffer containing the received DID_FIRMWARE_UPDATE payload
+     * @param buf_len - number of bytes available in buffer
+     *
+     * @return true if the message was consumed by this interface, false if mapping failed or the message was not intended for this device
+     */
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
         fwUpdate::payload_t *payload = nullptr;
         void *aux_data = nullptr;
@@ -783,6 +811,14 @@ namespace fwUpdate {
         return result;
     }
 
+    /**
+     * @brief Maps a raw byte buffer received from the comms system onto a payload_t message and dispatches it to fwUpdate_processMessage(const payload_t&).
+     *
+     * @param buffer - pointer to the raw byte buffer containing the received DID_FIRMWARE_UPDATE payload
+     * @param buf_len - number of bytes available in buffer
+     *
+     * @return true if the message was consumed by this interface, false if mapping failed or the message was not intended for the host
+     */
     bool FirmwareUpdateHost::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
@@ -827,6 +863,14 @@ namespace fwUpdate {
         return fwUpdate_sendPayload(request);
     }
 
+    /**
+     * @brief Re-sends a REQ_UPDATE request for the currently configured session, without changing the session parameters (used to retry a request that hasn't yet been acknowledged).
+     * @note Does nothing (returns false) if the session has already progressed past NOT_STARTED/READY or if no session id has been set.
+     *
+     * @param force_session - if true, generates a new session id before resending the request
+     *
+     * @return true if the request was successfully sent, false if the session state doesn't allow a resend
+     */
     bool FirmwareUpdateHost::fwUpdate_requestUpdate(bool force_session) {
 
         if ((session_status >= READY) || (session_id == 0))
@@ -851,6 +895,14 @@ namespace fwUpdate {
         return fwUpdate_sendPayload(request);
     }
 
+    /**
+     * @brief Sends a REQ_RESET message asking the specified target device to reset, independent of any active update session.
+     *
+     * @param target - target device to reset
+     * @param reset_flags - device-specific flags controlling how the reset is performed
+     *
+     * @return true if the request was successfully sent, otherwise false
+     */
     bool FirmwareUpdateHost::fwUpdate_requestReset(target_t target, uint16_t reset_flags) {
         // We don't care about having a session in order to request a reset (it's session independent)
         // if ((session_status != NOT_STARTED) || (session_id == 0))
@@ -884,6 +936,12 @@ namespace fwUpdate {
     }
 
 
+    /**
+     * @brief Builds and sends the next sequential firmware image chunk to the target device, advancing next_chunk_id on success.
+     * @note Chunk data is written directly into build_buffer in place (via fwUpdate_mapBufferToPayload() and fwUpdate_getImageChunk()) to avoid an extra copy.
+     *
+     * @return the number of chunks remaining to be sent, or 0 if all chunks have already been sent (next_chunk_id >= session_total_chunks)
+     */
     int FirmwareUpdateHost::fwUpdate_sendNextChunk() {
         payload_t* msg = (payload_t*)&build_buffer;
 
@@ -945,6 +1003,11 @@ namespace fwUpdate {
         return true;
     }
 
+    /**
+     * @brief Generates a new pseudo-random 16-bit session id used to distinguish separate update sessions.
+     *
+     * @return a newly generated 16-bit session id
+     */
     uint16_t FirmwareUpdateHost::fwUpdate_generateNewSessionID() {
 #ifdef __ZEPHYR__
         return (uint16_t)sys_rand32_get();
