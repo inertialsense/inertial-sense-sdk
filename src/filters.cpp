@@ -232,12 +232,10 @@ int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, b
 
     for (int idev = 0; idev < numDevices; idev++)
     {
-        if (!exclude[idev])
-        {
-            add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
-            add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
-            ndev++;
-        }
+        if (exclude[idev]) continue;
+        add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
+        add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
+        ndev++;
     }
 
     if (ndev > 0)
