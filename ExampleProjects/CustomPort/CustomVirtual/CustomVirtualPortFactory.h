@@ -12,19 +12,18 @@
 
 #ifdef __cplusplus
 
-/** STEP 4: Include IS core and other needed SDK header files here; 
+/** STEP 4:  Create a custom child class that inherits from PortFactory 
+ */
+
+/**Include IS core and other needed SDK header files here; 
  * include any of your own custom application port definition headers, the lower-level
  * code that defines the interface used by this custom port factory; in this case the new
  * virtual test ports
  */
 #include "core/base_port.h"
-#include "core/msg_logger.h"
 #include "PortFactory.h"
 #include "CustomVirtualPort.h"
 
-
-/** STEP 5: Create a custom child class that inherits from PortFactory 
- */
 class CustomVirtualPortFactory : public PortFactory {
 public:
     /** We need a way to get an instance of the singleton port factory */

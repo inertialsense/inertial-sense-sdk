@@ -22,7 +22,7 @@
 /** Include utility functions for use by your custom port class member functions defined here
  */
 #include "ISUtilities.h"
-
+#include "core/msg_logger.h"
 
 /**
  * @brief  Required minimum method, validates name and type, locates and/or instantiates new port

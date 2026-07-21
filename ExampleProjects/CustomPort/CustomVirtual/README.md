@@ -208,7 +208,6 @@ This example creates the `CustomVirtualPortFactory` derived class specified by t
 Example headers for .h file:
 ```C++
 #include "core/base_port.h"
-#include "core/msg_logger.h"
 #include "PortFactory.h"
 #include "CustomVirtualPort.h"
 ```
@@ -245,6 +244,7 @@ Example headers for .cpp file:
 #include <regex>
 #include "CustomVirtualPortFactory.h"
 #include "ISUtilities.h"
+#include "core/msg_logger.h"
 ```
 
 We next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
@@ -252,10 +252,6 @@ We next complete the four required minimum functions for a port factory implemen
 `validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t`) to the caller after identifying or allocating your port.  In this example, we use the globally defined `CustomVirtualPort` array of test ports accessed via macro, with the names of the ports being `TEST0`, `TEST1`, etc.
 
 ```C++
-/** In this example we use a virtual port, so there is no baud rate or blocking to set; our port is defined by
- *  CustomVirtualPort; defined g_customPorts given by TESTn_PORT is an array of custom_port_t, 0 and 1 are loopback ports
- *  and present the only ports utilized in this simple example
- */
 custom_port_t* customPort;
 if (pName == "TEST0") {
    customPort = TEST0_PORT;
@@ -304,15 +300,14 @@ In summary, our `main()` uses the command line arg for identifying a virtual ser
 
 
 ### Step 7: Create the Port Manager and New Custom Port Factory
-In `main()`, we start by first doing a nominal check on the command line argument with some usage statement upon error.  Then we create our communications management by starting with one `PortManager` and one `CustomVirtualPortFactory` and registering the factory with the manager, like so:
+In `main()`, we start by first doing a nominal check on the command line argument with some usage statement upon invoke error.  Then we create our communications management by instantiating one `PortManager` and one `CustomVirtualPortFactory` and registering the factory with the manager, like so:
 ```C++
 PortManager& pm = PortManager::getInstance();
 CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
 pm.addPortFactory(&vpf);
-          
 ```
 
-Port init happens in the `CustomVirtualPortFactory` constructor.  We are interested in finding all ports matching a certain name pattern, but then we'll reference the one specifically indicated on the command line, which is virtual loopback in this case.  Then we need to request our port.
+Port init happens in the `CustomVirtualPortFactory` constructor.  Then we are interested in finding all ports matching a certain name pattern and type, but then we'll reference the one specifically indicated on the command line, which is virtual loopback in this case.  Then we need to request our port.
 ```C++    
 pm.discoverPorts(R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
 port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);    

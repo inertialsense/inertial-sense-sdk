@@ -12,7 +12,9 @@
  */
 
 
-/** STEP 6: Include user IO capabilities for this demo so when run visual indicators appear */
+/** STEP 6: The example application */
+
+/** Include user IO capabilities for this demo so when run visual indicators appear */
 #include <stdio.h>
 
 /** Include utility functions for use by your custom port class member functions defined here
@@ -22,9 +24,7 @@
 /** The port factory child class the user creates, inheriting from PortFactory.h definition */
 #include "CustomVirtualPortFactory.h"
 
-/**
- * Include the SDK PortManager if desired for building and maintaining a list of all ports by name 
- */
+/** Include the SDK PortManager if desired for building and maintaining a list of all ports by name */
 #include "PortManager.h"
 
 
@@ -75,10 +75,8 @@ int main(int argc, char* argv[])
     unsigned int wlen = strlen(reinterpret_cast<const char*>(wbuf));
     unsigned char rbuf[PORT_BUFFER_SIZE];
 
-    // Note that base_port read/write returns signed integers
-    int rbytes, wbytes;
-    // arbitrary run count, iterations through the loop
-    int run_cnt = 2;  
+    int rbytes, wbytes;    // note that base_port read/write returns signed integers
+    int run_cnt = 2;       // arbitrary run count, iterations through the loop
 
     /** 
      * We use the base_port API open/free/write etc functions, for which the user creates the 
@@ -94,20 +92,19 @@ int main(int argc, char* argv[])
 
         log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Attempting to send msg '%s'", wbuf);
                         
-        // write fixed message if space available
-        if (portFree(port) >= wlen) {
+        if (portFree(port) >= wlen) {          // write fixed message if space available
             wbytes = portWrite(port, wbuf, wlen);
         }
         SLEEP_MS(1000);
 
-        // this is a loopback port test, read back same message
-        // (note does not attempt to revisit and completely empty buffer if written by another source)
+        /** This is a loopback port test, read back same message
+         * (note does not attempt to revisit and completely empty buffer if written by another source)
+         */
         if (portAvailable(port) > 0) {
             rbytes = portRead(port, rbuf, PORT_BUFFER_SIZE);
         }
         
-        // Verification and logging of results
-        bool test_success = false;
+        bool test_success = false;          // verification and logging of results
 
         /** STEP 9: Use the SDK's msg logger utility to add valuable user messages to a log output file (inertial_sense.log)
          */        
@@ -121,6 +118,8 @@ int main(int argc, char* argv[])
         if ( !test_success ) {
             log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test FAIL on comm port '%s', wrote %d, read %d", portName(port), wbytes, rbytes);
         }
+
+        memset(rbuf, 0, PORT_BUFFER_SIZE);  // clear the recv buffer
         
     } //while
 
