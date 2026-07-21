@@ -10,12 +10,7 @@
 
 /** Include C++ library and other needed SDK header files here
  */
-#include <array>
-#include <string>
-#include <stdexcept>
-
 #include "CustomVirtualPort.h"
-
 #include "util/util.h"
 
 
@@ -111,7 +106,6 @@ void initCustomPorts() {
 
         ringBufInit(&port.portRingBuf, port.portBuffer, PORT_BUFFER_SIZE, 1);
         SNPRINTF((char *)port.name, PORT_NAME_SIZE, "TEST%1d", portNum);
-        //SNPRINTF((char *)port.name, 6, "TEST%1d", portNum % 10);  //replace inherited magic number?        
 
         portNum++;
     }

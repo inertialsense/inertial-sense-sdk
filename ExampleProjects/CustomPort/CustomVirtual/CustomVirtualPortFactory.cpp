@@ -7,8 +7,10 @@
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
+/** STEP 5: Implement the required functions for a Port Factory
+ */
 
-/** STEP 4: Include C++ libraries for use by your custom port class member functions defined here
+/** Include C++ libraries for use by your custom port class member functions defined here
  */
 #include <vector>
 #include <regex>
@@ -21,11 +23,6 @@
  */
 #include "ISUtilities.h"
 
-//debug
-#include <iostream>
-
-/** STEP 5: Implement the required functions for a Port Factory
- */
 
 /**
  * @brief  Required minimum method, validates name and type, locates and/or instantiates new port
@@ -76,8 +73,7 @@ bool CustomVirtualPortFactory::releasePort(port_handle_t port) {
     /** If you allocated your port object on the heap, free the memory (delete) here;
      * In this example we use a virtual port with the static object, so there is no memory to free, only clear
      */
-    //for example, delete (serial_port_t*)port;
-    memset(port, 0, sizeof(custom_port_t));
+    memset(port, 0, sizeof(custom_port_t));      //or for example, delete (serial_port_t*)port;
 
     return true;
 }
@@ -118,36 +114,13 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     std::vector<std::string> portNames = {};
     portNames.clear();
     portNames.resize(NUM_COM_PORTS);
-
-    // The size of the custom_port_t name is a magic number in the declaration; derive it rather than
-    // insert the same number in case it changes    
-    size_t nlen = sizeof( ((custom_port_t*)0)->name );
-        
-    // Populate the vector using index into global test port array
-    int i = 0;
     
-    // Generate each string with the unique identifying names the underlying test port implementation dictates;
-    // won't assume the test port names are null-terminated
+    /** Grab each string with the unique identifying names the underlying test port implementation dictates
+     */
+    int i = 0;      // Populate the vector using index into global custom port array
     for (auto& str : portNames) {
-        str = std::string( reinterpret_cast<const char*>(g_customPorts[i].name), nlen );
-
-        // Find the last character that is NOT a null terminator, space, tab, carriage return, or newline
-        //size_t endpos = str.find_last_not_of("\0 \t\r\n", str.length() - 1);
-        size_t endpos = str.find_last_not_of( std::string("\0 \t\r\n", PORT_NAME_SIZE-1) );
-    
-        if (endpos != std::string::npos) {
-            str.resize(endpos + 1); // Trim everything after the last valid character
-        } else {
-            str.clear(); // The string was entirely whitespace or nulls
-        }
-    
-        
+        str = std::string( reinterpret_cast<const char*>(g_customPorts[i].name));        
         log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Found port '%s'", str.c_str());
-
-        //debug
-        std::cout << "portName added name of len " << str.length() << std::endl;
-        //
-        
         ++i;
     }
 
@@ -156,11 +129,6 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);
         if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
-
-            //debug
-            std::cout << "callback for this port " << name.length() << std::endl;
-            //
-            
             portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
         }
     }

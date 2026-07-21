@@ -47,7 +47,7 @@ typedef struct custom_port_s {
     // Used to simulate serial ports
     ring_buf_t      portRingBuf;
     uint8_t         portBuffer[PORT_BUFFER_SIZE];
-    uint8_t         name[PORT_NAME_SIZE];  //replace magic number inherited from original?
+    uint8_t         name[PORT_NAME_SIZE];
 } custom_port_t;
 
 /** These are defined in the .cpp file
