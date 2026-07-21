@@ -1345,11 +1345,33 @@ typedef struct PACKED
     int             stat_magfield;  //!< Flag whether the magnetic field is stationary/consistent (suitable for mag calibration)
 } inl2_status_t;
 
+/** @brief External position sensor sample. */
+
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    double     pos[3];       //!< position {x,y,z} (m)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance 
+    uint32_t   frame;        //!< frame of measurement: 0=ECEF, 1=LLA
+} ext_pos_t;
+
+/** @brief External velocity sensor sample. */
+
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance 
+    uint32_t   frame;        //!< frame of measurement: 0=ECEF, 1=NED, 2=Body
+} ext_vel_t;
+
+
 /** @brief Generic single-axis scalar sensor sample: a timestamped single value, reused across multiple DIDs for simple scalar sensor outputs. */
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val;    //!< Sensor value (units are source-dependent)
 } gen_1axis_sensor_t;
 
@@ -1357,17 +1379,15 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
+    float                   pos[3]; //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
 } gen_3axis_sensor_t;
 
 /** @brief Generic dual 3-axis single-precision sensor sample: a timestamped pair of 3-element vectors, reused across multiple DIDs that report two related 3-axis sensors together (e.g. uncalibrated + calibrated, or two redundant sensors). */
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val1[3]; //!< First 3-axis sensor value {x,y,z} (units are source-dependent)
-
     float                   val2[3]; //!< Second 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_dual_3axis_sensor_t;
 
@@ -1375,8 +1395,8 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     double                  val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
+    float                   pos[3]; //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
 } gen_3axis_sensord_t;
 
 /** @brief (DID_SYS_SENSORS) Raw/calibrated output from the system's onboard sensors: IMU (gyro/accelerometer), magnetometer, barometer, humidity, and analog/voltage monitor inputs. */
