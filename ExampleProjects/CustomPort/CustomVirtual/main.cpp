@@ -1,11 +1,11 @@
 /**
- * @file CustomVirtualExample.cpp
+ * @file main.cpp
  * @brief ${BRIEF_DESC}
  * 
  * @remark Based upon the SDK ExampleProjects/ISComm/ISCommExample.cpp
  *
  * @details This demonstrates an example application creating a custom port factory 
- * with a virtual port implemented by the test_serial_utils code
+ * with a virtual port implemented by a modified version of the test_serial_utils code
  *
  * @author TylerS
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
@@ -29,10 +29,9 @@
 
 
 /**
- * Uses arg for identifying virtual serial port in a 
- * "minimal" example of setting up a custom serial port connection.  Bind a 
- * port_handle_t to the named port. With the handle, the port is opened, which is
- * in loopback mode in this case, and a simple write/read test is performed.
+ * Uses arg for identifying virtual serial port in a "minimal" example of setting up a custom serial port
+ * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
+ * the port is opened, which is in loopback mode in this case, and a simple write/read test is performed.
  */
 int main(int argc, char* argv[])
 {
@@ -43,18 +42,19 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    printf("Attempting to allocate and open virtual port %s\r\n", argv[1]);
+    printf("Attempting to bind and open virtual port %s\r\n", argv[1]);
 
     
-    /** STEP 7: Initialize and open comms port, which is virtual loopback in this case */
-    CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
-
-    /** Singleton PortManager, but we'll make a local reference, and we register the virtual port factory */
+    /** STEP 7: We need a singleton Port Manager and CustomVirtualPortFactory,
+     * we'll make local references, and we register the virtual port factory
+     */
     PortManager& pm = PortManager::getInstance();
+    CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
     pm.addPortFactory(&vpf);
-
+          
     /** We are interested in finding all ports matching a certain name pattern, but then we'll reference the one
-     specifically indicated on the command line */
+     specifically indicated on the command line, which is virtual loopback in this case
+    */
     pm.discoverPorts(R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
     port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);    
     
@@ -108,7 +108,9 @@ int main(int argc, char* argv[])
         
         // Verification and logging of results
         bool test_success = false;
-        
+
+        /** STEP 9: Use the SDK's msg logger utility to add valuable user messages to a log output file (inertial_sense.log)
+         */        
         if ( (wbytes > 0) && (rbytes == wbytes) ) {
             if ( memcmp(rbuf, wbuf, wlen) == 0 ) {
                 log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s', %d bytes sent/recvd", portName(port), rbytes);
