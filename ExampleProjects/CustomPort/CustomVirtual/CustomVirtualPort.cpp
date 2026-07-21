@@ -4,7 +4,7 @@
  * ported to use as customer example of building a custom port implementation to extend base_port
  *
  * @author TylerS
- * @remark Originated as Walt Johonson's tests/test_serial_utils.cpp
+ * @remark Originated as Walt Johnson's tests/test_serial_utils.cpp
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 

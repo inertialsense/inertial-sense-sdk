@@ -155,7 +155,7 @@ In this project we have created and initialized six virtual ports.  Two are loop
 
 
 ### Step 3: Complete Port Implementation
-In [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp) we define various port functions, which will provide the underlying functionality for the `base_port_t` once properly assigned, such as:
+In [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp) we define various port functions that leverage the underlying transport mechanism of the port, which in this case is the SDK ring buffer, as seen here:
 
 ```C
 static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
@@ -171,13 +171,15 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
     {   
    //...
 }
-
 //etc
 ```
 
-CustomVirtualPort.cpp also provides an initialization function that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation.  These and many settings are shared for all our virtual ports, being the same nature.  Other settings like type can be specified for different ports.  We will reference these virtual ports with the string names "TEST\<X\>", as in `TEST0`.
+These will provide the underlying functionality for the `base_port_t` extension once properly assigned to the base port's API.  It may be useful to compare CustomVirtualPort.h and base_port.h to see how the base port is extended.
 
-```C
+
+Our CustomVirtualPort.cpp provides an initialization function that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation.  These and many settings are shared for all our virtual ports, being the same nature as ports.  Other settings like type can be specified for different ports.  We will reference these virtual ports with the simple string names "TEST\<X\>", as in `TEST0`.
+
+```C++
 void initCustomPorts() {
    int portNum = 0;
    for (custom_port_t& port : g_customPorts) {
