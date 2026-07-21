@@ -215,6 +215,22 @@ private:
     is_operation_result fill_current_page();
     is_operation_result process_hex_stream(ByteBufferStream& byteStream);
 
+    /**
+     * Scans the buffered Intel-HEX image for the highest absolute flash address that will be
+     * written. The .hex text size is unrelated to the resulting flash extent (records are ASCII,
+     * and process_hex_stream() coalesces records and gap-fills pages), so the records must be
+     * parsed: the current Extended-Linear-Address (type 0x04) supplies the page base and each
+     * data (type 0x00) record contributes abs = (ela<<16)|offset, end = abs + byteCount.
+     * @return the exclusive top absolute flash address written by the image (0 if unavailable).
+     */
+    uint32_t calcFinalImageTopAddress();
+
+    /**
+     * @return the exclusive top absolute address of writable APP flash for the currently-targeted
+     * device, based on its bootloader version. Used to reject an oversized image before erasing.
+     */
+    uint32_t getWritableFlashTopAddress();
+
     is_operation_result download_data(int startOffset, int endOffset);
 
     ByteBuffer* imgBuffer = nullptr;
