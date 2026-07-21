@@ -16,15 +16,18 @@ In this example we use a simple virtual serial test port for our `base_port_t` i
 
 ```mermaid
 graph TD
-    A[[main]] -.-> B(CustomVirtualPortFactory)
-    A -.-> H(PortManager)
-    B -.-> C(custom_virtual_port)
-    C -.-> D(base_port_t)
-    C -.-> G(ring_buf_t)
-    B-.-> E(PortFactory)
-    H -.-> B
-    A --> F[[loopback test]]
-    F <--> C
+   A[[main]] --> F[[loopback test]]
+   A -.-> D(base_port_t)
+   A -.-> B(CustomVirtualPortFactory)
+   B -.-> C(custom_port_t)
+   B-.-> E(PortFactory)
+   C -.-> D
+   C -.-> G(ring_buf_t)
+   A -.-> H(PortManager)
+   B ~~~ H
+   %%H -.-> B
+   F <--> D
+   %%comment
 ```
 
 ## Files
@@ -113,7 +116,7 @@ typedef struct base_port_s {
 } base_port_t;
 ```
 
-In our example, we will create a `CustomVirtualPort` built upon the SDK ring buffer construct.  Add required includes to your new header file, which in this case is [CustomVirtualPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.h):
+In our example, we will create a custom virtual port `custom_port_t` built upon the SDK ring buffer construct.  Add required includes to new header file, which in this case is [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h):
 ```C
 #include "core/base_port.h"
 #include "ring_buffer.h"  //optional, depends upon your implementation
