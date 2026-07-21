@@ -1,5 +1,5 @@
 /**
- * @file CustomVirtualPort.h
+ * @file custom_virtual_port.h
  * @brief From a collection of functions and classes that might be useful when writing/running unit tests,
  * ported to use as customer example of building a custom port implementation to extend base_port
  *

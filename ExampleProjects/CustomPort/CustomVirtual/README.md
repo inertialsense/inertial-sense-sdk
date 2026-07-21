@@ -1,7 +1,7 @@
 # SDK: Port Factory Custom Virtual Communications Port Example Project
 
 ## Introduction
-This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom virtual test port as the `base_port_t` implementation, and the creation and usage of a custom `PortFactory` child class, using the Inertial Sense SDK.  It also shows how to use `PortManager` to maintain the set of ports that come out of port factory operations.  A simple application can be built from the provided code out of the box.
+This [CustomVirtualPortExample](https://github.com/inertialsense/inertial-sense-sdk/tree/develop/ExampleProjects/CustomPort/CustomVirtual) project demonstrates the creation of a custom virtual test port as the `base_port_t` implementation, and the creation and usage of a custom `PortFactory` child class, using the Inertial Sense SDK.  It also shows how to use `PortManager` to maintain the set of ports that come out of port factory operations.  A simple application can be built from the provided code out of the box.
 
 ## Purpose and Design
 This project is constructed as both a walk-through and a template for users wishing to learn how to make use of three modules of the SDK that would be important pieces for communications management.  
@@ -18,7 +18,7 @@ In this example we use a simple virtual serial test port for our `base_port_t` i
 graph TD
     A[[main]] -.-> B(CustomVirtualPortFactory)
     A -.-> H(PortManager)
-    B -.-> C(CustomVirtualPort)
+    B -.-> C(custom_virtual_port)
     C -.-> D(base_port_t)
     C -.-> G(ring_buf_t)
     B-.-> E(PortFactory)
@@ -32,8 +32,8 @@ graph TD
 #### Project Files
 
 * [main.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualExample.cpp)
-* [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp)
-* [CustomVirtualPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.h)
+* [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp)
+* [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h)
 * [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp)
 * [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.h)
 

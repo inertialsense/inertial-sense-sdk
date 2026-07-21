@@ -22,7 +22,7 @@
  */
 #include "core/base_port.h"
 #include "PortFactory.h"
-#include "CustomVirtualPort.h"
+#include "custom_virtual_port.h"
 
 class CustomVirtualPortFactory : public PortFactory {
 public:

@@ -15,9 +15,8 @@ include_directories(
 # Define the executable
 add_executable(${PROJECT_NAME}
     main.cpp
-    #CustomVirtualExample.cpp
     CustomVirtualPortFactory.cpp
-    CustomVirtualPort.cpp
+    custom_virtual_port.cpp
 )
 
 # Build using C11 and CXX20

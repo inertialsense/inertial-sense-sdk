@@ -1,5 +1,5 @@
 /**
- * @file CustomVirtualPort.cpp
+ * @file custom_virtual_port.cpp
  * @brief From a collection of functions and classes that might be useful when writing/running unit tests,
  * ported to use as customer example of building a custom port implementation to extend base_port
  *
@@ -10,7 +10,7 @@
 
 /** Include C++ library and other needed SDK header files here
  */
-#include "CustomVirtualPort.h"
+#include "custom_virtual_port.h"
 #include "util/util.h"
 
 
