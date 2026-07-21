@@ -121,7 +121,7 @@ In our example, we will create a `CustomVirtualPort` built upon the SDK ring buf
 ```
 
 ### Step 2: Extend base_port_t With New Structure
-In this example we create a virtual test port defined in [CustomVirtualPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.h), which has both loopback and internally bridged passthrough ports, so that the example can be demonstrated without specialized hardware:
+In this example we create a virtual port defined in [CustomVirtualPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.h), which has both loopback and internally bridged passthrough ports, so that the example can be demonstrated without specialized hardware:
 
 ```C
 typedef struct custom_port_s {
@@ -145,7 +145,7 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
 //etc
 ```
 
-As this is a virtual custom port that does not rely on any hardware or third-party drivers, we can create more than one that share laregly the same characteristics, and/or customize some for a specific purpose.  In [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp):
+As this is a virtual port that does not rely on any hardware or third-party drivers, we can create more than one that share laregly the same characteristics, and/or customize some for a specific purpose.  In [CustomVirtualPort.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPort.cpp):
 
 ```C
 custom_port_t g_customPorts[NUM_COM_PORTS] = {};
@@ -203,7 +203,7 @@ When we create our new custom port factory in the following steps, we can call t
 
 
 ### Step 4: Extend PortFactory with New Class
-This example uses the `CustomVirtualPortFactory` derived class.  We create two new files, CustomVirtualPortFactory.h and CustomVirtualPortFactory.cpp.   With these files we will derive a new port factory from the SDK `PortFactory` class.
+This example creates the `CustomVirtualPortFactory` derived class specified by the files CustomVirtualPortFactory.h and CustomVirtualPortFactory.cpp.  With these files we will derive a new port factory from the SDK `PortFactory` class.
 
 Example headers for .h file:
 ```C++
@@ -247,9 +247,9 @@ Example headers for .cpp file:
 #include "ISUtilities.h"
 ```
 
-You will next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
+We next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
 
-`validatePort()` will check the name and type of the port at the beginning of the bind process.  In `bindPort()`, after completing validation of the name and type of port, you'll need to return a `port_handle_t` (that points to a `base_port_t`) to the caller after identifying or allocating your port.  In this example, we use the globally defined `CustomVirtualPort` array of test ports accessed via macro, with the names of the ports being `TEST0`, `TEST1`, etc.
+`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t`) to the caller after identifying or allocating your port.  In this example, we use the globally defined `CustomVirtualPort` array of test ports accessed via macro, with the names of the ports being `TEST0`, `TEST1`, etc.
 
 ```C++
 /** In this example we use a virtual port, so there is no baud rate or blocking to set; our port is defined by
@@ -288,7 +288,7 @@ Add in additional support functions to the CustomVirtualPortFactory.cpp file as 
 
 
 ### Step 6: Create Example Application
-Create a new .cpp file for your application, which for us is main.cpp in this example.
+Create a new .cpp file for the application, which for us is main.cpp in this example.
 
 Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference your new `PortFactory` class, and don't forget the `PortManager`:
 ```C++
