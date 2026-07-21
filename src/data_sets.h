@@ -172,7 +172,8 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_GYR              (eDataIDs)103   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
-
+#define DID_EXT_POS                     (eDataIDs)106   /**< (ext_pos_t) External position observation */
+#define DID_EXT_VEL                     (eDataIDs)107   /**< (ext_vel_t) External velocity observation */
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
 #define DID_GPX_FIRST                   (eDataIDs)120   /**< First of GPX DIDs */
