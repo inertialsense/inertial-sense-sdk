@@ -1353,7 +1353,7 @@ typedef struct PACKED
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance 
-    uint32_t   frame;        //!< frame of measurement: 0=ECEF, 1=LLA
+    //uint32_t   frame;        //!< frame of measurement: 0=ECEF, 1=LLA
 } ext_pos_t;
 
 /** @brief External velocity sensor sample. */
