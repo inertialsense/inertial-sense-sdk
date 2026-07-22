@@ -415,6 +415,44 @@ TEST_F(LogBoundsTest, W6_UnknownDidIsStillIndexedAndReadBack) {
     EXPECT_EQ(unknownSeen, 1u) << "unknown DID must be indexed under its own id";
 }
 
+// D/J: a truncated .raw (tail chopped mid-record) must load GRACEFULLY — no
+// crash — and must never produce garbage bounds (1970/2083/out-of-range). We
+// assert graceful + sane bounds, not exact surviving counts (per the adversarial
+// refinement). Complements test_truncated_log (which covers record iteration);
+// this is the resolver/bounds view over a truncated log.
+TEST_F(LogBoundsTest, TruncatedTailLoadsGracefullyWithSaneBounds) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (int i = 0; i < 10; ++i)
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0 + i)));  // ToW 100..109 s, week 2300
+    f = buildFixture("trunc", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    const auto full = fs::file_size(f.rawFile);
+    ASSERT_GT(full, 60u);
+    { std::error_code ec; fs::resize_file(f.rawFile, full - 40, ec); ASSERT_FALSE(ec); }  // chop the tail
+    if (!f.idxFile.empty()) { std::error_code ec; fs::remove(f.idxFile, ec); }            // force rebuild scan
+
+    // Observed: 9 of 10 records survive; the chopped tail record is dropped.
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value()) << "truncated log must load gracefully, not fail/crash";
+
+    std::size_t n = 0;
+    for (auto rv : log.value().allRecords()) { (void)rv; ++n; }
+    EXPECT_GE(n, 1u);
+    EXPECT_LT(n, 10u) << "the truncated tail record must be dropped, not invented";
+
+    auto r = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(r.has_value());
+    auto [lo, hi] = resolvedSpan(log.value(), *r);
+
+    const uint64_t base = 2300ull * kWeekMs + kGpsEpochMs;   // week-2300 epoch
+    EXPECT_EQ(gpsWeekOf(lo), 2300u);
+    EXPECT_EQ(gpsWeekOf(hi), 2300u);
+    EXPECT_EQ(lo, base + 100'000u) << "first (untouched) record survives intact";
+    EXPECT_GE(hi, lo);
+    EXPECT_LE(hi, base + 109'000u) << "no record resolves past what was written (no garbage bounds)";
+}
+
 // ==================== J-3: errant data (bounds robustness) ====================
 // Bounds are min/max over resolved times, so they must be robust to record
 // ORDER and to duplicates — not "first/last". These guard the class of
