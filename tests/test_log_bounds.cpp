@@ -21,6 +21,8 @@
 #include "DeviceLog.h"
 #include "ISDeviceLog.h"
 #include "ISFileManager.h"
+#include "ISLogFile.h"
+#include "ISLogIndex.h"
 #include "ISLogger.h"
 #include "ISTimeResolver.h"
 #include "data_sets.h"
@@ -44,7 +46,7 @@ constexpr uint32_t kSerial     = 888111u;
 constexpr uint64_t kGpsEpochMs = 315'964'800'000ULL;  //!< 1980-01-06 UTC in Unix ms
 constexpr uint64_t kWeekMs     = 604'800'000ULL;
 
-struct FixturePaths { fs::path directory; fs::path rawFile; };
+struct FixturePaths { fs::path directory; fs::path rawFile; fs::path idxFile; };
 
 void writeRecord(cISLogger& logger, std::shared_ptr<cDeviceLog> dev,
                  uint32_t did, void* payload, std::size_t size) {
@@ -103,12 +105,29 @@ FixturePaths buildFixture(const std::string& hint,
     ISFileManager::GetAllFilesInDirectory(f.directory.string(), true, "\\.raw$", rawFiles);
     if (!rawFiles.empty()) f.rawFile = rawFiles.front().name;
 
-    // Remove any .idx the writer emitted so fromSegments rebuilds a fresh v2
-    // index from the .raw scan (populates the record index used by allRecords).
+    // SN-8328: keep the writer's .idx. Post-fix, cISLogger emits a populated,
+    // finalized v2 sidecar even for a small (single-un-flushed-chunk) log, so
+    // fromSegments reads records straight from the writer's index. Exercising
+    // that on-disk index — not a reader-side rebuild — is the whole point of
+    // validating the writer stack end-to-end. (Before the DeviceLogRaw close-
+    // ordering fix this .idx had 0 records and we deleted it to force a scan.)
     std::vector<ISFileManager::file_info_t> idxFiles;
     ISFileManager::GetAllFilesInDirectory(f.directory.string(), true, "\\.idx$", idxFiles);
-    for (const auto& fi : idxFiles) { std::error_code ec; fs::remove(fi.name, ec); }
+    if (!idxFiles.empty()) f.idxFile = idxFiles.front().name;
     return f;
+}
+
+//! Number of records the writer recorded in the on-disk .idx header, and
+//! whether that header is finalized. Reads the sidecar with the same idx
+//! codec the reader uses. Returns {total_records, finalized}.
+std::pair<uint64_t, bool> writerIdxHeaderStats(const fs::path& idxPath) {
+    cISLogFile in(idxPath.string(), "rb");
+    if (!in.isOpened()) return {0, false};
+    auto hdr = inertial_sense::idx::readHeader(in);
+    if (!hdr.has_value()) return {0, false};
+    const bool finalized =
+        (hdr->flags & inertial_sense::idx::IS_LOG_IDX_HDR_FLAG_FINALIZED) != 0;
+    return {hdr->total_records, finalized};
 }
 
 void teardown(FixturePaths& f) {
@@ -276,6 +295,52 @@ TEST_F(LogBoundsTest, PreFixRecordDoesNotSplitCrossDidDomain) {
     EXPECT_EQ(gpsWeekOf(d1.first), 2300u);
     EXPECT_EQ(gpsWeekOf(d2.first), 2300u);
     EXPECT_EQ(gpsWeekOf(d2.second), 2300u);
+}
+
+// ================= W: writer-stack round-trip regression (SN-8328) =================
+// Guard for the cDeviceLogRaw::CloseAllFiles close-ordering defect. A log small
+// enough that cISLogger never flushed a chunk during logging used to finalize
+// its index against an orphan "./.idx" and then re-emit an empty, non-finalized
+// <segment>.idx (0 records); the reader trusted that empty sidecar and returned
+// zero records — deleting the .idx (forcing a rebuild scan) was the only way to
+// see the data. These assert the writer now emits a populated, finalized sidecar
+// AND the records read back end-to-end via the same fromSegments path Logalyzer
+// uses, with NO reader-side rebuild.
+
+TEST_F(LogBoundsTest, W1_SmallLogWriterIdxIsPopulatedAndFinalized) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0, 130.0, 140.0 })
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    f = buildFixture("w1_writeidx", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    ASSERT_FALSE(f.idxFile.empty()) << "writer must emit a .idx sidecar";
+
+    auto [total, finalized] = writerIdxHeaderStats(f.idxFile);
+    EXPECT_EQ(total, 5u) << "writer .idx must record every logged packet";
+    EXPECT_TRUE(finalized) << "clean CloseAllFiles must finalize the .idx";
+}
+
+TEST_F(LogBoundsTest, W1_SmallLogReadsBackAllRecordsViaFromSegments) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0)));
+    recs.emplace_back(DID_INS_1, bytesOf(makeIns1(110.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(120.0)));
+    recs.emplace_back(DID_INS_1, bytesOf(makeIns1(130.0)));
+    f = buildFixture("w1_readback", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+
+    std::size_t n = 0;
+    for (auto rv : log.value().allRecords()) { (void)rv; ++n; }
+    EXPECT_EQ(n, 4u) << "every written record must read back (writer .idx not empty)";
+
+    // The writer's on-disk index agrees with what the reader sees.
+    ASSERT_FALSE(f.idxFile.empty());
+    auto [total, finalized] = writerIdxHeaderStats(f.idxFile);
+    EXPECT_EQ(total, n);
+    EXPECT_TRUE(finalized);
 }
 
 }  // namespace

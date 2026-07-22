@@ -56,10 +56,22 @@ void cDeviceLogRaw::InitDeviceForReading()
 
 bool cDeviceLogRaw::CloseAllFiles()
 {
-    cDeviceLog::CloseAllFiles();
-
-    // Write remaining data to file
+    // SN-8328: flush the buffered raw chunk to disk BEFORE the base class
+    // writes/finalizes the .idx. WriteChunkToFile() lazily creates the real
+    // segment file via OpenNewSaveFile(), which is the only place m_fileName
+    // is assigned. If we let cDeviceLog::CloseAllFiles() run first (as before),
+    // then for any log small enough that no chunk was ever flushed during
+    // logging, m_fileName is still empty at finalize time: writeIndexChunk()/
+    // finalizeIndex() would land on an orphan "./.idx", and the subsequent
+    // lazy OpenNewSaveFile() would reset the index state and re-emit an empty,
+    // non-finalized <segment>.idx (0 records). The reader trusts that empty
+    // sidecar and returns zero records. Flushing first guarantees the segment
+    // file (and its correctly-named .idx) exist before finalize.
     FlushToFile();
+
+    // Flush any remaining buffered index records and finalize the .idx header
+    // against the now-existing segment file.
+    cDeviceLog::CloseAllFiles();
 
     // Close file
     CloseISLogFile(m_pFile);
