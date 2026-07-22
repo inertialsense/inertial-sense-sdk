@@ -46,7 +46,12 @@ constexpr uint32_t kSerial     = 888111u;
 constexpr uint64_t kGpsEpochMs = 315'964'800'000ULL;  //!< 1980-01-06 UTC in Unix ms
 constexpr uint64_t kWeekMs     = 604'800'000ULL;
 
-struct FixturePaths { fs::path directory; fs::path rawFile; fs::path idxFile; };
+struct FixturePaths {
+    fs::path directory;
+    fs::path rawFile;                  //!< first segment (back-compat for single-seg tests)
+    fs::path idxFile;                  //!< first segment's .idx
+    std::vector<fs::path> segments;    //!< all .raw segments, sorted by name
+};
 
 void writeRecord(cISLogger& logger, std::shared_ptr<cDeviceLog> dev,
                  uint32_t did, void* payload, std::size_t size) {
@@ -79,7 +84,8 @@ template <class T> std::vector<uint8_t> bytesOf(const T& t) {
 }
 
 FixturePaths buildFixture(const std::string& hint,
-                          const std::vector<std::pair<uint32_t, std::vector<uint8_t>>>& records) {
+                          const std::vector<std::pair<uint32_t, std::vector<uint8_t>>>& records,
+                          uint32_t maxFileSize = 0) {
     FixturePaths f;
     char dirBuf[256];
     std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_log_bounds_%s_%d_%ld",
@@ -91,6 +97,7 @@ FixturePaths buildFixture(const std::string& hint,
     cISLogger::sSaveOptions opts;
     opts.logType               = cISLogger::LOGTYPE_RAW;
     opts.useSubFolderTimestamp = false;
+    if (maxFileSize) opts.maxFileSize = maxFileSize;   // force segment rotation
     if (!logger.InitSave(f.directory.string(), opts)) return f;
     auto dev = logger.registerDevice(kHwId, kSerial);
     if (!dev) return f;
@@ -103,7 +110,12 @@ FixturePaths buildFixture(const std::string& hint,
 
     std::vector<ISFileManager::file_info_t> rawFiles;
     ISFileManager::GetAllFilesInDirectory(f.directory.string(), true, "\\.raw$", rawFiles);
-    if (!rawFiles.empty()) f.rawFile = rawFiles.front().name;
+    std::sort(rawFiles.begin(), rawFiles.end(),
+              [](const ISFileManager::file_info_t& a, const ISFileManager::file_info_t& b) {
+                  return a.name < b.name;  // alphabetical == segment order
+              });
+    for (const auto& ri : rawFiles) f.segments.emplace_back(ri.name);
+    if (!f.segments.empty()) f.rawFile = f.segments.front();
 
     // SN-8328: keep the writer's .idx. Post-fix, cISLogger emits a populated,
     // finalized v2 sidecar even for a small (single-un-flushed-chunk) log, so
@@ -341,6 +353,63 @@ TEST_F(LogBoundsTest, W1_SmallLogReadsBackAllRecordsViaFromSegments) {
     auto [total, finalized] = writerIdxHeaderStats(f.idxFile);
     EXPECT_EQ(total, n);
     EXPECT_TRUE(finalized);
+}
+
+// W-2: segment rotation round-trip. Force multiple .raw segments (small
+// maxFileSize + enough records to overflow the 128 KB chunk buffer repeatedly)
+// and read them all back through the same fromSegments path Logalyzer uses.
+// Every record must survive rotation exactly once — no drop at segment
+// boundaries, no duplication — and the resolved whole-log span must bridge all
+// segments.
+TEST_F(LogBoundsTest, W2_MultiSegmentRoundTripViaFromSegments) {
+    constexpr std::size_t kN = 4000;
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.reserve(kN);
+    for (std::size_t i = 0; i < kN; ++i)
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0 + static_cast<double>(i))));
+    f = buildFixture("w2_rotate", recs, /*maxFileSize*/ 100u * 1024u);
+    ASSERT_FALSE(f.segments.empty());
+    ASSERT_GT(f.segments.size(), 1u) << "expected rotation into multiple .raw segments";
+
+    auto log = ISDeviceLog::fromSegments(f.segments);
+    ASSERT_TRUE(log.has_value());
+
+    std::size_t n = 0;
+    for (auto rv : log.value().allRecords()) { (void)rv; ++n; }
+    EXPECT_EQ(n, kN) << "every record must survive rotation exactly once (no drop/dup)";
+
+    auto r = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(r.has_value());
+    auto [lo, hi] = resolvedSpan(log.value(), *r);
+    EXPECT_EQ(gpsWeekOf(lo), 2300u);
+    EXPECT_EQ(gpsWeekOf(hi), 2300u);
+    EXPECT_EQ(hi - lo, (kN - 1) * 1000u);  // 1 s ToW step across all segments
+}
+
+// W-6: an unrecognized DID is still a valid ISB packet, so the writer must
+// index it and the reader must surface it under its own id — not silently drop
+// it (which would understate record counts / bounds).
+TEST_F(LogBoundsTest, W6_UnknownDidIsStillIndexedAndReadBack) {
+    // Unmapped (>= DID_COUNT) but within the normal DID field width.
+    constexpr uint32_t kUnknownDid = 200u;
+    ASSERT_GE(kUnknownDid, static_cast<uint32_t>(DID_COUNT)) << "must be unmapped";
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(100.0)));
+    recs.emplace_back(kUnknownDid, std::vector<uint8_t>(32, 0xAB));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(110.0)));
+    f = buildFixture("w6_unknown", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+
+    std::size_t total = 0, unknownSeen = 0;
+    for (auto rv : log.value().allRecords()) {
+        ++total;
+        if (rv.did() == kUnknownDid) ++unknownSeen;
+    }
+    EXPECT_EQ(total, 3u) << "unknown-DID record must not be dropped from the index";
+    EXPECT_EQ(unknownSeen, 1u) << "unknown DID must be indexed under its own id";
 }
 
 }  // namespace
