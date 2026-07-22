@@ -412,4 +412,51 @@ TEST_F(LogBoundsTest, W6_UnknownDidIsStillIndexedAndReadBack) {
     EXPECT_EQ(unknownSeen, 1u) << "unknown DID must be indexed under its own id";
 }
 
+// W-3: flush/close durability. After CloseAllFiles the log is complete on disk;
+// re-opening it (any number of times) must yield the same records/bounds, and
+// the final record must not be truncated.
+TEST_F(LogBoundsTest, W3_ReopenAfterCloseIsDeterministic) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 101.0, 102.0, 103.0, 104.0 })
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    f = buildFixture("w3_reopen", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto countAndSpan = [](const fs::path& raw) {
+        auto log = ISDeviceLog::fromSegments({ raw });
+        EXPECT_TRUE(log.has_value());
+        std::size_t n = 0;
+        for (auto rv : log->allRecords()) { (void)rv; ++n; }
+        auto r = ISTimeResolver::build(log.value());
+        EXPECT_TRUE(r.has_value());
+        auto span = resolvedSpan(log.value(), *r);
+        return std::make_tuple(n, span.first, span.second);
+    };
+
+    // Two fully-independent opens of the same closed log agree exactly.
+    auto a = countAndSpan(f.rawFile);
+    auto b = countAndSpan(f.rawFile);
+    EXPECT_EQ(std::get<0>(a), 5u);
+    EXPECT_EQ(a, b) << "repeated opens of a closed log must be deterministic";
+}
+
+TEST_F(LogBoundsTest, W3_ClosedLogHasNoTruncatedFinalRecord) {
+    // The final record written before close must be fully present after reopen
+    // (a truncated flush would drop it or corrupt its DID).
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0 })
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    recs.emplace_back(DID_INS_1, bytesOf(makeIns1(130.0)));  // distinct final DID
+    f = buildFixture("w3_finalrec", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+
+    uint32_t lastDid = 0; std::size_t n = 0;
+    for (auto rv : log.value().allRecords()) { lastDid = rv.did(); ++n; }
+    EXPECT_EQ(n, 4u) << "final record must not be dropped by close";
+    EXPECT_EQ(lastDid, static_cast<uint32_t>(DID_INS_1)) << "final record read back intact";
+}
+
 }  // namespace
