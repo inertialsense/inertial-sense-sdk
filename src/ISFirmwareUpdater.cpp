@@ -1215,6 +1215,13 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                     // looks identical to a real upload in the UI.
                     {
                         auto lk = updateState.lock();
+                        // Because we never called initializeUpload() (no session was actually
+                        // started), updateState.target is still stale for this target. Sync it
+                        // here — otherwise refreshUpdateState()'s "session target changed" check
+                        // (which runs right after this, in the same step()) sees a mismatch and
+                        // clears updateState.messages, wiping the notification we just added
+                        // before it's ever displayed.
+                        updateState.target = target;
                         updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_WARN, cmd.resultMsg);
                         updateState.hasNotifications = true;
                     }
