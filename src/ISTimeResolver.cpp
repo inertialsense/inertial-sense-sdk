@@ -46,10 +46,13 @@ constexpr uint64_t kGpsWeekMs      = 604'800'000ULL;  //!< 7 days in ms
 //! SN-8323: how far before the durable fix period a ToW-domain record may fall
 //! and still be treated as a (backward-extrapolated) part of the timeline.
 //! Beyond this it is a pre-fix / startup record with no stable GPS time and is
-//! tagged SessionOnly/Unknown. Generous enough to keep legitimate
-//! seconds-before-fix data; the pathological case is days off (ToW near the GPS
-//! week start while the fix is well into the week).
-constexpr uint64_t kPreFixGuardMs  = 300'000ULL;      //!< 5 minutes
+//! tagged SessionOnly/Unknown. Sized to preserve legitimate backward
+//! extrapolation (GPS cold-start acquisition is well under an hour) while
+//! rejecting the pathological case, which is grossly off — a ToW at the GPS
+//! week start while the durable fix is days into the week. A record more than
+//! an hour before the first stable fix predates any plausible continuous
+//! session (prior power cycle / uninitialized time).
+constexpr uint64_t kPreFixGuardMs  = 3'600'000ULL;    //!< 1 hour
 
 /**
  * @brief Convert `(gpsWeek, towMs)` into a Unix-epoch ms timestamp.
