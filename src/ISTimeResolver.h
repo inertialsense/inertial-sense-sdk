@@ -197,10 +197,12 @@ public:
 private:
     explicit ISTimeResolver(std::vector<ISSyncPoint> syncs,
                             std::vector<Discontinuity> discs,
-                            uint32_t anchorWeek) noexcept
+                            uint32_t anchorWeek,
+                            uint64_t anchorTowStart) noexcept
         : syncPoints_(std::move(syncs)),
           discontinuities_(std::move(discs)),
-          anchorWeek_(anchorWeek) {}
+          anchorWeek_(anchorWeek),
+          anchorTowStart_(anchorTowStart) {}
 
     std::vector<ISSyncPoint>    syncPoints_;
     std::vector<Discontinuity>  discontinuities_;
@@ -209,6 +211,11 @@ private:
     //! chooseAnchorWeek). 0 => no valid week seen (pre-fix log); resolve() then
     //! falls back to ToW-only, pre-D0066 behavior.
     uint32_t                    anchorWeek_ = 0;
+    //! SN-8323: earliest ToW (ms into week) of the durable fix period. A
+    //! ToW-domain input well before this began has no stable GPS time (a
+    //! pre-fix / startup record) and resolve() tags it SessionOnly/Unknown so
+    //! consumers exclude it from the timeline + extent.
+    uint64_t                    anchorTowStart_ = 0;
 };
 
 } // namespace inertial_sense

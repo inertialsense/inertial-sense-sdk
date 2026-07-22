@@ -360,6 +360,34 @@ TEST_F(TimeResolverTest, StartupTransientWeekLosesToDurableFix) {
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(300000, 2300));
 }
 
+// SN-8323 (part 2): a pre-fix record whose ToW is well before the durable fix
+// window is tagged SessionOnly/Unknown so consumers drop it from the timeline +
+// extent (no "leading gap"), rather than anchoring it to a bogus week-start
+// time. A query inside the durable window still resolves normally.
+TEST_F(TimeResolverTest, PreFixToWBeforeDurableWindowIsSessionOnly) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    { auto s = makeIns2(1.0); s.week = 0; recs.emplace_back(DID_INS_2, bytesOf(s)); }  // pre-fix, ~1 s into week
+    for (double tow : { 400000.0, 400100.0, 400200.0 }) {  // durable fix ~4.6 days into the week
+        auto s = makeIns2(tow); s.week = 2300;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    f = buildFixture("prefix_before_window", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Pre-fix ToW (~1 s) is far before the durable window (~4.6 d) -> excluded.
+    auto pre = resolver->resolve(1000, kFixtureSerial);
+    EXPECT_EQ(pre.source, TimeSource::SessionOnly);
+    EXPECT_EQ(pre.confidence, TimeConfidence::Unknown);
+
+    // A query inside the durable window still resolves (2300-anchored).
+    auto ok = resolver->resolve(400100000, kFixtureSerial);
+    EXPECT_EQ(ok.value, expectedUnixMsForFixtureWeek(400100000, 2300));
+}
+
 // ---------------------------------------------------------------------------
 // Discontinuity detection — synthesize a clock jump between sync points
 // by giving the third sync point a much smaller delta than the gap

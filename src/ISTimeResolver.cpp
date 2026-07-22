@@ -43,6 +43,13 @@ constexpr std::array<uint32_t, 6> kToWBearingDids = {
 //! @note SN-8107 / D0066.
 constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
 constexpr uint64_t kGpsWeekMs      = 604'800'000ULL;  //!< 7 days in ms
+//! SN-8323: how far before the durable fix period a ToW-domain record may fall
+//! and still be treated as a (backward-extrapolated) part of the timeline.
+//! Beyond this it is a pre-fix / startup record with no stable GPS time and is
+//! tagged SessionOnly/Unknown. Generous enough to keep legitimate
+//! seconds-before-fix data; the pathological case is days off (ToW near the GPS
+//! week start while the fix is well into the week).
+constexpr uint64_t kPreFixGuardMs  = 300'000ULL;      //!< 5 minutes
 
 /**
  * @brief Convert `(gpsWeek, towMs)` into a Unix-epoch ms timestamp.
@@ -297,9 +304,18 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
         }
     }
 
-    // SN-8323: pick the epoch-anchor week before moving `syncs`.
+    // SN-8323: pick the epoch-anchor week + the start of its durable fix window
+    // (earliest ToW at that week) before moving `syncs`.
     const uint32_t anchorWeek = chooseAnchorWeek(syncs);
-    return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek };
+    uint64_t anchorTowStart = 0;
+    if (anchorWeek != 0) {
+        uint64_t minTow = UINT64_MAX;
+        for (const auto& sp : syncs) {
+            if (sp.gpsWeek == anchorWeek) minTow = std::min(minTow, sp.payloadToWMs);
+        }
+        anchorTowStart = (minTow == UINT64_MAX) ? 0 : minTow;
+    }
+    return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek, anchorTowStart };
 }
 
 // ============================================================
@@ -363,6 +379,18 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         const uint64_t towMs = (bridged < 0) ? 0u : static_cast<uint64_t>(bridged);
         return TimeStamp::fromResolvedViaSync(unixOrToW(towMs), deviceId,
                                               TimeConfidence::ExtrapolatedBackward);
+    }
+
+    // SN-8323 (part 2): a ToW-domain input that falls well before the durable
+    // fix period began is a pre-fix / startup record — the device had no stable
+    // GPS time yet (e.g. a ToW near the GPS week start while the fix is days
+    // into the week). Epoch-anchoring it would place it at a bogus early time
+    // and drag the log extent back (the "leading gap"). Tag it
+    // SessionOnly/Unknown — the same contract as a record with no anchor at all
+    // — so every SDK consumer excludes it from the timeline + extent uniformly.
+    if (epochAnchor && anchorTowStart_ > kPreFixGuardMs &&
+        hostTimeMs + kPreFixGuardMs < anchorTowStart_) {
+        return TimeStamp::fromSessionOnly(hostTimeMs, deviceId);
     }
 
     // Binary search for the first sync point whose hostTimeMs >= input.
