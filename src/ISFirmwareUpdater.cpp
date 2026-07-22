@@ -1209,7 +1209,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                         "Ignoring Update. New firmware %s is older than device %s.",
                         imageVerStr.c_str(), targetVerStr.c_str());
                     cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
-                    cmd.resultMsg = "Update Skipped — Firmware Not Newer (Use \"Force Update\" to Override)";
+                    cmd.resultMsg = "Update Skipped — Firmware is not newer (Use \"Force Update\" to override)";
                     // Record this as a notification (not an error) so the caller can surface it
                     // distinctly from a plain "Completed Successfully" — otherwise a version-skip
                     // looks identical to a real upload in the UI.
