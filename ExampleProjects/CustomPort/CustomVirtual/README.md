@@ -251,7 +251,7 @@ Example headers for .cpp file, which should include our new port factory header 
 
 We next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
 
-`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t`) to the caller after identifying or allocating your port.  In this example, we use the globally defined custom array of test ports accessed via macro, with the names of the ports being `TEST0`, `TEST1`, etc.  A sample from our `bindPort()` code showing the handle we return:
+`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use the globally defined custom array of test ports accessed via macro, with the names of the ports being `TEST0`, `TEST1`, etc.  A sample from our `bindPort()` code showing the handle we return:
 
 ```C++
 custom_port_t* customPort;
