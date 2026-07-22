@@ -82,8 +82,8 @@ std::vector<uint8_t> parsePayload(const uint8_t* framed, std::size_t n) {
     return {};
 }
 
-//! Write a single INS_2 record through cISLogger; return its .raw path.
-fs::path writeOneIns2(const ins_2_t& s) {
+//! Write a single record of any DID through cISLogger; return its .raw path.
+fs::path writeOneRecord(uint32_t did, const void* payload, std::size_t size) {
     const fs::path dir = makeTempDir("test_didmap");
     ISFileManager::DeleteDirectory(dir.string());
 
@@ -95,7 +95,7 @@ fs::path writeOneIns2(const ins_2_t& s) {
     auto dl = logger.registerDevice(kHwId, kSerial);
     if (!dl) return {};
     logger.EnableLogging(true);
-    const testsim::SimPacket p = testsim::frame(DID_INS_2, &s, sizeof(s));
+    const testsim::SimPacket p = testsim::frame(did, payload, size);
     logger.LogData(dl, static_cast<int>(p.framed.size()), p.framed.data());
     logger.CloseAllFiles();
 
@@ -103,6 +103,8 @@ fs::path writeOneIns2(const ins_2_t& s) {
     ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.raw$", raws);
     return raws.empty() ? fs::path{} : fs::path(raws.front().name);
 }
+
+fs::path writeOneIns2(const ins_2_t& s) { return writeOneRecord(DID_INS_2, &s, sizeof(s)); }
 
 // H1: the DID_INS_2 field map must agree with the C struct — offset and type
 // for a couple of well-known fields. A drift here is exactly what produces
@@ -267,6 +269,47 @@ TEST(DidMappingTest, ImusRawFieldsRegistered_SN8113) {
     EXPECT_EQ(m->at("I0.acc").offset, static_cast<uint32_t>(offsetof(imus_t, I[0].acc)));
     EXPECT_EQ(m->at("I2.acc").offset, static_cast<uint32_t>(offsetof(imus_t, I[2].acc)));
     EXPECT_EQ(m->at("I2.pqr").offset, static_cast<uint32_t>(offsetof(imus_t, I[2].pqr)));
+}
+
+// SN-8113 FUNCTIONAL round-trip: not just "is it registered" but "does the
+// parser actually work" — write a DID_IMUS_RAW (imus_t) record with known
+// per-IMU/axis values through cISLogger, read it back via fromSegments, and
+// extract element values through the field map exactly as RawSeriesBuilder
+// would. Asserting the values survive proves the end-to-end parse, not just
+// the mapping's presence.
+TEST(DidMappingTest, ImusRawParsesAndExtractsValues_SN8113) {
+    imus_t s{};
+    s.time       = 12.5;
+    s.status     = 0x7u;
+    s.I[0].acc[0] = 1.0f;  s.I[0].acc[1] = 2.0f;  s.I[0].acc[2] = 3.0f;
+    s.I[1].pqr[2] = -0.5f;
+    s.I[2].acc[1] = 9.81f;
+
+    const fs::path raw = writeOneRecord(DID_IMUS_RAW, &s, sizeof(s));
+    ASSERT_FALSE(raw.empty());
+    auto log = ISDeviceLog::fromSegments({ raw });
+    ASSERT_TRUE(log.has_value());
+    const map_name_to_info_t* m = cISDataMappings::NameToInfoMap(DID_IMUS_RAW);
+    ASSERT_NE(m, nullptr);
+
+    std::size_t seen = 0;
+    for (auto rv : log.value().records(DID_IMUS_RAW)) {
+        auto [ptr, size] = rv.bytes();
+        const std::vector<uint8_t> payload = parsePayload(ptr, size);
+        ASSERT_EQ(payload.size(), sizeof(imus_t)) << "IMUS_RAW payload round-trips whole";
+
+        bool ok = false;
+        EXPECT_FLOAT_EQ(static_cast<float>(extractScalar(*m, "I0.acc", payload.data(), ok, 0)), 1.0f);  EXPECT_TRUE(ok);
+        EXPECT_FLOAT_EQ(static_cast<float>(extractScalar(*m, "I0.acc", payload.data(), ok, 1)), 2.0f);  EXPECT_TRUE(ok);
+        EXPECT_FLOAT_EQ(static_cast<float>(extractScalar(*m, "I0.acc", payload.data(), ok, 2)), 3.0f);  EXPECT_TRUE(ok);
+        EXPECT_FLOAT_EQ(static_cast<float>(extractScalar(*m, "I1.pqr", payload.data(), ok, 2)), -0.5f); EXPECT_TRUE(ok);
+        // The field the original bug report cited: DID_IMUS_RAW / I2.acc[1].
+        EXPECT_FLOAT_EQ(static_cast<float>(extractScalar(*m, "I2.acc", payload.data(), ok, 1)), 9.81f); EXPECT_TRUE(ok);
+        ++seen;
+    }
+    EXPECT_EQ(seen, 1u) << "the written IMUS_RAW record must be found and parsed";
+
+    ISFileManager::DeleteDirectory(raw.parent_path().string());
 }
 
 }  // namespace
