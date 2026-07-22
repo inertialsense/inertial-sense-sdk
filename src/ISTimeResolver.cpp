@@ -19,6 +19,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <map>
 
 namespace inertial_sense {
 
@@ -180,6 +181,54 @@ void scanSegmentForSyncs(const ISLogReader& reader,
     }
 }
 
+/**
+ * @brief SN-8323: choose the epoch-anchor GPS week from the log's durable,
+ *        consistent fix period.
+ *
+ * The whole log is epoch-anchored to one GPS week (correct for a log spanning
+ * < 1 GPS week — the common case). Picking `syncPoints_.front()` is wrong: the
+ * sync list is sorted by ToW, so the front is typically a smallest-ToW pre-fix
+ * `gpsWeek == 0` record (device still searching) — leaving the log unanchored
+ * (ToW-only ~1980) while already-absolute records show the real year.
+ *
+ * During startup the reported time can be unstable (week 0, or a brief
+ * transient/garbage week) before the device settles into a durable fix. So we
+ * do NOT trust any single record or a raw popularity count. Instead, for each
+ * non-zero week we measure the ToW SPAN it covers across the log; the week
+ * backed by the widest span is the one the device held a stable fix at. A
+ * startup transient covers a tiny span (a few close-together records) and loses
+ * to the sustained fix. Ties break toward more sync points, then the larger
+ * (more recent) week.
+ *
+ * @return  The durable-fix GPS week, or 0 if no non-zero week is present
+ *          (caller falls back to ToW-only, pre-D0066 behavior).
+ */
+uint32_t chooseAnchorWeek(const std::vector<ISSyncPoint>& syncs) {
+    struct Agg { uint64_t minTow; uint64_t maxTow; uint32_t count; };
+    std::map<uint32_t, Agg> byWeek;   // week -> coverage (ordered ascending)
+    for (const auto& sp : syncs) {
+        if (sp.gpsWeek == 0) continue;
+        auto it = byWeek.find(sp.gpsWeek);
+        if (it == byWeek.end()) {
+            byWeek.emplace(sp.gpsWeek, Agg{ sp.payloadToWMs, sp.payloadToWMs, 1 });
+        } else {
+            it->second.minTow = std::min(it->second.minTow, sp.payloadToWMs);
+            it->second.maxTow = std::max(it->second.maxTow, sp.payloadToWMs);
+            ++it->second.count;
+        }
+    }
+    uint32_t bestWeek = 0, bestCount = 0;
+    uint64_t bestSpan = 0;
+    for (const auto& [wk, a] : byWeek) {   // ascending week -> larger week wins ties
+        const uint64_t span = a.maxTow - a.minTow;
+        if (span > bestSpan ||
+            (span == bestSpan && a.count >= bestCount)) {
+            bestSpan = span; bestCount = a.count; bestWeek = wk;
+        }
+    }
+    return bestWeek;
+}
+
 } // namespace
 
 // ============================================================
@@ -248,7 +297,9 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
         }
     }
 
-    return ISTimeResolver{ std::move(syncs), std::move(discs) };
+    // SN-8323: pick the epoch-anchor week before moving `syncs`.
+    const uint32_t anchorWeek = chooseAnchorWeek(syncs);
+    return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek };
 }
 
 // ============================================================
@@ -278,14 +329,18 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
         return TimeStamp::fromSessionOnly(hostTimeMs, deviceId);
     }
 
-    // SN-8107 / D0066: select a representative GPS week for the epoch
-    // anchor. We use the first sync point's week; for the common
-    // single-week log this is correct. A log spans < 1 hour typically,
-    // well inside one GPS week. If gpsWeek == 0 (week field invalid or
-    // not yet established), we don't epoch-anchor — resolved values stay
-    // in ToW domain (pre-D0066 behavior).
+    // SN-8107 / D0066: select a representative GPS week for the epoch anchor.
+    // SN-8323: use the durable-fix week (`anchorWeek_`, precomputed in build()
+    // as the non-zero week with the widest ToW coverage), NOT
+    // `syncPoints_.front().gpsWeek`.
+    // The sync list is sorted by ToW, so front() is the smallest-ToW record,
+    // which on a pre-GPS-fix log is a week-0 record — anchoring to it left the
+    // log unanchored (ToW-only ~1980) while already-absolute records showed the
+    // real year, giving a ~46-year mixed-domain span. `firstSync` is still the
+    // ToW-frame reference for the session-uptime bridge below. anchorWeek_ == 0
+    // (no valid week anywhere) falls back to ToW-only (pre-D0066 behavior).
     const ISSyncPoint& firstSync = syncPoints_.front();
-    const uint32_t anchorWeek = firstSync.gpsWeek;
+    const uint32_t anchorWeek = anchorWeek_;
     const bool     epochAnchor = (anchorWeek != 0);
     auto unixOrToW = [&](uint64_t towMs) -> uint64_t {
         return epochAnchor ? gpsToUnixMs(anchorWeek, towMs) : towMs;

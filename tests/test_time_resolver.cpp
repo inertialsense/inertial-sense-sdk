@@ -280,6 +280,87 @@ TEST_F(TimeResolverTest, ResolveExtrapolated) {
 }
 
 // ---------------------------------------------------------------------------
+// SN-8323: a log that begins BEFORE GPS fix. The earliest (smallest-ToW) sync
+// record carries week 0 (device still searching); later records carry the real
+// week. Because syncPoints_ is sorted by ToW, front() is the week-0 record;
+// anchoring to it (old behavior) left the log in the ToW-only ~1980 domain. The
+// resolver must anchor to the most-common valid (non-zero) week instead.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, PreFixWeekZeroAnchorsToValidWeek) {
+    auto pre = makeIns2(10.0);   pre.week = 0;     // smallest ToW, pre-fix week 0
+    auto a   = makeIns2(100.0);  a.week   = 2300;  // post-fix, valid week
+    auto b   = makeIns2(110.0);  b.week   = 2300;
+    auto c   = makeIns2(120.0);  c.week   = 2300;
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(pre));
+    recs.emplace_back(DID_INS_2, bytesOf(a));
+    recs.emplace_back(DID_INS_2, bytesOf(b));
+    recs.emplace_back(DID_INS_2, bytesOf(c));
+    f = buildFixture("prefix_week0", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // front() sync is the week-0 pre-fix record (smallest ToW) — the trap the
+    // old code fell into.
+    ASSERT_FALSE(resolver->syncPoints().empty());
+    EXPECT_EQ(resolver->syncPoints().front().gpsWeek, 0u);
+
+    // Must anchor to the valid week 2300, NOT week 0.
+    auto t = resolver->resolve(105000, kFixtureSerial);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000, 2300));
+    EXPECT_GE(t.value, 315'964'800'000ULL + 2300ULL * 604'800'000ULL);  // real-year domain
+    EXPECT_NE(t.value, 105000ULL);  // the un-anchored ToW-only (~1980) result
+}
+
+// SN-8323: all-week-0 log (device never fixed) → no valid week → fall back to
+// ToW-only (no epoch anchor); must not crash.
+TEST_F(TimeResolverTest, AllWeekZeroFallsBackToToWOnly) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0 }) {
+        auto s = makeIns2(tow); s.week = 0;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    f = buildFixture("allweek0", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    auto t = resolver->resolve(105000, kFixtureSerial);
+    EXPECT_EQ(t.value, 105000ULL);  // ToW-only passthrough, no epoch anchor
+}
+
+// SN-8323: a brief startup transient reports a WRONG non-zero week for a couple
+// records before the durable fix settles. The anchor must be derived from the
+// durable fix (widest ToW coverage), not the short-span transient.
+TEST_F(TimeResolverTest, StartupTransientWeekLosesToDurableFix) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // transient glitch: 2 records, tiny ToW span (5..6 s), wrong week 1111
+    for (double tow : { 5.0, 6.0 }) {
+        auto s = makeIns2(tow); s.week = 1111;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    // durable fix: many records, wide ToW span (100..600 s), real week 2300
+    for (double tow : { 100.0, 200.0, 300.0, 400.0, 500.0, 600.0 }) {
+        auto s = makeIns2(tow); s.week = 2300;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    f = buildFixture("transient_week", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    // Anchor to the durable week 2300, not the transient 1111.
+    auto t = resolver->resolve(300000, kFixtureSerial);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(300000, 2300));
+}
+
+// ---------------------------------------------------------------------------
 // Discontinuity detection — synthesize a clock jump between sync points
 // by giving the third sync point a much smaller delta than the gap
 // before it.
