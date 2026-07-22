@@ -31,15 +31,21 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <string>
 #include <utility>
 #include <vector>
-
-#include <unistd.h>
 
 using namespace inertial_sense;
 namespace fs = std::filesystem;
 
 namespace {
+
+//! Portable unique temp directory (works on POSIX + Windows CI). Avoids
+//! getpid()/ /tmp so the file builds and runs cross-platform.
+fs::path makeTempDir(const std::string& prefix) {
+    static unsigned counter = 0;
+    return fs::temp_directory_path() / (prefix + "_" + std::to_string(counter++));
+}
 
 constexpr uint16_t kHwId       = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
 constexpr uint32_t kSerial     = 888111u;
@@ -87,10 +93,7 @@ FixturePaths buildFixture(const std::string& hint,
                           const std::vector<std::pair<uint32_t, std::vector<uint8_t>>>& records,
                           uint32_t maxFileSize = 0) {
     FixturePaths f;
-    char dirBuf[256];
-    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_log_bounds_%s_%d_%ld",
-                  hint.c_str(), ::getpid(), static_cast<long>(::time(nullptr)));
-    f.directory = dirBuf;
+    f.directory = makeTempDir("test_log_bounds_" + hint);
     ISFileManager::DeleteDirectory(f.directory.string());
 
     cISLogger logger;

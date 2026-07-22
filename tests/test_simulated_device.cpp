@@ -27,22 +27,23 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-
 using namespace inertial_sense;
 using namespace inertial_sense::testsim;
 namespace fs = std::filesystem;
 
 namespace {
 
+//! Portable unique temp directory (POSIX + Windows CI).
+fs::path makeTempDir(const std::string& prefix) {
+    static unsigned counter = 0;
+    return fs::temp_directory_path() / (prefix + "_" + std::to_string(counter++));
+}
+
 //! Drive a simulated device through cISLogger into a fresh raw-log directory,
 //! returning the first .raw segment path ({} on failure).
 fs::path driveToLog(ISimulatedDevice& dev, const std::string& hint,
                     int ticks, double tow0, uint32_t week) {
-    char dirBuf[256];
-    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_simdev_%s_%d_%ld",
-                  hint.c_str(), ::getpid(), static_cast<long>(::time(nullptr)));
-    const fs::path dir = dirBuf;
+    const fs::path dir = makeTempDir("test_simdev_" + hint);
     ISFileManager::DeleteDirectory(dir.string());
 
     cISLogger logger;
@@ -73,10 +74,7 @@ fs::path driveMultiToLog(const std::string& hint,
                          const std::vector<ISimulatedDevice*>& devs,
                          const std::vector<int>& ticks,
                          double tow0, uint32_t week) {
-    char dirBuf[256];
-    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_simdev_%s_%d_%ld",
-                  hint.c_str(), ::getpid(), static_cast<long>(::time(nullptr)));
-    const fs::path dir = dirBuf;
+    const fs::path dir = makeTempDir("test_simdev_" + hint);
     ISFileManager::DeleteDirectory(dir.string());
 
     cISLogger logger;

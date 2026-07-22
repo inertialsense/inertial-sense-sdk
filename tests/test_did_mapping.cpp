@@ -29,8 +29,6 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-
 using namespace inertial_sense;
 namespace fs = std::filesystem;
 
@@ -39,14 +37,23 @@ namespace {
 constexpr uint16_t kHwId   = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
 constexpr uint32_t kSerial = 777001u;
 
-//! Extract a scalar field as a double via the DID field map — the consumer path.
+//! Portable unique temp directory (POSIX + Windows CI).
+fs::path makeTempDir(const std::string& prefix) {
+    static unsigned counter = 0;
+    return fs::temp_directory_path() / (prefix + "_" + std::to_string(counter++));
+}
+
+//! Extract a scalar (or array element) as a double via the DID field map —
+//! the consumer path. Array fields are stored under the base name with a
+//! per-element stride (elementSize); element i lives at offset + i*stride.
 double extractScalar(const map_name_to_info_t& m, const char* field,
-                     const uint8_t* payload, bool& ok) {
+                     const uint8_t* payload, bool& ok, unsigned arrayIndex = 0) {
     ok = false;
     auto it = m.find(field);
     if (it == m.end()) return 0.0;
     const data_info_t& info = it->second;
-    const uint8_t* p = payload + info.offset;
+    const uint32_t stride = info.elementSize ? info.elementSize : info.size;
+    const uint8_t* p = payload + info.offset + arrayIndex * stride;
     double v = 0.0;
     switch (info.type) {
         case DATA_TYPE_F64:    { double d;   std::memcpy(&d, p, 8); v = d; ok = true; break; }
@@ -60,10 +67,7 @@ double extractScalar(const map_name_to_info_t& m, const char* field,
 
 //! Write a single INS_2 record through cISLogger; return its .raw path.
 fs::path writeOneIns2(const ins_2_t& s) {
-    char dirBuf[256];
-    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_didmap_%d_%ld",
-                  ::getpid(), static_cast<long>(::time(nullptr)));
-    const fs::path dir = dirBuf;
+    const fs::path dir = makeTempDir("test_didmap");
     ISFileManager::DeleteDirectory(dir.string());
 
     cISLogger logger;
@@ -156,6 +160,16 @@ TEST(DidMappingTest, ExtractedValuesMatchWritten) {
         const double wk = extractScalar(*m, "week", payload, ok);
         EXPECT_TRUE(ok);
         EXPECT_DOUBLE_EQ(wk, 2300.0) << "UINT32 field extracted via the DID map";
+
+        // Array / vec element addressing: base name + per-element stride.
+        const double lat = extractScalar(*m, "lla", payload, ok, 0);
+        EXPECT_TRUE(ok); EXPECT_DOUBLE_EQ(lat, 40.25)   << "lla[0] (F64 array element)";
+        const double lon = extractScalar(*m, "lla", payload, ok, 1);
+        EXPECT_TRUE(ok); EXPECT_DOUBLE_EQ(lon, -111.75) << "lla[1]";
+        const double alt = extractScalar(*m, "lla", payload, ok, 2);
+        EXPECT_TRUE(ok); EXPECT_DOUBLE_EQ(alt, 1500.0)  << "lla[2]";
+        const double q0 = extractScalar(*m, "qn2b", payload, ok, 0);
+        EXPECT_TRUE(ok); EXPECT_DOUBLE_EQ(q0, 1.0)      << "qn2b[0] (F32 array element)";
         ++seen;
     }
     EXPECT_EQ(seen, 1u) << "the one written INS_2 record must be found";
