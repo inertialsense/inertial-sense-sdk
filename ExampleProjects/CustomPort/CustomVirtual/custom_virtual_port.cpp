@@ -53,9 +53,6 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
     if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
     {   
         // Buffer overflow
-        throw new std::out_of_range(utils::string_format("customPortWrite ring buffer overflow on %s: %d !!!\n",
-                                                         portName(destPort), ringBufUsed(&destPort->portRingBuf) + len));
-
         return PORT_ERROR__WRITE_FAILURE;
     }
     return len;

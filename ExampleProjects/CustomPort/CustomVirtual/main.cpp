@@ -94,6 +94,14 @@ int main(int argc, char* argv[])
                         
         if (portFree(port) >= wlen) {          // write fixed message if space available
             wbytes = portWrite(port, wbuf, wlen);
+            
+            // write error check
+            if ( wbytes < 0 ) {
+                printf("Exiting with write error\r\n");
+                if ( wbytes == PORT_ERROR__WRITE_FAILURE )
+                    printf("PORT_ERROR__WRITE_FAILURE\r\n");
+                exit(0);
+            }
         }
         SLEEP_MS(1000);
 
