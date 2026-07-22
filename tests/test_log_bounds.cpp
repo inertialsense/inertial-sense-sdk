@@ -415,6 +415,90 @@ TEST_F(LogBoundsTest, W6_UnknownDidIsStillIndexedAndReadBack) {
     EXPECT_EQ(unknownSeen, 1u) << "unknown DID must be indexed under its own id";
 }
 
+// ==================== J-3: errant data (bounds robustness) ====================
+// Bounds are min/max over resolved times, so they must be robust to record
+// ORDER and to duplicates — not "first/last". These guard the class of
+// out-of-order-segment anomalies without inventing an outlier-rejection policy.
+
+TEST_F(LogBoundsTest, J3_OutOfOrderRecordsSpanIsMinMax) {
+    // ToWs written badly out of order; all the same (durable) week.
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 300.0, 100.0, 250.0, 150.0, 200.0 })
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    f = buildFixture("j3_ooo", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto r = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(r.has_value());
+
+    auto [lo, hi] = resolvedSpan(log.value(), *r);
+    EXPECT_EQ(gpsWeekOf(lo), 2300u);
+    EXPECT_EQ(gpsWeekOf(hi), 2300u);
+    EXPECT_EQ(hi - lo, 200'000u);  // min ToW 100 s .. max ToW 300 s, order-independent
+}
+
+TEST_F(LogBoundsTest, J3_DuplicateTimestampsDoNotBreakSpan) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 150.0, 150.0, 150.0, 160.0 })  // triple duplicate + one later
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    f = buildFixture("j3_dup", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto r = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(r.has_value());
+
+    std::size_t n = 0;
+    for (auto rv : log.value().allRecords()) { (void)rv; ++n; }
+    EXPECT_EQ(n, 4u) << "duplicates are kept, not de-duplicated";
+    auto [lo, hi] = resolvedSpan(log.value(), *r);
+    EXPECT_EQ(hi - lo, 10'000u);  // 150 s .. 160 s
+    EXPECT_EQ(gpsWeekOf(lo), 2300u);
+}
+
+// ==================== J-4: flaky time-sync (bounds robustness) ====================
+// The anomaly that motivated this card: a pre-fix (week 0) record must not blow
+// the whole-log resolved span out to ~46 years / 1980. With the SN-8323 durable-
+// week anchor, everything resolves into the durable week and the span stays tight.
+
+TEST_F(LogBoundsTest, J4_WholeLogSpanStaysWithinOneWeekDespitePreFix) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(10.0, /*week*/ 0)));   // pre-fix
+    for (double tow : { 150.0, 160.0, 170.0 })
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow, 2300)));      // durable fix
+    f = buildFixture("j4_prefix_span", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto r = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(r.has_value());
+
+    auto [lo, hi] = resolvedSpan(log.value(), *r);
+    EXPECT_EQ(gpsWeekOf(lo), 2300u) << "no 1980/week-0 leak into the span floor";
+    EXPECT_EQ(gpsWeekOf(hi), 2300u);
+    EXPECT_LT(hi - lo, kWeekMs) << "span must not blow out to ~46 years";
+}
+
+TEST_F(LogBoundsTest, J4_TrailingPreFixRecordStaysInDurableWeek) {
+    // Pre-fix record at the END (late transient week-0) must also not corrupt.
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 150.0, 160.0, 170.0 })
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow, 2300)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(20.0, /*week*/ 0)));  // trailing pre-fix
+    f = buildFixture("j4_trailing", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto r = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(r.has_value());
+
+    auto [lo, hi] = resolvedSpan(log.value(), *r);
+    EXPECT_EQ(gpsWeekOf(lo), 2300u);
+    EXPECT_EQ(gpsWeekOf(hi), 2300u);
+    EXPECT_LT(hi - lo, kWeekMs);
+}
+
 // W-3: flush/close durability. After CloseAllFiles the log is complete on disk;
 // re-opening it (any number of times) must yield the same records/bounds, and
 // the final record must not be truncated.
