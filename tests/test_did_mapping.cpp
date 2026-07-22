@@ -242,4 +242,31 @@ TEST(DidMappingTest, StatusFieldExtractsAndDecodes) {
     ISFileManager::DeleteDirectory(raw.parent_path().string());
 }
 
+// SN-8113 regression guard: DID_IMUS_RAW per-IMU fields must be registered in
+// ISDataMappings so Logalyzer can build series for IMUS_RAW.I*.acc/pqr. The
+// original bug was that the DID had no field map at all (PopulateMapImus not
+// wired up). Fields are stored as base-name 3-vectors ("I0.acc", "I0.pqr", ...);
+// the consumer (RawSeriesBuilder::splitArrayField) resolves a subscripted name
+// like "I2.acc[1]" to base "I2.acc" + element index 1. This locks the mapping
+// in — a regression (e.g. the call getting commented out, as happened to
+// DID_DIAGNOSTIC_MESSAGE / SN-8127) would fail here.
+TEST(DidMappingTest, ImusRawFieldsRegistered_SN8113) {
+    EXPECT_EQ(cISDataMappings::NameToDid("DID_IMUS_RAW"),
+              static_cast<uint32_t>(DID_IMUS_RAW)) << "NameToDid must resolve DID_IMUS_RAW";
+
+    const map_name_to_info_t* m = cISDataMappings::NameToInfoMap(DID_IMUS_RAW);
+    ASSERT_NE(m, nullptr) << "DID_IMUS_RAW must have a field map (SN-8113)";
+
+    for (const char* base : { "I0.acc", "I0.pqr", "I1.acc", "I1.pqr", "I2.acc", "I2.pqr" }) {
+        ASSERT_TRUE(m->count(base)) << "missing IMUS_RAW field '" << base << "'";
+        const data_info_t& info = m->at(base);
+        EXPECT_EQ(info.type, DATA_TYPE_F32) << base;
+        EXPECT_EQ(info.arraySize, 3u) << base << " must be a 3-vector";
+    }
+    // Offsets agree with the imus_t struct (per-IMU stride correct).
+    EXPECT_EQ(m->at("I0.acc").offset, static_cast<uint32_t>(offsetof(imus_t, I[0].acc)));
+    EXPECT_EQ(m->at("I2.acc").offset, static_cast<uint32_t>(offsetof(imus_t, I[2].acc)));
+    EXPECT_EQ(m->at("I2.pqr").offset, static_cast<uint32_t>(offsetof(imus_t, I[2].pqr)));
+}
+
 }  // namespace
