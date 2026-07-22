@@ -65,6 +65,23 @@ double extractScalar(const map_name_to_info_t& m, const char* field,
     return v;
 }
 
+//! Parse a framed on-disk record back to a copy of its ISB payload bytes.
+//! ({} if it doesn't parse.) Mirrors the consumer: bytes() is the full framed
+//! record, so re-parse to reach the payload.
+std::vector<uint8_t> parsePayload(const uint8_t* framed, std::size_t n) {
+    is_comm_instance_t comm{};
+    uint8_t commBuf[1024];
+    is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
+    for (std::size_t i = 0; i < n; ++i) {
+        const protocol_type_t pt = is_comm_parse_byte(&comm, framed[i]);
+        if (pt == _PTYPE_INERTIAL_SENSE_DATA || pt == _PTYPE_INERTIAL_SENSE_CMD) {
+            const uint8_t* p = comm.rxPkt.data.ptr;
+            return std::vector<uint8_t>(p, p + comm.rxPkt.dataHdr.size);
+        }
+    }
+    return {};
+}
+
 //! Write a single INS_2 record through cISLogger; return its .raw path.
 fs::path writeOneIns2(const ins_2_t& s) {
     const fs::path dir = makeTempDir("test_didmap");
@@ -173,6 +190,54 @@ TEST(DidMappingTest, ExtractedValuesMatchWritten) {
         ++seen;
     }
     EXPECT_EQ(seen, 1u) << "the one written INS_2 record must be found";
+
+    ISFileManager::DeleteDirectory(raw.parent_path().string());
+}
+
+// H (status decode): a status/bitmask field must map as UINT32, extract its raw
+// value, and render to a non-empty decoded string via DataToString (the decode
+// path EvalTool/Logalyzer use for status columns/tooltips).
+TEST(DidMappingTest, StatusFieldExtractsAndDecodes) {
+    ins_2_t s{};
+    s.week       = 2300;
+    s.timeOfWeek = 100.0;
+    s.qn2b[0]    = 1.0f;
+    s.insStatus  = 0x00012345u;  // arbitrary recognizable bits
+
+    const fs::path raw = writeOneIns2(s);
+    ASSERT_FALSE(raw.empty());
+    auto log = ISDeviceLog::fromSegments({ raw });
+    ASSERT_TRUE(log.has_value());
+
+    const map_name_to_info_t* m = cISDataMappings::NameToInfoMap(DID_INS_2);
+    ASSERT_NE(m, nullptr);
+    ASSERT_TRUE(m->count("insStatus")) << "expected status field 'insStatus'";
+    const data_info_t& info = m->at("insStatus");
+    EXPECT_EQ(info.type, DATA_TYPE_UINT32);
+
+    std::size_t seen = 0;
+    for (auto rv : log.value().records(DID_INS_2)) {
+        auto [ptr, size] = rv.bytes();
+        const std::vector<uint8_t> payload = parsePayload(ptr, size);
+        ASSERT_EQ(payload.size(), sizeof(ins_2_t));
+
+        bool ok = false;
+        const double rawVal = extractScalar(*m, "insStatus", payload.data(), ok);
+        EXPECT_TRUE(ok);
+        EXPECT_EQ(static_cast<uint32_t>(rawVal), 0x00012345u) << "raw status value round-trips";
+
+        // Decode via the mapping's string renderer (status columns / tooltips).
+        p_data_hdr_t hdr{};
+        hdr.id     = DID_INS_2;
+        hdr.size   = sizeof(ins_2_t);
+        hdr.offset = 0;
+        data_mapping_string_t str{};
+        const bool okStr = cISDataMappings::DataToString(info, &hdr, payload.data(), str);
+        EXPECT_TRUE(okStr) << "DataToString must decode the status field";
+        EXPECT_GT(std::strlen(str), 0u) << "decoded status string must be non-empty";
+        ++seen;
+    }
+    EXPECT_EQ(seen, 1u);
 
     ISFileManager::DeleteDirectory(raw.parent_path().string());
 }
