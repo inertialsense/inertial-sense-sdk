@@ -128,15 +128,15 @@ We create a virtual port defined in [custom_virtual_port.h](https://github.com/i
 
 ```C
 typedef struct custom_port_s {
-    union {
-        base_port_t base;
-        comm_port_t comm;
-    };
+   union {
+      base_port_t base;
+      comm_port_t comm;
+   };
 
-    // Used to simulate serial ports
-    ring_buf_t      portRingBuf;
-    uint8_t         portBuffer[PORT_BUFFER_SIZE];
-    uint8_t         name[6];
+   // Used to simulate serial ports
+   ring_buf_t      portRingBuf;
+   uint8_t         portBuffer[PORT_BUFFER_SIZE];
+   uint8_t         name[PORT_NAME_SIZE];  
 } custom_port_t;
 
 ```
