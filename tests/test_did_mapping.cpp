@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <string>
@@ -308,6 +309,48 @@ TEST(DidMappingTest, ImusRawParsesAndExtractsValues_SN8113) {
         ++seen;
     }
     EXPECT_EQ(seen, 1u) << "the written IMUS_RAW record must be found and parsed";
+
+    ISFileManager::DeleteDirectory(raw.parent_path().string());
+}
+
+// H (conversion factor): a field with a unit conversion (DID_IMUS_RAW pqr is
+// stored in rad/s, conversion = C_RAD2DEG) must render the converted value when
+// useConversion=true and the raw value when false. Guards that the conversion
+// factor is both registered and actually applied by DataToString.
+TEST(DidMappingTest, ConversionFactorAppliedOnRender) {
+    imus_t s{};
+    s.I[0].pqr[0] = 1.0f;  // 1 rad/s -> ~57.2958 deg/s after conversion
+    const fs::path raw = writeOneRecord(DID_IMUS_RAW, &s, sizeof(s));
+    ASSERT_FALSE(raw.empty());
+    auto log = ISDeviceLog::fromSegments({ raw });
+    ASSERT_TRUE(log.has_value());
+
+    const map_name_to_info_t* m = cISDataMappings::NameToInfoMap(DID_IMUS_RAW);
+    ASSERT_NE(m, nullptr);
+    ASSERT_TRUE(m->count("I0.pqr"));
+    const data_info_t& info = m->at("I0.pqr");
+    ASSERT_GT(info.conversion, 1.0) << "pqr must carry a rad->deg conversion (~57.3)";
+
+    std::size_t seen = 0;
+    for (auto rv : log.value().records(DID_IMUS_RAW)) {
+        auto [ptr, size] = rv.bytes();
+        const std::vector<uint8_t> payload = parsePayload(ptr, size);
+        ASSERT_EQ(payload.size(), sizeof(imus_t));
+
+        p_data_hdr_t hdr{};
+        hdr.id = DID_IMUS_RAW; hdr.size = sizeof(imus_t); hdr.offset = 0;
+        data_mapping_string_t withConv{}, noConv{};
+        ASSERT_TRUE(cISDataMappings::DataToString(info, &hdr, payload.data(), withConv,
+                                                  /*arrayIndex*/ 0, /*json*/ false, /*useConversion*/ true));
+        ASSERT_TRUE(cISDataMappings::DataToString(info, &hdr, payload.data(), noConv,
+                                                  /*arrayIndex*/ 0, /*json*/ false, /*useConversion*/ false));
+        EXPECT_STRNE(withConv, noConv) << "conversion must change the rendered value";
+        // raw 1.0 rad/s -> unconverted ~1.0, converted ~= the conversion factor.
+        EXPECT_NEAR(std::strtod(noConv, nullptr), 1.0, 0.01);
+        EXPECT_NEAR(std::strtod(withConv, nullptr), info.conversion, info.conversion * 0.01);
+        ++seen;
+    }
+    EXPECT_EQ(seen, 1u);
 
     ISFileManager::DeleteDirectory(raw.parent_path().string());
 }
