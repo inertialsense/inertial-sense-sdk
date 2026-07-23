@@ -19,6 +19,7 @@ static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
 #define HISTORY_SIZE    5
 
+// Before using this structure, call update_nmea_speed() to update the speed values and history.
 static struct  
 {
     uint32_t    timeOfWeekMs;
@@ -2015,6 +2016,7 @@ int nmea_powgps(char a[], const int aSize, gnss_pos_t &pos)
 int nmea_powtlv(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel)
 {    
     float groundTrackHeading = 0;
+    update_nmea_speed(pos, vel);
 
     int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
 
