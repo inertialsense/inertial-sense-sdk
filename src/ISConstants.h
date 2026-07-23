@@ -793,8 +793,9 @@ static inline int is_finite(double v)
 #define C_WIE               7.2321151467e-05   // WGS-84 earth rotation rate (rad/s)
 #define C_WIE_F             7.2321151467e-05f
 
-#define C_TESLA2GAUSS_F     10000.0
-#define C_UTESLA2GAUSS_F    0.01
+#define C_TESLA2GAUSS_F     10000.0f
+#define C_UTESLA2GAUSS_F    0.01f
+#define C_GAUSS2UTESLA_F    100.0f
 
 #define C_0p1_DEG2RAD_F     0.00174532925199433f        // = 0.1f * C_0pDEG2RAD_F
 #define C_0p11_DEG2RAD_F    0.00191986217719376f
