@@ -11,7 +11,6 @@
 /** Include C++ library and other needed SDK header files here
  */
 #include "custom_virtual_port.h"
-#include "util/util.h"
 
 
 #define TIME_USEC()             current_timeUs()
