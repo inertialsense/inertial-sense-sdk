@@ -59,16 +59,21 @@ extern "C"
 
 class InertialSense;
 
-typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);   //!< Custom-allocator callback signature: given a port and its discovered dev_info_t, return a newly allocated device (or subclass)
-typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);                          //!< Custom-clone callback signature: return a newly allocated copy of orig
-typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);           //!< Callback signature for per-step data logging hooks
-typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;   //!< Callback signature for per-DID or global binary-data received callbacks
-typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;    //!< Callback signature for ISB ack/set-data-response received callbacks
+/** Custom-allocator callback signature: given a port and its discovered dev_info_t, return a newly allocated device (or subclass). */
+typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+/** Custom-clone callback signature: return a newly allocated copy of orig. */
+typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+/** Callback signature for per-step data logging hooks. */
+typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
+/** Callback signature for per-DID or global binary-data received callbacks. */
+typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+/** Callback signature for ISB ack/set-data-response received callbacks. */
+typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
 
 /**
-* Inertial Sense C++ interface
-* Note only one instance of this class per process is supported
-*/
+ * @brief Inertial Sense C++ interface.
+ * Note only one instance of this class per process is supported.
+ */
 class InertialSense
 {
 public:
@@ -80,7 +85,7 @@ public:
     {
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;      //!< callback invoked for any DID without a more specific entry in binaryCallback
-        pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
+        pfnHandleAckData binaryAckCallback;    //!< acknowledgment command and set data callback
 #define SIZE_BINARY_CALLBACK    256
         pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK] = {};     //!< per-DID binary-data callbacks, indexed by DID (for DIDs < SIZE_BINARY_CALLBACK)
         pfnStepLogFunction stepLogFunction = nullptr;                      //!< optional per-step data logging hook
@@ -688,12 +693,11 @@ private:
     int m_baudRate = IS_BAUDRATE_DEFAULT;                       //!< baud rate used by the most recent Open() call
     bool m_enableDeviceValidation = true;                       //!< whether Open()'d devices are validated (see EnableDeviceValidation())
     bool m_disableBroadcastsOnClose;                            //!< whether Close() sends a stop-broadcasts command to all devices first
-    bool m_serialPortDiscoveryEnabled  = true;   ///< last value passed to SetSerialPortDiscovery (default on)
-    bool m_networkPortDiscoveryEnabled = false;  ///< last value passed to SetNetworkPortDiscovery
-    bool m_relayPortDiscoveryEnabled   = false;  ///< last value passed to SetRelayPortDiscovery
+    bool m_serialPortDiscoveryEnabled  = true;   //!< last value passed to SetSerialPortDiscovery (default on)
+    bool m_networkPortDiscoveryEnabled = false;  //!< last value passed to SetNetworkPortDiscovery
+    bool m_relayPortDiscoveryEnabled   = false;  //!< last value passed to SetRelayPortDiscovery
 
-    /// Rebuild PortManager's factory list according to the current m_*PortDiscoveryEnabled
-    /// flags and clear its existing ports. Shared by all three Set*PortDiscovery setters.
+    /** Rebuild PortManager's factory list according to the current m_*PortDiscoveryEnabled flags and clear its existing ports. Shared by all three Set*PortDiscovery setters. */
     void rebuildPortFactories();
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).

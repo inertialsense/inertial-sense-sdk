@@ -30,15 +30,20 @@
 #include "PortManager.h"
 #include "DeviceFactory.h"
 
-typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);   //!< Custom-allocator callback signature: given a port and its discovered dev_info_t, return a newly allocated device (or subclass)
+/** Custom-allocator callback signature: given a port and its discovered dev_info_t, return a newly allocated device (or subclass). */
+typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
 
-typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);   //!< Custom-clone callback signature: return a newly allocated copy of orig
+/** Custom-clone callback signature: return a newly allocated copy of orig. */
+typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 
-typedef std::function<void(uint8_t, device_handle_t)> device_listener;    //!< Callback signature for addDeviceListener(): receives (device_event_e, device)
-typedef std::shared_ptr<device_listener> device_listener_handle_t;        //!< Opaque handle returned by addDeviceListener(), used to unregister via removeDeviceListener()
+/** Callback signature for addDeviceListener(): receives (device_event_e, device). */
+typedef std::function<void(uint8_t, device_handle_t)> device_listener;
+/** Opaque handle returned by addDeviceListener(), used to unregister via removeDeviceListener(). */
+typedef std::shared_ptr<device_listener> device_listener_handle_t;
 
 // typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
-typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;   //!< Callback signature for custom binary-data handling: (user context, parsed data, source port)
+/** Callback signature for custom binary-data handling: (user context, parsed data, source port). */
+typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 
 /** @brief Singleton owner of the discovered/managed device set; also implements std::list<device_handle_t> so it can be iterated directly. */

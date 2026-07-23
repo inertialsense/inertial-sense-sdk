@@ -38,8 +38,10 @@ public:
 
     inline static const char* port_event_names[] = { "PORT_ADDED", "PORT_REMOVED" };  //!< Human-readable names for port_event_e, indexed by enum value
 
-    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t, PortFactory& factory)> port_listener;  //!< Callback signature: (event, portType, portName, port, factory)
-    typedef std::shared_ptr<port_listener> port_listener_handle_t;   //!< Opaque handle returned by addPortListener(), used to unregister via removePortListener()
+    /** Callback signature: (event, portType, portName, port, factory). */
+    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t, PortFactory& factory)> port_listener;
+    /** Opaque handle returned by addPortListener(), used to unregister via removePortListener(). */
+    typedef std::shared_ptr<port_listener> port_listener_handle_t;
 
     /**
      * @brief Gets the singleton instance of the PortManager.

@@ -35,8 +35,10 @@
  */
 class CorrectionService {
 public:
-    typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;                        //!< Callback signature for addRTCM3Msg1029Listeners(): receives the RTCM3 Msg 1029 text payload
-    typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;      //!< Callback signature for addRTCM3PacketListeners(): receives (RTCM3 message type, packet data, packet size)
+    /** Callback signature for addRTCM3Msg1029Listeners(): receives the RTCM3 Msg 1029 text payload. */
+    typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
+    /** Callback signature for addRTCM3PacketListeners(): receives (RTCM3 message type, packet data, packet size). */
+    typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;
 
     /** @brief Default constructor; no source port is bound until setSourcePort() is called. */
     CorrectionService() { init(nullptr); }
