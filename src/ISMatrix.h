@@ -96,7 +96,7 @@ extern "C" {
 #define SET_VEC3_X(v,x)                     { (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define SET_VEC4_X(v,x)                     { (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
-/** Zero-order (single-pole) low-pass filter state for a 3-vector; see @ref LPFO0_init_Vec3 / @ref LPFO0_Vec3. */
+/** Single-pole ("O0") low-pass filter state for a 3-vector (usually called a 1st-order LPF); see @ref LPFO0_init_Vec3 / @ref LPFO0_Vec3. */
 typedef struct
 {
     ixVector3               v;      //!< Filter output / running value
@@ -943,7 +943,8 @@ int isAllMoreThanX_array(f_t *a, f_t x, int size);
 int isAllAbsLessThanX_array(f_t *a, f_t x, int size);
 
 /**
- * @brief Initialize a zero-order low-pass filter's alpha/beta gains and initial value.
+ * @brief Initialize a single-pole ("O0" -- tracks no extra derivative state, as opposed to O1 below)
+ * low-pass filter's alpha/beta gains and initial value. Usually called a 1st-order LPF.
  * @param lpf          Filter state to initialize.
  * @param dt           Expected update period (seconds).
  * @param cornerFreqHz Low-pass filter corner frequency (Hz).
@@ -952,14 +953,16 @@ int isAllAbsLessThanX_array(f_t *a, f_t x, int size);
 void LPFO0_init_Vec3(sLpfO0 *lpf, f_t dt, f_t cornerFreqHz, const ixVector3 initVal);
 
 /**
- * @brief Update a zero-order low-pass filter with a new sample: v[n+1] = beta*v[n] + alpha*input.
+ * @brief Update a single-pole ("O0") low-pass filter with a new sample (usually called a 1st-order
+ * LPF): v[n+1] = beta*v[n] + alpha*input.
  * @param lpf   Filter state; updated in place.
  * @param input New input sample.
  */
 void LPFO0_Vec3(sLpfO0 *lpf, const ixVector3 input);
 
 /**
- * @brief Zero-order (single-pole) low-pass filter update, standalone (no sLpfO0 state struct needed): result = beta*result + alpha*input.
+ * @brief Single-pole ("O0") low-pass filter update, standalone (no sLpfO0 state struct needed;
+ * usually called a 1st-order LPF): result = beta*result + alpha*input.
  * @param result Filter output and running state; updated in place.
  * @param input  New input sample.
  * @param alph   Filter alpha parameter (input gain).
@@ -977,12 +980,17 @@ static __inline void O0_LPF_Vec3(ixVector3 result, const ixVector3 input, f_t al
 
 
 /**
- * @brief First-order low-pass filter update with an explicit model-coefficient state (for larger dt).
+ * @brief Not a traditional low-pass filter despite the name -- this is a fused kinematic tracker
+ * with LPF smoothing, useful when dt is large enough that a plain single-pole LPF (O0, above)
+ * would lag noticeably behind a changing input. Each update: (1) estimates the derivative as
+ * (input - result) / dt; (2) low-pass filters that derivative estimate into the c1 state via
+ * O0_LPF_Vec3(); (3) integrates c1*dt onto the previous result to predict the current state;
+ * (4) blends that prediction with the new raw input via another O0_LPF_Vec3() stage.
  * @param result Filter output and running state; updated in place.
  * @param input  New input sample.
- * @param c1     Model-coefficient state; updated in place.
- * @param alph   Filter alpha parameter (input gain).
- * @param beta   Filter beta parameter (memory gain).
+ * @param c1     Model-coefficient (filtered derivative) state; updated in place.
+ * @param alph   Filter alpha parameter (input gain), used for both internal LPF stages.
+ * @param beta   Filter beta parameter (memory gain), used for both internal LPF stages.
  * @param dt     Time since the last update (seconds).
  */
 static __inline void O1_LPF_Vec3(ixVector3 result, const ixVector3 input, ixVector3 c1, f_t alph, f_t beta, f_t dt)

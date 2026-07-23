@@ -91,24 +91,24 @@ void lla2ecef(const double *LLA, double *Pe);
 
 /**
  * @brief Find NED (north, east, down) offset from llaRef to lla, single precision.
- * @param llaRef Reference latitude (rad), longitude (rad), MSL altitude (m).
- * @param lla    Target latitude (rad), longitude (rad), MSL altitude (m).
+ * @param llaRef Reference latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param lla    Target latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  * @param result Output: NED offset (meters) from llaRef to lla.
  */
 void lla2ned(ixVector3 llaRef, ixVector3 lla, ixVector3 result);
 
 /**
  * @brief Find NED (north, east, down) offset from llaRef to lla, double precision.
- * @param llaRef Reference latitude (rad), longitude (rad), MSL altitude (m).
- * @param lla    Target latitude (rad), longitude (rad), MSL altitude (m).
+ * @param llaRef Reference latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param lla    Target latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  * @param result Output: NED offset (meters) from llaRef to lla.
  */
 void lla2ned_d(double llaRef[3], double lla[3], ixVector3 result);
 
 /**
  * @brief Find NED (north, east, down) offset from llaRef to lla, double precision, degrees input.
- * @param llaRef Reference latitude (degrees), longitude (degrees), MSL altitude (m).
- * @param lla    Target latitude (degrees), longitude (degrees), MSL altitude (m).
+ * @param llaRef Reference latitude (degrees), longitude (degrees), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param lla    Target latitude (degrees), longitude (degrees), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  * @param result Output: NED offset (meters) from llaRef to lla.
  */
 void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result);
@@ -116,31 +116,31 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result);
 /**
  * @brief Find LLA from an NED (north, east, down) offset relative to llaRef, single precision.
  * @param ned    NED offset (meters) from llaRef.
- * @param llaRef Reference latitude (rad), longitude (rad), MSL altitude (m).
- * @param result Output: latitude (rad), longitude (rad), MSL altitude (m).
+ * @param llaRef Reference latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param result Output: latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  */
 void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result);
 
 /**
  * @brief Find LLA from an NED (north, east, down) offset relative to llaRef, double precision.
  * @param ned    NED offset (meters) from llaRef.
- * @param llaRef Reference latitude (rad), longitude (rad), MSL altitude (m).
- * @param result Output: latitude (rad), longitude (rad), MSL altitude (m).
+ * @param llaRef Reference latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param result Output: latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  */
 void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3]);
 
 /**
  * @brief Find LLA from an NED (north, east, down) offset relative to llaRef, double precision, degrees output (WGS-84 standard).
  * @param ned    NED offset (meters) from llaRef.
- * @param llaRef Reference latitude (degrees), longitude (degrees), MSL altitude (m).
- * @param result Output: latitude (degrees), longitude (degrees), MSL altitude (m).
+ * @param llaRef Reference latitude (degrees), longitude (degrees), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param result Output: latitude (degrees), longitude (degrees), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  */
 void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3]);
 
 /**
  * @brief Find the delta-LLA equivalent of an NED (north, east, down) offset relative to llaRef, single precision.
  * @param ned     NED offset (meters) from llaRef.
- * @param llaRef  Reference latitude (rad), longitude (rad), MSL altitude (m).
+ * @param llaRef  Reference latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  * @param deltaLLA Output: delta latitude (rad), delta longitude (rad), delta altitude (m).
  */
 void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA);
@@ -148,7 +148,7 @@ void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA);
 /**
  * @brief Find the delta-LLA equivalent of an NED (north, east, down) offset relative to llaRef, double precision.
  * @param ned     NED offset (meters) from llaRef.
- * @param llaRef  Reference latitude (rad), longitude (rad), MSL altitude (m).
+ * @param llaRef  Reference latitude (rad), longitude (rad), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  * @param deltaLLA Output: delta latitude (rad), delta longitude (rad), delta altitude (m).
  */
 void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
@@ -156,7 +156,7 @@ void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
 /**
  * @brief Find the delta-LLA equivalent of an NED (north, east, down) offset relative to llaRef, double precision, degrees output.
  * @param ned     NED offset (meters) from llaRef.
- * @param llaRef  Reference latitude (degrees), longitude (degrees), MSL altitude (m).
+ * @param llaRef  Reference latitude (degrees), longitude (degrees), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
  * @param deltaLLA Output: delta latitude (degrees), delta longitude (degrees), delta altitude (m).
  */
 void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
