@@ -243,11 +243,20 @@ TEST_F(TruncatedLogTest, CleanFixture_NoTruncationNoWarnings) {
 
     auto r = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(r.has_value());
-    EXPECT_TRUE(r->hadOnDiskIndex());
+    // SN-8328 (B): a clean (non-truncated) log must never be flagged as
+    // truncated. This ~1 MB cISLogger fixture spans several 128 KB chunks, so
+    // its writer .idx carries chunk-relative offsets (SDK writer-offset
+    // follow-up); the reader detects that and rebuilds from scan
+    // (hadOnDiskIndex() false, one benign "sidecar rebuilt" warning). The
+    // property under test is that this emits NO *truncation* warning and the
+    // segment reads to its end.
+    EXPECT_FALSE(r->hadOnDiskIndex());
     EXPECT_FALSE(r->isTruncated());
     EXPECT_EQ(r->truncationOffset(), r->fileSize());
-    EXPECT_TRUE(r->warnings().empty())
-        << "happy path should not emit warnings";
+    for (const auto& w : r->warnings()) {
+        EXPECT_EQ(w.find("truncation"), std::string::npos)
+            << "clean log emitted a truncation warning: " << w;
+    }
 }
 
 // ============================================================

@@ -362,6 +362,10 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                         if (!countConsistent) {
                             rebuildReason = RebuildReason::Stale;
                         } else {
+                            // Provisionally trust: the poison sweep and offset probe
+                            // below flip this back to Stale if they find a problem.
+                            rebuildReason = RebuildReason::None;
+
                             // Pull every record.
                             std::vector<idx::is_log_idx_record_v2_t> recs;
                             recs.reserve(nRecords);
@@ -413,7 +417,31 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                             }
                             if (poisonedCount > 0) {
                                 rebuildReason = RebuildReason::Stale;
-                            } else {
+                            }
+
+                            // SN-8328 (B): verify record offsets are monotonic PHYSICAL .raw
+                            // byte offsets (what viewAt/bytes() and the scan assume). The SDK
+                            // raw-log writer stores chunk-relative offsets that RESET to ~0 at
+                            // every 128 KB chunk-flush boundary (cDeviceLog::OpenNewSaveFile
+                            // zeroes m_lastIndexOffset, invoked lazily mid-segment), so any raw
+                            // log larger than one chunk has offsets that jump backwards at each
+                            // boundary -- tracked as an SDK writer-offset follow-up. Records are
+                            // appended in arrival order, so a correct physical index is
+                            // monotonically non-decreasing; a strict decrease means the offsets
+                            // are chunk-relative/corrupt. This is a deterministic O(n) check --
+                            // unlike a sampled parse-probe, it cannot coincidentally "pass" on a
+                            // same-DID burst. On detection, rebuild so the scan re-derives
+                            // correct physical offsets.
+                            if (rebuildReason == RebuildReason::None && recs.size() > 1) {
+                                for (std::size_t i = 1; i < recs.size(); ++i) {
+                                    if (recs[i].offset < recs[i - 1].offset) {
+                                        rebuildReason = RebuildReason::Stale;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (rebuildReason == RebuildReason::None) {
                                 r.header_         = *hdr;
                                 r.hadOnDiskIndex_ = true;
                                 r.buildIndexFromIdx(recs);
