@@ -362,6 +362,10 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                         if (!countConsistent) {
                             rebuildReason = RebuildReason::Stale;
                         } else {
+                            // Provisionally trust: the poison sweep and offset probe
+                            // below flip this back to Stale if they find a problem.
+                            rebuildReason = RebuildReason::None;
+
                             // Pull every record.
                             std::vector<idx::is_log_idx_record_v2_t> recs;
                             recs.reserve(nRecords);
@@ -391,17 +395,53 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                                 return did == DID_GNSS1_RAW || did == DID_GNSS2_RAW || did == DID_GNSS_BASE_RAW;
                             };
                             constexpr uint64_t kPoisonThresholdMs = 1'000'000'000'000ULL;
+                            // SN-8328: pre-fix tooling baked the raw GNSS observation time
+                            // (gtime_t absolute seconds, ~3.16e11 ms on some logs) into GNSS_RAW
+                            // records' timestamps, which the resolver anchors to GPS week 0 →
+                            // ~45-year span. The fix (cISDataMappings::Timestamp returns 0 for
+                            // GNSS_RAW) means correct tooling emits only host-uptime (or 0) for
+                            // these — always well under one GPS week for any real log. So a
+                            // GNSS_RAW record whose timestamp exceeds a week is baked obs-time
+                            // from old tooling → the sidecar is stale; rebuild so the corrected
+                            // scan re-derives it. (This replaces the SN-8004 blanket exemption,
+                            // which merely tolerated the bad values.)
+                            constexpr uint64_t kGnssRawStaleThreshMs = 604'800'000ULL;  // 1 GPS week
                             std::size_t poisonedCount = 0;
                             for (const auto& rec : recs) {
-                                if (isGpsRawDid(rec.did)) continue;
-                                if (rec.timestamp > kPoisonThresholdMs) {
+                                const uint64_t thresh = isGpsRawDid(rec.did) ? kGnssRawStaleThreshMs
+                                                                             : kPoisonThresholdMs;
+                                if (rec.timestamp > thresh) {
                                     ++poisonedCount;
                                     if (poisonedCount > 4) break;   // early-exit; rebuild anyway
                                 }
                             }
                             if (poisonedCount > 0) {
                                 rebuildReason = RebuildReason::Stale;
-                            } else {
+                            }
+
+                            // SN-8328 (B): verify record offsets are monotonic PHYSICAL .raw
+                            // byte offsets (what viewAt/bytes() and the scan assume). The SDK
+                            // raw-log writer stores chunk-relative offsets that RESET to ~0 at
+                            // every 128 KB chunk-flush boundary (cDeviceLog::OpenNewSaveFile
+                            // zeroes m_lastIndexOffset, invoked lazily mid-segment), so any raw
+                            // log larger than one chunk has offsets that jump backwards at each
+                            // boundary -- tracked as an SDK writer-offset follow-up. Records are
+                            // appended in arrival order, so a correct physical index is
+                            // monotonically non-decreasing; a strict decrease means the offsets
+                            // are chunk-relative/corrupt. This is a deterministic O(n) check --
+                            // unlike a sampled parse-probe, it cannot coincidentally "pass" on a
+                            // same-DID burst. On detection, rebuild so the scan re-derives
+                            // correct physical offsets.
+                            if (rebuildReason == RebuildReason::None && recs.size() > 1) {
+                                for (std::size_t i = 1; i < recs.size(); ++i) {
+                                    if (recs[i].offset < recs[i - 1].offset) {
+                                        rebuildReason = RebuildReason::Stale;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (rebuildReason == RebuildReason::None) {
                                 r.header_         = *hdr;
                                 r.hadOnDiskIndex_ = true;
                                 r.buildIndexFromIdx(recs);
