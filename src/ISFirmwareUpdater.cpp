@@ -531,12 +531,19 @@ bool ISFirmwareUpdater::step() {
     fnStep.mark("Finished fwUpdate_step().");
 
     if (fwUpdate_isDone()) {
-        if (hasErrors())
-            updateState.state = ISFwUpdateState::UPDATER_DONE_WITH_ERRORS;
-        else if (updateState.hasNotifications)
-            updateState.state = ISFwUpdateState::SUCCESS_WITH_NOTIFICATIONS;
-        else
-            updateState.state = ISFwUpdateState::UPDATER_SUCCESSFUL;
+        bool errored = hasErrors();
+        {
+            // hasNotifications is written elsewhere (e.g. cmd_UploadImage) under updateState.lock();
+            // take the same lock here so this read-and-write of updateState fields is synchronized
+            // against concurrent readers/writers (e.g. the UI thread via getSnapshot()).
+            auto lk = updateState.lock();
+            if (errored)
+                updateState.state = ISFwUpdateState::UPDATER_DONE_WITH_ERRORS;
+            else if (updateState.hasNotifications)
+                updateState.state = ISFwUpdateState::SUCCESS_WITH_NOTIFICATIONS;
+            else
+                updateState.state = ISFwUpdateState::UPDATER_SUCCESSFUL;
+        }
 
         // be sure to release/cleanup the source file after we are finished with it.
         if (srcFile) {
