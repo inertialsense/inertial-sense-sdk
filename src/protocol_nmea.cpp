@@ -2014,11 +2014,10 @@ int nmea_powgps(char a[], const int aSize, gnss_pos_t &pos)
  */
 int nmea_powtlv(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel)
 {    
-    float horVel = MAG_VEC2(vel.vel);
     float groundTrackHeading = 0;
 
     int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
-    
+
     update_nmea_speed(pos, vel);
 
     n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
@@ -2026,14 +2025,14 @@ int nmea_powtlv(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel)
     nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8
     nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
 
-    nmea_sprint(a, aSize, n, ",%.3f", pos.lla[2]);              // 11
-    nmea_sprint_f(a, aSize, n, ",%.3f", pos.hMSL);              // 12
+    nmea_sprint(a, aSize, n, ",%+.3f", pos.lla[2]);             // 11
+    nmea_sprint_f(a, aSize, n, ",%+.3f", pos.hMSL);             // 12
 
-    nmea_sprint_f(a, aSize, n, ",%.3f", horVel);                // 13
+    nmea_sprint_f(a, aSize, n, ",%.3f", s_dataSpeed.speed2dMps); // 13
 
-    nmea_sprint_f(a, aSize, n, ",%.3f", vel.vel[2]);            // 14
-    
-    groundTrackHeading = C_RAD2DEG_F * atan2f(vel.vel[1], vel.vel[0]);
+    nmea_sprint_f(a, aSize, n, ",%+.3f", -s_dataSpeed.velNed[2]); // 14 (velNed is Down-positive; negate for Up-positive)
+
+    groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
 
     if (groundTrackHeading < 0.0f)  groundTrackHeading += 360.0f;
     
@@ -4049,8 +4048,8 @@ int nmea_parse_powtlv(const char a[], const int aSize, gnss_pos_t &pos, gnss_vel
     uint64_t TOWus;
     char *ptr = (char *)&a[8];    // $POWGPS,
     uint32_t temp;
-    float horVel, courseMadeTrue;
-    
+    float horVel, vertVelUp, courseMadeTrue;
+
     // 1 -  GPS Time valid
     ptr = ASCII_to_u32(&temp, ptr);
 
@@ -4059,7 +4058,7 @@ int nmea_parse_powtlv(const char a[], const int aSize, gnss_pos_t &pos, gnss_vel
 
     // 3 -  GPS Time of Week (us)
     ptr = ASCII_to_u64(&TOWus, ptr);
-    pos.timeOfWeekMs = TOWus/1000;  // convert to seconds
+    pos.timeOfWeekMs = TOWus/1000;  // convert to milliseconds
 
     // if time is not valid, set time to 0
     if (temp == 0) { pos.timeOfWeekMs = 0; pos.week = 0; }
@@ -4091,15 +4090,27 @@ int nmea_parse_powtlv(const char a[], const int aSize, gnss_pos_t &pos, gnss_vel
     // 13 - Horizontal Speed (x.xxx m/s)
     ptr = ASCII_to_f32(&horVel, ptr);
 
-    // 14 - Vertical Speed (x.xxx m/s)
-    ptr = ASCII_to_f32(&vel.vel[2], ptr);
+    // 14 - Vertical Speed (x.xxx m/s), + upward, - downward
+    ptr = ASCII_to_f32(&vertVelUp, ptr);
 
     // 15 - Heading (x.xxx degrees)
     ptr = ASCII_to_f32(&courseMadeTrue, ptr);
     courseMadeTrue *= C_DEG2RAD_F;
 
-    vel.vel[0] = horVel * cosf(courseMadeTrue);
-    vel.vel[1] = horVel * sinf(courseMadeTrue);
+    ixVector3 velNed;
+    velNed[0] = horVel * cosf(courseMadeTrue);
+    velNed[1] = horVel * sinf(courseMadeTrue);
+    velNed[2] = -vertVelUp;     // NED down-positive
+    if (vel.status & GNSS_STATUS_FLAGS_GNSS_NMEA_DATA)
+    {   // NED velocity
+        cpy_Vec3_Vec3(vel.vel, velNed);
+    }
+    else
+    {   // ECEF velocity
+        ixQuat qe2n;
+        quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+        quatRot(vel.vel, qe2n, velNed);
+    }
 
     return 0;
 }
