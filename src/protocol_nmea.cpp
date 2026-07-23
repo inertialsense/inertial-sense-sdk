@@ -1980,7 +1980,6 @@ int nmea_powPrep(char a[], int startN, const int aSize, gnss_pos_t &pos)
 int nmea_powgps(char a[], const int aSize, gnss_pos_t &pos)
 {
     int n = ssnprintf(a, aSize, "$POWGPS");     // 0
-
     n = nmea_powPrep(a, n, aSize, pos);         // 1-6
 
     return nmea_sprint_footer(a, aSize, n);
@@ -2015,32 +2014,21 @@ int nmea_powgps(char a[], const int aSize, gnss_pos_t &pos)
  */
 int nmea_powtlv(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel)
 {    
+    update_nmea_speed(pos, vel);
+
     float groundTrackHeading = 0;
-    update_nmea_speed(pos, vel);
-
-    int n = ssnprintf(a, aSize, "$POWTLV");                     // 0
-
-    update_nmea_speed(pos, vel);
-
-    n = nmea_powPrep(a, n, aSize, pos);                         // 1-6
-
-    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                  // 7,8
-    nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                  // 9,10
-
-    nmea_sprint(a, aSize, n, ",%+.3f", pos.lla[2]);             // 11
-    nmea_sprint_f(a, aSize, n, ",%+.3f", pos.hMSL);             // 12
-
-    nmea_sprint_f(a, aSize, n, ",%.3f", s_dataSpeed.speed2dMps); // 13
-
-    nmea_sprint_f(a, aSize, n, ",%+.3f", -s_dataSpeed.velNed[2]); // 14 (velNed is Down-positive; negate for Up-positive)
-
+    int n = ssnprintf(a, aSize, "$POWTLV");                         // 0
+    n = nmea_powPrep(a, n, aSize, pos);                             // 1-6
+    nmea_latToDegMin(a, aSize, n, pos.lla[0]);                      // 7,8
+    nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                      // 9,10
+    nmea_sprint(a, aSize, n, ",%+.3f", pos.lla[2]);                 // 11
+    nmea_sprint_f(a, aSize, n, ",%+.3f", pos.hMSL);                 // 12
+    nmea_sprint_f(a, aSize, n, ",%.3f", s_dataSpeed.speed2dMps);    // 13
+    nmea_sprint_f(a, aSize, n, ",%+.3f", -s_dataSpeed.velNed[2]);   // 14 (velNed is Down-positive; negate for Up-positive)
     groundTrackHeading = C_RAD2DEG_F * atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
-
-    if (groundTrackHeading < 0.0f)  groundTrackHeading += 360.0f;
-    
-    nmea_sprint_f(a, aSize, n, ",%.3f", groundTrackHeading);    // 15
-
-    return nmea_sprint_footer(a, aSize, n);                     // 16
+    if (groundTrackHeading < 0.0f)  groundTrackHeading += 360.0f;    
+    nmea_sprint_f(a, aSize, n, ",%.3f", groundTrackHeading);        // 15
+    return nmea_sprint_footer(a, aSize, n);                         // 16
 }
 
 /**
