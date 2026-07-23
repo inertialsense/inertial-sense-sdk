@@ -35,9 +35,10 @@
  */
 class CorrectionService {
 public:
-    typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;
-    typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;
+    typedef std::function<void(std::string)> tRTCM3Msg1029ListenerCallback;                        //!< Callback signature for addRTCM3Msg1029Listeners(): receives the RTCM3 Msg 1029 text payload
+    typedef std::function<void(uint16_t, const void*, uint32_t)> tRTCM3PacketListenerCallback;      //!< Callback signature for addRTCM3PacketListeners(): receives (RTCM3 message type, packet data, packet size)
 
+    /** @brief Default constructor; no source port is bound until setSourcePort() is called. */
     CorrectionService() { init(nullptr); }
 
     /**
@@ -72,7 +73,7 @@ public:
 
     /**
      * Sets the port to read corrections from
-     * @param port
+     * @param srcPort the port to bind as the correction source, replacing any previously-bound source port
      */
     void setSourcePort(port_handle_t srcPort);
 
@@ -132,17 +133,20 @@ public:
     /**
      * Check if this CorrectionService is sending correction data to a given port
      * @param port A reference of a port to check for
+     * @return true if port is among this service's downstream ports, false otherwise.
      */
     bool hasPort(port_handle_t port);
 
     /**
      * Check if this CorrectionService is sending correction data to a given device
      * @param device A reference of a device to check for
+     * @return true if device's port is among this service's downstream ports, false otherwise.
      */
     bool hasDevice(device_handle_t device);
 
     /**
      * Gets the stats for the source port for this CorrectionService
+     * @return the source port's accumulated read/write statistics.
      */
     [[nodiscard]] port_stats_t* getSourceStats() const {return BASE_PORT(source)->stats;}
 
@@ -201,33 +205,39 @@ public:
 
 
 protected:
-    port_handle_t source {};
-    std::vector<port_handle_t> ports;
+    port_handle_t source {};                  //!< The bound source port from which correction data is read
+    std::vector<port_handle_t> ports;          //!< Downstream ports to which correction data is forwarded
 
 private:
-    inline static const std::vector<PortFactory*>& nullFactories = {};
-    std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;
-    std::vector<tRTCM3PacketListenerCallback> rtcm3PacketListeners;
-    is_comm_instance_t packetParser = {};
-    uint32_t rtcm3PacketsProcessed = 0;                                 // total number of RTCM3 packets that have been processed
-    uint32_t rtcm3PacketLastMs = 0;                                     // timestamp in ms, since the last RTCM3 packet was seen
-    uint32_t lastConnAttemptTs = 0;
-    bool localSrcPort = false;                                          // true if the source port was locally instantiated rather than passed in the constructor
-    PortFactory* srcPortFactory = nullptr;                               // the factory used to create the source port (if localSrcPort is true)
+    inline static const std::vector<PortFactory*>& nullFactories = {};    //!< Empty factory list, used as the default argument for the portName-based constructor
+    std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;      //!< Registered callbacks notified on every RTCM3 Msg 1029
+    std::vector<tRTCM3PacketListenerCallback> rtcm3PacketListeners;       //!< Registered callbacks notified on every RTCM3 packet
+    is_comm_instance_t packetParser = {};                                 //!< SDK comm-protocol parser instance bound to the source port
+    uint32_t rtcm3PacketsProcessed = 0;                                 //!< total number of RTCM3 packets that have been processed
+    uint32_t rtcm3PacketLastMs = 0;                                     //!< timestamp in ms, since the last RTCM3 packet was seen
+    uint32_t lastConnAttemptTs = 0;                                     //!< timestamp (ms) of the last (re)connection attempt to the source
+    bool localSrcPort = false;                                          //!< true if the source port was locally instantiated rather than passed in the constructor
+    PortFactory* srcPortFactory = nullptr;                               //!< the factory used to create the source port (if localSrcPort is true)
 
-    MessageStats::mul_stats_t* msgStats = nullptr;                      // if not-null, call into the msgStats when parsing the source port
+    MessageStats::mul_stats_t* msgStats = nullptr;                      //!< if not-null, call into the msgStats when parsing the source port
 
-    pfnIsCommGenMsgHandler previousRtcm3Handler = nullptr;
-    pfnIsCommGenMsgHandler previousErrorHandler = nullptr;
+    pfnIsCommGenMsgHandler previousRtcm3Handler = nullptr;              //!< RTCM3 handler previously registered on the source port, restored when the source port changes/closes
+    pfnIsCommGenMsgHandler previousErrorHandler = nullptr;              //!< Error/raw-data handler previously registered on the source port, restored when the source port changes/closes
 
     /**
-     * Transforms one format (like NTRIP) to RTCM3 to be processed by the device
-     * You should overload this if your implementing another corrections protocol in a host side application
+     * Transforms one format (like NTRIP) to RTCM3 to be processed by the device.
+     *
+     * This is the primary extension point for subclasses implementing another corrections
+     * protocol in a host-side application. It's only invoked from onRawDataHandler(), for data the
+     * base comm parser could not already identify as RTCM3 (data recognized as RTCM3 bypasses this
+     * entirely via onRtcm3Handler() and is forwarded as-is). The base implementation is a no-op
+     * stub that reads/writes nothing and returns 0 -- i.e. unrecognized raw data is dropped unless
+     * a subclass overrides this to translate its protocol's framing into RTCM3.
      * @param inputBuffer Data to be transformed
      * @param inputLength Length of input buffer
      * @param finalBuffer To be transmitted to the device
      * @param finalBufferSize The size of the final buffer
-     * @return Number of bytes processed
+     * @return Number of bytes written into finalBuffer
      */
     virtual uint32_t packetTransformer(const uint8_t *inputBuffer, uint32_t inputLength, uint8_t *finalBuffer, uint32_t finalBufferSize);
 
@@ -253,7 +263,7 @@ private:
 
     /**
      * Private initializer function
-     * @param port Port to use for Corrections
+     * @param srcPort Port to use for Corrections
      */
     void init(port_handle_t srcPort);
 
