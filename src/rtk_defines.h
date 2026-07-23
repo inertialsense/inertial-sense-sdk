@@ -4,8 +4,9 @@
  * limits, and per-constellation satellite numbering ranges used by the embedded RTK positioning engine.
  *
  * Constellation support is selected at compile time via the ENA* macros below; enabling a constellation
- * pulls in its satellite-numbering range (MINPRN*/MAXPRN*/NSAT*) and system count (NSYS*), otherwise
- * those are defined as 0 so downstream array sizing (e.g. GPS_EPHEMERIS_ARRAY_SIZE) stays consistent.
+ * pulls in its satellite-numbering range (the MINPRN, MAXPRN, and NSAT macros for that constellation)
+ * and system count (the NSYS macro for that constellation), otherwise those are defined as 0 so
+ * downstream array sizing (e.g. GPS_EPHEMERIS_ARRAY_SIZE) stays consistent.
  * DO NOT reorder or resize these without checking every consumer -- several are used as fixed array
  * dimensions in wire-format structures.
  *
@@ -16,7 +17,7 @@
 #ifndef __RTK_EMBEDDED_DEFINES_H_
 #define __RTK_EMBEDDED_DEFINES_H_
 
-/** Enabled GNSS constellations (comment out to disable; see the corresponding NSYS*/MINPRN*/MAXPRN* below). */
+/** Enabled GNSS constellations (comment out to disable; see the corresponding NSYS, MINPRN, and MAXPRN macros below). */
 #define ENAGAL      //!< Galileo enabled
 #define ENACMP      //!< BeiDou (Compass) enabled
 // #define ENAGLO   //!< GLONASS -- disabled
