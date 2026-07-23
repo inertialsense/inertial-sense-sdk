@@ -160,17 +160,25 @@ TEST(DidMappingTest, ExtractedValuesMatchWritten) {
         uint8_t commBuf[1024];
         is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
         const uint8_t* payload = nullptr;
-        uint32_t parsedDid = 0;
+        uint32_t parsedDid  = 0;
+        uint32_t parsedSize = 0;
         for (std::size_t i = 0; i < size; ++i) {
             const protocol_type_t pt = is_comm_parse_byte(&comm, ptr[i]);
             if (pt == _PTYPE_INERTIAL_SENSE_DATA || pt == _PTYPE_INERTIAL_SENSE_CMD) {
-                payload   = comm.rxPkt.data.ptr;
-                parsedDid = comm.rxPkt.dataHdr.id;
+                payload    = comm.rxPkt.data.ptr;
+                parsedDid  = comm.rxPkt.dataHdr.id;
+                parsedSize = comm.rxPkt.dataHdr.size;
                 break;
             }
         }
         ASSERT_NE(payload, nullptr) << "record must parse back to an ISB payload";
         EXPECT_EQ(parsedDid, static_cast<uint32_t>(DID_INS_2));
+        // Guard the map-offset reads below: they index into `payload` at DID-map
+        // offsets up to sizeof(ins_2_t). Assert the parsed payload is a full
+        // struct first, so a truncated/regressed record fails cleanly here rather
+        // than reading past the payload (Copilot review, PR #1232).
+        ASSERT_EQ(parsedSize, sizeof(ins_2_t))
+            << "parsed INS_2 payload must be a full struct before map-offset reads";
 
         bool ok = false;
         const double tow = extractScalar(*m, "timeOfWeek", payload, ok);
