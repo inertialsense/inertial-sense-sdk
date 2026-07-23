@@ -26,19 +26,25 @@
 #include "core/base_port.h"
 #include "PortFactory.h"
 
+/** @brief Singleton owner of the discovered/managed port set; also implements std::set<port_handle_t> so it can be iterated directly. */
 class PortManager : public std::set<port_handle_t> {
 public:
 
+    /** @brief Port-set change events delivered to registered port_listener callbacks. */
     enum port_event_e : uint8_t {
-        PORT_ADDED,
-        PORT_REMOVED,
+        PORT_ADDED,      //!< A new port was discovered and added to the managed set
+        PORT_REMOVED,    //!< A previously managed port was removed (no longer discoverable)
     };
 
-    inline static const char* port_event_names[] = { "PORT_ADDED", "PORT_REMOVED" };
+    inline static const char* port_event_names[] = { "PORT_ADDED", "PORT_REMOVED" };  //!< Human-readable names for port_event_e, indexed by enum value
 
-    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t, PortFactory& factory)> port_listener;
-    typedef std::shared_ptr<port_listener> port_listener_handle_t;
+    typedef std::function<void(port_event_e, uint16_t, std::string, port_handle_t, PortFactory& factory)> port_listener;  //!< Callback signature: (event, portType, portName, port, factory)
+    typedef std::shared_ptr<port_listener> port_listener_handle_t;   //!< Opaque handle returned by addPortListener(), used to unregister via removePortListener()
 
+    /**
+     * @brief Gets the singleton instance of the PortManager.
+     * @return reference to the singleton PortManager.
+     */
     static PortManager& getInstance() {
         static PortManager instance;
         return instance;
@@ -79,12 +85,17 @@ public:
 
     /**
      * Returns a vector containing all registered port factories.
-     * @return
+     * @return a vector of pointers to the currently registered port factories.
      */
     std::vector<PortFactory*> getPortFactories() {
         return factories;
     }
 
+    /**
+     * @brief Registers a callback to be notified when ports are added or removed.
+     * @param listener the callback to invoke on port_event_e changes.
+     * @return an opaque handle to the registered listener, used to unregister via removePortListener().
+     */
     port_listener_handle_t addPortListener(const port_listener& listener) {
         std::lock_guard<std::recursive_mutex> lock(mutex);
         port_listener_handle_t listenerPtr = std::make_shared<port_listener>(listener);
@@ -92,6 +103,11 @@ public:
         return listenerPtr;
     }
 
+    /**
+     * @brief Unregisters a previously registered port listener.
+     * @param listener the handle returned by addPortListener().
+     * @return true if the listener was found and removed, false otherwise.
+     */
     bool removePortListener(const port_listener_handle_t& listener) {
         std::lock_guard<std::recursive_mutex> lock(mutex);
         bool didIt = (listeners.erase(listener) != 0);
@@ -106,11 +122,18 @@ public:
 
     /**
      * Returns a vector of all currently discovered/managed ports
-     * @return
+     * @return a vector of all currently discovered/managed port handles.
      */
     std::vector<port_handle_t> getPorts();
 
+    /**
+     * @brief Gets a managed port by its index in the set.
+     * @param index the index of the port to retrieve.
+     * @return the port handle at that index, or NULL if index is out of range.
+     */
     port_handle_t getPort(uint16_t index);
+
+    /** @brief Equivalent to getPort(index); provided for convenient array-style access. */
     inline port_handle_t operator[](int index) { return getPort(index); }
 
     /**
@@ -122,7 +145,9 @@ public:
     port_handle_t getPort(const std::string& name, uint16_t portType = PORT_TYPE__UNKNOWN);
 
     /**
-     * Release the requested port, deallocating any associated memory
+     * @brief Release the requested port, deallocating any associated memory.
+     * @param port the port to release.
+     * @return true if port was found among the known ports and released, false otherwise.
      */
     bool releasePort(port_handle_t port) {
         std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -135,6 +160,7 @@ public:
         return false;
     }
 
+    /** @brief Removes all managed ports (and their factory-tracking entries) without closing or releasing them. */
     void clear(){
         std::set<port_handle_t>::clear();
         knownPorts.clear();
@@ -142,6 +168,8 @@ public:
 
 protected:
     PortManager() = default;
+
+    /** @brief Closes and releases every still-valid known port before the singleton is destroyed. */
     ~PortManager() {
         std::lock_guard<std::recursive_mutex> lock(mutex);
         // if the PortManager is destroyed, it should destroy all ports which it knows about
@@ -156,10 +184,10 @@ protected:
     };
 
     /**
-     * Callback handler used by factories when a port is located (but not yet allocated)
-     * @param factory - the factory which discovered this port
-     * @oaram portType - the type of port (as determined by the factory)
-     * @param portName - the name of the port (as determined by the factory, should be unique)
+     * @brief Callback handler used by factories when a port is located (but not yet allocated).
+     * @param factory the factory which discovered this port.
+     * @param portType the type of port (as determined by the factory).
+     * @param portName the name of the port (as determined by the factory, should be unique).
      */
     void portHandler(PortFactory* factory, uint16_t portType, const std::string& portName);
 
@@ -167,10 +195,11 @@ private:
     PortManager(PortManager const &) = delete;
     PortManager& operator=(PortManager const&) = delete;
 
+    /** @brief Tracks which factory discovered a given port, under what type/name, so it can be located and released later. */
     struct port_entry_t {
-        PortFactory* factory;
-        uint16_t type;
-        std::string name;
+        PortFactory* factory;    //!< Factory that discovered this port
+        uint16_t type;           //!< Port type (a PORT_TYPE__ value) as determined by the factory
+        std::string name;        //!< Unique port name, as determined by the factory
 
         port_entry_t(PortFactory* f, uint16_t t, const std::string& n) { // , port_handle_t* p) {
             factory = f, type = t, name = n; // , port = p;
@@ -186,12 +215,21 @@ private:
 
     mutable std::recursive_mutex mutex;                                        // Mutex must be mutable if the range needs to support const containers
 
+    /**
+     * @brief RAII range-adapter that holds the PortManager's mutex for the lifetime of a
+     * range-based for loop, so iteration over the managed port set is safe against concurrent
+     * modification from other threads. See locked_range().
+     */
     class LockedRangeProxy {
     private:
         PortManager& container;
         std::scoped_lock<std::recursive_mutex> lock_guard;                     // The lock_guard/scoped_lock ensures RAII
 
     public:
+        /**
+         * @brief Locks container's mutex for the lifetime of this proxy.
+         * @param container_ref the PortManager whose port set will be iterated.
+         */
         LockedRangeProxy(PortManager& container_ref) : container(container_ref), lock_guard(container_ref.mutex) { }
 
         // The destructor will be called automatically when the for loop ends,
@@ -206,6 +244,11 @@ private:
     };
 
 public:
+    /**
+     * @brief Get a range-adapter over the managed port set that holds the internal mutex for the
+     * duration of iteration, e.g. `for (auto& port : portManager.locked_range()) { ... }`.
+     * @return a LockedRangeProxy usable directly in a range-based for loop.
+     */
     LockedRangeProxy locked_range() { return LockedRangeProxy(*this); }
 
 };
