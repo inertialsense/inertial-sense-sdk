@@ -5155,7 +5155,8 @@ enum can_baudrate_t
  *  CAN_BAUDRATE_KBPS_FD_ENABLE flag bit. */
 #define CAN_BAUDRATE_KBPS_MASK          (uint16_t)0x7FFF
 
-/** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
+/** (DID_CAN_CONFIG / DID_CANFD_CONFIG) CAN bus broadcast configuration: per-message period
+ *  multipliers, transmit addresses, baud rate, and receive address. */
 typedef struct PACKED
 {
     /** Broadcast period multiple for each CAN message. 0 disables the message.
