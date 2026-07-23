@@ -462,8 +462,12 @@ void ISFirmwareUpdater::refreshUpdateState() {
             }
             break;
         case ISFwUpdateState::UPDATER_SUCCESSFUL:
-        case ISFwUpdateState::SUCCESS_WITH_NOTIFICATIONS:
             updateState.lastMessage = "Completed successfully.";
+            break;
+        case ISFwUpdateState::SUCCESS_WITH_NOTIFICATIONS:
+            // Prefer the most recent recorded notification (e.g. "skipped due to version") over
+            // a generic success message, so the user can see WHY nothing was actually uploaded.
+            updateState.lastMessage = updateState.messages.empty() ? "Completed successfully." : updateState.messages.back().msg;
             break;
     }
 
@@ -527,7 +531,19 @@ bool ISFirmwareUpdater::step() {
     fnStep.mark("Finished fwUpdate_step().");
 
     if (fwUpdate_isDone()) {
-        updateState.state = hasErrors() ? ISFwUpdateState::UPDATER_DONE_WITH_ERRORS : ISFwUpdateState::UPDATER_SUCCESSFUL;
+        bool errored = hasErrors();
+        {
+            // hasNotifications is written elsewhere (e.g. cmd_UploadImage) under updateState.lock();
+            // take the same lock here so this read-and-write of updateState fields is synchronized
+            // against concurrent readers/writers (e.g. the UI thread via getSnapshot()).
+            auto lk = updateState.lock();
+            if (errored)
+                updateState.state = ISFwUpdateState::UPDATER_DONE_WITH_ERRORS;
+            else if (updateState.hasNotifications)
+                updateState.state = ISFwUpdateState::SUCCESS_WITH_NOTIFICATIONS;
+            else
+                updateState.state = ISFwUpdateState::UPDATER_SUCCESSFUL;
+        }
 
         // be sure to release/cleanup the source file after we are finished with it.
         if (srcFile) {
@@ -1200,7 +1216,22 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                         "Ignoring Update. New firmware %s is older than device %s.",
                         imageVerStr.c_str(), targetVerStr.c_str());
                     cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
-                    cmd.resultMsg = "Target is already up to date.";
+                    cmd.resultMsg = "Update Skipped — Firmware is not newer (Use \"Force Update\" to override)";
+                    // Record this as a notification (not an error) so the caller can surface it
+                    // distinctly from a plain "Completed Successfully" — otherwise a version-skip
+                    // looks identical to a real upload in the UI.
+                    {
+                        auto lk = updateState.lock();
+                        // Because we never called initializeUpload() (no session was actually
+                        // started), updateState.target is still stale for this target. Sync it
+                        // here — otherwise refreshUpdateState()'s "session target changed" check
+                        // (which runs right after this, in the same step()) sees a mismatch and
+                        // clears updateState.messages, wiping the notification we just added
+                        // before it's ever displayed.
+                        updateState.target = target;
+                        updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_WARN, cmd.resultMsg);
+                        updateState.hasNotifications = true;
+                    }
                     return;
                 }
             }
