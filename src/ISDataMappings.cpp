@@ -3328,15 +3328,19 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
         return 0.0;
     }
     
-    // raw data types with observation use a custom timestamp function
+    // SN-8328: gnss_raw_t carries a raw GNSS *observation* time (gtime_t —
+    // absolute seconds since epoch), which is a DIFFERENT time domain from the
+    // device's time-of-week / uptime timeline that ISTimeResolver anchors on.
+    // Emitting obs.time here poisons the resolved span: on some logs it evaluates
+    // to ~1980, which the resolver anchors to GPS week 0, splitting the log's
+    // resolved bounds across ~45 years (a D0066 violation surfaced by the
+    // goldenlogs RL tests on combined GPX+IMX compassing logs). Raw-passthrough
+    // records have no device ToW, so return 0 — they get positioned by host
+    // uptime and bridged to the durable week like every other non-ToW record.
+    // (Supersedes SN-8004, which tried to tolerate the obs.time downstream via a
+    // poison-sweep exemption instead of not emitting it.)
     if (hdr->id == DID_GNSS1_RAW || hdr->id == DID_GNSS2_RAW || hdr->id == DID_GNSS_BASE_RAW)
     {
-        gnss_raw_t* raw = (gnss_raw_t*)buf;
-        if (raw->dataType == eRawDataType::raw_data_type_observation && raw->obsCount>0)
-        {
-            const obsd_t& obs = raw->data.obs[0];
-            return obs.time.sec + (double)obs.time.time;
-        }
         return 0.0;
     }
 
