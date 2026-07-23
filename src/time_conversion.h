@@ -100,8 +100,8 @@ int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS);
 /**
  * @brief Convert GPS time of week in milliseconds to UTC date and time.
  *
- * @param gpsSecondsOfWeek Output GPS seconds of week.
- * @param gpsWeek Output GPS week number since January 6th, 1980.
+ * @param gpsSecondsOfWeek Input GPS seconds of week.
+ * @param gpsWeek Input GPS week number since January 6th, 1980.
  * @param leapSeconds Leap seconds to account for difference between GPS and UTC time (18s by default).
  * @return std::tm UTC time.
  */

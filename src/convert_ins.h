@@ -48,7 +48,7 @@ void convertIns1ToIns2(ins_1_t* ins1, ins_2_t* result);
 void convertIns2ToIns1(ins_2_t *ins2, ins_1_t *result, double *refLla=NULL);
 
 /**
- * @brief Convert ins_3_t (quaternion/NED, ECEF position) to ins_1_t (Euler/NED, LLA position).
+ * @brief Convert ins_3_t (quaternion/NED, LLA position) to ins_1_t (Euler/NED, LLA position).
  * @param ins3   Source INS-3 solution (quaternion body rotation w.r.t. NED, LLA position).
  * @param result Output INS-1 solution: Euler angles w.r.t. NED, same LLA position, and NED offset
  *               from refLla (if provided).
