@@ -10,6 +10,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file InertialSense.h
+ * @brief Legacy all-devices façade over PortManager/DeviceManager/ISDevice: opens port(s), discovers
+ * devices, and broadcasts commands/data-requests to every connected device at once. Most of the
+ * per-device functionality here has since moved onto ISDevice directly (see the individual method
+ * docs) -- new code that only needs to address a single device should prefer ISDevice.
+ */
+
 #ifndef __INERTIALSENSE_H
 #define __INERTIALSENSE_H
 
@@ -51,41 +59,48 @@ extern "C"
 
 class InertialSense;
 
+/** Custom-allocator callback signature: given a port and its discovered dev_info_t, return a newly allocated device (or subclass). */
 typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
+/** Custom-clone callback signature: return a newly allocated copy of orig. */
 typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
+/** Callback signature for per-step data logging hooks. */
 typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
+/** Callback signature for per-DID or global binary-data received callbacks. */
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+/** Callback signature for ISB ack/set-data-response received callbacks. */
 typedef std::function<void(void* ctx, p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port)> pfnHandleAckData;
 
 /**
-* Inertial Sense C++ interface
-* Note only one instance of this class per process is supported
-*/
+ * @brief Inertial Sense C++ interface.
+ * Note only one instance of this class per process is supported.
+ */
 class InertialSense
 {
 public:
-    PortManager& portManager = PortManager::getInstance();
-    DeviceManager& deviceManager = DeviceManager::getInstance();
+    PortManager& portManager = PortManager::getInstance();     //!< reference to the PortManager singleton
+    DeviceManager& deviceManager = DeviceManager::getInstance(); //!< reference to the DeviceManager singleton
 
+    /** @brief Legacy ComManager-era global callback/buffer state, retained for the deprecated single-callback broadcast path and testing (see ComManagerState()). */
     struct com_manager_cpp_state_t
     {
         // common vars
-        pfnHandleBinaryData binaryCallbackGlobal;
-        pfnHandleAckData binaryAckCallback;    // acknowledgment command and set data callback
+        pfnHandleBinaryData binaryCallbackGlobal;      //!< callback invoked for any DID without a more specific entry in binaryCallback
+        pfnHandleAckData binaryAckCallback;    //!< acknowledgment command and set data callback
 #define SIZE_BINARY_CALLBACK    256
-        pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK] = {};
-        pfnStepLogFunction stepLogFunction = nullptr;
-        InertialSense* inertialSenseInterface = nullptr;
-        char* clientBuffer = nullptr;
-        int clientBufferSize = 0;
-        int* clientBytesToSend = 0;
-        int16_t discoveryTimeout = DeviceManager::DISCOVERY__DEFAULT_TIMEOUT;
+        pfnHandleBinaryData binaryCallback[SIZE_BINARY_CALLBACK] = {};     //!< per-DID binary-data callbacks, indexed by DID (for DIDs < SIZE_BINARY_CALLBACK)
+        pfnStepLogFunction stepLogFunction = nullptr;                      //!< optional per-step data logging hook
+        InertialSense* inertialSenseInterface = nullptr;                  //!< back-reference to the owning InertialSense instance
+        char* clientBuffer = nullptr;                                      //!< unused legacy client buffer pointer
+        int clientBufferSize = 0;                                          //!< unused legacy client buffer size
+        int* clientBytesToSend = 0;                                        //!< unused legacy client bytes-to-send pointer
+        int16_t discoveryTimeout = DeviceManager::DISCOVERY__DEFAULT_TIMEOUT;  //!< per-device discovery timeout (ms) used by this instance
     };
 
+    /** @brief Result of a single-port BootloadFile() attempt. */
     typedef struct
     {
-        std::string port;
-        std::string error;
+        std::string port;      //!< the port the bootload attempt was made on
+        std::string error;     //!< empty on success, otherwise a description of the failure
     } bootload_result_t;
 
 
@@ -94,16 +109,21 @@ public:
     */
     InertialSense();
 
+    /** @brief Constructs with a custom set of port/device factories, in place of the default set registered by the no-arg constructor. */
     InertialSense(std::vector<PortFactory*> pFactories, std::vector<DeviceFactory*> dFactories);
 
     /**
     * Constructor
     * @param callbackIsb InertialSense binary received data callback (optional). If specified, ALL BroadcastBinaryData requests will callback to this function.
+    * @param callbackHandlerAck acknowledgment/set-data-response received callback (optional).
     * @param callbackRmc Real-time message controller received data callback (optional).
     * @param callbackNmea NMEA received received data callback (optional).
     * @param callbackUblox Ublox binary received data callback (optional).
     * @param callbackRtcm3 RTCM3 received data callback (optional).
     * @param callbackSpartn Spartn received data callback (optional).
+    * @param callbackSeptSbf Septentrio SBF received data callback (optional).
+    * @param callbackSeptReply Septentrio reply received data callback (optional).
+    * @param callbackNewDevice custom new-device allocator callback (optional); see registerNewDeviceHandler().
     */
     explicit InertialSense(
             pfnHandleBinaryData     callbackIsb,
@@ -122,6 +142,7 @@ public:
     */
     virtual ~InertialSense();
 
+    /** @return the most recently constructed InertialSense instance, or nullptr if none exists. Only one instance per process is supported. */
     static InertialSense* getLastInstance();
 
     /**
@@ -129,12 +150,14 @@ public:
     * @param port the port to open
     * @param baudRate the baud rate to connect with - supported rates are 115200, 230400, 460800, 921600, 2000000, 3000000
     * @param disableBroadcastsOnClose whether to send a stop broadcasts command to all units on Close
+    * @param filterHdwType a IS_HARDWARE_* type used to restrict discovery to only matching device types
     * @return true if opened, false if failure (i.e. baud rate is bad or port fails to open)
     */
     bool Open(const char* port, int baudRate=IS_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose=false, uint16_t filterHdwType=IS_HARDWARE_ANY);
 
     /**
     * Check if the connection is open
+    * @return true if at least one managed device is currently connected
     */
     bool IsOpen();
 
@@ -145,6 +168,7 @@ public:
 
     /**
     * Get all open serial port names
+    * @return currently always returns an empty vector; not yet implemented against DeviceManager/PortManager.
     */
     std::vector<std::string> GetPortNames() { return {}; }
 
@@ -154,12 +178,16 @@ public:
      */
     std::set<port_handle_t> getPorts() { return portManager; }
 
+    /** @return the number of devices currently managed by DeviceManager. */
     int DeviceCount() { return (int)deviceManager.DeviceCount(); }
 
+    /** @return a reference to DeviceManager's backing list of managed devices. */
     std::list<device_handle_t>& getDevices() { return deviceManager; };
 
+    /** @return the device bound to port, or nullptr if none is known. */
     device_handle_t getDevice(port_handle_t port) { return deviceManager.getDevice(port); }
 
+    /** @return the device with the given unique Id (see ISDevice::getUniqueId()), or nullptr if none is known. */
     device_handle_t getDevice(uint64_t uid) { return deviceManager.getDevice(uid); }
 
     /**
@@ -170,6 +198,7 @@ public:
 
     /**
      * Register a callback handler for data stream errors.
+     * @param errorHandler function to be called when a data-stream parse error occurs
      */
     void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
 
@@ -177,7 +206,7 @@ public:
     * Enable or disable logging - logging is disabled by default
     * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
     * @param logPath the path to write the log files to
-    * @param logType the type of log to write
+    * @param logOptions the cISLogger save options (log type, filters, etc.) to use
     * @param rmcPreset RMC preset for data streaming
     * @param rmcOptions RMC options for data streaming
     * @return true if success, false if failure
@@ -237,30 +266,33 @@ public:
 
     /**
      * Locates the device associated with the specified port
-     * @param port
+     * @param port the port to look up; defaults to the first/only device's port if 0
      * @return device_handle_t which is connected to port, otherwise NULL
      */
     device_handle_t DeviceByPort(port_handle_t port = 0);
 
     /**
      * Locates the device associated with the specified port name
-     * @param port
+     * @param port_name the port name to look up (see portName())
      * @return device_handle_t which is connected to port, otherwise NULL
+     * @note declared but not currently defined anywhere in the SDK.
      */
     device_handle_t DeviceByPortName(const std::string& port_name);
 
     /**
+     * @param oldPorts the previously known set of port names, used as a baseline to detect new ones
      * @return a list of discovered ports which are not currently associated with a open device
      */
     std::vector<std::string> checkForNewPorts(std::vector<std::string>& oldPorts);
 
     /**
      * @brief Process received data from a port
-     * 
-     * @param port 
-     * @param data 
+     *
+     * @param port the port the data was received on
+     * @param data the parsed ISB data message
      */
     void ProcessRxData(port_handle_t port, p_data_t* data);
+    /** @brief Process a received NMEA sentence from a port. @param port the port the message was received on @param msg the raw NMEA sentence bytes @param msgSize length of msg in bytes */
     void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
     /**
@@ -298,7 +330,17 @@ public:
     * Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
     * Please ensure that all other connections to the com port are closed before calling this function.
     *
-    TODO: Param documentation
+    * @param comPort the serial port the device is connected to
+    * @param serialNum the expected serial number of the device to bootload, used to confirm identity after reconnecting
+    * @param fileName path to the main application firmware file to upload
+    * @param blFileName path to the bootloader firmware file to upload (if the device's bootloader itself needs updating)
+    * @param forceBootloaderUpdate if true, updates the bootloader even if the device's bootloader version already appears current
+    * @param baudRate the baud rate to use while bootloading
+    * @param uploadProgress callback invoked with upload progress
+    * @param verifyProgress callback invoked with post-upload verification progress
+    * @param infoProgress callback invoked with general status/info messages
+    * @param waitAction callback invoked periodically while waiting, e.g. to allow UI pumping or cancellation checks
+    * @return IS_OP_OK on success, otherwise an is_operation_result error code
     */
     static is_operation_result BootloadFile(
             const std::string& comPort,
@@ -319,9 +361,9 @@ public:
      * of the update process.
      * @param targetDevice the device which all commands should be directed to
      * @param cmds a vector of strings to be interpreted as commands, performed in sequence.  ie ["slot=0","upload=myfirmware.bin","slot=1","upload=configuration.conf","softReset"]
-     * @param infoProgress a callback method which provides progress information about the update
+     * @param fwUpdateStatus a callback method which provides progress information about the update
      * @param waitAction a callback which is checked periodically to see if the update should be cancelled
-     * @return
+     * @return always IS_OP_OK; this fires ISDevice::updateFirmware() on every managed device without aggregating their individual results (poll isFirmwareUpdateFinished()/isFirmwareUpdateSuccessful() for outcome)
      */
     is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds, fwUpdate::pfnStatusCb fwUpdateStatus, void (*waitAction)() = nullptr);
 
@@ -391,9 +433,9 @@ public:
     * and the appropriate checksum is calculated and appended.  This function can be used to send non-standard packets
     * and data sets, such as RTCM, UBLOX, etc.
     * @param pktInfo a field indication the type of, and flags for, the packet to be sent
-    * @param dataId the data id of the data to send
-    * @param payload the data to send
-    * @param length length of data to send
+    * @param data the data to send
+    * @param did the data id of the data to send
+    * @param size length of data to send
     * @param offset offset into data to send at
      */
     static void Send(uint8_t pktInfo, void *data=NULL, uint16_t did=0, uint16_t size=0, uint16_t offset=0);
@@ -404,7 +446,7 @@ public:
      * For example, to set only a portion of DID_FLASH_CONFIG, you could use SendData like this:
      *   SendData(DID_FLASH_CONFIG, &cfg.refLla[0], sizeof(double)*3, offsetof(nvm_flash_cfg_t, refLla));
      * @param dataId the data id of the data to send
-     * @param payload the data to send
+     * @param data the data to send
      * @param length length of data to send
      * @param offset offset into data to send at
      */
@@ -425,15 +467,13 @@ public:
     static void SendNmea(const std::string& nmeaMsg);
 
     /**
-     * Request a specific device broadcast binary data
-     * @param port the device's port to request data from
+     * Requests every currently managed device broadcast (or fetch once, if periodMultiple is 0) the given DID.
      * @param dataId the data id (DID_* - see data_sets.h) to broadcast
      * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
-     * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
      */
     static void BroadcastBinaryData(uint32_t dataId, int periodMultiple);
 
-    /**
+    /*
     * Broadcast binary data
     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
@@ -445,6 +485,7 @@ public:
     /**
     * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
     * @param rmcPreset realtimeMessageController preset
+    * @param rmcOptions realtimeMessageController options bitmask
     */
     static void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
 
@@ -464,12 +505,11 @@ public:
 
     /**
      * Sends message to device to set devices Event Filter
-     * param Target: 0 = device,
-     *               1 = forward to device GNSS 1 port (ie GPX),
-     *               2 = forward to device GNSS 2 port (ie GPX),
-     *               else will return
-     *       port: Send in target COM port.
-     *                If arg is < 0 default port will be used
+     * @param target 0 = device, 1 = forward to device GNSS 1 port (ie GPX), 2 = forward to device GNSS 2 port (ie GPX); any other value is rejected without sending
+     * @param msgTypeIdMask bitmask of message type Ids to filter on
+     * @param portMask bitmask of device ports the filter applies to
+     * @param priorityLevel minimum priority level required for a message to pass the filter
+     * @param port the device to send to; if 0 (default), sends to the first/only managed device
     */
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port = 0);
 
@@ -523,21 +563,23 @@ public:
     bool WaitForGpxFlashCfgSynced(port_handle_t port = 0);
 
     /**
-     * @brief SaveImxFlashConfigToFile
-     * @param path - Path to YAML flash config file
-     * @param pHandle - Handle of current device
-     * @return true for failure to upload file, false for success.
+     * @brief Serializes the given device's locally synchronized IMX flash config to a YAML file.
+     * @param path Path to the YAML flash config file to write
+     * @param port the device to save from; if 0 (default), uses the first/only managed device
+     * @return true on success, false on failure.
      */
     bool SaveImxFlashConfigToFile(std::string path, port_handle_t port = 0);
+    /** @copydoc SaveImxFlashConfigToFile */
     bool SaveGpxFlashConfigToFile(std::string path, port_handle_t port = 0);
 
     /**
-     * @brief LoadFlashConfigFromFile
-     * @param path - Path to YAML flash config file
-     * @param pHandle - Handle of current device
-     * @return true for failure to upload file, false for success.
+     * @brief Reads a YAML flash config file and uploads it to the given device.
+     * @param path Path to the YAML flash config file to read
+     * @param port the device to upload to; if 0 (default), uses the first/only managed device
+     * @return true on success, false on failure.
      */
     bool LoadImxFlashConfigFromFile(std::string path, port_handle_t port = 0);
+    /** @copydoc LoadImxFlashConfigFromFile */
     bool LoadGpxFlashConfigFromFile(std::string path, port_handle_t port = 0);
 
     /**
@@ -591,7 +633,7 @@ public:
      */
     void SetSerialPortDiscovery(bool enable = true);
 
-    // Used for testing
+    /** @brief Used for testing; exposes the legacy ComManager-era global callback/buffer state. @return pointer to this instance's com_manager_cpp_state_t. */
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
 
     /**
@@ -609,6 +651,7 @@ public:
         return oldHandler;
     }
 
+    /** @brief Resolves port to a device (or the first managed device if port is null) and invokes func on it. @return func's result, or false if no matching device is found. */
     template<typename Func>
     bool WithDevice(port_handle_t port, Func&& func)
     {
@@ -616,45 +659,45 @@ public:
         return (device ? func(device) : false);
     }
 
-    static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
-    static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
+    static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;     //!< (ms) interval between automatic flash-config synchronization checks
+    static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;     //!< (ms) default timeout for flash-config synchronization waits
 
 protected:
+    /** @brief Registered as the ComManager port-error callback; prints errMsg to stdout. @return 0 (always handled). */
     static int OnPortError(port_handle_t port, int errCode, const char *errMsg);
 
 private:
-    uint32_t m_timeMs;
-    InertialSense::com_manager_cpp_state_t m_comManagerState;
-    pfnOnNewDeviceHandler m_newDeviceHandler = NULLPTR;
-    pfnOnCloneDeviceHandler m_cloneDeviceHandler = NULLPTR;
-    pfnIsCommGenMsgHandler  m_handlerNmea = NULLPTR;
-    pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;
-    pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;
-    pfnIsCommGenMsgHandler  m_handlerSpartn = NULLPTR;
-    pfnIsCommGenMsgHandler  m_handlerSeptSbf = NULLPTR;
-    pfnIsCommGenMsgHandler  m_handlerSeptReply = NULLPTR;
-    pfnComManagerRmcHandler m_handlerRmc = NULLPTR;
-    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
+    uint32_t m_timeMs;                                          //!< last time (ms) Update() was called
+    InertialSense::com_manager_cpp_state_t m_comManagerState;   //!< legacy ComManager-era global callback/buffer state (see ComManagerState())
+    pfnOnNewDeviceHandler m_newDeviceHandler = NULLPTR;         //!< custom new-device allocator, if registered via registerNewDeviceHandler()
+    pfnOnCloneDeviceHandler m_cloneDeviceHandler = NULLPTR;     //!< custom device-clone handler, if registered
+    pfnIsCommGenMsgHandler  m_handlerNmea = NULLPTR;            //!< user-registered NMEA message callback
+    pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;           //!< user-registered u-blox message callback
+    pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;           //!< user-registered RTCM3 message callback
+    pfnIsCommGenMsgHandler  m_handlerSpartn = NULLPTR;          //!< user-registered SPARTN message callback
+    pfnIsCommGenMsgHandler  m_handlerSeptSbf = NULLPTR;         //!< user-registered Septentrio SBF message callback
+    pfnIsCommGenMsgHandler  m_handlerSeptReply = NULLPTR;       //!< user-registered Septentrio reply message callback
+    pfnComManagerRmcHandler m_handlerRmc = NULLPTR;             //!< user-registered RMC (real-time message controller) callback
+    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;    //!< user-registered data-stream parse error callback (see setErrorHandler())
 
-    cISLogger m_logger;
-    void* m_logThread;
-    cMutex m_logMutex;
-    std::map<port_handle_t, std::vector<p_data_buf_t>> m_logPackets;
-    time_t m_lastLogReInit;
+    cISLogger m_logger;                                          //!< the logger instance used by EnableLogger()/SetLoggerEnabled()
+    void* m_logThread;                                           //!< handle to the background logger thread, if logging is enabled
+    cMutex m_logMutex;                                           //!< guards m_logPackets / logger state against concurrent access from LoggerThread()
+    std::map<port_handle_t, std::vector<p_data_buf_t>> m_logPackets;  //!< per-port queue of packets pending write by LoggerThread()
+    time_t m_lastLogReInit;                                     //!< last time the logger was (re)initialized
 
-    char m_clientBuffer[512];
-    int m_clientBufferBytesToSend;
-    bool m_forwardGpgga;
+    char m_clientBuffer[512];                                   //!< unused legacy client buffer
+    int m_clientBufferBytesToSend;                              //!< unused legacy client buffer byte count
+    bool m_forwardGpgga;                                        //!< unused legacy GPGGA-forwarding flag
 
-    int m_baudRate = IS_BAUDRATE_DEFAULT;
-    bool m_enableDeviceValidation = true;
-    bool m_disableBroadcastsOnClose;
-    bool m_serialPortDiscoveryEnabled  = true;   ///< last value passed to SetSerialPortDiscovery (default on)
-    bool m_networkPortDiscoveryEnabled = false;  ///< last value passed to SetNetworkPortDiscovery
-    bool m_relayPortDiscoveryEnabled   = false;  ///< last value passed to SetRelayPortDiscovery
+    int m_baudRate = IS_BAUDRATE_DEFAULT;                       //!< baud rate used by the most recent Open() call
+    bool m_enableDeviceValidation = true;                       //!< whether Open()'d devices are validated (see EnableDeviceValidation())
+    bool m_disableBroadcastsOnClose;                            //!< whether Close() sends a stop-broadcasts command to all devices first
+    bool m_serialPortDiscoveryEnabled  = true;   //!< last value passed to SetSerialPortDiscovery (default on)
+    bool m_networkPortDiscoveryEnabled = false;  //!< last value passed to SetNetworkPortDiscovery
+    bool m_relayPortDiscoveryEnabled   = false;  //!< last value passed to SetRelayPortDiscovery
 
-    /// Rebuild PortManager's factory list according to the current m_*PortDiscoveryEnabled
-    /// flags and clear its existing ports. Shared by all three Set*PortDiscovery setters.
+    /** Rebuild PortManager's factory list according to the current m_*PortDiscoveryEnabled flags and clear its existing ports. Shared by all three Set*PortDiscovery setters. */
     void rebuildPortFactories();
 
     std::vector<std::string> m_ignoredPorts;    //!< port names which should be ignored (known bad, etc).
@@ -665,17 +708,26 @@ private:
     PortManager::port_listener_handle_t     m_portListenerHandle;    //!< handle for the portManagerHandler listener registered on the singleton PortManager; removed in ~InertialSense()
 
 
-    // returns false if logger failed to open
+    /** @brief Called each Update() to service the logger thread/state. @return false if the logger failed to open. */
     bool UpdateServer();
+    /** @brief Opens/initializes the logger at path with the given save options and starts LoggerThread(). @return false if the logger failed to open. */
     bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
+    /** @brief Stops and flushes the logger, if enabled. */
     void DisableLogging();
+    /** @return true once every currently managed device has reported valid dev_info_t (see ISDevice::hasDeviceInfo()). */
     bool HasReceivedDeviceInfoFromAllDevices();
+    /** @brief Opens the given port pattern (or discovers matching ports) at baudRate, optionally filtered by hardware type. @return true if at least one port was opened. */
     bool OpenPorts(const char* port, int baudRate, uint16_t filterHdwType=IS_HARDWARE_ANY);
+    /** @brief Closes all currently open device ports. @param drainBeforeClose if true, waits for pending TX/RX to drain before closing. */
     void ClosePorts(bool drainBeforeClose = false);
+    /** @brief Background thread entry point that drains m_logPackets to the logger. @param info the owning InertialSense instance, cast from void*. */
     static void LoggerThread(void* info);
+    /** @brief Per-step data callback registered on devices while logging is enabled; queues data into m_logPackets for LoggerThread(). */
     static void StepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
+    /** @brief PortManager port-event listener; used to detect and react to newly discovered/removed ports. */
     void portManagerHandler(uint8_t event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory);
+    /** @brief DeviceManager device-event listener; used to detect and react to newly discovered/removed devices. */
     void deviceManagerHandler(uint8_t event, device_handle_t device);
 };
 
