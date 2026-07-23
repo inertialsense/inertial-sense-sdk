@@ -396,6 +396,14 @@ bool cDeviceLog::writeIndexChunk() {
         return true; // nothing to do
     }
 
+    // SN-8328: never emit an index for a segment that has no file name yet.
+    // Writing "m_fileName + .idx" with an empty m_fileName would create an
+    // orphan "./.idx" in the working directory (unassociated with any .raw).
+    // Callers must open the segment file (OpenNewSaveFile) before indexing.
+    if (m_fileName.empty()) {
+        return false;
+    }
+
     const std::string fileName = m_fileName + ".idx";
     cISLogFile indexFile(fileName, "ab");
     if (!indexFile.isOpened()) {

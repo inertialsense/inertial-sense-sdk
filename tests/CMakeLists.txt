@@ -40,6 +40,12 @@ if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_resolver.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_truncated_log.cpp")
+    # NOTE (SN-8328): only *some* of this PR's tests are POSIX-only and excluded
+    # above (test_log_reader/test_log_writer/test_truncated_log — they use
+    # ::getpid()/tmp paths). The other new SN-8328 tests — test_log_bounds,
+    # test_did_mapping, test_simulated_device — are deliberately written portable
+    # (std::filesystem temp dirs, no <unistd.h>) and are intentionally NOT
+    # excluded here, so they run on Windows CI too. Do not add them to this list.
     # yamlcpp needs to know it's a static lib
     add_definitions(-DYAML_CPP_STATIC_DEFINE)
 endif()
