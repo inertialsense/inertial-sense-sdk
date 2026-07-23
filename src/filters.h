@@ -1,10 +1,20 @@
-/*
- * filters.h
+/**
+ * @file filters.h
+ * @brief IIR/FIR low-pass filtering, running-average/variance filters, and IMU coning-and-sculling
+ * (preintegration) helpers.
  *
- * Created: 3/17/2011 8:27:37 AM
- *  Author: waltj
- */ 
-
+ * Includes precomputed single-pole low-pass filter alpha/beta coefficient tables for common
+ * sample-rate/corner-frequency combinations (see the ALPH_[sampleRate]SR_[cornerFreq]CF /
+ * BETA_[sampleRate]SR_[cornerFreq]CF naming convention below), the O0_LP_FILTER/O1_LP_FILTER family
+ * of filter macros that apply those coefficients, and functions to combine/convert between IMU and
+ * preintegrated-IMU (PIMU) data.
+ *
+ * Unless otherwise noted: angular rates are in radians/second, accelerations are in meters/second^2,
+ * and IMU/PIMU data is in the body/IMU frame.
+ *
+ * @author Walt Johnson
+ * @copyright Copyright (c) 2011-2026 Inertial Sense, Inc. - http://inertialsense.com
+ */
 
 #ifndef FILTERS_H_
 #define FILTERS_H_
@@ -16,10 +26,12 @@
 
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   100Hz (10ms) Sample Rate
+/**
+ * Single-pole low-pass filter coefficients, precomputed for a 100Hz (10ms) sample rate:
+ *   Alpha = (Fc/Fs)/(1 + Fc/Fs); Beta = 1.0 - Alpha
+ * Named ALPH_100SR_[Fc]CF / BETA_100SR_[Fc]CF, where [Fc] is the corner frequency in Hz (with 'p'
+ * standing in for a decimal point, e.g. 0p001 = 0.001Hz). Apply via O0_LP_FILTER or O0_LPF_VEC3.
+ */
 #define    ALPH_100SR_0p001CF   (0.0000099999f)        // 0.001Hz corner freq @ 100Hz sample rate
 #define    BETA_100SR_0p001CF   (0.9999900001f)
 #define    ALPH_100SR_0p01CF    (0.0000999900f)        // 0.01Hz corner freq @ 100Hz sample rate
@@ -46,10 +58,7 @@
 #define    BETA_100SR_100CF     (0.5000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   200Hz (5ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 200Hz (5ms) sample rate. */
 #define    ALPH_200SR_0p001CF   (0.0000050000f)        // 0.001Hz corner freq @ 200Hz sample rate
 #define    BETA_200SR_0p001CF   (0.9999950000f)
 #define    ALPH_200SR_0p01CF    (0.0000499975f)        // 0.01Hz corner freq @ 200Hz sample rate
@@ -80,10 +89,7 @@
 #define    BETA_200SR_200CF     (0.5000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   250Hz (4ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 250Hz (4ms) sample rate. */
 #define    ALPH_250SR_0p001CF   (0.0000040000f)        // 0.001Hz corner freq @ 250Hz sample rate
 #define    BETA_250SR_0p001CF   (0.9999960000f)
 #define    ALPH_250SR_0p01CF    (0.0000399984f)        // 0.01Hz corner freq @ 250Hz sample rate
@@ -116,10 +122,7 @@
 #define    BETA_250SR_250CF     (0.5000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   333Hz (3ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 333Hz (3ms) sample rate. */
 #define    ALPH_333SR_0p001CF   (0.0000030000f)        // 0.001Hz corner freq @ 333Hz sample rate
 #define    BETA_333SR_0p001CF   (0.9999970000f)
 #define    ALPH_333SR_0p01CF    (0.0000299991f)        // 0.01Hz corner freq @ 333Hz sample rate
@@ -154,10 +157,7 @@
 #define    BETA_333SR_400CF     (0.4545454545f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   400Hz (2.5ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 400Hz (2.5ms) sample rate. */
 #define    ALPH_400SR_0p001CF   (0.0000025000f)        // 0.001Hz corner freq @ 400Hz sample rate
 #define    BETA_400SR_0p001CF   (0.9999975000f)
 #define    ALPH_400SR_0p01CF    (0.0000249994f)        // 0.01Hz corner freq @ 400Hz sample rate
@@ -192,10 +192,7 @@
 #define    BETA_400SR_400CF     (0.5000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   500Hz (2ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 500Hz (2ms) sample rate. */
 #define    ALPH_500SR_0p001CF   (0.0000020000f)        // 0.001Hz corner freq @ 500Hz sample rate
 #define    BETA_500SR_0p001CF   (0.9999980000f)
 #define    ALPH_500SR_0p01CF    (0.0000199996f)        // 0.01Hz corner freq @ 500Hz sample rate
@@ -234,10 +231,7 @@
 #define    BETA_500SR_500CF     (0.5000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   1000Hz (1ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 1000Hz (1ms) sample rate. */
 #define    ALPH_1000SR_0p001CF  (0.0000010000f)     // 0.001Hz corner freq @ 1000Hz sample rate
 #define    BETA_1000SR_0p001CF  (0.9999990000f)
 #define    ALPH_1000SR_0p01CF   (0.0000099999f)     // 0.01Hz corner freq @ 1000Hz sample rate
@@ -278,10 +272,7 @@
 #define    BETA_1000SR_1000CF   (0.50000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   2000Hz (0.5ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 2000Hz (0.5ms) sample rate. */
 #define    ALPH_2000SR_0p001CF  (0.0000005000f)        // 0.001Hz corner freq @ 2000Hz sample rate
 #define    BETA_2000SR_0p001CF  (0.9999995000f)
 #define    ALPH_2000SR_0p01CF   (0.0000050000f)        // 0.01Hz corner freq @ 2000Hz sample rate
@@ -324,10 +315,7 @@
 #define    BETA_2000SR_2000CF   (0.50000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   4000Hz (0.25ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for a 4000Hz (0.25ms) sample rate. */
 #define    ALPH_4000SR_0p001CF  (0.0000002500f)        // 0.001Hz corner freq @ 4000Hz sample rate
 #define    BETA_4000SR_0p001CF  (0.9999997500f)
 #define    ALPH_4000SR_0p01CF   (0.0000025000f)        // 0.01Hz corner freq @ 4000Hz sample rate
@@ -372,10 +360,7 @@
 #define    BETA_4000SR_4000CF   (0.50000000000f)
 
 
-// Low Pass Filter Coefficients
-//   Alpha = (Fc/Fs)/(1 + Fc/Fs)
-//   Beta = 1.0 - Alpha
-//   8000Hz (0.125ms) Sample Rate
+/** Single-pole low-pass filter coefficients (see the 100Hz table above for the naming convention and formula), precomputed for an 8000Hz (0.125ms) sample rate. */
 #define    ALPH_8000SR_0p001CF  (0.0000001250f)        // 0.001Hz corner freq @ 8000Hz sample rate
 #define    BETA_8000SR_0p001CF  (0.9999998750f)
 #define    ALPH_8000SR_0p01CF   (0.0000012500f)        // 0.01Hz corner freq @ 8000Hz sample rate
@@ -432,135 +417,223 @@
 // #define I_BETA           91          // = ALPHA_PLUS_BETA - I_ALPHA
 // #define ALPHA_PLUS_BETA  100
 
-#define ACCUM_WORD_NBITS            32        // Bit size of IIR accumulator
-#define MAX_NUMBER_IIR_CHANNELS     10
+#define ACCUM_WORD_NBITS            32        //!< Bit size of IIR accumulator
+#define MAX_NUMBER_IIR_CHANNELS     10         //!< Maximum number of channels supported by iif_filter_t
 
+/** Configuration for a fixed-point IIR low-pass filter bank (see iif_filter_t). */
 typedef struct
-{   
-    float Fs;                       // (Hz) sample frequency
-    float Fc;                       // (Hz) corner frequency
-    unsigned int n_channels;        // number of channels in filter (i.e. ADC channels)
-    unsigned int input_size;        // input buffer length (= n_channels * n_input_samples)
-    unsigned int sig_word_nbits;    // (bits) input signal resolution bit size
-    
-     unsigned int bit_shift;        // bits to shift ADC int to IIR fixed point
+{
+    float Fs;                       //!< Sample frequency (Hz)
+    float Fc;                       //!< Corner frequency (Hz)
+    unsigned int n_channels;        //!< Number of channels in filter (i.e. ADC channels)
+    unsigned int input_size;        //!< Input buffer length (= n_channels * n_input_samples)
+    unsigned int sig_word_nbits;    //!< Input signal resolution bit size (bits)
+
+    unsigned int bit_shift;         //!< Bits to shift ADC int to IIR fixed point
 //     int gama_x;                  // = alpha_x + beta_x
 //     unsigned int adc_to_iir;     // = 2^bit_shift
-    float iir_to_adc;               // = 1/adc_to_iir
+    float iir_to_adc;               //!< = 1/adc_to_iir
 //     unsigned int alpha;          // = TsFc/(1 + TsFc)*alpha_plus_beta, sample period (Ts) and corner freq (Fc).  0.001*100/(1 + 0.001*100)*100 = 0.0909
-    int alpha_x;                    // = alpha*adc_to_iir
-    int beta;                       // = alpha_plus_beta - alpha;
+    int alpha_x;                    //!< = alpha*adc_to_iir
+    int beta;                       //!< = alpha_plus_beta - alpha
 } iir_options_t;
 
 
 
+/** Fixed-point IIR low-pass filter bank state: configuration plus one accumulator per channel. */
 typedef struct
-{   
-    iir_options_t opt;
-    int accum[MAX_NUMBER_IIR_CHANNELS];
+{
+    iir_options_t opt;                          //!< Filter configuration
+    int accum[MAX_NUMBER_IIR_CHANNELS];         //!< Per-channel fixed-point accumulator state
 } iif_filter_t;
 
 
-typedef struct  
-{   
-    int         count;              // Sample count
-    double      mean;               // input average
+/** Running-mean filter state: sample count plus the current mean. */
+typedef struct
+{
+    int         count;              //!< Sample count
+    double      mean;               //!< Input average
 } rmean_filter_t;
 
 
 //_____ P R O T O T Y P E S ________________________________________________
 
+/**
+ * @brief Initialize (zero) an IIR filter bank's accumulator state.
+ * @param f Filter bank to initialize; f->opt must already be configured.
+ */
 void init_iir_filter(iif_filter_t *f);
 
+/**
+ * @brief Run one sample through a fixed-point IIR low-pass filter bank, uint16 input.
+ * @param f      Filter bank state (configuration + accumulators).
+ * @param input  Input sample, one value per channel (length f->opt.n_channels).
+ * @param output Output: filtered value per channel (length f->opt.n_channels).
+ */
 void iir_filter_u16(iif_filter_t *f, unsigned short input[], float output[]);
+
+/**
+ * @brief Run one sample through a fixed-point IIR low-pass filter bank, int16 input.
+ * @param f      Filter bank state (configuration + accumulators).
+ * @param input  Input sample, one value per channel (length f->opt.n_channels).
+ * @param output Output: filtered value per channel (length f->opt.n_channels).
+ */
 void iir_filter_s16(iif_filter_t *f, short input[], float output[]);
 
 
-/** 
- * \brief Running Average Filter
- *  A running average of the input array is collected in the mean array.  Filter
- *  is reset when sampleCount equals 0.
+/**
+ * @brief Running Average Filter.
+ * A running average of the input array is collected in the mean array. Filter
+ * is reset when sampleCount equals 0.
  *
- * \param mean          Average of input
- * \param input         Floating point value to be included in the average.
- * \param arraySize     Array length of mean and input arrays.
- * \param sampleCount   Sample number of input.  0 causes filter to be reset.
+ * @param input         Floating point value(s) to be included in the average.
+ * @param mean          Average of input; updated in place.
+ * @param arraySize     Array length of mean and input arrays.
+ * @param sampleCount   Sample number of input. 0 causes filter to be reset.
  */
-void running_mean_filter(float mean[], float input[], int arraySize, int sampleCount);
+void running_mean_filter(float input[], float mean[], int arraySize, int sampleCount);
 
 
-/** 
- * \brief Running Average Filter (double)
- *  A running average of the input array is collected in the mean array.  Filter
- *  is reset when sampleCount equals 0.
+/**
+ * @brief Running Average Filter (double).
+ * A running average of the input array is collected in the mean array. Filter
+ * is reset when sampleCount equals 0.
  *
- * \param mean          Average of input
- * \param input         Double (float 64) value to be included in the average.
- * \param arraySize     Array length of mean and input arrays.
- * \param sampleCount   Sample number of input.  0 causes filter to be reset.
+ * @param mean          Average of input; updated in place.
+ * @param input         Double (float 64) value(s) to be included in the average.
+ * @param arraySize     Array length of mean and input arrays.
+ * @param sampleCount   Sample number of input. 0 causes filter to be reset.
  */
 void running_mean_filter_f64(double mean[], float input[], int arraySize, int sampleCount);
 
 /**
- * \brief Recursive Moving Average and Variance Filter
+ * @brief Recursive Moving Average and Variance Filter.
  * Recursive computation of expected moving average and variance given their previous
  * values, new element in the set, number of elements in the set (window size) and
  * assuming that one of the elements in the set is removed when new one is
  * added (i.e. fixed window size).
  * Reference: http://math.stackexchange.com/questions/1063962/how-can-i-recursively-approximate-a-moving-average-and-standard-deviation
  *
- * \param mean          Moving average of the set
- * \param var           Moving variance of the set
- * \param input         Floating point value added to the set
-  * \param sampleCount   Number of samples in the sliding window
-*/
+ * @param mean          Moving average of the set; updated in place.
+ * @param var           Moving variance of the set; updated in place.
+ * @param input         Floating point value added to the set.
+ * @param sampleCount   Number of samples in the sliding window.
+ */
 void recursive_moving_mean_var_filter(float *mean, float *var, float input, int sampleCount);
 
-// Condense multiple IMUs down to one IMU
+/**
+ * @brief Condense multiple IMUs' samples down to a single averaged IMU sample.
+ * @param result     Output: averaged IMU sample.
+ * @param imus       Input: multiple IMUs' samples (numDevices of them).
+ * @param numDevices Number of IMU devices (and samples) in imus.
+ */
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices);
-int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude); // for individual IMU exclusion
-void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);  // for individual gyro/accelerometer (per axis) exclusion
 
-// Duplicate one IMU to multiple IMUs
+/**
+ * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual IMUs.
+ * @param result     Output: averaged IMU sample.
+ * @param di         Input: multiple IMUs' samples (numDevices of them).
+ * @param numDevices Number of IMU devices (and samples) in di.
+ * @param exclude    Per-IMU exclusion flags (length numDevices); true excludes that IMU from the average.
+ * @return 1 on success, 0 on failure (e.g. all IMUs excluded).
+ */
+int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude);
+
+/**
+ * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual gyro/accelerometer axes.
+ * @param result       Output: averaged IMU sample.
+ * @param di           Input: multiple IMUs' samples (numDevices of them).
+ * @param numDevices   Number of IMU devices (and samples) in di.
+ * @param exclude_gyro Per-axis gyro exclusion flags (X/Y/Z); true excludes that axis from the average.
+ * @param exclude_acc  Per-axis accelerometer exclusion flags (X/Y/Z); true excludes that axis from the average.
+ * @param iaxis        Axis index (0=X, 1=Y, 2=Z) being processed by this call.
+ */
+void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);
+
+/**
+ * @brief Duplicate one IMU sample to fill a multi-IMU (imus_t) sample.
+ * @param result     Output: multi-IMU sample with every device set to imu.
+ * @param imu        Input: single IMU sample to duplicate.
+ * @param numDevices Number of IMU devices to fill in result.
+ */
 void singleToMultiImu(imus_t *result, imu_t *imu, const int numDevices);
 
-// Convert integrated IMU to IMU. Returns 1 on success, 0 on failure (e.g. when dt == 0).
+/**
+ * @brief Convert a preintegrated IMU (PIMU) sample to an integer-count IMU sample (imui_t).
+ * @param imu   Output: IMU sample as integer counts.
+ * @param pImu  Input: preintegrated IMU (delta theta/velocity + integration period).
+ * @param divDt Reciprocal of the integration period (1/dt) used to convert deltas back to rates.
+ * @return 1 on success, 0 on failure (e.g. when dt == 0).
+ */
 int preintegratedImuToImuI(imui_t *imu, const pimu_t *pImu, float divDt);
+
+/**
+ * @brief Convert a preintegrated IMU (PIMU) sample to a rate-based IMU sample.
+ * @param imu    Output: IMU sample as angular rate/acceleration.
+ * @param imuInt Input: preintegrated IMU (delta theta/velocity + integration period).
+ * @return 1 on success, 0 on failure (e.g. when dt == 0).
+ */
 int preintegratedImuToImu(imu_t *imu, const pimu_t *imuInt);
+
+/**
+ * @brief Convert a rate-based IMU sample to a preintegrated IMU (PIMU) sample.
+ * @param pImu Output: preintegrated IMU (delta theta/velocity + integration period).
+ * @param imu  Input: IMU sample as angular rate/acceleration.
+ * @param dt   Integration period (seconds) to scale the rates into deltas.
+ * @return 1 on success, 0 on failure (e.g. when dt == 0).
+ */
 int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt);
 
+/**
+ * @brief Compute the coning-and-sculling (preintegration) delta theta/velocity between two IMU samples via Riemann-sum integration.
+ * @param output  Output: coning-and-sculling integral (delta theta/velocity).
+ * @param imu     Current gyro and accelerometer sample.
+ * @param imuLast Previous gyro and accelerometer sample.
+ * @return The integration period (dt, seconds) between imuLast and imu.
+ */
 float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
+
+/**
+ * @brief Compute the coning-and-sculling (preintegration) delta theta/velocity between two IMU samples via trapezoidal integration.
+ * @param output  Output: coning-and-sculling integral (delta theta/velocity).
+ * @param imu     Current gyro and accelerometer sample.
+ * @param imuLast Previous gyro and accelerometer sample.
+ * @return The integration period (dt, seconds) between imuLast and imu.
+ */
 float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
 
-/** 
- * \brief Compute coning and sculling integrals from gyro and accelerometer samples
+/**
+ * @brief Compute coning and sculling integrals from gyro and accelerometer samples.
  *
- * \param output        Coning and sculling integral
- * \param imu           Gyro and accelerometer sample.
- * \param imuLast       Previous gyro and accelerometer sample.
+ * @param output        Coning and sculling integral
+ * @param imu           Gyro and accelerometer sample.
+ * @param imuLast       Previous gyro and accelerometer sample.
  */
 void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast);
 
-/** 
- * \brief Compute coning and sculling integrals from multiple gyro and accelerometer samples
+/**
+ * @brief Compute coning and sculling integrals from multiple gyro and accelerometer samples.
  *
- * \param pimuOut       Coning and sculling integral output array
- * \param pimuCnt       Number of elements in pimuOut array
- * \param imusIn        Array of gyro and accelerometer samples.
- * \param imuLastArray  Array of previous gyro and accelerometer samples.
+ * @param pimuArray     Coning and sculling integral output array
+ * @param arraySize     Number of elements in pimuArray
+ * @param imusIn        Array of gyro and accelerometer samples.
+ * @param imuLastArray  Array of previous gyro and accelerometer samples.
  */
-void integrateImusIntoPimuArray(pimu_t pimuOut[MAX_IMU_DEVICES], const int pimuCnt, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES]);
+void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES]);
 
-// Set integral, time, and status to zero
+/**
+ * @brief Zero out a preintegrated IMU sample's integral, time, and status fields.
+ * @param pimu Preintegrated IMU sample to clear.
+ */
 void zeroPimu(pimu_t *pimu);
 
-/** 
- * \brief Find alpha and beta parameters for single pole Low-Pass filter
+/**
+ * @brief Find alpha and beta parameters for a single-pole low-pass filter.
  *
- * \param dt            (sec) Update period
- * \param cornerFreq    (Hz) Low-pass filter corner frequency
- * \param alpha         Filter alpha parameter (input gain)
- * \param beta          Filter beta parameter (memory gain)
+ * @param dt            Update period (seconds)
+ * @param cornerFreqHz  Low-pass filter corner frequency (Hz)
+ * @param alpha         Output: filter alpha parameter (input gain)
+ * @param beta          Output: filter beta parameter (memory gain)
  */
 static __inline void lpf_alpha_beta(float dt, float cornerFreqHz, float *alpha, float *beta)
 {
@@ -570,32 +643,94 @@ static __inline void lpf_alpha_beta(float dt, float cornerFreqHz, float *alpha, 
 }
 
 
-// LPF zero order:                                            val = beta*lastVal + alpha*input
+/**
+ * @brief Zero-order single-pole low-pass filter: val = beta*lastVal + alpha*input.
+ * @param val   Filter output and running state; updated in place.
+ * @param input New input sample.
+ * @param alph  Filter alpha parameter (input gain), from lpf_alpha_beta().
+ * @param beta  Filter beta parameter (memory gain), from lpf_alpha_beta().
+ */
 #define O0_LP_FILTER(val,input,alph,beta)                    (val = (((beta)*(val)) + ((alph)*(input))))
 
-// LPF first order model coefficient:                        c = beta*c + alph*((input - val) / dt)        (dt long)
-// LPF input into state estimate:                            val = beta*((val) + c*dt) + alph*input        (dt short)
+/**
+ * @brief First-order single-pole low-pass filter with an explicit model-coefficient state (for larger dt).
+ * Updates the model coefficient c = beta*c + alph*((input - val) / dt), then the state estimate
+ * val = beta*(val + c*dt) + alph*input.
+ * @param val   Filter output and running state; updated in place.
+ * @param input New input sample.
+ * @param alph  Filter alpha parameter (input gain), from lpf_alpha_beta().
+ * @param beta  Filter beta parameter (memory gain), from lpf_alpha_beta().
+ * @param c     Model-coefficient state; updated in place.
+ * @param dt    Time since the last update (seconds).
+ */
 #define O1_LP_FILTER(val,input,alph,beta,c,dt)                { c = beta*c + alph*((input-val)/dt);   val = beta*(val + c*dt) + alph*input; }
 
 
-// Propagate filter estimate when no input is available
+/**
+ * @brief Propagate a first-order filter's state estimate forward when no new input is available (shorter dt).
+ * @param val   Filter output and running state; updated in place.
+ * @param input Unused (kept for macro-call-site symmetry with @ref O1X_LP_FILTER).
+ * @param c     Model-coefficient state from the most recent @ref O1X_LP_FILTER update.
+ * @param dt    Time since the last update (seconds).
+ */
 #define O1X_LP_FILTER_NO_INPUT(val,input,c,dt)                { val = val + c*dt; }                        // (shorter dt)
-    
-// LPF first order model coefficient:                        c = beta*c + alph*((input - val2) / dt2)
-// LPF input into state estimate:                            val = val2 = beta*((val2) + c*dt2) + alph*input
+
+/**
+ * @brief First-order single-pole low-pass filter maintaining two synchronized state copies (val, val2).
+ * Updates the model coefficient c = beta*c + alph*((input - val2) / dt2), then both state copies:
+ * val = val2 = beta*(val2 + c*dt2) + alph*input.
+ * @param val   Filter output; set equal to val2 after update.
+ * @param val2  Filter running state; updated in place, then copied to val.
+ * @param input New input sample.
+ * @param alph  Filter alpha parameter (input gain), from lpf_alpha_beta().
+ * @param beta  Filter beta parameter (memory gain), from lpf_alpha_beta().
+ * @param c     Model-coefficient state; updated in place.
+ * @param dt2   Time since the last update (seconds).
+ */
 #define O1X_LP_FILTER(val,val2,input,alph,beta,c,dt2)        { c = beta*c + alph*((input-val2)/dt2);   val = val2 = beta*(val2 + c*dt2) + alph*input; }
 
 
+/**
+ * @brief Vector-3 (per-axis) version of @ref O0_LP_FILTER.
+ * @param val   3-element filter output/state array; updated in place.
+ * @param input 3-element new input sample.
+ * @param alph  Filter alpha parameter (input gain).
+ * @param beta  Filter beta parameter (memory gain).
+ */
 #define O0_LPF_VEC3(val,input,alph,beta)                   {O0_LP_FILTER(val[0],input[0],alph,beta); \
                                                             O0_LP_FILTER(val[1],input[1],alph,beta); \
                                                             O0_LP_FILTER(val[2],input[2],alph,beta);}
+/**
+ * @brief Vector-3 (per-axis) version of @ref O1X_LP_FILTER_NO_INPUT.
+ * @param val   3-element filter output/state array; updated in place.
+ * @param input Unused (kept for macro-call-site symmetry with @ref O1X_LPF_VEC3).
+ * @param c     3-element model-coefficient state array from the most recent @ref O1X_LPF_VEC3 update.
+ * @param dt    Time since the last update (seconds).
+ */
 #define O1X_LPF_VEC3_NO_INPUT(val,input,c,dt)               {O1X_LP_FILTER_NO_INPUT(val[0],input[0],c[0],dt); \
                                                             O1X_LP_FILTER_NO_INPUT(val[1],input[1],c[1],dt); \
                                                             O1X_LP_FILTER_NO_INPUT(val[2],input[2],c[2],dt);}
+/**
+ * @brief Vector-3 (per-axis) version of @ref O1X_LP_FILTER.
+ * @param val   3-element filter output array; set equal to val2 after update.
+ * @param val2  3-element filter running state array; updated in place, then copied to val.
+ * @param input 3-element new input sample.
+ * @param alph  Filter alpha parameter (input gain).
+ * @param beta  Filter beta parameter (memory gain).
+ * @param c     3-element model-coefficient state array; updated in place.
+ * @param dt2   Time since the last update (seconds).
+ */
 #define O1X_LPF_VEC3(val,val2,input,alph,beta,c,dt2)       {O1X_LP_FILTER(val[0],val2[0],input[0],alph,beta,c[0],dt2); \
                                                             O1X_LP_FILTER(val[1],val2[1],input[1],alph,beta,c[1],dt2); \
                                                             O1X_LP_FILTER(val[2],val2[2],input[2],alph,beta,c[2],dt2);}
 
+/**
+ * @brief Compute alpha/beta from dt and corner frequency, then apply one zero-order low-pass filter update.
+ * @param val          Filter output and running state; updated in place.
+ * @param input        New input sample.
+ * @param dt           Time since the last update (seconds).
+ * @param cornerFreqHz Low-pass filter corner frequency (Hz).
+ */
 static __inline void lpf_filter(float *val, float input, float dt, float cornerFreqHz)
 {
     float alph, beta;

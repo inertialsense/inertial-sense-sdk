@@ -1,6 +1,7 @@
 /**
- * @file NtripCorrectionService.h 
- * @brief ${BRIEF_DESC}
+ * @file NtripCorrectionService.h
+ * @brief CorrectionService specialization that connects to an NTRIP caster over TCP, negotiates
+ * the mount-point request, and forwards the resulting RTCM3 correction stream.
  *
  * @author Kyle Mallory on 1/17/26.
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
@@ -33,16 +34,21 @@ class NtripCorrectionService : public CorrectionService {
 
         /**
          * @brief typical constructor which creates the service and immediate connects to the requested URL
-         * @param connectUrl
+         * @param connectUrl the NTRIP caster URL to connect to, e.g. "ntrip://user:pass\@host:port/mountpoint"
          */
         NtripCorrectionService(const std::string& connectUrl) { setMessageStats(&srcStats); connect(connectUrl); }
 
         ~NtripCorrectionService() = default;
 
         /**
-         *
-         * @param connectUrl
-         * @return
+         * @brief Opens a TCP connection to the NTRIP caster and performs the NTRIP mount-point
+         * request/negotiation. This does not itself override CorrectionService::packetTransformer()
+         * -- NTRIP's TCP stream, once connected, carries RTCM3 directly, so the base class's normal
+         * RTCM3 handling (onRtcm3Handler()) is sufficient once connect() succeeds.
+         * @param connectUrl the NTRIP caster URL to connect to, e.g. "ntrip://user:pass\@host:port/mountpoint".
+         *   Defaults to port 2101 (the standard NTRIP port) if the URL omits one.
+         * @param userAgent the User-Agent string sent in the NTRIP request headers.
+         * @return true if the connection and mount-point negotiation succeeded, false otherwise.
          */
         bool connect(const std::string& connectUrl, std::string userAgent = "NTRIP Inertial Sense");
 
@@ -51,6 +57,9 @@ class NtripCorrectionService : public CorrectionService {
          */
         bool isConnected() { return portIsOpened(source); }
 
+        /**
+         * @return true if at least one RTCM3 message has been received from the caster since connecting.
+         */
         bool isReceivingCorrections() { return srcStats.rtcm3.size() > 0; }
 
         /**
@@ -80,8 +89,8 @@ class NtripCorrectionService : public CorrectionService {
         void setConnectionRequestHeaders(std::map<std::string, std::string> hdrs);
 
     private:
-        MessageStats::mul_stats_t srcStats;         // CorrectionService has a way to collect this, if something else owns it - so we'll own it.
-        std::map<std::string, std::string> headers; // Custom headers which will be sent to the NTRIP caster when connecting
+        MessageStats::mul_stats_t srcStats;         //!< Per-protocol message statistics for the caster connection; CorrectionService only holds a pointer to stats, so this instance owns the storage.
+        std::map<std::string, std::string> headers; //!< Custom headers which will be sent to the NTRIP caster when connecting
 };
 
 
