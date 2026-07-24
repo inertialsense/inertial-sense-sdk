@@ -1,4 +1,7 @@
 #include <fstream>
+#ifndef ARM
+#include <iostream>
+#endif
 #include "md5.h"
 using namespace std;
 
