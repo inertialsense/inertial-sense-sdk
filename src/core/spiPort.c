@@ -202,8 +202,7 @@ int spiPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
         // Drain any stale edge event so the subsequent poll catches the NEXT rising edge.
         char dummy[2];
         lseek(p->drGpioFd, 0, SEEK_SET);
-        ssize_t drained = read(p->drGpioFd, dummy, sizeof(dummy));
-        (void)drained;
+        if (read(p->drGpioFd, dummy, sizeof(dummy)) < 0) { HANDLE_SPI_ERROR(p); }
 
         struct pollfd pfd = { .fd = p->drGpioFd, .events = POLLPRI | POLLERR };
         int rc = poll(&pfd, 1, (int)timeout);
@@ -213,8 +212,7 @@ int spiPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
         // Confirm the pin is still high (fast pulses may already be gone)
         char val = '0';
         lseek(p->drGpioFd, 0, SEEK_SET);
-        ssize_t rd = read(p->drGpioFd, &val, 1);
-        (void)rd;
+        if (read(p->drGpioFd, &val, 1) < 0) { HANDLE_SPI_ERROR(p); }
         if (val != '1') return 0;
     }
 
@@ -347,8 +345,7 @@ int spiPortSetDataReady(port_handle_t port, int gpioNum)
     // Export the GPIO (ignore EBUSY — already exported is fine)
     int expFd = open("/sys/class/gpio/export", O_WRONLY);
     if (expFd < 0) { HANDLE_SPI_ERROR(p); }
-    ssize_t wr = write(expFd, numStr, n);
-    (void)wr;
+    if (write(expFd, numStr, n) < 0 && errno != EBUSY) { close(expFd); HANDLE_SPI_ERROR(p); }
     close(expFd);
 
     // Set direction to input

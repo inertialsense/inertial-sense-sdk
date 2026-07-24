@@ -163,15 +163,21 @@ size_t splitString(const string str, const char delimiter, vector<string>& resul
     if (str.empty())
         return 0;
 
+    // Matches std::getline(istream, str, delim) semantics: a trailing delimiter with nothing
+    // after it does NOT produce a final empty field (the last getline() call would start already
+    // at EOF with nothing left to extract, and fail outright rather than yielding "").
     size_t start = 0;
-    for (size_t i = 0; i <= str.size(); ++i)
+    for (size_t i = 0; i < str.size(); ++i)
     {
-        if (i == str.size() || str[i] == delimiter)
+        if (str[i] == delimiter)
         {
             result.push_back(str.substr(start, i - start));
             start = i + 1;
         }
     }
+    if (start < str.size())
+        result.push_back(str.substr(start));
+
     return result.size();
 }
 
