@@ -1059,8 +1059,10 @@ TEST(protocol_nmea, INTEL)
  */
 TEST(protocol_nmea, POWTLV)
 {
-    gnss_pos_t pos = {};    
-    pos.timeOfWeekMs = 423199200;
+    gnss_pos_t pos = {};
+    // Distinct from other tests' timeOfWeekMs: update_nmea_speed() caches s_dataSpeed keyed only on
+    // timeOfWeekMs, so reusing another test's value would silently reuse its stale cached velocity.
+    pos.timeOfWeekMs = 423199201;
     pos.week = 2361;
     pos.leapS = 18;
     pos.lla[0] = 40.19759002;
