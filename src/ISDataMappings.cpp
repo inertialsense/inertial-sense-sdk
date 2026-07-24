@@ -3364,6 +3364,12 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
     return 0.0;
 }
 
+// WARNING (SN-8323): the current-time fallback below substitutes the CALLER's
+// (reader's) wall clock. That is ONLY valid on a live WRITE/capture path, where
+// "now" IS the capture time. It must NEVER be called on a log-READ / parse /
+// load path — a read-time anchor changes every load and can never be a valid
+// timestamp. Reader code must call Timestamp() (0 sentinel) and route through
+// ISTimeResolver instead. See D0060 / D0069.
 double cISDataMappings::TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf)
 {
     double timestamp = Timestamp(hdr, buf);

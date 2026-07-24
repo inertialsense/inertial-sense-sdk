@@ -9,6 +9,8 @@
 
 #include "ISLogReader.h"
 
+#include "ISDeviceLog.h"      // detectGaps: iterate composed segments
+#include "ISTimeResolver.h"   // detectGaps: resolve per-segment record times
 #include "core/msg_logger.h"
 
 // com_manager.h FIRST — short-circuits the broken extern-C wrap in ISFirmwareUpdater.h that would otherwise trip C++
@@ -850,6 +852,82 @@ ISLogReader::RangeIterator ISLogReader::seek(TimeStamp target) const noexcept {
         }
     }
     return RangeIterator{ this, &allIndices_, pos };
+}
+
+// ---------------------------------------------------------------------------
+// Gap detection (SN-8345)
+// ---------------------------------------------------------------------------
+
+std::vector<ISLogReader::DataGap>
+ISLogReader::findGaps(std::vector<SegmentSpan> spans, uint64_t thresholdMs) {
+    std::vector<DataGap> gaps;
+
+    spans.erase(std::remove_if(spans.begin(), spans.end(),
+                               [](const SegmentSpan& s) { return !s.valid(); }),
+                spans.end());
+    if (spans.size() < 2) return gaps;
+
+    std::sort(spans.begin(), spans.end(),
+              [](const SegmentSpan& a, const SegmentSpan& b) {
+                  return a.start.value < b.start.value;
+              });
+
+    // Sweep in start order, tracking the coverage high-water mark. A gap opens
+    // when the next span begins more than thresholdMs past the mark; overlapping
+    // or contiguous spans just extend it.
+    TimeStamp coverEnd = spans.front().end;
+    for (std::size_t i = 1; i < spans.size(); ++i) {
+        const SegmentSpan& s = spans[i];
+        if (s.start.value > coverEnd.value &&
+            (s.start.value - coverEnd.value) > thresholdMs) {
+            DataGap g;
+            g.startTime  = coverEnd;
+            g.endTime    = s.start;
+            g.segmentId  = kNoSegment;   // no segment covers this interval
+            gaps.push_back(g);
+        }
+        if (s.end.value > coverEnd.value) coverEnd = s.end;
+    }
+    return gaps;
+}
+
+std::vector<ISLogReader::DataGap>
+ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
+                        uint64_t thresholdMs) {
+    const uint64_t devId = log.deviceId();
+    std::vector<SegmentSpan> spans;
+    spans.reserve(log.segmentCount());
+
+    for (std::size_t s = 0; s < log.segmentCount(); ++s) {
+        bool      any = false;
+        TimeStamp lo{};
+        TimeStamp hi{};
+        for (auto v : log.segment(s).allRecords()) {
+            const uint64_t raw = v.timestamp().value;
+            if (raw == 0) continue;                       // metadata / sentinel
+            const TimeStamp r = resolver.resolve(raw, devId);
+            if (r.source == TimeSource::SessionOnly) continue;  // no wall-clock anchor
+            if (r.value == 0) continue;
+            if (!any || r.value < lo.value) lo = r;
+            if (!any || r.value > hi.value) hi = r;
+            any = true;
+        }
+        if (any) {
+            SegmentSpan sp;
+            sp.segmentId = static_cast<int>(s);
+            sp.start     = lo;
+            sp.end       = hi;
+            spans.push_back(sp);
+        }
+    }
+
+    auto gaps = findGaps(std::move(spans), thresholdMs);
+    log_debug(IS_LOG_ISLOG,
+              "ISLogReader::detectGaps: device 0x%016llx, %zu segment(s) -> %zu gap(s) "
+              "(threshold %llu ms)",
+              (unsigned long long)devId, log.segmentCount(), gaps.size(),
+              (unsigned long long)thresholdMs);
+    return gaps;
 }
 
 } // namespace inertial_sense

@@ -345,7 +345,11 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
-                m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
+                // SN-8323: this is a READ path — never anchor on the reader's
+                // clock. Use Timestamp() (0 for time-less records), NOT
+                // TimestampOrCurrentTime() whose current-time fallback would put
+                // a load-varying reader wall clock into LogStats.
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
 
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
