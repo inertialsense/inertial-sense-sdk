@@ -53,7 +53,10 @@ TypedRange<T> extractTypedRange(const ISLogReader& reader, did_t did) {
         if (comm.rxPkt.dataHdr.id != did) continue;
         if (comm.rxPkt.dataHdr.size != sizeof(T)) continue;
 
-        const double tsSec = cISDataMappings::TimestampOrCurrentTime(
+        // SN-8323: NEVER anchor on the reader's clock. Use Timestamp() (0 for a
+        // record with no internal time), NOT TimestampOrCurrentTime() whose
+        // current-time fallback stamps a load-varying reader-host wall clock.
+        const double tsSec = cISDataMappings::Timestamp(
             &comm.rxPkt.dataHdr, comm.rxPkt.data.ptr);
         const uint64_t tsMs = static_cast<uint64_t>(tsSec * 1000.0);
         TimeStamp ts{ tsMs, TimeSource::PayloadToW, TimeConfidence::Exact,

@@ -58,9 +58,86 @@ namespace inertial_sense {
 template <std::uint32_t DID> struct DIDTraits;
 template <class T>           class  TypedRange;
 
+// Gap detection (below) spans a whole device log; forward-declared so the
+// single-segment header stays light. Full definitions in ISDeviceLog.h /
+// ISTimeResolver.h, pulled in by ISLogReader.cpp.
+class ISDeviceLog;
+class ISTimeResolver;
+
 class ISLogReader {
 public:
     using did_t = uint32_t;
+
+    // -----------------------------------------------------------------
+    // Gap detection (SN-8345) — coverage gaps on the resolved timeline
+    // -----------------------------------------------------------------
+
+    /// Sentinel segment id: a gap NO segment covers (a whole segment absent, or
+    /// a recording pause between segments). A valid (>= 0) id instead marks a
+    /// gap WITHIN a present segment — a dropped-data interval (future). Callers
+    /// colour the two cases differently on the timeline.
+    static constexpr int kNoSegment = -1;
+
+    /// A segment's resolved wall-clock coverage, `[start, end]`. Input to
+    /// @ref findGaps. `start`/`end` are resolved (unified-domain) TimeStamps.
+    struct SegmentSpan {
+        int       segmentId = kNoSegment;  ///< composition index (0-based)
+        TimeStamp start{};                 ///< earliest resolved record time
+        TimeStamp end{};                   ///< latest resolved record time
+
+        /// True when the span is a usable, non-degenerate interval.
+        bool valid() const noexcept {
+            return end.value >= start.value && (start.value != 0 || end.value != 0);
+        }
+    };
+
+    /// A detected coverage gap on the unified resolved timeline.
+    struct DataGap {
+        TimeStamp startTime{};             ///< gap start = end of prior coverage
+        TimeStamp endTime{};               ///< gap end   = start of next coverage
+        int       segmentId = kNoSegment;  ///< @ref kNoSegment = no owning segment
+                                           ///< (missing/pause); valid = within-segment drop
+
+        /// Gap width in ms (0 if degenerate).
+        uint64_t durationMs() const noexcept {
+            return endTime.value > startTime.value ? endTime.value - startTime.value : 0;
+        }
+    };
+
+    /**
+     * @brief Detect coverage gaps between segment spans. PURE — no I/O.
+     *
+     * Spans need not be sorted or disjoint. Sweeps them in start order tracking
+     * the running coverage high-water mark; whenever the next span begins more
+     * than @p thresholdMs after that mark, the interval is reported as a gap
+     * (with @ref kNoSegment — no segment covers it). Overlapping / contiguous
+     * spans never produce a gap.
+     *
+     * @param spans        Per-segment resolved spans; invalid spans ignored.
+     * @param thresholdMs  Minimum gap width to report (`<= thresholdMs` skipped).
+     * @return             Gaps in ascending start order.
+     */
+    static std::vector<DataGap> findGaps(std::vector<SegmentSpan> spans,
+                                         uint64_t thresholdMs);
+
+    /**
+     * @brief Resolve each segment's coverage from @p log and detect gaps.
+     *
+     * Scans every record of every segment through @p resolver, tracking the
+     * min/max resolved value per segment (records that resolve to
+     * @ref TimeSource::SessionOnly are excluded — an unanchored segment yields
+     * no span). A full scan is deliberate: within a segment records can be
+     * mixed-domain, so the raw first/last record is not a reliable extent.
+     * Then applies @ref findGaps.
+     *
+     * @param log          Composed device log.
+     * @param resolver     Resolver built from @p log.
+     * @param thresholdMs  Minimum gap width to report.
+     * @return             Coverage gaps on the resolved timeline.
+     */
+    static std::vector<DataGap> detectGaps(const ISDeviceLog& log,
+                                           const ISTimeResolver& resolver,
+                                           uint64_t thresholdMs);
 
     // -----------------------------------------------------------------
     // Lifecycle
