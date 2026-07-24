@@ -3992,18 +3992,28 @@ class logPlot:
         self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         for d in self.active_devs_no_ref:
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            dtIns = np.diff(timeIns) / self.d
+            # Diff on FULL-resolution time (bypassing getData's downsample decimation) for every
+            # dt/delta calculation below, then decimate the RESULTING per-sample deltas for
+            # display. Diffing an already-decimated time array and dividing by self.d (the old
+            # behavior) measures the gap across self.d real samples and recovers only the MEAN dt
+            # -- diluting real per-sample jitter/glitches by ~1/self.d and throwing off each
+            # plot's auto-scaled Y-axis whenever downsample != 1 (only correct by coincidence at
+            # downsample=1).
+            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', downsample=False), True)
+            dtIns = np.diff(timeIns)[::self.d]
+            xInsFull = timeIns[1::self.d]
 
-            timeGnss1 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
+            timeGnss1 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs', downsample=False))
             ind = getValidTimeInd(timeGnss1)
             timeGnss1 = timeGnss1[ind]
-            dtGnss1 = np.diff(timeGnss1) / self.d
+            dtGnss1 = np.diff(timeGnss1)[::self.d]
+            xGnss1Full = timeGnss1[1::self.d]
 
-            timeGnss2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs'))
+            timeGnss2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs', downsample=False))
             ind = getValidTimeInd(timeGnss2)
             timeGnss2 = timeGnss2[ind]
-            dtGnss2 = np.diff(timeGnss2) / self.d
+            dtGnss2 = np.diff(timeGnss2)[::self.d]
+            xGnss2Full = timeGnss2[1::self.d]
 
             towOffset = self.getGpsTowOffset(d)
             if np.size(towOffset) > 0:
@@ -4013,22 +4023,22 @@ class logPlot:
 
             deltaTimestamp = np.array([])
             timeImu  = np.array([])
-            timePimu = self.getData(d, DID_PIMU, 'time')
-            timeIMU  = self.getData(d, DID_IMU, 'time')
-            # Diff on the FULL-resolution time (bypassing getData's downsample decimation), then
-            # decimate the resulting per-sample deltas for display. Diffing an already-decimated
-            # time array (the old behavior) measures the gap across self.d real samples and divides
-            # by self.d to recover the mean -- which dilutes real per-sample jitter/glitches by
-            # ~1/self.d, shrinking the plotted variance and throwing off this plot's auto-scaled
-            # Y-axis whenever downsample != 1 (only correct by coincidence at downsample=1).
+            timePimu = self.getData(d, DID_PIMU, 'time', downsample=False)
+            timeIMU  = self.getData(d, DID_IMU, 'time', downsample=False)
             timeImusFull = self.getData(d, DID_IMUS_RAW, 'time', downsample=False)
             if timePimu.size:
-                timeImu = getTimeFromGpsTow(timePimu + towOffset)
-                deltaTimestamp = np.diff(timePimu) / self.d
-                dtPimu = self.getData(d, DID_PIMU, 'dt')
+                timeImuAll = getTimeFromGpsTow(timePimu + towOffset)
+                deltaTimestamp = np.diff(timePimu)[::self.d]
+                timeImu = timeImuAll[1::self.d]
+                # dtPimu is a raw per-sample field (not a diff), so it's sliced with the same
+                # [1::self.d] stride as timeImu/deltaTimestamp above to keep all three the exact
+                # same length -- rather than getData's default decimation, which no longer matches
+                # now that deltaTimestamp is computed from full-resolution data first.
+                dtPimu = self.getData(d, DID_PIMU, 'dt', downsample=False)[1::self.d]
             elif timeIMU.size:
-                timeImu = getTimeFromGpsTow(timeIMU + towOffset)
-                deltaTimestamp = np.diff(timeIMU) / self.d
+                timeImuAll = getTimeFromGpsTow(timeIMU + towOffset)
+                deltaTimestamp = np.diff(timeIMU)[::self.d]
+                timeImu = timeImuAll[1::self.d]
             if timeImusFull.size:
                 timeImusFull = getTimeFromGpsTow(timeImusFull + towOffset)
                 deltaImusTimestamp = np.diff(timeImusFull)[::self.d]
@@ -4041,11 +4051,11 @@ class logPlot:
                 xImus = np.arange(0, np.shape(deltaImusTimestamp)[0])
                 xImu  = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
-                xIns  = timeIns[1:]
-                xGnss1 = timeGnss1[1:]
-                xGnss2 = timeGnss2[1:]
+                xIns  = xInsFull
+                xGnss1 = xGnss1Full
+                xGnss2 = xGnss2Full
                 xImus = timeImusX
-                xImu  = timeImu[1:]
+                xImu  = timeImu
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGnss1, dtGnss1)
@@ -4054,7 +4064,7 @@ class logPlot:
                 ax[3].plot(xImus, deltaImusTimestamp)
             ax[4].plot(xImu, deltaTimestamp)
             if 'dtPimu' in locals() and dtPimu.size:
-                ax[5].plot(xImu, dtPimu[1:])
+                ax[5].plot(xImu, dtPimu)
 
             self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
             self.configureSubplot(ax[1], f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
@@ -4075,12 +4085,14 @@ class logPlot:
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
-                timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+                timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time', downsample=False)
                 if np.any(timeRef):
-                    integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
-                    deltaTimestampRef = timeRef[1:] - timeRef[0:-1]
-                    deltaTimestampRef = deltaTimestampRef / self.d
-                    timeImuRef = getTimeFromGpsTow(timeRef[1:] + towOffset)
+                    # Same fix as above: diff full-resolution time, decimate the result, and slice
+                    # the raw (non-diffed) 'dt' field with the same [1::self.d] stride to keep it
+                    # the same length as deltaTimestampRef.
+                    integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt', downsample=False)[1::self.d]
+                    deltaTimestampRef = np.diff(timeRef)[::self.d]
+                    timeImuRef = getTimeFromGpsTow(timeRef[1::self.d] + towOffset)
                     ax[5].plot(timeImuRef, integrationPeriodRef)
                     ax[6].plot(timeImuRef, deltaTimestampRef)
 
