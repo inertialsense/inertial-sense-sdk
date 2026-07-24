@@ -89,13 +89,21 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
         log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port type validation failed: %d", pType );
         return false;   // we can only validate this port type - all others fail
     }
-
-    /** Check port name to make sure it would be found, matching the naming described in the custom port definition */
-    const std::regex pattern("^TEST[0-5]$");
-    if (! std::regex_match(pName, pattern) ) {
+   
+    /** Check port name to make sure it would be found, matching the naming described in the custom port definition */    
+    const std::regex pattern("^TEST([0-9]+)$");
+    std::smatch m;
+    if (! std::regex_match(pName, m, pattern) ) {
         log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port name validation failed: '%s'", pName.c_str() );
         return false;
     }
+
+    int index = std::stoi(m[1].str());
+    if (index < 0 || index >= NUM_COM_PORTS) {
+        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port index out of range: '%s'", pName.c_str() );
+        return false;
+    }
+
      
     return true;
 }
