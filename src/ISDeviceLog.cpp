@@ -106,35 +106,10 @@ void ISDeviceLog::buildIndex() {
         for (std::size_t r = 0; r < n; ++r) {
             const Locator loc{ s, r };
             all_.push_back(loc);
-            // Pull DID via the segment's records-vector accessor.
-            // (Segment's per-DID map is already built; we replay it here.)
-        }
-        for (auto did : segments_[s].presentDids()) {
-            auto& bucket = byDid_[did];
-            for (auto rec : segments_[s].records(did)) {
-                // We need the in-segment record index, not the view.
-                // Easier path: the segment's allRecords() walks records
-                // in arrival order with index 0..N-1, and records(did)
-                // walks them in arrival order too. So we can map by
-                // counting — but that's O(N²). Instead, iterate
-                // records(did) and for each match remember the
-                // arrival-order index by checking offsetInFile() —
-                // unique per record after D-04. Simpler still:
-                // re-derive from segment's internal byDid_ via a
-                // small accessor. Lacking that, use a linear pass.
-                (void)rec;
-            }
-            // Simpler: walk the segment's records() range and rely on
-            // the fact that ISDeviceLog::all_ is built in segment-then-
-            // arrival order. We can rebuild byDid_ from all_ by
-            // replaying ISLogReader::recordAt and reading did().
         }
         total_ += n;
     }
 
-    // Rebuild byDid_ cleanly by iterating all_ once and reading
-    // records' DIDs through the segment's recordAt accessor.
-    byDid_.clear();
     for (const auto& loc : all_) {
         const ISRecordView v = segments_[loc.segment].recordAt(loc.record);
         byDid_[v.did()].push_back(loc);
