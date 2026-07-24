@@ -432,12 +432,13 @@ class logPlot:
             self._did_name_map = {v: k for k, v in globals().items() if k.startswith('DID_') and isinstance(v, int)}
         return self._did_name_map.get(did, 'DID_UNKNOWN(%d)' % did)
 
-    def getData(self, dev, DID, field, removeLeadingZeros=0):
+    def getData(self, dev, DID, field, removeLeadingZeros=0, downsample=True):
         try:
-            if self.d == 1:
+            d = self.d if downsample else 1
+            if d == 1:
                 data = self.log.data[dev, DID][field]   # view (no copy)
             else:
-                data = self.log.data[dev, DID][field][::self.d]
+                data = self.log.data[dev, DID][field][::d]
             if removeLeadingZeros:
                 data = data.copy()
                 # Copy the first nonzero data entry to leading zeros
@@ -1478,52 +1479,52 @@ class logPlot:
                     time = getTimeFromGpsTow(time + np.mean(towOffset))
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'X Gyr OK')
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                if r: ax.text(labelX, -cnt * 1.5, 'X Gyr OK', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Y Gyr OK')
+                if r: ax.text(labelX, -cnt * 1.5, 'Y Gyr OK', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Z Gyr OK')
+                if r: ax.text(labelX, -cnt * 1.5, 'Z Gyr OK', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'X Acc OK')
+                if r: ax.text(labelX, -cnt * 1.5, 'X Acc OK', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Y Acc OK')
+                if r: ax.text(labelX, -cnt * 1.5, 'Y Acc OK', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Z Acc OK')
+                if r: ax.text(labelX, -cnt * 1.5, 'Z Acc OK', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000040) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Shock Detection')
+                if r: ax.text(labelX, -cnt * 1.5, 'Shock Detection', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Mag Update')
+                if r: ax.text(labelX, -cnt * 1.5, 'Mag Update', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000200) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Ref IMU Present')
+                if r: ax.text(labelX, -cnt * 1.5, 'Ref IMU Present', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x01000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyr Reject')
+                if r: ax.text(labelX, -cnt * 1.5, 'Gyr Reject', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Acc Reject')
+                if r: ax.text(labelX, -cnt * 1.5, 'Acc Reject', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x40000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Gyro Saturation')
+                if r: ax.text(labelX, -cnt * 1.5, 'Gyro Saturation', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(time, -cnt * 1.5 + ((status & 0x80000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Accel Saturation')
+                if r: ax.text(labelX, -cnt * 1.5, 'Accel Saturation', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
@@ -1548,51 +1549,51 @@ class logPlot:
                 iStatus = self.getData(d, DID_INS_2, 'insStatus')
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000001) != 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Hdg Coarse')
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                if r: ax.text(labelX, -cnt * 1.5, 'Hdg Coarse', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Hdg Fine')
+                if r: ax.text(labelX, -cnt * 1.5, 'Hdg Fine', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Vel Coarse')
+                if r: ax.text(labelX, -cnt * 1.5, 'Vel Coarse', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Vel Fine')
+                if r: ax.text(labelX, -cnt * 1.5, 'Vel Fine', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Pos Coarse')
+                if r: ax.text(labelX, -cnt * 1.5, 'Pos Coarse', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000040) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Pos Fine')
+                if r: ax.text(labelX, -cnt * 1.5, 'Pos Fine', transform=ax.get_yaxis_transform())
                 cnt += 1
                 dead_reckoning = self.is_dead_reckoning(iStatus)
                 ax.plot(instime, -cnt * 1.5 + dead_reckoning, label='Dead Reckoning')
-                if r: ax.text(p1, -cnt * 1.5, 'Dead Reckoning')
+                if r: ax.text(labelX, -cnt * 1.5, 'Dead Reckoning', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 # ax.plot(instime, -cnt * 1.5 + ((iStatus >> 9) & 1))
-                # ax.text(p1, -cnt * 1.5, 'GNSS Update')
+                # ax.text(labelX, -cnt * 1.5, 'GNSS Update', transform=ax.get_yaxis_transform())
                 # cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS aiding Pos')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS aiding Pos', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00004000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS aiding Vel')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS aiding Vel', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000080) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS aiding Hdg')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS aiding Hdg', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000800) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'MAG aiding Hdg')
+                if r: ax.text(labelX, -cnt * 1.5, 'MAG aiding Hdg', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Wheel Enc. aiding Vel')
+                if r: ax.text(labelX, -cnt * 1.5, 'Wheel Enc. aiding Vel', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
                 # ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00001000) != 0))
-                # if r: ax.text(p1, -cnt * 1.5, 'Nav Mode')
+                # if r: ax.text(labelX, -cnt * 1.5, 'Nav Mode', transform=ax.get_yaxis_transform())
                 # cnt += 1
                 sol_status = (iStatus & 0x000F0000) >> 16
                 aligning_or_high_variance = np.isin(sol_status, [1,4,6,8])    # Include aligning w/ high variance 
@@ -1600,60 +1601,60 @@ class logPlot:
                 solution_ahrs = np.isin(sol_status, [5,6])
                 solution_vrs = np.isin(sol_status,  [7,8])
                 # ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x000F0000) >> 16) / 4.0)
-                # if r: ax.text(p1, -cnt * 1.5, 'Solution Status')
+                # if r: ax.text(labelX, -cnt * 1.5, 'Solution Status', transform=ax.get_yaxis_transform())
                 # cnt += 1
                 ax.plot(instime, -cnt * 1.5 + solution_nav)
-                if r: ax.text(p1, -cnt * 1.5, 'Solution: Nav')
+                if r: ax.text(labelX, -cnt * 1.5, 'Solution: Nav', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + solution_ahrs)
-                if r: ax.text(p1, -cnt * 1.5, 'Solution: AHRS')
+                if r: ax.text(labelX, -cnt * 1.5, 'Solution: AHRS', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + solution_vrs)
-                if r: ax.text(p1, -cnt * 1.5, 'Solution: VRS')
+                if r: ax.text(labelX, -cnt * 1.5, 'Solution: VRS', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + aligning_or_high_variance)
-                if r: ax.text(p1, -cnt * 1.5, 'Aligning/High Variance')
+                if r: ax.text(labelX, -cnt * 1.5, 'Aligning/High Variance', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + (((iStatus & 0x03000000) >> 24) == 3))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: Precision Position Valid')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: Precision Position Valid', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x04000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: Compassing Valid (fix & hold)')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: Compassing Valid (fix & hold)', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00100000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: Compassing Baseline UNSET')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: Compassing Baseline UNSET', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00200000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: Compassing Baseline BAD')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: Compassing Baseline BAD', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x08000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: No Observ.')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: No Observ.', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x10000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: Base No Pos.')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: Base No Pos.', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x20000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTK: Base Pos. Moving')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTK: Base Pos. Moving', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00400000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Mag: Recalibrating')
+                if r: ax.text(labelX, -cnt * 1.5, 'Mag: Recalibrating', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00800000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Mag: Inter. or Bad Cal')
+                if r: ax.text(labelX, -cnt * 1.5, 'Mag: Inter. or Bad Cal', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x40000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'RTOS Task Period Overrun')
+                if r: ax.text(labelX, -cnt * 1.5, 'RTOS Task Period Overrun', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x80000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'General Fault')
+                if r: ax.text(labelX, -cnt * 1.5, 'General Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
 
             ax.grid(True)
@@ -1679,99 +1680,99 @@ class logPlot:
                 hStatus = self.getData(d, DID_INS_2, 'hdwStatus')
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Motion Gyr')
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                if r: ax.text(labelX, -cnt * 1.5, 'Motion Gyr', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Motion Acc')
+                if r: ax.text(labelX, -cnt * 1.5, 'Motion Acc', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Fault Detect Gyr')
+                if r: ax.text(labelX, -cnt * 1.5, 'Fault Detect Gyr', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000008) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Fault Detect Acc')
+                if r: ax.text(labelX, -cnt * 1.5, 'Fault Detect Acc', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation Gyr')
+                if r: ax.text(labelX, -cnt * 1.5, 'Saturation Gyr', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000200) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation Acc')
+                if r: ax.text(labelX, -cnt * 1.5, 'Saturation Acc', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000400) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation Mag')
+                if r: ax.text(labelX, -cnt * 1.5, 'Saturation Mag', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Saturation Baro')
+                if r: ax.text(labelX, -cnt * 1.5, 'Saturation Baro', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Satellite Rx')
+                if r: ax.text(labelX, -cnt * 1.5, 'Satellite Rx', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Strobe In')
+                if r: ax.text(labelX, -cnt * 1.5, 'Strobe In', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000040) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS TOW Valid')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS TOW Valid', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Ref IMU Rx')
+                if r: ax.text(labelX, -cnt * 1.5, 'Ref IMU Rx', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00002000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'EKF using ref. IMU')
+                if r: ax.text(labelX, -cnt * 1.5, 'EKF using ref. IMU', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
+                if r: ax.text(labelX, -cnt * 1.5, 'Err Com Tx Limited', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
+                if r: ax.text(labelX, -cnt * 1.5, 'Err Com Rx Overrun', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00F00000) >> 20) / 4)
-                if r: ax.text(p1, -cnt * 1.5, 'Com Parse Error Count')
+                if r: ax.text(labelX, -cnt * 1.5, 'Com Parse Error Count', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Temperature error')
+                if r: ax.text(labelX, -cnt * 1.5, 'Temperature error', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'No GNSS PPS')
+                if r: ax.text(labelX, -cnt * 1.5, 'No GNSS PPS', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS PPS Timesync')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS PPS Timesync', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 bit_status = (hStatus & 0x03000000) >> 24
                 ax.plot(instime, -cnt * 1.5 + (bit_status == 1))
-                if r: ax.text(p1, -cnt * 1.5, 'BIT Running')
+                if r: ax.text(labelX, -cnt * 1.5, 'BIT Running', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + (bit_status == 2))
-                if r: ax.text(p1, -cnt * 1.5, 'BIT Passed')
+                if r: ax.text(labelX, -cnt * 1.5, 'BIT Passed', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + (bit_status == 3))
-                if r: ax.text(p1, -cnt * 1.5, 'BIT Fault')
+                if r: ax.text(labelX, -cnt * 1.5, 'BIT Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x10000000))
-                if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
+                if r: ax.text(labelX, -cnt * 1.5, 'Reset Backup Mode', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x20000000))
-                if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
+                if r: ax.text(labelX, -cnt * 1.5, 'Watchdog Reset', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x30000000))
-                if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
+                if r: ax.text(labelX, -cnt * 1.5, 'Software Reset', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x70000000) == 0x40000000))
-                if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
+                if r: ax.text(labelX, -cnt * 1.5, 'Hardware Reset', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
+                if r: ax.text(labelX, -cnt * 1.5, 'Critical Sys Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
                 
@@ -1796,91 +1797,91 @@ class logPlot:
                 genFaultCode = self.getData(d, DID_SYS_PARAMS, 'genFaultCode')
 
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000001) != 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Overrun UWV')
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                if r: ax.text(labelX, -cnt * 1.5, 'Overrun UWV', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Overrun Latitude')
+                if r: ax.text(labelX, -cnt * 1.5, 'Overrun Latitude', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Overrun Altitude')
+                if r: ax.text(labelX, -cnt * 1.5, 'Overrun Altitude', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Unhandled Interrupt')
+                if r: ax.text(labelX, -cnt * 1.5, 'Unhandled Interrupt', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000020) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS Sys Fault')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS Sys Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000040) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS Tx Limited')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS Tx Limited', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000080) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS Rx Overrun')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS Rx Overrun', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000100) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Init Sensors')
+                if r: ax.text(labelX, -cnt * 1.5, 'Init Sensors', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000200) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Init SPI')
+                if r: ax.text(labelX, -cnt * 1.5, 'Init SPI', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000400) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Config SPI')
+                if r: ax.text(labelX, -cnt * 1.5, 'Config SPI', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00000800) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Init')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 Init', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00001000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Init')
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 Init', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00002000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Flash Invalid Values')
+                if r: ax.text(labelX, -cnt * 1.5, 'Flash Invalid Values', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00004000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Flash Checksum Failure')
+                if r: ax.text(labelX, -cnt * 1.5, 'Flash Checksum Failure', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00008000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Flash Write Failure')
+                if r: ax.text(labelX, -cnt * 1.5, 'Flash Write Failure', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00010000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Sys Fault General')
+                if r: ax.text(labelX, -cnt * 1.5, 'Sys Fault General', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00020000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Sys Fault Critical')
+                if r: ax.text(labelX, -cnt * 1.5, 'Sys Fault Critical', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Sensor Saturation')
+                if r: ax.text(labelX, -cnt * 1.5, 'Sensor Saturation', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00100000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Init IMU')
+                if r: ax.text(labelX, -cnt * 1.5, 'Init IMU', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00200000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Init Barometer')
+                if r: ax.text(labelX, -cnt * 1.5, 'Init Barometer', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00400000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Init Magnetometer')
+                if r: ax.text(labelX, -cnt * 1.5, 'Init Magnetometer', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00800000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Init I2C')
+                if r: ax.text(labelX, -cnt * 1.5, 'Init I2C', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Ser Check Init')
+                if r: ax.text(labelX, -cnt * 1.5, 'Ser Check Init', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x01000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Chip Erase Invalid')
+                if r: ax.text(labelX, -cnt * 1.5, 'Chip Erase Invalid', transform=ax.get_yaxis_transform())
                 cnt += 1
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'EKF GNSS Time Fault')
+                if r: ax.text(labelX, -cnt * 1.5, 'EKF GNSS Time Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
-                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS Rcvr Time Fault')
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x04000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'GNSS Rcvr Time Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
 
@@ -1990,27 +1991,27 @@ class logPlot:
                     ind = getValidTimeInd(time)
                     # CXD-1 Init State
                     ax.plot(time[ind], -cnt * 1.5 + (gnssStatus1_init[ind] / 20))                 # / 20 because CXD5610::InitSteps::kDone
-                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Init State')
+                    labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS 1 Init State', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     # CXD-1 fwUpdate
                     # gnssStatus1_fwUpdate[gnssStatus1_fwUpdate == 255] = -1
                     ax.plot(time[ind], -cnt * 1.5 + ((gnssStatus1_fwUpdate[ind] + 1) / 17))       # / 17 because CXD5610::FirmwareUpdateState::kDone
-                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 fwUpdate')
+                    labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS 1 fwUpdate', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     # CXD-1 Run State
                     ax.plot(time[ind], -cnt * 1.5 + (gnssStatus1_run[ind] / 9))                   # / 9 because CXD5610::RunState::kHardReset
-                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Run State')
+                    labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS 1 Run State', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     # CXD-1 Reset Cause
                     ax.plot(time[ind], -cnt * 1.5 + (gnssStatus1_rstCause[ind] / 13))             # /13 because eGNSSDriverRstCause::cxdRst_Max
-                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS 1 Reset Cause')
+                    labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS 1 Reset Cause', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ####  rest of Gpx Status
@@ -2018,42 +2019,45 @@ class logPlot:
                     faultCode = ((status & 0xFF000000) >> 24)
 
                     ax.plot(time[ind], -cnt * 1.5 + (errCnt[ind] / 16))
-                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                    if r: ax.text(p1, -cnt * 1.5, 'Com parse err count')
+                    labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                    if r: ax.text(labelX, -cnt * 1.5, 'Com parse err count', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ### No Comms flags
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000010) >> 8))
-                    if r: ax.text(p1, -cnt * 1.5, 'No Ser0 Comms')
+                    # Shift amounts must match each mask's own bit position (GPX_STATUS_COM0/1/2_RX_TRAFFIC_NOT_DETECTED
+                    # and GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED are bits 4-7 -- these were previously shifted by
+                    # 8-11, which always evaluates to 0 regardless of the actual bit's state).
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000010) >> 4))
+                    if r: ax.text(labelX, -cnt * 1.5, 'No Ser0 Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000020) >> 9))
-                    if r: ax.text(p1, -cnt * 1.5, 'No Ser1 Comms')
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000020) >> 5))
+                    if r: ax.text(labelX, -cnt * 1.5, 'No Ser1 Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000040) >> 10))
-                    if r: ax.text(p1, -cnt * 1.5, 'No Ser2 Comms')
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000040) >> 6))
+                    if r: ax.text(labelX, -cnt * 1.5, 'No Ser2 Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000080) >> 11))
-                    if r: ax.text(p1, -cnt * 1.5, 'No USB Comms')
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000080) >> 7))
+                    if r: ax.text(labelX, -cnt * 1.5, 'No USB Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ### General Faults
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00010000) >> 16))
-                    if r: ax.text(p1, -cnt * 1.5, 'RTK Queue Limited')
+                    if r: ax.text(labelX, -cnt * 1.5, 'RTK Queue Limited', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00100000) >> 20))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS Rcvr Time Fault')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS Rcvr Time Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00800000) >> 23))
-                    if r: ax.text(p1, -cnt * 1.5, 'DMA Fault')
+                    if r: ax.text(labelX, -cnt * 1.5, 'DMA Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + (faultCode[ind] / 15))
-                    if r: ax.text(p1, -cnt * 1.5, 'Fatal Fault Code')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Fatal Fault Code', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
@@ -2080,98 +2084,98 @@ class logPlot:
                 if time.size and hStatus.size:
                     ind = getValidTimeInd(time)
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000001) != 0))
-                    p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Sat RX')
+                    labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 Sat RX', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000002) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Sat RX')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 Sat RX', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000004) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 TOW Valid')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 TOW Valid', transform=ax.get_yaxis_transform())
                     cnt += 1
-                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000005) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 TOW Valid')
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000008) != 0))
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 TOW Valid', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000070) >> 4))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Reset Count')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 Reset Count', transform=ax.get_yaxis_transform())
                     cnt += 1
-                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000070) >> 8))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Reset Count')
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000700) >> 8))
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 Reset Count', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000080) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Fault')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000800) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Fault')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00001000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'FW Update Required')
+                    if r: ax.text(labelX, -cnt * 1.5, 'FW Update Required', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00004000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Sys Reset Required')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Sys Reset Required', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00008000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Flash Write Pending')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Flash Write Pending', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00010000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err Com Tx Limited', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00020000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err Com Rx Overrun', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00040000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err GNSS1 PPS')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err GNSS1 PPS', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00080000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err GNSS2 PPS')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err GNSS2 PPS', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00100000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err GNSS1 low CN0')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err GNSS1 low CN0', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00200000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err GNSS2 low CN0')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err GNSS2 low CN0', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00400000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err GNSS1 CN0 IR')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err GNSS1 CN0 IR', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00800000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err GNSS2 CN0 IR')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err GNSS2 CN0 IR', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x0300000) >> 24))
-                    if r: ax.text(p1, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault')
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x03000000) >> 24))
+                    if r: ax.text(labelX, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x04000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Err Temperature')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Err Temperature', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x08000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'GNSS PPS Timesync')
+                    if r: ax.text(labelX, -cnt * 1.5, 'GNSS PPS Timesync', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x10000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Reset Backup Mode', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x20000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Watchdog Reset', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x30000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Software Reset', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x40000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Hardware Reset', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x80000000) != 0))
-                    if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
+                    if r: ax.text(labelX, -cnt * 1.5, 'Critical Sys Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
                 
@@ -3991,18 +3995,28 @@ class logPlot:
         self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         for d in self.active_devs_no_ref:
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            dtIns = np.diff(timeIns) / self.d
+            # Diff on FULL-resolution time (bypassing getData's downsample decimation) for every
+            # dt/delta calculation below, then decimate the RESULTING per-sample deltas for
+            # display. Diffing an already-decimated time array and dividing by self.d (the old
+            # behavior) measures the gap across self.d real samples and recovers only the MEAN dt
+            # -- diluting real per-sample jitter/glitches by ~1/self.d and throwing off each
+            # plot's auto-scaled Y-axis whenever downsample != 1 (only correct by coincidence at
+            # downsample=1).
+            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', downsample=False), True)
+            dtIns = np.diff(timeIns)[::self.d]
+            xInsFull = timeIns[1::self.d]
 
-            timeGnss1 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
+            timeGnss1 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs', downsample=False))
             ind = getValidTimeInd(timeGnss1)
             timeGnss1 = timeGnss1[ind]
-            dtGnss1 = np.diff(timeGnss1) / self.d
+            dtGnss1 = np.diff(timeGnss1)[::self.d]
+            xGnss1Full = timeGnss1[1::self.d]
 
-            timeGnss2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs'))
+            timeGnss2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs', downsample=False))
             ind = getValidTimeInd(timeGnss2)
             timeGnss2 = timeGnss2[ind]
-            dtGnss2 = np.diff(timeGnss2) / self.d
+            dtGnss2 = np.diff(timeGnss2)[::self.d]
+            xGnss2Full = timeGnss2[1::self.d]
 
             towOffset = self.getGpsTowOffset(d)
             if np.size(towOffset) > 0:
@@ -4010,21 +4024,35 @@ class logPlot:
             else:
                 towOffset = 0
 
+            # Initialized here (rather than only inside the branches below) so a device that lacks
+            # PIMU/IMU or IMUS_RAW data doesn't hit an UnboundLocalError building xImus/xImu below,
+            # and so dtPimu doesn't leak a stale value from a previous device in this loop that did
+            # have PIMU data.
             deltaTimestamp = np.array([])
             timeImu  = np.array([])
-            timePimu = self.getData(d, DID_PIMU, 'time')
-            timeIMU  = self.getData(d, DID_IMU, 'time')
-            timeImus = self.getData(d, DID_IMUS_RAW, 'time')
+            dtPimu = np.array([])
+            deltaImusTimestamp = np.array([])
+            timeImusX = np.array([])
+            timePimu = self.getData(d, DID_PIMU, 'time', downsample=False)
+            timeIMU  = self.getData(d, DID_IMU, 'time', downsample=False)
+            timeImusFull = self.getData(d, DID_IMUS_RAW, 'time', downsample=False)
             if timePimu.size:
-                timeImu = getTimeFromGpsTow(timePimu + towOffset)            
-                deltaTimestamp = np.diff(timePimu) / self.d
-                dtPimu = self.getData(d, DID_PIMU, 'dt')
+                timeImuAll = getTimeFromGpsTow(timePimu + towOffset)
+                deltaTimestamp = np.diff(timePimu)[::self.d]
+                timeImu = timeImuAll[1::self.d]
+                # dtPimu is a raw per-sample field (not a diff), so it's sliced with the same
+                # [1::self.d] stride as timeImu/deltaTimestamp above to keep all three the exact
+                # same length -- rather than getData's default decimation, which no longer matches
+                # now that deltaTimestamp is computed from full-resolution data first.
+                dtPimu = self.getData(d, DID_PIMU, 'dt', downsample=False)[1::self.d]
             elif timeIMU.size:
-                timeImu = getTimeFromGpsTow(timeIMU + towOffset)
-                deltaTimestamp = np.diff(timeIMU) / self.d
-            if timeImus.size:
-                timeImus = getTimeFromGpsTow(timeImus + towOffset)
-                deltaImusTimestamp = np.diff(timeImus) / self.d
+                timeImuAll = getTimeFromGpsTow(timeIMU + towOffset)
+                deltaTimestamp = np.diff(timeIMU)[::self.d]
+                timeImu = timeImuAll[1::self.d]
+            if timeImusFull.size:
+                timeImusFull = getTimeFromGpsTow(timeImusFull + towOffset)
+                deltaImusTimestamp = np.diff(timeImusFull)[::self.d]
+                timeImusX = timeImusFull[1::self.d]
 
             if self.xAxisSample:
                 xIns  = np.arange(0, np.shape(dtIns)[0])
@@ -4033,11 +4061,11 @@ class logPlot:
                 xImus = np.arange(0, np.shape(deltaImusTimestamp)[0])
                 xImu  = np.arange(0, np.shape(deltaTimestamp)[0])
             else:
-                xIns  = timeIns[1:]
-                xGnss1 = timeGnss1[1:]
-                xGnss2 = timeGnss2[1:]
-                xImus = timeImus[1:]
-                xImu  = timeImu[1:]
+                xIns  = xInsFull
+                xGnss1 = xGnss1Full
+                xGnss2 = xGnss2Full
+                xImus = timeImusX
+                xImu  = timeImu
 
             ax[0].plot(xIns, dtIns, label=self.log.serials[d])
             ax[1].plot(xGnss1, dtGnss1)
@@ -4045,16 +4073,16 @@ class logPlot:
             if xImus.size > 0:
                 ax[3].plot(xImus, deltaImusTimestamp)
             ax[4].plot(xImu, deltaTimestamp)
-            if 'dtPimu' in locals() and dtPimu.size:
-                ax[5].plot(xImu, dtPimu[1:])
+            if dtPimu.size:
+                ax[5].plot(xImu, dtPimu)
 
             self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
             self.configureSubplot(ax[1], f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
             self.configureSubplot(ax[2], f'GNSS2 dt: {np.mean(dtGnss2):.3f}s', 's')
-            if 'deltaImusTimestamp' in locals() and deltaImusTimestamp.size > 0:
+            if deltaImusTimestamp.size > 0:
                 self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {np.mean(deltaImusTimestamp):.3f}s', 's')
             self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
-            if 'dtPimu' in locals() and dtPimu.size:
+            if dtPimu.size:
                 self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
@@ -4067,14 +4095,29 @@ class logPlot:
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
-                timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time')
+                # towOffset must be recomputed for this device -- the towOffset left over from the
+                # earlier active_devs_no_ref loop belongs to whichever device that loop last
+                # processed, not necessarily this one.
+                towOffset = self.getGpsTowOffset(d)
+                if np.size(towOffset) > 0:
+                    towOffset = towOffset[-1]
+                else:
+                    towOffset = 0
+                timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time', downsample=False)
                 if np.any(timeRef):
-                    integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt')[1:]
-                    deltaTimestampRef = timeRef[1:] - timeRef[0:-1]
-                    deltaTimestampRef = deltaTimestampRef / self.d
-                    timeImuRef = getTimeFromGpsTow(timeRef[1:] + towOffset)
-                    ax[5].plot(timeImuRef, integrationPeriodRef)
-                    ax[6].plot(timeImuRef, deltaTimestampRef)
+                    # Same fix as above: diff full-resolution time, decimate the result, and slice
+                    # the raw (non-diffed) 'dt' field with the same [1::self.d] stride to keep it
+                    # the same length as deltaTimestampRef.
+                    integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt', downsample=False)[1::self.d]
+                    deltaTimestampRef = np.diff(timeRef)[::self.d]
+                    timeImuRef = getTimeFromGpsTow(timeRef[1::self.d] + towOffset)
+                    # Plot into ax[6]/ax[7] -- the subplots actually configured/titled above as
+                    # 'Reference IMU Integration Period'/'Reference IMU Delta Timestamp'. The
+                    # previous ax[5]/ax[6] plotted reference data into the PIMU Integration Period
+                    # subplot and overwrote what should have been Reference IMU Integration Period,
+                    # leaving the actual Reference IMU Delta Timestamp subplot (ax[7]) empty.
+                    ax[6].plot(timeImuRef, integrationPeriodRef)
+                    ax[7].plot(timeImuRef, deltaTimestampRef)
 
         self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
