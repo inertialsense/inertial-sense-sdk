@@ -10,9 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <cctype>
 #include <cstdio>
-#include <sstream>
-#include <iostream>
 #include <cmath>
 #include <string>
 #include <ctime>
@@ -157,15 +156,29 @@ string base64Decode(const string& encoded_string)
     return ret;
 }
 
+// Stream-free by design: keeps this available on embedded builds (declared unconditionally in
+// ISUtilities.h) without pulling in <sstream>/<iostream> and their locale/iostream linkage cost.
 size_t splitString(const string str, const char delimiter, vector<string>& result)
 {
     result.clear();
-    istringstream f(str);
-    string s;
-    while (getline(f, s, delimiter))
+    if (str.empty())
+        return 0;
+
+    // Matches std::getline(istream, str, delim) semantics: a trailing delimiter with nothing
+    // after it does NOT produce a final empty field (the last getline() call would start already
+    // at EOF with nothing left to extract, and fail outright rather than yielding "").
+    size_t start = 0;
+    for (size_t i = 0; i < str.size(); ++i)
     {
-        result.push_back(s);
+        if (str[i] == delimiter)
+        {
+            result.push_back(str.substr(start, i - start));
+            start = i + 1;
+        }
     }
+    if (start < str.size())
+        result.push_back(str.substr(start));
+
     return result.size();
 }
 
