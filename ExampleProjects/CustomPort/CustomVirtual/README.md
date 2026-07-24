@@ -190,13 +190,13 @@ void initCustomPorts() {
       if (portNum <= 1)
          port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
 
-         port.base.portRead = customPortRead;
-         port.base.portWrite = customPortWrite;
-         //etc
+      port.base.portRead = customPortRead;
+      port.base.portWrite = customPortWrite;
+      //etc
 
-         SNPRINTF((char *)port.name, PORT_NAME_SIZE, "TEST%1d", portNum);
-            
-         portNum++;
+      SNPRINTF((char *)port.name, PORT_NAME_SIZE, "TEST%1d", portNum);
+         
+      portNum++;
     }
 }
 ```

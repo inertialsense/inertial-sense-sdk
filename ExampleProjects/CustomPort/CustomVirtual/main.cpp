@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
         rbytes = 0;
         wbytes = 0;
 
-        log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Attempting to send msg '%s'", wbuf);
+        log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Attempting to send msg '%s'", reinterpret_cast<const char*>(wbuf));
                         
         if (portFree(port) >= wlen) {          // write fixed message if space available
             wbytes = portWrite(port, wbuf, wlen);
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
                 printf("Exiting with write error\r\n");
                 if ( wbytes == PORT_ERROR__WRITE_FAILURE )
                     printf("PORT_ERROR__WRITE_FAILURE\r\n");
-                exit(0);
+                return 1;
             }
         }
         SLEEP_MS(1000);

@@ -29,7 +29,7 @@
  *         ensure the data was written (or is read/parsed) correctly.
  *
  *      BRIDGE (TEST2_PORT <-> TEST3_PORT, TEST4_PORT <-> TEST5_PORT):
- *         All data that is written to the port of written into the ringbuffer of the paired port.
+ *         All data that is written to the port is written into the ringbuffer of the paired port.
  */
 
 #define COM_BUFFER_SIZE     4096
