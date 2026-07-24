@@ -135,7 +135,7 @@ int main(int argc, const char** argv) {
 #if PLATFORM_IS_LINUX
     const char* portPattern = "(.+)";   // NOTE: this is a MATCHING REGEX pattern (this one matches everything)
 #else
-    const char* portArg = "COMM1";
+    const char* portPattern = "COMM1";
 #endif
     if (argc > 1)
         portPattern = argv[1];     // take the first argument as the port to connect with
