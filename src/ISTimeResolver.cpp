@@ -123,7 +123,8 @@ double slopeBetween(const ISSyncPoint& a, const ISSyncPoint& b) noexcept {
  */
 void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t deviceId,
-                         std::vector<ISSyncPoint>& out) {
+                         std::vector<ISSyncPoint>& out,
+                         std::vector<int64_t>& upOffsetsOut) {
     auto bytes = reader.rawBytes();
     if (!bytes.first || bytes.second == 0) return;
 
@@ -144,6 +145,26 @@ void scanSegmentForSyncs(const ISLogReader& reader,
             continue;
         }
         const auto& hdr = comm.rxPkt.dataHdr;
+
+        // SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS
+        // time-of-week (timeOfWeekMs) and the definitive system uptime (upTime,
+        // seconds since boot). When the device is synced (timeOfWeekMs > 0),
+        // one such record yields the authoritative uptime->ToW offset that
+        // bridges every session-uptime value (magnetometer/imu records, and
+        // pre-sync "real clock" records whose week/ToW default to uptime until
+        // GPS lock). This replaces the fragile per-sync actualHostTimeMs
+        // heuristic. (Kyle 2026-07-23: SYS_PARAMS.upTime is the definitive
+        // relative uptime; GNSS/INS are the accurate absolute clock.)
+        if (hdr.id == DID_SYS_PARAMS && comm.rxPkt.data.ptr &&
+            hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
+            sys_params_t sp2{};
+            std::memcpy(&sp2, comm.rxPkt.data.ptr, sizeof(sp2));
+            if (sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
+                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
+                upOffsetsOut.push_back(
+                    static_cast<int64_t>(sp2.timeOfWeekMs) - upMs);
+            }
+        }
 
         // Probe every record for a payload-side timestamp. ToW-bearing
         // records use this for the sync's payloadToW; non-ToW-bearing
@@ -246,11 +267,17 @@ uint32_t chooseAnchorWeek(const std::vector<ISSyncPoint>& syncs) {
 // ============================================================
 
 std::vector<ISSyncPoint> ISTimeResolver::detectSyncPoints(const ISDeviceLog& log) {
+    std::vector<int64_t> upOffsets;  // discarded here; build() consumes them.
+    return detectSyncPointsImpl(log, upOffsets);
+}
+
+std::vector<ISSyncPoint> ISTimeResolver::detectSyncPointsImpl(
+    const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut) {
     std::vector<ISSyncPoint> out;
     const uint64_t deviceId = log.deviceId();
 
     for (std::size_t s = 0; s < log.segmentCount(); ++s) {
-        scanSegmentForSyncs(log.segment(s), deviceId, out);
+        scanSegmentForSyncs(log.segment(s), deviceId, out, upOffsetsOut);
     }
 
     // Sort by hostTimeMs (the build's downstream expectation). Records
@@ -285,7 +312,8 @@ ISTimeResolver::build(const ISDeviceLog& log) {
 
 ISExpected<ISTimeResolver>
 ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
-    auto syncs = detectSyncPoints(log);
+    std::vector<int64_t> upOffsets;
+    auto syncs = detectSyncPointsImpl(log, upOffsets);
 
     std::vector<Discontinuity> discs;
     if (syncs.size() >= 3) {
@@ -311,14 +339,35 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
     // (earliest ToW at that week) before moving `syncs`.
     const uint32_t anchorWeek = chooseAnchorWeek(syncs);
     uint64_t anchorTowStart = 0;
+    uint64_t anchorTowEnd   = 0;
     if (anchorWeek != 0) {
         uint64_t minTow = UINT64_MAX;
+        uint64_t maxTow = 0;
         for (const auto& sp : syncs) {
-            if (sp.gpsWeek == anchorWeek) minTow = std::min(minTow, sp.payloadToWMs);
+            if (sp.gpsWeek == anchorWeek) {
+                minTow = std::min(minTow, sp.payloadToWMs);
+                maxTow = std::max(maxTow, sp.payloadToWMs);
+            }
         }
         anchorTowStart = (minTow == UINT64_MAX) ? 0 : minTow;
+        anchorTowEnd   = maxTow;
     }
-    return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek, anchorTowStart };
+
+    // SN-8323 (uptime unification): authoritative uptime->ToW offset = median of
+    // the synced DID_SYS_PARAMS (timeOfWeekMs - upTime) samples. upTime and ToW
+    // advance 1:1, so all synced samples agree modulo clock drift; the median
+    // resists an occasional transient sample.
+    int64_t uptimeToTowOffsetMs = 0;
+    bool    haveUptimeOffset    = false;
+    if (!upOffsets.empty()) {
+        std::sort(upOffsets.begin(), upOffsets.end());
+        uptimeToTowOffsetMs = upOffsets[upOffsets.size() / 2];
+        haveUptimeOffset    = true;
+    }
+
+    return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek,
+                           anchorTowStart, anchorTowEnd,
+                           uptimeToTowOffsetMs, haveUptimeOffset };
 }
 
 // ============================================================
@@ -364,6 +413,39 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
     auto unixOrToW = [&](uint64_t towMs) -> uint64_t {
         return epochAnchor ? gpsToUnixMs(anchorWeek, towMs) : towMs;
     };
+
+    // SN-8323 (uptime unification): authoritative uptime->ToW bridge. When a
+    // synced DID_SYS_PARAMS supplied the definitive offset, classify the input
+    // against the durable-fix ToW window [anchorTowStart_, anchorTowEnd_]:
+    //   - already inside the window  -> ToW-domain, fall through to the normal
+    //     sync-point resolution below;
+    //   - outside, but (input + offset) lands inside -> a session-uptime value
+    //     (magnetometer/imu, or a pre-sync "real clock" record whose ToW field
+    //     defaulted to uptime until GPS lock) -> bridge via the authoritative
+    //     offset.
+    // This supersedes the fragile per-sync actualHostTimeMs heuristic (below)
+    // and stops tiny pre-sync ToW values from poisoning the bridge — the mag
+    // records that used to resolve to the GPS-week start (days early) now land
+    // correctly in the fix window. (Kyle 2026-07-23.)
+    if (haveUptimeOffset_ && epochAnchor && anchorTowEnd_ >= anchorTowStart_) {
+        const int64_t guard    = static_cast<int64_t>(kPreFixGuardMs);
+        const int64_t lo       = static_cast<int64_t>(anchorTowStart_);
+        const int64_t hi       = static_cast<int64_t>(anchorTowEnd_);
+        const int64_t raw      = static_cast<int64_t>(hostTimeMs);
+        const bool    rawIsTow = (raw >= lo - guard && raw <= hi + guard);
+        if (!rawIsTow) {
+            const int64_t bridged = raw + uptimeToTowOffsetMs_;
+            if (bridged >= lo - guard && bridged <= hi + guard) {
+                const uint64_t towMs = (bridged < 0) ? 0u
+                                                     : static_cast<uint64_t>(bridged);
+                const TimeConfidence conf =
+                    (bridged < lo) ? TimeConfidence::ExtrapolatedBackward
+                                   : TimeConfidence::Interpolated;
+                return TimeStamp::fromResolvedViaSync(
+                    gpsToUnixMs(anchorWeek, towMs), deviceId, conf);
+            }
+        }
+    }
 
     // SN-8107 / D0066: cross-domain bridge. v2 .idx puts sync records'
     // timestamp field in the GPS-ToW domain (hundreds of millions of ms

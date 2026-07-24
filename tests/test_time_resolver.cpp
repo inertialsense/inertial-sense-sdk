@@ -99,6 +99,26 @@ imu_t makeImu(double bootSec) {
     return s;
 }
 
+// SN-8323 (uptime unification): magnetometer `time` is seconds-since-boot
+// (uptime). DID_MAGNETOMETER is NOT ToW-bearing, so its .idx timestamp is the
+// uptime — a session-uptime value the resolver must bridge, not anchor.
+magnetometer_t makeMag(double bootSec) {
+    magnetometer_t m{};
+    m.time   = bootSec;
+    m.mag[0] = 0.1f; m.mag[1] = 0.2f; m.mag[2] = 0.3f;
+    return m;
+}
+
+// SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS ToW
+// (timeOfWeekMs) and the definitive uptime (upTime, seconds). A synced sample
+// yields the authoritative uptime->ToW offset the resolver bridges through.
+sys_params_t makeSysParams(double upTimeSec, uint32_t towMs) {
+    sys_params_t s{};
+    s.timeOfWeekMs = towMs;
+    s.upTime       = upTimeSec;
+    return s;
+}
+
 FixturePaths buildFixture(const std::string& hint,
                           const std::vector<std::pair<uint32_t, std::vector<uint8_t>>>& records) {
     FixturePaths f;
@@ -225,6 +245,43 @@ TEST_F(TimeResolverTest, ResolveExactAtSyncPoint) {
     EXPECT_EQ(t.confidence, TimeConfidence::Exact);
     // SN-8107 / D0066: epoch-anchored output (gpsWeek=2300 in makeIns2).
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(110000));
+}
+
+// ---------------------------------------------------------------------------
+// SN-8323 (uptime unification): a session-uptime record (magnetometer) bridges
+// to the durable-fix window via the authoritative DID_SYS_PARAMS offset — NOT
+// to the GPS-week start. Reproduces the customer yaw-jump log, where the mag's
+// uptime `time` mis-resolved ~3.85 days early and poisoned the log extent.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, SessionUptimeRecordsBridgeViaSysParamsOffset) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // Pre-sync "real clock" record: week defaults to 1, ToW field holds uptime
+    // (~0.9 s) — must NOT be allowed to anchor the log.
+    { ins_2_t p = makeIns2(0.9); p.week = 1; recs.emplace_back(DID_INS_2, bytesOf(p)); }
+    // Magnetometer at uptime 50 s (non-sync; .idx timestamp = 50000 ms uptime).
+    recs.emplace_back(DID_MAGNETOMETER, bytesOf(makeMag(50.0)));
+    // Synced SYS_PARAMS: upTime 5 s, ToW 200000 s => offset 199,995,000 ms.
+    recs.emplace_back(DID_SYS_PARAMS, bytesOf(makeSysParams(5.0, 200'000'000u)));
+    // Durable fix (week 2300) window: ToW 200000 s .. 200100 s.
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200000.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200100.0)));
+
+    f = buildFixture("uptime_bridge", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Mag uptime 50 s -> ToW 50000 + 199,995,000 = 200,045,000 ms in week 2300.
+    auto t = resolver->resolve(50'000, kFixtureSerial);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
+    // It is bridged (real timeline point), NOT excluded as SessionOnly — the
+    // pre-fix bug tagged it SessionOnly/Unknown and dropped it from the extent.
+    EXPECT_NE(t.source, TimeSource::SessionOnly);
+    // And it lands in the fix window, not days early at the GPS-week start.
+    EXPECT_GT(t.value, expectedUnixMsForFixtureWeek(199'000'000ull, 2300));
 }
 
 // ---------------------------------------------------------------------------
