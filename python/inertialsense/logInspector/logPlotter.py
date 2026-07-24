@@ -1880,7 +1880,7 @@ class logPlot:
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
                 if r: ax.text(labelX, -cnt * 1.5, 'EKF GNSS Time Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
-                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x02000000) != 0))
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x04000000) != 0))
                 if r: ax.text(labelX, -cnt * 1.5, 'GNSS Rcvr Time Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
                 cnt += 1
@@ -2024,19 +2024,22 @@ class logPlot:
                     cnt += 1
 
                     ### No Comms flags
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000010) >> 8))
+                    # Shift amounts must match each mask's own bit position (GPX_STATUS_COM0/1/2_RX_TRAFFIC_NOT_DETECTED
+                    # and GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED are bits 4-7 -- these were previously shifted by
+                    # 8-11, which always evaluates to 0 regardless of the actual bit's state).
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000010) >> 4))
                     if r: ax.text(labelX, -cnt * 1.5, 'No Ser0 Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000020) >> 9))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000020) >> 5))
                     if r: ax.text(labelX, -cnt * 1.5, 'No Ser1 Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000040) >> 10))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000040) >> 6))
                     if r: ax.text(labelX, -cnt * 1.5, 'No Ser2 Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000080) >> 11))
+                    ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000080) >> 7))
                     if r: ax.text(labelX, -cnt * 1.5, 'No USB Comms', transform=ax.get_yaxis_transform())
                     cnt += 1
 
@@ -2090,7 +2093,7 @@ class logPlot:
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000004) != 0))
                     if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 TOW Valid', transform=ax.get_yaxis_transform())
                     cnt += 1
-                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000005) != 0))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000008) != 0))
                     if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 TOW Valid', transform=ax.get_yaxis_transform())
                     cnt += 1
                     cnt += 1
@@ -2098,7 +2101,7 @@ class logPlot:
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000070) >> 4))
                     if r: ax.text(labelX, -cnt * 1.5, 'GNSS1 Reset Count', transform=ax.get_yaxis_transform())
                     cnt += 1
-                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000070) >> 8))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000700) >> 8))
                     if r: ax.text(labelX, -cnt * 1.5, 'GNSS2 Reset Count', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x00000080) != 0))
@@ -2148,7 +2151,7 @@ class logPlot:
                     cnt += 1
                     cnt += 1
 
-                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x0300000) >> 24))
+                    ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x03000000) >> 24))
                     if r: ax.text(labelX, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault', transform=ax.get_yaxis_transform())
                     cnt += 1
                     ax.plot(time[ind], -cnt * 1.5 + ((hStatus[ind] & 0x04000000) != 0))
@@ -4021,8 +4024,15 @@ class logPlot:
             else:
                 towOffset = 0
 
+            # Initialized here (rather than only inside the branches below) so a device that lacks
+            # PIMU/IMU or IMUS_RAW data doesn't hit an UnboundLocalError building xImus/xImu below,
+            # and so dtPimu doesn't leak a stale value from a previous device in this loop that did
+            # have PIMU data.
             deltaTimestamp = np.array([])
             timeImu  = np.array([])
+            dtPimu = np.array([])
+            deltaImusTimestamp = np.array([])
+            timeImusX = np.array([])
             timePimu = self.getData(d, DID_PIMU, 'time', downsample=False)
             timeIMU  = self.getData(d, DID_IMU, 'time', downsample=False)
             timeImusFull = self.getData(d, DID_IMUS_RAW, 'time', downsample=False)
@@ -4063,16 +4073,16 @@ class logPlot:
             if xImus.size > 0:
                 ax[3].plot(xImus, deltaImusTimestamp)
             ax[4].plot(xImu, deltaTimestamp)
-            if 'dtPimu' in locals() and dtPimu.size:
+            if dtPimu.size:
                 ax[5].plot(xImu, dtPimu)
 
             self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
             self.configureSubplot(ax[1], f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
             self.configureSubplot(ax[2], f'GNSS2 dt: {np.mean(dtGnss2):.3f}s', 's')
-            if 'deltaImusTimestamp' in locals() and deltaImusTimestamp.size > 0:
+            if deltaImusTimestamp.size > 0:
                 self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {np.mean(deltaImusTimestamp):.3f}s', 's')
             self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
-            if 'dtPimu' in locals() and dtPimu.size:
+            if dtPimu.size:
                 self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
@@ -4085,6 +4095,14 @@ class logPlot:
             for d in self.active_devs:
                 deltaTimestampRef = 0
                 timeImuRef = 0
+                # towOffset must be recomputed for this device -- the towOffset left over from the
+                # earlier active_devs_no_ref loop belongs to whichever device that loop last
+                # processed, not necessarily this one.
+                towOffset = self.getGpsTowOffset(d)
+                if np.size(towOffset) > 0:
+                    towOffset = towOffset[-1]
+                else:
+                    towOffset = 0
                 timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time', downsample=False)
                 if np.any(timeRef):
                     # Same fix as above: diff full-resolution time, decimate the result, and slice
@@ -4093,8 +4111,13 @@ class logPlot:
                     integrationPeriodRef = self.getData(d, DID_REFERENCE_PIMU, 'dt', downsample=False)[1::self.d]
                     deltaTimestampRef = np.diff(timeRef)[::self.d]
                     timeImuRef = getTimeFromGpsTow(timeRef[1::self.d] + towOffset)
-                    ax[5].plot(timeImuRef, integrationPeriodRef)
-                    ax[6].plot(timeImuRef, deltaTimestampRef)
+                    # Plot into ax[6]/ax[7] -- the subplots actually configured/titled above as
+                    # 'Reference IMU Integration Period'/'Reference IMU Delta Timestamp'. The
+                    # previous ax[5]/ax[6] plotted reference data into the PIMU Integration Period
+                    # subplot and overwrote what should have been Reference IMU Integration Period,
+                    # leaving the actual Reference IMU Delta Timestamp subplot (ax[7]) empty.
+                    ax[6].plot(timeImuRef, integrationPeriodRef)
+                    ax[7].plot(timeImuRef, deltaTimestampRef)
 
         self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
