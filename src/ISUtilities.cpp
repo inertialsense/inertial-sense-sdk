@@ -11,9 +11,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <cstdio>
-#if !PLATFORM_IS_EMBEDDED
-#include <sstream>
-#endif
 #include <cmath>
 #include <string>
 #include <ctime>
@@ -158,19 +155,25 @@ string base64Decode(const string& encoded_string)
     return ret;
 }
 
-#if !PLATFORM_IS_EMBEDDED
+// Stream-free by design: keeps this available on embedded builds (declared unconditionally in
+// ISUtilities.h) without pulling in <sstream>/<iostream> and their locale/iostream linkage cost.
 size_t splitString(const string str, const char delimiter, vector<string>& result)
 {
     result.clear();
-    istringstream f(str);
-    string s;
-    while (getline(f, s, delimiter))
+    if (str.empty())
+        return 0;
+
+    size_t start = 0;
+    for (size_t i = 0; i <= str.size(); ++i)
     {
-        result.push_back(s);
+        if (i == str.size() || str[i] == delimiter)
+        {
+            result.push_back(str.substr(start, i - start));
+            start = i + 1;
+        }
     }
     return result.size();
 }
-#endif
 
 void joinStrings(const vector<string>& v, const char c, string& result) 
 {
