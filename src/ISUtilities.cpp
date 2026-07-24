@@ -11,8 +11,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include <cstdio>
+#if !PLATFORM_IS_EMBEDDED
 #include <sstream>
-#include <iostream>
+#endif
 #include <cmath>
 #include <string>
 #include <ctime>
@@ -157,6 +158,7 @@ string base64Decode(const string& encoded_string)
     return ret;
 }
 
+#if !PLATFORM_IS_EMBEDDED
 size_t splitString(const string str, const char delimiter, vector<string>& result)
 {
     result.clear();
@@ -168,6 +170,7 @@ size_t splitString(const string str, const char delimiter, vector<string>& resul
     }
     return result.size();
 }
+#endif
 
 void joinStrings(const vector<string>& v, const char c, string& result) 
 {
