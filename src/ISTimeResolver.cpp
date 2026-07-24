@@ -159,7 +159,13 @@ void scanSegmentForSyncs(const ISLogReader& reader,
             hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
             sys_params_t sp2{};
             std::memcpy(&sp2, comm.rxPkt.data.ptr, sizeof(sp2));
-            if (sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
+            // Only trust timeOfWeekMs as GPS ToW when the device says so:
+            // HDW_STATUS_GNSS_TIME_OF_WEEK_VALID. Otherwise timeOfWeekMs is
+            // LOCAL system time (uptime-like), and differencing it against
+            // upTime yields a bogus offset that corrupts the median bridge.
+            const bool towValid =
+                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
                 const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
                 upOffsetsOut.push_back(
                     static_cast<int64_t>(sp2.timeOfWeekMs) - upMs);

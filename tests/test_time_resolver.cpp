@@ -112,10 +112,14 @@ magnetometer_t makeMag(double bootSec) {
 // SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS ToW
 // (timeOfWeekMs) and the definitive uptime (upTime, seconds). A synced sample
 // yields the authoritative uptime->ToW offset the resolver bridges through.
-sys_params_t makeSysParams(double upTimeSec, uint32_t towMs) {
+// `towValid` sets HDW_STATUS_GNSS_TIME_OF_WEEK_VALID — the resolver only trusts
+// timeOfWeekMs as GPS ToW when that bit is set; otherwise timeOfWeekMs is local
+// system time and must NOT feed the offset (Copilot review, PR #1239).
+sys_params_t makeSysParams(double upTimeSec, uint32_t towMs, bool towValid = true) {
     sys_params_t s{};
     s.timeOfWeekMs = towMs;
     s.upTime       = upTimeSec;
+    if (towValid) s.hdwStatus |= HDW_STATUS_GNSS_TIME_OF_WEEK_VALID;
     return s;
 }
 
@@ -282,6 +286,37 @@ TEST_F(TimeResolverTest, SessionUptimeRecordsBridgeViaSysParamsOffset) {
     EXPECT_NE(t.source, TimeSource::SessionOnly);
     // And it lands in the fix window, not days early at the GPS-week start.
     EXPECT_GT(t.value, expectedUnixMsForFixtureWeek(199'000'000ull, 2300));
+}
+
+// Copilot review (PR #1239): an UNSYNCED SYS_PARAMS (HDW_STATUS_GNSS_TIME_OF_WEEK_VALID
+// clear) carries LOCAL system time in timeOfWeekMs, NOT GPS ToW. It must not
+// establish the uptime->ToW offset — otherwise it bridges session-uptime records
+// to a bogus wall-clock. Identical to the synced fixture above, except the
+// SYS_PARAMS's ToW-valid bit is clear; the mag must therefore NOT bridge to the
+// synced-case value (the SYS_PARAMS offset is the only thing that produced it).
+TEST_F(TimeResolverTest, UnsyncedSysParamsDoesNotEstablishOffset) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    { ins_2_t p = makeIns2(0.9); p.week = 1; recs.emplace_back(DID_INS_2, bytesOf(p)); }
+    recs.emplace_back(DID_MAGNETOMETER, bytesOf(makeMag(50.0)));
+    // Same upTime/ToW as the synced case, but ToW-valid bit is CLEAR.
+    recs.emplace_back(DID_SYS_PARAMS,
+                      bytesOf(makeSysParams(5.0, 200'000'000u, /*towValid=*/false)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200000.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200100.0)));
+
+    f = buildFixture("unsynced_sysparams", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // The bogus offset (if the gate were absent) would bridge mag uptime 50 s to
+    // 200,045,000 ms. With the gate, the unsynced SYS_PARAMS is ignored, so the
+    // mag does NOT land at that value.
+    auto t = resolver->resolve(50'000, kFixtureSerial);
+    EXPECT_NE(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
 }
 
 // ---------------------------------------------------------------------------
