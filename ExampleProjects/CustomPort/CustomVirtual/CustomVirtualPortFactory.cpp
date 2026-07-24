@@ -128,8 +128,9 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
      */
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);
-        if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
-            portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
+        
+        if (validatePort(name, pType ) && match) {
+            portCallback(this, pType, name);
         }
     }
 } //locatePorts
