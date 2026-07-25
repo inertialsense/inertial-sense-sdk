@@ -56,10 +56,22 @@ void cDeviceLogRaw::InitDeviceForReading()
 
 bool cDeviceLogRaw::CloseAllFiles()
 {
-    cDeviceLog::CloseAllFiles();
-
-    // Write remaining data to file
+    // SN-8328: flush the buffered raw chunk to disk BEFORE the base class
+    // writes/finalizes the .idx. WriteChunkToFile() lazily creates the real
+    // segment file via OpenNewSaveFile(), which is the only place m_fileName
+    // is assigned. If we let cDeviceLog::CloseAllFiles() run first (as before),
+    // then for any log small enough that no chunk was ever flushed during
+    // logging, m_fileName is still empty at finalize time: writeIndexChunk()/
+    // finalizeIndex() would land on an orphan "./.idx", and the subsequent
+    // lazy OpenNewSaveFile() would reset the index state and re-emit an empty,
+    // non-finalized <segment>.idx (0 records). The reader trusts that empty
+    // sidecar and returns zero records. Flushing first guarantees the segment
+    // file (and its correctly-named .idx) exist before finalize.
     FlushToFile();
+
+    // Flush any remaining buffered index records and finalize the .idx header
+    // against the now-existing segment file.
+    cDeviceLog::CloseAllFiles();
 
     // Close file
     CloseISLogFile(m_pFile);
@@ -333,7 +345,11 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
-                m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
+                // SN-8323: this is a READ path — never anchor on the reader's
+                // clock. Use Timestamp() (0 for time-less records), NOT
+                // TimestampOrCurrentTime() whose current-time fallback would put
+                // a load-varying reader wall clock into LogStats.
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
 
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);

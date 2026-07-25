@@ -1,3 +1,16 @@
+/**
+ * @file time_conversion.h
+ * @brief GPS <-> UTC <-> Julian-date time conversions, and a UTC-timezone-force helper.
+ *
+ * All GPS times are referenced to January 6th, 1980 (the GPS epoch) and expressed as a week number
+ * plus a time-of-week (seconds or milliseconds); a leap-second offset (18s as of December 31, 2016,
+ * passed explicitly to each function) converts to/from UTC. Julian dates are days since noon
+ * Universal Time on January 1, 4713 BCE.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
+ */
+
 #ifndef _C_TIMECONV_H_
 #define _C_TIMECONV_H_
 
@@ -8,89 +21,143 @@ extern "C" {
 #include <ctime>
 #include "stdint.h"
 
-#define C_SECONDS_PER_WEEK          (604800)        // (60 * 60 * 24 * 7)
-#define C_SECONDS_PER_DAY           (86400)
-#define C_MILLISECONDS_PER_WEEK     (604800000)     // (60 * 60 * 24 * 7 * 1000)
-#define C_MILLISECONDS_PER_DAY      (86400000)
-#define C_MILLISECONDS_PER_HOUR     (3600000)
-#define C_MILLISECONDS_PER_MINUTE   (60000)
-#define C_MILLISECONDS_PER_SECOND   (1000)
-#define C_DAYS_PER_SECOND           (1.1574074074074074074074074074074e-5)
-#define C_GPS_TO_UNIX_OFFSET_S      (315964800)
+#define C_SECONDS_PER_WEEK          (604800)        //!< Seconds per week (60 * 60 * 24 * 7)
+#define C_SECONDS_PER_DAY           (86400)         //!< Seconds per day
+#define C_MILLISECONDS_PER_WEEK     (604800000)     //!< Milliseconds per week (60 * 60 * 24 * 7 * 1000)
+#define C_MILLISECONDS_PER_DAY      (86400000)      //!< Milliseconds per day
+#define C_MILLISECONDS_PER_HOUR     (3600000)       //!< Milliseconds per hour
+#define C_MILLISECONDS_PER_MINUTE   (60000)         //!< Milliseconds per minute
+#define C_MILLISECONDS_PER_SECOND   (1000)          //!< Milliseconds per second
+#define C_DAYS_PER_SECOND           (1.1574074074074074074074074074074e-5)  //!< Days per second (1 / 86400)
+#define C_GPS_TO_UNIX_OFFSET_S      (315964800)     //!< Offset (seconds) from the Unix epoch (1970-01-01) to the GPS epoch (1980-01-06)
 
+/** Calendar date, with day-of-week for convenience. */
 typedef struct
 {
-    int year;
-    int month;
-    int day;        // Day of month
-    int weekday;    // Day of week
+    int year;       //!< Full year (e.g. 2026)
+    int month;      //!< Month (1-12)
+    int day;        //!< Day of month (1-31)
+    int weekday;    //!< Day of week (0-Sunday .. 6-Saturday)
 } utc_date_t;
 
+/** Time of day. */
 typedef struct
 {
-    int hour;
-    int minute;
-    int second;
-    int millisecond;
+    int hour;         //!< Hour (0-23)
+    int minute;       //!< Minute (0-59)
+    int second;       //!< Second (0-59)
+    int millisecond;  //!< Millisecond (0-999)
 } utc_time_t;
 
 /**
- * @brief Set and revert the UTC Time Zone object
+ * @brief Force the process's local timezone to UTC (Linux only; no-op elsewhere), saving the
+ * previous TZ environment variable so it can be restored with @ref RevertUtcTimeZone.
  */
-void SetUtcTimeZone(); 
+void SetUtcTimeZone();
+
+/**
+ * @brief Restore the timezone saved by the most recent @ref SetUtcTimeZone call (Linux only; no-op elsewhere).
+ */
 void RevertUtcTimeZone();
 
-/** Convert GPS time of week in milliseconds to UTC time */
+/**
+ * @brief Convert GPS time of week in milliseconds to UTC time-of-day.
+ * @param gpsTimeOfWeekMs GPS time of week (milliseconds).
+ * @param gpsLeapS        Leap seconds to subtract to convert GPS time to UTC.
+ * @param time            Output: UTC time-of-day.
+ */
 void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time);
 
-/** Convert GPS week and time of week in milliseconds to UTC date and time */
+/**
+ * @brief Convert GPS week and time of week in milliseconds to UTC calendar date and time-of-day.
+ * @param gpsWeek      GPS week number since January 6th, 1980.
+ * @param gpsTowMs     GPS time of week (milliseconds).
+ * @param gpsLeapS     Leap seconds to subtract to convert GPS time to UTC.
+ * @param date         Output: UTC calendar date.
+ * @param time         Output: UTC time-of-day.
+ * @param milliseconds Output: UTC milliseconds within the current second.
+ */
 void gpsWeekTowMsToUtcDateTime(uint32_t gpsWeek, uint32_t gpsTowMs, int gpsLeapS, utc_date_t *date, utc_time_t *time, uint32_t *milliseconds);
 
-/** Convert UTC time to GPS time of week in milliseconds */
+/**
+ * @brief Convert UTC time-of-day to GPS time of week in milliseconds.
+ * @param time             UTC time-of-day.
+ * @param utcWeekday       UTC day of week (0-Sunday .. 6-Saturday), needed since time-of-day alone
+ *                         doesn't determine which day's GPS time-of-week to compute.
+ * @param gpsTimeOfWeekMs  Output: GPS time of week (milliseconds).
+ * @param gpsLeapS         Leap seconds to add to convert UTC time to GPS.
+ */
 void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS);
 
-/** Convert GPS time in milliseconds to UTC weekday */
+/**
+ * @brief Convert GPS time of week in milliseconds to UTC day of week.
+ * @param gpsTowMs GPS time of week (milliseconds).
+ * @param leapS    Leap seconds to subtract to convert GPS time to UTC.
+ * @return UTC day of week (0-Sunday .. 6-Saturday).
+ */
 int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS);
 
 /**
  * @brief Convert GPS time of week in milliseconds to UTC date and time.
- * 
- * @param gpsSecondsOfWeek Output GPS seconds of week.
- * @param gpsWeek Output GPS week number since January 6th, 1980.
+ *
+ * @param gpsSecondsOfWeek Input GPS seconds of week.
+ * @param gpsWeek Input GPS week number since January 6th, 1980.
  * @param leapSeconds Leap seconds to account for difference between GPS and UTC time (18s by default).
  * @return std::tm UTC time.
  */
 std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int leapSeconds);
 
 /**
- * @brief Convert UTC date and time to GPS seconds in week and week number.  This function is 8x computationally 
- * more intensive than UtcDateTimeToGpsTime(). 
- * 
+ * @brief Convert UTC date and time to GPS seconds in week and week number.  This function is 8x computationally
+ * more intensive than UtcDateTimeToGpsTime().
+ *
  * @param utcTime UTC time as std::tm.
+ * @param leapSeconds Leap seconds to account for difference between GPS and UTC time (18s by default).
  * @param gpsSecondsOfWeek Output GPS seconds of week.
  * @param gpsWeek Output GPS week number since January 6th, 1980.
- * @param leapSeconds Leap seconds to account for difference between GPS and UTC time (18s by default).
  */
 void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &gpsSecondsOfWeek, uint32_t &gpsWeek);
 
 /**
- * @brief Convert UTC date and time to GPS time in time of week in milliseconds and number of weeks.  
+ * @brief Convert UTC date and time to GPS time in time of week in milliseconds and number of weeks.
  * This function is equivalent to and computationally faster than stdUtcDateTimeToGpsTime().
- * 
- * @param datetime[7] input int array of UTC time at GMT time zone {year,month,day,hour,min,sec,msec}
- * @param gpsLeapSeconds input number GPS leap seconds to convert to UTC time
- * @param gpsTowMs output GPS time of week in milliseconds 
- * @param gpsWeek output GPS week number
+ *
+ * @param datetime Input int array of UTC time at GMT time zone: {year, month, day, hour, min, sec, msec}.
+ * @param leapSeconds Input GPS leap seconds to convert to UTC time.
+ * @param gpsTowMs Output GPS time of week in milliseconds.
+ * @param gpsWeek Output GPS week number.
  */
 void UtcDateTimeToGpsTime(const int datetime[7], int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek);
 
-/** Convert Julian Date to calendar date. */
+/**
+ * @brief Convert a Julian date to a calendar date and time.
+ * @param julian      Julian date (days since noon Universal Time, January 1, 4713 BCE).
+ * @param year        Output: year.
+ * @param month       Output: month (1-12).
+ * @param day         Output: day of month (1-31).
+ * @param hour        Output: hour (0-23).
+ * @param minute      Output: minute (0-59).
+ * @param second      Output: second (0-59).
+ * @param millisecond Output: millisecond (0-999).
+ */
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond);
 
-/** Convert GPS Week and Ms and leapSeconds to Unix seconds**/
+/**
+ * @brief Convert GPS week + time of week + leap seconds to Unix time.
+ * @param gpsWeek         GPS week number since January 6th, 1980.
+ * @param gpsTimeofWeekMS GPS time of week (milliseconds).
+ * @param leapSeconds     Leap seconds to account for difference between GPS and UTC time.
+ * @return Unix time (seconds since January 1, 1970 UTC).
+ */
 double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds);
 
-/** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
+/**
+ * @brief Convert GPS week and milliseconds to a Julian date.
+ * @param gpsWeek        GPS week number since January 6th, 1980.
+ * @param gpsMilliseconds GPS time of week (milliseconds).
+ * @param leapSeconds    Leap seconds, i.e. the GPS-UTC offset (18 seconds as of December 31, 2016).
+ * @return Julian date (days since noon Universal Time, January 1, 4713 BCE).
+ */
 double gpsToJulian(uint32_t gpsWeek, uint32_t gpsMilliseconds, uint32_t leapSeconds);
 
 

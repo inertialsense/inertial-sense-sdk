@@ -99,6 +99,30 @@ imu_t makeImu(double bootSec) {
     return s;
 }
 
+// SN-8323 (uptime unification): magnetometer `time` is seconds-since-boot
+// (uptime). DID_MAGNETOMETER is NOT ToW-bearing, so its .idx timestamp is the
+// uptime — a session-uptime value the resolver must bridge, not anchor.
+magnetometer_t makeMag(double bootSec) {
+    magnetometer_t m{};
+    m.time   = bootSec;
+    m.mag[0] = 0.1f; m.mag[1] = 0.2f; m.mag[2] = 0.3f;
+    return m;
+}
+
+// SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS ToW
+// (timeOfWeekMs) and the definitive uptime (upTime, seconds). A synced sample
+// yields the authoritative uptime->ToW offset the resolver bridges through.
+// `towValid` sets HDW_STATUS_GNSS_TIME_OF_WEEK_VALID — the resolver only trusts
+// timeOfWeekMs as GPS ToW when that bit is set; otherwise timeOfWeekMs is local
+// system time and must NOT feed the offset (Copilot review, PR #1239).
+sys_params_t makeSysParams(double upTimeSec, uint32_t towMs, bool towValid = true) {
+    sys_params_t s{};
+    s.timeOfWeekMs = towMs;
+    s.upTime       = upTimeSec;
+    if (towValid) s.hdwStatus |= HDW_STATUS_GNSS_TIME_OF_WEEK_VALID;
+    return s;
+}
+
 FixturePaths buildFixture(const std::string& hint,
                           const std::vector<std::pair<uint32_t, std::vector<uint8_t>>>& records) {
     FixturePaths f;
@@ -228,6 +252,74 @@ TEST_F(TimeResolverTest, ResolveExactAtSyncPoint) {
 }
 
 // ---------------------------------------------------------------------------
+// SN-8323 (uptime unification): a session-uptime record (magnetometer) bridges
+// to the durable-fix window via the authoritative DID_SYS_PARAMS offset — NOT
+// to the GPS-week start. Reproduces the customer yaw-jump log, where the mag's
+// uptime `time` mis-resolved ~3.85 days early and poisoned the log extent.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, SessionUptimeRecordsBridgeViaSysParamsOffset) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // Pre-sync "real clock" record: week defaults to 1, ToW field holds uptime
+    // (~0.9 s) — must NOT be allowed to anchor the log.
+    { ins_2_t p = makeIns2(0.9); p.week = 1; recs.emplace_back(DID_INS_2, bytesOf(p)); }
+    // Magnetometer at uptime 50 s (non-sync; .idx timestamp = 50000 ms uptime).
+    recs.emplace_back(DID_MAGNETOMETER, bytesOf(makeMag(50.0)));
+    // Synced SYS_PARAMS: upTime 5 s, ToW 200000 s => offset 199,995,000 ms.
+    recs.emplace_back(DID_SYS_PARAMS, bytesOf(makeSysParams(5.0, 200'000'000u)));
+    // Durable fix (week 2300) window: ToW 200000 s .. 200100 s.
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200000.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200100.0)));
+
+    f = buildFixture("uptime_bridge", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Mag uptime 50 s -> ToW 50000 + 199,995,000 = 200,045,000 ms in week 2300.
+    auto t = resolver->resolve(50'000, kFixtureSerial);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
+    // It is bridged (real timeline point), NOT excluded as SessionOnly — the
+    // pre-fix bug tagged it SessionOnly/Unknown and dropped it from the extent.
+    EXPECT_NE(t.source, TimeSource::SessionOnly);
+    // And it lands in the fix window, not days early at the GPS-week start.
+    EXPECT_GT(t.value, expectedUnixMsForFixtureWeek(199'000'000ull, 2300));
+}
+
+// Copilot review (PR #1239): an UNSYNCED SYS_PARAMS (HDW_STATUS_GNSS_TIME_OF_WEEK_VALID
+// clear) carries LOCAL system time in timeOfWeekMs, NOT GPS ToW. It must not
+// establish the uptime->ToW offset — otherwise it bridges session-uptime records
+// to a bogus wall-clock. Identical to the synced fixture above, except the
+// SYS_PARAMS's ToW-valid bit is clear; the mag must therefore NOT bridge to the
+// synced-case value (the SYS_PARAMS offset is the only thing that produced it).
+TEST_F(TimeResolverTest, UnsyncedSysParamsDoesNotEstablishOffset) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    { ins_2_t p = makeIns2(0.9); p.week = 1; recs.emplace_back(DID_INS_2, bytesOf(p)); }
+    recs.emplace_back(DID_MAGNETOMETER, bytesOf(makeMag(50.0)));
+    // Same upTime/ToW as the synced case, but ToW-valid bit is CLEAR.
+    recs.emplace_back(DID_SYS_PARAMS,
+                      bytesOf(makeSysParams(5.0, 200'000'000u, /*towValid=*/false)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200000.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(200100.0)));
+
+    f = buildFixture("unsynced_sysparams", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // The bogus offset (if the gate were absent) would bridge mag uptime 50 s to
+    // 200,045,000 ms. With the gate, the unsynced SYS_PARAMS is ignored, so the
+    // mag does NOT land at that value.
+    auto t = resolver->resolve(50'000, kFixtureSerial);
+    EXPECT_NE(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
+}
+
+// ---------------------------------------------------------------------------
 // Resolve between two sync points → Interpolated.
 // ---------------------------------------------------------------------------
 TEST_F(TimeResolverTest, ResolveInterpolated) {
@@ -277,6 +369,115 @@ TEST_F(TimeResolverTest, ResolveExtrapolated) {
     auto bwd = resolver->resolve(50000, kFixtureSerial);
     EXPECT_EQ(bwd.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
+}
+
+// ---------------------------------------------------------------------------
+// SN-8323: a log that begins BEFORE GPS fix. The earliest (smallest-ToW) sync
+// record carries week 0 (device still searching); later records carry the real
+// week. Because syncPoints_ is sorted by ToW, front() is the week-0 record;
+// anchoring to it (old behavior) left the log in the ToW-only ~1980 domain. The
+// resolver must anchor to the most-common valid (non-zero) week instead.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, PreFixWeekZeroAnchorsToValidWeek) {
+    auto pre = makeIns2(10.0);   pre.week = 0;     // smallest ToW, pre-fix week 0
+    auto a   = makeIns2(100.0);  a.week   = 2300;  // post-fix, valid week
+    auto b   = makeIns2(110.0);  b.week   = 2300;
+    auto c   = makeIns2(120.0);  c.week   = 2300;
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_INS_2, bytesOf(pre));
+    recs.emplace_back(DID_INS_2, bytesOf(a));
+    recs.emplace_back(DID_INS_2, bytesOf(b));
+    recs.emplace_back(DID_INS_2, bytesOf(c));
+    f = buildFixture("prefix_week0", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // front() sync is the week-0 pre-fix record (smallest ToW) — the trap the
+    // old code fell into.
+    ASSERT_FALSE(resolver->syncPoints().empty());
+    EXPECT_EQ(resolver->syncPoints().front().gpsWeek, 0u);
+
+    // Must anchor to the valid week 2300, NOT week 0.
+    auto t = resolver->resolve(105000, kFixtureSerial);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000, 2300));
+    EXPECT_GE(t.value, 315'964'800'000ULL + 2300ULL * 604'800'000ULL);  // real-year domain
+    EXPECT_NE(t.value, 105000ULL);  // the un-anchored ToW-only (~1980) result
+}
+
+// SN-8323: all-week-0 log (device never fixed) → no valid week → fall back to
+// ToW-only (no epoch anchor); must not crash.
+TEST_F(TimeResolverTest, AllWeekZeroFallsBackToToWOnly) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0 }) {
+        auto s = makeIns2(tow); s.week = 0;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    f = buildFixture("allweek0", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    auto t = resolver->resolve(105000, kFixtureSerial);
+    EXPECT_EQ(t.value, 105000ULL);  // ToW-only passthrough, no epoch anchor
+}
+
+// SN-8323: a brief startup transient reports a WRONG non-zero week for a couple
+// records before the durable fix settles. The anchor must be derived from the
+// durable fix (widest ToW coverage), not the short-span transient.
+TEST_F(TimeResolverTest, StartupTransientWeekLosesToDurableFix) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // transient glitch: 2 records, tiny ToW span (5..6 s), wrong week 1111
+    for (double tow : { 5.0, 6.0 }) {
+        auto s = makeIns2(tow); s.week = 1111;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    // durable fix: many records, wide ToW span (100..600 s), real week 2300
+    for (double tow : { 100.0, 200.0, 300.0, 400.0, 500.0, 600.0 }) {
+        auto s = makeIns2(tow); s.week = 2300;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    f = buildFixture("transient_week", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    // Anchor to the durable week 2300, not the transient 1111.
+    auto t = resolver->resolve(300000, kFixtureSerial);
+    EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(300000, 2300));
+}
+
+// SN-8323 (part 2): a pre-fix record whose ToW is well before the durable fix
+// window is tagged SessionOnly/Unknown so consumers drop it from the timeline +
+// extent (no "leading gap"), rather than anchoring it to a bogus week-start
+// time. A query inside the durable window still resolves normally.
+TEST_F(TimeResolverTest, PreFixToWBeforeDurableWindowIsSessionOnly) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    { auto s = makeIns2(1.0); s.week = 0; recs.emplace_back(DID_INS_2, bytesOf(s)); }  // pre-fix, ~1 s into week
+    for (double tow : { 400000.0, 400100.0, 400200.0 }) {  // durable fix ~4.6 days into the week
+        auto s = makeIns2(tow); s.week = 2300;
+        recs.emplace_back(DID_INS_2, bytesOf(s));
+    }
+    f = buildFixture("prefix_before_window", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Pre-fix ToW (~1 s) is far before the durable window (~4.6 d) -> excluded.
+    auto pre = resolver->resolve(1000, kFixtureSerial);
+    EXPECT_EQ(pre.source, TimeSource::SessionOnly);
+    EXPECT_EQ(pre.confidence, TimeConfidence::Unknown);
+
+    // A query inside the durable window still resolves (2300-anchored).
+    auto ok = resolver->resolve(400100000, kFixtureSerial);
+    EXPECT_EQ(ok.value, expectedUnixMsForFixtureWeek(400100000, 2300));
 }
 
 // ---------------------------------------------------------------------------

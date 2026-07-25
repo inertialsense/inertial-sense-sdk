@@ -30,20 +30,27 @@
 #include "PortManager.h"
 #include "DeviceFactory.h"
 
+/** Custom-allocator callback signature: given a port and its discovered dev_info_t, return a newly allocated device (or subclass). */
 typedef device_handle_t(*pfnOnNewDeviceHandler)(port_handle_t port, const dev_info_t& devInfo);
 
+/** Custom-clone callback signature: return a newly allocated copy of orig. */
 typedef device_handle_t(*pfnOnCloneDeviceHandler)(const ISDevice& orig);
 
+/** Callback signature for addDeviceListener(): receives (device_event_e, device). */
 typedef std::function<void(uint8_t, device_handle_t)> device_listener;
+/** Opaque handle returned by addDeviceListener(), used to unregister via removeDeviceListener(). */
 typedef std::shared_ptr<device_listener> device_listener_handle_t;
 
 // typedef void(*pfnStepLogFunction)(void* ctx, const p_data_t* data, port_handle_t port);
+/** Callback signature for custom binary-data handling: (user context, parsed data, source port). */
 typedef std::function<void(void* ctx, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 
+/** @brief Singleton owner of the discovered/managed device set; also implements std::list<device_handle_t> so it can be iterated directly. */
 class DeviceManager : public std::list<device_handle_t>
 {
 public:
+    /** @brief Device lifecycle events delivered to registered device_listener callbacks. */
     enum device_event_e : uint8_t {
         DEVICE_ADDED,                   //!< a previously unknown device was discovered and added to the manager
         DEVICE_PORT_BOUND,              //!< a previously known device had a new port bound to it
@@ -54,7 +61,7 @@ public:
         DEVICE_REMOVED,                 //!< a previously known device was removed from the manager
     };
 
-    inline static const char* device_event_names[] = { "DEVICE_ADDED", "DEVICE_PORT_BOUND", "DEVICE_CONNECTED", "DEVICE_INFO_CHANGED", "DEVICE_DISCONNECTED", "DEVICE_PORT_LOST", "DEVICE_REMOVED" };
+    inline static const char* device_event_names[] = { "DEVICE_ADDED", "DEVICE_PORT_BOUND", "DEVICE_CONNECTED", "DEVICE_INFO_CHANGED", "DEVICE_DISCONNECTED", "DEVICE_PORT_LOST", "DEVICE_REMOVED" };  //!< Human-readable names for device_event_e, indexed by enum value
 
     static const uint16_t OPTIONS_USE_DEFAULTS                    = 0xFFFF;       //!< used to indicate that higher-order options, if set should be used
     static const uint16_t DISCOVERY__IGNORE_CLOSED_PORTS          = 0x0001;       //!< when set, this will cause closed ports to be skipped/ignored, otherwise open the port before attempting discovery
@@ -75,10 +82,12 @@ public:
     }
 
     /**
-     * Queries all factories to identify and enumerate all ports which can be discovered by all registered factories
+     * Concurrently validates all currently known PortManager ports against all registered factories:
+     * each port is probed by each factory in round-robin, so every factory gets fair time to validate,
+     * and the first factory to successfully validate on a port wins that port and allocates the device.
+     * Total discovery time is bounded by max(factory timeout) rather than (num_ports * num_factories * timeout).
      * Note that only newly discovered devices which have not been previously discovered will trigger a device_listener callback.
      * This function does not return a value, and provides no direct indication that any devices were successfully discovered.
-     * @param pm a reference to a PortManager instance (but, its a singleton??) which will be used for ports to query for new devices.
      * @param hdwId a IS_HARDWARE_* type used to restrict the discovery to only matching device types, default value of IS_HARDWARE_ANY
      *  will match all device types.
      * @param timeoutMs the number of milliseconds to allow for each device to complete discovery before failing.
@@ -95,6 +104,7 @@ public:
      * @param hdwId a IS_HARDWARE_* type used to restrict the discovery to only matching device types, default value of IS_HARDWARE_ANY
      *  will match all device types.
      * @param timeoutMs the number of milliseconds to wait for a device to respond before failing
+     * @param options a bitmask of DISCOVERY__* options; defaults to this manager's managementOptions if OPTIONS_USE_DEFAULTS
      * @return true if a device was discovered on the specified port, otherwise false
      */
     bool discoverDevice(port_handle_t port, uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS) {
@@ -186,13 +196,10 @@ public:
     void setDeviceFactory(DeviceFactory* df) { clearDeviceFactories(); addDeviceFactory(df); };
 
     /**
-     * Registers a custom handler to instantiate discovered devices. Default behavior is to
-     * create new ISDevice instances for each new device discovered. Setting a NewDeviceHandler
-     * to a custom function allows for instancing a custom ISDevice subclass and/or doing any
-     * additional initialization of that device at creation. The handler is provided the port
-     * and the device info for the newly discovered device.
-     * @param handler a function pointer to be called when a new device is discovered
-     * @return the previously registered handler, if any
+     * Registers a device_listener to be notified of device_event_e events (added, connected,
+     * disconnected, removed, etc). Multiple listeners may be registered concurrently.
+     * @param listener the callback to register
+     * @return a handle identifying this registration, to be passed to removeDeviceListener() later
      */
     device_listener_handle_t addDeviceListener(const device_listener& listener) {
         std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -223,11 +230,14 @@ public:
 
     /**
      * Retrieve a previously seeded device hint for a port, or nullptr if no hint exists.
+     * @param port the port handle whose hint should be retrieved
+     * @return pointer to the seeded dev_info_t, or nullptr if no hint was seeded for port
      */
     const dev_info_t* getDeviceHint(port_handle_t port) const;
 
     /**
      * Remove a previously seeded device hint.
+     * @param port the port handle whose hint should be removed
      */
     void clearDeviceHint(port_handle_t port);
 
@@ -256,9 +266,10 @@ public:
 
 
     /**
-     * Registers a previously allocated device
+     * Registers a previously allocated device. If a device matching the same hardware Id and
+     * serial number is already registered (including the exact same instance), this is a no-op.
      * @param device a pointer to an ISDevice instance to add to the list of managed devices
-     * @return
+     * @return true if the device was registered (or an equivalent device was already registered), false if device is null
      */
     bool registerDevice(device_handle_t device);
 
@@ -283,9 +294,14 @@ public:
     device_handle_t registerNewDevice(port_handle_t port, dev_info_t devInfo = {});
 
     /**
-     * Releases the specified device, freeing any associated memory, and optionally closing any connected ports
-     * @param device
-     * @param closePort
+     * Removes the specified device from being managed by the DeviceManager, and can optionally (by
+     * default) close the associated port and free/delete the memory associated with the device.
+     * The closePort/deleteDevice arguments can be used to decouple a device from the DeviceManager
+     * while keeping the device functional, in which case it becomes the caller's responsibility to
+     * ensure the device is properly closed/released when no longer needed.
+     * @param device a pointer/reference to the device to release
+     * @param closePort if true (default) the port will be closed (if open) prior to the device being released, otherwise the port is left in its current state.
+     * @param deleteDevice if true (default) the memory associated with the device will be deallocated, otherwise the device is left in an operational state.
      * @return true if the device was found, and released otherwise false
      */
     bool releaseDevice(device_handle_t device, bool closePort = true, bool deleteDevice = true);
@@ -302,8 +318,8 @@ public:
     size_t DeviceCount() { return size(); }
 
     /**
-     * Returns a reference to the backing list available, connected devices
-     * @return
+     * Returns a reference to the backing list of available, connected devices
+     * @return a reference to the DeviceManager's underlying std::list<device_handle_t>
      */
     std::list<device_handle_t>& getDevices() { return *this; };
 
@@ -348,8 +364,8 @@ public:
      * compareDevInfo in order to selected.  Passing 0x0000 for filterFlags will return all available
      * devices (any device matches), while passing 0xFFFF will only match an exact match, including
      * the serial number.
-     * @param devInfo
-     * @param filterFlags
+     * @param devInfo the reference device info to compare each known device against (via utils::compareDevInfo)
+     * @param filterFlags bitmask of the devInfo fields that must match for a device to be selected
      * @return a vector of device_handle_t which match the filter criteria (devInfo/filterFlags)
      */
     std::vector<device_handle_t> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
@@ -360,7 +376,7 @@ public:
      * be ignored in the filter criteria.  Ie, to filter on ALL IMX devices, regardless of
      * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
      * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
-     * @param hdwId
+     * @param hdwId the encoded hardware Id (type/major/minor) to filter on; a component whose bits are all ones is treated as a wildcard for that component
      * @return a vector of device_handle_t which match the filter criteria (hdwId)
      */
     std::vector<device_handle_t> selectByHdwId(const uint16_t hdwId = 0xFFFF);
@@ -377,8 +393,19 @@ public:
     std::vector<std::pair<device_handle_t, std::string>> getUpgradableDevices(const std::string& firmwarePath);
 
 protected:
+    /**
+     * @brief PortManager port_listener callback, registered by the constructor. On PORT_REMOVED,
+     * releases the port from whichever device it was bound to (notifying DEVICE_PORT_LOST) and
+     * erases the port-to-device mapping. PORT_ADDED is currently a no-op (see the TODO in the .cpp).
+     * @param event a PortManager::port_event_e value
+     * @param pType the port's type bitmask
+     * @param pName the port's name
+     * @param port the port handle the event pertains to
+     * @param factory the PortFactory that owns/produced the port
+     */
     void portHandler(uint8_t event, uint16_t pType, std::string pName, port_handle_t port, PortFactory& factory);
 
+    /** @brief Private constructor (singleton, use getInstance()); registers portHandler() as a PortManager port listener. */
     DeviceManager() {
         PortManager::getInstance().addPortListener([this](auto && PH1, auto && PH2, auto && PH3, auto && PH4, auto && PH5) { portHandler(PH1, PH2, PH3, PH4, PH5); });
     };
@@ -387,24 +414,26 @@ protected:
 
     /**
      * Callback handler used by factories when a device is detected (but not yet allocated)
-     * @param factory - the factory which discovered this device
-     * @param port - the port which the device was discovered on
-     * @param devInfo - the name of the port (as determined by the factory, should be unique)
+     * @param factory the factory which discovered this device
+     * @param devInfo the dev_info_t identifying the discovered device, as reported by factory
+     * @param port the port which the device was discovered on
+     * @param options a bitmask of DISCOVERY__* options controlling whether the port is closed on rejection
      * @returns true if the device was properly allocated and added to the manager, otherwise false
      */
     bool deviceHandler(DeviceFactory* factory, const dev_info_t& devInfo, port_handle_t port, int options);
 
 
 private:
+    /** @brief A previously-discovered device's identity, tracked in knownDevices even after the device itself has been released. */
     struct device_entry_t {
-        DeviceFactory* factory;
-        uint64_t hdwId;
-        device_handle_t device;
+        DeviceFactory* factory;    //!< the factory that discovered/claimed this device
+        uint64_t hdwId;            //!< encoded hardware Id + serial number uniquely identifying this device (see ENCODE_UNIQUE_ID)
+        device_handle_t device;    //!< the device instance, if still allocated/managed; may be stale once released
 
         device_entry_t(DeviceFactory* f, uint64_t i, device_handle_t d) : factory(f), hdwId(i), device(d) {};
     };
 
-    PortManager& portManager = PortManager::getInstance();
+    PortManager& portManager = PortManager::getInstance();             //!< reference to the PortManager singleton, used by portHandler() registration
 
     std::vector<DeviceFactory*> factories;                              //!< list of device factories responsible for detecting, allocating and freeing ports of different types. -- Note that DeviceFactories should always be static singletons, DO NOT FREE/DELETE the factory!
     std::unordered_set<device_listener_handle_t> listeners;             //!< list of listeners who should be notified when new devices are discovered, lost, opened, closed, etc
@@ -412,9 +441,15 @@ private:
     std::map<port_handle_t, device_handle_t> portToDeviceMap;           //!< map of port handles to device handles for fast lookups
 
     int managementOptions = DISCOVERY__DEFAULTS;                        //!< a bit mask of various options used to modify the behavior of the device manager during various operations
-    std::recursive_mutex mutex;
+    std::recursive_mutex mutex;                                         //!< guards factories/listeners/knownDevices/portToDeviceMap/deviceHints_ against concurrent access
     std::map<port_handle_t, dev_info_t> deviceHints_;                  //!< seeded hints keyed by port_handle_t; valid for the lifetime of the port handle
 
+    /**
+     * @brief RAII range-adapter returned by locked_range(): holds DeviceManager::mutex for its
+     * entire lifetime (typically the duration of a range-based for loop) while exposing the
+     * begin()/end() iterators of the underlying device list, so callers can safely iterate the
+     * DeviceManager's devices without a separate explicit lock/unlock.
+     */
     class LockedRangeProxy {
     private:
         DeviceManager& container;
@@ -435,6 +470,7 @@ private:
     };
 
 public:
+    /** @brief Returns a LockedRangeProxy holding DeviceManager::mutex for safe range-based iteration over the managed devices. */
     LockedRangeProxy locked_range() { return LockedRangeProxy(*this); }
 
 };

@@ -28,28 +28,66 @@
 
 using json = nlohmann::json;
 
-// Convert Vector to and from String
+/**
+ * @brief Convert a float vector to a comma-separated string.
+ * @param vec pointer to the first element of the vector.
+ * @param len number of elements in vec.
+ * @return comma-separated string representation of vec.
+ */
 std::string VectorToString(const float* vec, int len);
+
+/**
+ * @brief Parse a comma-separated string back into a float vector.
+ * @param str comma-separated string representation, as produced by VectorToString().
+ * @param vec output buffer, must have room for len elements.
+ * @param len number of elements to parse into vec.
+ */
 void StringToVector(const std::string& str, float* vec, int len);
 
-// Convert matrix [m x n] to and from string
+/**
+ * @brief Convert a row-major float matrix to a string.
+ * @param mat pointer to the first element of the matrix, row-major, rows x cols.
+ * @param rows number of rows.
+ * @param cols number of columns.
+ * @return string representation of mat.
+ */
 std::string MatrixToString(const float* mat, int rows, int cols);
+
+/**
+ * @brief Parse a string back into a row-major float matrix.
+ * @param str string representation, as produced by MatrixToString().
+ * @param mat output buffer, must have room for rows*cols elements.
+ * @param rows number of rows to parse into mat.
+ * @param cols number of columns to parse into mat.
+ */
 void StringToMatrix(const std::string& str, float* mat, int rows, int cols);
 
+/** @brief A resizable [m x n] row-major float matrix, with string (de)serialization for JSON storage. */
 struct sMatrix
 {
-    std::vector<float> mat;    // [m x n] matrix
-    int m;                      // number of rows
-    int n;                      // number of columns
+    std::vector<float> mat;    //!< [m x n] matrix, row-major
+    int m;                      //!< number of rows
+    int n;                      //!< number of columns
 
+    /** @brief Default-construct an empty (unsized) matrix. */
     sMatrix(){}
 
+    /**
+     * @brief Construct and zero-initialize a matrix of the given size.
+     * @param rows number of rows.
+     * @param cols number of columns.
+     */
     sMatrix(int rows, int cols): m(rows), n(cols)
     {
         mat.resize(m*n);
         zero();
     }
 
+    /**
+     * @brief Resize this matrix, discarding previous contents and zero-initializing.
+     * @param rows new number of rows.
+     * @param cols new number of columns.
+     */
     void resize(int rows, int cols)
     {
         m = rows;
@@ -58,46 +96,66 @@ struct sMatrix
         zero();
     }
 
+    /**
+     * @brief Get a raw pointer to the underlying row-major data.
+     * @return pointer to the first element.
+     */
     float *matrix()
-    { 
-        return &mat[0]; 
+    {
+        return &mat[0];
     }
 
+    /** @brief Set every element of this matrix to zero. */
     void zero()
     {
         for (size_t i=0; i<mat.size(); i++)
             mat[i] = 0;
     }
 
+    /** @brief Fill this matrix with sequential debug values (1, 2, 3, ...) for testing. */
     void debug()
     {
         for (size_t i=0; i<mat.size(); i++)
             mat[i] = i+1;
     }
 
+    /**
+     * @brief Parse this matrix's contents from a string, using its current m/n dimensions.
+     * @param str string representation, as produced by toString().
+     */
     void fromString(std::string str)
     {
         StringToMatrix(str, &mat[0], m, n);
     }
 
+    /**
+     * @brief Serialize this matrix's contents to a string.
+     * @return string representation of this matrix.
+     */
     std::string toString()
     {
         return MatrixToString(&mat[0], m, n);
     }
 };
 
-struct sCalData 
+/** @brief Least-squares calibration working set for one sensor: truth data (Y), the matrix being solved for (Ahat), and the sampled/uncalibrated input (Xhat). */
+struct sCalData
 {
-    sMatrix                 Y;          // truth data
-    sMatrix                 Ahat;       // matrix we're solving for
-    sMatrix                 Xhat;       // sampled/uncalibrated data
-    int                     len;
+    sMatrix                 Y;          //!< Truth data
+    sMatrix                 Ahat;       //!< Matrix being solved for
+    sMatrix                 Xhat;       //!< Sampled/uncalibrated data
+    int                     len;        //!< Number of samples
 
+    /** @brief Default-construct without allocating (call resize() before use). */
     sCalData()
     {
 
     }
 
+    /**
+     * @brief Construct and size the working matrices for size samples.
+     * @param size number of samples.
+     */
     sCalData(int size)
     {
         len = size;
@@ -106,6 +164,10 @@ struct sCalData
         Xhat.resize(4, size);
     }
 
+    /**
+     * @brief Resize the working matrices, discarding previous contents.
+     * @param size number of samples.
+     */
     void resize(int size)
     {
         len = size;
@@ -114,6 +176,7 @@ struct sCalData
         Xhat.resize(4, size);
     }
 
+    /** @brief Zero all three working matrices (Y, Ahat, Xhat). */
     void zero()
     {
         Y.zero();
@@ -121,6 +184,7 @@ struct sCalData
         Xhat.zero();
     }
 
+    /** @brief Fill all three working matrices with sequential debug values, for testing. */
     void debug()
     {
         Y.debug();
@@ -129,12 +193,14 @@ struct sCalData
     }
 };
 
+/** @brief Per-sensor motion-calibration (orthonormalization) working sets: one sCalData per gyro, accelerometer, and magnetometer. */
 struct sOrthoCal
 {
-    sCalData gyr[MAX_IMU_DEVICES];
-    sCalData acc[MAX_IMU_DEVICES];
-    sCalData mag[MAX_MAG_DEVICES];
+    sCalData gyr[MAX_IMU_DEVICES];    //!< Per-IMU gyro calibration working set
+    sCalData acc[MAX_IMU_DEVICES];    //!< Per-IMU accelerometer calibration working set
+    sCalData mag[MAX_MAG_DEVICES];    //!< Per-magnetometer calibration working set
 
+    /** @brief Allocates and zeroes each sensor's working set at its expected sample count (NUM_PQR_SAMPLES for gyro, NUM_POSES for accel, NUM_HDG_SAMPLES for mag). */
     sOrthoCal()
     {
         for (int d = 0; d < MAX_IMU_DEVICES; d++)
@@ -162,6 +228,7 @@ struct sOrthoCal
 class ISDeviceCal : public sensor_cal_t
 {
 public:
+    /** @brief Result/progress states for the step-based (non-blocking) upload and load operations below. */
     enum AsyncState {
         ASYNC_STATE__FAILURE     = -1,          //!< general failure state indicating an error condition, but otherwise a completed async cycle
         ASYNC_STATE__PENDING     = 0,           //!< indicates that the async operation is still in progress, and should be called again soon
@@ -190,6 +257,15 @@ public:
         loadCalibrationFromJsonFile(filePath, &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose);
     }
 
+    /**
+     * @brief Fetch the most recent calibration for a device from a REST calibration database and
+     * populate this object with it. Looks up the device by hardware type + serial number, finds the
+     * calibration entry with the latest calDateTime, then downloads and parses that entry.
+     * @param restBaseUrl Base URL of the calibration REST API (e.g. "https://cal.example.com").
+     * @param devInfo Target device info; used to build the hardware-type/serial-number lookup.
+     * @return the HTTP response from the final calibration fetch. statusCode == 200 on success;
+     *         -1 indicates a connection/parse failure, 404 that the device has no calibration on file.
+     */
     ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo);
 
 
@@ -332,7 +408,7 @@ public:
      */
     static AsyncState uploadSensorCalStep(port_handle_t port, int &calUploadState, sensor_cal_t &cal, const dev_info_t &devInfo, cal_upload_ctx_t &ctx);
 
-    static const int CAL_UPLOAD_SLEEP_MS = 150;
+    static const int CAL_UPLOAD_SLEEP_MS = 150;    //!< Recommended delay (ms) between successive uploadSensorCalStep() calls while an upload is in progress
 
     cal_upload_ctx_t uploadCtx = {};    //!< per-upload state; owned by ISDeviceCal so async owners (ISDevice::m_calibration) have stable storage
 

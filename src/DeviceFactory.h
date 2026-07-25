@@ -1,6 +1,12 @@
 /**
- * @file DeviceFactory.h 
- * @brief ${BRIEF_DESC}
+ * @file DeviceFactory.h
+ * @brief Device-type identification and allocation: given a raw port, determine what kind of
+ * Inertial Sense device (if any) is attached and construct the matching ISDevice subclass.
+ *
+ * DeviceManager delegates all device discovery to a set of registered DeviceFactory instances
+ * (one per supported hardware family, e.g. ImxDeviceFactory, GpxDeviceFactory). Each factory both
+ * identifies whether a port holds a device it's responsible for, and allocates/releases the
+ * resulting ISDevice instance.
  *
  * @author Kyle Mallory on 3/10/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
@@ -21,7 +27,7 @@
 #include "PortManager.h"
 
 /**
- * An interface, to be implemented as a singleton, that is responsible for identifying various types of ISDevice and allocating and releasing them.
+ * @brief An interface, to be implemented as a singleton, that is responsible for identifying various types of ISDevice and allocating and releasing them.
  *
  * Supports both blocking single-port discovery (locateDevice) and concurrent multi-port discovery
  * via a three-phase protocol (beginValidation / stepValidation / completeValidation) driven by
@@ -33,17 +39,17 @@ public:
     virtual ~DeviceFactory() = default;
 
     /**
-     * Per-port, per-factory state during concurrent validation. Managed by the base class
+     * @brief Per-port, per-factory state during concurrent validation. Managed by the base class
      * beginValidation/stepValidation/completeValidation methods. Subclasses should not need
      * to interact with this directly — override the onXxx hooks instead.
      */
     struct ValidationContext {
-        port_handle_t port = nullptr;
-        std::shared_ptr<ISDevice> device;
-        uint16_t hdwId = IS_HARDWARE_ANY;
-        uint32_t timeoutMs = 3000;
-        bool complete = false;
-        int result = 0;  // -1 = failed/timeout, 0 = in-progress, 1 = success
+        port_handle_t port = nullptr;              //!< Port being validated
+        std::shared_ptr<ISDevice> device;          //!< ISDevice probe used to communicate with the port during validation
+        uint16_t hdwId = IS_HARDWARE_ANY;           //!< Hardware Id filter for this validation attempt
+        uint32_t timeoutMs = 3000;                  //!< Timeout for this validation attempt (milliseconds)
+        bool complete = false;                      //!< True once stepValidation has reached a terminal result
+        int result = 0;                             //!< -1 = failed/timeout, 0 = in-progress, 1 = success
     };
 
     /**
@@ -75,13 +81,13 @@ public:
     };
 
     /**
-     * Attempts to identify a specific type of device on all currently known ports, within the timeout period
+     * Attempts to identify a specific type of device on all currently known ports, within the timeout period.
+     * Note: this returns void; use locateDevice() directly on a specific port if a detection result is needed.
      * @param deviceCallback a function to be called if this Factory identified a possible/viable Inertial Sense device on the specified port
      * @param hdwId a hardware Id qualifier that can be used to narrow the type of device
-     * @param timeout the maximum time to attempt to identify a device before giving up
-     * @return true if a device was detected, otherwise false (indicating a timeout occurred)
+     * @param timeoutMs the maximum time (milliseconds) to attempt to identify a device before giving up
      */
-    virtual void locateDevices(std::function<bool(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, uint16_t hdwId, uint16_t timeout);
+    virtual void locateDevices(std::function<bool(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, uint16_t hdwId, uint16_t timeoutMs);
 
     /**
      * Attempts to identify a specific type of device on the specified port, within the timeout period.
@@ -91,11 +97,11 @@ public:
      *   port is not opened, this function will attempt to open it in order for ensure discovery.
      * @param hdwId a hardware Id qualifier that can be used to narrow the type of device.  There is no direct indication that a hardware type
      *   failed to match.
-     * @param timeout the maximum time to attempt to identify a device before giving up. There is no direct indication that a timeout occurred.
+     * @param timeoutMs the maximum time (milliseconds) to attempt to identify a device before giving up. There is no direct indication that a timeout occurred.
      * @return true if a device was detected, otherwise false. Note that a false can result for any number of reasons, including invalid port,
      *   hdwId mismatch, or a timeout.
      */
-    virtual bool locateDevice(std::function<bool(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeout);
+    virtual bool locateDevice(std::function<bool(DeviceFactory*, const dev_info_t&, port_handle_t)>& deviceCallback, port_handle_t port, uint16_t hdwId, uint16_t timeoutMs);
 
     /**
      * Phase 1: Prepare a ValidationContext for concurrent validation on this port.
@@ -124,11 +130,15 @@ public:
     bool completeValidation(ValidationContext& ctx, dev_info_t& devInfoOut);
 
     /**
-     * Assigns a Factory-specific timeout period for each port
-     * @param timeout
+     * @brief Assigns a Factory-specific timeout period for each port.
+     * @param timeout the per-device validation timeout, in milliseconds.
      */
     void setPerDeviceTimeout(uint32_t timeout) { deviceTimeout = timeout; };
 
+    /**
+     * @brief Gets the Factory-specific timeout period used for each port.
+     * @return the per-device validation timeout, in milliseconds.
+     */
     uint32_t getPerDeviceTimeout() const { return deviceTimeout; };
 
 protected:
@@ -161,11 +171,16 @@ protected:
     virtual bool onCompleteValidation(const dev_info_t& devInfo, uint16_t hdwId) { (void)devInfo; (void)hdwId; return true; }
 
 private:
-    uint32_t deviceTimeout = 3000;  // should match DeviceManager::DISCOVERY__DEFAULT_TIMEOUT
+    uint32_t deviceTimeout = 3000;  //!< Default per-device validation timeout (ms); should match DeviceManager::DISCOVERY__DEFAULT_TIMEOUT
 };
 
+/** @brief DeviceFactory singleton for IMX-5 devices; allocates an ISDevice only for devices whose hardware Id resolves to IS_HARDWARE_IMX_5_0. */
 class ImxDeviceFactory : public DeviceFactory {
 public:
+    /**
+     * @brief Gets the singleton instance of this factory.
+     * @return reference to the singleton ImxDeviceFactory, as a DeviceFactory.
+     */
     static DeviceFactory& getInstance() {
         static ImxDeviceFactory instance;
         return instance;
@@ -175,6 +190,12 @@ private:
     ImxDeviceFactory() = default;
     // ~ImxDeviceFactory() override = default;
 
+    /**
+     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo resolves to an IMX-5 hardware Id.
+     * @param devInfo the device information uniquely identifying the specific device.
+     * @param port an associated port (optional) that this device should be bound to.
+     * @return a new ISDevice if devInfo is an IMX-5, otherwise nullptr.
+     */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
             return std::make_shared<ISDevice>(devInfo, port);
@@ -183,8 +204,13 @@ private:
     }
 };
 
+/** @brief DeviceFactory singleton for GPX-1 devices; allocates an ISDevice only for devices whose hardware Id resolves to IS_HARDWARE_GPX_1_0. */
 class GpxDeviceFactory : public DeviceFactory {
 public:
+    /**
+     * @brief Gets the singleton instance of this factory.
+     * @return reference to the singleton GpxDeviceFactory, as a DeviceFactory.
+     */
     static DeviceFactory& getInstance() {
         static GpxDeviceFactory instance;
         return instance;
@@ -194,6 +220,12 @@ private:
     GpxDeviceFactory() = default;
     // ~GpxDeviceFactory() override = default;
 
+    /**
+     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo resolves to a GPX-1 hardware Id.
+     * @param devInfo the device information uniquely identifying the specific device.
+     * @param port an associated port (optional) that this device should be bound to.
+     * @return a new ISDevice if devInfo is a GPX-1, otherwise nullptr.
+     */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_GPX_1_0)
             return std::make_shared<ISDevice>(devInfo, port);

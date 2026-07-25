@@ -185,7 +185,7 @@ public:
     ISFwUpdateState(const ISFwUpdateState& other)
         : lastMessage(other.lastMessage), state(other.state), status(other.status),
           target(other.target), slot(other.slot), progress(other.progress),
-          messages(other.messages), hasErrors(other.hasErrors) { }
+          messages(other.messages), hasErrors(other.hasErrors), hasNotifications(other.hasNotifications) { }
 
     ISFwUpdateState& operator=(const ISFwUpdateState& other) {
         if (this != &other) {
@@ -197,6 +197,7 @@ public:
             progress = other.progress;
             messages = other.messages;
             hasErrors = other.hasErrors;
+            hasNotifications = other.hasNotifications;
         }
         return *this;
     }
@@ -226,6 +227,7 @@ public:
         slot = 0;
         progress = 0.f;
         hasErrors = false;
+        hasNotifications = false;
     }
 
     std::string                 lastMessage;                        //!< the current/last/most recent message which should be shown to the user
@@ -236,6 +238,7 @@ public:
     float                       progress = 0.f;                     //!< the current/last progress of the target upload
     std::vector<message>        messages;                           //!< the collection of all messages that have occurred during the update
     bool                        hasErrors = false;                  //!< an easy indicator to track errors while still in progress, generally true if msgs contains one more IS_LOG_LEVEL_ERROR messages
+    bool                        hasNotifications = false;           //!< true if a non-error notification (e.g., "update skipped due to version") was recorded during the update
 
 private:
     mutable std::recursive_mutex mtx;                               //!< protects all fields from concurrent read/write across threads

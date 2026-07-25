@@ -9,6 +9,8 @@
 
 #include "ISLogReader.h"
 
+#include "ISDeviceLog.h"      // detectGaps: iterate composed segments
+#include "ISTimeResolver.h"   // detectGaps: resolve per-segment record times
 #include "core/msg_logger.h"
 
 // com_manager.h FIRST — short-circuits the broken extern-C wrap in ISFirmwareUpdater.h that would otherwise trip C++
@@ -362,6 +364,10 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                         if (!countConsistent) {
                             rebuildReason = RebuildReason::Stale;
                         } else {
+                            // Provisionally trust: the poison sweep and offset probe
+                            // below flip this back to Stale if they find a problem.
+                            rebuildReason = RebuildReason::None;
+
                             // Pull every record.
                             std::vector<idx::is_log_idx_record_v2_t> recs;
                             recs.reserve(nRecords);
@@ -391,17 +397,53 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                                 return did == DID_GNSS1_RAW || did == DID_GNSS2_RAW || did == DID_GNSS_BASE_RAW;
                             };
                             constexpr uint64_t kPoisonThresholdMs = 1'000'000'000'000ULL;
+                            // SN-8328: pre-fix tooling baked the raw GNSS observation time
+                            // (gtime_t absolute seconds, ~3.16e11 ms on some logs) into GNSS_RAW
+                            // records' timestamps, which the resolver anchors to GPS week 0 →
+                            // ~45-year span. The fix (cISDataMappings::Timestamp returns 0 for
+                            // GNSS_RAW) means correct tooling emits only host-uptime (or 0) for
+                            // these — always well under one GPS week for any real log. So a
+                            // GNSS_RAW record whose timestamp exceeds a week is baked obs-time
+                            // from old tooling → the sidecar is stale; rebuild so the corrected
+                            // scan re-derives it. (This replaces the SN-8004 blanket exemption,
+                            // which merely tolerated the bad values.)
+                            constexpr uint64_t kGnssRawStaleThreshMs = 604'800'000ULL;  // 1 GPS week
                             std::size_t poisonedCount = 0;
                             for (const auto& rec : recs) {
-                                if (isGpsRawDid(rec.did)) continue;
-                                if (rec.timestamp > kPoisonThresholdMs) {
+                                const uint64_t thresh = isGpsRawDid(rec.did) ? kGnssRawStaleThreshMs
+                                                                             : kPoisonThresholdMs;
+                                if (rec.timestamp > thresh) {
                                     ++poisonedCount;
                                     if (poisonedCount > 4) break;   // early-exit; rebuild anyway
                                 }
                             }
                             if (poisonedCount > 0) {
                                 rebuildReason = RebuildReason::Stale;
-                            } else {
+                            }
+
+                            // SN-8328 (B): verify record offsets are monotonic PHYSICAL .raw
+                            // byte offsets (what viewAt/bytes() and the scan assume). The SDK
+                            // raw-log writer stores chunk-relative offsets that RESET to ~0 at
+                            // every 128 KB chunk-flush boundary (cDeviceLog::OpenNewSaveFile
+                            // zeroes m_lastIndexOffset, invoked lazily mid-segment), so any raw
+                            // log larger than one chunk has offsets that jump backwards at each
+                            // boundary -- tracked as an SDK writer-offset follow-up. Records are
+                            // appended in arrival order, so a correct physical index is
+                            // monotonically non-decreasing; a strict decrease means the offsets
+                            // are chunk-relative/corrupt. This is a deterministic O(n) check --
+                            // unlike a sampled parse-probe, it cannot coincidentally "pass" on a
+                            // same-DID burst. On detection, rebuild so the scan re-derives
+                            // correct physical offsets.
+                            if (rebuildReason == RebuildReason::None && recs.size() > 1) {
+                                for (std::size_t i = 1; i < recs.size(); ++i) {
+                                    if (recs[i].offset < recs[i - 1].offset) {
+                                        rebuildReason = RebuildReason::Stale;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (rebuildReason == RebuildReason::None) {
                                 r.header_         = *hdr;
                                 r.hadOnDiskIndex_ = true;
                                 r.buildIndexFromIdx(recs);
@@ -810,6 +852,82 @@ ISLogReader::RangeIterator ISLogReader::seek(TimeStamp target) const noexcept {
         }
     }
     return RangeIterator{ this, &allIndices_, pos };
+}
+
+// ---------------------------------------------------------------------------
+// Gap detection (SN-8345)
+// ---------------------------------------------------------------------------
+
+std::vector<ISLogReader::DataGap>
+ISLogReader::findGaps(std::vector<SegmentSpan> spans, uint64_t thresholdMs) {
+    std::vector<DataGap> gaps;
+
+    spans.erase(std::remove_if(spans.begin(), spans.end(),
+                               [](const SegmentSpan& s) { return !s.valid(); }),
+                spans.end());
+    if (spans.size() < 2) return gaps;
+
+    std::sort(spans.begin(), spans.end(),
+              [](const SegmentSpan& a, const SegmentSpan& b) {
+                  return a.start.value < b.start.value;
+              });
+
+    // Sweep in start order, tracking the coverage high-water mark. A gap opens
+    // when the next span begins more than thresholdMs past the mark; overlapping
+    // or contiguous spans just extend it.
+    TimeStamp coverEnd = spans.front().end;
+    for (std::size_t i = 1; i < spans.size(); ++i) {
+        const SegmentSpan& s = spans[i];
+        if (s.start.value > coverEnd.value &&
+            (s.start.value - coverEnd.value) > thresholdMs) {
+            DataGap g;
+            g.startTime  = coverEnd;
+            g.endTime    = s.start;
+            g.segmentId  = kNoSegment;   // no segment covers this interval
+            gaps.push_back(g);
+        }
+        if (s.end.value > coverEnd.value) coverEnd = s.end;
+    }
+    return gaps;
+}
+
+std::vector<ISLogReader::DataGap>
+ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
+                        uint64_t thresholdMs) {
+    const uint64_t devId = log.deviceId();
+    std::vector<SegmentSpan> spans;
+    spans.reserve(log.segmentCount());
+
+    for (std::size_t s = 0; s < log.segmentCount(); ++s) {
+        bool      any = false;
+        TimeStamp lo{};
+        TimeStamp hi{};
+        for (auto v : log.segment(s).allRecords()) {
+            const uint64_t raw = v.timestamp().value;
+            if (raw == 0) continue;                       // metadata / sentinel
+            const TimeStamp r = resolver.resolve(raw, devId);
+            if (r.source == TimeSource::SessionOnly) continue;  // no wall-clock anchor
+            if (r.value == 0) continue;
+            if (!any || r.value < lo.value) lo = r;
+            if (!any || r.value > hi.value) hi = r;
+            any = true;
+        }
+        if (any) {
+            SegmentSpan sp;
+            sp.segmentId = static_cast<int>(s);
+            sp.start     = lo;
+            sp.end       = hi;
+            spans.push_back(sp);
+        }
+    }
+
+    auto gaps = findGaps(std::move(spans), thresholdMs);
+    log_debug(IS_LOG_ISLOG,
+              "ISLogReader::detectGaps: device 0x%016llx, %zu segment(s) -> %zu gap(s) "
+              "(threshold %llu ms)",
+              (unsigned long long)devId, log.segmentCount(), gaps.size(),
+              (unsigned long long)thresholdMs);
+    return gaps;
 }
 
 } // namespace inertial_sense
