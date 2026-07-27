@@ -3971,6 +3971,8 @@ typedef struct PACKED
 
     float                   baseToRoverVector[3];   //!< Vector from base to rover {x,y,z} in ECEF, in meters. If compassing is enabled, this is instead the 3-vector from antenna 2 (GNSS2) to antenna 1 (GNSS1)
 
+    float                   covEcefPacked[6];       //!< RTK solution covariance in ECEF packed as [Pxx, Pyy, Pzz, Pxy, Pyz, Pzx], in meters^2
+
     float                   baseToRoverDistance;    //!< Distance from base to rover (baseline length), in meters
 
     float                   baseToRoverHeading;     //!< Angle from north to baseToRoverVector in the local tangent plane, in radians
