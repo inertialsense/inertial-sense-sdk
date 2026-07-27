@@ -5180,25 +5180,13 @@ enum can_baudrate_t
  *  multipliers, transmit addresses, baud rate, and receive address. */
 typedef struct PACKED
 {
-    /** Broadcast period multiple for each CAN message. 0 disables the message.
-     *  Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values.
-     *  In CAN-FD mode the same array is reused: indices 0..NUM_FDCIDS-1
-     *  correspond to canfd_cid_t values (FDCID_INS_1=0, FDCID_INS_2=1, …).
-     *  NUM_FDCIDS < NUM_CIDS so there is no overlap. */
-    uint16_t                can_period_mult[NUM_CIDS];
+    uint16_t                can_period_mult[NUM_CIDS];       //!< Broadcast period multiple for each CAN message. 0 disables the message. Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values. In CAN-FD mode the same array is reused: indices 0..NUM_FDCIDS-1 correspond to canfd_cid_t values (FDCID_INS_1=0, FDCID_INS_2=1, …). NUM_FDCIDS < NUM_CIDS so there is no overlap.
 
-    /** Transmit address for each CAN message.
-     *  Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values.
-     *  In CAN-FD mode indices 0..NUM_FDCIDS-1 correspond to canfd_cid_t values
-     *  and are validated / defaulted by CAN_init() when FD is enabled. */
-    uint32_t                can_transmit_address[NUM_CIDS];
+    uint32_t                can_transmit_address[NUM_CIDS];  //!< Transmit address for each CAN message. Indices 0..NUM_CIDS-1 correspond to classic can_cid_t values. In CAN-FD mode indices 0..NUM_FDCIDS-1 correspond to canfd_cid_t values and are validated / defaulted by CAN_init() when FD is enabled.
 
-    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates). Bit 15
-     *  (CAN_BAUDRATE_KBPS_FD_ENABLE) enables CAN-FD on capable hardware. */
-    uint16_t                can_setting;
+    uint16_t                can_setting;                     //!< Baud rate (kbps) (See can_baudrate_t for valid baud rates). Bit 15 (CAN_BAUDRATE_KBPS_FD_ENABLE) enables CAN-FD on capable hardware.
 
-    /** Receive address */
-    uint32_t                can_receive_address;
+    uint32_t                can_receive_address;             //!< Receive address
 
 } can_config_t;
 

@@ -198,11 +198,23 @@ private:
     explicit ISTimeResolver(std::vector<ISSyncPoint> syncs,
                             std::vector<Discontinuity> discs,
                             uint32_t anchorWeek,
-                            uint64_t anchorTowStart) noexcept
+                            uint64_t anchorTowStart,
+                            uint64_t anchorTowEnd,
+                            int64_t  uptimeToTowOffsetMs,
+                            bool     haveUptimeOffset) noexcept
         : syncPoints_(std::move(syncs)),
           discontinuities_(std::move(discs)),
           anchorWeek_(anchorWeek),
-          anchorTowStart_(anchorTowStart) {}
+          anchorTowStart_(anchorTowStart),
+          anchorTowEnd_(anchorTowEnd),
+          uptimeToTowOffsetMs_(uptimeToTowOffsetMs),
+          haveUptimeOffset_(haveUptimeOffset) {}
+
+    //! Core detection: scans all segments for sync points AND (SN-8323 uptime
+    //! unification) authoritative uptime->ToW offset samples from DID_SYS_PARAMS.
+    //! `detectSyncPoints` and `build` both delegate here.
+    static std::vector<ISSyncPoint> detectSyncPointsImpl(
+        const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut);
 
     std::vector<ISSyncPoint>    syncPoints_;
     std::vector<Discontinuity>  discontinuities_;
@@ -216,6 +228,19 @@ private:
     //! pre-fix / startup record) and resolve() tags it SessionOnly/Unknown so
     //! consumers exclude it from the timeline + extent.
     uint64_t                    anchorTowStart_ = 0;
+    //! SN-8323 (uptime unification): latest ToW (ms into week) of the durable
+    //! fix period. With anchorTowStart_ it bounds the plausible ToW window used
+    //! to classify a resolve() input as ToW-domain vs uptime-domain.
+    uint64_t                    anchorTowEnd_ = 0;
+    //! SN-8323 (uptime unification): authoritative uptime->GPS-ToW offset (ms),
+    //! derived from DID_SYS_PARAMS (timeOfWeekMs - upTime) during build(). Kyle
+    //! 2026-07-23: SYS_PARAMS.upTime is the definitive relative uptime; session-
+    //! only records (magnetometer, imu) and pre-sync "real clock" records (whose
+    //! week/ToW default to uptime until GPS sync) are bridged through this single
+    //! offset instead of the fragile per-sync actualHostTimeMs heuristic.
+    int64_t                     uptimeToTowOffsetMs_ = 0;
+    //! True when a synced DID_SYS_PARAMS gave a usable uptime->ToW offset.
+    bool                        haveUptimeOffset_ = false;
 };
 
 } // namespace inertial_sense
