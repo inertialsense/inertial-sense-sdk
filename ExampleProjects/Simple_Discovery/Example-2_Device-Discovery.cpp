@@ -55,7 +55,9 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
  * that for us.  We only need to open a connection to the device and start communicating.
  */
 int main_discovery(const char* portPattern) {
-    ISDevice* device = nullptr; // this will be our discovered device... but null for now.
+    std::cout << "Simple Discovery started" << std::endl;
+    
+    std::shared_ptr<ISDevice> device = nullptr; // this will be our discovered device... but null for now.
 
     // Both DeviceManager & PortManager are singletons, but we'll make a local reference to both to keep the code clean
     PortManager& pm = PortManager::getInstance();
@@ -133,7 +135,7 @@ int main(int argc, const char** argv) {
 #if PLATFORM_IS_LINUX
     const char* portPattern = "(.+)";   // NOTE: this is a MATCHING REGEX pattern (this one matches everything)
 #else
-    const char* portArg = "COMM1";
+    const char* portPattern = "COMM1";
 #endif
     if (argc > 1)
         portPattern = argv[1];     // take the first argument as the port to connect with
