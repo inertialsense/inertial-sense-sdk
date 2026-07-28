@@ -648,10 +648,27 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
         fwUpdate_resetEngine();
     }
 
-    char buffer[256];
+    // Format into a dynamically-sized buffer. A fixed buffer here previously truncated long
+    // messages mid-word (e.g. a firmware package error whose path pushed the message past 256
+    // bytes). Grow-and-retry rather than probe with a null destination: some vsnprintf
+    // implementations (older MSVC CRTs) return -1 on truncation instead of the needed length,
+    // so a single nullptr/0 probe can't be trusted to size the buffer correctly everywhere.
+    std::string buffer;
     va_list args;
     va_start(args, errMsg);
-    VSNPRINTF(buffer, sizeof(buffer), errMsg, args);
+    size_t bufSize = 256;
+    for (int attempt = 0; attempt < 8; ++attempt) {
+        buffer.resize(bufSize);
+        va_list args_copy;
+        va_copy(args_copy, args);
+        int written = VSNPRINTF(&buffer[0], buffer.size(), errMsg, args_copy);
+        va_end(args_copy);
+        if (written >= 0 && (size_t)written < bufSize) {
+            buffer.resize((size_t)written);    // trim the trailing NUL from the string's view
+            break;
+        }
+        bufSize = (written > 0) ? (size_t)written + 1 : bufSize * 2;
+    }
     va_end(args);
 
     cmd.status = ISFwUpdaterCmd::CMD_ERROR;
@@ -660,7 +677,9 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
         updateState.messages.emplace_back(activeStep, cmd, IS_LOG_LEVEL_ERROR, buffer);
     }
 
-    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, buffer);
+    // Pass the already-formatted text through a literal "%s" so any '%' in a filename/path
+    // isn't reinterpreted as a format specifier by the status callback.
+    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, "%s", buffer.c_str());
 
     if (failLabel.empty()) {
         // No on-error label: this is an unrecoverable error. Cancel any remaining
@@ -890,6 +909,10 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
     std::string arg0 = cmd[0];  // REMEMBER cmd[0] is getting the first argument (std::string) from cmd
     bool suspendAfterExtraction = ((cmd.args.size() == 2) && (cmd[1] == "true"));
     bool isManifest = (arg0.length() >= 5) && (0 == arg0.compare (arg0.length() - 5, 5, ".yaml"));
+    // Reset per-extraction diagnostic context; processPackageManifest() populates these with the
+    // step/image being processed so a parse error can report exactly where it occurred.
+    pkgErrorStep.clear();
+    pkgErrorImage.clear();
     pkg_error_e err_result = isManifest ? processPackageManifest(arg0) : openFirmwarePackage(arg0);
 
     // processPackageManifest/openFirmwarePackage modifies the commands vector, which
@@ -922,7 +945,7 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
                 err_msg = "Manifest references an invalid or non-existent image entry.";
                 break;
             case PKG_ERR_IMAGE_UNKNOWN_PATH:
-                err_msg = "Manifest image path is missing or invalid.";
+                err_msg = "Malformed manifest: a referenced image has no filename/backing file (the package claims to upgrade a target it cannot). This package is invalid.";
                 break;
             case PKG_ERR_IMAGE_FILE_NOT_FOUND:
                 err_msg = "Manifest image reference is valid, but the backing datafile is missing.";
@@ -939,7 +962,11 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
             case PKG_SUCCESS:
                 break;
         }
-        handleCommandError(cmd, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", arg0.c_str(), err_result, err_msg);
+        // Include the offending step/image (when known) so failures can be diagnosed from the log alone.
+        std::string context;
+        if (!pkgErrorStep.empty())  context += " [step: " + pkgErrorStep + "]";
+        if (!pkgErrorImage.empty()) context += " [image: " + pkgErrorImage + "]";
+        handleCommandError(cmd, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s%s", arg0.c_str(), err_result, err_msg, context.c_str());
     } else if (suspendAfterExtraction) {
         // we aren't ready to process any new commands from the package...
         updateState.state = ISFwUpdateState::UDPATER_SUSPENDED;
@@ -1552,18 +1579,23 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
             if (!label.IsScalar())
                 return PKG_ERR_INVALID_TARGET; // key must identify a target name
 
+            auto labelName = label.as<std::string>();
+            pkgErrorStep = labelName;   // track context so any subsequent error can name this step
+            pkgErrorImage.clear();     // a step-level error shouldn't carry over the previous step's image
+
             if (!cmds.IsSequence())
                 return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
 
-            auto labelName = label.as<std::string>();
             commands.emplace_back(labelName, "");
 
             for (auto cmds_iv : cmds) {
                 for (auto cmd : cmds_iv) {
+                    pkgErrorImage.clear();
                     auto cmd_name = cmd.first.as<std::string>();
                     auto cmd_arg = cmd.second.as<std::string>();
 
                     if (cmd_name == "image") {
+                        pkgErrorImage = cmd_arg;   // track context for diagnostics
                         uint32_t image_size = 0;
                         md5hash_t image_hash = {};
                         // uint8_t image_version[4] = {};
@@ -1576,8 +1608,25 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
                         if (!image.IsDefined() || !image.IsMap())
                             return PKG_ERR_IMAGE_INVALID_REFERENCE; // step references invalid or non-existent image in manifest
 
-                        if (!image["filename"].IsDefined() && !image["filename"].IsScalar())
-                            return PKG_ERR_IMAGE_UNKNOWN_PATH; // an image must define AT LEAST a filename
+                        // A referenced image MUST define a (scalar) filename. An image entry that
+                        // is referenced by a step but has no filename is a MALFORMED manifest: the
+                        // package advertises the ability to upgrade this target (the step exists)
+                        // but carries no backing file for it. That is a critical packaging defect
+                        // (e.g. a firmware image that failed to build or bundle) and must fail
+                        // loudly -- NOT be silently skipped as if the target were "optional". A
+                        // target that is genuinely not shipped must have its image AND step stanzas
+                        // removed from the manifest entirely (see update_manifest.py); a target that
+                        // IS shipped but simply isn't physically present on this unit is handled at
+                        // runtime by the step's 'target ...,:JUMP' skip, not here. Silently skipping
+                        // would let a customer who HAS the target receive a package that looks like
+                        // it upgrades it but can't. (SN-8347)
+                        //
+                        // NOTE: the original condition here was '&&', which only tripped when the
+                        // filename was neither defined nor scalar -- a defined-but-non-scalar
+                        // filename (e.g. a list/map) slipped through to as<std::string>() below.
+                        // '||' is the correct strict check.
+                        if (!image["filename"].IsDefined() || !image["filename"].IsScalar())
+                            return PKG_ERR_IMAGE_UNKNOWN_PATH; // referenced image has no backing file -> malformed manifest
 
                         std::string filename = image["filename"].as<std::string>();
                         if (archive) {
