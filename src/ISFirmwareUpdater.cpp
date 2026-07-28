@@ -650,18 +650,24 @@ void ISFirmwareUpdater::handleCommandError(ISFwUpdaterCmd& cmd, int errCode, con
 
     // Format into a dynamically-sized buffer. A fixed buffer here previously truncated long
     // messages mid-word (e.g. a firmware package error whose path pushed the message past 256
-    // bytes). Size the string to the exact formatted length so nothing is lost.
+    // bytes). Grow-and-retry rather than probe with a null destination: some vsnprintf
+    // implementations (older MSVC CRTs) return -1 on truncation instead of the needed length,
+    // so a single nullptr/0 probe can't be trusted to size the buffer correctly everywhere.
     std::string buffer;
     va_list args;
     va_start(args, errMsg);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = VSNPRINTF(nullptr, 0, errMsg, args_copy);
-    va_end(args_copy);
-    if (needed > 0) {
-        buffer.resize((size_t)needed + 1);
-        VSNPRINTF(&buffer[0], buffer.size(), errMsg, args);
-        buffer.resize((size_t)needed);      // trim the trailing NUL from the string's view
+    size_t bufSize = 256;
+    for (int attempt = 0; attempt < 8; ++attempt) {
+        buffer.resize(bufSize);
+        va_list args_copy;
+        va_copy(args_copy, args);
+        int written = VSNPRINTF(&buffer[0], buffer.size(), errMsg, args_copy);
+        va_end(args_copy);
+        if (written >= 0 && (size_t)written < bufSize) {
+            buffer.resize((size_t)written);    // trim the trailing NUL from the string's view
+            break;
+        }
+        bufSize = (written > 0) ? (size_t)written + 1 : bufSize * 2;
     }
     va_end(args);
 
@@ -1575,6 +1581,7 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
 
             auto labelName = label.as<std::string>();
             pkgErrorStep = labelName;   // track context so any subsequent error can name this step
+            pkgErrorImage.clear();     // a step-level error shouldn't carry over the previous step's image
 
             if (!cmds.IsSequence())
                 return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
