@@ -156,8 +156,10 @@ def run_build(args: list[str] = []) -> int:
     print("CMD:", " ".join(pip_install_cmd))
     build_process = subprocess.run(pip_install_cmd, cwd=SDK_DIR, check=True)
 
-    # Build extension in-place
-    return run_setup_command("build_ext --inplace", cwd=PYTHON_DIR)
+    # Build extension in-place. --force is required because distutils only compares the .cpp
+    # mtime against its cached .o, so header-only changes (e.g. data_sets.h) are silently skipped
+    # on incremental builds -- this bit CI on the persistent self-hosted runner (SN-8374).
+    return run_setup_command("build_ext --inplace --force", cwd=PYTHON_DIR)
 
 @contextmanager
 def _argv(temp: list[str]):
