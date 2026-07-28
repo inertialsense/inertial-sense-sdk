@@ -196,7 +196,7 @@ int CAN_ISB_GNSS_to_CAN_gnss1_rtk_pos_rel(gnss_rtk_rel_t* gnss, is_can_payload* 
     out->rtkrel.arRatio         = static_cast<uint8_t>(gnss->arRatio);
     out->rtkrel.differentialAge = static_cast<uint8_t>(gnss->differentialAge);
     out->rtkrel.distanceToBase  = gnss->baseToRoverDistance;
-    out->rtkrel.headingToBase   = static_cast<int16_t>(gnss->baseToRoverHeading*1000);
+    out->rtkrel.rtkHeading      = static_cast<int16_t>(gnss->rtkHeading*1000);
     return (int)sizeof(is_can_gnss_rtk_rel);
 }
 
@@ -207,7 +207,7 @@ int CAN_ISB_GNSS_to_CAN_gnss2_rtk_cmp_rel(gnss_rtk_rel_t* gnss, is_can_payload* 
     out->rtkrel.arRatio         = static_cast<uint8_t>(gnss->arRatio);
     out->rtkrel.differentialAge = static_cast<uint8_t>(gnss->differentialAge);
     out->rtkrel.distanceToBase  = gnss->baseToRoverDistance;
-    out->rtkrel.headingToBase   = static_cast<int16_t>(gnss->baseToRoverHeading*1000);
+    out->rtkrel.rtkHeading      = static_cast<int16_t>(gnss->rtkHeading*1000);
     return (int)sizeof(is_can_gnss_rtk_rel);
 }
 
@@ -435,20 +435,20 @@ int CAN_CAN_gnss2_pos_to_ISB_GNSS_POS(is_can_payload* in, gnss_pos_t* out)
 /** @brief Unpack GNSS-1 RTK position-relative data (heading inverse scale 1/1000) from a CAN RTK payload. */
 int CAN_CAN_gnss1_rtk_pos_rel_to_ISB_GNSS_RTK_REL(is_can_payload* in, gnss_rtk_rel_t* out)
 {
-    out->arRatio             = static_cast<float>(in->rtkrel.arRatio);
-    out->differentialAge     = static_cast<float>(in->rtkrel.differentialAge);
-    out->baseToRoverDistance = in->rtkrel.distanceToBase;
-    out->baseToRoverHeading  = in->rtkrel.headingToBase / 1000.0f;
+    out->arRatio                = static_cast<float>(in->rtkrel.arRatio);
+    out->differentialAge        = static_cast<float>(in->rtkrel.differentialAge);
+    out->baseToRoverDistance    = in->rtkrel.distanceToBase;
+    out->rtkHeading             = in->rtkrel.rtkHeading / 1000.0f;
     return (int)sizeof(is_can_gnss_rtk_rel);
 }
 
 /** @brief Unpack GNSS-2 RTK compassing-relative data (heading inverse scale 1/1000) from a CAN RTK payload. */
 int CAN_CAN_gnss2_rtk_cmp_rel_to_ISB_GNSS_RTK_REL(is_can_payload* in, gnss_rtk_rel_t* out)
 {
-    out->arRatio             = static_cast<float>(in->rtkrel.arRatio);
-    out->differentialAge     = static_cast<float>(in->rtkrel.differentialAge);
-    out->baseToRoverDistance = in->rtkrel.distanceToBase;
-    out->baseToRoverHeading  = in->rtkrel.headingToBase / 1000.0f;
+    out->arRatio                = static_cast<float>(in->rtkrel.arRatio);
+    out->differentialAge        = static_cast<float>(in->rtkrel.differentialAge);
+    out->baseToRoverDistance    = in->rtkrel.distanceToBase;
+    out->rtkHeading             = in->rtkrel.rtkHeading / 1000.0f;
     return (int)sizeof(is_can_gnss_rtk_rel);
 }
 
@@ -619,7 +619,7 @@ int CANFD_ISB_GNSS1_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out
     out->rtkrel.arRatio         = gnss->arRatio;
     out->rtkrel.differentialAge = gnss->differentialAge;
     out->rtkrel.distanceToBase  = gnss->baseToRoverDistance;
-    out->rtkrel.headingToBase   = gnss->baseToRoverHeading;
+    out->rtkrel.rtkHeading      = gnss->rtkHeading;
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 
@@ -629,7 +629,7 @@ int CANFD_ISB_GNSS2_RTK_REL_to_CANFD(gnss_rtk_rel_t* gnss, is_canfd_payload* out
     out->rtkrel.arRatio         = gnss->arRatio;
     out->rtkrel.differentialAge = gnss->differentialAge;
     out->rtkrel.distanceToBase  = gnss->baseToRoverDistance;
-    out->rtkrel.headingToBase   = gnss->baseToRoverHeading;
+    out->rtkrel.rtkHeading      = gnss->rtkHeading;
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 
@@ -735,20 +735,20 @@ int CANFD_CANFD_to_ISB_GNSS2_POS(is_canfd_payload* in, gnss_pos_t* out)
 /** @brief Decode a CAN FD RTK relative payload into a DID_GNSS1_RTK_POS_REL structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_GNSS1_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
 {
-    out->arRatio            = in->rtkrel.arRatio;
-    out->differentialAge    = in->rtkrel.differentialAge;
-    out->baseToRoverDistance = in->rtkrel.distanceToBase;
-    out->baseToRoverHeading = in->rtkrel.headingToBase;
+    out->arRatio                = in->rtkrel.arRatio;
+    out->differentialAge        = in->rtkrel.differentialAge;
+    out->baseToRoverDistance    = in->rtkrel.distanceToBase;
+    out->rtkHeading             = in->rtkrel.rtkHeading;
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 
 /** @brief Decode a CAN FD RTK relative payload into a DID_GNSS2_RTK_CMP_REL structure. See protocol_CAN.h for full doc. */
 int CANFD_CANFD_to_ISB_GNSS2_RTK_REL(is_canfd_payload* in, gnss_rtk_rel_t* out)
 {
-    out->arRatio            = in->rtkrel.arRatio;
-    out->differentialAge    = in->rtkrel.differentialAge;
-    out->baseToRoverDistance = in->rtkrel.distanceToBase;
-    out->baseToRoverHeading = in->rtkrel.headingToBase;
+    out->arRatio                = in->rtkrel.arRatio;
+    out->differentialAge        = in->rtkrel.differentialAge;
+    out->baseToRoverDistance    = in->rtkrel.distanceToBase;
+    out->rtkHeading             = in->rtkrel.rtkHeading;
     return (int)sizeof(is_canfd_gnss_rtk_rel);
 }
 

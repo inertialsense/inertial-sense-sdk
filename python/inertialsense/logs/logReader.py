@@ -633,7 +633,7 @@ class Log:
         sum_count = 1
         for d in range(self.numDev):
             time = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
-            yaw  = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
+            yaw  = self.data[d, DID_GNSS2_RTK_CMP_REL]['rtkHeading']
             if len(yaw) == 0:
                 continue
 
@@ -660,7 +660,7 @@ class Log:
         for d in range(self.numDev):
             serial_number = self.data[d, DID_DEV_INFO]['serialNumber'][0]
             time_ms = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
-            yaw = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
+            yaw = self.data[d, DID_GNSS2_RTK_CMP_REL]['rtkHeading']
             ar_ratio = self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio']
 
             success = False

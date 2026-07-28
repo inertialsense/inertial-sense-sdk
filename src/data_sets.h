@@ -3343,15 +3343,15 @@ typedef struct PACKED
 
     uint32_t                checksum;                           //!< Checksum, excluding size and checksum.  0xFFFFFFFF is invalid.
 
-    uint32_t                key;                                 //!< Manufacturer method for restoring flash defaults
+    uint32_t                key;                                //!< Manufacturer method for restoring flash defaults
 
     uint32_t                startupImuDtMs;                     //!< (ms) IMU sample (system input) period set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling.
 
     uint32_t                startupNavDtMs;                     //!< (ms) Navigation filter (system output) output period set on startup.  Used to initialize sysParams.navOutputPeriodMs.
 
-    uint32_t                ser0BaudRate;                        //!< (bps) Serial port 0 baud rate
+    uint32_t                ser0BaudRate;                       //!< (bps) Serial port 0 baud rate
 
-    uint32_t                ser1BaudRate;                        //!< (bps) Serial port 1 baud rate
+    uint32_t                ser1BaudRate;                       //!< (bps) Serial port 1 baud rate
 
     float                   insRotation[3];                     //!< (rad) Rotation about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X.
 
@@ -3401,7 +3401,7 @@ typedef struct PACKED
 
     float                   gnssMinimumElevation;               //!< (rad) Minimum elevation of a satellite above the horizon to be used in the solution. Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere.
 
-    uint32_t                ser2BaudRate;                        //!< (bps) Serial port 2 baud rate
+    uint32_t                ser2BaudRate;                       //!< (bps) Serial port 2 baud rate
 
     wheel_config_t          wheelConfig;                        //!< Wheel encoder: euler angles describing the rotation from imu to left wheel, plus track width/radius and config bits (see eWheelCfgBits)
 
@@ -3969,13 +3969,13 @@ typedef struct PACKED
 
     float                   arRatio;                //!< Ambiguity resolution ratio factor for validation (unitless; higher indicates greater confidence the fixed integer ambiguity is correct)
 
-    float                   baseToRoverVector[3];   //!< Vector from base to rover {x,y,z} in ECEF, in meters. If compassing is enabled, this is instead the 3-vector from antenna 2 (GNSS2) to antenna 1 (GNSS1)
+    float                   baseToRoverVector[3];   //!< Vector from base to rover {x,y,z} in ECEF, in meters. If compassing is enabled, this is instead the 3-vector from antenna 1 (GNSS1, moving base) to antenna 2 (GNSS2, rover)
 
     float                   baseToRoverDistance;    //!< Distance from base to rover (baseline length), in meters
 
-    float                   baseToRoverHeading;     //!< Angle from north to baseToRoverVector in the local tangent plane, in radians
+    float                   rtkHeading;             //!< Heading from true north to baseToRoverVector, projected into the local tangent (NED) plane and corrected for GNSS antenna offsets (making it comparable to the INS heading), in radians
 
-    float                   baseToRoverHeadingAcc;  //!< Accuracy (standard deviation) of baseToRoverHeading, in radians
+    float                   rtkHeadingAcc;          //!< Accuracy (standard deviation) of rtkHeading, in radians
 
     uint32_t                status;                 //!< GNSS status (see eGnssStatus): [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag
 

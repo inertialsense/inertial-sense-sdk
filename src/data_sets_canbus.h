@@ -205,7 +205,7 @@ typedef struct PACKED
 /** GNSS position fix status and mean signal quality. */
 typedef struct PACKED
 {
-    uint32_t                status;                                    //!< (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags
+    uint32_t                status;                                 //!< (see eGnssStatus) GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags
     uint32_t                cnoMean;                                //!< Average of all satellite carrier to noise ratios (signal strengths) that are non-zero, in dBHz
 } is_can_gnss_pos_status;
 
@@ -214,16 +214,16 @@ typedef struct PACKED
 {
     uint8_t                 arRatio;                                //!< Ambiguity resolution ratio factor for validation
     uint8_t                 differentialAge;                        //!< Age of differential correction (seconds)
-    float                   distanceToBase;                            //!< Distance to base station (meters)
-    int16_t                 headingToBase;                            //!< Angle from north to vectorToBase in the local tangent plane, radians (scaled by 1000, 3 decimal places precision)
+    float                   distanceToBase;                         //!< Distance to base station (meters)
+    int16_t                 rtkHeading;                             //!< Angle from north to vectorToBase in the local tangent plane, radians (scaled by 1000, 3 decimal places precision)
 } is_can_gnss_rtk_rel;
 
 /** INS roll and per-IMU roll rates. */
 typedef struct PACKED
 {
         int16_t             insRoll;                                //!< INS Euler roll, radians (scaled by 10000, 4 decimal places precision)
-        int16_t             pImu1;                                    //!< IMU 1 roll rate, radians/second (scaled by 1000, 3 decimal places precision), from DID_IMU
-        int16_t             pImu2;                                    //!< IMU 2 roll rate, radians/second (scaled by 1000, 3 decimal places precision), from DID_IMU
+        int16_t             pImu1;                                  //!< IMU 1 roll rate, radians/second (scaled by 1000, 3 decimal places precision), from DID_IMU
+        int16_t             pImu2;                                  //!< IMU 2 roll rate, radians/second (scaled by 1000, 3 decimal places precision), from DID_IMU
 } is_can_roll_rollRate;
 
 /** Union of all classic-CAN (8-byte) payload types; the active member is selected by the frame's CAN ID. */
@@ -331,8 +331,8 @@ typedef struct PACKED
     float       arRatio;            //!< Ambiguity resolution ratio factor for validation
     float       differentialAge;    //!< Age of differential correction (seconds)
     float       distanceToBase;     //!< Distance to base station (meters)
-    float       headingToBase;      //!< Angle from north to vectorToBase in the local tangent plane (radians)
-} is_canfd_gnss_rtk_rel;        //!< 16 bytes total
+    float       rtkHeading;         //!< Angle from north to vectorToBase in the local tangent plane (radians)
+} is_canfd_gnss_rtk_rel;            //!< 16 bytes total
 
 /** Union of all CAN FD payload types; the active member is selected by the frame's CAN ID. */
 typedef union PACKED

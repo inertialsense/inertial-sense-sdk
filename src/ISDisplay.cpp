@@ -1729,9 +1729,9 @@ std::string cInertialSenseDisplay::DataToStringRtkRel(const gnss_rtk_rel_t &rel,
 
     if (m_displayMode == DMODE_SCROLL)
     {   // Single line format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, ", V2B[%10.3f,%10.3f,%9.2f], %4.1f age, %4.1f arRatio, %4.3f dist, %4.2f bear",
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, ", V2B[%10.3f,%10.3f,%9.2f], %4.1f age, %4.1f arRatio, %4.3f dist, %4.2f hdg",
             rel.baseToRoverVector[0], rel.baseToRoverVector[1], rel.baseToRoverVector[2],
-            rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.baseToRoverHeading);
+            rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.rtkHeading);
     }
     else
     {   // Spacious format
@@ -1740,8 +1740,8 @@ std::string cInertialSenseDisplay::DataToStringRtkRel(const gnss_rtk_rel_t &rel,
             rel.baseToRoverVector[0],           // Vector to base in ECEF
             rel.baseToRoverVector[1],           // Vector to base in ECEF
             rel.baseToRoverVector[2]);          // Vector to base in ECEF
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  bear:%6.1f\n",
-            rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.baseToRoverHeading*C_RAD2DEG_F);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tRTK:\tdiffAge:%5.1fs  arRatio: %4.1f  dist:%7.2fm  hdg:%6.1f\n",
+            rel.differentialAge, rel.arRatio, rel.baseToRoverDistance, rel.rtkHeading*C_RAD2DEG_F);
     }
 
     return buf;
