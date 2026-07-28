@@ -1314,7 +1314,7 @@ class logPlot:
         ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('Heading - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0,0], 'Magnetic Heading', 'deg')
-        self.configureSubplot(ax[1,0], 'RTK Heading', 'deg')
+        self.configureSubplot(ax[1,0], 'RTK Heading (not accurate with large roll/pitch)', 'deg')
         self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
 
         refRtkTime = None
@@ -1332,7 +1332,7 @@ class logPlot:
 
                 for d in self.active_devs:
                     gnssTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_RTK_CMP_REL, 'timeOfWeekMs'))
-                    gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'baseToRoverHeading')
+                    gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'rtkHeading')
                     if refRtkTime is None:
                         refRtkTime = gnssTime
                         refRtkHdg = np.copy(gnssHdg)
@@ -1376,7 +1376,7 @@ class logPlot:
             gnssTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_RTK_CMP_REL, 'timeOfWeekMs'))
             insTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
-            gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'baseToRoverHeading')
+            gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'rtkHeading')
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
             if len(qn2b) == 0:
                 continue

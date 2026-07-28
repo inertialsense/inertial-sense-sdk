@@ -215,7 +215,7 @@ typedef struct PACKED
     uint8_t                 arRatio;                                //!< Ambiguity resolution ratio factor for validation
     uint8_t                 differentialAge;                        //!< Age of differential correction (seconds)
     float                   distanceToBase;                         //!< Distance to base station (meters)
-    int16_t                 baseToRoverHeading;                             //!< RTK heading of baseToRoverVector minus the GNSS antenna offset in the local tangent (NED) plane
+    int16_t                 baseToRoverHeading;                     //!< RTK heading of baseToRoverVector minus the GNSS antenna offset in the local tangent (NED) plane
 } is_can_gnss_rtk_rel;
 
 /** INS roll and per-IMU roll rates. */
