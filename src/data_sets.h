@@ -3963,19 +3963,19 @@ enum eRtkSolStatus
  */
 typedef struct PACKED
 {
-    uint32_t                timeOfWeekMs;           //!< GPS time of week (since Sunday morning), in milliseconds
+    uint32_t                timeOfWeekMs;           //!< (ms) GPS time of week (since Sunday morning)
 
-    float                   differentialAge;        //!< Age of differential corrections, in seconds
+    float                   differentialAge;        //!< (s) Age of differential corrections
 
     float                   arRatio;                //!< Ambiguity resolution ratio factor for validation (unitless; higher indicates greater confidence the fixed integer ambiguity is correct)
 
-    float                   baseToRoverVector[3];   //!< Vector from base to rover {x,y,z} in ECEF, in meters. If compassing is enabled, this is instead the 3-vector from antenna 1 (GNSS1, moving base) to antenna 2 (GNSS2, rover)
+    float                   baseToRoverVector[3];   //!< (m) Vector from base to rover GNSS antennas {x,y,z} in ECEF.  Precision positioning mode: RTK station (base) to GNSS1 (rover).  Compassing mode: GNSS1 (base) to GNSS2 (rover)
 
-    float                   baseToRoverDistance;    //!< Distance from base to rover (baseline length), in meters
+    float                   baseToRoverDistance;    //!< (m) Distance from base to rover GNSS antennas (baseline length)
 
-    float                   rtkHeading;             //!< Heading from true north to baseToRoverVector, projected into the local tangent (NED) plane and corrected for GNSS antenna offsets (making it comparable to the INS heading), in radians
+    float                   rtkHeading;             //!< (rad) Heading of baseToRoverVector minus the GNSS antenna offset in the local tangent (NED) plane
 
-    float                   rtkHeadingAcc;          //!< Accuracy (standard deviation) of rtkHeading, in radians
+    float                   rtkHeadingAcc;          //!< (rad) Accuracy (standard deviation) of rtkHeading
 
     uint32_t                status;                 //!< GNSS status (see eGnssStatus): [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag
 

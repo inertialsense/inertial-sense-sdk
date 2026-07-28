@@ -215,7 +215,7 @@ typedef struct PACKED
     uint8_t                 arRatio;                                //!< Ambiguity resolution ratio factor for validation
     uint8_t                 differentialAge;                        //!< Age of differential correction (seconds)
     float                   distanceToBase;                         //!< Distance to base station (meters)
-    int16_t                 rtkHeading;                             //!< RTK heading from true north to the base→rover baseline in the local tangent plane, radians (scaled by 1000, 3 decimal places precision)
+    int16_t                 rtkHeading;                             //!< RTK heading of baseToRoverVector minus the GNSS antenna offset in the local tangent (NED) plane
 } is_can_gnss_rtk_rel;
 
 /** INS roll and per-IMU roll rates. */
@@ -331,7 +331,7 @@ typedef struct PACKED
     float       arRatio;            //!< Ambiguity resolution ratio factor for validation
     float       differentialAge;    //!< Age of differential correction (seconds)
     float       distanceToBase;     //!< Distance to base station (meters)
-    float       rtkHeading;         //!< RTK heading from true north to the base→rover baseline in the local tangent plane (radians)
+    float       rtkHeading;         //!< (radians) Heading of RTK baseToRoverVector minus the GNSS antenna offset in the local tangent (NED) plane
 } is_canfd_gnss_rtk_rel;            //!< 16 bytes total
 
 /** Union of all CAN FD payload types; the active member is selected by the frame's CAN ID. */
