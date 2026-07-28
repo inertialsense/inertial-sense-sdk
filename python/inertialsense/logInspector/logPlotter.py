@@ -1314,7 +1314,7 @@ class logPlot:
         ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('Heading - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0,0], 'Magnetic Heading', 'deg')
-        self.configureSubplot(ax[1,0], 'RTK Compassing', 'deg')
+        self.configureSubplot(ax[1,0], 'RTK Heading', 'deg')
         self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
 
         refRtkTime = None
