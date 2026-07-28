@@ -331,7 +331,7 @@ typedef struct PACKED
     float       arRatio;            //!< Ambiguity resolution ratio factor for validation
     float       differentialAge;    //!< Age of differential correction (seconds)
     float       distanceToBase;     //!< Distance to base station (meters)
-    float       rtkHeading;         //!< Angle from north to vectorToBase in the local tangent plane (radians)
+    float       rtkHeading;         //!< RTK heading from true north to the base→rover baseline in the local tangent plane (radians)
 } is_canfd_gnss_rtk_rel;            //!< 16 bytes total
 
 /** Union of all CAN FD payload types; the active member is selected by the frame's CAN ID. */
