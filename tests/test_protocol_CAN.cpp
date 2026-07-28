@@ -371,7 +371,7 @@ TEST(protocol_CAN, GNSS_rtk_pos_rel)
     src.arRatio             = 3.5f;
     src.differentialAge     = 1.0f;
     src.baseToRoverDistance = 245.6f;
-    src.rtkHeading  = 1.234f;
+    src.baseToRoverHeading  = 1.234f;
 
     is_can_payload p = {};
     int sz = CAN_ISB_GNSS_to_CAN_gnss1_rtk_pos_rel(&src, &p);
@@ -380,7 +380,7 @@ TEST(protocol_CAN, GNSS_rtk_pos_rel)
     EXPECT_EQ(p.rtkrel.arRatio,         (uint8_t)src.arRatio);
     EXPECT_EQ(p.rtkrel.differentialAge, (uint8_t)src.differentialAge);
     EXPECT_FLOAT_EQ(p.rtkrel.distanceToBase, src.baseToRoverDistance);
-    EXPECT_NEAR(p.rtkrel.rtkHeading / 1000.0f, src.rtkHeading, 1e-3f);
+    EXPECT_NEAR(p.rtkrel.baseToRoverHeading / 1000.0f, src.baseToRoverHeading, 1e-3f);
 }
 
 TEST(protocol_CAN, GNSS_rtk_cmp_rel)
@@ -389,7 +389,7 @@ TEST(protocol_CAN, GNSS_rtk_cmp_rel)
     src.arRatio             = 5.0f;
     src.differentialAge     = 2.0f;
     src.baseToRoverDistance = 123.4f;
-    src.rtkHeading          = -0.567f;
+    src.baseToRoverHeading  = -0.567f;
 
     is_can_payload p = {};
     int sz = CAN_ISB_GNSS_to_CAN_gnss2_rtk_cmp_rel(&src, &p);
@@ -398,7 +398,7 @@ TEST(protocol_CAN, GNSS_rtk_cmp_rel)
     EXPECT_EQ(p.rtkrel.arRatio,         (uint8_t)src.arRatio);
     EXPECT_EQ(p.rtkrel.differentialAge, (uint8_t)src.differentialAge);
     EXPECT_FLOAT_EQ(p.rtkrel.distanceToBase, src.baseToRoverDistance);
-    EXPECT_NEAR(p.rtkrel.rtkHeading / 1000.0f, src.rtkHeading, 1e-3f);
+    EXPECT_NEAR(p.rtkrel.baseToRoverHeading / 1000.0f, src.baseToRoverHeading, 1e-3f);
 }
 
 TEST(protocol_CAN, IMU_roll_rollRate)
@@ -677,7 +677,7 @@ TEST(protocol_CAN, roundtrip_rtk_pos_rel)
     src.arRatio             = 3.0f;     // uint8_t on wire: truncates to 3
     src.differentialAge     = 1.0f;
     src.baseToRoverDistance = 245.6f;
-    src.rtkHeading  = 1.234f;
+    src.baseToRoverHeading  = 1.234f;
 
     is_can_payload p = {};
     CAN_ISB_GNSS_to_CAN_gnss1_rtk_pos_rel(&src, &p);
@@ -686,7 +686,7 @@ TEST(protocol_CAN, roundtrip_rtk_pos_rel)
     EXPECT_FLOAT_EQ(out.arRatio,         (float)(uint8_t)src.arRatio);
     EXPECT_FLOAT_EQ(out.differentialAge, (float)(uint8_t)src.differentialAge);
     EXPECT_FLOAT_EQ(out.baseToRoverDistance, src.baseToRoverDistance);
-    EXPECT_NEAR(out.rtkHeading, src.rtkHeading, 1e-3f);
+    EXPECT_NEAR(out.baseToRoverHeading, src.baseToRoverHeading, 1e-3f);
 }
 
 TEST(protocol_CAN, roundtrip_rtk_cmp_rel)
@@ -695,7 +695,7 @@ TEST(protocol_CAN, roundtrip_rtk_cmp_rel)
     src.arRatio             = 5.0f;
     src.differentialAge     = 2.0f;
     src.baseToRoverDistance = 123.4f;
-    src.rtkHeading          = -0.567f;
+    src.baseToRoverHeading  = -0.567f;
 
     is_can_payload p = {};
     CAN_ISB_GNSS_to_CAN_gnss2_rtk_cmp_rel(&src, &p);
@@ -704,7 +704,7 @@ TEST(protocol_CAN, roundtrip_rtk_cmp_rel)
     EXPECT_FLOAT_EQ(out.arRatio,         (float)(uint8_t)src.arRatio);
     EXPECT_FLOAT_EQ(out.differentialAge, (float)(uint8_t)src.differentialAge);
     EXPECT_FLOAT_EQ(out.baseToRoverDistance, src.baseToRoverDistance);
-    EXPECT_NEAR(out.rtkHeading, src.rtkHeading, 1e-3f);
+    EXPECT_NEAR(out.baseToRoverHeading, src.baseToRoverHeading, 1e-3f);
 }
 
 TEST(protocol_CAN, roundtrip_pimu_px)

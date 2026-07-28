@@ -3973,12 +3973,13 @@ typedef struct PACKED
 
     float                   baseToRoverDistance;    //!< (m) Distance from base to rover GNSS antennas (baseline length)
 
-    float                   rtkHeading;             //!< (rad) Heading of baseToRoverVector minus the GNSS antenna offset in the local tangent (NED) plane
+    float                   baseToRoverHeading;     //!< (rad) Heading of baseToRoverVector in the local tangent (NED) plane
 
-    float                   rtkHeadingAcc;          //!< (rad) Accuracy (standard deviation) of rtkHeading
+    float                   baseToRoverHeadingAcc;  //!< (rad) Accuracy (standard deviation) of baseToRoverHeading
 
     uint32_t                status;                 //!< GNSS status (see eGnssStatus): [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag
 
+    float                   rtkHeading;             //!< (rad) Heading of baseToRoverVector minus the GNSS antenna offset angle in the local tangent (NED) plane.  NOTE: This is provided as a convenient way to validate the GNSS antenna offsets, but this is not accurate during large roll/pitch angles.
 } gnss_rtk_rel_t;
 
 /**

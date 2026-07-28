@@ -1332,7 +1332,7 @@ class logPlot:
 
                 for d in self.active_devs:
                     gnssTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_RTK_CMP_REL, 'timeOfWeekMs'))
-                    gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'rtkHeading')
+                    gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'baseToRoverHeading')
                     if refRtkTime is None:
                         refRtkTime = gnssTime
                         refRtkHdg = np.copy(gnssHdg)
@@ -1376,7 +1376,7 @@ class logPlot:
             gnssTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_RTK_CMP_REL, 'timeOfWeekMs'))
             insTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
-            gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'rtkHeading')
+            gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'baseToRoverHeading')
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
             if len(qn2b) == 0:
                 continue
@@ -2308,8 +2308,8 @@ class logPlot:
             dist2base = self.getData(d, relDid, 'baseToRoverDistance')
             dist2base[dist2base > 1e5] = np.nan
             ax[3].plot(rtkRelTime[ind], dist2base[ind])
-            ax[4].plot(rtkRelTime[ind], self.getData(d, relDid, 'rtkHeading')[ind]*180.0/np.pi)
-            ax[5].plot(rtkRelTime[ind], self.getData(d, relDid, 'rtkHeadingAcc')[ind]*180.0/np.pi)
+            ax[4].plot(rtkRelTime[ind], self.getData(d, relDid, 'baseToRoverHeading')[ind]*180.0/np.pi)
+            ax[5].plot(rtkRelTime[ind], self.getData(d, relDid, 'baseToRoverHeadingAcc')[ind]*180.0/np.pi)
             self.legends_add(ax[0].legend(ncol=2))
 
         self.setPlotYSpanMin(ax[1], 0.5)    # Differential age
@@ -2797,7 +2797,7 @@ class logPlot:
             rtkRelTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_RTK_POS_REL, 'timeOfWeekMs'))
             if len(rtkRelTime) == 0:
                 continue
-            ax[0].plot(rtkRelTime, self.getData(d, DID_GNSS1_RTK_POS_REL, 'rtkHeading')*RAD2DEG)
+            ax[0].plot(rtkRelTime, self.getData(d, DID_GNSS1_RTK_POS_REL, 'baseToRoverHeading')*RAD2DEG)
             ax[1].plot(rtkRelTime, self.getData(d, DID_GNSS1_RTK_POS_REL, 'baseToRoverDistance'))
 
             for a in ax:
