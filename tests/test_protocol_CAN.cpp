@@ -398,7 +398,7 @@ TEST(protocol_CAN, GNSS_rtk_cmp_rel)
     EXPECT_EQ(p.rtkrel.arRatio,         (uint8_t)src.arRatio);
     EXPECT_EQ(p.rtkrel.differentialAge, (uint8_t)src.differentialAge);
     EXPECT_FLOAT_EQ(p.rtkrel.distanceToBase, src.baseToRoverDistance);
-    EXPECT_NEAR(p.rtkrel.headingToBase / 1000.0f, src.rtkHeading, 1e-3f);
+    EXPECT_NEAR(p.rtkrel.rtkHeading / 1000.0f, src.rtkHeading, 1e-3f);
 }
 
 TEST(protocol_CAN, IMU_roll_rollRate)
