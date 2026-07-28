@@ -448,6 +448,8 @@ private:
     std::vector<ISFwUpdaterCmd> commands;                   //!< the stack of commands to execute for this update
     std::string activeStep;                                 //!< the name of the currently executing step name, from the manifest when available
     std::string failLabel;                                  //!< a label to jump to, when an error occurs
+    std::string pkgErrorStep;                               //!< step label active when a package/manifest parse error occurred (for diagnostics)
+    std::string pkgErrorImage;                              //!< image key referenced when a package/manifest parse error occurred (for diagnostics)
     ISFwUpdaterCmd* activeCmd = &nullCmd;                   //!< a reference to the currently executing command.
     std::string statusMsg;                                  //!< a string the reflects the current state of the updater - this should be "Human Readable" (it generally gets reported directly to the user in the UI, etc).
 
