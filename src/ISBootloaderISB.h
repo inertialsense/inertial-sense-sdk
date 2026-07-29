@@ -1,9 +1,13 @@
 /**
  * @file ISBootloaderISB.h
+ * @brief Bootloader-protocol implementation for the legacy Inertial-Sense-Bootloader (ISB)
+ *        ASCII/hex-record protocol used to update application images over a serial port
+ *        (uINS-3/4, EVB-2, IMX-5), and to navigate up to APP or down to the ROM bootloader
+ *        (SAM-BA/DFU) level.
+ *
  * @author Dave Cutting
- * @brief Inertial Sense routines for updating application images using the ISB
- *  (Inertial Sense Bootloader) protocol.
- * 
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved. See the MIT
+ *            license text below.
  */
 
 /*
@@ -25,55 +29,104 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <mutex>
 
+/**
+ * cISBootloaderBase implementation for the legacy Inertial-Sense-Bootloader (ISB) protocol: an
+ * ASCII/hex-record command set sent over a serial port to query device/version info, and to
+ * erase/program/verify application flash. Also drives the reboot chain into APP mode (up) or
+ * into the ROM bootloader (SAM-BA/DFU) mode (down).
+ */
 class cISBootloaderISB : public ISBootloader::cISBootloaderBase
 {
 public:
+    /**
+     * @param upload_cb callback invoked to report image-download progress; dummy_update_callback if null
+     * @param verify_cb callback invoked to report image-verify progress; dummy_verify_callback if null
+     * @param info_cb callback invoked to report status/log messages; dummy_info_callback if null
+     * @param port the serial port the ISB-mode device is connected on
+     */
     cISBootloaderISB(
         fwUpdate::pfnProgressCb upload_cb,
         fwUpdate::pfnProgressCb verify_cb,
         fwUpdate::pfnStatusCb info_cb,
         port_handle_t port
-  ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+  ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb }
     {
         m_port = port;
         m_bootloader_type = IS_BL_TYPE_ISB;
         m_port_name = std::string(portName(port));
     }
-    
-    ~cISBootloaderISB() 
+
+    /** Destructor; the serial port is owned by the caller, not closed here. */
+    ~cISBootloaderISB()
     {
-        
+
     }
 
+    /**
+     * @param param a null-terminated serial port name to compare against this device's port
+     * @return IS_OP_OK if param matches this device's serial port name, otherwise IS_OP_ERROR
+     */
     is_operation_result match_test(void* param);
-    
+
+    /** @return IS_OP_OK if the device was reset (see reboot_force()), IS_OP_CLOSED if the port had to be closed, otherwise IS_OP_ERROR */
     is_operation_result reboot();
+    /** @return IS_OP_OK if the restart-bootloader command was sent successfully, otherwise IS_OP_ERROR */
     is_operation_result reboot_force();
+    /** @return IS_OP_OK always; sends the "reboot to program mode" command and closes the port */
     is_operation_result reboot_up();
+    /**
+     * Reboots down into the ROM bootloader (SAM-BA/DFU) level if the device's ISB bootloader
+     * version is older than major.minor (or force is set).
+     * @param major if the target level requires a compatible image, its major version (0 = don't care)
+     * @param minor if the target level requires a compatible image, its minor version (0 = don't care)
+     * @param force if true, reboot even though the device's ISB version already appears up to date
+     * @return IS_OP_OK if no update was needed or the reboot command was sent, otherwise IS_OP_ERROR
+     */
     is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false);
 
+    /** @return the device's Inertial Sense serial number and ISB bootloader version, or 0 if they could not be read */
     uint32_t get_device_info();
 
+    /** @return the eImageSignature bitmask of images this device's ISB bootloader will accept, or IS_IMAGE_SIGN_NONE/error if it could not be determined */
     ISBootloader::eImageSignature check_is_compatible();
-    
-    is_operation_result download_image(std::string image);
-    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
-    is_operation_result verify_image(std::string image);
-    
+
     /**
-     * @brief Gets the version (e.g. 6a) from the bootloader file. Should be used in 
-     *  conjunction with the function that gets the signature from the firmware 
+     * @brief Erases and programs the device's flash from an Intel-HEX image, page by page, over
+     *        the ISB ASCII protocol.
+     * @param image path to the Intel-HEX (.hex) image to flash
+     * @return IS_OP_OK on success, otherwise IS_OP_ERROR
+     */
+    is_operation_result download_image(std::string image);
+    /** @return IS_OP_OK always (no-op; reading an image back is not supported over ISB) */
+    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
+    /**
+     * @brief Verifies the device's flash contents against an Intel-HEX image over the ISB protocol.
+     * @param image path to the Intel-HEX (.hex) image to verify against the device
+     * @return IS_OP_OK if the device's contents match image, otherwise IS_OP_ERROR
+     */
+    is_operation_result verify_image(std::string image);
+
+    /**
+     * @brief Gets the version (e.g. 6a) from the bootloader file. Should be used in
+     *  conjunction with the function that gets the signature from the firmware
      *  image.
-     * 
+     *
      * @param filename file name of the bootloader
      * @param major filled with major version
      * @param minor filled with minor version
-     * @return is_operation_result 
+     * @return is_operation_result
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
+    /**
+     * Performs the ISB handshake sequence (repeated 'U' characters) required before the bootloader
+     * will accept commands. A no-op if this instance has already handshaken successfully.
+     * @param port the serial port to handshake over
+     * @return IS_OP_OK once a handshake response is received, otherwise IS_OP_ERROR
+     */
     is_operation_result handshake_sync(port_handle_t port);
 
+    /** Clears the process-wide list of serial numbers already reset by reboot(). */
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 
 private:
