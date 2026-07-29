@@ -131,12 +131,15 @@ def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
 def run_build(args: list[str] = []) -> int:
     build_type = "Release"
     clean = False
+    force = False
 
     for arg in args:
         if arg in ("-c", "--clean"):
             clean = True
         elif arg in ("-d", "--debug"):
             build_type = "Debug"
+        elif arg in ("-f", "--force"):
+            force = True
 
     # Use current interpreter for pip
     pip_install_cmd = [PY, "-m", "pip", "install", str(PYTHON_DIR)]
@@ -156,8 +159,12 @@ def run_build(args: list[str] = []) -> int:
     print("CMD:", " ".join(pip_install_cmd))
     build_process = subprocess.run(pip_install_cmd, cwd=SDK_DIR, check=True)
 
-    # Build extension in-place
-    return run_setup_command("build_ext --inplace", cwd=PYTHON_DIR)
+    # --force recompiles even if distutils thinks the .cpp is unchanged vs. its cached .o.
+    # Needed when only a header changed (e.g. data_sets.h), since distutils won't notice --
+    # this bit CI on the persistent self-hosted runner (SN-8374). Off by default for faster
+    # incremental builds; pass -f/--force when header-only changes need to be picked up.
+    build_ext_cmd = "build_ext --inplace" + (" --force" if force else "")
+    return run_setup_command(build_ext_cmd, cwd=PYTHON_DIR)
 
 @contextmanager
 def _argv(temp: list[str]):
@@ -186,6 +193,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build or run Log Inspector")
     parser.add_argument("-c", "--clean", action="store_true", help="Clean Python build artifacts and exit")
     parser.add_argument("-d", "--debug", action="store_true", help="Build Debug (currently informational)")
+    parser.add_argument("-f", "--force", action="store_true", help="Force recompiling the extension, even if unchanged (needed after header-only changes)")
     parser.add_argument("-r", "--run", action="store_true", help="Launch Log Inspector after a successful build")
     parser.add_argument("-ri", "--run-internal", action="store_true", help="Launch Log Inspector in internal mode after a successful build")
     parser.add_argument("-n", "--no-build", action="store_true", help="Skip build step and just run Log Inspector")
@@ -201,7 +209,8 @@ def main() -> int:
 
     # Build
     if not args.no_build:
-        rc = run_build(["--debug"] if args.debug else [])
+        build_args = (["--debug"] if args.debug else []) + (["--force"] if args.force else [])
+        rc = run_build(build_args)
         if rc:
             return rc
 
