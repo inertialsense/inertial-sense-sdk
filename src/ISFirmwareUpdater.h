@@ -1,6 +1,13 @@
-//
-// Created by kylemallory on 8/18/23.
-//
+/**
+ * @file ISFirmwareUpdater.h
+ * @brief High-level firmware update policy/orchestration: parses manifest-driven update
+ *        scripts (a sequence of target/upload/waitfor/policy steps), applies per-target update
+ *        policy (skip/if-newer/force), and drives the underlying device-specific updater
+ *        (ISBFirmwareUpdater or ISDFUFirmwareUpdater) through the fwUpdate wire protocol.
+ *
+ * @author Kyle Mallory on 8/18/23.
+ * @copyright Copyright (c) 2023 Inertial Sense, Inc. All rights reserved.
+ */
 
 #ifndef SDK_ISFIRMWAREUPDATER_H
 #define SDK_ISFIRMWAREUPDATER_H
@@ -249,6 +256,12 @@ private:
 static ISFwUpdaterCmd nullCmd = ISFwUpdaterCmd();
 static ISFwUpdateState nullState = ISFwUpdateState();
 
+/**
+ * Manages a firmware update session for a single device: parses a manifest into a queue of
+ * ISFwUpdaterCmd steps, applies update policy per target, and drives step() to advance the
+ * queue -- delegating the actual chunked upload to the fwUpdate::FirmwareUpdateHost base and,
+ * for USB-DFU or ISB-protocol targets, to an owned device-specific updater instance.
+ */
 class ISFirmwareUpdater : private fwUpdate::FirmwareUpdateHost {
 public:
 
@@ -264,8 +277,14 @@ public:
      */
     ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo, ISFwUpdateState& state) : FirmwareUpdateHost(), port(port), devInfo(devInfo), updateState(state), activeCmd(&nullCmd) { }
 
+    /**
+     * Constructor to initiate and manage updating a firmware image of the specified device
+     * @param device handle to the device to be updated
+     * @param state the shared state object this updater reports progress/status into
+     */
     explicit ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& state);
 
+    /** @param cb callback invoked with formatted status/progress messages as the update proceeds */
     void setInfoProgressCb(fwUpdate::pfnStatusCb cb) { pfnStatus_cb = cb; }
 
     ~ISFirmwareUpdater() override {
@@ -283,44 +302,75 @@ public:
         devInfo = nullptr;
     };
 
+    /** Re-derives updateState's aggregate state/status/hasErrors/hasNotifications fields from the current command queue. */
     void refreshUpdateState();
 
+    /** @param _target the fwUpdate target to direct subsequent commands/steps at */
     void setTarget(fwUpdate::target_t _target);
 
+    /**
+     * Parses a manifest-style command script into the queued command list, replacing any existing queue.
+     * @param cmds the list of command strings to parse (e.g. "target=IMX5", "upload,filename=...")
+     * @return true if all commands were parsed successfully, otherwise false
+     */
     bool setCommands(std::vector<std::string> cmds);
 
+    /**
+     * Advances the update session by one step: runs the next queued command (or continues the
+     * active one) and drives the underlying fwUpdate protocol. Call repeatedly (e.g. once per
+     * main loop iteration) until hasPendingCommands() returns false.
+     * @return true if some action was taken this step, otherwise false
+     */
     bool step();
 
+    /** @return true if any queued or in-process command remains, otherwise false */
     bool hasPendingCommands() { for (auto& c :commands) { if ((c.status == ISFwUpdaterCmd::CMD_QUEUED) || (c.status == ISFwUpdaterCmd::CMD_IN_PROCESS)) return true; } return false; }
 
+    /** @return true if any command in the queue is in the CMD_ERROR state, otherwise false */
     bool hasErrors() { for (auto& c :commands) { if (c.status == ISFwUpdaterCmd::CMD_ERROR) return true; } return false; }
 
+    /** @param level the minimum severity of messages this updater will report */
     void setLogLevel(eLogLevel level) { logLevel = level; }
 
+    /** @return the minimum severity of messages this updater will report */
     eLogLevel getLogLevel() { return logLevel; }
 
+    /** @return a copy of all messages recorded during this update session */
     std::vector<ISFwUpdateState::message> getMessages() { return updateState.messages; }
 
+    /** @return a reference to the currently-executing command (or a static no-op command if none is active) */
     ISFwUpdaterCmd& getActiveCommand() { return *activeCmd; };
 
+    /**
+     * @param steps if non-null, receives the number of chunks/steps completed for the active upload
+     * @param total if non-null, receives the total number of chunks/steps for the active upload
+     * @return the completion percentage (0-100) of the active upload
+     */
     float getProgress(int* steps = nullptr, int* total=nullptr) {
         if (steps) *steps = fwUpdate_getProgressNum();
         if (total) *total = fwUpdate_getProgressTotal();
         return fwUpdate_getProgressPercent();
     }
 
+    /** @return the fwUpdate target currently being updated */
     fwUpdate::target_t getActiveTarget() { return fwUpdate_getSessionTarget(); }
 
+    /** @return the human-readable name of the target currently being updated */
     const char* getActiveTargetName() { return fwUpdate_getSessionTargetName(); }
 
+    /** @return the image slot currently being uploaded to (0 if not applicable) */
     int getActiveSlot() { return fwUpdate_getSessionImageSlot(); }
 
+    /** @return the current/last update_status_e of the active upload session */
     fwUpdate::update_status_e getUploadStatus() { return fwUpdate_getSessionStatus(); }
 
+    /** @return a human-readable name for getUploadStatus() */
     const char* getUploadStatusName() { return fwUpdate_getNiceStatusName(getUploadStatus()); }
 
+    /** @param msg a received p_data_t message to be processed by the fwUpdate protocol handler @return true if the message was recognized and processed, otherwise false */
     bool processMessage(p_data_t* msg) { return fwUpdate_processMessage(msg->ptr, msg->hdr.size); }
 
+    /** Clears the command queue, discarding any queued/in-process/completed commands. */
     void clearAllCommands() { commands.clear(); }
 
     /**
@@ -369,8 +419,10 @@ public:
      * Called when an error occurs while processing a command, to perform corrective actions (if possible).
      * Primarily, this checks if there is a failLabel defined and looks for the corresponding command label.
      * Otherwise it logs the message/errorcode, and clears the command stack.
-     * @param errCode
-     * @param errMsg
+     * @param cmd the command that was being processed when the error occurred
+     * @param errCode a numerical error code
+     * @param errMmsg a printf-style format string for a human-readable message corresponding to errCode
+     * @param ... format arguments for errMmsg
      */
     void handleCommandError(ISFwUpdaterCmd& cmd, int errCode, const char *errMmsg, ...);
 
@@ -382,6 +434,7 @@ public:
      */
     fwUpdate::update_status_e cancel(bool immediately = false);
 
+    /** @return true if the active command/session is in a state where cancel() can be honored, otherwise false */
     bool isCancelable();
 
     /**
@@ -543,13 +596,13 @@ private:
      * @param offset the offset into the image file to pull data from
      * @param len the number of bytes to pull from the image file
      * @param buffer a provided buffer to store the data into.
-     * @return
+     * @return the number of bytes actually written to buffer, or a negative value on error
      */
     int fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) override;
 
     /**
-     * @param msg
-     * @return
+     * @param msg the received version-info response payload
+     * @return true if the response was recognized and processed, otherwise false
      */
     bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t &msg) override;
 
@@ -584,15 +637,20 @@ private:
      * Parses a YAML tree containing the manifest of the firmware package
      * @param manifest YAML::Node of the manifests parsed YAML file/text
      * @param archive a pointer to the archive which contains this manifest (or null-ptr if parsed from a file).
-     * @return
+     * @return PKG_SUCCESS on success, otherwise a PKG_ERR_* code describing the parse failure
      */
     pkg_error_e processPackageManifest(YAML::Node &manifest, mz_zip_archive *archive);
 
+    /**
+     * Opens and parses the manifest from a standalone (non-archived) manifest file.
+     * @param manifest_file path to the manifest YAML file
+     * @return PKG_SUCCESS on success, otherwise a PKG_ERR_* code describing the failure
+     */
     pkg_error_e processPackageManifest(const std::string &manifest_file);
 
     /**
      * Performs any necessary cleanup of memory, file handles, or temporary files after all tasks associated with a firmware package have finished (or from an unrecoverable error).
-     * @return
+     * @return PKG_SUCCESS on success, otherwise a PKG_ERR_* code describing the failure
      */
     pkg_error_e cleanupFirmwarePackage();
 
