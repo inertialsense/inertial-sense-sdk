@@ -487,7 +487,7 @@ enum eGnssStatus
     GNSS_STATUS_FLAGS_MASK                              = (int)0x1FFFE000,  //!< Mask isolating all status/quality flag bits
     GNSS_STATUS_FLAGS_BIT_OFFSET                        = (int)16,          //!< Bit offset of the status/quality flags field within status
 
-    GNSS_STATUS_FLAGS_UNUSED_2                          = (int)0x20000000,  //!< Unused
+    GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID         = (int)0x20000000,  //!< RTK ECEF covariance matrix is valid and packed in rel->covEcefPacked
     GNSS_STATUS_FLAGS_UNUSED_3                          = (int)0x40000000,  //!< Unused
     GNSS_STATUS_FLAGS_UNUSED_4                          = (int)0x80000000,  //!< Unused
 };
@@ -3364,15 +3364,15 @@ typedef struct PACKED
 
     uint32_t                checksum;                           //!< Checksum, excluding size and checksum.  0xFFFFFFFF is invalid.
 
-    uint32_t                key;                                 //!< Manufacturer method for restoring flash defaults
+    uint32_t                key;                                //!< Manufacturer method for restoring flash defaults
 
     uint32_t                startupImuDtMs;                     //!< (ms) IMU sample (system input) period set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling.
 
     uint32_t                startupNavDtMs;                     //!< (ms) Navigation filter (system output) output period set on startup.  Used to initialize sysParams.navOutputPeriodMs.
 
-    uint32_t                ser0BaudRate;                        //!< (bps) Serial port 0 baud rate
+    uint32_t                ser0BaudRate;                       //!< (bps) Serial port 0 baud rate
 
-    uint32_t                ser1BaudRate;                        //!< (bps) Serial port 1 baud rate
+    uint32_t                ser1BaudRate;                       //!< (bps) Serial port 1 baud rate
 
     float                   insRotation[3];                     //!< (rad) Rotation about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X.
 
@@ -3422,7 +3422,7 @@ typedef struct PACKED
 
     float                   gnssMinimumElevation;               //!< (rad) Minimum elevation of a satellite above the horizon to be used in the solution. Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere.
 
-    uint32_t                ser2BaudRate;                        //!< (bps) Serial port 2 baud rate
+    uint32_t                ser2BaudRate;                       //!< (bps) Serial port 2 baud rate
 
     wheel_config_t          wheelConfig;                        //!< Wheel encoder: euler angles describing the rotation from imu to left wheel, plus track width/radius and config bits (see eWheelCfgBits)
 
@@ -3984,21 +3984,23 @@ enum eRtkSolStatus
  */
 typedef struct PACKED
 {
-    uint32_t                timeOfWeekMs;           //!< GPS time of week (since Sunday morning), in milliseconds
+    uint32_t                timeOfWeekMs;           //!< (ms) GPS time of week (since Sunday morning)
 
-    float                   differentialAge;        //!< Age of differential corrections, in seconds
+    float                   differentialAge;        //!< (s) Age of differential corrections
 
     float                   arRatio;                //!< Ambiguity resolution ratio factor for validation (unitless; higher indicates greater confidence the fixed integer ambiguity is correct)
 
-    float                   baseToRoverVector[3];   //!< Vector from base to rover {x,y,z} in ECEF, in meters. If compassing is enabled, this is instead the 3-vector from antenna 2 (GNSS2) to antenna 1 (GNSS1)
+    float                   baseToRoverVector[3];   //!< (m) Vector from base to rover GNSS antennas {x,y,z} in ECEF.  Precision positioning mode: RTK station (base) to GNSS1 (rover).  Compassing mode: GNSS1 (base) to GNSS2 (rover)
 
-    float                   baseToRoverDistance;    //!< Distance from base to rover (baseline length), in meters
+    float                   baseToRoverDistance;    //!< (m) Distance from base to rover GNSS antennas (baseline length)
 
-    float                   baseToRoverHeading;     //!< Angle from north to baseToRoverVector in the local tangent plane, in radians
+    float                   baseToRoverHeading;     //!< (rad) Heading of baseToRoverVector in the local tangent (NED) plane
 
-    float                   baseToRoverHeadingAcc;  //!< Accuracy (standard deviation) of baseToRoverHeading, in radians
+    float                   baseToRoverHeadingAcc;  //!< (rad) Accuracy (standard deviation) of baseToRoverHeading
 
     uint32_t                status;                 //!< GNSS status (see eGnssStatus): [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag
+
+    // float                   covEcefPacked[6];       //!< RTK solution covariance in ECEF packed as [Pxx, Pyy, Pzz, Pxy, Pyz, Pzx], in meters^2
 
 } gnss_rtk_rel_t;
 
