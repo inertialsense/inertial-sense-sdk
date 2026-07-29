@@ -320,6 +320,70 @@ TEST_F(TimeResolverTest, UnsyncedSysParamsDoesNotEstablishOffset) {
 }
 
 // ---------------------------------------------------------------------------
+// SN-8339 — multi-boot: a mid-log power cycle resets the device's uptime while
+// GPS ToW keeps advancing, so a single global uptime->ToW offset can only be
+// right for one boot. The resolver must detect the reboot (SYS_PARAMS.upTime
+// drop in arrival order) into two sessions, each with its own offset, and the
+// arrival-keyed resolve() overload must bridge a uptime value against the offset
+// of the session that record belongs to.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, MultiBootSessionsBridgeUptimePerSession) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+
+    // --- Session 1: upTime ~100 s, ToW ~250,000 s (week 2300). ---
+    // Pre-sync record (week 1) must not anchor the log.
+    { ins_2_t p = makeIns2(0.9); p.week = 1; recs.emplace_back(DID_INS_2, bytesOf(p)); }
+    // Synced SYS_PARAMS: offset1 = 250,000,000 - 100,000 = 249,900,000 ms.
+    recs.emplace_back(DID_SYS_PARAMS, bytesOf(makeSysParams(100.0, 250'000'000u)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(250000.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(250100.0)));
+    // Session-1 magnetometer at uptime 100 s (bridges to 250,000,000 ms ToW).
+    recs.emplace_back(DID_MAGNETOMETER, bytesOf(makeMag(100.0)));
+
+    // --- Reboot: upTime drops 100 s -> 5 s. Session 2: ToW ~350,000 s. ---
+    // Synced SYS_PARAMS: offset2 = 350,000,000 - 5,000 = 349,995,000 ms.
+    recs.emplace_back(DID_SYS_PARAMS, bytesOf(makeSysParams(5.0, 350'000'000u)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(350000.0)));
+    recs.emplace_back(DID_INS_2, bytesOf(makeIns2(350100.0)));
+    // Session-2 magnetometer at uptime 5 s (bridges to 350,000,000 ms ToW).
+    recs.emplace_back(DID_MAGNETOMETER, bytesOf(makeMag(5.0)));
+
+    f = buildFixture("multiboot", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Two power-on sessions detected, in arrival order, each with its own offset.
+    const auto& S = resolver->sessions();
+    ASSERT_EQ(S.size(), 2u) << "reboot (upTime drop) should split into 2 sessions";
+    EXPECT_LT(S[0].arrivalEnd, S[1].arrivalStart);
+    EXPECT_TRUE(S[0].haveOffset);
+    EXPECT_TRUE(S[1].haveOffset);
+    EXPECT_EQ(S[0].uptimeToTowOffsetMs, 249'900'000);
+    EXPECT_EQ(S[1].uptimeToTowOffsetMs, 349'995'000);
+
+    // Arrival-keyed resolve picks the covering session's offset.
+    // Session-1 uptime 100 s -> ToW 250,000,000 ms (via offset1).
+    auto t1 = resolver->resolve(100'000, kFixtureSerial, S[0].arrivalStart);
+    EXPECT_EQ(t1.value, expectedUnixMsForFixtureWeek(250'000'000ull, 2300));
+    EXPECT_NE(t1.source, TimeSource::SessionOnly);
+    // Session-2 uptime 5 s -> ToW 350,000,000 ms (via offset2).
+    auto t2 = resolver->resolve(5'000, kFixtureSerial, S[1].arrivalStart);
+    EXPECT_EQ(t2.value, expectedUnixMsForFixtureWeek(350'000'000ull, 2300));
+    EXPECT_NE(t2.source, TimeSource::SessionOnly);
+
+    // The arrival key matters: without it, the session-1 uptime bridges against
+    // the log-global offset (which the reboot makes wrong for session 1) and
+    // lands somewhere other than its true 250,000,000 ms — the exact multi-boot
+    // mis-resolution this overload fixes.
+    auto t1NoKey = resolver->resolve(100'000, kFixtureSerial);
+    EXPECT_NE(t1NoKey.value, t1.value);
+}
+
+// ---------------------------------------------------------------------------
 // Resolve between two sync points → Interpolated.
 // ---------------------------------------------------------------------------
 TEST_F(TimeResolverTest, ResolveInterpolated) {
