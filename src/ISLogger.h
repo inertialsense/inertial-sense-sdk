@@ -123,7 +123,10 @@ public:
      * @param serials if non-empty, only devices whose serial number (as a string) appears in this
      *        list are loaded; the literal value "ALL" also matches every serial number found.
      * @return true if at least one device log was found and set up for reading, false otherwise.
+     * @note SN-7901: legacy read path. Prefer the D0021 reader stack —
+     *       `ISDeviceLog::fromSegments()` + `ISLogReader` / `ISRecordView`.
      */
+    [[deprecated("Legacy log-reader API (SN-7901). Use ISDeviceLog::fromSegments() with the ISLogReader / ISRecordView reader stack instead.")]]
     bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_RAW, std::vector<std::string> serials = {});
 
     /**
@@ -221,10 +224,15 @@ public:
      * @brief Read the next data set from @p devLogger, skipping over (and logging as errors) any corrupt records.
      * @param devLogger device log to read from; defaults to null, which returns null.
      * @return the next data set, or null if @p devLogger is null or no more data is available.
+     * @note SN-7901: legacy read path. Prefer the D0021 reader stack —
+     *       `ISDeviceLog::fromSegments()` + `ISLogReader` / `ISRecordView`.
      */
+    [[deprecated("Legacy log-reader API (SN-7901). Use ISDeviceLog::fromSegments() with the ISLogReader / ISRecordView reader stack instead.")]]
     p_data_buf_t* ReadData(std::shared_ptr<cDeviceLog> devLogger = nullptr);
 
-    /** @brief ReadData() overload that looks up the device by its index in DeviceLogs(). @return the next data set, or null if @p devIndex is out of range or no more data is available. */
+    /** @brief ReadData() overload that looks up the device by its index in DeviceLogs(). @return the next data set, or null if @p devIndex is out of range or no more data is available.
+     *  @note SN-7901: legacy read path — see the ReadData() overload above. */
+    [[deprecated("Legacy log-reader API (SN-7901). Use ISDeviceLog::fromSegments() with the ISLogReader / ISRecordView reader stack instead.")]]
     p_data_buf_t* ReadData(size_t devIndex);
 
     /**
