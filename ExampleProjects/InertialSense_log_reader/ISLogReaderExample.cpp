@@ -16,11 +16,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/InertialSense.h"
 
-static int msgHandlerIsb(InertialSense* i, p_data_t* data, port_handle_t port)
+static void msgHandlerIsb(void* ctx, p_data_t* data, port_handle_t port)
 {
     static uint64_t dataCount;
     printf("Data count: %" PRIu64 "          \r", ++dataCount);
-    return 0;
 }
 
 int main(int argc, char* argv[])
