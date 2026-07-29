@@ -1609,7 +1609,7 @@ static void PopulateMapGnssRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_rtk_rel_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_rtk_rel_t::timeOfWeekMs, DATA_TYPE_UINT32,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("baseToRoverVector", &gnss_rtk_rel_t::baseToRoverVector, DATA_TYPE_F32, 3, {"m"}, {"Vector from base to rover in ECEF. Compassing mode: Base (GNSS1) to Rover (GNSS2)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddArray("baseToRoverVector", &gnss_rtk_rel_t::baseToRoverVector, DATA_TYPE_F32, 3, {"m"}, {"Vector from base to rover in ECEF. DID_GNSS1_RTK_POS_REL: RTK base station (base) to GNSS1 (rover). DID_GNSS2_RTK_CMP_REL (compassing): Base (GNSS1) to Rover (GNSS2)."}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("differentialAge", &gnss_rtk_rel_t::differentialAge, DATA_TYPE_F32, "s", "Age of differential signal received.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("arRatio", &gnss_rtk_rel_t::arRatio, DATA_TYPE_F32, "", "Ambiguity resolution ratio factor for validation.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("baseToRoverDistance", &gnss_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
