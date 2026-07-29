@@ -316,14 +316,18 @@ public:
                 case MDNS_RECORDTYPE_ANY: break;
             }
             // The previous active member was destroyed above, so the union storage no longer holds a
-            // live object. Construct the new active member in place (placement-new) — assigning here
-            // would run operator= over uninitialized memory (UB; the original crash was exactly this).
-            this->name = std::string(other.name);
+            // live object. Mark the union as empty (IGNORE) *before* doing anything that can throw:
+            // if the name assignment or the placement-new below throws, the destructor must not try to
+            // destroy the already-destroyed (or not-yet-constructed) member. type is set to the real
+            // value only after the new active member has been successfully constructed in place.
+            this->type = MDNS_RECORDTYPE_IGNORE;
 
-            this->type = other.type;
+            this->name = other.name;
             this->rclass = other.rclass;
             this->ttl = other.ttl;
 
+            // Construct the new active member in place (placement-new) — assigning would run operator=
+            // over uninitialized memory (UB; the original crash was exactly this).
             if (other.type == MDNS_RECORDTYPE_PTR) {
                 new (&this->data.ptr) mdns_record_ptr_cpp_t(other.data.ptr);
             } else if (other.type == MDNS_RECORDTYPE_SRV) {
@@ -335,6 +339,7 @@ public:
             } else if (other.type == MDNS_RECORDTYPE_TXT) {
                 new (&this->data.txt) mdns_record_txt_cpp_t(other.data.txt);
             }
+            this->type = other.type;
             return *this;
         }
 
