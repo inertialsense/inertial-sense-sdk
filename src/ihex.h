@@ -1,8 +1,10 @@
 /**
  * @file ihex.h
  * @author Dave Cutting
- * @brief Intel HEX file read routines for embedded firmware
- * 
+ * @brief Intel HEX file read routines for embedded firmware. Provides a minimal
+ *        C API for loading the sections (contiguous data blocks) of an Intel
+ *        HEX firmware image into memory, and for releasing that memory again.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved.
  */
 
 /*
@@ -27,35 +29,34 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" { 
 #endif
 
-#define MAX_NUM_IHEX_SECTIONS   1024        
-#define MAX_IHEX_SECTION_LEN    0x020000    // 128K TODO: Reduce to 64k if possible
+#define MAX_NUM_IHEX_SECTIONS   1024         //!< maximum number of image sections that can be tracked at once
+#define MAX_IHEX_SECTION_LEN    0x020000     //!< maximum length, in bytes, of a single image section (128K; may be reduced to 64K in the future)
 
+/**
+ * Represents a single contiguous section of an Intel HEX image, as loaded
+ * into memory by ihex_load_sections().
+ */
 typedef struct
 {
-    /* Address the image section needs to be programmed to */
-    uint32_t address;
-
-    /* Pointer to the section data */
-    uint8_t* image;
-
-    /* Length of this section*/
-    uint32_t len;
+    uint32_t address;    //!< address the image section needs to be programmed to
+    uint8_t* image;      //!< pointer to the section data (heap-allocated; owned by this struct)
+    uint32_t len;        //!< length of this section, in bytes
 } ihex_image_section_t;
 
 /**
  * @brief Load an intel hex file into a struct representing the full image
- * 
- * @param ihex_filename a string representing the filename, including path, where the hex file resides at. 
+ *
+ * @param ihex_filename a string representing the filename, including path, where the hex file resides at.
  * @param image array of ihex_image_section_t that will be filled with the image
  * @param num_slots the maximum number of sections to read from the file
- * @return int the number of sections actually read
+ * @return the number of sections actually read, or 0 if the file could not be opened
  */
 size_t ihex_load_sections(const char* ihex_filename, ihex_image_section_t* image, size_t num_slots);
 
 /**
  * @brief Free the memory associated with an image
- * 
- * @param image the struct containing the full image 
+ *
+ * @param image the struct containing the full image
  * @param num number of populated sections in the image. Obtained from return value of ihex_load_sections
  */
 void ihex_unload_sections(ihex_image_section_t* image, size_t num);
