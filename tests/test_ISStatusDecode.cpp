@@ -246,7 +246,7 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF).");
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GNSS PPS.");
 
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID       , "0x20000000 - RTK ECEF covariance matrix is valid and packed in rel->covEcefPacked");
+    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID       , "0x20000000 - RTK ECEF covariance matrix is valid (if provided by RTK REL message).");
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_3                        , "0x40000000 - <<UNUSED>>");
     BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_4                        , "0x80000000 - <<UNUSED>>");
 #undef BIT_MSG
