@@ -152,6 +152,20 @@ public:
     constexpr void setArrivalIndex(uint64_t idx) noexcept { arrivalIndex_ = idx; }
 
     /**
+     * SN-8383: host-uptime-since-log-start (ms) for THIS record, copied verbatim
+     * from the source `.idx` v2.1 record's `local_uptime_ms`. 0 when the source
+     * was v2.0 (which had no per-record delta). Surfacing it here lets a
+     * re-writer (`ISLogWriter`) carry the delta through bake/trim into its
+     * (always v2.1) output instead of emitting a zeroed field.
+     *
+     * @return  Per-record host-uptime delta in ms (0 if the source lacked it).
+     */
+    constexpr uint32_t localUptimeMs() const noexcept { return localUptimeMs_; }
+
+    //! Stamp the per-record host-uptime delta onto this view. Called by `ISLogReader`.
+    constexpr void setLocalUptimeMs(uint32_t ms) noexcept { localUptimeMs_ = ms; }
+
+    /**
      * Returns the record's bytes as a (pointer, size) pair. The
      * pointer aliases the parent reader's mmap'd region; do not
      * dereference after the reader is destroyed or moved-from.
@@ -200,6 +214,7 @@ private:
     std::size_t    size_         = 0;
     uint16_t       flags_        = 0;
     uint64_t       arrivalIndex_ = kNoArrivalIndex;
+    uint32_t       localUptimeMs_ = 0;   //!< SN-8383: per-record host-uptime delta from the source v2.1 .idx.
 };
 
 /**
@@ -239,14 +254,16 @@ public:
                 uint64_t offsetInFile,
                 std::vector<uint8_t> bytes,
                 uint16_t flags = 0,
-                uint64_t arrivalIndex = ISRecordView::kNoArrivalIndex)
+                uint64_t arrivalIndex = ISRecordView::kNoArrivalIndex,
+                uint32_t localUptimeMs = 0)
         : did_(did),
           timestampMs_(timestampMs),
           deviceId_(deviceId),
           offset_(offsetInFile),
           bytes_(std::move(bytes)),
           flags_(flags),
-          arrivalIndex_(arrivalIndex) {}
+          arrivalIndex_(arrivalIndex),
+          localUptimeMs_(localUptimeMs) {}
 
     /** @return  The record's DID, or 0 if untagged. */
     uint32_t did() const noexcept { return did_; }
@@ -274,6 +291,10 @@ public:
     /** @return  Global arrival index preserved from the source view, or
      *           `ISRecordView::kNoArrivalIndex` if it was unassigned. */
     uint64_t arrivalIndex() const noexcept { return arrivalIndex_; }
+
+    /** @return  SN-8383 per-record host-uptime delta (ms) preserved from the
+     *           source view; 0 if the source `.idx` was v2.0. */
+    uint32_t localUptimeMs() const noexcept { return localUptimeMs_; }
 
     /**
      * @return  `{ data, size }` over the owning buffer; `data` may
@@ -305,12 +326,13 @@ private:
     std::vector<uint8_t> bytes_;
     uint16_t             flags_        = 0;
     uint64_t             arrivalIndex_ = ISRecordView::kNoArrivalIndex;
+    uint32_t             localUptimeMs_ = 0;   //!< SN-8383: per-record host-uptime delta.
 };
 
 inline OwnedRecord ISRecordView::owned() const {
     std::vector<uint8_t> copy(data_, data_ + size_);
     return OwnedRecord{ did_, timestampMs_, deviceId_, offset_,
-                        std::move(copy), flags_, arrivalIndex_ };
+                        std::move(copy), flags_, arrivalIndex_, localUptimeMs_ };
 }
 
 } // namespace inertial_sense

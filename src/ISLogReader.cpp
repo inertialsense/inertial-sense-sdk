@@ -782,7 +782,7 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen = (endOff > off && endOff <= total) ? (endOff - off) : 0;
     }
 
-    return ISRecordView{
+    ISRecordView v{
         rec.did,
         rec.timestamp,
         deviceId_,
@@ -791,6 +791,8 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen,
         rec.flags,
     };
+    v.setLocalUptimeMs(rec.local_uptime_ms);   // SN-8383: carry the per-record delta onto the view
+    return v;
 }
 
 ISRecordView ISLogReader::RangeIterator::operator*() const noexcept {
