@@ -197,7 +197,7 @@ private:
      * @return a new ISDevice if devInfo is an IMX-5 or IMX-6, otherwise nullptr.
      */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
-        if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0 || ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_6_0)
+        if (DEV_INFO_MATCHES_HDW_ID(devInfo, IS_HARDWARE_IMX))
             return std::make_shared<ISDevice>(devInfo, port);
 
         return nullptr;
