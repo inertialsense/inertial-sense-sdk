@@ -179,10 +179,13 @@ public:
     void removeRTCM3PacketListeners(uint32_t id);
 
     /**
-     * Checks the source port for data and forwards it to all devices
+     * Checks the source port for data and forwards it to all devices.
+     * Also (re)opens the source port if it is not currently open. Virtual so that protocol-specific
+     * subclasses (e.g. NtripCorrectionService) can extend the (re)connection handling -- NTRIP, for
+     * example, must re-negotiate its mount-point request after every (re)connect, not just reopen the socket.
      * @return 0 if no packets processed, positive number representing number of packets processed, negative number representing errno
      */
-    int step();
+    virtual int step();
 
     /**
      * @return the age, in milliseconds, of the last received RTCM3 message.
@@ -209,6 +212,7 @@ public:
 protected:
     port_handle_t source {};                  //!< The bound source port from which correction data is read
     std::vector<port_handle_t> ports;          //!< Downstream ports to which correction data is forwarded
+    uint32_t lastConnAttemptTs = 0;            //!< timestamp (ms) after which the next source (re)connection attempt is allowed (reconnect backoff)
 
 private:
     inline static const std::vector<PortFactory*>& nullFactories = {};    //!< Empty factory list, used as the default argument for the portName-based constructor
@@ -217,7 +221,6 @@ private:
     is_comm_instance_t packetParser = {};                                 //!< SDK comm-protocol parser instance bound to the source port
     uint32_t rtcm3PacketsProcessed = 0;                                 //!< total number of RTCM3 packets that have been processed
     uint32_t rtcm3PacketLastMs = 0;                                     //!< timestamp in ms, since the last RTCM3 packet was seen
-    uint32_t lastConnAttemptTs = 0;                                     //!< timestamp (ms) of the last (re)connection attempt to the source
     bool localSrcPort = false;                                          //!< true if the source port was locally instantiated rather than passed in the constructor
     PortFactory* srcPortFactory = nullptr;                               //!< the factory used to create the source port (if localSrcPort is true)
 

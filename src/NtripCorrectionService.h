@@ -53,6 +53,17 @@ class NtripCorrectionService : public CorrectionService {
         bool connect(const std::string& connectUrl, std::string userAgent = "NTRIP Inertial Sense");
 
         /**
+         * @brief Reads/forwards corrections, and (re)establishes the caster connection when needed.
+         * Overrides CorrectionService::step() because reconnecting an NTRIP source requires re-sending
+         * the mount-point request after the TCP socket reconnects -- the base class only reopens the
+         * socket, which would leave us connected to the caster but never streaming. The TCP (re)connect
+         * itself is non-blocking (polled across successive step() calls); only the bounded mount-point
+         * negotiation blocks briefly, once per (re)connection.
+         * @return 0 if no packets processed, >0 number of packets processed, <0 on error / not connected.
+         */
+        int step() override;
+
+        /**
          * @return true if there is an open connection/socket with the NTRIP server
          */
         bool isConnected() { return portIsOpened(source); }
@@ -89,8 +100,18 @@ class NtripCorrectionService : public CorrectionService {
         void setConnectionRequestHeaders(std::map<std::string, std::string> hdrs);
 
     private:
+        /**
+         * @brief Sends the cached NTRIP mount-point request over the (already-open) source port and waits
+         * for the caster's response. Shared by connect() (initial) and step() (reconnect). Requires the
+         * source port to be open and requestMsg to have been built by a prior connect().
+         * @return true if the request was sent and a response was received, false otherwise.
+         */
+        bool negotiateMountPoint();
+
         MessageStats::mul_stats_t srcStats;         //!< Per-protocol message statistics for the caster connection; CorrectionService only holds a pointer to stats, so this instance owns the storage.
         std::map<std::string, std::string> headers; //!< Custom headers which will be sent to the NTRIP caster when connecting
+        std::string requestMsg;                      //!< Cached mount-point HTTP GET request, built in connect(), re-sent by negotiateMountPoint() on (re)connect
+        std::string casterUrl;                       //!< Cached caster URL, retained for log messages on reconnect
 };
 
 
