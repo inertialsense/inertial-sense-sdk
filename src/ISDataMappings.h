@@ -44,14 +44,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #ifndef CHAR_BIT
-#define CHAR_BIT 8
+#define CHAR_BIT 8   //!< number of bits in a char, for platforms whose climits header doesn't define it
 #endif
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 #include "luna_data_sets.h"
 #endif
 
-#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
+#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048   //!< capacity, in bytes, of a data_mapping_string_t rendering buffer
 
 /** The primitive wire/storage type of a mapped field (see data_info_t::type). */
 typedef enum
@@ -306,7 +306,7 @@ template <typename Dtype>
 class DataMapper
 {
 public:
-    typedef Dtype MAP_TYPE;
+    typedef Dtype MAP_TYPE;  //!< the concrete DID struct type this mapper populates fields for
 
     /**
      * @param data_set the SDK-wide array of data sets; data_set[did] is the entry this mapper populates
@@ -795,30 +795,37 @@ public:
 
     /**
     * Get the data set for a data id
+    * @param did the data id
     * @return the data set for the data id, or NULL if none found
     */
     static data_set_t* DataSet(uint32_t did);
 
     /**
     * Get the info for a data id
+    * @param did the data id
     * @return the info for the data id, or NULL if none found
     */
     static const map_name_to_info_t* NameToInfoMap(uint32_t did);
 
     /**
     * Get map pointer for a data id
+    * @param did the data id
     * @return map pointer for the data id, or NULL if none found
     */
     static const map_index_to_info_t* IndexToInfoMap(uint32_t did);
 
     /**
     * Get map pointer for a data id
+    * @param did the data id
+    * @param element the flattened element index
+    * @param arrayIndex receives the array index (within its field) of the returned element
     * @return map pointer for the data id (or NULL if none found) and array index
     */
     static const data_info_t* ElementToInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
 
     /**
     * Get map pointer for a data id
+    * @param dataId the data id
     * @return map pointer for the data id, or NULL if none found
     */
     static const map_index_to_info_t* GetIndexMapInfo(uint32_t dataId);
@@ -840,6 +847,7 @@ public:
     * SN-8068: Array-of-struct members of a DID (additive). These expose inner struct
     * fields once as "<struct>.<field>" and carry the metadata needed to fan a field out
     * across every populated element, keyed by identity.
+    * @param did the data id
     * @return pointer to the DID's array-struct descriptors, or NULL if the DID has none.
     */
     static const std::vector<array_struct_info_t>* ArrayStructFields(uint32_t did);
@@ -908,8 +916,8 @@ public:
     * @param datasetBuffer packet buffer
     * @param info metadata about the field to convert
     * @param arrayIndex index into array
-    * @param elementSize size of elements in array
     * @param json true if json, false if csv
+    * @param useConversion if true, multiply the parsed value by info.conversion before storing
     * @return true if success, false if error
     */
     static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false, bool useConversion = true);
@@ -920,6 +928,7 @@ public:
     * @param stringLength the number of chars in stringBuffer
     * @param dataBuffer data buffer pointer
     * @param dataType data type
+    * @param dataSize size, in bytes, of the field at dataBuffer
     * @param radix (10 = base 10 for decimal, 16 = base 16 for hexidecimal) if the field is a number field, ignored otherwise
     * @param conversion conversion of value (i.e. rad2deg)
     * @param json true if json, false if csv
@@ -935,6 +944,7 @@ public:
     * @param stringBuffer the buffer to hold the converted string
     * @param arrayIndex index into array
     * @param json true if json, false if csv
+    * @param useConversion if true, divide the raw value by info.conversion before rendering
     * @return true if success, false if error
     */
     static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false, bool useConversion = true);

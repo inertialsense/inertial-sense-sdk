@@ -1,6 +1,8 @@
 /**
- * @file ISFilePort.h 
- * @brief ${BRIEF_DESC}
+ * @file ISFilePort.h
+ * @brief Stream-backed base_port_t implementations: ISStreamPort adapts an arbitrary
+ *        %std::istream/%std::ostream pair to the base_port_t interface, and ISFilePort is a
+ *        concrete specialization of it that opens a single file for both reading and writing.
  *
  * @author Kyle Mallory on 1/16/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
@@ -16,6 +18,13 @@
 #include "core/types.h"
 #include "core/base_port.h"
 
+/**
+ * Adapts an arbitrary %std::istream/%std::ostream pair to the base_port_t interface, so that the
+ * generic port I/O helpers (portRead(), portWrite(), etc. from base_port.h) can operate on any
+ * C++ stream as if it were a hardware port. The port's name/free/available/read/write callbacks
+ * are implemented as static member functions that reinterpret the port_handle_t back into an
+ * ISStreamPort*, per the base_port_t "vtable" convention.
+ */
 class ISStreamPort : base_port_t {
 private:
     // static std::map<port_handle_t, ISStreamPort> m_streamPortMappings;
@@ -41,10 +50,16 @@ private:
 
 
 public:
-    const std::string m_portName;
-    std::ostream& m_ostream;
-    std::istream& m_istream;
+    const std::string m_portName;  //!< display name for this port, returned by ISStreamPort::name()
+    std::ostream& m_ostream;       //!< the output stream data is written to (portWrite)
+    std::istream& m_istream;       //!< the input stream data is read from (portRead)
 
+    /**
+     * Constructs a stream-backed port bound to the given input/output streams.
+     * @param name display name for this port (returned by ISStreamPort::name())
+     * @param in   the input stream to read from
+     * @param out  the output stream to write to
+     */
     ISStreamPort(const std::string& name, std::istream& in, std::ostream& out) : m_portName(name), m_ostream(out), m_istream(in) {
         pnum = 128; // FIXME unique ID?  maybe an index value or hash?
         ptype = PORT_TYPE__FILE;
@@ -57,10 +72,20 @@ public:
     }
 };
 
+/**
+ * Concrete ISStreamPort that opens a single file for both reading and writing, using the same
+ * path for the underlying std::ifstream and std::ofstream. Useful for capturing/replaying raw
+ * port traffic to/from disk using the generic base_port_t helpers.
+ */
 class ISFilePort : ISStreamPort {
-    std::ofstream m_out;
-    std::ifstream m_in;
+    std::ofstream m_out;  //!< output stream opened on the file passed to the constructor
+    std::ifstream m_in;   //!< input stream opened on the file passed to the constructor
 
+    /**
+     * Opens fname for both reading and writing, and binds the resulting streams to the
+     * underlying ISStreamPort.
+     * @param fname path of the file to open for read/write access
+     */
     ISFilePort(const std::string& fname) : ISStreamPort(fname, m_in, m_out){
         m_out.open(fname);
         m_in.open(fname);

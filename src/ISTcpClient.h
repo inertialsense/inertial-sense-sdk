@@ -10,6 +10,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISTcpClient.h
+ * @brief cISStream implementation of a TCP client socket, plus free functions wrapping the raw socket API.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved.
+ */
+
 #ifndef __ISTCPCLIENT__H__
 #define __ISTCPCLIENT__H__
 
@@ -19,9 +27,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISStream.h"
 
-#define IS_SOCKET_DEFAULT_TIMEOUT_MS 5000
+#define IS_SOCKET_DEFAULT_TIMEOUT_MS 5000  //!< default socket connect/read timeout, in milliseconds
 
 
+/** cISStream implementation of a TCP client socket. Deprecated in favor of tcpPort/TcpPortFactory. */
 class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] cISTcpClient : public cISStream
 {
 public:
@@ -89,6 +98,7 @@ public:
 
     /**
     * Sets whether the client socket is blocking. Default is false.
+    * @param blocking true to make the socket blocking, false to make it non-blocking
     * @return 0 if success otherwise an error code
     */
     int SetBlocking(bool blocking);
@@ -102,10 +112,10 @@ public:
 private:
     cISTcpClient(const cISTcpClient& copy); // Disable copy constructor
 
-    is_socket_t m_socket;
-    std::string m_host;
-    int m_port;
-    bool m_blocking;
+    is_socket_t m_socket;    //!< underlying OS socket handle, 0 when not connected
+    std::string m_host;      //!< host or ip address passed to the most recent Open()
+    int m_port;              //!< port number passed to the most recent Open()
+    bool m_blocking;         //!< whether the socket is currently in blocking mode
 };
 
 /**
