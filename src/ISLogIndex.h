@@ -209,10 +209,14 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
  * left 0). `record_size` comes from the header (`hdr.record_size`, 0 ⇒ legacy
  * 24). Pure layout decode — never fails; caller ensures `in` holds at least
  * `record_size` bytes.
+ *
+ * @note No default `record_size`: the header's stride is authoritative for both
+ *       v2.0 (0 ⇒ 24) and v2.1 (32), and a wrong assumption silently mis-parses
+ *       (SN-8383). Callers pass `hdr.record_size` explicitly.
  */
 is_log_idx_record_v2_t parseRecord(
     const uint8_t* in,
-    std::size_t record_size = IS_LOG_IDX_RECORD_V2_1_SIZE) noexcept;
+    std::size_t record_size) noexcept;
 
 // ----- File-level wrappers (cISLogFileBase) --------------------------------
 
@@ -244,15 +248,17 @@ ISExpected<void> writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t&
 ISExpected<is_log_idx_header_t> readHeader(cISLogFileBase& file);
 
 /**
- * @brief Read a single record (`record_size` bytes) from the current file
- *        position. Pass `hdr.record_size` (0 ⇒ legacy 24) so v2.0 and v2.1
- *        files both stride correctly.
+ * @brief Read a single record from the current file position, striding by
+ *        `record_size` bytes. Pass `hdr.record_size` (0 ⇒ legacy 24) so v2.0
+ *        and v2.1 files both stride correctly; a future stride > 32 is consumed
+ *        whole (only the known prefix is parsed) so the stream stays aligned.
  * @return `Truncated` if fewer than `record_size` bytes remained; `Io` on
  *         underlying read error.
+ * @note No default `record_size` — see @ref parseRecord (SN-8383).
  */
 ISExpected<is_log_idx_record_v2_t> readRecord(
     cISLogFileBase& file,
-    std::size_t record_size = IS_LOG_IDX_RECORD_V2_1_SIZE);
+    std::size_t record_size);
 
 // ----- Convenience constructors --------------------------------------------
 

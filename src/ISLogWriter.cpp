@@ -91,6 +91,14 @@ ISExpected<ISLogWriter> ISLogWriter::create(Options opts) {
     w.header_         = idx::makeDefaultHeader(kProducerVersion,
                                                opts.tsUnits,
                                                opts.tsSource);
+    // SN-8383: ISLogWriter is a derivative re-writer driven by ISRecordView,
+    // which does not carry the per-record host-uptime delta. It therefore cannot
+    // produce a meaningful `local_uptime_ms`, so it emits honest v2.0 (24-byte)
+    // records rather than 32-byte records with a permanently-zero delta and a
+    // clear HAS_LOCAL_DELTA flag. The live capture path (DeviceLog) is the v2.1
+    // delta producer. (If ISRecordView ever exposes the source delta, this can
+    // switch back to v2.1 and copy it through.)
+    w.header_.record_size = static_cast<uint16_t>(idx::IS_LOG_IDX_RECORD_V2_SIZE);
 
     w.rawStream_.open(rawTmp,
                       std::ios::binary | std::ios::out | std::ios::trunc);
@@ -243,10 +251,13 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     rec.flags     = view.flags();
     rec.reserved  = 0;
 
+    // serializeRecord fills the full 32-byte v2.1 layout; ISLogWriter writes
+    // only the 24-byte v2.0 prefix (see header.record_size above). The trailing
+    // local_uptime_ms / reserved2 (both 0 here) are intentionally not emitted.
     uint8_t buf[idx::IS_LOG_IDX_RECORD_V2_1_SIZE];
     idx::serializeRecord(buf, rec);
     idxStream_.write(reinterpret_cast<const char*>(buf),
-                     idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
+                     idx::IS_LOG_IDX_RECORD_V2_SIZE);
     if (!idxStream_.good()) {
         return fail(ISErrorCode::Io,
                     "ISLogWriter::append: short write on .idx");

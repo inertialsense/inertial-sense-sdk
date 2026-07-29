@@ -10,6 +10,7 @@
 
 #include "ISLogFileBase.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace inertial_sense {
@@ -198,17 +199,29 @@ ISExpected<is_log_idx_header_t> readHeader(cISLogFileBase& file) {
 }
 
 ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file, std::size_t record_size) {
-    // Legacy pre-v2.1 headers carry record_size 0 ⇒ read the 24-byte prefix;
-    // clamp anything larger than v2.1 (a future v2.2 reader handles the tail).
-    if (record_size < IS_LOG_IDX_RECORD_V2_SIZE)   record_size = IS_LOG_IDX_RECORD_V2_SIZE;
-    if (record_size > IS_LOG_IDX_RECORD_V2_1_SIZE) record_size = IS_LOG_IDX_RECORD_V2_1_SIZE;
+    // Legacy pre-v2.1 headers carry record_size 0 ⇒ 24-byte stride.
+    if (record_size < IS_LOG_IDX_RECORD_V2_SIZE) record_size = IS_LOG_IDX_RECORD_V2_SIZE;
+
+    // Parse only the fields this build understands (the v2.0/v2.1 prefix). A
+    // future format with record_size > 32 is still consumed WHOLE so the file
+    // position advances by the full stride and subsequent reads stay aligned.
+    const std::size_t parseLen = std::min<std::size_t>(record_size, IS_LOG_IDX_RECORD_V2_1_SIZE);
     uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
-    const std::size_t got = file.read(buf, record_size);
-    if (got < record_size) {
+    if (file.read(buf, parseLen) < parseLen) {
         return fail(ISErrorCode::Truncated,
                     "short read on .idx record");
     }
-    return parseRecord(buf, record_size);
+    // Discard any trailing bytes of a larger (future) record.
+    for (std::size_t remaining = record_size - parseLen; remaining > 0;) {
+        uint8_t scratch[64];
+        const std::size_t chunk = std::min<std::size_t>(remaining, sizeof(scratch));
+        if (file.read(scratch, chunk) < chunk) {
+            return fail(ISErrorCode::Truncated,
+                        "short read on .idx record tail");
+        }
+        remaining -= chunk;
+    }
+    return parseRecord(buf, parseLen);
 }
 
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,

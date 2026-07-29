@@ -439,7 +439,7 @@ TEST_F(LogReaderTest, GpsRawObsTimeTriggersRebuild) {
     ASSERT_GT(bytes.size(), IS_LOG_IDX_HEADER_SIZE + IS_LOG_IDX_RECORD_V2_SIZE);
 
     auto* recPtr = reinterpret_cast<uint8_t*>(bytes.data() + IS_LOG_IDX_HEADER_SIZE);
-    is_log_idx_record_v2_t r = parseRecord(recPtr);
+    is_log_idx_record_v2_t r = parseRecord(recPtr, IS_LOG_IDX_RECORD_V2_1_SIZE);
     r.did       = DID_GNSS1_RAW;
     r.timestamp = 1'700'000'000'000ULL;   // baked absolute obs-time — not a valid device-timeline value
     serializeRecord(recPtr, r);

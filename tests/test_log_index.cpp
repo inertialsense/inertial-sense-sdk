@@ -108,7 +108,7 @@ TEST(IdxRoundTrip, RecordSerializeAndParse) {
     uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, src);
 
-    const auto parsed = parseRecord(buf);   // default record_size = v2.1 (32)
+    const auto parsed = parseRecord(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);   // full v2.1 stride (32)
     EXPECT_EQ(parsed.timestamp,       src.timestamp);
     EXPECT_EQ(parsed.offset,          src.offset);
     EXPECT_EQ(parsed.did,             src.did);
@@ -152,7 +152,7 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
 
     for (std::size_t i = 0; i < N; ++i) {
         const auto p = parseRecord(
-            buf.data() + IS_LOG_IDX_HEADER_SIZE + i * REC);
+            buf.data() + IS_LOG_IDX_HEADER_SIZE + i * REC, REC);
         EXPECT_EQ(p.timestamp, sources[i].timestamp);
         EXPECT_EQ(p.offset,    sources[i].offset);
         EXPECT_EQ(p.did,       sources[i].did);
@@ -261,17 +261,17 @@ TEST(IdxFileIO, HeaderAndRecordRoundTripViaCISLogFile) {
         EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2);
         EXPECT_EQ(hdrR->total_records, 3u);
 
-        auto a = readRecord(in);
+        auto a = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
         ASSERT_TRUE(a.has_value());
         EXPECT_EQ(a->did, 0xAAAu);
         EXPECT_EQ(a->flags, IS_LOG_IDX_REC_FLAG_HAS_TOW);
 
-        auto b = readRecord(in);
+        auto b = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
         ASSERT_TRUE(b.has_value());
         EXPECT_EQ(b->did, 0xBBBu);
         EXPECT_EQ(b->flags, 0u);
 
-        auto c = readRecord(in);
+        auto c = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
         ASSERT_TRUE(c.has_value());
         EXPECT_EQ(c->did, 0xCCCu);
         EXPECT_EQ(c->offset, 4096u);
@@ -400,7 +400,7 @@ TEST(IdxFileIO, TruncatedRecordReturnsTruncated) {
     cISLogFile in(path, "rb");
     ASSERT_TRUE(in.isOpened());
     ASSERT_TRUE(readHeader(in).has_value());
-    auto rec = readRecord(in);
+    auto rec = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_FALSE(rec.has_value());
     EXPECT_EQ(rec.error().code, ISErrorCode::Truncated);
 
@@ -414,13 +414,13 @@ TEST(IdxRecordRange, LargeOffsetRoundTrip) {
     is_log_idx_record_v2_t src{ 1234, big_offset, 100, 0, 0 };
     uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, src);
-    auto p = parseRecord(buf);
+    auto p = parseRecord(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);
     EXPECT_EQ(p.offset, big_offset);
 
     constexpr uint64_t huge_offset = 0xFFFF'FFFF'FFFF'0000ULL;
     src.offset = huge_offset;
     serializeRecord(buf, src);
-    p = parseRecord(buf);
+    p = parseRecord(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);
     EXPECT_EQ(p.offset, huge_offset);
 }
 
@@ -519,15 +519,15 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
     EXPECT_NE(hdrR->producer_version, 0u)
         << "producer_version must be filled from PROTOCOL_VERSION_CHAR0..3";
 
-    auto rec1 = readRecord(in);
+    auto rec1 = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_TRUE(rec1.has_value());
     EXPECT_EQ(rec1->did, static_cast<uint32_t>(DID_DEV_INFO));
 
-    auto rec2 = readRecord(in);
+    auto rec2 = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_TRUE(rec2.has_value());
     EXPECT_EQ(rec2->did, static_cast<uint32_t>(DID_INS_1));
 
-    auto rec3 = readRecord(in);
+    auto rec3 = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_TRUE(rec3.has_value());
     EXPECT_EQ(rec3->did, static_cast<uint32_t>(DID_GNSS1_POS));
 
@@ -631,7 +631,7 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
             << idxInfo.name << ": some ISB packets should have been indexed";
 
         for (uint32_t i = 0; i < hdrR->total_records; ++i) {
-            auto recR = readRecord(in);
+            auto recR = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
             ASSERT_TRUE(recR.has_value())
                 << idxInfo.name << " record " << i << ": "
                 << recR.error().message;
@@ -788,7 +788,7 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
                          "(= file_size - header) / record_size";
 
         for (uint32_t i = 0; i < hdrR->total_records; ++i) {
-            auto rec = readRecord(in);
+            auto rec = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
             ASSERT_TRUE(rec.has_value())
                 << f.name << " record " << i << "/" << hdrR->total_records
                 << ": " << rec.error().message;
