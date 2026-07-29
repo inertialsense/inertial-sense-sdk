@@ -27,9 +27,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderBase.h"
 
 #ifndef MAX_PATH
-#define MAX_PATH_SONY 260
+#define MAX_PATH_SONY 260       //!< maximum path length for Sony bootloader image filenames, when the platform doesn't define MAX_PATH
 #else
-#define MAX_PATH_SONY MAX_PATH
+#define MAX_PATH_SONY MAX_PATH  //!< maximum path length for Sony bootloader image filenames, aliased to the platform's MAX_PATH
 #endif
 
 /**

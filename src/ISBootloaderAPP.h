@@ -90,11 +90,11 @@ public:
     /** @return the device's Inertial Sense serial number, queried over its normal comm protocol, or 0 if it could not be read */
     uint32_t get_device_info();
 
-    /** @return IS_OP_OK always (no-op; an application-mode device can't be flashed through this transport) */
+    /** @param image unused @return IS_OP_OK always (no-op; an application-mode device can't be flashed through this transport) */
     is_operation_result download_image(std::string image) { return IS_OP_OK; }
-    /** @return IS_OP_OK always (no-op; an application-mode device can't be read back through this transport) */
+    /** @param image unused @return IS_OP_OK always (no-op; an application-mode device can't be read back through this transport) */
     is_operation_result upload_image(std::string image) { return IS_OP_OK; }
-    /** @return IS_OP_OK always (no-op; an application-mode device can't be verified through this transport) */
+    /** @param image unused @return IS_OP_OK always (no-op; an application-mode device can't be verified through this transport) */
     is_operation_result verify_image(std::string image) { return IS_OP_OK; }
 
     /** Clears the process-wide list of serial numbers already seen in application mode. */

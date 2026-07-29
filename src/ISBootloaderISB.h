@@ -97,7 +97,7 @@ public:
      * @return IS_OP_OK on success, otherwise IS_OP_ERROR
      */
     is_operation_result download_image(std::string image);
-    /** @return IS_OP_OK always (no-op; reading an image back is not supported over ISB) */
+    /** @param image unused @return IS_OP_OK always (no-op; reading an image back is not supported over ISB) */
     is_operation_result upload_image(std::string image) { return IS_OP_OK; }
     /**
      * @brief Verifies the device's flash contents against an Intel-HEX image over the ISB protocol.

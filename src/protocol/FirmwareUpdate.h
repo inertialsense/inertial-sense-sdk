@@ -252,12 +252,12 @@ namespace fwUpdate {
     typedef union {
         struct {                     //!< requests that the target device perform a reset (see msg_types_e::MSG_REQ_RESET)
             uint16_t reset_flags;    //!< a reset_flags_e bitmask controlling how the reset is performed
-        } req_reset;
+        } req_reset;                 //!< payload for MSG_REQ_RESET
 
         struct {                    //!< a response to a reset request (usually this isn't sent, but sometimes, like asking a GNSS receiver to reset, it could send back a reply, since that doesn't originate on the GNSS receiver).
             target_t target;        //!< responding target
             uint16_t status;        //!< response status (0 == success)
-        } rpl_reset;
+        } rpl_reset;                 //!< payload for MSG_RESET_RESP
 
         struct {
         } req_version;              //!< requests the version info for the target device
@@ -270,26 +270,26 @@ namespace fwUpdate {
             uint16_t chunk_size;    //!< the maximum size of each chunk
             uint16_t progress_rate; //!< the rate (millis) at which the device should publish progress reports back to the host.
             md5hash_t md5_hash;     //!< the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
-        } req_update;
+        } req_update;                //!< payload for MSG_REQ_UPDATE
 
         struct {
             uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
             uint16_t totl_chunks;   //!< the total number of chunks that are necessary to transmit the entire firmware file
             update_status_e status; //!< a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
-        } update_resp;
+        } update_resp;               //!< payload for MSG_UPDATE_RESP
 
         struct {
             uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
             uint16_t chunk_id;      //!< the chunk number identifying this portion of the firmware
             uint16_t data_len;      //!< the number of bytes of accompanying data
             uint8_t data;           //!< the first byte of data (cast to a uint8_t * to access the rest...)
-        } chunk;
+        } chunk;                     //!< payload for MSG_UPDATE_CHUNK
 
         struct {
             uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
             uint16_t chunk_id;      //!< the chunk number identifying this portion of the firmware which should be resent
             resend_reason_e reason; //!< an indicator of why this chunk was requested. This is optional, but is useful for debugging purposes. Regardless of the reason, the requested chunk, and all subsequent chunks must be resent.
-        } req_resend;
+        } req_resend;                //!< payload for MSG_REQ_RESEND_CHUNK
 
         struct {
             uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
@@ -299,12 +299,12 @@ namespace fwUpdate {
             uint8_t msg_level;      //!< a numerical indication of the criticality of this message, 0 being the highest. Best practive is to associate syslog type levels here (CRITICAL, ERROR, WARN, INFO, DEBUG, etc).
             uint8_t msg_len;        //!< the length of the following string (in bytes)
             uint8_t message;        //!< an arbitrary human-readable string, that is intended to be consumed by the user to give status about the update process
-        } progress;
+        } progress;                  //!< payload for MSG_UPDATE_PROGRESS
 
         struct {
             uint16_t session_id;    //!< random 16-bit identifier used to validate/associate the data stream.
             update_status_e status; //!< a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
-        } resp_done;
+        } resp_done;                 //!< payload for MSG_UPDATE_DONE
 
         struct {
             target_t resTarget;     //!< the target identifier of the responding device (for which this data represents)
@@ -328,7 +328,7 @@ namespace fwUpdate {
             uint8_t buildMillis;    //!< Build time millisecond
 
             uint8_t buildFlags;     //!< Build flags (preserves debug/dirty and related build-state flags)
-        } version_resp;
+        } version_resp;              //!< payload for MSG_VERSION_INFO_RESP
 
     } msg_data_t;
 
@@ -445,7 +445,7 @@ namespace fwUpdate {
         uint32_t timeout_duration = 20000;                      //!< the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //!< the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
 
-        target_t session_target = TARGET_HOST;
+        target_t session_target = TARGET_HOST;                  //!< the target device this session is communicating with
         update_status_e session_status = NOT_STARTED;           //!< last known state of this session
         uint16_t session_id = 0;                                //!< the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         uint16_t session_chunk_size = 0;                        //!< the negotiated maximum size for each chunk.
@@ -596,6 +596,7 @@ namespace fwUpdate {
          * Note that some systems may not always be able to respond with a success before the system is reset.
          * If a system is NOT able to perform a reset (ie UNSUPPORTED, etc), this MUST return false.
          * @param target_id the device to reset
+         * @param reset_flags the severity/style of reset to perform (e.g. RESET_SOFT, RESET_HARD)
          * @return true if successful, otherwise false
          */
         virtual bool fwUpdate_performReset(target_t target_id, reset_flags_e reset_flags) = 0;
@@ -743,6 +744,11 @@ namespace fwUpdate {
         int32_t last_chunk_id = -1;                          //!< the last received chunk id from a CHUNK message. -1 = no chunk yet received; the next received chunk must be 0.
     };
 
+    /**
+     * FirmwareUpdateHost is the SDK-side (controlling host PC) implementation of the
+     * fwUpdate protocol: requests updates, sends image chunks, and processes responses/progress
+     * from a remote target device.
+     */
     class FirmwareUpdateHost : public FirmwareUpdateBase {
     public:
         /**
@@ -757,6 +763,13 @@ namespace fwUpdate {
          * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
          */
         bool fwUpdate_processMessage(const payload_t& msg_payload);
+
+        /**
+         * Unpacks buffer into a payload_t and processes it; see fwUpdate_processMessage(const payload_t&).
+         * @param buffer the raw received message buffer
+         * @param buf_len the number of bytes in buffer
+         * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
+         */
         bool fwUpdate_processMessage(const uint8_t* buffer, int buf_len);
 
         /**

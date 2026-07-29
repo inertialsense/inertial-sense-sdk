@@ -103,7 +103,12 @@ public:
      * @return IS_OP_OK on success, otherwise IS_OP_ERROR
      */
     is_operation_result reboot_up();
-    /** @return IS_OP_OK always (no level below DFU to reboot into for this transport) */
+    /**
+     * @param major unused
+     * @param minor unused
+     * @param force unused
+     * @return IS_OP_OK always (no level below DFU to reboot into for this transport)
+     */
     is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) { (void)major; (void)minor; (void)force; return IS_OP_OK; }
 
     /**
@@ -125,9 +130,9 @@ public:
      * @return IS_OP_OK on success, otherwise IS_OP_ERROR
      */
     is_operation_result download_image(std::string image);
-    /** @return IS_OP_OK always (no-op; reading an image back is not supported over DFU) */
+    /** @param image unused @return IS_OP_OK always (no-op; reading an image back is not supported over DFU) */
     is_operation_result upload_image(std::string image) { (void)image; return IS_OP_OK; }
-    /** @return IS_OP_OK always (no-op; verification is not supported over DFU) */
+    /** @param image unused @return IS_OP_OK always (no-op; verification is not supported over DFU) */
     is_operation_result verify_image(std::string image) { (void)image; return IS_OP_OK; }
 
     /** @return the number of STM32 DFU-mode devices currently enumerable via libusb */

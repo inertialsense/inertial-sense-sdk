@@ -37,15 +37,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "protocol/FirmwareUpdate.h"
 
-#define IMX5_FLASH_PAGE_SIZE 65536      // 64K flash page size for IMX-5
-#define IMX5_BOOTLOADER_INCOMPATIBLE_MSG "IMX firmware incompatible with bootloader. Update IMX-5 bootloader to v6i or newer required for selected IMX firmware."
+#define IMX5_FLASH_PAGE_SIZE 65536      //!< 64K flash page size for IMX-5
+#define IMX5_BOOTLOADER_INCOMPATIBLE_MSG "IMX firmware incompatible with bootloader. Update IMX-5 bootloader to v6i or newer required for selected IMX firmware."  //!< error text shown when the IMX-5 bootloader is too old for the selected firmware image
 
 namespace ISBootloader {
 
-static constexpr int IS_DEVICE_LIST_LEN = 256;
-static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;
+static constexpr int IS_DEVICE_LIST_LEN = 256;        //!< maximum number of devices that can be tracked/enumerated at once
+static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;   //!< maximum length, in bytes, of a firmware/bootloader image file path
 
-static constexpr int IS_REBOOT_DELAY_MS = 3000;
+static constexpr int IS_REBOOT_DELAY_MS = 3000;       //!< delay (ms) allowed for a device to complete a reboot before it is considered unresponsive
 
 /** Processor family of the connected device, detected from its bootloader/image signature. */
 typedef enum {

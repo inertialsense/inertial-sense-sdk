@@ -22,14 +22,19 @@
 
 //#define BOOTLOADER_RETRIES                  12
 //#define BOOTLOADER_RESPONSE_DELAY           10
-#define BOOTLOADER_REFRESH_DELAY            500
-#define MAX_VERIFY_CHUNK_SIZE               1024
-#define BOOTLOADER_TIMEOUT_DEFAULT          1000
-#define MAX_SEND_COUNT                      510
+#define BOOTLOADER_REFRESH_DELAY            500    //!< minimum interval (ms) between successive ISB step refreshes
+#define MAX_VERIFY_CHUNK_SIZE               1024    //!< maximum number of bytes read back per verify-chunk request
+#define BOOTLOADER_TIMEOUT_DEFAULT          1000    //!< default timeout (ms) for an ISB command/ack exchange
+#define MAX_SEND_COUNT                      510     //!< maximum number of bytes sent per ISB write command
 
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
-#define FLASH_PAGE_SIZE                     65536
+#define FLASH_PAGE_SIZE                     65536   //!< logical page size used for ISB page offsets (0x0000-0xFFFF); independent of the device's actual physical flash page size
 
+/**
+ * Device-side fwUpdate::FirmwareUpdateDevice implementation for the ISB (Inertial Sense
+ * Bootloader) legacy update protocol: erases, writes, and verifies an Intel-HEX image page by
+ * page over the ISB's ASCII command/ack wire protocol.
+ */
 class ISBFirmwareUpdater : public fwUpdate::FirmwareUpdateDevice {
 
 public:

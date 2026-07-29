@@ -68,7 +68,12 @@ public:
     is_operation_result reboot();
     /** @return IS_OP_OK on success, otherwise IS_OP_ERROR; sets the GPNVM boot-from-flash bit then reboots into IS-bootloader mode */
     is_operation_result reboot_up();
-    /** @return IS_OP_OK always (no level below SAM-BA to reboot into for this transport) */
+    /**
+     * @param major unused
+     * @param minor unused
+     * @param force unused
+     * @return IS_OP_OK always (no level below SAM-BA to reboot into for this transport)
+     */
     is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) { (void)major; (void)minor; (void)force; return IS_OP_OK; }
 
     /** @return the device's Inertial Sense serial number, or 0 if it could not be read */
@@ -81,7 +86,7 @@ public:
      * @return IS_OP_OK on success, otherwise IS_OP_ERROR
      */
     is_operation_result download_image(std::string image);
-    /** @return IS_OP_OK always (no-op; reading an image back is not supported over SAM-BA) */
+    /** @param image unused @return IS_OP_OK always (no-op; reading an image back is not supported over SAM-BA) */
     is_operation_result upload_image(std::string image) { return IS_OP_OK; }
     /**
      * @brief Verifies the device's flash contents against an Intel-HEX image over the SAM-BA protocol.
@@ -92,7 +97,7 @@ public:
 
     /**
      * @brief Check if the referenced device is a SAM-BA device, and that the image matches
-     *
+     * @return the eImageSignature bitmask of images this device's bootloader will accept, or IS_IMAGE_SIGN_ERROR
      */
     ISBootloader::eImageSignature check_is_compatible();
 

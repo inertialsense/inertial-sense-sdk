@@ -46,7 +46,7 @@ extern "C"
 
 #if !defined(ISDevice)
     class ISDevice;
-    typedef std::shared_ptr<ISDevice> device_handle_t;
+    typedef std::shared_ptr<ISDevice> device_handle_t;  //!< fallback forward-declaration if ISDevice.h wasn't already included
 #endif
 
 
@@ -64,14 +64,20 @@ enum update_policy_e : int8_t {
  * Stores the update policy and image version metadata for a single step/target.
  */
 struct step_policy_t {
-    update_policy_e policy = UPDATE_POLICY_DEFAULT;
+    update_policy_e policy = UPDATE_POLICY_DEFAULT;  //!< the resolved update policy for this step/target
     uint8_t imageVersion[4] = {};  //!< parsed from manifest "version: x.y.z.w"
     bool hasImageVersion = false;  //!< true if imageVersion was explicitly set
 };
 
 
+/**
+ * A single queued/executing/completed step in a firmware update session's command queue
+ * (parsed from a manifest step, e.g. "target=IMX5", "upload,filename=..."). Tracks the
+ * command's arguments, status, and timing.
+ */
 class ISFwUpdaterCmd {
 public:
+    /** Execution status of a queued command. */
     enum cmd_status_e : int8_t {
         CMD_CANCELLED = -3,                                 //!< command was canceled (by the user) before it could complete
         CMD_NOT_EXECUTED = -2,                              //!< command was queued, but ultimately never executed (was skipped due to jumps, etc)
@@ -81,6 +87,7 @@ public:
         CMD_SUCCESS = 2,                                    //!< command had successfully completed
         CMD_SUSPENDED = 3,                                  //!< command has been suspended (by the user) - must be moved back into IN_PROCESS to resume
     };
+    /** Bitmask of capabilities common to all commands. */
     enum cmd_flags_e : int16_t {
         CMD_FLAGS__PAUSABLE = 1 << 0,                       //!< command can be paused/suspended
         CMD_FLAGS__CANCELABLE = 1 << 1,                     //!< command can be canceled (by the user)
@@ -98,13 +105,27 @@ public:
     std::chrono::system_clock::time_point timeStarted;      //!< wall-clock time when this command started execution
     std::chrono::system_clock::time_point timeFinished;     //!< wall-clock time when this command finished execution (error or success)
 
+    /** Constructs an empty, unlabeled command (used as a static "null" placeholder command). */
     explicit ISFwUpdaterCmd() { }
 
+    /**
+     * @param _step the step label this command executes under
+     * @param _cmd the name of the command
+     */
     ISFwUpdaterCmd(const std::string& _step, const std::string& _cmd) : step(_step), cmd(_cmd) {
         status = CMD_QUEUED;
         timeQueued = std::chrono::system_clock::now();
     }
 
+    /**
+     * Constructs a command and parses its comma-separated argument string into named args,
+     * either as explicit "key=value" pairs, positionally against _keyNames, or (if neither
+     * applies) against a built-in default key list for well-known command names.
+     * @param _step the step label this command executes under
+     * @param _cmd the name of the command
+     * @param _args a comma-separated argument string, e.g. "filename=fw.hex,slot=0"
+     * @param _keyNames positional argument names to assign to bare (non "key=value") values, in order
+     */
     ISFwUpdaterCmd(const std::string& _step, const std::string& _cmd, const std::string& _args, std::deque<std::string> _keyNames = {}) : ISFwUpdaterCmd(_step, _cmd) {
         static std::map<std::string, std::vector<std::string>> defaultKeys = {
                 {"target",     {"target","timeout", "interval", "on-timeout"}},
@@ -138,13 +159,17 @@ public:
         }
     }
 
+    /** @param other the command to compare against @return true if other has the same cmd name and step label as this command */
     bool operator==(const ISFwUpdaterCmd& other) const {
         return (cmd == other.cmd) && (step == other.step);
     }
+
+    /** @param k the argument name @return the value of argument k, or "" if not present */
     inline std::string operator[](const std::string& k) {
         return args[k];
     }
 
+    /** @param i the positional index of the argument to retrieve, in map iteration order @return the i-th argument's value, or "" if out of range */
     inline std::string operator[](int i) {
         for (auto& [k, v] : args) {
             if (i-- <= 0)
@@ -153,17 +178,25 @@ public:
         return "";
     }
 
+    /** @param k the argument name @return true if this command has an argument named k */
     inline bool hasArg(const std::string& k) {
         return (args.find(k) != args.end());
     }
 
+    /** @param k the argument name @param def the value to return if k is not present @return the value of argument k, or def if not present */
     inline std::string getArg(const std::string& k, const std::string& def = "") {
         return (hasArg(k) ? args[k] : def);
     }
 };
 
+/**
+ * Shared, thread-safe state for a firmware update session: overall updater state/status, the
+ * current target/slot/progress, and the accumulated log of messages. Owned by the caller and
+ * passed by reference to ISFirmwareUpdater; use lock()/getSnapshot() for thread-safe access.
+ */
 class ISFwUpdateState {
 public:
+    /** Overall state of an update session, aggregated across all queued commands. */
     enum updater_state_e : int8_t {
         UPDATER_CANCELED = -3,                              //!< no longer running, user cancelled, and not all steps were completed.
         UPDATER_DONE_WITH_ERRORS = -2,                      //!< no longer running, errors occurred during the update
@@ -176,24 +209,35 @@ public:
         SUCCESS_WITH_NOTIFICATIONS = 5,                     //!< no more queued commands, but there were notifications/messages reported (but not errors)
     };
 
+    /** A single reported message (status/error/notification) associated with a command's execution. */
     struct message {
         std::string target;                                 //!< the target (if any) which was active, if any
         ISFwUpdaterCmd cmd;                                 //!< the command that generated this message
-        eLogLevel severity;                                 //!< the severity level of the message - use one of IS_LOG_LEVEL_*
+        eLogLevel severity;                                 //!< the severity level of the message (one of the IS_LOG_LEVEL_ constants)
         std::string msg;                                    //!< the fully-formatted message
 
+        /**
+         * @param _target the target which was active when this message was generated, if any
+         * @param _cmd the command that generated this message
+         * @param _severity the severity level of the message, one of the IS_LOG_LEVEL_ constants
+         * @param _msg the fully-formatted message text
+         */
         message(const std::string& _target, const ISFwUpdaterCmd& _cmd, eLogLevel _severity, const std::string& _msg) : target(_target), cmd(_cmd), severity(_severity), msg(_msg) { };
     };
 
     ISFwUpdateState() = default;
 
-    // Copy constructor — copies all data fields but creates a fresh mutex (mutexes are non-copyable).
-    // The source is NOT locked here; callers should use getSnapshot() for thread-safe copies.
+    /**
+     * Copy constructor — copies all data fields but creates a fresh mutex (mutexes are non-copyable).
+     * The source is NOT locked here; callers should use getSnapshot() for thread-safe copies.
+     * @param other the instance to copy fields from
+     */
     ISFwUpdateState(const ISFwUpdateState& other)
         : lastMessage(other.lastMessage), state(other.state), status(other.status),
           target(other.target), slot(other.slot), progress(other.progress),
           messages(other.messages), hasErrors(other.hasErrors), hasNotifications(other.hasNotifications) { }
 
+    /** @param other the instance to copy fields from @return *this */
     ISFwUpdateState& operator=(const ISFwUpdateState& other) {
         if (this != &other) {
             lastMessage = other.lastMessage;
@@ -212,12 +256,14 @@ public:
     /**
      * Acquire a lock on this state object. All reads and writes to this state should be done while holding this lock,
      * to prevent cross-thread data races (e.g., GUI thread reading while IOManager thread writes).
+     * @return a lock owning this state object's mutex
      */
     std::unique_lock<std::recursive_mutex> lock() const { return std::unique_lock<std::recursive_mutex>(mtx); }
 
     /**
      * Returns a thread-safe snapshot (copy) of the current state. The caller can safely read from the copy
      * without holding a lock. Prefer this over direct field access from non-owner threads.
+     * @return a copy of this state object, taken under lock
      */
     ISFwUpdateState getSnapshot() const {
         auto lk = lock();
@@ -225,6 +271,7 @@ public:
         return snapshot;
     }
 
+    /** Clears messages/errors and resets target/status/slot/progress to their initial values. */
     void resetState() {
         auto lk = lock();
         lastMessage.clear();
@@ -253,8 +300,8 @@ private:
 
 
 
-static ISFwUpdaterCmd nullCmd = ISFwUpdaterCmd();
-static ISFwUpdateState nullState = ISFwUpdateState();
+static ISFwUpdaterCmd nullCmd = ISFwUpdaterCmd();      //!< static "no active command" placeholder, pointed to by activeCmd when nothing is running
+static ISFwUpdateState nullState = ISFwUpdateState();  //!< static placeholder update-state instance, unused by default-constructed updaters
 
 /**
  * Manages a firmware update session for a single device: parses a manifest into a queue of
@@ -272,8 +319,9 @@ public:
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
-     * @param portHandle handle to the port (typically serial) to which the device is connected
-     * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
+     * @param port handle to the port (typically serial) to which the device is connected
+     * @param devInfo the root device info connected on this port
+     * @param state the shared state object this updater reports progress/status into
      */
     ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo, ISFwUpdateState& state) : FirmwareUpdateHost(), port(port), devInfo(devInfo), updateState(state), activeCmd(&nullCmd) { }
 
@@ -386,11 +434,14 @@ public:
      * Returns a summary of unique firmware update targets from the queued commands.
      * Deduplicates by target name — each target appears once with all associated step labels.
      * Thread-safe: locks the internal mutex.
+     * @return one StepInfo per unique target referenced by the queued commands
      */
     std::vector<StepInfo> getStepSummary() const;
 
     /**
      * Sets an explicit update policy for a specific step (by exact label name).
+     * @param stepLabel the exact step label to set the policy for
+     * @param policy the update policy to apply to this step
      */
     void setStepPolicy(const std::string& stepLabel, update_policy_e policy);
 
@@ -398,11 +449,14 @@ public:
      * Stores a deferred pattern-based policy override. The pattern is matched (case-insensitive
      * substring) against step labels during manifest parsing, and against target names at step
      * transition time. First matching pattern wins.
+     * @param pattern a case-insensitive substring to match against step labels/target names
+     * @param policy the update policy to apply when pattern matches
      */
     void setPolicyPattern(const std::string& pattern, update_policy_e policy);
 
     /**
      * Sets the updater-wide default policy, used when no step-specific or pattern-matched policy applies.
+     * @param policy the default update policy
      */
     void setDefaultPolicy(update_policy_e policy);
 
@@ -412,6 +466,8 @@ public:
      *   2. defaultPolicy (if not DEFAULT)
      *   3. forceUpdate bool (legacy)
      *   4. IF_NEWER fallback
+     * @param stepLabel the step label to resolve a policy for
+     * @return the effective update_policy_e for stepLabel
      */
     update_policy_e getEffectivePolicy(const std::string& stepLabel) const;
 
