@@ -9,9 +9,11 @@
 
 #include "ISDeviceLog.h"
 
+#include "ISTimeResolver.h"   // SN-8105 anchored-span accessors
 #include "core/msg_logger.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <set>
 #include <utility>
 
@@ -140,6 +142,52 @@ TimeStamp ISDeviceLog::spanEnd() const noexcept {
         if (v != 0) return TimeStamp::fromPayloadToW(v, deviceId_);
     }
     return TimeStamp::fromPayloadToW(0, deviceId_);
+}
+
+namespace {
+
+//! SN-8105: single arrival-ordered pass folding the min and max of every
+//! record's resolver-anchored timestamp. Skips zero-raw (no time field) and
+//! `SessionOnly/Unknown` (no shared anchor) records. `any` is false when the
+//! log has no anchorable record. Keyed on arrival index for SN-8339 multi-boot.
+struct AnchoredFold {
+    uint64_t minMs = UINT64_MAX;
+    uint64_t maxMs = 0;
+    bool     any   = false;
+};
+
+AnchoredFold foldAnchoredSpan(const ISDeviceLog& log,
+                              const ISTimeResolver& resolver) {
+    AnchoredFold f;
+    const uint64_t deviceId = log.deviceId();
+    for (ISRecordView v : log.allRecords()) {
+        const uint64_t raw = v.timestamp().value;
+        if (raw == 0) continue;
+        const TimeStamp r = resolver.resolve(raw, deviceId, v.arrivalIndex());
+        if (r.source == TimeSource::SessionOnly &&
+            r.confidence == TimeConfidence::Unknown) {
+            continue;
+        }
+        if (r.value == 0) continue;
+        if (!f.any || r.value < f.minMs) f.minMs = r.value;
+        if (!f.any || r.value > f.maxMs) f.maxMs = r.value;
+        f.any = true;
+    }
+    return f;
+}
+
+}  // namespace
+
+TimeStamp ISDeviceLog::anchoredSpanStart(const ISTimeResolver& resolver) const noexcept {
+    const AnchoredFold f = foldAnchoredSpan(*this, resolver);
+    if (!f.any) return spanStart();
+    return TimeStamp::fromResolvedViaSync(f.minMs, deviceId_, TimeConfidence::Exact);
+}
+
+TimeStamp ISDeviceLog::anchoredSpanEnd(const ISTimeResolver& resolver) const noexcept {
+    const AnchoredFold f = foldAnchoredSpan(*this, resolver);
+    if (!f.any) return spanEnd();
+    return TimeStamp::fromResolvedViaSync(f.maxMs, deviceId_, TimeConfidence::Exact);
 }
 
 ISDeviceLog::Range ISDeviceLog::records(did_t did) const noexcept {

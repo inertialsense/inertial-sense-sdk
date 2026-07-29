@@ -384,6 +384,39 @@ TEST_F(TimeResolverTest, MultiBootSessionsBridgeUptimePerSession) {
 }
 
 // ---------------------------------------------------------------------------
+// SN-8105 — ISDeviceLog::anchoredSpanStart/End route the raw first/last
+// timestamps through the resolver, so a GPS-anchored log reports absolute
+// wall-clock ms rather than the raw ToW/uptime value `spanStart/End` return.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, AnchoredSpanIsGpsAnchoredNotRaw) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0, 130.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("anchored_span", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    ASSERT_FALSE(resolver->syncPoints().empty());
+
+    constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
+
+    // Raw span is the ToW ms of the first/last record — a pre-1980 value.
+    EXPECT_LT(log->spanStart().value, kGpsEpochUnixMs);
+
+    // Anchored span epoch-anchors to week 2300: real 2026-era absolute ms.
+    const auto aStart = log->anchoredSpanStart(resolver.value());
+    const auto aEnd   = log->anchoredSpanEnd(resolver.value());
+    EXPECT_EQ(aStart.value, expectedUnixMsForFixtureWeek(100'000));
+    EXPECT_EQ(aEnd.value,   expectedUnixMsForFixtureWeek(130'000));
+    EXPECT_GT(aStart.value, kGpsEpochUnixMs);
+    EXPECT_LT(aStart.value, aEnd.value);
+}
+
+// ---------------------------------------------------------------------------
 // Resolve between two sync points → Interpolated.
 // ---------------------------------------------------------------------------
 TEST_F(TimeResolverTest, ResolveInterpolated) {
