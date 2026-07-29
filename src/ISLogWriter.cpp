@@ -243,10 +243,10 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     rec.flags     = view.flags();
     rec.reserved  = 0;
 
-    uint8_t buf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
+    uint8_t buf[idx::IS_LOG_IDX_RECORD_V2_1_SIZE];
     idx::serializeRecord(buf, rec);
     idxStream_.write(reinterpret_cast<const char*>(buf),
-                     idx::IS_LOG_IDX_RECORD_V2_SIZE);
+                     idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
     if (!idxStream_.good()) {
         return fail(ISErrorCode::Io,
                     "ISLogWriter::append: short write on .idx");

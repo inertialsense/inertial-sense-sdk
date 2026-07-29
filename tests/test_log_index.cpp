@@ -62,9 +62,10 @@ TEST(IdxLayout, StaticSizes) {
     // in the header but exercises it through gtest so we get a named
     // failure if some future struct edit breaks the discipline.
     EXPECT_EQ(sizeof(is_log_idx_header_t),    IS_LOG_IDX_HEADER_SIZE);
-    EXPECT_EQ(sizeof(is_log_idx_record_v2_t), IS_LOG_IDX_RECORD_V2_SIZE);
-    EXPECT_EQ(IS_LOG_IDX_HEADER_SIZE,    64u);
-    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_SIZE, 24u);
+    EXPECT_EQ(sizeof(is_log_idx_record_v2_t), IS_LOG_IDX_RECORD_V2_1_SIZE);   // v2.1 struct = 32
+    EXPECT_EQ(IS_LOG_IDX_HEADER_SIZE,      64u);
+    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_SIZE,   24u);   // v2.0 on-disk prefix (unchanged)
+    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_1_SIZE, 32u);   // SN-8383 trailing local_uptime_ms + pad
 }
 
 TEST(IdxRoundTrip, HeaderSerializeAndParse) {
@@ -101,15 +102,23 @@ TEST(IdxRoundTrip, RecordSerializeAndParse) {
         /* did       */ 0x1234,
         /* flags     */ IS_LOG_IDX_REC_FLAG_HAS_TOW,
         /* reserved  */ 0,
+        /* local_uptime_ms */ 777u,
+        /* reserved2 */ 0,
     };
-    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, src);
 
-    const auto parsed = parseRecord(buf);
-    EXPECT_EQ(parsed.timestamp, src.timestamp);
-    EXPECT_EQ(parsed.offset,    src.offset);
-    EXPECT_EQ(parsed.did,       src.did);
-    EXPECT_EQ(parsed.flags,     src.flags);
+    const auto parsed = parseRecord(buf);   // default record_size = v2.1 (32)
+    EXPECT_EQ(parsed.timestamp,       src.timestamp);
+    EXPECT_EQ(parsed.offset,          src.offset);
+    EXPECT_EQ(parsed.did,             src.did);
+    EXPECT_EQ(parsed.flags,           src.flags);
+    EXPECT_EQ(parsed.local_uptime_ms, src.local_uptime_ms);   // SN-8383 trailing field round-trips
+
+    // v2.0 back-compat: parsing only the 24-byte prefix leaves local_uptime_ms 0.
+    const auto parsed20 = parseRecord(buf, IS_LOG_IDX_RECORD_V2_SIZE);
+    EXPECT_EQ(parsed20.timestamp,       src.timestamp);
+    EXPECT_EQ(parsed20.local_uptime_ms, 0u);
 }
 
 TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
@@ -117,7 +126,8 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
     // single contiguous buffer. The reader walks: parseHeader at
     // offset 0, then parseRecord at offset 64, 64+24, 64+48, ....
     constexpr std::size_t N = 10;
-    std::vector<uint8_t> buf(IS_LOG_IDX_HEADER_SIZE + N * IS_LOG_IDX_RECORD_V2_SIZE, 0);
+    constexpr std::size_t REC = IS_LOG_IDX_RECORD_V2_1_SIZE;   // writer emits v2.1 (32-byte) records
+    std::vector<uint8_t> buf(IS_LOG_IDX_HEADER_SIZE + N * REC, 0);
 
     auto hdr = makeRoundTripHeader();
     hdr.total_records = N;
@@ -133,7 +143,7 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
         r.flags     = (i % 2 == 0) ? IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
         r.reserved  = 0;
         sources.push_back(r);
-        serializeRecord(buf.data() + IS_LOG_IDX_HEADER_SIZE + i * IS_LOG_IDX_RECORD_V2_SIZE, r);
+        serializeRecord(buf.data() + IS_LOG_IDX_HEADER_SIZE + i * REC, r);
     }
 
     auto parsedHdr = parseHeader(buf.data());
@@ -142,7 +152,7 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
 
     for (std::size_t i = 0; i < N; ++i) {
         const auto p = parseRecord(
-            buf.data() + IS_LOG_IDX_HEADER_SIZE + i * IS_LOG_IDX_RECORD_V2_SIZE);
+            buf.data() + IS_LOG_IDX_HEADER_SIZE + i * REC);
         EXPECT_EQ(p.timestamp, sources[i].timestamp);
         EXPECT_EQ(p.offset,    sources[i].offset);
         EXPECT_EQ(p.did,       sources[i].did);
@@ -316,7 +326,7 @@ TEST(IdxRecordRange, LargeOffsetRoundTrip) {
     // >4GB (i.e. wouldn't fit in v1's u32) round-trips cleanly.
     constexpr uint64_t big_offset = 0x0000'0001'0000'0000ULL;  // 4 GiB exactly
     is_log_idx_record_v2_t src{ 1234, big_offset, 100, 0, 0 };
-    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, src);
     auto p = parseRecord(buf);
     EXPECT_EQ(p.offset, big_offset);
@@ -682,8 +692,11 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
         EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
             << f.name << ": each segment must be finalized";
 
+        // SN-8383: the writer now emits v2.1 (32-byte) records; use the header's
+        // record_size (authoritative) rather than a hard-coded stride.
+        EXPECT_EQ(hdrR->record_size, IS_LOG_IDX_RECORD_V2_1_SIZE) << f.name;
         const size_t expectedFromSize =
-            (f.size - IS_LOG_IDX_HEADER_SIZE) / IS_LOG_IDX_RECORD_V2_SIZE;
+            (f.size - IS_LOG_IDX_HEADER_SIZE) / hdrR->record_size;
         EXPECT_EQ(hdrR->total_records, expectedFromSize)
             << f.name << ": header total_records must match on-disk record count "
                          "(= file_size - header) / record_size";

@@ -87,7 +87,10 @@ void serializeHeader(uint8_t out[IS_LOG_IDX_HEADER_SIZE],
     out[41] = hdr.ts_source;
     out[42] = hdr.flags;
     out[43] = hdr.reserved8;
-    // out[44..63] left zero from memset.
+    put_u16(out + 44, hdr.record_size);        // SN-8383: on-disk record stride
+    put_u16(out + 46, hdr.reserved16);
+    put_u64(out + 48, hdr.capture_epoch_ms);   // SN-8340: absolute host wall-clock at log-open
+    // out[56..63] left zero from memset.
 }
 
 ISExpected<is_log_idx_header_t> parseHeader(
@@ -117,7 +120,10 @@ ISExpected<is_log_idx_header_t> parseHeader(
     hdr.ts_source           = in[41];
     hdr.flags               = in[42];
     hdr.reserved8           = in[43];
-    std::memcpy(hdr.reserved, in + 44, sizeof(hdr.reserved));
+    hdr.record_size         = get_u16(in + 44);   // 0 on legacy pre-v2.1 headers
+    hdr.reserved16          = get_u16(in + 46);
+    hdr.capture_epoch_ms    = get_u64(in + 48);
+    std::memcpy(hdr.reserved, in + 56, sizeof(hdr.reserved));
 
     if (hdr.version != IS_LOG_IDX_VERSION_V2) {
         return fail(ISErrorCode::Unsupported,
@@ -132,23 +138,30 @@ ISExpected<is_log_idx_header_t> parseHeader(
     return hdr;
 }
 
-void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_SIZE],
+void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
                      const is_log_idx_record_v2_t& rec) noexcept {
     put_u64(out +  0, rec.timestamp);
     put_u64(out +  8, rec.offset);
     put_u32(out + 16, rec.did);
     put_u16(out + 20, rec.flags);
     put_u16(out + 22, rec.reserved);
+    put_u32(out + 24, rec.local_uptime_ms);   // v2.1 trailing field (SN-8383)
+    put_u32(out + 28, rec.reserved2);
 }
 
 is_log_idx_record_v2_t parseRecord(
-    const uint8_t in[IS_LOG_IDX_RECORD_V2_SIZE]) noexcept {
+    const uint8_t* in, std::size_t record_size) noexcept {
     is_log_idx_record_v2_t rec{};
     rec.timestamp = get_u64(in +  0);
     rec.offset    = get_u64(in +  8);
     rec.did       = get_u32(in + 16);
     rec.flags     = get_u16(in + 20);
     rec.reserved  = get_u16(in + 22);
+    // v2.1 trailing field present only when the on-disk record is >= 32 bytes.
+    if (record_size >= IS_LOG_IDX_RECORD_V2_1_SIZE) {
+        rec.local_uptime_ms = get_u32(in + 24);
+        rec.reserved2       = get_u32(in + 28);
+    }
     return rec;
 }
 
@@ -165,10 +178,10 @@ ISExpected<void> writeHeader(cISLogFileBase& file, const is_log_idx_header_t& hd
 }
 
 ISExpected<void> writeRecord(cISLogFileBase& file, const is_log_idx_record_v2_t& rec) {
-    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, rec);
-    const std::size_t written = file.write(buf, IS_LOG_IDX_RECORD_V2_SIZE);
-    if (written != IS_LOG_IDX_RECORD_V2_SIZE) {
+    const std::size_t written = file.write(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);
+    if (written != IS_LOG_IDX_RECORD_V2_1_SIZE) {
         return fail(ISErrorCode::Io, "short write on .idx record");
     }
     return {};
@@ -184,19 +197,24 @@ ISExpected<is_log_idx_header_t> readHeader(cISLogFileBase& file) {
     return parseHeader(buf);
 }
 
-ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file) {
-    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
-    const std::size_t got = file.read(buf, IS_LOG_IDX_RECORD_V2_SIZE);
-    if (got < IS_LOG_IDX_RECORD_V2_SIZE) {
+ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file, std::size_t record_size) {
+    // Legacy pre-v2.1 headers carry record_size 0 ⇒ read the 24-byte prefix;
+    // clamp anything larger than v2.1 (a future v2.2 reader handles the tail).
+    if (record_size < IS_LOG_IDX_RECORD_V2_SIZE)   record_size = IS_LOG_IDX_RECORD_V2_SIZE;
+    if (record_size > IS_LOG_IDX_RECORD_V2_1_SIZE) record_size = IS_LOG_IDX_RECORD_V2_1_SIZE;
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
+    const std::size_t got = file.read(buf, record_size);
+    if (got < record_size) {
         return fail(ISErrorCode::Truncated,
                     "short read on .idx record");
     }
-    return parseRecord(buf);
+    return parseRecord(buf, record_size);
 }
 
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
                                       TimestampUnits units,
-                                      HeaderTimeSource source) noexcept {
+                                      HeaderTimeSource source,
+                                      uint64_t capture_epoch_ms) noexcept {
     is_log_idx_header_t hdr{};
     hdr.magic[0] = IS_LOG_IDX_MAGIC[0];
     hdr.magic[1] = IS_LOG_IDX_MAGIC[1];
@@ -213,6 +231,13 @@ is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
     hdr.ts_source           = static_cast<uint8_t>(source);
     hdr.flags               = 0;  // FINALIZED set on clean close
     hdr.reserved8           = 0;
+    // v2.1: all newly-written .idx use 32-byte records; record_size drives the
+    // reader's stride (legacy v2.0 files carry 0 ⇒ reader treats as 24). The
+    // live writer sets HAS_LOCAL_DELTA once it stamps real per-record deltas.
+    hdr.record_size         = static_cast<uint16_t>(IS_LOG_IDX_RECORD_V2_1_SIZE);
+    hdr.reserved16          = 0;
+    hdr.capture_epoch_ms    = capture_epoch_ms;
+    if (capture_epoch_ms != 0) hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH;
     std::memset(hdr.reserved, 0, sizeof(hdr.reserved));
     return hdr;
 }
