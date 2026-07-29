@@ -1616,6 +1616,7 @@ static void PopulateMapGnssRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("baseToRoverHeading", &gnss_rtk_rel_t::baseToRoverHeading, DATA_TYPE_F32, SYM_DEG, "Angle from north to baseToRoverVector in local tangent (NED) plane.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("baseToRoverHeadingAcc", &gnss_rtk_rel_t::baseToRoverHeadingAcc, DATA_TYPE_F32, SYM_DEG, "Accuracy of baseToRoverHeading", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_6, C_RAD2DEG);
     mapper.AddMember("status", &gnss_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GNSS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GNSS_STATUS).renderExtended = renderGnssStatusBits;
+    // mapper.AddArray("covEcefPacked", &gnss_rtk_rel_t::covEcefPacked, DATA_TYPE_F32, 6, {"m^2"}, {"RTK solution covariance in ECEF packed as [Pxx, Pyy, Pzz, Pxy, Pyz, Pzx]"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_6);
 }
 
 static void PopulateMapGnssRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
