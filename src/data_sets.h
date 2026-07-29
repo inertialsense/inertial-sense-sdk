@@ -486,7 +486,7 @@ enum eGnssStatus
     GNSS_STATUS_FLAGS_MASK                              = (int)0x1FFFE000,  //!< Mask isolating all status/quality flag bits
     GNSS_STATUS_FLAGS_BIT_OFFSET                        = (int)16,          //!< Bit offset of the status/quality flags field within status
 
-    GNSS_STATUS_FLAGS_UNUSED_2                          = (int)0x20000000,  //!< Unused
+    GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID         = (int)0x20000000,  //!< RTK ECEF covariance matrix is valid and packed in rel->covEcefPacked
     GNSS_STATUS_FLAGS_UNUSED_3                          = (int)0x40000000,  //!< Unused
     GNSS_STATUS_FLAGS_UNUSED_4                          = (int)0x80000000,  //!< Unused
 };
