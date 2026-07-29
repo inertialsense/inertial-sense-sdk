@@ -12,74 +12,66 @@
 #include "TcpPortFactory.h"
 #include "util/util.h"
 
+// Max time to wait for the (non-blocking) TCP connection to the caster to complete before giving up.
+#define NTRIP_CONNECT_TIMEOUT_MS 5000
+// Minimum delay between reconnect attempts after a hard connection failure (avoids hammering the caster).
+#define NTRIP_RECONNECT_BACKOFF_MS 2500
+
 bool NtripCorrectionService::connect(const std::string& connectUrl, std::string userAgent) {
     // parse the URL; NTRIP defaults to port 2101 when the caster URL omits one
     const utils::UriParts uri = utils::parseUri(connectUrl, "ntrip://:2101");
     const std::string& host = uri.host;
     const int port = uri.port;
 
-    /***
-     * One issue here is that connect() is not the same as portOpen(), because connect needs to do some talking
-     * to negotiate the connection - we open the port, and then we send the following parameters and wait for a
-     * response. If the parameters aren't right, the remote end will shut down, and we didn't really connect.
-     *
-     * If we try and call portOpen() again to reconnect (which we will in CorrectionService::step()), we'll
-     * reconnect the TCP socket, but won't call connect(), which mean no negotiations.
-     *
-     * One option here is to replace tcp_port_t.base.portOpen function pointer with a Ntrip-specific function,
-     * injecting itself into the middle, so that portOpen() calls the Ntrip's connect() and directly calls
-     * tcpPortOpen().  We could do this because NTRIP should only ever use tcpPort.  Should being the operative
-     * word there.
-     *
-     * However, we also have an issue of context - since NtripCorrectionService is C++ and needs its 'this'
-     * but tcpPort doesn't known anything about that... How do you call portOpen() and will carry over the
-     * object instance that holds the tcp_port_s struct?  These are good questions!
-     *
-     * Solving the instance issue, we could add a "context" or "userdata" parameter to base_port_t. This would
-     * be pretty minimally invasive, and wouldn't change any functions signatures, etc. This would only require
-     * two additional functions, portSetUserContext() and portGetUserContext(), and a corresponding void pointer
-     * in base_port_t. The context pointer is assigned per port though, not per call, etc. I think this can work.
-     *
-     * In addition to the userContext pointer, we'd need to implement an additional callback into base_port_t, a
-     * portNotify callback which would get called (if defined) when port operations (like an Open, Close, etc) are
-     * made with a port. Similar to the portLogger callback, this would include the port_handle_t and a PORT_OP__*
-     * argument indicating the event type that we are being notified of.  This could grow, if we're not careful
-     * since there might be need for things like PORT_OP__OPENING vs PORT_OP__OPENED, etc.  Still, might be worth
-     * exploring.
-     *
-     * In our case here for the Ntrip, we'd do the following:
-     *      portSetUserContext(source, this);
-     *      portSetNotifyCallback(source, NtripCorrectionService::portConnected);
-     *
-     * Where NtripCorrectionService::portConnected() would look like:
-     *      static void NtripCorrectionService::portConnected(port_handle_t port, int port_op) {
-     *          if (port_op == PORT_OP__OPENED) {
-     *              NtripCorrectionService* ntrip = (NtripCorrectionService*)portGetUserContext(port);
-     *              if (ntrip)
-     *                  ntrip->makeConnectionRequest();
-     *          }
-     *      }
-     ****/
+    /*
+     * connect() is more than portOpen(): once the TCP socket is up we must send the mount-point request
+     * and read the caster's response before corrections flow. Because that negotiation has to be repeated
+     * whenever the TCP link is re-established, the request is cached (requestMsg) and the negotiation is
+     * factored into negotiateMountPoint(); step() replays it on reconnect. (A future refactor could instead
+     * hook a port "opened" notification callback so the negotiation is driven by the port layer itself.)
+     */
+
+    // Build and cache the mount-point request up front so it can be re-sent verbatim on reconnect
+    // (see step() / negotiateMountPoint()) without having to re-parse the URL.
+    casterUrl = connectUrl;
+    requestMsg = "GET " + uri.path + " HTTP/1.1\r\n";
+    requestMsg += "User-Agent: " + userAgent + "\r\n";
+    if (uri.hasUserinfo()) {
+        std::string auth = uri.user + ":" + uri.password;
+        requestMsg += "Authorization: Basic " + base64Encode((const unsigned char*)auth.data(), (int)auth.length()) + "\r\n";
+    }
+    requestMsg += "Accept: */*\r\nConnection: close\r\n\r\n";
 
     // extract the host & port, and make the socket/port connection
     std::string serverUrl = "tcp://" + host + ":" + std::to_string(port);
     source = TcpPortFactory::getInstance().bindPort(serverUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
 
-    // Remember, binding a port doesn't open it - it just creates the underlying instance that references the underlying hardware
-    if (!source || (portOpen(source) != PORT_ERROR__NONE))
+    // Remember, binding a port doesn't open it - it just creates the underlying instance that references the underlying hardware.
+    // tcpPort uses a non-blocking connect: portOpen() returns PORT_ERROR__NONE while the TCP handshake is still in flight and
+    // only sets PORT_FLAG__OPENED once connected. We must wait for the connection to actually complete (via portOpenRetry, which
+    // polls until portIsOpened()) before writing the NTRIP request below - otherwise the write races the handshake and fails.
+    if (!source || (portOpenRetry(source, NTRIP_CONNECT_TIMEOUT_MS, 2) != PORT_ERROR__NONE))
         return false;
 
-    std::string msg = "GET " + uri.path + " HTTP/1.1\r\n";
-    msg += "User-Agent: " + userAgent + "\r\n";
-    if (uri.hasUserinfo()) {
-        std::string auth = uri.user + ":" + uri.password;
-        msg += "Authorization: Basic " + base64Encode((const unsigned char*)auth.data(), (int)auth.length()) + "\r\n";
-    }
-    msg += "Accept: */*\r\nConnection: close\r\n\r\n";
+    if (!negotiateMountPoint())
+        return false;
 
-    int bytesSent = portWrite(source, (uint8_t*)msg.data(), (int)msg.length());
-    if ((size_t)bytesSent != msg.length()) {
-        log_debug(IS_LOG_PORT, "Error submitting NTRIP connection request to %s", connectUrl.c_str());
+    setSourcePort(source);  // set the sourcePort for the underlying CorrectionService to this port
+    return true;
+}
+
+/**
+ * Sends the cached mount-point request and consumes the caster's response headers. The source port
+ * must already be open. Factored out of connect() so the same negotiation can be replayed on reconnect
+ * from step() (an NTRIP caster only starts streaming after it receives the mount-point request).
+ */
+bool NtripCorrectionService::negotiateMountPoint() {
+    if (!portIsOpened(source) || requestMsg.empty())
+        return false;
+
+    int bytesSent = portWrite(source, (uint8_t*)requestMsg.data(), (int)requestMsg.length());
+    if ((size_t)bytesSent != requestMsg.length()) {
+        log_debug(IS_LOG_PORT, "Error submitting NTRIP connection request to %s", casterUrl.c_str());
         return false;
     }
 
@@ -92,7 +84,7 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
         contentLength -= bytesRead;
 
         if (bytesRead < 0) {
-            log_debug(IS_LOG_PORT, "Timeout waiting for response from %s", connectUrl.c_str());
+            log_debug(IS_LOG_PORT, "Timeout waiting for response from %s", casterUrl.c_str());
             return false;
         }
         printf("%s\n", buffer);
@@ -105,8 +97,33 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
         }
     } while ((bytesRead != 0) || (contentLength > 0));
 
-    setSourcePort(source);  // set the sourcePort for the underlying CorrectionService to this port
     return true;
+}
+
+int NtripCorrectionService::step() {
+    if (!portIsOpened(source)) {
+        // The NTRIP TCP stream is down (initial connect failed, or the caster dropped us). Reconnecting
+        // means more than reopening the socket: the caster only streams after it receives the mount-point
+        // request, so we must re-negotiate it. CorrectionService::step() would only reopen the socket and
+        // leave us connected-but-silent. The TCP (re)connect is non-blocking (portOpen() is polled across
+        // successive step() calls, just like the base class), so we don't stall the caller here.
+        if (source && !requestMsg.empty() && (lastConnAttemptTs < current_timeMs())) {
+            if (portOpen(source) < PORT_ERROR__NONE) {
+                lastConnAttemptTs = current_timeMs() + NTRIP_RECONNECT_BACKOFF_MS;   // hard failure -> back off
+            } else if (portIsOpened(source)) {
+                // TCP is (re)connected -- re-negotiate the mount point before corrections can resume.
+                if (negotiateMountPoint()) {
+                    setSourcePort(source);
+                } else {
+                    portClose(source);                                              // negotiation failed; drop and retry later
+                    lastConnAttemptTs = current_timeMs() + NTRIP_RECONNECT_BACKOFF_MS;
+                }
+            }
+        }
+        if (!portIsOpened(source))
+            return -1;
+    }
+    return CorrectionService::step();
 }
 
 bool NtripCorrectionService::updatePosition(const gnss_pos_t& gps) {
