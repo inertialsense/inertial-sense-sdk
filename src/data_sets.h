@@ -3969,11 +3969,11 @@ typedef struct PACKED
 
     float                   arRatio;                //!< Ambiguity resolution ratio factor for validation (unitless; higher indicates greater confidence the fixed integer ambiguity is correct)
 
-    float                   baseToRoverVector[3];   //!< (m) Vector from base to rover GNSS antennas {x,y,z} in ECEF.  Precision positioning mode: RTK station (base) to GNSS1 (rover).  Compassing mode: GNSS1 (base) to GNSS2 (rover)
+    float                   baseToRoverVector[3];   //!< (m) Vector from base to rover GNSS antennas {x,y,z} in ECEF.  DID_GNSS1_RTK_POS_REL: RTK base station (base) to GNSS1 (rover).  DID_GNSS2_RTK_CMP_REL (compassing): GNSS1 (base) to GNSS2 (rover)
 
     float                   baseToRoverDistance;    //!< (m) Distance from base to rover GNSS antennas (baseline length)
 
-    float                   baseToRoverHeading;     //!< (rad) Heading of baseToRoverVector in the local tangent (NED) plane
+    float                   baseToRoverHeading;     //!< (rad) Heading of baseToRoverVector in the local tangent (NED) plane.  Compassing mode: GNSS1 (base) to GNSS2 (rover)
 
     float                   baseToRoverHeadingAcc;  //!< (rad) Accuracy (standard deviation) of baseToRoverHeading
 
