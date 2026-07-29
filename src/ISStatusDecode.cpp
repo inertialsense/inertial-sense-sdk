@@ -473,7 +473,7 @@ status_field_decode_t buildGnssStatusDecode()
         "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF)."));
     d.subfields.push_back(bitField("PPS timesync", GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC, false,
         "0x10000000 - Time is synchronized by GNSS PPS."));
-    d.subfields.push_back(bitField("Unused 2", GNSS_STATUS_FLAGS_UNUSED_2, false, "0x20000000 - <<UNUSED>>"));
+    d.subfields.push_back(bitField("ECEF covariance valid", GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID, false, "0x20000000 - RTK ECEF covariance matrix is valid and packed in rel->covEcefPacked"));
     d.subfields.push_back(bitField("Unused 3", GNSS_STATUS_FLAGS_UNUSED_3, false, "0x40000000 - <<UNUSED>>"));
     d.subfields.push_back(bitField("Unused 4", GNSS_STATUS_FLAGS_UNUSED_4, false, "0x80000000 - <<UNUSED>>"));
 
