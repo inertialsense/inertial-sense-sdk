@@ -279,6 +279,92 @@ TEST(IdxFileIO, HeaderAndRecordRoundTripViaCISLogFile) {
     std::remove(path.c_str());
 }
 
+// SN-8383 back-compat: a genuine v2.0 .idx file (legacy header record_size==0,
+// 24-byte on-disk records) must read cleanly under the v2.1 reader — the reader
+// strides by the header's record_size (0 => 24), reads only the 24-byte prefix,
+// and leaves the v2.1 trailing local_uptime_ms zeroed. A v2.1 file (record_size
+// 32) reads its trailing field. Both directions in one test, side by side.
+TEST(IdxFileIO, V20AndV21FilesBothReadCleanly) {
+    // ---- v2.0 file: legacy header (record_size 0) + 24-byte records ----
+    const auto v20 = makeTmpPath("v20file");
+    {
+        cISLogFile out(v20, "wb");
+        ASSERT_TRUE(out.isOpened());
+        auto hdr = makeRoundTripHeader();
+        hdr.record_size   = 0;   // legacy: pre-v2.1 headers carry 0 here
+        hdr.total_records = 3;
+        hdr.flags         = IS_LOG_IDX_HDR_FLAG_FINALIZED;  // no v2.1 feature flags
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
+
+        // Write each record as its 24-byte v2.0 prefix ONLY (serialize the full
+        // 32-byte layout, persist just the prefix) — a true on-disk v2.0 record.
+        const is_log_idx_record_v2_t recs[3] = {
+            { 1000, 0,    0xAAAu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0, /*local_uptime*/ 111u },
+            { 2000, 4096, 0xBBBu, 0,                            0,                  222u },
+            { 3000, 8192, 0xCCCu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0,                  333u },
+        };
+        for (const auto& r : recs) {
+            uint8_t rbuf[IS_LOG_IDX_RECORD_V2_1_SIZE];
+            serializeRecord(rbuf, r);
+            ASSERT_EQ(out.write(rbuf, IS_LOG_IDX_RECORD_V2_SIZE),  // 24 bytes only
+                      IS_LOG_IDX_RECORD_V2_SIZE);
+        }
+    }
+    {
+        cISLogFile in(v20, "rb");
+        ASSERT_TRUE(in.isOpened());
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+        EXPECT_EQ(hdrR->record_size, 0u) << "legacy v2.0 header carries record_size 0";
+
+        const uint32_t stride = hdrR->record_size;  // 0 -> readRecord clamps to 24
+        const uint32_t wantDid[3] = { 0xAAAu, 0xBBBu, 0xCCCu };
+        const uint64_t wantOff[3] = { 0u, 4096u, 8192u };
+        for (int i = 0; i < 3; ++i) {
+            auto r = readRecord(in, stride);
+            ASSERT_TRUE(r.has_value()) << "record " << i << ": " << r.error().message;
+            EXPECT_EQ(r->did, wantDid[i]) << "record " << i;
+            EXPECT_EQ(r->offset, wantOff[i]) << "record " << i;
+            EXPECT_EQ(r->local_uptime_ms, 0u)
+                << "v2.0 record must have NO trailing delta (record " << i << ")";
+        }
+        // Reader consumed exactly header + 3*24 bytes; a 4th read hits EOF.
+        auto past = readRecord(in, stride);
+        EXPECT_FALSE(past.has_value());
+    }
+    std::remove(v20.c_str());
+
+    // ---- v2.1 file: header record_size 32 + 32-byte records w/ delta ----
+    const auto v21 = makeTmpPath("v21file");
+    {
+        cISLogFile out(v21, "wb");
+        ASSERT_TRUE(out.isOpened());
+        auto hdr = makeRoundTripHeader();
+        hdr.record_size   = IS_LOG_IDX_RECORD_V2_1_SIZE;  // 32
+        hdr.total_records = 2;
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
+        is_log_idx_record_v2_t r1{ 5000, 0,   0xD1u, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0, 4444u };
+        is_log_idx_record_v2_t r2{ 6000, 512, 0xD2u, 0,                            0, 5555u };
+        ASSERT_TRUE(writeRecord(out, r1).has_value());  // writes full 32 bytes
+        ASSERT_TRUE(writeRecord(out, r2).has_value());
+    }
+    {
+        cISLogFile in(v21, "rb");
+        ASSERT_TRUE(in.isOpened());
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value());
+        EXPECT_EQ(hdrR->record_size, IS_LOG_IDX_RECORD_V2_1_SIZE);
+        auto a = readRecord(in, hdrR->record_size);
+        ASSERT_TRUE(a.has_value());
+        EXPECT_EQ(a->did, 0xD1u);
+        EXPECT_EQ(a->local_uptime_ms, 4444u) << "v2.1 record carries the trailing delta";
+        auto b = readRecord(in, hdrR->record_size);
+        ASSERT_TRUE(b.has_value());
+        EXPECT_EQ(b->local_uptime_ms, 5555u);
+    }
+    std::remove(v21.c_str());
+}
+
 TEST(IdxFileIO, TruncatedHeaderReturnsTruncated) {
     const auto path = makeTmpPath("trunc");
     // Write a file with only 32 bytes — half a header.
