@@ -12,6 +12,9 @@
 #include "TcpPortFactory.h"
 #include "util/util.h"
 
+// Max time to wait for the (non-blocking) TCP connection to the caster to complete before giving up.
+#define NTRIP_CONNECT_TIMEOUT_MS 5000
+
 bool NtripCorrectionService::connect(const std::string& connectUrl, std::string userAgent) {
     // parse the URL; NTRIP defaults to port 2101 when the caster URL omits one
     const utils::UriParts uri = utils::parseUri(connectUrl, "ntrip://:2101");
@@ -65,8 +68,11 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
     std::string serverUrl = "tcp://" + host + ":" + std::to_string(port);
     source = TcpPortFactory::getInstance().bindPort(serverUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
 
-    // Remember, binding a port doesn't open it - it just creates the underlying instance that references the underlying hardware
-    if (!source || (portOpen(source) != PORT_ERROR__NONE))
+    // Remember, binding a port doesn't open it - it just creates the underlying instance that references the underlying hardware.
+    // tcpPort uses a non-blocking connect: portOpen() returns PORT_ERROR__NONE while the TCP handshake is still in flight and
+    // only sets PORT_FLAG__OPENED once connected. We must wait for the connection to actually complete (via portOpenRetry, which
+    // polls until portIsOpened()) before writing the NTRIP request below - otherwise the write races the handshake and fails.
+    if (!source || (portOpenRetry(source, NTRIP_CONNECT_TIMEOUT_MS, 2) != PORT_ERROR__NONE))
         return false;
 
     std::string msg = "GET " + uri.path + " HTTP/1.1\r\n";

@@ -28,13 +28,19 @@ int portOpenRetry(port_handle_t port, unsigned int timeoutMs, unsigned int retry
     do {
         if (portIsOpened(port)) return PORT_ERROR__NONE;
 
+        // A port is only truly ready once PORT_FLAG__OPENED is set. With a non-blocking connect
+        // (e.g. tcpPort), portOpen() returns PORT_ERROR__NONE while the handshake is still in flight
+        // ("pending") WITHOUT setting that flag, so we must keep polling until portIsOpened() rather
+        // than returning on the first PORT_ERROR__NONE. Only a negative result is a hard failure.
         lastResult = portOpen(port);
-        if (lastResult == PORT_ERROR__NONE) return lastResult;
+        if (portIsOpened(port)) return PORT_ERROR__NONE;    // opened synchronously (blocking connect / serial)
+        if (lastResult < PORT_ERROR__NONE)
+            log_more_debug(IS_LOG_PORT, "portOpenRetry(): portOpen() failed with error: %d (%d)", lastResult, portError(port));
 
-        log_more_debug(IS_LOG_PORT, "portOpenRetry(): portOpen() failed with error: %d (%d)", lastResult, portError(port));
         SLEEP_MS(retryDelayMs);
     } while (current_timeMs() < timeout);
-    return lastResult;
+    // Final check: the last portOpen() above may have completed the handshake just before we timed out.
+    return portIsOpened(port) ? PORT_ERROR__NONE : lastResult;
 }
 
 /**
