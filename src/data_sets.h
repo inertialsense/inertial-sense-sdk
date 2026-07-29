@@ -3979,7 +3979,7 @@ typedef struct PACKED
 
     uint32_t                status;                 //!< GNSS status (see eGnssStatus): [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags, NMEA input flag
 
-    float                   covEcefPacked[6];       //!< RTK solution covariance in ECEF packed as [Pxx, Pyy, Pzz, Pxy, Pyz, Pzx], in meters^2
+    // float                   covEcefPacked[6];       //!< RTK solution covariance in ECEF packed as [Pxx, Pyy, Pzz, Pxy, Pyz, Pzx], in meters^2
 
 } gnss_rtk_rel_t;
 
