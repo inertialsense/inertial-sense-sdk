@@ -1,14 +1,16 @@
-/*
-MIT LICENSE
-
-Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+/**
+ * @file DataJSON.h
+ * @brief JSON (de)serialization for a single data set (DID), used by DeviceLogJSON.
+ *
+ * Each data set is one JSON object: `{"id":<did>,"<field1>":<value1>,...}`. Field names and
+ * layout come from `cISDataMappings`, keyed by DID. Parsing (StringJSONToData()) uses a simple
+ * bracket/quote scanner rather than a general JSON parser — it expects an already-isolated,
+ * single top-level object (as produced by DeviceLogJSON's balanced-brace file scanner), not
+ * arbitrary JSON.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ */
 
 #ifndef DATA_JSON_H
 #define DATA_JSON_H
@@ -20,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "com_manager.h"
 #include "ISLogFileBase.h"
 
+/** @brief Check whether @p c is a character that must be escaped inside a JSON string value. */
 static inline bool IS_JSON_ESCAPE_CHAR(char c)
 {
     switch (c)
@@ -37,34 +40,42 @@ static inline bool IS_JSON_ESCAPE_CHAR(char c)
     return false;
 }
 
+/** @brief Stateless JSON (de)serialization helpers for one data set (DID) at a time. */
 class cDataJSON
 {
 public:
-    /*
-    * Write data to json file
-    * pFile the file to write to
-    * dataHdr data header
-    * dataBuf data buffer
-    * prefix prefix if data is written
-    */
+    /**
+     * @brief Write one data set as a JSON object (`{"id":...,"field":value,...}`) to @p pFile.
+     * @param pFile file to write to.
+     * @param dataHdr header describing @p dataBuf's data ID, size, and offset.
+     * @param dataBuf the data payload described by @p dataHdr.
+     * @param prefix if non-null, written immediately before the JSON object (e.g. `",\n"` to separate array elements); not included in the returned byte count.
+     * @return the number of bytes of the JSON object written (excluding @p prefix), or 0 if @p pFile is null or @p dataHdr.id has no known field mapping.
+     */
     int WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix);
 
     /**
-    * Parse a json string into a data packet
-    * data needs the id set to the proper data id
-    * buf memory to fill with data
-    * bufSize size of available memory in buf
-    * order id contains the value for ordering data
-    * returns true if success, false if no map found
-    */
+     * @brief Parse a single JSON object string into a data set.
+     *
+     * Expects @p s to be exactly one top-level `{...}` object with an `"id"` field appearing
+     * first; fields that don't map to a known field for that DID are silently skipped rather than
+     * treated as an error.
+     *
+     * @param s the JSON object to parse.
+     * @param[out] hdr `id` is set from the object's `"id"` field; on success, `size` is set to the DID's full struct size.
+     * @param buf destination buffer to fill; must be at least the DID's full struct size.
+     * @param bufSize size of @p buf, in bytes (currently unused — the caller is responsible for @p buf being large enough).
+     * @return true if an `"id"` field was found, it mapped to a known DID, and every recognized field parsed successfully; false otherwise.
+     */
     bool StringJSONToData(std::string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize);
 
     /**
-    * Convert data to a json string
-    * buf is assumed to be large enough to hold the data structure
-    * json filled with json data
-    * return true if success, false if no map found
-    */
+     * @brief Convert one data set to a JSON object string (`{"id":...,"field":value,...}`, no trailing newline).
+     * @param hdr header describing @p buf's data ID, size, and offset; a partial buffer (offset/size narrower than the DID's full struct) is zero-padded around its actual bytes before conversion.
+     * @param buf the data payload described by @p hdr.
+     * @param[out] json the resulting JSON object string; cleared and repopulated by this call.
+     * @return true on success; false if @p hdr.id has no known field mapping.
+     */
     bool DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, std::string& json);
 };
 
