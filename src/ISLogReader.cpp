@@ -907,14 +907,20 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
     std::vector<SegmentSpan> spans;
     spans.reserve(log.segmentCount());
 
+    // SN-8339: the resolver's arrival index is global across segments (in
+    // composition order), so accumulate each segment's base from the prior
+    // segments' record counts to key the multi-boot resolver per record.
+    uint64_t segArrivalBase = 0;
     for (std::size_t s = 0; s < log.segmentCount(); ++s) {
         bool      any = false;
         TimeStamp lo{};
         TimeStamp hi{};
+        uint64_t  recIdx = 0;
         for (auto v : log.segment(s).allRecords()) {
+            const uint64_t arrivalIndex = segArrivalBase + recIdx++;
             const uint64_t raw = v.timestamp().value;
             if (raw == 0) continue;                       // metadata / sentinel
-            const TimeStamp r = resolver.resolve(raw, devId);
+            const TimeStamp r = resolver.resolve(raw, devId, arrivalIndex);
             if (r.source == TimeSource::SessionOnly) continue;  // no wall-clock anchor
             if (r.value == 0) continue;
             if (!any || r.value < lo.value) lo = r;
@@ -928,6 +934,7 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
             sp.end       = hi;
             spans.push_back(sp);
         }
+        segArrivalBase += recIdx;   // advance the global arrival base past this segment
     }
 
     auto gaps = findGaps(std::move(spans), thresholdMs);

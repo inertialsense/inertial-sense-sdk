@@ -129,6 +129,28 @@ public:
      */
     constexpr uint16_t flags() const noexcept { return flags_; }
 
+    //! SN-8339: sentinel for "arrival index not assigned" (a bare reader view
+    //! that never passed through `ISDeviceLog`'s cross-segment iterator).
+    static constexpr uint64_t kNoArrivalIndex = UINT64_MAX;
+
+    /**
+     * Returns this record's global arrival index — its 0-based position in the
+     * device log's cross-segment arrival order (`ISDeviceLog::allRecords()`).
+     * Set by `ISDeviceLog`'s iterator; `kNoArrivalIndex` on a view obtained
+     * directly from a single-segment reader (no cross-segment context).
+     *
+     * SN-8339: this is the key the multi-boot resolver uses to select which
+     * power-on session's uptime->ToW offset bridges a session-uptime record —
+     * it matches `ISTimeResolver`'s own arrival numbering during its byte scan.
+     *
+     * @return  Global arrival index, or `kNoArrivalIndex` if unassigned.
+     */
+    constexpr uint64_t arrivalIndex() const noexcept { return arrivalIndex_; }
+
+    //! Stamp the global arrival index onto this view. Called by
+    //! `ISDeviceLog`'s cross-segment iterator; not normally used directly.
+    constexpr void setArrivalIndex(uint64_t idx) noexcept { arrivalIndex_ = idx; }
+
     /**
      * Returns the record's bytes as a (pointer, size) pair. The
      * pointer aliases the parent reader's mmap'd region; do not
@@ -174,9 +196,10 @@ private:
     uint64_t       timestampMs_ = 0;
     uint64_t       deviceId_    = 0;
     uint64_t       offset_      = 0;
-    const uint8_t* data_        = nullptr;
-    std::size_t    size_        = 0;
-    uint16_t       flags_       = 0;
+    const uint8_t* data_         = nullptr;
+    std::size_t    size_         = 0;
+    uint16_t       flags_        = 0;
+    uint64_t       arrivalIndex_ = kNoArrivalIndex;
 };
 
 /**
@@ -215,13 +238,15 @@ public:
                 uint64_t deviceId,
                 uint64_t offsetInFile,
                 std::vector<uint8_t> bytes,
-                uint16_t flags = 0)
+                uint16_t flags = 0,
+                uint64_t arrivalIndex = ISRecordView::kNoArrivalIndex)
         : did_(did),
           timestampMs_(timestampMs),
           deviceId_(deviceId),
           offset_(offsetInFile),
           bytes_(std::move(bytes)),
-          flags_(flags) {}
+          flags_(flags),
+          arrivalIndex_(arrivalIndex) {}
 
     /** @return  The record's DID, or 0 if untagged. */
     uint32_t did() const noexcept { return did_; }
@@ -245,6 +270,10 @@ public:
      *          source view at construction.
      */
     uint16_t flags() const noexcept { return flags_; }
+
+    /** @return  Global arrival index preserved from the source view, or
+     *           `ISRecordView::kNoArrivalIndex` if it was unassigned. */
+    uint64_t arrivalIndex() const noexcept { return arrivalIndex_; }
 
     /**
      * @return  `{ data, size }` over the owning buffer; `data` may
@@ -274,12 +303,14 @@ private:
     uint64_t             deviceId_    = 0;
     uint64_t             offset_      = 0;
     std::vector<uint8_t> bytes_;
-    uint16_t             flags_       = 0;
+    uint16_t             flags_        = 0;
+    uint64_t             arrivalIndex_ = ISRecordView::kNoArrivalIndex;
 };
 
 inline OwnedRecord ISRecordView::owned() const {
     std::vector<uint8_t> copy(data_, data_ + size_);
-    return OwnedRecord{ did_, timestampMs_, deviceId_, offset_, std::move(copy), flags_ };
+    return OwnedRecord{ did_, timestampMs_, deviceId_, offset_,
+                        std::move(copy), flags_, arrivalIndex_ };
 }
 
 } // namespace inertial_sense

@@ -99,8 +99,10 @@ void ISDeviceLog::buildIndex() {
     total_ = 0;
     all_.clear();
     byDid_.clear();
+    segmentBase_.assign(segments_.size(), 0);
 
     for (std::size_t s = 0; s < segments_.size(); ++s) {
+        segmentBase_[s] = total_;   // SN-8339: global arrival base for this segment
         const std::size_t n = segments_[s].recordCount();
         all_.reserve(all_.size() + n);
         for (std::size_t r = 0; r < n; ++r) {
@@ -188,7 +190,14 @@ ISDeviceLog::RangeIterator
 ISRecordView ISDeviceLog::RangeIterator::operator*() const noexcept {
     if (!parent_ || !locators_ || pos_ >= locators_->size()) return {};
     const Locator& loc = (*locators_)[pos_];
-    return parent_->segments_[loc.segment].recordAt(loc.record);
+    ISRecordView v = parent_->segments_[loc.segment].recordAt(loc.record);
+    // SN-8339: stamp the global arrival index so consumers can key the
+    // multi-boot resolver, regardless of which range (allRecords / records(did)
+    // / seek / in_time) produced this view.
+    if (loc.segment < parent_->segmentBase_.size()) {
+        v.setArrivalIndex(parent_->segmentBase_[loc.segment] + loc.record);
+    }
+    return v;
 }
 
 ISDeviceLog::RangeIterator&

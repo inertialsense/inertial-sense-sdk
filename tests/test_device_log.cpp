@@ -212,6 +212,44 @@ TEST(ISDeviceLog, SegmentBoundaryCallbackFires) {
     teardown(f);
 }
 
+// SN-8339 — the cross-segment iterator stamps a dense global arrival index
+// (0..N-1 in composition order), and a per-DID filtered range carries the SAME
+// global index (not a per-DID local counter) so the multi-boot resolver keys
+// correctly regardless of which range produced the view.
+TEST(ISDeviceLog, StampsGlobalArrivalIndexAcrossSegments) {
+    auto f = buildSingleDeviceFixture("arrival", kSerialA, 1.0f, 256 * 1024);
+    ASSERT_GE(f.segmentsA.size(), 2u) << "need >=2 segments to prove global (not per-segment) index";
+
+    auto dl = ISDeviceLog::fromSegments(f.segmentsA);
+    ASSERT_TRUE(dl.has_value()) << dl.error().message;
+
+    // allRecords() yields a dense 0..N-1 arrival index, strictly in order.
+    std::vector<uint32_t> didByArrival(dl->recordCount(), 0u);
+    uint64_t expected = 0;
+    for (ISRecordView v : dl->allRecords()) {
+        ASSERT_LT(expected, dl->recordCount());
+        EXPECT_EQ(v.arrivalIndex(), expected);
+        didByArrival[expected] = v.did();
+        ++expected;
+    }
+    EXPECT_EQ(expected, dl->recordCount());
+
+    // A per-DID filtered range carries the GLOBAL arrival index — each view's
+    // index maps back to its own DID in the allRecords() ordering.
+    auto dids = dl->presentDids();
+    ASSERT_FALSE(dids.empty());
+    uint64_t checked = 0;
+    for (ISRecordView v : dl->records(dids.front())) {
+        ASSERT_NE(v.arrivalIndex(), ISRecordView::kNoArrivalIndex);
+        ASSERT_LT(v.arrivalIndex(), dl->recordCount());
+        EXPECT_EQ(didByArrival[v.arrivalIndex()], v.did());
+        ++checked;
+    }
+    EXPECT_EQ(checked, dl->records(dids.front()).size());
+
+    teardown(f);
+}
+
 // SN-8383 / SN-8340 — the live logger writes a v2.1 .idx: 32-byte records with
 // a per-record host-uptime delta (arrival-monotonic), and a durable capture
 // epoch + the two feature flags in the header.

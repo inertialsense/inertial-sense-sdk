@@ -286,6 +286,13 @@ private:
     std::unordered_map<did_t, std::vector<Locator>>   byDid_;
     static const std::vector<Locator>                 kEmptyLocators_;
 
+    //! SN-8339: per-segment base of the global arrival index. A record at
+    //! (segment s, record r) has global arrival index `segmentBase_[s] + r` —
+    //! its 0-based position in cross-segment arrival order. Stamped onto every
+    //! view the range iterator yields so consumers can key the multi-boot
+    //! resolver. Matches `ISTimeResolver`'s own byte-scan arrival numbering.
+    std::vector<std::size_t>                          segmentBase_;
+
     std::function<void(std::size_t)>   onSegmentBoundary_;
 
     friend class RangeIterator;
