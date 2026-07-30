@@ -1,6 +1,11 @@
 /**
- * @file PeriodStat.h 
- * @brief ${BRIEF_DESC}
+ * @file ChronoStat.h
+ * @brief Chronometry/timing-statistics helper: given a stream of sample() calls (either
+ *        externally-timestamped or using an internal clock), incrementally computes the
+ *        inter-sample interval (dt) and its min/max/average/variance, the second-order
+ *        variation between successive intervals (ddt), the resulting sample rate, and a
+ *        user-driven accrual counter/rate -- all via Welford's online algorithm so no history
+ *        of samples needs to be retained.
  *
  * @author Kyle Mallory on 9/17/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
@@ -20,12 +25,18 @@
 // #define ADDITIONAL_DEBUGGING     // Use this if you are troubleshooting the ChronoStat calculations in sample();
 
 #ifdef ADDITIONAL_DEBUGGING
+/** Begins building a per-sample debug log line (label + timestamp prefix); active only when ADDITIONAL_DEBUGGING is defined. */
 #define START_DEBUG_MSG()           std::string logMsg = utils::string_format("%-20s ts:%6.3f :: ", label.c_str(), time)
+/** Appends a printf-style-formatted fragment to the in-progress debug log line started by START_DEBUG_MSG(). @param ... a printf-style format string and its arguments */
 #define APPEND_DEBUG_MSG(...)       logMsg += utils::string_format(__VA_ARGS__)
+/** Emits the debug log line built by START_DEBUG_MSG()/APPEND_DEBUG_MSG() via the given log macro. @param msg_level the log_* macro (e.g. log_debug) to emit the line with */
 #define END_DEBUG_MSG(msg_level)    msg_level(IS_LOG_CHRONO_STATS, "%s", logMsg.c_str())
 #else
+/** No-op when ADDITIONAL_DEBUGGING is not defined. */
 #define START_DEBUG_MSG()           {}
+/** No-op when ADDITIONAL_DEBUGGING is not defined. @param ... unused */
 #define APPEND_DEBUG_MSG(...)       {}
+/** No-op when ADDITIONAL_DEBUGGING is not defined. @param msg_level unused */
 #define END_DEBUG_MSG(msg_level)    {}
 #endif
 
@@ -44,8 +55,8 @@ private:
     constexpr static double INVALID_DDT_MIN_STAT = 99999.0;
     int cnt = 0;
     double timeLast = NAN;                  //!< the last time that a sample was taken
-    std::chrono::high_resolution_clock::time_point localTimeTs;     // this should initialize to the clocks epoch
-    std::string label;
+    std::chrono::high_resolution_clock::time_point localTimeTs;     //!< local-clock timestamp of the most recent sample; default-initializes to the clock's epoch
+    std::string label;                      //!< optional label/name for this stat instance, used only by toString()
     double dtM2 = 0;                        //!< Welford's algorithm running sum of squared differences from the mean, used to derive dtVariance
 
 public:
@@ -60,39 +71,42 @@ public:
     double duration = 0;                    //!< the sum of all dt's - effectively the total time between the first and last sample.
 
     double dtLast = NAN;                    //!< timestamp of the last dt sample, used for ddt calculations
-    double ddt = 0;
-    double ddtMin = 0;
-    double ddtMax = 0;
-    double ddtMinTime = 0;
-    double ddtMaxTime = 0;
-    double ddtAvg = 0;
-    int ddtCnt = 0;
+    double ddt = 0;                         //!< the delta between the two most recent dt values (the "second derivative" of the sample times), in seconds
+    double ddtMin = 0;                      //!< the lowest ddt from all samples, in seconds (0 until first ddt)
+    double ddtMax = 0;                      //!< the largest ddt from all samples, in seconds (0 until first ddt)
+    double ddtMinTime = 0;                  //!< the sample time of the lowest ddt
+    double ddtMaxTime = 0;                  //!< the sample time of the largest ddt
+    double ddtAvg = 0;                      //!< the average ddt across all samples (in seconds)
+    int ddtCnt = 0;                         //!< the number of ddt samples (should always be dtCnt - 1)
 
     double rate = 0;                //!< the rate/second of samples
     uint64_t accrual = 0;           //!< a general purpose, user counter - call accrue()
     double accrualRate = 0;         //!< the rate/second of the accrual counter
 
     /**
-     * @returns the number of times this stat has been sampled
+     * @return the number of times this stat has been sampled
      */
     inline int count() { return cnt; }
 
     /**
-     * @returns true indicating that more than one sample has been taken and that stats are available, otherwise false
+     * @return true indicating that more than one sample has been taken and that stats are available, otherwise false
      */
     inline bool hasData() { return cnt > 1; }
 
+    /**
+     * @return the value of time (either externally supplied or from the local clock) passed to the most recent call to sample(), or NAN if sample() has never been called.
+     */
     inline double lastSampleTime() { return timeLast; }
 
     /**
-     * @returns the current timestamp (chrono::time_point) of the most recent sample.
+     * @return the current timestamp (chrono::time_point) of the most recent sample.
      *   If sample has never been called, this should return the Epoch of the source
-     *   (std::chrono::hish_resolution_clock) clock, which is typically Jan 1, 1970.
+     *   (std::chrono::high_resolution_clock) clock, which is typically Jan 1, 1970.
      */
     inline std::chrono::high_resolution_clock::time_point lastLocalTs() { return localTimeTs; }
 
     /**
-     * @returns a timestamp in milliseconds at the time the last sample was taken.
+     * @return a timestamp in milliseconds at the time the last sample was taken.
      * NOTE: this is a milliseconds since epoch, cast to a uint32_t which will truncate the upper bits and thus
      *   does not represent an actual wall-clock/system time, as it will rollover approximately every 49 days
      */
@@ -103,7 +117,7 @@ public:
     }
 
     /**
-     * @returns the time elapsed (milliseconds) since the last sample (derived from the local system clock).
+     * @return the time elapsed (milliseconds) since the last sample (derived from the local system clock).
      * NOTE that this uses the local time when the sample was made, and is independent of the time provided
      * to the call to sample() (if any). If there is no previous sample, returns UINT32_MAX.
      */
@@ -121,12 +135,12 @@ public:
     void setLabel(const std::string& newLabel) { label = newLabel; }
 
     /**
-     * @returns the current label associated with this stat instance.
+     * @return the current label associated with this stat instance.
      */
     std::string getLabel() { return label; }
 
     /**
-     * @returns true if a label has been assigned, otherise false.
+     * @return true if a label has been assigned, otherise false.
      */
     bool hasLabel() { return !label.empty(); }
 
@@ -227,7 +241,7 @@ public:
 
 
     /**
-     * @returns the (population) standard deviation of dt across all samples, in the same units as dt.
+     * @return the (population) standard deviation of dt across all samples, in the same units as dt.
      */
     inline double dtStdDev() { return std::sqrt(dtVariance); }
 

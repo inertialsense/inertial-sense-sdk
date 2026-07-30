@@ -61,6 +61,7 @@ class RelayPortFactory : public PortFactory {
 public:
 
     // -- Singleton --
+    /** @return the process-wide singleton RelayPortFactory instance. */
     static RelayPortFactory& getInstance() {
         static RelayPortFactory instance;
         return instance;
@@ -70,6 +71,7 @@ public:
     RelayPortFactory& operator=(RelayPortFactory const&) = delete;
 
     // -- Per-device record parsed from the relay's HTTP response --
+    /** A single device entry parsed from a relay host's /api/availableDevices response or SSE snapshot. */
     struct DeviceRecord {
         std::string  portUrl;       //!< tcp://host:port — the actual port to bind/connect
         dev_info_t   hint = {};     //!< bridgeboard-authoritative device info for seedDeviceHint()
@@ -86,6 +88,7 @@ public:
     };
 
     // -- Per-host status snapshot (returned by getRelayHosts()) --
+    /** A point-in-time snapshot of a single relay host's configuration and connection status. */
     struct RelayHostStatus {
         std::string  url;                                           //!< http://host:port (canonical base URL; no path)
         bool         enabled = false;                               //!< whether this host contributes ports
@@ -211,6 +214,7 @@ public:
      * @param interval polling period (default 1 second)
      */
     void setPollInterval(std::chrono::milliseconds interval) { pollInterval_ = interval; }
+    /** @return the currently configured HTTP polling interval for enabled hosts. */
     std::chrono::milliseconds getPollInterval() const { return pollInterval_; }
 
     /** Default HTTP port assumed for mDNS-discovered hosts (bridgeboard default). */
@@ -265,10 +269,11 @@ private:
     ~RelayPortFactory();
 
     // -- Internal per-host state --
+    /** Full internal state tracked for one relay host, including SSE worker state. */
     struct RelayHost {
         std::string  url;                                           //!< canonical "http://host:port" (no path)
-        bool         enabled = false;
-        bool         viaMdns = false;
+        bool         enabled = false;                               //!< whether this host currently contributes ports
+        bool         viaMdns = false;                               //!< true if discovered via mDNS, false if manually added
         std::vector<DeviceRecord> devices;                          //!< latest poll/snapshot result (metadata + hints)
         std::set<std::string> knownPortUrls;                        //!< high-water mark of tcp:// URLs ever seen from this host.
                                                                     //!< Only cleared on host disable/remove. Ports persist across
@@ -280,7 +285,7 @@ private:
                                                                     //!< successful poll. Drives offline port eviction + reconnect backoff.
                                                                     //!< Seeded to "now" on enable so a never-reachable host starts its grace then.
         std::chrono::steady_clock::time_point lastAttemptTime = {}; //!< last poll ATTEMPT (success or failure) — gates the backoff cadence.
-        std::string  lastError;
+        std::string  lastError;                                     //!< empty on success; descriptive string on the most recent failure
         uint32_t     consecutiveFailures = 0;                       //!< polling failure counter (resets on success)
 
         // -- SSE worker state (populated while feedType == SSE) --
@@ -293,7 +298,7 @@ private:
         uint32_t     sseConsecutiveFailures = 0;                    //!< drives fallback to Polling after DEFAULT_MAX_SSE_RETRIES
 
         // -- Transport mode --
-        RelayFeedType activeTransport = RelayFeedType::Auto;
+        RelayFeedType activeTransport = RelayFeedType::Auto;        //!< the transport currently in use for this host
 
         RelayHost() = default;
         // Non-copyable/movable because of the thread member.

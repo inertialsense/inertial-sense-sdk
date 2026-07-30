@@ -1,6 +1,7 @@
 /**
- * @file PortLocator.h 
- * @brief ${BRIEF_DESC}
+ * @file PortFactory.h
+ * @brief Abstract PortFactory interface, plus the SerialPortFactory and SpiPortFactory
+ *  implementations for discovering and binding local (non-networked) ports.
  *
  * @author Kyle Mallory on 2/20/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
@@ -34,7 +35,10 @@ public:
     // virtual ~PortFactory() = default;
 
     /**
-     * @param portCallback - A function to be called when this Factory identifies a possible port; callback parameters are port-type and name
+     * Scans for ports discoverable by this factory and invokes @p portCallback for each one found.
+     * @param portCallback a function to be called when this factory identifies a possible port; callback parameters are the factory, port-type, and name
+     * @param pattern an optional, implementation-specific filter (e.g. a regex) matched against candidate port names/URLs; empty matches all
+     * @param pType an optional port-type filter/hint (PORT_TYPE__* flags); defaults to PORT_TYPE__UNKNOWN
      */
     virtual void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern = "", uint16_t pType = PORT_TYPE__UNKNOWN) = 0;
 
@@ -53,8 +57,8 @@ public:
     /**
      * A function responsible for allocating the underlying port type and returning a port_handle_t to it
      * This function should NOT manipulate the underlying port, such as opening, etc.
-     * @param pType the type of the port being allocated
      * @param pName the binding name of the port to be allocated.
+     * @param pType the type of the port being allocated
      * @return a port_handle_t to the allocated port
      */
     virtual port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) = 0;
@@ -84,13 +88,18 @@ public:
     }
 };
 
+/**
+ * PortFactory implementation for local serial (UART) devices. Uses OS-specific enumeration
+ * (e.g. /sys/class/tty on Linux, QueryDosDeviceA on Windows) to discover COM/TTY ports.
+ */
 class SerialPortFactory : public PortFactory {
 public:
     struct {
-        int defaultBaudRate = BAUDRATE_921600;
-        bool defaultBlocking = false;
+        int defaultBaudRate = BAUDRATE_921600;  //!< default baud rate applied to ports bound by this factory
+        bool defaultBlocking = false;           //!< default blocking mode applied to ports bound by this factory
     } portOptions = {};
 
+    /** Returns the process-wide singleton SerialPortFactory instance. */
     static SerialPortFactory& getInstance() {
         static SerialPortFactory instance;
         return instance;
@@ -99,15 +108,41 @@ public:
     SerialPortFactory(SerialPortFactory const &) = delete;
     SerialPortFactory& operator=(SerialPortFactory const&) = delete;
 
+    /**
+     * Enumerates serial ports known to the host OS and invokes @p portCallback for each one that
+     * matches @p pattern (a regex) and validates.
+     * @param portCallback function to call for each matching port (factory, port-type, name)
+     * @param pattern regex matched against candidate port names
+     * @param pType ignored by the matching logic; PORT_TYPE__UART is always reported to the callback
+     */
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
+    /**
+     * Returns true if @p pName refers to an existing, OS-recognized serial/TTY device.
+     * @param pName the serial device name/path to validate
+     * @param pType the port type to validate against (platform-specific use)
+     * @return true if the port exists and is usable, otherwise false
+     */
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
+    /**
+     * Allocates and initializes a serial_port_t for the given port name. Does NOT open the device.
+     * @param pName the serial device name/path to bind
+     * @param pType additional port-type flags OR'd with PORT_TYPE__UART | PORT_TYPE__COMM
+     * @return the allocated port handle, or nullptr if validatePort fails
+     */
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
 
+    /**
+     * Frees the serial_port_t allocated by bindPort(). Does NOT close the device first.
+     * @param port the port handle to release
+     * @return true if @p port was non-null and successfully freed
+     */
     bool releasePort(port_handle_t port) override;
 
+    /** Sets the default baud rate used when a port is bound without an explicit override. */
     SerialPortFactory& setBaudRate(uint32_t baud) { portOptions.defaultBaudRate = baud; return *this; }
+    /** Sets the default blocking mode used when a port is bound without an explicit override. */
     SerialPortFactory& setBlocking(bool block) { portOptions.defaultBlocking = block; return *this; }
 
 private:
@@ -119,7 +154,7 @@ private:
      * @param port the port the error occurred on
      * @param errCode the error code (usually errno) of the error that occurred
      * @param errMsg an optional string message which describes the error the occurred
-     * @return
+     * @return always 0 (reserved for future use); the port is closed and/or invalidated as a side effect for certain errCode values
      */
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 
@@ -172,9 +207,9 @@ class SpiPortFactory : public PortFactory {
 public:
     /** Default SPI parameters applied when binding a new port. Per-port bracket opts override these. */
     struct {
-        uint32_t defaultSpeedHz  = SPI_PORT_DEFAULT_SPEED_HZ; ///< SPI clock speed in Hz
-        uint8_t  defaultMode     = SPI_PORT_DEFAULT_MODE;     ///< SPI mode 0-3 (CPOL/CPHA)
-        int      dataReadyGpio   = -1;                        ///< data-ready GPIO number, -1 = disabled
+        uint32_t defaultSpeedHz  = SPI_PORT_DEFAULT_SPEED_HZ; //!< SPI clock speed in Hz
+        uint8_t  defaultMode     = SPI_PORT_DEFAULT_MODE;     //!< SPI mode 0-3 (CPOL/CPHA)
+        int      dataReadyGpio   = -1;                        //!< data-ready GPIO number, -1 = disabled
     } portOptions = {};
 
     /** Returns the process-wide singleton SpiPortFactory instance. */

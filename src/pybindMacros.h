@@ -1,3 +1,19 @@
+/**
+ * @file pybindMacros.h
+ * @brief Registers the NumPy structured-array dtype for every `data_sets.h` struct exposed to the
+ *        Python bindings, via pybind11's `PYBIND11_NUMPY_DTYPE(type, field1, field2, ...)` macro.
+ *
+ * Despite the filename, this file does not define any macros of its own -- `PYBIND11_NUMPY_DTYPE`
+ * is a third-party macro from `<pybind11/numpy.h>`. Each line below is an *invocation* of that
+ * macro: it registers `type` as NumPy-array-compatible, listing (in declaration order) every field
+ * that should be exposed as a dtype member, so Python code can view/construct a NumPy structured
+ * array over the same memory layout as the corresponding C struct. Commented-out lines are structs
+ * intentionally not (yet) exposed to Python -- left in place as a record of what was considered.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
+ */
+
 #include "data_sets.h"
 
 // support types
