@@ -1,8 +1,12 @@
 /**
  * @file ISBootloaderSony.h
+ * @brief Bootloader-protocol implementation for the Sony CXD5610 GNSS receiver's bootloader
+ *        protocol (framed opcode/checksum messages over UART), used to inject and execute the
+ *        chip's updater program and write new SDK/app/lib/cfg firmware images.
+ *
  * @author Dave Cutting
- * @brief Inertial Sense routines for updating ISB images using SAM-BA protocol.
- * 
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved. See the MIT
+ *            license text below.
  */
 
 /*
@@ -23,50 +27,79 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderBase.h"
 
 #ifndef MAX_PATH
-#define MAX_PATH_SONY 260
+#define MAX_PATH_SONY 260       //!< maximum path length for Sony bootloader image filenames, when the platform doesn't define MAX_PATH
 #else
-#define MAX_PATH_SONY MAX_PATH
+#define MAX_PATH_SONY MAX_PATH  //!< maximum path length for Sony bootloader image filenames, aliased to the platform's MAX_PATH
 #endif
 
+/**
+ * cISBootloaderBase implementation for the Sony CXD5610 GNSS receiver's bootloader protocol: a
+ * framed, checksummed opcode message set sent over UART (CXD_SET_STATUS/PROGRAM_CODE_INJECTION/
+ * PROGRAM_EXECUTION/WRITE_PROGRAM/etc.) used to restart the chip into bootloader mode, inject and
+ * run its updater program, and write the SDK/app/lib/cfg firmware images that make up a release.
+ */
 class cISBootloaderSONY : public ISBootloader::cISBootloaderBase
 {
 public:
+    /**
+     * @param filename path to the firmware image this session will operate on
+     * @param upload_cb callback invoked to report image-download progress; dummy_update_callback if null
+     * @param verify_cb callback invoked to report image-verify progress; dummy_verify_callback if null
+     * @param info_cb callback invoked to report status/log messages; dummy_info_callback if null
+     * @param port the serial port the device is connected on
+     */
     cISBootloaderSONY(
         std::string filename,
         fwUpdate::pfnProgressCb upload_cb,
         fwUpdate::pfnProgressCb verify_cb,
         fwUpdate::pfnStatusCb info_cb,
         port_handle_t port
-  ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
+  ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb }
     {
         m_port = port;
     }
-    
-    ~cISBootloaderSONY() 
+
+    /** Destructor; the serial port is owned by the caller, not closed here. */
+    ~cISBootloaderSONY()
     {
-        
+
     }
 
+    /**
+     * @param param a null-terminated serial port name to compare against this device's port
+     * @return IS_OP_OK if param matches this device's serial port name, otherwise IS_OP_ERROR
+     */
     is_operation_result match_test(void* param);
-    
+
+    /** @return IS_OP_OK on success, otherwise IS_OP_ERROR */
     is_operation_result reboot();
+    /** @return IS_OP_OK on success, otherwise IS_OP_ERROR; reboots up into the next bootloader/application level */
     is_operation_result reboot_up();
 
+    /** @return 0 always (not implemented for this transport) */
     uint32_t get_device_info() {return 0; }
-    
+
+    /** @return IS_OP_OK on success, otherwise IS_OP_ERROR; writes the SDK/app/lib/cfg images from m_sony_filenames to the device */
     is_operation_result download_image(void);
+    /** @return IS_OP_OK always (no-op; reading an image back is not supported over this transport) */
     is_operation_result upload_image(void) { return IS_OP_OK; }
+    /** @return IS_OP_OK if the device's contents match the previously-downloaded image, otherwise IS_OP_ERROR */
     is_operation_result verify_image(void);
-    
+
+    /**
+     * @param imgSign the eImageSignature bitmask of the candidate image to check against this device
+     * @return non-zero if the connected CXD5610 device could be restarted into bootloader mode and imgSign is compatible with it, otherwise 0
+     */
     uint8_t check_is_compatible(uint32_t imgSign);
 
-    typedef struct 
+    /** Paths to the individual firmware components that together make up one Sony CXD5610 release. */
+    typedef struct
     {
-        char updater[MAX_PATH_SONY];
-        char app[MAX_PATH_SONY];
-        char sdk[MAX_PATH_SONY];
-        char lib[MAX_PATH_SONY];
-        char cfg[MAX_PATH_SONY];
+        char updater[MAX_PATH_SONY];    //!< path to the bootloader updater program to inject and run on the device
+        char app[MAX_PATH_SONY];        //!< path to the application firmware image
+        char sdk[MAX_PATH_SONY];        //!< path to the Sony GNSS SDK image
+        char lib[MAX_PATH_SONY];        //!< path to the supporting library image
+        char cfg[MAX_PATH_SONY];        //!< path to the configuration image
     } m_sony_filenames;
 
 private:
