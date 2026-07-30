@@ -98,6 +98,20 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 {
     cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);    // call into the super, in case it needs to do something special
 
+    // SN-8328: physical .idx offsets. The .raw segment is pure concatenated
+    // packet bytes (chunks are written header-less — see DeviceLogRaw.h), so a
+    // record's physical byte offset in the file is simply its position in that
+    // stream. `rawFileBase` is the physical position of THIS input buffer's first
+    // byte within the current file = (bytes already flushed to the file) +
+    // (bytes buffered in the current chunk before this input). Both terms are
+    // flush-invariant — a chunk flush moves bytes from the buffer to the file,
+    // leaving m_fileSize + GetDataSize() unchanged — so it is valid to capture
+    // here, before the possible chunk flush below.
+    const uint64_t rawFileBase = static_cast<uint64_t>(m_fileSize) + static_cast<uint64_t>(m_chunk.GetDataSize());
+    if (rawFileBase == 0) {
+        m_rawIndexCursor = 0;   // a fresh .raw file -> per-file offsets restart at 0
+    }
+
     // Parse messages for statistics and DID_DEV_INFO
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
     {
@@ -132,6 +146,13 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                     // own DID + payload timestamp + ToW flag — which is
                     // exactly what per-DID time-range queries against the
                     // index need.
+                    // SN-8328: stamp this packet's PHYSICAL .raw byte offset (its
+                    // start position in the file) rather than a chunk-relative
+                    // one, so ISLogReader trusts the sidecar (no offset-driven
+                    // rebuild) and the v2.1 per-record deltas survive.
+                    // m_rawIndexCursor holds the start of the current packet,
+                    // tracked across input-buffer boundaries below.
+                    m_lastIndexOffset = m_rawIndexCursor;
                     addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     dev_info_t tmpInfo = {};
@@ -182,6 +203,11 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             {
                 m_logStats.CacheDiagnosticData(m_comm.rxPkt.dataHdr.id, m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size, timestamp, m_comm.rxPkt.dataHdr.offset);
             }
+
+            // SN-8328: this packet's bytes end at dPtr, so the NEXT packet starts
+            // at the following byte. Mirrors ISLogReader's scan cursor; persists
+            // across input buffers so a split packet keeps its true start.
+            m_rawIndexCursor = rawFileBase + static_cast<uint64_t>(dPtr - dataBuf) + 1;
         }
     }
 
@@ -207,14 +233,9 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         return false;   // unable to push the buffer into the chunk
     }
 
-    // D-01 / SN-7879: advance the index-offset counter for the *next*
-    // chunk-input. The base cDeviceLog::SaveData(int, ...) used to do
-    // this immediately on entry, but that broke per-packet emission
-    // (records inside the parser loop above would have been tagged
-    // with the next-chunk's offset). We defer the bump to here so the
-    // offset captured by per-packet addIndexRecord calls matches the
-    // chunk-input's starting offset.
-    m_lastIndexOffset += dataSize;
+    // SN-8328: m_lastIndexOffset is no longer a chunk-input accumulator — each
+    // .idx record now gets its true physical .raw offset from m_rawIndexCursor
+    // in the parse loop above, so there is no per-buffer bump here.
 
     return true;
 }

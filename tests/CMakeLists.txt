@@ -39,6 +39,7 @@ if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISHttpRequest.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_resolver.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_v21_e2e.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_truncated_log.cpp")
     # NOTE (SN-8328): only *some* of this PR's tests are POSIX-only and excluded
     # above (test_log_reader/test_log_writer/test_truncated_log — they use
