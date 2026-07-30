@@ -375,32 +375,30 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             // Parse IPv4 from message
             struct sockaddr_in addr;
             mdns_record_parse_a(data, size, record_offset, record_length, &addr);
-            // Copy IPv4 address to new record
-            newRecord.data.a = mdns_record_a_cpp_t(addr);
+            // Construct IPv4 address in the (raw) union storage. The union members are non-trivial and
+            // the storage is not yet holding a live object, so placement-new — not assignment — is required.
+            new (&newRecord.data.a) mdns_record_a_cpp_t(addr);
         } else if (rtype == MDNS_RECORDTYPE_PTR) {
             // Record is a PTR record
             // Parse PTR name from message
             mdns_string_t ptrTxt = mdns_record_parse_ptr(data, size, record_offset, record_length,
                                                       namebuffer, sizeof(namebuffer));
             // Copy PTR name to new record
-            mdns_record_ptr_cpp_t ptrRecord = mdns_record_ptr_cpp_t(std::string(MDNS_STRING_ARGS(ptrTxt)));
-            newRecord.data.ptr = ptrRecord;
+            new (&newRecord.data.ptr) mdns_record_ptr_cpp_t(std::string(MDNS_STRING_ARGS(ptrTxt)));
         } else if (rtype == MDNS_RECORDTYPE_AAAA) {
             // Record is an IPv6 Address
             // Parse IPv6 from message
             struct sockaddr_in6 addr;
             mdns_record_parse_aaaa(data, size, record_offset, record_length, &addr);
             // Copy IPv6 address to new record
-            mdns_record_aaaa_cpp_t aaaaRecord = mdns_record_aaaa_cpp_t(addr);
-            newRecord.data.aaaa = aaaaRecord;
+            new (&newRecord.data.aaaa) mdns_record_aaaa_cpp_t(addr);
         } else if (rtype == MDNS_RECORDTYPE_SRV) {
             // Record is an SRV record
             // Parse data from SRV record
             mdns_record_srv_t srv = mdns_record_parse_srv(data, size, record_offset, record_length,
                                                           namebuffer, sizeof(namebuffer));
             // Copy data in to new record
-            mdns_record_srv_cpp_t srvRecord = mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
-            newRecord.data.srv = srvRecord;
+            new (&newRecord.data.srv) mdns_record_srv_cpp_t(srv.priority, srv.weight, srv.port, std::string(MDNS_STRING_ARGS(srv.name)));
         } else {
             log_warn(IS_LOG_MDNS_CACHE, "Unable to process unknown MDNS record type: Not Supported.");
             return -ENOTSUP;
@@ -428,8 +426,7 @@ int mdns::queryCallback(int sock, const struct sockaddr* from, size_t addrlen, m
             std::vector<unsigned char> value;
             for (std::size_t p = 0; p < txtbuffer[itxt].value.length; p++) { value.push_back(txtbuffer[itxt].value.str[p]); }
 
-            mdns_record_txt_cpp_t txtRecord = mdns_record_txt_cpp_t(key, value);
-            newRecord.data.txt = txtRecord;
+            new (&newRecord.data.txt) mdns_record_txt_cpp_t(key, value);
             newRecord.type = (mdns_record_type)rtype;
             responses.insert_or_assign(newRecord, std::chrono::steady_clock::now()-std::chrono::microseconds(100*backtick));
             backtick++;
