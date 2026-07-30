@@ -31,18 +31,11 @@ public:
         static CustomVirtualPortFactory instance;
         return instance;
     }
-
+    CustomVirtualPortFactory() { }
+    
     /** Remove certain constructors/operators, because we're a singleton... */
     CustomVirtualPortFactory(CustomVirtualPortFactory const &) = delete;
     CustomVirtualPortFactory& operator=(CustomVirtualPortFactory const&) = delete;
-
-    /** We are using virtual ports, so rather than an external driver init process we rely on, we init the ports
-     * here in the constructor */
-    CustomVirtualPortFactory() {
-        /** This init routine assigns the base port functions of the underlying port implementation, for all virtual ports
-         */
-        initCustomPorts();
-    }
     
     /**
      * These four functions will be required for your implementation, can be 

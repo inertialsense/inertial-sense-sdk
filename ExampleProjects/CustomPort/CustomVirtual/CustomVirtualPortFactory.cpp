@@ -36,16 +36,14 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
      *  CustomVirtualPort; defined g_customPorts given by TESTn_PORT is an array of custom_port_t, 0 and 1 are loopback ports
      *  and present the only ports utilized in this simple example
      */
-    custom_port_t* customPort;
+    custom_port_t* customPort = new custom_port_t();
 
-    if (pName == "TEST0") {
-        customPort = TEST0_PORT;
-    }
-    else if (pName == "TEST1") {
-        customPort = TEST1_PORT;
+    if (customPort) {
+        initCustomPort(*customPort, pName, pType);
     }
     else
         return nullptr;
+        
 
     /** Need a port_handle_t reference to our port to use for our own validation and to return from bind */
     port_handle_t port = (port_handle_t) customPort;
@@ -73,7 +71,8 @@ bool CustomVirtualPortFactory::releasePort(port_handle_t port) {
     /** If you allocated your port object on the heap, free the memory (delete) here;
      * In this example we use a virtual port with the static object, so there is no memory to free, only clear
      */
-    memset(port, 0, sizeof(custom_port_t));      //or for example, delete (serial_port_t*)port;
+    memset(port, 0, sizeof(custom_port_t));
+    delete static_cast<custom_port_t*>(port);
 
     return true;
 }
@@ -90,7 +89,7 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
         return false;   // we can only validate this port type - all others fail
     }
    
-    /** Check port name to make sure it would be found, matching the naming described in the custom port definition */    
+    /** Check port name to make sure it could be found, matching the naming prescribed by custom port definition */
     const std::regex pattern("^TEST([0-9]+)$");
     std::smatch m;
     if (! std::regex_match(pName, m, pattern) ) {
@@ -119,20 +118,9 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
 
     /** User implementation to populate names of ports as present on system
      */
-    std::vector<std::string> portNames = {};
-    portNames.clear();
-    portNames.resize(NUM_COM_PORTS);
-    
-    /** Grab each string with the unique identifying names the underlying test port implementation dictates
-     */
-    int i = 0;      // Populate the vector using index into global custom port array
-    for (auto& str : portNames) {
-        str = std::string( reinterpret_cast<const char*>(g_customPorts[i].name));        
-        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Found port '%s'", str.c_str());
-        ++i;
-    }
+    const std::vector<std::string> portNames = {"TEST0", "TEST1"};
 
-    /** For each port that is found by name matching search pattern, validate it and call user-defined callback function
+    /** For each port that is found by name matching search pattern, validate it and call PortManager callback function
      */
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);

@@ -17,7 +17,7 @@
 #include "core/base_port.h"
 #include "ring_buffer.h"  //optional, depends upon your implementation
 #include "com_manager.h" //optional, depends upon your implementation
-
+#include <string>
 /**
  * PORT IMPLEMENTATION used for unit and functional tests
  * This is a generic port implementation that provides both bridging and loopback capability
@@ -50,20 +50,6 @@ typedef struct custom_port_s {
     uint8_t         name[PORT_NAME_SIZE];
 } custom_port_t;
 
-/** These are defined in the .cpp file
- */
-extern custom_port_t g_customPorts[NUM_COM_PORTS];
-
-/** Macros that give us an easy way to reference the various custom test ports
- */
-#define TEST_PORT(n)     ((custom_port_t *)&g_customPorts[n])
-#define TEST0_PORT       TEST_PORT(0)
-#define TEST1_PORT       TEST_PORT(1)
-#define TEST2_PORT       TEST_PORT(2)
-#define TEST3_PORT       TEST_PORT(3)
-#define TEST4_PORT       TEST_PORT(4)
-#define TEST5_PORT       TEST_PORT(5)
-
 
 /** Declarations for the core port functions which will provide the underlying implementation for the base_port
  */
@@ -76,7 +62,6 @@ static int customPortValidate(port_handle_t port);
     
 /** Other internal support functions, not hooked to the base_port API
  */
-void initCustomPorts();
-
+void initCustomPort(custom_port_t& port, const std::string& pName, uint16_t pType);
 
 #endif // CUSTOM_VIRTUAL_PORT_H
