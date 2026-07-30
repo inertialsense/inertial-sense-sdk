@@ -76,6 +76,13 @@ bool cDeviceLogRaw::CloseAllFiles()
     // Close file
     CloseISLogFile(m_pFile);
 
+    // SN-8328 (rotation ordering): the current .raw segment is finalized. Reset
+    // the physical-offset accounting so the NEXT segment's records index from 0.
+    // (The base's lazy OpenNewSaveFile() also zeroes m_fileSize, but that fires
+    // only at the next chunk flush — too late for records indexed in between.)
+    m_fileSize       = 0;
+    m_rawIndexCursor = 0;
+
     return true;
 }
 
@@ -98,15 +105,33 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 {
     cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);    // call into the super, in case it needs to do something special
 
+    // SN-8328 (rotation ordering): if this input buffer won't fit in the current
+    // chunk, flush + (maybe) rotate FIRST — BEFORE indexing this buffer's
+    // packets below. PushBack() puts the whole buffer into one chunk, so a
+    // record and its data must land in the same segment; flushing after indexing
+    // would emit the record into the closing segment's .idx while its data goes
+    // to the next segment (a trusted sidecar would then double-count it).
+    // Records already indexed for the current chunk are fully placed, so this
+    // flush writes them to the correct segment.
+    if (dataSize > m_chunk.GetBuffFree())
+    {
+        if (!WriteChunkToFile())
+        {
+            return false;   // there was an error writing the chunk to disk
+        }
+        else if (m_fileSize >= m_maxFileSize)
+        {
+            CloseAllFiles();   // rotate; resets m_fileSize + m_rawIndexCursor for the new segment
+        }
+    }
+
     // SN-8328: physical .idx offsets. The .raw segment is pure concatenated
     // packet bytes (chunks are written header-less — see DeviceLogRaw.h), so a
     // record's physical byte offset in the file is simply its position in that
     // stream. `rawFileBase` is the physical position of THIS input buffer's first
     // byte within the current file = (bytes already flushed to the file) +
-    // (bytes buffered in the current chunk before this input). Both terms are
-    // flush-invariant — a chunk flush moves bytes from the buffer to the file,
-    // leaving m_fileSize + GetDataSize() unchanged — so it is valid to capture
-    // here, before the possible chunk flush below.
+    // (bytes buffered in the current chunk before this input). The flush above
+    // has already run, so both terms reflect the segment this buffer lands in.
     const uint64_t rawFileBase = static_cast<uint64_t>(m_fileSize) + static_cast<uint64_t>(m_chunk.GetDataSize());
     if (rawFileBase == 0) {
         m_rawIndexCursor = 0;   // a fresh .raw file -> per-file offsets restart at 0
@@ -208,21 +233,6 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             // at the following byte. Mirrors ISLogReader's scan cursor; persists
             // across input buffers so a split packet keeps its true start.
             m_rawIndexCursor = rawFileBase + static_cast<uint64_t>(dPtr - dataBuf) + 1;
-        }
-    }
-
-    // Ensure data will fit in chunk.  If not, create new chunk
-    if (dataSize > m_chunk.GetBuffFree())
-    {
-        // Save chunk to file and clear
-        if (!WriteChunkToFile())
-        {
-            return false;   // there was a error writing the chunk to disk
-        }
-        else if (m_fileSize >= m_maxFileSize)
-        {
-            // Close existing file
-            CloseAllFiles();
         }
     }
 
