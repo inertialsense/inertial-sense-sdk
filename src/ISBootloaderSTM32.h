@@ -1,3 +1,14 @@
+/**
+ * @file ISBootloaderSTM32.h
+ * @brief Bootloader-protocol implementation for the STM32 UART ROM bootloader (the same
+ *        USART-based command set exposed by the chip's built-in bootloader before DFU/ISB is
+ *        available), used to erase/read/write flash and jump to an application entry point.
+ *
+ * @author Dave Cutting
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved. See the MIT
+ *            license text below.
+ */
+
 /*
 MIT LICENSE
 
@@ -15,36 +26,63 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderBase.h"
 
+/**
+ * cISBootloaderBase implementation for the STM32 ROM bootloader's UART command protocol
+ * (GET/GET_VERSION/GET_ID/READ_MEMORY/WRITE_MEMORY/GO/erase, per ST AN3155). Used to identify
+ * the connected STM32 part, and to erase, program, and jump into a flashed application image.
+ */
 class cISBootloaderSTM32 : public ISBootloader::cISBootloaderBase
 {
 public:
+    /**
+     * @param filename path to the firmware image this session will operate on
+     * @param upload_cb callback invoked to report image-download progress; dummy_update_callback if null
+     * @param verify_cb callback invoked to report image-verify progress; dummy_verify_callback if null
+     * @param info_cb callback invoked to report status/log messages; dummy_info_callback if null
+     * @param port the serial port the device is connected on
+     */
     cISBootloaderSTM32(
         std::string filename,
         fwUpdate::pfnProgressCb upload_cb,
         fwUpdate::pfnProgressCb verify_cb,
         fwUpdate::pfnStatusCb info_cb,
         port_handle_t port
-  ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
+  ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb }
     {
         m_port = port;
     }
-    
-    ~cISBootloaderSTM32() 
+
+    /** Destructor; the serial port is owned by the caller, not closed here. */
+    ~cISBootloaderSTM32()
     {
-        
+
     }
 
+    /**
+     * @param param a null-terminated serial port name to compare against this device's port
+     * @return IS_OP_OK if param matches this device's serial port name, otherwise IS_OP_ERROR
+     */
     is_operation_result match_test(void* param);
-    
+
+    /** @return IS_OP_OK on success, otherwise IS_OP_ERROR */
     is_operation_result reboot() {}
+    /** @return IS_OP_OK on success, otherwise IS_OP_ERROR; reboots up into the next bootloader/application level */
     is_operation_result reboot_up();
 
+    /** @return the device's Inertial Sense serial number, or 0 if it could not be read */
     uint32_t get_device_info();
-    
+
+    /** @return IS_OP_OK on success, otherwise IS_OP_ERROR; erases and programs flash from the image path passed to the constructor */
     is_operation_result download_image(void);
+    /** @return IS_OP_OK always (no-op; reading an image back is not supported over this transport) */
     is_operation_result upload_image(void) { return IS_OP_OK; }
+    /** @return IS_OP_OK always (no-op; verification is not supported over this transport) */
     is_operation_result verify_image(void) { return IS_OP_OK; }
-    
+
+    /**
+     * @param imgSign the eImageSignature bitmask of the candidate image to check against this device
+     * @return non-zero if the connected STM32 device ID matches a known/supported part and imgSign is compatible with it, otherwise 0
+     */
     uint8_t check_is_compatible(uint32_t imgSign);
 
 private:

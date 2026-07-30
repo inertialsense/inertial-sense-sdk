@@ -1,3 +1,11 @@
+/**
+ * @file intel_hex_utils.h
+ * @brief Utility functions for working with Intel HEX firmware files: existence
+ *        checks, flash-page usage calculation, structural/content validation,
+ *        and extraction of an embedded STM32 bootloader version signature.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved.
+ */
+
 #pragma once
 
 #include <string>

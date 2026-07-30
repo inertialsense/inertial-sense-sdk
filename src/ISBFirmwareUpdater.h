@@ -1,6 +1,8 @@
 /**
- * @file ISBFirmwareUpdater.h 
- * @brief ${BRIEF_DESC}
+ * @file ISBFirmwareUpdater.h
+ * @brief Device-side fwUpdate::FirmwareUpdateDevice implementation for the ISB (Inertial Sense
+ *        Bootloader) legacy update protocol -- page-oriented erase/write/verify of an Intel-HEX
+ *        image over the ISB's ASCII command/ack wire protocol.
  *
  * @author Kyle Mallory on 5/29/24.
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
@@ -20,22 +22,27 @@
 
 //#define BOOTLOADER_RETRIES                  12
 //#define BOOTLOADER_RESPONSE_DELAY           10
-#define BOOTLOADER_REFRESH_DELAY            500
-#define MAX_VERIFY_CHUNK_SIZE               1024
-#define BOOTLOADER_TIMEOUT_DEFAULT          1000
-#define MAX_SEND_COUNT                      510
+#define BOOTLOADER_REFRESH_DELAY            500    //!< minimum interval (ms) between successive ISB step refreshes
+#define MAX_VERIFY_CHUNK_SIZE               1024    //!< maximum number of bytes read back per verify-chunk request
+#define BOOTLOADER_TIMEOUT_DEFAULT          1000    //!< default timeout (ms) for an ISB command/ack exchange
+#define MAX_SEND_COUNT                      510     //!< maximum number of bytes sent per ISB write command
 
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
-#define FLASH_PAGE_SIZE                     65536
+#define FLASH_PAGE_SIZE                     65536   //!< logical page size used for ISB page offsets (0x0000-0xFFFF); independent of the device's actual physical flash page size
 
+/**
+ * Device-side fwUpdate::FirmwareUpdateDevice implementation for the ISB (Inertial Sense
+ * Bootloader) legacy update protocol: erases, writes, and verifies an Intel-HEX image page by
+ * page over the ISB's ASCII command/ack wire protocol.
+ */
 class ISBFirmwareUpdater : public fwUpdate::FirmwareUpdateDevice {
 
 public:
     /**
-     * Constructor to establish a connected to the specified device, and optionally validating against hdwId and serialNo
-     * @param device the libusb device which identifies the connected device to update. This is NOT a libusb_device_handle! If null, this function will use to first detected DFU device which matches the hdwId and/or serialNo
-     * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
-     * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
+     * Constructor to manage an ISB-protocol firmware update of the specified target on the given device.
+     * @param target the fwUpdate target device this updater instance is responsible for
+     * @param device the connected device the target resides on
+     * @param toHost a shared byte-stream queue that outgoing responses/acks are written to, to be sent back to the host
      */
     ISBFirmwareUpdater(fwUpdate::target_t target, const device_handle_t& device, std::deque<uint8_t>& toHost) : FirmwareUpdateDevice(target), device(device), target_devInfo(), toHost(toHost) { }
 
@@ -46,38 +53,60 @@ public:
     };
 
     /**
-     * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.
-     * @param level
-     * @param message
-     * @param ...
-     * @return
+     * Formats and reports a progress/status message. Overridden here because ISB reports progress
+     * per erase/write/verify page step rather than per fixed-size chunk, so the base class's
+     * chunk-count formatting doesn't apply.
+     * @param level the severity of the message (one of IS_LOG_LEVEL_*)
+     * @param message a printf-style format string
+     * @param ... format arguments for message
+     * @return true if the message was successfully formatted and reported, otherwise false
      */
     bool fwUpdate_sendProgressFormatted(int level, const char* message, ...) override;
 
+    /**
+     * Formats and reports a progress/status message that additionally carries an explicit
+     * chunk-count pair, for steps (e.g. page verify) that report progress against a page/chunk
+     * count that differs from the base class's own bookkeeping.
+     * @param level the severity of the message (one of IS_LOG_LEVEL_*)
+     * @param total_chunks the total number of chunks/pages for the current step
+     * @param num_chunks the number of chunks/pages completed so far
+     * @param message a printf-style format string
+     * @param ... format arguments for message
+     * @return true if the message was successfully formatted and reported, otherwise false
+     */
     bool fwUpdate_sendProgressFormatted(int level, int total_chunks, int num_chunks, const char* message, ...);
 
-    // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
+    /**
+     * Drives the ISB update state machine forward by one step; called internally by
+     * processMessage() when a message is received, and should also be called periodically
+     * (independent of message reception) so timeouts and page erase/write/verify progress
+     * continue to advance.
+     * @param msg_type the type of message that was last processed, or MSG_UNKNOWN
+     * @param processed true if msg_type was already handled by the caller (additional/optional
+     *        processing may still occur here), false if it was not yet handled
+     * @return true if some action was taken as a result of this step, otherwise false
+     */
     bool fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) override;
 
-    // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
     /**
      * Performs a system reset of various severity per reset_flags, (ie, RESET_SOFT by informing the OS/MCU to restart the system,
      * vs RESET_HARD, usually by pulling interfacing pins into the MCU either HIGH or LOW to force a reset state on the hardware).
      * Note that some systems may not always be able to respond with a success before the system is reset.
      * If a system is NOT able to perform a reset (ie UNSUPPORTED, etc), this MUST return false.
      * @param target_id the device to reset
+     * @param reset_flags the severity/style of reset to perform (e.g. RESET_SOFT, RESET_HARD)
      * @return true if successful, otherwise false
      */
     bool fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
 
-    // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
     /**
      * Internally called by fwUpdate_processMessage() when a REQ_VERSION_INFO message is received, to request version info for the target device.
      * This is to be implemented by the concrete class.  If the target/requested device can not provide version info, this should return false.
      * If this call returns false, the API will respond with a MSG_VERSION_INFO_RESP, with the message filled with 0xFF, indicating not-supported.
      * NOTE that this call is passed a reference to a const dev_info_t; the base-class provides the instance which is referenced. As the implementer
      * of this class, it is your responsibility to fill it with the appropriate data.
-     * @param a reference to a dev_info_t struct that contains the necessary version information to be returned back to the querying host.
+     * @param target_id the device whose version info is being requested
+     * @param dev_info reference to a dev_info_t struct to fill with the version information to be returned back to the querying host
      * @return true if the message was received and parsed without error, false otherwise.
      */
     bool fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) override;
@@ -88,7 +117,6 @@ public:
      * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_startUpdate
      * this should return "GOOD_TO_GO" on success.
      */
-    // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
     fwUpdate::update_status_e fwUpdate_startUpdate(const fwUpdate::payload_t& msg) override;
 
     /**
@@ -101,26 +129,25 @@ public:
      * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_writeImageChunk
      * this should return "WAITING_FOR_DATA" if more chunks are expected, or an error.
      */
-    // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
     fwUpdate::update_status_e fwUpdate_writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) override;
 
     /**
-     * Validated and finishes writing of the firmware image; that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization.
+     * Validates and finishes writing of the firmware image; that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization.
      * @param target_id the target_id
      * @param slot_id the image slot, if applicable (otherwise 0)
-     * @return
+     * @param flags additional flags controlling finalization behavior
+     * @return an update_status_e indicating the continued state of the update process, or an error
      */
-    // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
     fwUpdate::update_status_e fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) override;
 
     /**
-     * Writes the requested data (usually a packed payload_t) out to the specified device
+     * Writes the requested data (usually a packed payload_t) out to the specified device.
      * Note that the implementation between a target and an actual interface is device-specific. In most cases,
      * for a Device-implementation, this will typically specify TARGET_HOST, which will direct back to the
      * controlling host.
-     * @param target
-     * @param buffer
-     * @param buff_len
+     * @param target the target this message is directed to
+     * @param buffer the encoded buffer to send
+     * @param buff_len the number of bytes in the encoded buffer to send
      * @return true if the data was successfully sent to the underlying communication system, otherwise false
      */
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
