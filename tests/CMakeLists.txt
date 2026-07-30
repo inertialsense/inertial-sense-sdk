@@ -39,6 +39,7 @@ if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISHttpRequest.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_resolver.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_v21_e2e.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_truncated_log.cpp")
     # NOTE (SN-8328): only *some* of this PR's tests are POSIX-only and excluded
     # above (test_log_reader/test_log_writer/test_truncated_log — they use
@@ -93,6 +94,14 @@ endif()
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# SN-7901: some tests deliberately exercise the now-[[deprecated]] legacy
+# log-reader API (cISLogger::LoadFromDirectory / ReadData). Suppress the
+# deprecation warnings here to match the SDK core's -Wno-deprecated-declarations
+# convention (CMakeLists.txt); the attribute still signals downstream consumers.
+if(NOT WIN32)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-deprecated-declarations)
+endif()
 
 # Link IS-SDK libraries to the executable
 include(${IS_SDK_DIR}/include_is_sdk_target_link_libraries.cmake)

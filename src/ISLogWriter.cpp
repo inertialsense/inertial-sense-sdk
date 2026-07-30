@@ -91,6 +91,12 @@ ISExpected<ISLogWriter> ISLogWriter::create(Options opts) {
     w.header_         = idx::makeDefaultHeader(kProducerVersion,
                                                opts.tsUnits,
                                                opts.tsSource);
+    // SN-8383: the SDK always writes the current .idx version (v2.1); it never
+    // emits an older format. ISLogWriter carries each source record's
+    // per-record host-uptime delta through via ISRecordView::localUptimeMs()
+    // (see append()), so it declares HAS_LOCAL_DELTA. `record_size` stays at
+    // makeDefaultHeader's 32.
+    w.header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA;
 
     w.rawStream_.open(rawTmp,
                       std::ios::binary | std::ios::out | std::ios::trunc);
@@ -237,16 +243,20 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     rawOffset_ += bytes.second;
 
     idx::is_log_idx_record_v2_t rec{};
-    rec.timestamp = view.timestamp().value;
-    rec.offset    = recordOffset;
-    rec.did       = view.did();
-    rec.flags     = view.flags();
-    rec.reserved  = 0;
+    rec.timestamp       = view.timestamp().value;
+    rec.offset          = recordOffset;
+    rec.did             = view.did();
+    rec.flags           = view.flags();
+    rec.reserved        = 0;
+    rec.local_uptime_ms = view.localUptimeMs();   // SN-8383: carry the source's per-record delta through
 
-    uint8_t buf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
+    // Always write the full v2.1 (32-byte) record — the SDK never emits an
+    // older .idx version. The per-record delta is preserved from the source
+    // (0 only if the source itself was a v2.0 log with no delta).
+    uint8_t buf[idx::IS_LOG_IDX_RECORD_V2_1_SIZE];
     idx::serializeRecord(buf, rec);
     idxStream_.write(reinterpret_cast<const char*>(buf),
-                     idx::IS_LOG_IDX_RECORD_V2_SIZE);
+                     idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
     if (!idxStream_.good()) {
         return fail(ISErrorCode::Io,
                     "ISLogWriter::append: short write on .idx");
