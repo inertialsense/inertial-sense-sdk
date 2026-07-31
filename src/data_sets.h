@@ -172,8 +172,13 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_GYR              (eDataIDs)103   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
+<<<<<<< Updated upstream
 #define DID_EXT_POS                     (eDataIDs)106   /**< (ext_pos_t) External position observation */
 #define DID_EXT_VEL                     (eDataIDs)107   /**< (ext_vel_t) External velocity observation */
+=======
+#define DID_EXTERNAL_AIDING             (eDataIDs)106   /**< (external_aiding_u) External aiding information. */
+
+>>>>>>> Stashed changes
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
 #define DID_GPX_FIRST                   (eDataIDs)120   /**< First of GPX DIDs */
@@ -3327,6 +3332,9 @@ typedef struct PACKED
     wheel_config_t          wheelConfig;   //!< Wheel transform, track width, and wheel radius
 
 } ground_vehicle_t;
+
+external_aiding_u
+
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
 enum eDynamicModel
