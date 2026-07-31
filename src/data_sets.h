@@ -172,13 +172,10 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_GYR              (eDataIDs)103   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
-<<<<<<< Updated upstream
 #define DID_EXT_POS                     (eDataIDs)106   /**< (ext_pos_t) External position observation */
 #define DID_EXT_VEL                     (eDataIDs)107   /**< (ext_vel_t) External velocity observation */
-=======
-#define DID_EXTERNAL_AIDING             (eDataIDs)106   /**< (external_aiding_u) External aiding information. */
+// #define DID_EXTERNAL_AIDING             (eDataIDs)106   /**< (external_aiding_u) External aiding information. */
 
->>>>>>> Stashed changes
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
 #define DID_GPX_FIRST                   (eDataIDs)120   /**< First of GPX DIDs */
@@ -1350,29 +1347,6 @@ typedef struct PACKED
     int             mag_cal_done;   //!< Flag whether the magnetometer calibration process has completed
     int             stat_magfield;  //!< Flag whether the magnetic field is stationary/consistent (suitable for mag calibration)
 } inl2_status_t;
-
-/** @brief External position sensor sample. */
-
-typedef struct PACKED
-{
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    double     pos[3];       //!< position {x,y,z} (m)
-    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
-    float      var[3];       //!< observation variance 
-    //uint32_t   frame;        //!< frame of measurement: 0=ECEF, 1=LLA
-} ext_pos_t;
-
-/** @brief External velocity sensor sample. */
-
-typedef struct PACKED
-{
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
-    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
-    float      var[3];       //!< observation variance 
-    uint32_t   frame;        //!< frame of measurement: 0=ECEF, 1=NED, 2=Body
-} ext_vel_t;
-
 
 /** @brief Generic single-axis scalar sensor sample: a timestamped single value, reused across multiple DIDs for simple scalar sensor outputs. */
 typedef struct PACKED
@@ -3333,8 +3307,34 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-external_aiding_u
+/** @brief External aiding status bitflags, used with ext_vel_t.status (DID_EXTERNAL_AIDING). Reports the frame of measurement for the external aiding sensor. */
+enum eExternalAidingStatus
+{
+    EP_STATUS_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
+    EP_STATUS_FRAME_ECEF    = 1,           //!< ECEF frame
+    EP_STATUS_FRAME_NED     = 2,           //!< NED frame
+    EP_STATUS_FRAME_BODY    = 3            //!< Body frame
+};
 
+/** @brief External position sensor sample. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< frame of measurement: 0=ECEF, 1=NED (see eExternalAidingStatus)
+    double     pos[3];       //!< position {x,y,z} (m)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance 
+} ext_pos_t;
+
+/** @brief External velocity sensor sample. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< frame of measurement: 0=ECEF, 1=NED, 2=Body (see eExternalAidingStatus)
+    float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance 
+} ext_vel_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
 enum eDynamicModel
