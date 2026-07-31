@@ -32,6 +32,10 @@
 
 namespace inertial_sense {
 
+class ISTimeResolver;  // forward — SN-8105 anchored-span accessors take one by
+                       // ref; ISTimeResolver.h includes this header (it builds
+                       // from an ISDeviceLog), so we cannot include it back.
+
 class ISDeviceLog {
 public:
     using did_t = uint32_t;
@@ -116,6 +120,33 @@ public:
      *          empty-composition semantics as `spanStart`.
      */
     TimeStamp spanEnd() const noexcept;
+
+    /**
+     * @brief SN-8105: earliest record timestamp, GPS-anchored via the resolver.
+     *
+     * `spanStart()` returns the raw first/last `TimeStamp::value()` in whatever
+     * time domain the originating record used (session-uptime for radio modules,
+     * GPS-ToW for GPS-anchored devices), so on a GPS-anchored log it can report a
+     * ~0 ms session-uptime value that renders as a 1970 wall-clock. This variant
+     * routes every record's raw timestamp through `resolver` (SN-8339: keyed on
+     * the record's global arrival index, so multi-boot logs bridge per session)
+     * and folds the minimum of the anchored, non-`SessionOnly` results.
+     *
+     * @param resolver  Resolver built from this device log.
+     * @return  Earliest GPS-anchored absolute-ms timestamp, or `spanStart()`
+     *          (raw) if the log has no anchorable records.
+     */
+    TimeStamp anchoredSpanStart(const ISTimeResolver& resolver) const noexcept;
+
+    /**
+     * @brief SN-8105: latest record timestamp, GPS-anchored via the resolver.
+     *        See `anchoredSpanStart`; folds the maximum instead.
+     *
+     * @param resolver  Resolver built from this device log.
+     * @return  Latest GPS-anchored absolute-ms timestamp, or `spanEnd()` (raw)
+     *          if the log has no anchorable records.
+     */
+    TimeStamp anchoredSpanEnd(const ISTimeResolver& resolver) const noexcept;
 
     /** @return  Number of underlying segments composed. */
     std::size_t segmentCount() const noexcept { return segments_.size(); }
@@ -285,6 +316,13 @@ private:
     std::vector<Locator>                              all_;
     std::unordered_map<did_t, std::vector<Locator>>   byDid_;
     static const std::vector<Locator>                 kEmptyLocators_;
+
+    //! SN-8339: per-segment base of the global arrival index. A record at
+    //! (segment s, record r) has global arrival index `segmentBase_[s] + r` —
+    //! its 0-based position in cross-segment arrival order. Stamped onto every
+    //! view the range iterator yields so consumers can key the multi-boot
+    //! resolver. Matches `ISTimeResolver`'s own byte-scan arrival numbering.
+    std::vector<std::size_t>                          segmentBase_;
 
     std::function<void(std::size_t)>   onSegmentBoundary_;
 

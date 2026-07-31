@@ -141,15 +141,13 @@ protected:
 TEST_F(LogReaderTest, OpenSegmentSucceeds) {
     auto r = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(r.has_value()) << "openSegment failed: " << r.error().message;
-    // SN-8328 (B): this fixture is a ~1 MB cISLogger raw log, i.e. larger than
-    // one 128 KB chunk. The SDK writer stores chunk-relative .idx offsets that
-    // desync from the physical .raw offset past the first chunk flush (tracked
-    // as an SDK writer-offset follow-up). The reader's offset-sanity probe
-    // detects this and rebuilds the index from a full .raw scan, so
-    // hadOnDiskIndex() is false here — and the rebuilt index is correct, which
-    // the rest of this assertion set verifies. (A <128 KB log's writer index is
-    // trusted; RoundTripBitIdentical covers that path via ISLogWriter output.)
-    EXPECT_FALSE(r->hadOnDiskIndex());
+    // SN-8328: this fixture is a ~1 MB cISLogger raw log spanning several 128 KB
+    // chunks. The RAW writer now stamps each record's true physical .raw offset
+    // (m_fileSize + chunk fill + within-buffer position), so the offsets are
+    // monotonic and correct across chunk boundaries and the reader TRUSTS the
+    // on-disk sidecar — no rebuild. (Previously the writer stamped chunk-relative
+    // offsets that reset at each flush, forcing a scan-rebuild here.)
+    EXPECT_TRUE(r->hadOnDiskIndex());
     EXPECT_GT(r->recordCount(), 0u);
     EXPECT_EQ(r->header().magic[0], 'I');
     EXPECT_EQ(r->header().magic[3], 'X');
@@ -439,7 +437,7 @@ TEST_F(LogReaderTest, GpsRawObsTimeTriggersRebuild) {
     ASSERT_GT(bytes.size(), IS_LOG_IDX_HEADER_SIZE + IS_LOG_IDX_RECORD_V2_SIZE);
 
     auto* recPtr = reinterpret_cast<uint8_t*>(bytes.data() + IS_LOG_IDX_HEADER_SIZE);
-    is_log_idx_record_v2_t r = parseRecord(recPtr);
+    is_log_idx_record_v2_t r = parseRecord(recPtr, IS_LOG_IDX_RECORD_V2_1_SIZE);
     r.did       = DID_GNSS1_RAW;
     r.timestamp = 1'700'000'000'000ULL;   // baked absolute obs-time — not a valid device-timeline value
     serializeRecord(recPtr, r);

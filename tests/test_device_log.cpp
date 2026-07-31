@@ -10,6 +10,8 @@
 #include "DeviceLog.h"
 #include "ISDeviceLog.h"
 #include "ISFileManager.h"
+#include "ISLogFile.h"      // cISLogFile (SN-8383/8340 .idx inspection)
+#include "ISLogIndex.h"     // idx::readHeader / readRecord / v2.1 flags
 #include "ISLogger.h"
 #include "test_data_utils.h"
 
@@ -206,6 +208,84 @@ TEST(ISDeviceLog, SegmentBoundaryCallbackFires) {
     for ([[maybe_unused]] ISRecordView v : dl->allRecords()) { /* drain */ }
     // For N segments we expect (N-1) boundary crossings.
     EXPECT_EQ(boundaryHits.load(), dl->segmentCount() - 1);
+
+    teardown(f);
+}
+
+// SN-8339 — the cross-segment iterator stamps a dense global arrival index
+// (0..N-1 in composition order), and a per-DID filtered range carries the SAME
+// global index (not a per-DID local counter) so the multi-boot resolver keys
+// correctly regardless of which range produced the view.
+TEST(ISDeviceLog, StampsGlobalArrivalIndexAcrossSegments) {
+    auto f = buildSingleDeviceFixture("arrival", kSerialA, 1.0f, 256 * 1024);
+    ASSERT_GE(f.segmentsA.size(), 2u) << "need >=2 segments to prove global (not per-segment) index";
+
+    auto dl = ISDeviceLog::fromSegments(f.segmentsA);
+    ASSERT_TRUE(dl.has_value()) << dl.error().message;
+
+    // allRecords() yields a dense 0..N-1 arrival index, strictly in order.
+    std::vector<uint32_t> didByArrival(dl->recordCount(), 0u);
+    uint64_t expected = 0;
+    for (ISRecordView v : dl->allRecords()) {
+        ASSERT_LT(expected, dl->recordCount());
+        EXPECT_EQ(v.arrivalIndex(), expected);
+        didByArrival[expected] = v.did();
+        ++expected;
+    }
+    EXPECT_EQ(expected, dl->recordCount());
+
+    // A per-DID filtered range carries the GLOBAL arrival index — each view's
+    // index maps back to its own DID in the allRecords() ordering.
+    auto dids = dl->presentDids();
+    ASSERT_FALSE(dids.empty());
+    uint64_t checked = 0;
+    for (ISRecordView v : dl->records(dids.front())) {
+        ASSERT_NE(v.arrivalIndex(), ISRecordView::kNoArrivalIndex);
+        ASSERT_LT(v.arrivalIndex(), dl->recordCount());
+        EXPECT_EQ(didByArrival[v.arrivalIndex()], v.did());
+        ++checked;
+    }
+    EXPECT_EQ(checked, dl->records(dids.front()).size());
+
+    teardown(f);
+}
+
+// SN-8383 / SN-8340 — the live logger writes a v2.1 .idx: 32-byte records with
+// a per-record host-uptime delta (arrival-monotonic), and a durable capture
+// epoch + the two feature flags in the header.
+TEST(ISDeviceLog, WriterStampsV21LocalDeltaAndCaptureEpoch) {
+    using namespace inertial_sense::idx;
+    auto f = buildSingleDeviceFixture("v21", kSerialA, 0.3f, 1u << 30);  // one segment
+    ASSERT_FALSE(f.segmentsA.empty());
+
+    fs::path idxPath = f.segmentsA.front();
+    idxPath.replace_extension(".idx");
+    ASSERT_TRUE(fs::exists(idxPath)) << idxPath;
+
+    cISLogFile in(idxPath.string(), "rb");
+    ASSERT_TRUE(in.isOpened());
+    auto hdrR = readHeader(in);
+    ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+
+    // v2.1 header: 32-byte records, both feature flags, a real host wall-clock.
+    EXPECT_EQ(hdrR->record_size, IS_LOG_IDX_RECORD_V2_1_SIZE);
+    EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA, 0u);
+    EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH, 0u);
+    EXPECT_GT(hdrR->capture_epoch_ms, 1'400'000'000'000ULL)   // > ~2014 => a real epoch, not uptime
+        << "capture_epoch_ms should be a recent host wall-clock (SN-8340)";
+    ASSERT_GT(hdrR->total_records, 0u);
+
+    // Per-record local_uptime_ms is present and arrival-monotonic (the host
+    // clock only advances). Not asserting non-zero: a very fast write could keep
+    // every delta within the same millisecond; monotonicity is the invariant.
+    uint64_t prev = 0;
+    for (uint64_t i = 0; i < hdrR->total_records; ++i) {
+        auto recR = readRecord(in, hdrR->record_size);
+        ASSERT_TRUE(recR.has_value()) << "record " << i << ": " << recR.error().message;
+        EXPECT_GE(recR->local_uptime_ms, prev)
+            << "local_uptime_ms must be arrival-monotonic (record " << i << ")";
+        prev = recR->local_uptime_ms;
+    }
 
     teardown(f);
 }
