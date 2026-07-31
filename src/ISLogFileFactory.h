@@ -1,14 +1,14 @@
-/*
-MIT LICENSE
-
-Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+/**
+ * @file ISLogFileFactory.h
+ * @brief Platform-selecting factory for `cISLogFileBase` instances.
+ *
+ * Callers that need a log file should go through `CreateISLogFile()` / `CloseISLogFile()` rather
+ * than constructing a concrete `cISLogFileBase` implementation directly, so the platform choice
+ * (stdio-backed `cISLogFile` vs. FatFs-backed `cISLogFileFatFs` on EVB-2) stays centralized here.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ */
 
 #ifndef IS_SDK_CREATE_IS_LOG_FILE_H_
 #define IS_SDK_CREATE_IS_LOG_FILE_H_
@@ -22,6 +22,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 
+/**
+ * @brief Allocate a new, unopened log file for the current platform.
+ * @return a heap-allocated `cISLogFileBase*` (concrete type depends on platform); never null.
+ *         Caller owns the returned pointer and must release it via CloseISLogFile().
+ */
 inline cISLogFileBase* CreateISLogFile()
 {
 #if PLATFORM_IS_EVB_2
@@ -31,6 +36,14 @@ inline cISLogFileBase* CreateISLogFile()
 #endif
 }
 
+/**
+ * @brief Allocate and open a log file for the current platform.
+ * @param filePath path to the file to open.
+ * @param mode stdio-style `fopen()` mode string (e.g. "rb", "wb").
+ * @return a heap-allocated `cISLogFileBase*` (concrete type depends on platform); never null.
+ *         Caller owns the returned pointer and must release it via CloseISLogFile(). Check
+ *         `isOpened()` on the result to confirm the open succeeded.
+ */
 inline cISLogFileBase* CreateISLogFile(const char* filePath, const char* mode)
 {
 #if PLATFORM_IS_EVB_2
@@ -40,6 +53,14 @@ inline cISLogFileBase* CreateISLogFile(const char* filePath, const char* mode)
 #endif
 }
 
+/**
+ * @brief Allocate and open a log file for the current platform.
+ * @param filePath path to the file to open.
+ * @param mode stdio-style `fopen()` mode string (e.g. "rb", "wb").
+ * @return a heap-allocated `cISLogFileBase*` (concrete type depends on platform); never null.
+ *         Caller owns the returned pointer and must release it via CloseISLogFile(). Check
+ *         `isOpened()` on the result to confirm the open succeeded.
+ */
 inline cISLogFileBase* CreateISLogFile(const std::string& filePath, const char* mode)
 {
 #if PLATFORM_IS_EVB_2
@@ -49,6 +70,10 @@ inline cISLogFileBase* CreateISLogFile(const std::string& filePath, const char* 
 #endif
 }
 
+/**
+ * @brief Close and free a log file allocated by `CreateISLogFile()`.
+ * @param logFile reference to the pointer to close and delete; set to null on return. No-op if already null.
+ */
 inline void CloseISLogFile(cISLogFileBase*& logFile)
 {
     if (logFile != NULLPTR)

@@ -18,19 +18,22 @@ extern "C"
     #include "core/base_port.h"
 }
 
+/** Lightweight, blocking HTTP/1.1 client built on the tcpPort transport; supports GET/POST/PUT and multipart PUT. */
 class ISHttpRequest {
 public:
+    /** Result of an HTTP request performed by ISHttpRequest. */
     struct Response {
-        int statusCode = -1;
-        std::string statusMessage;
-        std::string body;
-        std::map<std::string, std::string> headers;
+        int statusCode = -1;                        //!< HTTP status code (e.g. 200), or -1 if the request failed before a response was received
+        std::string statusMessage;                   //!< HTTP status reason phrase (e.g. "OK")
+        std::string body;                             //!< response body, with any chunked/length framing already removed
+        std::map<std::string, std::string> headers;   //!< response headers, keyed by header name
     };
 
+    /** One field of a multipart/form-data body sent via putMultipart(). */
     struct MultipartField {
-        std::string name;
-        std::string contentType;   // e.g., "application/json", "application/zip"
-        std::string data;
+        std::string name;          //!< form field name
+        std::string contentType;   //!< MIME type of data, e.g. "application/json", "application/zip"
+        std::string data;          //!< raw field content
     };
 
     /**
@@ -69,11 +72,18 @@ public:
     static Response putMultipart(const std::string& url, const std::vector<MultipartField>& fields, int timeoutMs = 10000);
 
 private:
+    /** Builds a raw HTTP/1.1 GET request line and headers for host/path. */
     static std::string buildGetRequest(const std::string& host, const std::string& path);
+
+    /** Builds a raw HTTP/1.1 request (any method) with optional content type and body. */
     static std::string buildRequest(const std::string& method, const std::string& host, const std::string& path,
                                     const std::string& contentType, const std::string& body);
+
+    /** Parses url, opens a tcpPort connection, sends the request, and returns the parsed Response. */
     static Response sendRequest(const std::string& url, const std::string& method,
                                 const std::string& contentType, const std::string& body, int timeoutMs);
+
+    /** Reads and parses an HTTP status line, headers, and body from an already-connected port. */
     static Response parseResponse(port_handle_t port, int timeoutMs);
 };
 
