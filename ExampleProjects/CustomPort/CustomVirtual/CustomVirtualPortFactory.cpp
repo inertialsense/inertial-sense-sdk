@@ -12,7 +12,6 @@
 
 /** Include C++ libraries for use by your custom port class member functions defined here
  */
-#include <vector>
 #include <regex>
 
 /** Include the header file for your child port factory class derived from parent PortFactory.h
@@ -24,6 +23,7 @@
 #include "ISUtilities.h"
 #include "core/msg_logger.h"
 
+
 /**
  * @brief  Required minimum method, validates name and type, locates and/or instantiates new port
  */
@@ -33,12 +33,12 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
         return nullptr;
    
     /** In this example we use a virtual port, so there is no baud rate or blocking to set; our port is defined by
-     *  CustomVirtualPort; defined g_customPorts given by TESTn_PORT is an array of custom_port_t, 0 and 1 are loopback ports
-     *  and present the only ports utilized in this simple example
+     *  custom_virtual_port; we allocate a new custom_port_t loopback port
      */
     custom_port_t* customPort = new custom_port_t();
 
     if (customPort) {
+        /** Set up our new port */
         initCustomPort(*customPort, pName, pType);
     }
     else
@@ -53,7 +53,8 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
      */
     portValidate(port);
        
-    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bound new comm port '%s'", portName(port));
+    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bind new comm port '%s'", portName(port));
+
     return port;
 }
 
@@ -66,14 +67,14 @@ bool CustomVirtualPortFactory::releasePort(port_handle_t port) {
     if (!port)
         return false;
 
-    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Releasing comm port '%s'", portName(port) );
-
+    log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Release comm port '%s'", portName(port) );
+        
     /** If you allocated your port object on the heap, free the memory (delete) here;
-     * In this example we use a virtual port with the static object, so there is no memory to free, only clear
+     * or clear only for static allocation
      */
     memset(port, 0, sizeof(custom_port_t));
     delete static_cast<custom_port_t*>(port);
-
+       
     return true;
 }
 
@@ -85,24 +86,23 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
     /** Check port type to make sure it is allowed, in this case both these types
      */
     if (pType != (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) {
-        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port type validation failed: %d", pType );
+        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_ERROR, "Port type validation failed: %d", pType );
         return false;   // we can only validate this port type - all others fail
     }
    
     /** Check port name to make sure it could be found, matching the naming prescribed by custom port definition */
-    const std::regex pattern("^TEST([0-9]+)$");
+    const std::regex pattern(validatePattern);
     std::smatch m;
     if (! std::regex_match(pName, m, pattern) ) {
-        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port name validation failed: '%s'", pName.c_str() );
+        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_ERROR, "Port name validation failed: '%s'", pName.c_str() );
         return false;
     }
 
     int index = std::stoi(m[1].str());
-    if (index < 0 || index >= NUM_COM_PORTS) {
-        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Port index out of range: '%s'", pName.c_str() );
+    if (index < 0 || index >= portNames.size()) {
+        log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_ERROR, "Port index out of range: '%s'", pName.c_str() );
         return false;
     }
-
      
     return true;
 }
@@ -115,10 +115,6 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     std::regex matchPattern(pattern);
 
     log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Locating ports with regex pattern '%s'", pattern.c_str());
-
-    /** User implementation to populate names of ports as present on system
-     */
-    const std::vector<std::string> portNames = {"TEST0", "TEST1"};
 
     /** For each port that is found by name matching search pattern, validate it and call PortManager callback function
      */

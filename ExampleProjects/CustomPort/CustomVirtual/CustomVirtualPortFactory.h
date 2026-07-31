@@ -31,7 +31,13 @@ public:
         static CustomVirtualPortFactory instance;
         return instance;
     }
-    CustomVirtualPortFactory() { }
+
+    /** On construction, set the SDK message logger verbosity level, as we use the logger in this class for
+     * some custom status and error messages
+     */
+    CustomVirtualPortFactory() {
+        IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
+    }
     
     /** Remove certain constructors/operators, because we're a singleton... */
     CustomVirtualPortFactory(CustomVirtualPortFactory const &) = delete;
@@ -51,6 +57,11 @@ private:
     /** Make this private for our singleton pattern */
     ~CustomVirtualPortFactory() = default;
 
+    /** This regex pattern defines the format for our virtual port names, for use in validating possible ports */
+    const char* validatePattern = "^TEST([0-9]+)$";
+
+    /** Give the names of the virtual ports we want to be able to use */
+    const std::array<const char*, 2> portNames = { "TEST0", "TEST1" };
 };
 
 

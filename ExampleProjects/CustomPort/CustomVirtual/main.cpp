@@ -27,7 +27,6 @@
 /** Include the SDK PortManager if desired for building and maintaining a list of all ports by name */
 #include "PortManager.h"
 
-
 /**
  * Uses arg for identifying virtual serial port in a "minimal" example of setting up a custom serial port
  * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
@@ -43,7 +42,6 @@ int main(int argc, char* argv[])
     }
 
     printf("Attempting to bind and open virtual port %s\r\n", argv[1]);
-
     
     /** STEP 7: We need a singleton Port Manager and CustomVirtualPortFactory,
      * we'll make local references, and we register the virtual port factory
@@ -76,7 +74,7 @@ int main(int argc, char* argv[])
     unsigned char rbuf[PORT_BUFFER_SIZE];
 
     int rbytes, wbytes;    // note that base_port read/write returns signed integers
-    int run_cnt = 2;       // arbitrary run count, iterations through the loop
+    int run_cnt = 1;       // arbitrary run count, iterations through the loop
 
     /** 
      * We use the base_port API open/free/write etc functions, for which the user creates the 
@@ -90,7 +88,7 @@ int main(int argc, char* argv[])
         rbytes = 0;
         wbytes = 0;
 
-        log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Attempting to send msg '%s'", reinterpret_cast<const char*>(wbuf));
+        printf("Attempting to send msg '%s'\r\n", reinterpret_cast<const char*>(wbuf));
                         
         if (portFree(port) >= wlen) {          // write fixed message if space available
             wbytes = portWrite(port, wbuf, wlen);
@@ -100,7 +98,7 @@ int main(int argc, char* argv[])
                 printf("Exiting with write error\r\n");
                 if ( wbytes == PORT_ERROR__WRITE_FAILURE )
                     printf("PORT_ERROR__WRITE_FAILURE\r\n");
-                return 1;
+                return -4;
             }
         }
         SLEEP_MS(1000);
@@ -118,13 +116,13 @@ int main(int argc, char* argv[])
          */        
         if ( (wbytes > 0) && (rbytes == wbytes) ) {
             if ( memcmp(rbuf, wbuf, wlen) == 0 ) {
-                log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s', %d bytes sent/recvd", portName(port), rbytes);
+                printf("Loopback test good on comm port '%s', %d bytes sent/recvd\r\n", portName(port), rbytes);
                 test_success = true;
             }
         }
 
         if ( !test_success ) {
-            log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test FAIL on comm port '%s', wrote %d, read %d", portName(port), wbytes, rbytes);
+            printf("Loopback test FAIL on comm port '%s', wrote %d, read %d\r\n", portName(port), wbytes, rbytes);
         }
 
         memset(rbuf, 0, PORT_BUFFER_SIZE);  // clear the recv buffer
@@ -132,7 +130,7 @@ int main(int argc, char* argv[])
     } //while
 
 
-    printf("Program complete, see inertial_sense.log for results\r\n");
+    printf("Program complete, see inertial_sense.log for more results details\r\n");
     
     
 } //main

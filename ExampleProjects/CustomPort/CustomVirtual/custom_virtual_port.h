@@ -18,23 +18,21 @@
 #include "ring_buffer.h"  //optional, depends upon your implementation
 #include "com_manager.h" //optional, depends upon your implementation
 #include <string>
+
 /**
  * PORT IMPLEMENTATION used for unit and functional tests
- * This is a generic port implementation that provides both bridging and loopback capability
+ * This is a generic port implementation that provides loopback capability
  * There are 6 ports defined:
- *      LOOPBACK (TEST0_PORT, TEST1_PORT):
+ *      LOOPBACK:
  *         All data that is written to the port is placed into a ringbuffer which feeds subsequent reads
  *         If no data has been written, there is not data to be read.  If you want to test synchronous
  *         functionality, use a loopback and perform all your writes, then read from the same port to
  *         ensure the data was written (or is read/parsed) correctly.
- *
- *      BRIDGE (TEST2_PORT <-> TEST3_PORT, TEST4_PORT <-> TEST5_PORT):
- *         All data that is written to the port is written into the ringbuffer of the paired port.
  */
 
-#define COM_BUFFER_SIZE     4096
 #define PORT_BUFFER_SIZE    8192
 #define PORT_NAME_SIZE      6
+
 
 /** STEP 2: Create your custom port declaration, extending base_port_t
  */
