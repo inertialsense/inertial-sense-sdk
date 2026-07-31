@@ -10,12 +10,21 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISClient.h
+ * @brief Factory that opens a cISStream (TCP or serial) client from a colon-delimited connection string.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved.
+ */
+
 #ifndef __IS_CLIENT__H__
 #define __IS_CLIENT__H__
 
 #include "ISStream.h"
 
 
+/** Factory for opening a cISStream connection (TCP/NTRIP or serial) from a single connection string. */
 class cISClient
 {
 private:
@@ -28,7 +37,7 @@ public:
 
     /**
     * Opens an ISStream (TCP or Serial Port) client
-    * @param connectionString Colon delimited string containing connection info, 
+    * @param connectionString Colon delimited string containing connection info,
     * [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
     *    type:        TCP, SERIAL
     *    protocol:    RTCM3, UBLOX, IS
@@ -36,7 +45,7 @@ public:
     *    [TCP]:[RTCM3]:[ip/url]:[port]:[mountpoint]:[username]:[password]
     *    [TCP]:[RTCM3]:[ip/url]:[port]
     *    [SERIAL]:[RTCM3]:[serial port]:[baudrate]
-    * @param enableGpggaForwarding Return value indicating that GPGGA GNSS messages should sent for VRS base stations. 
+    * @param enableGpggaForwarding Return value indicating that GPGGA GNSS messages should sent for VRS base stations.
     * @return cISStream pointer if successful, otherwise NULLPTR
     */
     static cISStream* OpenConnectionToServer(const std::string& connectionString, bool *enableGpggaForwarding=NULL);

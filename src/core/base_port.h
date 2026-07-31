@@ -1,6 +1,9 @@
 /**
- * @file base_port.h 
- * @brief ${BRIEF_DESC}
+ * @file base_port.h
+ * @brief Common port abstraction shared by every transport (UART/USB/SPI/CAN/TCP/UDP/file/
+ *        loopback): the base_port_t vtable-style struct, the PORT_TYPE__/PORT_FLAG__/
+ *        PORT_ERROR__ constant families, and the inline portRead()/portWrite()/portOpen()/etc.
+ *        wrappers that dispatch through it with integrity-checking and stats bookkeeping.
  *
  * @author Kyle Mallory on 5/9/25.
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
@@ -55,22 +58,23 @@
 
 #define PORT_DEFAULT_TIMEOUT        1000        //!< A default timeout period (in milliseconds) for READ and other operations.
 
-typedef void* port_handle_t;
+typedef void* port_handle_t;    //!< opaque handle to a base_port_t-compatible port; cast internally via BASE_PORT()
 
-typedef const char*(*pfnPortName)(port_handle_t port);
-typedef int(*pfnPortValidate)(port_handle_t port);
-typedef int(*pfnPortOpen)(port_handle_t port);
-typedef int(*pfnPortClose)(port_handle_t port);
-typedef int(*pfnPortFree)(port_handle_t port);
-typedef int(*pfnPortAvailable)(port_handle_t port);
-typedef int(*pfnPortFlush)(port_handle_t port);
-typedef int(*pfnPortDrain)(port_handle_t port, uint32_t timeout);
-typedef int(*pfnPortRead)(port_handle_t port, uint8_t* buf, unsigned int len);
-typedef int(*pfnPortReadTimeout)(port_handle_t port, uint8_t* buf, unsigned int len, uint32_t timeout);
-typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int len);
-typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData);
+typedef const char*(*pfnPortName)(port_handle_t port);                                                          //!< returns an optional name uniquely identifying the port, or "" if unsupported
+typedef int(*pfnPortValidate)(port_handle_t port);                                                               //!< confirms the port is viable, without opening/connecting it; returns non-zero if viable
+typedef int(*pfnPortOpen)(port_handle_t port);                                                                   //!< opens/connects the port; returns a PORT_ERROR__* code, or PORT_ERROR__NONE on success
+typedef int(*pfnPortClose)(port_handle_t port);                                                                  //!< closes/disconnects the port; returns a PORT_ERROR__* code, or PORT_ERROR__NONE on success
+typedef int(*pfnPortFree)(port_handle_t port);                                                                   //!< returns the number of bytes that can currently be written without dropping data
+typedef int(*pfnPortAvailable)(port_handle_t port);                                                              //!< returns the number of bytes currently available to be read
+typedef int(*pfnPortFlush)(port_handle_t port);                                                                  //!< discards all data currently waiting to be read; returns the number of bytes flushed, or a PORT_ERROR__* code
+typedef int(*pfnPortDrain)(port_handle_t port, uint32_t timeout);                                                //!< blocks up to timeout ms for queued TX data to be sent; returns bytes dropped (if any), or a PORT_ERROR__* code
+typedef int(*pfnPortRead)(port_handle_t port, uint8_t* buf, unsigned int len);                                   //!< reads up to len bytes into buf; returns the actual number of bytes read
+typedef int(*pfnPortReadTimeout)(port_handle_t port, uint8_t* buf, unsigned int len, uint32_t timeout);          //!< reads up to len bytes into buf, waiting up to timeout ms; returns the actual number of bytes read
+typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int len);                            //!< writes len bytes from buf; returns the number of bytes actually written, or a PORT_ERROR__* code
+typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData); //!< invoked on every portRead()/portWrite() to monitor/copy data flowing through the port
 // typedef int(*pfnPortSetName)(port_handle_t port, const char* name, unsigned int len);
 
+/** Traffic/error counters optionally attached to a port (see base_port_t::stats), reset via portStatsReset(). */
 PUSH_PACK_1
 typedef struct
 {
@@ -92,6 +96,12 @@ typedef struct
 POP_PACK
 
 
+/**
+ * Common "vtable" header every concrete port implementation (UART/USB/SPI/CAN/TCP/UDP/file/
+ * loopback) embeds as its first member, so a port_handle_t can be reinterpreted via BASE_PORT()
+ * regardless of the concrete port type. The chksum field lets portCheckIntegrity() detect a
+ * stale/invalid handle before dereferencing the function pointers below.
+ */
 typedef struct base_port_s {
     uint16_t pnum;                          //!< an identifier for a specific port that belongs to this device
     uint16_t ptype;                         //!< an indicator of the type of port
@@ -115,29 +125,142 @@ typedef struct base_port_s {
     uint32_t chksum;                        //!< to be valid:  chksum == ^~((pflags << 16) | ptype) - this is a validation mechanism to help ensure that this is a valid port
     port_stats_t* stats;                    //!< if not-null, contains the stats associated with this port (bytes sent/received, etc)
 } base_port_t;
-#define BASE_PORT(n)        ((base_port_t*)(n))
+#define BASE_PORT(n)        ((base_port_t*)(n))    //!< reinterprets a port_handle_t (or any compatible concrete port pointer) as a base_port_t*
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * Fallback software-timeout implementation of portReadTimeout(), used when a port implementation
+ * doesn't provide its own pfnPortReadTimeout. Internal use only -- DO NOT EXPORT / call directly.
+ * @param port the port to read from
+ * @param buffer the buffer to place a copy of the data into
+ * @param readCount the maximum number of bytes to read
+ * @param timeoutMs the maximum time, in milliseconds, to wait for readCount bytes to be received
+ * @return the number of actual bytes read, or a PORT_ERROR__* code
+ */
 int portReadTimeout_internal(port_handle_t port, uint8_t *buffer, unsigned int readCount, unsigned int timeoutMs);     // DO NOT EXPORT
+
+/**
+ * Reads and discards bytes from port until the waitFor sequence is matched or timeoutMs elapses.
+ * @param port the port to read from
+ * @param waitFor the byte sequence to wait for
+ * @param waitForLength the number of bytes in waitFor
+ * @param timeoutMs the maximum time, in milliseconds, to wait for a match
+ * @return the number of bytes consumed (including the match) if found, or a PORT_ERROR__* code (e.g. PORT_ERROR__TIMEOUT)
+ */
 int portWaitForTimeout(port_handle_t port, const uint8_t* waitFor, unsigned int waitForLength, unsigned int timeoutMs);
+
+/**
+ * Reads and discards bytes from port until the waitFor sequence is matched, using PORT_DEFAULT_TIMEOUT.
+ * @param port the port to read from
+ * @param waitFor the byte sequence to wait for
+ * @param waitForLength the number of bytes in waitFor
+ * @return the number of bytes consumed (including the match) if found, or a PORT_ERROR__* code (e.g. PORT_ERROR__TIMEOUT)
+ */
 int portWaitFor(port_handle_t port, const uint8_t* waitFor, unsigned int waitForLength);
 
+/**
+ * Reads a single character, waiting up to timeoutMs for it to become available.
+ * @param port the port to read from
+ * @param c receives the read character
+ * @param timeoutMs the maximum time, in milliseconds, to wait
+ * @return 1 if a character was read, or a PORT_ERROR__* code (e.g. PORT_ERROR__TIMEOUT)
+ */
 int portReadCharTimeout(port_handle_t port, unsigned char* c, unsigned int timeoutMs);
+
+/**
+ * Reads a single character, using PORT_DEFAULT_TIMEOUT.
+ * @param port the port to read from
+ * @param c receives the read character
+ * @return 1 if a character was read, or a PORT_ERROR__* code (e.g. PORT_ERROR__TIMEOUT)
+ */
 int portReadChar(port_handle_t port, unsigned char* c);
 
+/**
+ * Reads a single line (terminated by newline) into buffer, waiting up to timeoutMs.
+ * @param port the port to read from
+ * @param buffer the buffer to place the line into
+ * @param bufferLength the size of buffer, in bytes
+ * @param timeoutMs the maximum time, in milliseconds, to wait for a complete line
+ * @return the number of bytes read (the line, excluding the terminator), or a PORT_ERROR__* code
+ */
 int portReadLineTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned int timeoutMs);
+
+/**
+ * Reads a single line (terminated by newline) into buffer, using PORT_DEFAULT_TIMEOUT.
+ * @param port the port to read from
+ * @param buffer the buffer to place the line into
+ * @param bufferLength the size of buffer, in bytes
+ * @return the number of bytes read (the line, excluding the terminator), or a PORT_ERROR__* code
+ */
 int portReadLine(port_handle_t port, unsigned char* buffer, unsigned int bufferLength);
 
+/**
+ * Reads a line of ASCII text into buffer, waiting up to timeoutMs, and locates the start of the
+ * ASCII payload within it.
+ * @param port the port to read from
+ * @param buffer the buffer to read raw line data into
+ * @param bufferLength the size of buffer, in bytes
+ * @param timeoutMs the maximum time, in milliseconds, to wait for a complete line
+ * @param asciiData receives a pointer into buffer at which the ASCII payload begins
+ * @return the number of bytes read, or a PORT_ERROR__* code
+ */
 int portReadAsciiTimeout(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned int timeoutMs, unsigned char** asciiData);
+
+/**
+ * Reads a line of ASCII text into buffer, using PORT_DEFAULT_TIMEOUT, and locates the start of the
+ * ASCII payload within it.
+ * @param port the port to read from
+ * @param buffer the buffer to read raw line data into
+ * @param bufferLength the size of buffer, in bytes
+ * @param asciiData receives a pointer into buffer at which the ASCII payload begins
+ * @return the number of bytes read, or a PORT_ERROR__* code
+ */
 int portReadAscii(port_handle_t port, unsigned char* buffer, unsigned int bufferLength, unsigned char** asciiData);
 
+/**
+ * Writes writeCount bytes from buffer, followed by a line terminator.
+ * @param port the port to write to
+ * @param buffer the data to write
+ * @param writeCount the number of bytes in buffer
+ * @return the number of bytes written, or a PORT_ERROR__* code
+ */
 int portWriteLine(port_handle_t port, const unsigned char* buffer, unsigned int writeCount);
+
+/**
+ * Writes a null-terminated ASCII string.
+ * @param port the port to write to
+ * @param buffer the null-terminated string to write
+ * @param bufferLength the maximum number of bytes to write from buffer
+ * @return the number of bytes written, or a PORT_ERROR__* code
+ */
 int portWriteAscii(port_handle_t port, const char* buffer, unsigned int bufferLength);
 
+/**
+ * Writes writeCount bytes from buffer, then waits up to timeoutMs for the waitFor sequence to be
+ * received in response.
+ * @param port the port to write to and read the response from
+ * @param buffer the data to write
+ * @param writeCount the number of bytes in buffer
+ * @param waitFor the byte sequence to wait for in the response
+ * @param waitForLength the number of bytes in waitFor
+ * @param timeoutMs the maximum time, in milliseconds, to wait for a match
+ * @return the number of response bytes consumed (including the match) if found, or a PORT_ERROR__* code
+ */
 int portWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength, const unsigned int timeoutMs);
+
+/**
+ * Writes writeCount bytes from buffer, then waits (using PORT_DEFAULT_TIMEOUT) for the waitFor
+ * sequence to be received in response.
+ * @param port the port to write to and read the response from
+ * @param buffer the data to write
+ * @param writeCount the number of bytes in buffer
+ * @param waitFor the byte sequence to wait for in the response
+ * @param waitForLength the number of bytes in waitFor
+ * @return the number of response bytes consumed (including the match) if found, or a PORT_ERROR__* code
+ */
 int portWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, unsigned int writeCount, const unsigned char* waitFor, unsigned int waitForLength);
 
 /**
@@ -185,7 +308,7 @@ static inline int portCheckIntegrity(port_handle_t port) {
     return (port && (BASE_PORT(port)->chksum == ~(uint32_t)((BASE_PORT(port)->pnum << 16) | BASE_PORT(port)->ptype)));
 }
 
-#define NOT_GNSS_PORT(port) ((portType(port) & PORT_TYPE__GNSS) == 0)
+#define NOT_GNSS_PORT(port) ((portType(port) & PORT_TYPE__GNSS) == 0)    //!< true if port does not have the PORT_FLAG__GNSS bit set
 
 /**
  * @brief sets the specified bit-flags on the port, without modifying previously set flags
