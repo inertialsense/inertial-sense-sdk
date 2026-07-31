@@ -27,6 +27,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <list>
 #include <string>
 #include <vector>
@@ -170,6 +171,72 @@ TEST_F(LogWriterTest, RoundTripBitIdentical) {
             << "byte mismatch at record " << (i - 1);
     }
     EXPECT_EQ(i, inCount);
+}
+
+// ---------------------------------------------------------------------------
+// SN-8383: the writer always emits the current .idx version (v2.1) and carries
+// the source's per-record host-uptime delta through, declaring HAS_LOCAL_DELTA.
+// Guards against the writer emitting an older format or zeroing the delta.
+// ---------------------------------------------------------------------------
+TEST_F(LogWriterTest, PreservesLocalUptimeDeltaAndAlwaysWritesV21) {
+    fixture = buildFixture("delta");   // only needed for a scratch directory
+    ASSERT_FALSE(fixture.directory.empty());
+
+    // Drive the writer with synthetic views carrying known, non-zero per-record
+    // deltas. Benign (non-GNSS-raw) DIDs + small host-uptime timestamps keep the
+    // reader on its trust-the-sidecar path (no poison/obs-time rebuild), so we
+    // observe exactly what the writer emitted.
+    struct SrcRec { uint32_t did; uint64_t ts; uint16_t flags; uint32_t delta; std::vector<uint8_t> payload; };
+    const std::vector<SrcRec> src = {
+        { 4u, 1000u, idx::IS_LOG_IDX_REC_FLAG_HAS_TOW, 5u,    {1, 2, 3, 4} },
+        { 5u, 2000u, 0u,                                123u,  {9, 9}       },
+        { 4u, 3000u, 0u,                                4567u, {7, 7, 7}    },
+    };
+    const uint64_t devId = 0x42u;
+
+    const fs::path outRaw = fixture.directory / "delta_synth.raw";
+    {
+        auto writerR = ISLogWriter::create(outRaw, devId);
+        ASSERT_TRUE(writerR.has_value()) << writerR.error().message;
+        ISLogWriter writer = std::move(writerR.value());
+        for (const auto& r : src) {
+            ISRecordView v{ r.did, r.ts, devId, /*offset*/ 0u,
+                            r.payload.data(), r.payload.size(), r.flags };
+            v.setLocalUptimeMs(r.delta);
+            ASSERT_TRUE(writer.append(v).has_value());
+        }
+        ASSERT_TRUE(writer.finalize().has_value());
+    }
+
+    // Inspect the writer's on-disk .idx bytes directly — this is the writer's
+    // output contract. (Round-tripping through ISLogReader::openSegment would
+    // conflate the writer with the reader's .raw-validation / rebuild logic,
+    // which a synthetic garbage .raw would trip.)
+    fs::path outIdx = outRaw;
+    outIdx.replace_extension(".idx");
+    std::ifstream in(outIdx, std::ios::binary);
+    ASSERT_TRUE(in.good());
+    const std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)),
+                                     std::istreambuf_iterator<char>());
+    ASSERT_GE(bytes.size(),
+              idx::IS_LOG_IDX_HEADER_SIZE + src.size() * idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
+
+    auto hdr = idx::parseHeader(bytes.data());
+    ASSERT_TRUE(hdr.has_value()) << hdr.error().message;
+
+    // Always v2.1: 32-byte stride + HAS_LOCAL_DELTA declared (never a downgrade).
+    EXPECT_EQ(hdr->record_size, idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
+    EXPECT_NE(0, hdr->flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA);
+    EXPECT_EQ(hdr->total_records, src.size());
+
+    // Each record, in write order, carries its source delta verbatim.
+    for (std::size_t i = 0; i < src.size(); ++i) {
+        const auto rec = idx::parseRecord(
+            bytes.data() + idx::IS_LOG_IDX_HEADER_SIZE + i * idx::IS_LOG_IDX_RECORD_V2_1_SIZE,
+            idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
+        EXPECT_EQ(rec.timestamp,       src[i].ts)    << "ts mismatch at record " << i;
+        EXPECT_EQ(rec.local_uptime_ms, src[i].delta) << "delta mismatch at record " << i;
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -353,7 +353,16 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                         rebuildReason = RebuildReason::Corrupted;
                     } else {
                         const std::size_t bodyBytes = s.size() - bodyStart;
-                        const std::size_t nRecords  = bodyBytes / idx::IS_LOG_IDX_RECORD_V2_SIZE;
+                        // SN-8383: stride by the header's record_size (legacy v2.0 / pre-v2.1
+                        // headers carry 0 => 24). A future >32 record still strides correctly;
+                        // we parse only the v2.1 prefix we understand.
+                        const std::size_t recSize   = (hdr->record_size >= idx::IS_LOG_IDX_RECORD_V2_SIZE)
+                                                          ? hdr->record_size
+                                                          : idx::IS_LOG_IDX_RECORD_V2_SIZE;
+                        const std::size_t parseLen  = (recSize > idx::IS_LOG_IDX_RECORD_V2_1_SIZE)
+                                                          ? idx::IS_LOG_IDX_RECORD_V2_1_SIZE
+                                                          : recSize;
+                        const std::size_t nRecords  = bodyBytes / recSize;
 
                         // Stale-detection: if the header advertises a total_records that disagrees with what's
                         // physically present in the file body, the sidecar was truncated, partially overwritten, or
@@ -372,9 +381,9 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                             std::vector<idx::is_log_idx_record_v2_t> recs;
                             recs.reserve(nRecords);
                             for (std::size_t i = 0; i < nRecords; ++i) {
-                                uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
-                                std::memcpy(recBuf, s.data() + bodyStart + i * idx::IS_LOG_IDX_RECORD_V2_SIZE, idx::IS_LOG_IDX_RECORD_V2_SIZE);
-                                recs.push_back(idx::parseRecord(recBuf));
+                                uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_1_SIZE];
+                                std::memcpy(recBuf, s.data() + bodyStart + i * recSize, parseLen);
+                                recs.push_back(idx::parseRecord(recBuf, parseLen));
                             }
 
                             // Poison sweep: pre-fix v2 .idx files baked the host's wall-clock value (~1.7e12 ms in 2026)
@@ -625,9 +634,9 @@ bool ISLogReader::persistIndex() const {
     if (!out) { std::error_code ec; fs::remove(tmpPath, ec); return false; }
 
     for (const auto& rec : records_) {
-        uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_SIZE];
+        uint8_t recBuf[idx::IS_LOG_IDX_RECORD_V2_1_SIZE];
         idx::serializeRecord(recBuf, rec);
-        out.write(reinterpret_cast<const char*>(recBuf), idx::IS_LOG_IDX_RECORD_V2_SIZE);
+        out.write(reinterpret_cast<const char*>(recBuf), idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
         if (!out) { std::error_code ec; fs::remove(tmpPath, ec); return false; }
     }
     out.close();
@@ -773,7 +782,7 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen = (endOff > off && endOff <= total) ? (endOff - off) : 0;
     }
 
-    return ISRecordView{
+    ISRecordView v{
         rec.did,
         rec.timestamp,
         deviceId_,
@@ -782,6 +791,8 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen,
         rec.flags,
     };
+    v.setLocalUptimeMs(rec.local_uptime_ms);   // SN-8383: carry the per-record delta onto the view
+    return v;
 }
 
 ISRecordView ISLogReader::RangeIterator::operator*() const noexcept {
@@ -898,14 +909,20 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
     std::vector<SegmentSpan> spans;
     spans.reserve(log.segmentCount());
 
+    // SN-8339: the resolver's arrival index is global across segments (in
+    // composition order), so accumulate each segment's base from the prior
+    // segments' record counts to key the multi-boot resolver per record.
+    uint64_t segArrivalBase = 0;
     for (std::size_t s = 0; s < log.segmentCount(); ++s) {
         bool      any = false;
         TimeStamp lo{};
         TimeStamp hi{};
+        uint64_t  recIdx = 0;
         for (auto v : log.segment(s).allRecords()) {
+            const uint64_t arrivalIndex = segArrivalBase + recIdx++;
             const uint64_t raw = v.timestamp().value;
             if (raw == 0) continue;                       // metadata / sentinel
-            const TimeStamp r = resolver.resolve(raw, devId);
+            const TimeStamp r = resolver.resolve(raw, devId, arrivalIndex);
             if (r.source == TimeSource::SessionOnly) continue;  // no wall-clock anchor
             if (r.value == 0) continue;
             if (!any || r.value < lo.value) lo = r;
@@ -919,6 +936,7 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
             sp.end       = hi;
             spans.push_back(sp);
         }
+        segArrivalBase += recIdx;   // advance the global arrival base past this segment
     }
 
     auto gaps = findGaps(std::move(spans), thresholdMs);

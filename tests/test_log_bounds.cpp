@@ -365,6 +365,11 @@ TEST_F(LogBoundsTest, W1_SmallLogReadsBackAllRecordsViaFromSegments) {
 // boundaries, no duplication — and the resolved whole-log span must bridge all
 // segments.
 TEST_F(LogBoundsTest, W2_MultiSegmentRoundTripViaFromSegments) {
+    // SN-8328: rotation-boundary integrity. The writer flushes/rotates BEFORE
+    // indexing each input buffer, so every record's .idx entry lands in the same
+    // segment as its data (no double-count across a rotation), and the offset
+    // base resets per segment. Each segment's sidecar is trusted; every record
+    // survives rotation exactly once.
     constexpr std::size_t kN = 4000;
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
     recs.reserve(kN);

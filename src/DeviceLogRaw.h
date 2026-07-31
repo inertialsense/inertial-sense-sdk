@@ -95,6 +95,14 @@ private:
     p_data_buf_t m_pData;                   //!< scratch buffer for the most recently read data set
     is_comm_instance_t m_comm;              //!< multi-protocol packet parser (IS binary, NMEA, RTCM3, u-blox)
     protocol_type_t m_protocolType;         //!< unused
+
+    //! SN-8328: physical byte offset (within the current .raw file) at which the
+    //! NEXT parsed packet starts. Persists across SaveData() input buffers so a
+    //! packet split across two LogData() calls still gets its true start offset.
+    //! Reset to 0 when a fresh .raw file begins. Stamped into each .idx record so
+    //! ISLogReader trusts the sidecar instead of rebuilding (a rebuild would drop
+    //! the SN-8383 per-record host-uptime deltas).
+    uint64_t m_rawIndexCursor = 0;
 };
 
 #endif // IS_SDK__DEVICE_LOG_RAW_H

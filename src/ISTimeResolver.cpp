@@ -121,10 +121,26 @@ double slopeBetween(const ISSyncPoint& a, const ISSyncPoint& b) noexcept {
  *
  * @note SN-8107 / D0066.
  */
+//! SN-8339: accumulates one power-on session during the arrival-order scan.
+struct SessionAccum {
+    uint64_t             arrivalStart = 0;   //!< global arrival index of the session's first record
+    std::vector<int64_t> upOffsets;          //!< synced SYS_PARAMS (ToW - upTime) samples in this session
+};
+
+//! Median of a copy (sorts in place); 0 for empty.
+int64_t medianOf(std::vector<int64_t> v) {
+    if (v.empty()) return 0;
+    std::sort(v.begin(), v.end());
+    return v[v.size() / 2];
+}
+
 void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t deviceId,
                          std::vector<ISSyncPoint>& out,
-                         std::vector<int64_t>& upOffsetsOut) {
+                         std::vector<int64_t>& upOffsetsOut,
+                         uint64_t& arrivalIndex,
+                         double& prevUpTimeSec,
+                         std::vector<SessionAccum>& sessAccum) {
     auto bytes = reader.rawBytes();
     if (!bytes.first || bytes.second == 0) return;
 
@@ -145,6 +161,9 @@ void scanSegmentForSyncs(const ISLogReader& reader,
             continue;
         }
         const auto& hdr = comm.rxPkt.dataHdr;
+        // SN-8339: global record-arrival index (matches ISDeviceLog's ISB-only,
+        // arrival-ordered record stream — both parse the same .raw for ISB).
+        const uint64_t thisArrival = arrivalIndex++;
 
         // SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS
         // time-of-week (timeOfWeekMs) and the definitive system uptime (upTime,
@@ -159,6 +178,17 @@ void scanSegmentForSyncs(const ISLogReader& reader,
             hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
             sys_params_t sp2{};
             std::memcpy(&sp2, comm.rxPkt.data.ptr, sizeof(sp2));
+            // SN-8339: a SYS_PARAMS.upTime that DROPS relative to the previous
+            // SYS_PARAMS (in arrival order) means the device rebooted — open a
+            // new power-on session starting at this record. (Checked on every
+            // SYS_PARAMS, regardless of GPS-time validity, since a fresh boot is
+            // typically pre-fix.)
+            if (sp2.upTime > 0.0) {
+                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+                    sessAccum.push_back(SessionAccum{ thisArrival, {} });
+                }
+                prevUpTimeSec = sp2.upTime;
+            }
             // Only trust timeOfWeekMs as GPS ToW when the device says so:
             // HDW_STATUS_GNSS_TIME_OF_WEEK_VALID. Otherwise timeOfWeekMs is
             // LOCAL system time (uptime-like), and differencing it against
@@ -167,8 +197,9 @@ void scanSegmentForSyncs(const ISLogReader& reader,
                 (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
             if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
                 const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
-                upOffsetsOut.push_back(
-                    static_cast<int64_t>(sp2.timeOfWeekMs) - upMs);
+                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+                upOffsetsOut.push_back(off);                       // global (SN-8323) offset samples
+                if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);  // per-session (SN-8339)
             }
         }
 
@@ -273,17 +304,44 @@ uint32_t chooseAnchorWeek(const std::vector<ISSyncPoint>& syncs) {
 // ============================================================
 
 std::vector<ISSyncPoint> ISTimeResolver::detectSyncPoints(const ISDeviceLog& log) {
-    std::vector<int64_t> upOffsets;  // discarded here; build() consumes them.
-    return detectSyncPointsImpl(log, upOffsets);
+    std::vector<int64_t> upOffsets;   // discarded here; build() consumes them.
+    std::vector<Session> sessions;    // discarded here.
+    return detectSyncPointsImpl(log, upOffsets, sessions);
 }
 
 std::vector<ISSyncPoint> ISTimeResolver::detectSyncPointsImpl(
-    const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut) {
+    const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut,
+    std::vector<Session>& sessionsOut) {
     std::vector<ISSyncPoint> out;
     const uint64_t deviceId = log.deviceId();
 
+    // SN-8339: partition records into power-on sessions during the scan. The
+    // first session starts at arrival index 0; each SYS_PARAMS.upTime drop opens
+    // another. Arrival index is global across segments (matches allRecords()).
+    uint64_t arrivalIndex  = 0;
+    double   prevUpTimeSec = -1.0;
+    std::vector<SessionAccum> sessAccum;
+    sessAccum.push_back(SessionAccum{ 0, {} });
+
     for (std::size_t s = 0; s < log.segmentCount(); ++s) {
-        scanSegmentForSyncs(log.segment(s), deviceId, out, upOffsetsOut);
+        scanSegmentForSyncs(log.segment(s), deviceId, out, upOffsetsOut,
+                            arrivalIndex, prevUpTimeSec, sessAccum);
+    }
+
+    // Finalize sessions: arrivalEnd = next session's start - 1 (last record for
+    // the final session); per-session offset = median of its own SYS_PARAMS
+    // samples (haveOffset=false when it had none — build() fills the fallback).
+    const uint64_t lastArrival = (arrivalIndex == 0) ? 0 : arrivalIndex - 1;
+    for (std::size_t i = 0; i < sessAccum.size(); ++i) {
+        Session sess{};
+        sess.arrivalStart = sessAccum[i].arrivalStart;
+        sess.arrivalEnd   = (i + 1 < sessAccum.size())
+                                ? (sessAccum[i + 1].arrivalStart - 1)
+                                : lastArrival;
+        sess.haveOffset   = !sessAccum[i].upOffsets.empty();
+        sess.uptimeToTowOffsetMs =
+            sess.haveOffset ? medianOf(sessAccum[i].upOffsets) : 0;
+        sessionsOut.push_back(sess);
     }
 
     // Sort by hostTimeMs (the build's downstream expectation). Records
@@ -319,7 +377,8 @@ ISTimeResolver::build(const ISDeviceLog& log) {
 ISExpected<ISTimeResolver>
 ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
     std::vector<int64_t> upOffsets;
-    auto syncs = detectSyncPointsImpl(log, upOffsets);
+    std::vector<Session> sessions;
+    auto syncs = detectSyncPointsImpl(log, upOffsets, sessions);
 
     std::vector<Discontinuity> discs;
     if (syncs.size() >= 3) {
@@ -371,16 +430,36 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
         haveUptimeOffset    = true;
     }
 
+    // SN-8339: a session with no synced SYS_PARAMS of its own inherits the
+    // log-global offset (best available) rather than 0, so its uptime records
+    // still bridge; sessions with their own samples keep their per-session median.
+    for (auto& sess : sessions) {
+        if (!sess.haveOffset && haveUptimeOffset) {
+            sess.uptimeToTowOffsetMs = uptimeToTowOffsetMs;
+            sess.haveOffset          = true;
+        }
+    }
+
     return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek,
                            anchorTowStart, anchorTowEnd,
-                           uptimeToTowOffsetMs, haveUptimeOffset };
+                           uptimeToTowOffsetMs, haveUptimeOffset,
+                           std::move(sessions) };
 }
 
 // ============================================================
 // Resolve
 // ============================================================
 
-TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const {
+// SN-8339: the two public overloads are thin wrappers; all resolution logic
+// lives here, parameterized by the uptime->ToW bridge offset to use. The no-key
+// overload passes the log-global offset (byte-identical to pre-SN-8339
+// behavior); the arrival-keyed overload passes the per-session offset selected
+// from `sessions_`, so a uptime value from any power-on session bridges against
+// that session's own median rather than a single global offset that can only be
+// right for one boot.
+TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
+                                      int64_t uptimeOffsetMs,
+                                      bool haveOffset) const {
     // SN-8115: idempotency / already-anchored guard. Legitimate raw inputs are
     // either a GPS time-of-week (always < one week, 604,800,000 ms) or a
     // session-uptime (ms since session start — at most hours). Neither can
@@ -433,14 +512,14 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
     // and stops tiny pre-sync ToW values from poisoning the bridge — the mag
     // records that used to resolve to the GPS-week start (days early) now land
     // correctly in the fix window. (Kyle 2026-07-23.)
-    if (haveUptimeOffset_ && epochAnchor && anchorTowEnd_ >= anchorTowStart_) {
+    if (haveOffset && epochAnchor && anchorTowEnd_ >= anchorTowStart_) {
         const int64_t guard    = static_cast<int64_t>(kPreFixGuardMs);
         const int64_t lo       = static_cast<int64_t>(anchorTowStart_);
         const int64_t hi       = static_cast<int64_t>(anchorTowEnd_);
         const int64_t raw      = static_cast<int64_t>(hostTimeMs);
         const bool    rawIsTow = (raw >= lo - guard && raw <= hi + guard);
         if (!rawIsTow) {
-            const int64_t bridged = raw + uptimeToTowOffsetMs_;
+            const int64_t bridged = raw + uptimeOffsetMs;
             if (bridged >= lo - guard && bridged <= hi + guard) {
                 const uint64_t towMs = (bridged < 0) ? 0u
                                                      : static_cast<uint64_t>(bridged);
@@ -537,6 +616,33 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const 
     return TimeStamp::fromResolvedViaSync(unixOrToW(static_cast<uint64_t>(tow)),
                                           deviceId,
                                           TimeConfidence::Interpolated);
+}
+
+TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const {
+    // No arrival key: bridge with the log-global uptime offset. Byte-identical
+    // to the pre-SN-8339 single-offset behavior — every existing caller keeps
+    // its exact results and multi-boot logs simply use one offset (best effort).
+    return resolveImpl(hostTimeMs, deviceId, uptimeToTowOffsetMs_,
+                       haveUptimeOffset_);
+}
+
+TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
+                                  uint64_t arrivalIndex) const {
+    // SN-8339: with a known arrival index and more than one power-on session,
+    // pick the session whose arrival range covers this record and bridge with
+    // that session's own offset. A single-session log (the common case) is
+    // identical to the no-key path, so this overload is a strict superset.
+    if (sessions_.size() > 1) {
+        for (const auto& sess : sessions_) {
+            if (arrivalIndex >= sess.arrivalStart &&
+                arrivalIndex <= sess.arrivalEnd) {
+                return resolveImpl(hostTimeMs, deviceId,
+                                   sess.uptimeToTowOffsetMs, sess.haveOffset);
+            }
+        }
+    }
+    return resolveImpl(hostTimeMs, deviceId, uptimeToTowOffsetMs_,
+                       haveUptimeOffset_);
 }
 
 ISTimeResolver::Stats ISTimeResolver::computeStats(const ISDeviceLog& log) const {
