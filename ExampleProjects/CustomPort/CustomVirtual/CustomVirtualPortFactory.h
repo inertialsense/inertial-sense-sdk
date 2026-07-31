@@ -52,11 +52,13 @@ public:
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
     bool releasePort(port_handle_t port) override;
 
+    /** This regex pattern is used by the Port Manager to search for ports by name */
+    const char* discoverPattern = R"(TEST\d\0?)";
 
 private:
     /** Make this private for our singleton pattern */
     ~CustomVirtualPortFactory() = default;
-
+    
     /** This regex pattern defines the format for our virtual port names, for use in validating possible ports */
     const char* validatePattern = "^TEST([0-9]+)$";
 
