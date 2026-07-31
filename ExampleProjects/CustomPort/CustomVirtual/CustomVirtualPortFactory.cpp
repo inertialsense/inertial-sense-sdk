@@ -14,11 +14,11 @@
  */
 #include <regex>
 
-/** Include the header file for your child port factory class derived from parent PortFactory.h
+/** Include the header file for child port factory class derived from parent PortFactory.h
  */
 #include "CustomVirtualPortFactory.h"
 
-/** Include utility functions for use by your custom port class member functions defined here
+/** Include utility functions for use by custom port factory class member functions defined here
  */
 #include "ISUtilities.h"
 #include "core/msg_logger.h"
@@ -52,7 +52,9 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
      * example, do not need to open or configure, but we use the port's own validation method
      */
     portValidate(port);
-       
+
+    /** STEP 9: Use the SDK's msg logger utility to add valuable user messages to a log output file (inertial_sense.log)
+     */        
     log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bind new comm port '%s'", portName(port));
 
     return port;

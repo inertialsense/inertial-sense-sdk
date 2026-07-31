@@ -11,7 +11,7 @@
 #ifndef CUSTOM_VIRTUAL_PORT_H
 #define CUSTOM_VIRTUAL_PORT_H
 
-/** STEP 1: Include IS core, other needed SDK header files here, and your own channel implementation files
+/** STEP 1: Include IS core, other needed SDK header files here, and port implementation files
  * as required
  */
 #include "core/base_port.h"
@@ -34,7 +34,7 @@
 #define PORT_NAME_SIZE      6
 
 
-/** STEP 2: Create your custom port declaration, extending base_port_t
+/** STEP 2: Create a custom port declaration, extending base_port_t
  */
 typedef struct custom_port_s {
     union {

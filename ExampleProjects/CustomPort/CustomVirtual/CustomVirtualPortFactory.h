@@ -32,10 +32,11 @@ public:
         return instance;
     }
 
-    /** On construction, set the SDK message logger verbosity level, as we use the logger in this class for
-     * some custom status and error messages
-     */
+    /** Default constructor */
     CustomVirtualPortFactory() {
+        /** STEP 9: On construction, set the SDK message logger verbosity level, as we use the logger in this class for
+         * some custom status and error messages
+         */
         IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
     }
     

@@ -53,7 +53,6 @@ int main(int argc, char* argv[])
     /** We are interested in finding all ports matching a certain name pattern, but then we'll reference the one
      specifically indicated on the command line, which is virtual loopback in this case
     */
-    //pm.discoverPorts(R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
     pm.discoverPorts(vpf.discoverPattern, PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
     port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);    
     
@@ -113,8 +112,6 @@ int main(int argc, char* argv[])
         
         bool test_success = false;          // verification and logging of results
 
-        /** STEP 9: Use the SDK's msg logger utility to add valuable user messages to a log output file (inertial_sense.log)
-         */        
         if ( (wbytes > 0) && (rbytes == wbytes) ) {
             if ( memcmp(rbuf, wbuf, wlen) == 0 ) {
                 printf("Loopback test good on comm port '%s', %d bytes sent/recvd\r\n", portName(port), rbytes);
