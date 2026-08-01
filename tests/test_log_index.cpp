@@ -62,9 +62,10 @@ TEST(IdxLayout, StaticSizes) {
     // in the header but exercises it through gtest so we get a named
     // failure if some future struct edit breaks the discipline.
     EXPECT_EQ(sizeof(is_log_idx_header_t),    IS_LOG_IDX_HEADER_SIZE);
-    EXPECT_EQ(sizeof(is_log_idx_record_v2_t), IS_LOG_IDX_RECORD_V2_SIZE);
-    EXPECT_EQ(IS_LOG_IDX_HEADER_SIZE,    64u);
-    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_SIZE, 24u);
+    EXPECT_EQ(sizeof(is_log_idx_record_v2_t), IS_LOG_IDX_RECORD_V2_1_SIZE);   // v2.1 struct = 32
+    EXPECT_EQ(IS_LOG_IDX_HEADER_SIZE,      64u);
+    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_SIZE,   24u);   // v2.0 on-disk prefix (unchanged)
+    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_1_SIZE, 32u);   // SN-8383 trailing local_uptime_ms + pad
 }
 
 TEST(IdxRoundTrip, HeaderSerializeAndParse) {
@@ -101,15 +102,23 @@ TEST(IdxRoundTrip, RecordSerializeAndParse) {
         /* did       */ 0x1234,
         /* flags     */ IS_LOG_IDX_REC_FLAG_HAS_TOW,
         /* reserved  */ 0,
+        /* local_uptime_ms */ 777u,
+        /* reserved2 */ 0,
     };
-    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, src);
 
-    const auto parsed = parseRecord(buf);
-    EXPECT_EQ(parsed.timestamp, src.timestamp);
-    EXPECT_EQ(parsed.offset,    src.offset);
-    EXPECT_EQ(parsed.did,       src.did);
-    EXPECT_EQ(parsed.flags,     src.flags);
+    const auto parsed = parseRecord(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);   // full v2.1 stride (32)
+    EXPECT_EQ(parsed.timestamp,       src.timestamp);
+    EXPECT_EQ(parsed.offset,          src.offset);
+    EXPECT_EQ(parsed.did,             src.did);
+    EXPECT_EQ(parsed.flags,           src.flags);
+    EXPECT_EQ(parsed.local_uptime_ms, src.local_uptime_ms);   // SN-8383 trailing field round-trips
+
+    // v2.0 back-compat: parsing only the 24-byte prefix leaves local_uptime_ms 0.
+    const auto parsed20 = parseRecord(buf, IS_LOG_IDX_RECORD_V2_SIZE);
+    EXPECT_EQ(parsed20.timestamp,       src.timestamp);
+    EXPECT_EQ(parsed20.local_uptime_ms, 0u);
 }
 
 TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
@@ -117,7 +126,8 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
     // single contiguous buffer. The reader walks: parseHeader at
     // offset 0, then parseRecord at offset 64, 64+24, 64+48, ....
     constexpr std::size_t N = 10;
-    std::vector<uint8_t> buf(IS_LOG_IDX_HEADER_SIZE + N * IS_LOG_IDX_RECORD_V2_SIZE, 0);
+    constexpr std::size_t REC = IS_LOG_IDX_RECORD_V2_1_SIZE;   // writer emits v2.1 (32-byte) records
+    std::vector<uint8_t> buf(IS_LOG_IDX_HEADER_SIZE + N * REC, 0);
 
     auto hdr = makeRoundTripHeader();
     hdr.total_records = N;
@@ -133,7 +143,7 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
         r.flags     = (i % 2 == 0) ? IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
         r.reserved  = 0;
         sources.push_back(r);
-        serializeRecord(buf.data() + IS_LOG_IDX_HEADER_SIZE + i * IS_LOG_IDX_RECORD_V2_SIZE, r);
+        serializeRecord(buf.data() + IS_LOG_IDX_HEADER_SIZE + i * REC, r);
     }
 
     auto parsedHdr = parseHeader(buf.data());
@@ -142,7 +152,7 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
 
     for (std::size_t i = 0; i < N; ++i) {
         const auto p = parseRecord(
-            buf.data() + IS_LOG_IDX_HEADER_SIZE + i * IS_LOG_IDX_RECORD_V2_SIZE);
+            buf.data() + IS_LOG_IDX_HEADER_SIZE + i * REC, REC);
         EXPECT_EQ(p.timestamp, sources[i].timestamp);
         EXPECT_EQ(p.offset,    sources[i].offset);
         EXPECT_EQ(p.did,       sources[i].did);
@@ -251,22 +261,108 @@ TEST(IdxFileIO, HeaderAndRecordRoundTripViaCISLogFile) {
         EXPECT_EQ(hdrR->version, IS_LOG_IDX_VERSION_V2);
         EXPECT_EQ(hdrR->total_records, 3u);
 
-        auto a = readRecord(in);
+        auto a = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
         ASSERT_TRUE(a.has_value());
         EXPECT_EQ(a->did, 0xAAAu);
         EXPECT_EQ(a->flags, IS_LOG_IDX_REC_FLAG_HAS_TOW);
 
-        auto b = readRecord(in);
+        auto b = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
         ASSERT_TRUE(b.has_value());
         EXPECT_EQ(b->did, 0xBBBu);
         EXPECT_EQ(b->flags, 0u);
 
-        auto c = readRecord(in);
+        auto c = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
         ASSERT_TRUE(c.has_value());
         EXPECT_EQ(c->did, 0xCCCu);
         EXPECT_EQ(c->offset, 4096u);
     }
     std::remove(path.c_str());
+}
+
+// SN-8383 back-compat: a genuine v2.0 .idx file (legacy header record_size==0,
+// 24-byte on-disk records) must read cleanly under the v2.1 reader — the reader
+// strides by the header's record_size (0 => 24), reads only the 24-byte prefix,
+// and leaves the v2.1 trailing local_uptime_ms zeroed. A v2.1 file (record_size
+// 32) reads its trailing field. Both directions in one test, side by side.
+TEST(IdxFileIO, V20AndV21FilesBothReadCleanly) {
+    // ---- v2.0 file: legacy header (record_size 0) + 24-byte records ----
+    const auto v20 = makeTmpPath("v20file");
+    {
+        cISLogFile out(v20, "wb");
+        ASSERT_TRUE(out.isOpened());
+        auto hdr = makeRoundTripHeader();
+        hdr.record_size   = 0;   // legacy: pre-v2.1 headers carry 0 here
+        hdr.total_records = 3;
+        hdr.flags         = IS_LOG_IDX_HDR_FLAG_FINALIZED;  // no v2.1 feature flags
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
+
+        // Write each record as its 24-byte v2.0 prefix ONLY (serialize the full
+        // 32-byte layout, persist just the prefix) — a true on-disk v2.0 record.
+        const is_log_idx_record_v2_t recs[3] = {
+            { 1000, 0,    0xAAAu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0, /*local_uptime*/ 111u },
+            { 2000, 4096, 0xBBBu, 0,                            0,                  222u },
+            { 3000, 8192, 0xCCCu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0,                  333u },
+        };
+        for (const auto& r : recs) {
+            uint8_t rbuf[IS_LOG_IDX_RECORD_V2_1_SIZE];
+            serializeRecord(rbuf, r);
+            ASSERT_EQ(out.write(rbuf, IS_LOG_IDX_RECORD_V2_SIZE),  // 24 bytes only
+                      IS_LOG_IDX_RECORD_V2_SIZE);
+        }
+    }
+    {
+        cISLogFile in(v20, "rb");
+        ASSERT_TRUE(in.isOpened());
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
+        EXPECT_EQ(hdrR->record_size, 0u) << "legacy v2.0 header carries record_size 0";
+
+        const uint32_t stride = hdrR->record_size;  // 0 -> readRecord clamps to 24
+        const uint32_t wantDid[3] = { 0xAAAu, 0xBBBu, 0xCCCu };
+        const uint64_t wantOff[3] = { 0u, 4096u, 8192u };
+        for (int i = 0; i < 3; ++i) {
+            auto r = readRecord(in, stride);
+            ASSERT_TRUE(r.has_value()) << "record " << i << ": " << r.error().message;
+            EXPECT_EQ(r->did, wantDid[i]) << "record " << i;
+            EXPECT_EQ(r->offset, wantOff[i]) << "record " << i;
+            EXPECT_EQ(r->local_uptime_ms, 0u)
+                << "v2.0 record must have NO trailing delta (record " << i << ")";
+        }
+        // Reader consumed exactly header + 3*24 bytes; a 4th read hits EOF.
+        auto past = readRecord(in, stride);
+        EXPECT_FALSE(past.has_value());
+    }
+    std::remove(v20.c_str());
+
+    // ---- v2.1 file: header record_size 32 + 32-byte records w/ delta ----
+    const auto v21 = makeTmpPath("v21file");
+    {
+        cISLogFile out(v21, "wb");
+        ASSERT_TRUE(out.isOpened());
+        auto hdr = makeRoundTripHeader();
+        hdr.record_size   = IS_LOG_IDX_RECORD_V2_1_SIZE;  // 32
+        hdr.total_records = 2;
+        ASSERT_TRUE(writeHeader(out, hdr).has_value());
+        is_log_idx_record_v2_t r1{ 5000, 0,   0xD1u, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0, 4444u };
+        is_log_idx_record_v2_t r2{ 6000, 512, 0xD2u, 0,                            0, 5555u };
+        ASSERT_TRUE(writeRecord(out, r1).has_value());  // writes full 32 bytes
+        ASSERT_TRUE(writeRecord(out, r2).has_value());
+    }
+    {
+        cISLogFile in(v21, "rb");
+        ASSERT_TRUE(in.isOpened());
+        auto hdrR = readHeader(in);
+        ASSERT_TRUE(hdrR.has_value());
+        EXPECT_EQ(hdrR->record_size, IS_LOG_IDX_RECORD_V2_1_SIZE);
+        auto a = readRecord(in, hdrR->record_size);
+        ASSERT_TRUE(a.has_value());
+        EXPECT_EQ(a->did, 0xD1u);
+        EXPECT_EQ(a->local_uptime_ms, 4444u) << "v2.1 record carries the trailing delta";
+        auto b = readRecord(in, hdrR->record_size);
+        ASSERT_TRUE(b.has_value());
+        EXPECT_EQ(b->local_uptime_ms, 5555u);
+    }
+    std::remove(v21.c_str());
 }
 
 TEST(IdxFileIO, TruncatedHeaderReturnsTruncated) {
@@ -304,7 +400,7 @@ TEST(IdxFileIO, TruncatedRecordReturnsTruncated) {
     cISLogFile in(path, "rb");
     ASSERT_TRUE(in.isOpened());
     ASSERT_TRUE(readHeader(in).has_value());
-    auto rec = readRecord(in);
+    auto rec = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_FALSE(rec.has_value());
     EXPECT_EQ(rec.error().code, ISErrorCode::Truncated);
 
@@ -316,15 +412,15 @@ TEST(IdxRecordRange, LargeOffsetRoundTrip) {
     // >4GB (i.e. wouldn't fit in v1's u32) round-trips cleanly.
     constexpr uint64_t big_offset = 0x0000'0001'0000'0000ULL;  // 4 GiB exactly
     is_log_idx_record_v2_t src{ 1234, big_offset, 100, 0, 0 };
-    uint8_t buf[IS_LOG_IDX_RECORD_V2_SIZE];
+    uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
     serializeRecord(buf, src);
-    auto p = parseRecord(buf);
+    auto p = parseRecord(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);
     EXPECT_EQ(p.offset, big_offset);
 
     constexpr uint64_t huge_offset = 0xFFFF'FFFF'FFFF'0000ULL;
     src.offset = huge_offset;
     serializeRecord(buf, src);
-    p = parseRecord(buf);
+    p = parseRecord(buf, IS_LOG_IDX_RECORD_V2_1_SIZE);
     EXPECT_EQ(p.offset, huge_offset);
 }
 
@@ -423,15 +519,15 @@ TEST(IdxIntegration, EndToEndViaDeviceLogApi) {
     EXPECT_NE(hdrR->producer_version, 0u)
         << "producer_version must be filled from PROTOCOL_VERSION_CHAR0..3";
 
-    auto rec1 = readRecord(in);
+    auto rec1 = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_TRUE(rec1.has_value());
     EXPECT_EQ(rec1->did, static_cast<uint32_t>(DID_DEV_INFO));
 
-    auto rec2 = readRecord(in);
+    auto rec2 = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_TRUE(rec2.has_value());
     EXPECT_EQ(rec2->did, static_cast<uint32_t>(DID_INS_1));
 
-    auto rec3 = readRecord(in);
+    auto rec3 = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
     ASSERT_TRUE(rec3.has_value());
     EXPECT_EQ(rec3->did, static_cast<uint32_t>(DID_GNSS1_POS));
 
@@ -535,7 +631,7 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
             << idxInfo.name << ": some ISB packets should have been indexed";
 
         for (uint32_t i = 0; i < hdrR->total_records; ++i) {
-            auto recR = readRecord(in);
+            auto recR = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
             ASSERT_TRUE(recR.has_value())
                 << idxInfo.name << " record " << i << ": "
                 << recR.error().message;
@@ -682,14 +778,17 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
         EXPECT_NE(hdrR->flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
             << f.name << ": each segment must be finalized";
 
+        // SN-8383: the writer now emits v2.1 (32-byte) records; use the header's
+        // record_size (authoritative) rather than a hard-coded stride.
+        EXPECT_EQ(hdrR->record_size, IS_LOG_IDX_RECORD_V2_1_SIZE) << f.name;
         const size_t expectedFromSize =
-            (f.size - IS_LOG_IDX_HEADER_SIZE) / IS_LOG_IDX_RECORD_V2_SIZE;
+            (f.size - IS_LOG_IDX_HEADER_SIZE) / hdrR->record_size;
         EXPECT_EQ(hdrR->total_records, expectedFromSize)
             << f.name << ": header total_records must match on-disk record count "
                          "(= file_size - header) / record_size";
 
         for (uint32_t i = 0; i < hdrR->total_records; ++i) {
-            auto rec = readRecord(in);
+            auto rec = readRecord(in, IS_LOG_IDX_RECORD_V2_1_SIZE);
             ASSERT_TRUE(rec.has_value())
                 << f.name << " record " << i << "/" << hdrR->total_records
                 << ": " << rec.error().message;

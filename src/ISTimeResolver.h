@@ -74,6 +74,25 @@ public:
     };
 
     /**
+     * @brief SN-8339: one power-on session, delimited by a `SYS_PARAMS.upTime`
+     *        drop (device reboot) in arrival order.
+     *
+     * Each session owns its own uptime->ToW offset because uptime resets to ~0
+     * on every boot while GPS ToW continues — so a single global offset (the
+     * pre-SN-8339 model) mis-resolves every session after the first, and a small
+     * session-uptime value can't pick its session by value alone. The
+     * arrival-keyed `resolve()` overload selects the session whose
+     * `[arrivalStart, arrivalEnd]` window (in the device's global record-arrival
+     * order) contains the record's arrival index.
+     */
+    struct Session {
+        uint64_t arrivalStart        = 0;      //!< first record's global arrival index (inclusive)
+        uint64_t arrivalEnd          = 0;      //!< last record's global arrival index (inclusive)
+        int64_t  uptimeToTowOffsetMs = 0;      //!< this session's median uptime->ToW offset
+        bool     haveOffset          = false;  //!< a synced SYS_PARAMS gave this session an offset
+    };
+
+    /**
      * @brief Diagnostic counters from `computeStats(deviceLog)`.
      *
      * Counts of the per-record confidence outcomes when resolving
@@ -172,6 +191,30 @@ public:
     TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId) const;
 
     /**
+     * @brief SN-8339: arrival-keyed resolve for multi-boot logs.
+     *
+     * Identical to `resolve(hostTimeMs, deviceId)` EXCEPT that, when the log has
+     * more than one power-on session, `arrivalIndex` (the record's position in
+     * the device's global record-arrival order) selects which session's
+     * uptime->ToW offset bridges a session-uptime input — resolving the
+     * ambiguity where the same small uptime value occurs in two sessions. With a
+     * single session (or an out-of-range key), this is byte-identical to the
+     * no-key overload, so existing callers that don't pass a key are unaffected.
+     *
+     * @param hostTimeMs   Record's `.idx` timestamp field.
+     * @param deviceId     Source device id.
+     * @param arrivalIndex Record's global arrival index (see `ISRecordView`).
+     */
+    TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId,
+                      uint64_t arrivalIndex) const;
+
+    /**
+     * @return  Per-power-on sessions detected during build (SN-8339), in
+     *          arrival order. Size 1 for a single-boot log.
+     */
+    const std::vector<Session>& sessions() const noexcept { return sessions_; }
+
+    /**
      * @return  Sync points used to build this resolver, sorted by
      *          `hostTimeMs`. Lifetime tied to the resolver.
      */
@@ -201,20 +244,30 @@ private:
                             uint64_t anchorTowStart,
                             uint64_t anchorTowEnd,
                             int64_t  uptimeToTowOffsetMs,
-                            bool     haveUptimeOffset) noexcept
+                            bool     haveUptimeOffset,
+                            std::vector<Session> sessions = {}) noexcept
         : syncPoints_(std::move(syncs)),
           discontinuities_(std::move(discs)),
           anchorWeek_(anchorWeek),
           anchorTowStart_(anchorTowStart),
           anchorTowEnd_(anchorTowEnd),
           uptimeToTowOffsetMs_(uptimeToTowOffsetMs),
-          haveUptimeOffset_(haveUptimeOffset) {}
+          haveUptimeOffset_(haveUptimeOffset),
+          sessions_(std::move(sessions)) {}
 
     //! Core detection: scans all segments for sync points AND (SN-8323 uptime
     //! unification) authoritative uptime->ToW offset samples from DID_SYS_PARAMS.
     //! `detectSyncPoints` and `build` both delegate here.
     static std::vector<ISSyncPoint> detectSyncPointsImpl(
-        const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut);
+        const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut,
+        std::vector<Session>& sessionsOut);
+
+    //! SN-8339: shared resolve body, parameterized on the uptime->ToW offset so
+    //! both the global (no-key) path and the per-session (arrival-keyed) path
+    //! reuse identical logic. `resolve(h,d)` passes the global offset; the
+    //! arrival-keyed overload passes the selected session's offset.
+    TimeStamp resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
+                          int64_t uptimeOffsetMs, bool haveOffset) const;
 
     std::vector<ISSyncPoint>    syncPoints_;
     std::vector<Discontinuity>  discontinuities_;
@@ -241,6 +294,10 @@ private:
     int64_t                     uptimeToTowOffsetMs_ = 0;
     //! True when a synced DID_SYS_PARAMS gave a usable uptime->ToW offset.
     bool                        haveUptimeOffset_ = false;
+    //! SN-8339: per-power-on sessions (reboot = SYS_PARAMS.upTime drop in
+    //! arrival order). Size 1 for a single-boot log; the arrival-keyed resolve()
+    //! overload uses per-session offsets when size > 1.
+    std::vector<Session>        sessions_;
 };
 
 } // namespace inertial_sense

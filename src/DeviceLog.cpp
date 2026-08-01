@@ -10,6 +10,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <chrono>
 #include <ctime>
 #include <string>
 #include <sstream>
@@ -67,6 +68,12 @@ void cDeviceLog::InitDeviceForWriting(const std::string& timestamp, const std::s
     m_logStats.Clear();
     m_indexChunks.clear();
     m_logStartUpTime = current_uptimeMs();
+    // SN-8340: capture the absolute host wall-clock once, at log-open, so the
+    // v2.1 .idx header carries a durable epoch anchor even for logs that never
+    // acquire GPS. Per-record times stay relative (m_logStartUpTime delta).
+    m_captureEpochMs = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
 
@@ -357,6 +364,15 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
     rec.offset = m_lastIndexOffset;
     rec.reserved = 0;
 
+    // SN-8383 (v2.1): stamp the host-uptime-since-log-start for EVERY record —
+    // the per-record local clock v1 had and the v2 transition dropped. This is
+    // independent of `timestamp` below (which still prefers the payload ToW),
+    // so a downstream resolver can bracket a timeless record between the local
+    // deltas of its timed neighbours instead of guessing by arrival index.
+    const uint32_t localDelta = static_cast<uint32_t>(current_uptimeMs() - m_logStartUpTime);
+    rec.local_uptime_ms = localDelta;
+    rec.reserved2       = 0;
+
     if (dataHdr != nullptr) {
         rec.did = dataHdr->id;
         // cISDataMappings::Timestamp returns 0.0 if the DID doesn't
@@ -367,7 +383,7 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
             rec.timestamp = static_cast<uint64_t>(tsSeconds * 1000.0);
             rec.flags = IS_LOG_IDX_REC_FLAG_HAS_TOW;
         } else {
-            rec.timestamp = static_cast<uint64_t>(current_uptimeMs() - m_logStartUpTime);
+            rec.timestamp = localDelta;
             rec.flags = 0;
         }
     } else {
@@ -375,7 +391,7 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
         // to host uptime delta so the record still anchors a position
         // in the .raw segment by approximate time.
         rec.did = 0;
-        rec.timestamp = static_cast<uint64_t>(current_uptimeMs() - m_logStartUpTime);
+        rec.timestamp = localDelta;
         rec.flags = 0;
     }
 
@@ -419,7 +435,9 @@ bool cDeviceLog::writeIndexChunk() {
         is_log_idx_header_t hdr = makeDefaultHeader(
             encode_sdk_producer_version(),
             TimestampUnits::HostUptimeMs,
-            HeaderTimeSource::Mixed);
+            HeaderTimeSource::Mixed,
+            m_captureEpochMs);
+        hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA;   // SN-8383: every record carries local_uptime_ms
         auto r = writeHeader(indexFile, hdr);
         if (!r) {
             return false;
@@ -463,11 +481,17 @@ bool cDeviceLog::finalizeIndex() {
     is_log_idx_header_t hdr = makeDefaultHeader(
         encode_sdk_producer_version(),
         TimestampUnits::HostUptimeMs,
-        HeaderTimeSource::Mixed);
+        HeaderTimeSource::Mixed,
+        m_captureEpochMs);
     hdr.total_records       = m_idxTotalRecords;
     hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
     hdr.last_timestamp_ms   = m_idxLastTimestampMs;
-    hdr.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    // Preserve the v2.1 flags across the finalize header rewrite (the plain
+    // "= FINALIZED" would otherwise drop HAS_LOCAL_DELTA / HAS_CAPTURE_EPOCH).
+    hdr.flags               = static_cast<uint8_t>(
+                                  IS_LOG_IDX_HDR_FLAG_FINALIZED
+                                | IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA
+                                | (m_captureEpochMs ? IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH : 0));
 
     auto r = writeHeader(indexFile, hdr);
     if (!r) {
