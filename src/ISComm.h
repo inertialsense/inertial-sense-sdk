@@ -131,8 +131,11 @@ typedef enum
 /** Default protocol enable mask used by is_comm_init() when no explicit mask is set. */
 #define DEFAULT_PROTO_MASK (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
-/** The maximum allowable dataset size */
-#define MAX_DATASET_SIZE        1024
+/** The maximum allowable dataset size. SN-8405: raised from 1024 to cover gnss_sig_t's new
+ *  max size (1128 bytes at MAX_NUM_SAT_SIGNALS=160) with headroom; a single ISB packet can
+ *  carry far more than this (see is_comm_write_isb_precomp_to_port's PKT_BUF_SIZE check), so
+ *  this does not require any change to PKT_BUF_SIZE. */
+#define MAX_DATASET_SIZE        1280
 
 /** The decoded overhead involved in sending a packet - 4 bytes for header, 4 bytes for footer */
 #define PKT_OVERHEAD_SIZE       8       // = START_BYTE + INFO_BYTE + COUNTER_BYTE + FLAGS_BYTE + CHECKSUM_BYTE_1 + CHECKSUM_BYTE_2 + CHECKSUM_BYTE_3 + END_BYTE
