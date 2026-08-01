@@ -4304,7 +4304,9 @@ enum eGpxStatus
 
     GPX_STATUS_UPDATE_CONFIRMED                 = (int)0x00000100,  //!< Update confirmed
 
-    GPX_STATUS_GENERAL_FAULT_MASK               = (int)0xFFFF0000,  //!< Mask covering all general fault bits (RTK/GNSS/RTOS/DMA faults and the fatal sub-field)
+    // TODO: Re-enable this after we have addressed the cause of the RTOS task period overruns. For now, we will ignore this fault to avoid false positives. WHJ
+    // GPX_STATUS_GENERAL_FAULT_MASK               = (int)0xFFFF0000,  //!< Mask covering all general fault bits (RTK/GNSS/RTOS/DMA faults and the fatal sub-field)
+    GPX_STATUS_GENERAL_FAULT_MASK               = (int)0xFFDF0000,  //!< Mask covering all general fault bits (RTK/GNSS/RTOS/DMA faults and the fatal sub-field)        // GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN excluded to prevent RTOS task period overrun false positives. WHJ
 
     GPX_STATUS_FAULT_RTK_QUEUE_LIMITED          = (int)0x00010000,  //!< RTK buffer filled causing data loss
 

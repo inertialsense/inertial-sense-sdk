@@ -9,9 +9,11 @@
 
 #include "ISDeviceLog.h"
 
+#include "ISTimeResolver.h"   // SN-8105 anchored-span accessors
 #include "core/msg_logger.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <set>
 #include <utility>
 
@@ -99,8 +101,10 @@ void ISDeviceLog::buildIndex() {
     total_ = 0;
     all_.clear();
     byDid_.clear();
+    segmentBase_.assign(segments_.size(), 0);
 
     for (std::size_t s = 0; s < segments_.size(); ++s) {
+        segmentBase_[s] = total_;   // SN-8339: global arrival base for this segment
         const std::size_t n = segments_[s].recordCount();
         all_.reserve(all_.size() + n);
         for (std::size_t r = 0; r < n; ++r) {
@@ -138,6 +142,52 @@ TimeStamp ISDeviceLog::spanEnd() const noexcept {
         if (v != 0) return TimeStamp::fromPayloadToW(v, deviceId_);
     }
     return TimeStamp::fromPayloadToW(0, deviceId_);
+}
+
+namespace {
+
+//! SN-8105: single arrival-ordered pass folding the min and max of every
+//! record's resolver-anchored timestamp. Skips zero-raw (no time field) and
+//! `SessionOnly/Unknown` (no shared anchor) records. `any` is false when the
+//! log has no anchorable record. Keyed on arrival index for SN-8339 multi-boot.
+struct AnchoredFold {
+    uint64_t minMs = UINT64_MAX;
+    uint64_t maxMs = 0;
+    bool     any   = false;
+};
+
+AnchoredFold foldAnchoredSpan(const ISDeviceLog& log,
+                              const ISTimeResolver& resolver) {
+    AnchoredFold f;
+    const uint64_t deviceId = log.deviceId();
+    for (ISRecordView v : log.allRecords()) {
+        const uint64_t raw = v.timestamp().value;
+        if (raw == 0) continue;
+        const TimeStamp r = resolver.resolve(raw, deviceId, v.arrivalIndex());
+        if (r.source == TimeSource::SessionOnly &&
+            r.confidence == TimeConfidence::Unknown) {
+            continue;
+        }
+        if (r.value == 0) continue;
+        if (!f.any || r.value < f.minMs) f.minMs = r.value;
+        if (!f.any || r.value > f.maxMs) f.maxMs = r.value;
+        f.any = true;
+    }
+    return f;
+}
+
+}  // namespace
+
+TimeStamp ISDeviceLog::anchoredSpanStart(const ISTimeResolver& resolver) const noexcept {
+    const AnchoredFold f = foldAnchoredSpan(*this, resolver);
+    if (!f.any) return spanStart();
+    return TimeStamp::fromResolvedViaSync(f.minMs, deviceId_, TimeConfidence::Exact);
+}
+
+TimeStamp ISDeviceLog::anchoredSpanEnd(const ISTimeResolver& resolver) const noexcept {
+    const AnchoredFold f = foldAnchoredSpan(*this, resolver);
+    if (!f.any) return spanEnd();
+    return TimeStamp::fromResolvedViaSync(f.maxMs, deviceId_, TimeConfidence::Exact);
 }
 
 ISDeviceLog::Range ISDeviceLog::records(did_t did) const noexcept {
@@ -188,7 +238,14 @@ ISDeviceLog::RangeIterator
 ISRecordView ISDeviceLog::RangeIterator::operator*() const noexcept {
     if (!parent_ || !locators_ || pos_ >= locators_->size()) return {};
     const Locator& loc = (*locators_)[pos_];
-    return parent_->segments_[loc.segment].recordAt(loc.record);
+    ISRecordView v = parent_->segments_[loc.segment].recordAt(loc.record);
+    // SN-8339: stamp the global arrival index so consumers can key the
+    // multi-boot resolver, regardless of which range (allRecords / records(did)
+    // / seek / in_time) produced this view.
+    if (loc.segment < parent_->segmentBase_.size()) {
+        v.setArrivalIndex(parent_->segmentBase_[loc.segment] + loc.record);
+    }
+    return v;
 }
 
 ISDeviceLog::RangeIterator&

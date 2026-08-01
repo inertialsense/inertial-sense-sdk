@@ -347,6 +347,7 @@ protected:
     uint64_t m_lastIndexOffset = 0;                 //!< running byte offset into the .raw segment; v2 widened from u32 to u64 since segments can exceed 4GB
     uint32_t m_logStartUpTime = 0;                  //!< the system uptime (in millis) at the moment this index was created
     uint32_t m_lastIndexTime = 0;                   //!< system uptime (in ms) of the last index record; v2 still tracks this for the host-uptime fallback path
+    uint64_t m_captureEpochMs = 0;                  //!< SN-8340: absolute host wall-clock (ms since Unix epoch) captured at log-open; written to the v2.1 .idx header so a no-GPS-ever log still has a wall-clock anchor
 
     // D-01 / SN-7879 v2 .idx bookkeeping. The header at offset 0 of
     // the .idx file carries these aggregates; finalizeIndex() seeks(0)
