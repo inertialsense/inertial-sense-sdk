@@ -131,15 +131,6 @@ typedef enum
 /** Default protocol enable mask used by is_comm_init() when no explicit mask is set. */
 #define DEFAULT_PROTO_MASK (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
-/** The maximum allowable dataset size. SN-8405: raised from 1024 to cover gnss_sig_t's new
- *  max size (1128 bytes at MAX_NUM_SAT_SIGNALS=160) with headroom; a single ISB packet can
- *  carry far more than this (see is_comm_write_isb_precomp_to_port's PKT_BUF_SIZE check), so
- *  this does not require any change to PKT_BUF_SIZE. */
-#define MAX_DATASET_SIZE        1280
-
-/** The decoded overhead involved in sending a packet - 4 bytes for header, 4 bytes for footer */
-#define PKT_OVERHEAD_SIZE       8       // = START_BYTE + INFO_BYTE + COUNTER_BYTE + FLAGS_BYTE + CHECKSUM_BYTE_1 + CHECKSUM_BYTE_2 + CHECKSUM_BYTE_3 + END_BYTE
-
 /** The maximum buffer space that is used for sending and receiving packets */
 #ifndef PKT_BUF_SIZE
 #define PKT_BUF_SIZE            2048
@@ -148,17 +139,9 @@ typedef enum
 /** The maximum time between received data that will reset in the parser */
 #define MAX_PARSER_GAP_TIME_MS  100
 
-/** The maximum encoded overhead size in sending a packet (7 bytes for header, 7 bytes for footer). The packet start and end bytes are never encoded. */
-#define MAX_PKT_OVERHEAD_SIZE   (PKT_OVERHEAD_SIZE + PKT_OVERHEAD_SIZE - 2)  // worst case for packet encoding header / footer
-
-/** The maximum size of an decoded packet body */
-#define MAX_PKT_BODY_SIZE       (((PKT_BUF_SIZE - MAX_PKT_OVERHEAD_SIZE) / 2) & 0xFFFFFFFE) // worst case for packet encoding body, rounded down to even number
-
-/** The maximum size of decoded data in a packet body */
-#define MAX_P_DATA_BODY_SIZE    (MAX_PKT_BODY_SIZE-sizeof(p_data_hdr_t))    // Data size limit
-
-/** The maximum size of a decoded ACK message */
-#define MAX_P_ACK_BODY_SIZE     (MAX_PKT_BODY_SIZE-sizeof(p_ack_hdr_t))     // Ack data size
+// MAX_DATASET_SIZE, PKT_OVERHEAD_SIZE, MAX_PKT_OVERHEAD_SIZE, MAX_PKT_BODY_SIZE, and
+// MAX_P_DATA_BODY_SIZE are defined below, once packet_hdr_t and p_data_hdr_t exist, since they're
+// computed from sizeof() those structs. MAX_P_ACK_BODY_SIZE is defined further below, after p_ack_hdr_t.
 
 /** Binary checksum start value */
 #define CHECKSUM_SEED 0x00AAAAAA
@@ -418,6 +401,27 @@ typedef struct
 #define ISB_MIN_PACKET_SIZE             (sizeof(packet_hdr_t) + 2)                                      //!< Minimum ISB packet size: header + 2-byte checksum, no payload
 #define ISB_HDR_TO_PACKET_SIZE(hdr)     ((hdr).size + ISB_MIN_PACKET_SIZE + ((hdr).offset ? 2 : 0))     //!< Compute total ISB packet byte size from a packet_hdr_t
 
+/** The overhead involved in sending a packet: @ref packet_hdr_t header + 2-byte checksum footer.
+ *  Same computation as @ref ISB_MIN_PACKET_SIZE (a packet with zero-length payload is pure overhead). */
+#define PKT_OVERHEAD_SIZE       ISB_MIN_PACKET_SIZE
+
+/** The maximum overhead size in sending a packet. Equal to @ref PKT_OVERHEAD_SIZE: protocol 2.x
+ *  (see PROTOCOL_VERSION_CHAR0) is a length-prefixed binary format with no byte-stuffing/escaping,
+ *  so unlike the old v1 protocol's PSC_RESERVED_KEY escaping, there is no worst-case encoding growth
+ *  to account for here. */
+#define MAX_PKT_OVERHEAD_SIZE   PKT_OVERHEAD_SIZE
+
+/** The maximum size of a decoded packet body: full buffer minus header/footer overhead, rounded down to an even number. */
+#define MAX_PKT_BODY_SIZE       ((PKT_BUF_SIZE - MAX_PKT_OVERHEAD_SIZE) & 0xFFFFFFFE)
+
+/** The maximum size of decoded data in a packet body */
+#define MAX_P_DATA_BODY_SIZE    (MAX_PKT_BODY_SIZE-sizeof(p_data_hdr_t))    // Data size limit
+
+/** The maximum allowable dataset size: tied directly to the maximum packet payload capacity.
+ *  Note: for packets with ISB_FLAGS_PAYLOAD_W_OFFSET set, pkt->data.size already excludes the 2-byte offset.
+ *  This limit intentionally bounds pkt->data.size (dataset bytes), not on-wire payloadSize. */
+#define MAX_DATASET_SIZE        MAX_PKT_BODY_SIZE
+
 /** Represents a packet header and body */
 typedef struct
 {
@@ -524,6 +528,9 @@ typedef struct
     /** Packet counter of the received packet */
     uint16_t            pktCounter;
 } p_ack_hdr_t;
+
+/** The maximum size of a decoded ACK message */
+#define MAX_P_ACK_BODY_SIZE     (MAX_PKT_BODY_SIZE-sizeof(p_ack_hdr_t))     // Ack data size
 
 /** Represents the entire body of an ACK or NACK packet */
 typedef struct
