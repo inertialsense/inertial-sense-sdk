@@ -417,13 +417,10 @@ typedef struct
 /** The maximum size of decoded data in a packet body */
 #define MAX_P_DATA_BODY_SIZE    (MAX_PKT_BODY_SIZE-sizeof(p_data_hdr_t))    // Data size limit
 
-/** The maximum allowable dataset size: tied directly to @ref MAX_P_DATA_BODY_SIZE, the actual
- *  per-packet data capacity, since a dataset must fit in a single (non-fragmented) ISB packet --
- *  ISB_FLAGS_EXTENDED_PAYLOAD exists as a flag bit but has no reassembly implementation anywhere
- *  in this parser. SN-8405 raised this from a hardcoded 1024 to cover gnss_sig_t's new max size
- *  (1128 bytes at MAX_NUM_SAT_SIGNALS=160); deriving it from MAX_P_DATA_BODY_SIZE instead means
- *  it no longer needs manual bumping as datasets grow, as long as they still fit in one packet. */
-#define MAX_DATASET_SIZE        MAX_P_DATA_BODY_SIZE
+/** The maximum allowable dataset size: tied directly to the maximum packet payload capacity.
+ *  Note: for packets with ISB_FLAGS_PAYLOAD_W_OFFSET set, pkt->data.size already excludes the 2-byte offset.
+ *  This limit intentionally bounds pkt->data.size (dataset bytes), not on-wire payloadSize. */
+#define MAX_DATASET_SIZE        MAX_PKT_BODY_SIZE
 
 /** Represents a packet header and body */
 typedef struct
