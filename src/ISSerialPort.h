@@ -10,6 +10,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISSerialPort.h
+ * @brief cISStream implementation backed by a native OS serial (COM) port.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved.
+ */
+
 #ifndef __ISSERIALPORT_H__
 #define __ISSERIALPORT_H__
 
@@ -21,19 +29,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPortPlatform.h"
 
 
+/**
+ * cISStream implementation that reads and writes a native serial/COM port using the
+ * C serialPort/serialPortPlatform API declared in serialPort.h.
+ */
 class cISSerialPort : serial_port_t, public cISStream
 {
 private:
     cISSerialPort(const cISSerialPort& copy) = delete; // disable copy constructor
 
-    port_handle_t port= this;
-    int m_timeout;
-    bool m_blocking;
+    port_handle_t port= this;  //!< handle used with the C serialPort API; points at an externally-owned port, or at this object's own serial_port_t base when constructed with NULL
+    int m_timeout;              //!< read timeout in milliseconds, 0 for none
+    bool m_blocking;             //!< whether reads/writes block until data is transferred
 
 public:
     /**
     * Constructor
-    * @param serial inner serial port implementation or NULL for default, if not NULL, it will be copied
+    * @param port inner serial port handle to use, or NULL to initialize and own this object's own serial_port_t base
     */
     cISSerialPort(port_handle_t port = NULL);
 

@@ -21,6 +21,7 @@
 #include <string>
 #include <list>
 #include <utility>
+#include <new>
 #include "mdns.h"
 
 #ifdef _WIN32
@@ -239,13 +240,16 @@ public:
             type = other.type;
             rclass = other.rclass;
             ttl = other.ttl;
+            // The union members are non-trivial (std::string / std::vector) and the union storage
+            // is not yet holding a live object, so each active member must be *constructed*
+            // (placement-new) — assigning would run operator= over uninitialized memory (UB / crash).
             switch (type) {
                 case MDNS_RECORDTYPE_IGNORE: break;
-                case MDNS_RECORDTYPE_A: data.a = other.data.a; break;
-                case MDNS_RECORDTYPE_TXT: data.txt = other.data.txt; break;
-                case MDNS_RECORDTYPE_PTR: data.ptr = other.data.ptr; break;
-                case MDNS_RECORDTYPE_AAAA: data.aaaa = other.data.aaaa; break;
-                case MDNS_RECORDTYPE_SRV: data.srv = other.data.srv; break;
+                case MDNS_RECORDTYPE_A: new (&data.a) mdns_record_a_cpp_t(other.data.a); break;
+                case MDNS_RECORDTYPE_TXT: new (&data.txt) mdns_record_txt_cpp_t(other.data.txt); break;
+                case MDNS_RECORDTYPE_PTR: new (&data.ptr) mdns_record_ptr_cpp_t(other.data.ptr); break;
+                case MDNS_RECORDTYPE_AAAA: new (&data.aaaa) mdns_record_aaaa_cpp_t(other.data.aaaa); break;
+                case MDNS_RECORDTYPE_SRV: new (&data.srv) mdns_record_srv_cpp_t(other.data.srv); break;
                 case MDNS_RECORDTYPE_ANY: break;
             }
         }
@@ -311,26 +315,31 @@ public:
                 case MDNS_RECORDTYPE_SRV: data.srv.~mdns_record_srv_cpp_t(); break;
                 case MDNS_RECORDTYPE_ANY: break;
             }
-            // Zero out the data to prevent any crashes when we try to reassign data
-            memset((void*)&(this->data), 0, sizeof(mdns_record_data));
+            // The previous active member was destroyed above, so the union storage no longer holds a
+            // live object. Mark the union as empty (IGNORE) *before* doing anything that can throw:
+            // if the name assignment or the placement-new below throws, the destructor must not try to
+            // destroy the already-destroyed (or not-yet-constructed) member. type is set to the real
+            // value only after the new active member has been successfully constructed in place.
+            this->type = MDNS_RECORDTYPE_IGNORE;
 
-            this->name = std::string(other.name);
-
-            this->type = other.type;
+            this->name = other.name;
             this->rclass = other.rclass;
             this->ttl = other.ttl;
 
+            // Construct the new active member in place (placement-new) — assigning would run operator=
+            // over uninitialized memory (UB; the original crash was exactly this).
             if (other.type == MDNS_RECORDTYPE_PTR) {
-                this->data.ptr = other.data.ptr;
+                new (&this->data.ptr) mdns_record_ptr_cpp_t(other.data.ptr);
             } else if (other.type == MDNS_RECORDTYPE_SRV) {
-                this->data.srv = other.data.srv;
+                new (&this->data.srv) mdns_record_srv_cpp_t(other.data.srv);
             } else if (other.type == MDNS_RECORDTYPE_A) {
-                this->data.a = other.data.a;
+                new (&this->data.a) mdns_record_a_cpp_t(other.data.a);
             } else if (other.type == MDNS_RECORDTYPE_AAAA) {
-                this->data.aaaa = other.data.aaaa;
+                new (&this->data.aaaa) mdns_record_aaaa_cpp_t(other.data.aaaa);
             } else if (other.type == MDNS_RECORDTYPE_TXT) {
-                this->data.txt = other.data.txt;
+                new (&this->data.txt) mdns_record_txt_cpp_t(other.data.txt);
             }
+            this->type = other.type;
             return *this;
         }
 

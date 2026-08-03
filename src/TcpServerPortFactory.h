@@ -55,14 +55,25 @@ enum eTcpListenErrorContext {
  */
 class TcpServerPortFactory : public PortFactory {
 public:
+    /** Configuration for this factory's listener, set by the constructor. */
     struct {
         uint16_t listenerPort = 4321;       //!< the tcp port to listen for incoming connections on
-        struct sockaddr_in listeningAddr;   //!< listening address (this binds to a specific interface, defaults to 127.0.0.1
+        struct sockaddr_in listeningAddr;   //!< listening address (this binds to a specific interface, defaults to 127.0.0.1)
         bool backgroundListener = false;    //!< if true, we'll setup a thread to process incoming connections -- note that this doesn't service those connections, just the listener
         int maxConnections = 10;            //!< the maximum number of connections that can be kept open - additional connection requests will be rejected
         bool portDefaultBlocking = false;   //!< if true, created tcpPorts will be configured for blocking by default (usually, we don't want that).
-    } factoryOptions = {};
+    } factoryOptions = {};   //!< configuration for this factory's listener, set by the constructor
 
+    /**
+     * Constructs and configures a listener; does not start listening (call startListening() or
+     * drive it via locatePorts()). Performs one-time platform setup (ignores SIGPIPE on Linux,
+     * calls WSAStartup on Windows).
+     * @param listenPort the tcp port to listen for incoming connections on
+     * @param listenAddr the local interface address to bind to; accepts "<address>" or "<address> (<name>)", defaults to 127.0.0.1
+     * @param maxConnections the maximum number of connections that can be kept open
+     * @param portDefaultBlocking if true, created tcpPorts will be configured for blocking by default
+     * @param backgroundListener if true, a thread will be set up to process incoming connections (the listener only, not the connections themselves)
+     */
     explicit TcpServerPortFactory(uint16_t listenPort = 4321, const std::string& listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
 #ifdef PLATFORM_IS_LINUX
         signal(SIGPIPE, SIG_IGN); // ignore broken pipes
@@ -99,14 +110,41 @@ public:
     // TcpServerPortFactory(TcpServerPortFactory const &) = delete;
     // TcpServerPortFactory& operator=(TcpServerPortFactory const&) = delete;
 
+    /**
+     * Services pending incoming connections on the listening socket (starting it if not already
+     * started) and invokes @p portCallback for each accepted connection whose auto-generated
+     * "tcp://ip:port" name validates.
+     * @param portCallback the function to call back into to indicate that this port has been "found"
+     * @param pattern the URL to validate and "discover"
+     * @param pType ignored
+     */
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
+    /**
+     * Validates that @p pName is a well-formed "tcp://host:port" URL whose host resolves.
+     * @param pName the URL to validate, starting with tcp://
+     * @param pType must be PORT_TYPE__TCP
+     * @return true if a port can be created from pName, otherwise false
+     */
     bool validatePort(const std::string& pName, uint16_t pType) override;
 
+    /**
+     * Parses and creates a new port_handle_t representing a TCP port for a URL in the format
+     * tcp://ipAddr:port.
+     * @param pName the URL and name of the new port to bind a port_handle_t to
+     * @param pType the port type requested to be generated
+     * @return a port_handle_t bound to the newly created TCP port for the connection pName represents, or nullptr on failure
+     */
     port_handle_t bindPort(const std::string& pName, uint16_t pType) override;
 
+    /**
+     * Releases and frees the memory used by this port.
+     * @param port the TCP port handle to deinitialize
+     * @return true if successful, false otherwise
+     */
     bool releasePort(port_handle_t port) override;
 
+    /** Shuts down (SHUT_RDWR) and closes every currently-accepted client socket, without removing them from knownSockets. */
     void shutdownAllClients();
 
     /**
@@ -121,20 +159,39 @@ public:
     std::pair<eTcpListenErrorContext, int> getLastListenError() const { return lastListenError; }
 
 protected:
+    /** A single accepted client connection: its raw socket, auto-generated "tcp://ip:port" name, and (once bound) its port handle. */
     struct socket_entry_t {
-        int socket = 0;
-        std::string portName;
-        mutable port_handle_t port = nullptr;
+        int socket = 0;                        //!< the accepted client's raw socket descriptor
+        std::string portName;                  //!< auto-generated "tcp://ip:port" name for this connection
+        mutable port_handle_t port = nullptr;   //!< the bound port handle for this connection, once created
 
+        /**
+         * @param _s the accepted client's raw socket descriptor
+         * @param _n auto-generated "tcp://ip:port" name for this connection
+         * @param _p the bound port handle for this connection, if already created
+         */
         socket_entry_t(int _s, std::string _n, port_handle_t _p = nullptr) : socket(_s), portName(std::move(_n)), port(_p) {};
 
-        // Overload operator< for strict weak ordering
+        /**
+         * Strict weak ordering by socket, falling back to portName so entries with the same
+         * (reused) socket value on different names remain distinguishable in the containing std::set.
+         * @param other the socket_entry_t to compare against
+         * @return true if this entry sorts before @p other
+         */
         bool operator<(const socket_entry_t& other) const {
             return (socket != other.socket) ? socket < other.socket : portName < other.portName; // Secondary sorting criterion
         }
 
     };
 
+    /**
+     * Applies the listener configuration used by startListening(); does not itself open a socket.
+     * @param listenPort the tcp port to listen for incoming connections on
+     * @param listenAddr the local interface address to bind to; accepts "<address>" or "<address> (<name>)", defaults to 127.0.0.1
+     * @param maxConnections the maximum number of connections that can be kept open
+     * @param portDefaultBlocking if true, created tcpPorts will be configured for blocking by default
+     * @param backgroundListener if true, a thread will be set up to process incoming connections (the listener only, not the connections themselves)
+     */
     void configure(uint16_t listenPort = 4321, const std::string& listenAddr = "127.0.0.1", int maxConnections = 10, bool portDefaultBlocking = false, bool backgroundListener = false) {
         factoryOptions.listenerPort = listenPort;
         factoryOptions.maxConnections = maxConnections;
@@ -154,14 +211,24 @@ protected:
         factoryOptions.listeningAddr.sin_addr = addr;
     }
 
+    /**
+     * Creates, configures (non-blocking, SO_REUSEADDR), binds, and listens on the socket described
+     * by factoryOptions. Idempotent — if a listener is already open, returns true immediately without
+     * creating a second socket. On failure, records the failing step and platform error via
+     * recordListenError() and tears the half-open socket back down (see getLastListenError()).
+     * @return true if a listener is open (already was, or was just created), false on failure
+     */
     bool startListening();
 
+    /** Closes the listening socket (if open) and resets it to the not-listening state. */
     void stopListening();
 
+    /** @return the number of currently-accepted client connections. */
     int getClientConnectionCount() {
         return (int)knownSockets.size();
     }
 
+    /** @return a snapshot copy of all currently-accepted client connections. */
     std::vector<socket_entry_t> getClientSockets() {
         std::vector<socket_entry_t> out;
         for (const auto& ks : knownSockets)
@@ -172,6 +239,8 @@ protected:
     /**
      * The primary service routine - this should be called periodically (and frequently) to service incoming connections.
      * If this is not called, no ports will ever be discovered/created
+     * @param cb callback invoked once per newly-accepted connection, with the socket_entry_t describing it
+     * @return true if at least one connection was accepted during this call; false if none were (including when no listener is active)
      */
     bool processPendingConnections(std::function<void(const socket_entry_t&)> cb);
 
