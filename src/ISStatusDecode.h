@@ -55,6 +55,7 @@ struct status_subfield_t
     uint32_t                          mask     = 0;                            //!< Bit(s) this sub-field occupies in the raw value.
     uint32_t                          shift    = 0;                            //!< Right-shift for Enum/Count extraction; 0 for Bit.
     bool                              isError  = false;                        //!< Bit: this flag is an error. Enum/Count: sub-field is error-bearing (per-value override via `values`).
+    bool                              boolInvert = false;                     //!< Bit only: for boolean-style consumers (e.g. the status-ribbon chart), invert the raw `(value & mask) != 0` truthiness before display. Lets a negatively-worded status bit (e.g. "...NOT_DETECTED") carry a positively-worded `name` ("...detected") without changing the underlying bit or `legacyText`/`RenderStatusFromDecode` line output, which is governed by the raw bit and unaffected by this flag.
     uint32_t                          gateMask = 0;                            //!< If non-zero, only decode/emit when `(raw & gateMask) != 0` (hybrid pattern). 0 = always.
     bool                              emitZero = false;                        //!< Count: emit a line even when the extracted value is 0 (e.g. GNSS satellite count). Default: skip zero.
     bool                              modeHexDec = false;                      //!< Count: format args are `(masked, shifted)` instead of `(value, value)` — for "hex(masked) ... dec(shifted)" lines (the BIT-mode pattern).

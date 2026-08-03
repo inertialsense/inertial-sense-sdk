@@ -901,6 +901,40 @@ TEST(ISStatusDecode, GpxStatus_RoundTrip_RandomSweep)
     }
 }
 
+// SN-8402: the four RX-traffic subfields are a status, not a fault (isError stays false,
+// consistent with them being excluded from GPX_STATUS_GENERAL_FAULT_MASK) -- but a boolean-style
+// consumer (the status-ribbon chart) needs boolInvert=true so the positively-worded "detected" name
+// shows true when the underlying NOT_DETECTED bit is clear. Confirms the schema data, not any
+// particular consumer's rendering (that's covered on the Logalyzer side).
+TEST(ISStatusDecode, GpxStatus_RxTrafficSubfields_PositiveNameNotFaultButInverted)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
+    ASSERT_NE(dec, nullptr);
+
+    struct Want { const char* name; uint32_t mask; };
+    const Want wants[] = {
+        { "COM0 RX traffic detected", (uint32_t)GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED },
+        { "COM1 RX traffic detected", (uint32_t)GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED },
+        { "COM2 RX traffic detected", (uint32_t)GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED },
+        { "USB RX traffic detected",  (uint32_t)GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED },
+    };
+
+    for (const auto& w : wants) {
+        const status_subfield_t* sf = nullptr;
+        for (const auto& cand : dec->subfields)
+            if (cand.mask == w.mask) { sf = &cand; break; }
+        ASSERT_NE(sf, nullptr) << w.name;
+        EXPECT_EQ(sf->name, w.name);
+        EXPECT_EQ(sf->kind, eStatusSubfieldKind::Bit);
+        EXPECT_FALSE(sf->isError) << w.name << " is a status, not a fault";
+        EXPECT_TRUE(sf->boolInvert) << w.name;
+        // legacyText / RenderStatusFromDecode's line output is unaffected by the rename or the
+        // invert flag -- still only emitted when the raw NOT_DETECTED bit is actually set.
+        EXPECT_NE(sf->legacyText.find("not detected"), std::string::npos) << w.name;
+        EXPECT_EQ(RenderStatusFromDecode(*dec, w.mask), legacyRenderGpxStatusReference(w.mask));
+    }
+}
+
 TEST(ISStatusDecode, GpxHdwStatus_RoundTrip_EverySingleBit)
 {
     const status_field_decode_t* dec = GetStatusDecodeByField("gpxHdwStatus");

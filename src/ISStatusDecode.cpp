@@ -27,7 +27,7 @@ uint32_t maskShift(uint32_t mask)
 }
 
 /** @brief Build a single on/off-bit sub-field descriptor. */
-status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const char* legacy)
+status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const char* legacy, bool boolInvert = false)
 {
     status_subfield_t s;
     s.name       = name;
@@ -35,6 +35,7 @@ status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const 
     s.mask       = mask;
     s.shift      = 0;
     s.isError    = isError;
+    s.boolInvert = boolInvert;
     s.gateMask   = 0;
     s.legacyText = legacy;
     return s;
@@ -488,21 +489,21 @@ status_field_decode_t buildGpxStatusDecode()
     d.fieldName = "status";   // registry key is "gpxStatus"
     d.errorMask = (uint32_t)GPX_STATUS_GENERAL_FAULT_MASK;
 
-    auto gerr = [](const char* name, uint32_t mask, const char* legacy) {
-        return bitField(name, mask, (mask & (uint32_t)GPX_STATUS_GENERAL_FAULT_MASK) != 0, legacy);
-    };
-    // Inverted variant: bit set means "OK" (e.g. traffic detected), not fault.
-    auto gerrInv = [](const char* name, uint32_t mask, const char* legacy) {
-        return bitField(name, mask, (mask & (uint32_t)GPX_STATUS_GENERAL_FAULT_MASK) == 0, legacy);
+    auto gerr = [](const char* name, uint32_t mask, const char* legacy, bool boolInvert = false) {
+        return bitField(name, mask, (mask & (uint32_t)GPX_STATUS_GENERAL_FAULT_MASK) != 0, legacy, boolInvert);
     };
 
     // Parse-error count is rendered by the legacy code as a presence flag (any of the low nibble),
     // not a number — model it as a Bit on the count mask.
     d.subfields.push_back(gerr("COM parse errors", GPX_STATUS_COM_PARSE_ERR_COUNT_MASK, "0x0000000F - Communications parse error count"));
-    d.subfields.push_back(gerrInv("COM0 RX traffic detected", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED, "0x00000010 - COM0 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerrInv("COM1 RX traffic detected", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED, "0x00000020 - COM1 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerrInv("COM2 RX traffic detected", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED, "0x00000040 - COM2 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerrInv("USB RX traffic detected", GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED, "0x00000080 - USB RX traffic not detected in last 30 seconds."));
+    // These four are a status, not a fault (deliberately outside GPX_STATUS_GENERAL_FAULT_MASK, so
+    // isError stays false via gerr()) -- positively-worded name + boolInvert=true so a boolean-style
+    // consumer (the status-ribbon chart) shows "RX traffic detected" = true when the underlying
+    // NOT_DETECTED bit is clear. legacyText (and RenderStatusFromDecode's line output) is untouched.
+    d.subfields.push_back(gerr("COM0 RX traffic detected", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED, "0x00000010 - COM0 RX traffic not detected in last 30 seconds.", /*boolInvert=*/true));
+    d.subfields.push_back(gerr("COM1 RX traffic detected", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED, "0x00000020 - COM1 RX traffic not detected in last 30 seconds.", /*boolInvert=*/true));
+    d.subfields.push_back(gerr("COM2 RX traffic detected", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED, "0x00000040 - COM2 RX traffic not detected in last 30 seconds.", /*boolInvert=*/true));
+    d.subfields.push_back(gerr("USB RX traffic detected", GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED, "0x00000080 - USB RX traffic not detected in last 30 seconds.", /*boolInvert=*/true));
     d.subfields.push_back(gerr("Firmware image confirmed", GPX_STATUS_UPDATE_CONFIRMED, "0x00000100 - Update confirmed."));
     d.subfields.push_back(gerr("RTK buffer overflow", GPX_STATUS_FAULT_RTK_QUEUE_LIMITED, "0x00010000 - RTK buffer overflow."));
     d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME, "0x00100000 - GNSS receiver time fault"));
