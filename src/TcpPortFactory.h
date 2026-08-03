@@ -28,10 +28,12 @@
  */
 class TcpPortFactory : public PortFactory {
 public:
+    /** Default options applied to ports created by this factory. */
     struct {
-        bool defaultBlocking = false;
-    } portOptions = {};
+        bool defaultBlocking = false;   //!< default blocking mode applied to ports bound by this factory
+    } portOptions = {};   //!< default options applied to ports created by this factory
 
+    /** @return the process-wide singleton TcpPortFactory instance. */
     static TcpPortFactory& getInstance() {
         static TcpPortFactory instance;
         return instance;
@@ -40,12 +42,37 @@ public:
     TcpPortFactory(TcpPortFactory const &) = delete;
     TcpPortFactory& operator=(TcpPortFactory const&) = delete;
 
+    /**
+     * This factory doesn't provide device discovery; it only reports whether @p pattern itself
+     * is a valid "tcp://host:port" URL, invoking @p portCallback with it if so (a one-port stub).
+     * @param portCallback function invoked with (this factory, PORT_TYPE__TCP, pattern) if pattern validates
+     * @param pattern the "tcp://host:port" URL to validate and "discover"
+     * @param pType ignored
+     */
     void locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) override;
 
+    /**
+     * Validates that @p pName is a well-formed "tcp://host:port" URL whose host resolves.
+     * @param pName the URL to validate, starting with tcp://
+     * @param pType must include PORT_TYPE__TCP
+     * @return true if a port can be created from pName, otherwise false
+     */
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
+    /**
+     * Parses and creates a new port_handle_t representing a TCP port for a URL in the format
+     * tcp://ipAddr:port.
+     * @param pName the URL and name of the new port to bind a port_handle_t to
+     * @param pType the port type requested to be generated
+     * @return a port_handle_t bound to the newly created TCP port for the connection pName represents, or nullptr on failure
+     */
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
 
+    /**
+     * Releases and frees the memory used by this port.
+     * @param port the TCP port handle to deinitialize
+     * @return true if successful, false otherwise
+     */
     bool releasePort(port_handle_t port) override;
 
 private:

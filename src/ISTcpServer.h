@@ -10,6 +10,14 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/**
+ * @file ISTcpServer.h
+ * @brief cISStream implementation of a simple multi-client TCP server, plus its connection delegate interface.
+ *
+ * @author Inertial Sense, Inc.
+ * @copyright Copyright (c) 2014-2025 Inertial Sense, Inc. All rights reserved.
+ */
+
 #ifndef _ISTCPSERVER__H__
 #define _ISTCPSERVER__H__
 
@@ -21,6 +29,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 class cISTcpServer;
 
+/**
+ * Delegate interface notified of client connect/disconnect/data events on a cISTcpServer.
+ * Override the callbacks of interest; all have no-op default implementations.
+ */
 class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] iISTcpServerDelegate
 {
 protected:
@@ -82,11 +94,17 @@ protected:
     friend class cISTcpServer;
 };
 
+/**
+ * cISStream implementation of a listening TCP server that accepts and manages multiple client
+ * sockets. Update() must be polled to accept new connections and to prune disconnected clients.
+ * Deprecated in favor of tcpPort/TcpPortFactory.
+ */
 class [[deprecated("Use tcpPort/TcpPortFactory instead. cISTcpClient will be removed with SDK 3.0.")]] cISTcpServer : public cISStream
 {
 public:
     /**
     * Constructor
+    * @param delegate optional delegate notified of client connect/disconnect/data events, or NULL for none
     */
     cISTcpServer(iISTcpServerDelegate* delegate = NULL);
 
@@ -143,11 +161,11 @@ public:
 private:
     cISTcpServer(const cISTcpServer& copy); // Disable copy constructor
 
-    is_socket_t m_socket;
-    std::vector<is_socket_t> m_clients;
-    std::string m_ipAddress;
-    int32_t m_port;
-    iISTcpServerDelegate* m_delegate;
+    is_socket_t m_socket;                    //!< listening socket handle, 0 when not open
+    std::vector<is_socket_t> m_clients;       //!< currently connected client sockets
+    std::string m_ipAddress;                  //!< ip address bound in the most recent Open()
+    int32_t m_port;                           //!< port number bound in the most recent Open()
+    iISTcpServerDelegate* m_delegate;         //!< optional delegate notified of client events, may be NULL
 };
 
 #endif

@@ -88,16 +88,21 @@ namespace utils {
     std::string trim_copy(std::string s, const char* t = " \t\n\r\f\v");
 
     /**
-     * Performs sprintf-type formatting, using a std:string for the format string, and outputting a std::string
-     * @tparam Args
-     * @param format
-     * @param args
-     * @return
+     * Base case for the variadic string_format() below; returns format unchanged, since there are
+     * no substitutions to perform when no additional arguments are supplied.
+     * @param format the string to return as-is
+     * @return a copy of format
      */
     inline std::string string_format(const std::string& format) {
         return format;
     }
 
+    /**
+     * Performs sprintf-type formatting, using a std::string for the format string, and outputting a std::string.
+     * @param format a printf-style format string
+     * @param args the values to substitute into format, per the usual printf conversion rules
+     * @return the formatted string
+     */
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {
         int size_s = std::snprintf((char*)nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
@@ -113,9 +118,8 @@ namespace utils {
 
     /**
      * Combine all elements of a container denoted by the start and ending iterators, to join into a
-     *   single string, using the specified delimiter
-     * @tparam T the type of container/iterator
-     * @param v a copy of the iterator denoting the first element to join
+     *   single string, using the specified delimiter. The iterator type is deduced from the arguments.
+     * @param begin a copy of the iterator denoting the first element to join
      * @param end reference to the iterator denoting the last element to join
      * @param delimiter a delimiter string to be placed between each element in the output string
      * @return a string of all joined elements
@@ -131,8 +135,8 @@ namespace utils {
     }
 
     /**
-     * Combine all elements of a container into a single string, using the specified delimiter
-     * @tparam T the type of container
+     * Combine all elements of a container into a single string, using the specified delimiter.
+     * The container type is deduced from the argument.
      * @param v reference to the container of elements to join
      * @param delimiter a delimiter string to be placed between each element in the output string
      * @return a string of all joined elements
@@ -191,12 +195,11 @@ namespace utils {
 
 
     /**
-     * Returns the index of an entry (type E) within a container (type T)
-     * @tparam E the data type of the collection; defaults to std::string
-     * @tparam T the collection type; defaults to std::vector
+     * Returns the index of an entry (type E, default std::string) within a container (type T,
+     * default std::vector<E>).
      * @param c a reference to the collection containing the element to index
      * @param e a reference to the element to locate in the collection
-     * @returns the index number of the element e within collection c, or -1 if not found.
+     * @return the index number of the element e within collection c, or -1 if not found.
      */
     template <typename E=std::string, typename T=std::vector<E>>
     int indexOf(const T& c, const E& e) {
@@ -205,9 +208,26 @@ namespace utils {
         return (int)pos;
     }
 
+    /**
+     * Formats the passed raw data as a "hexadecimal view". This can be used with any data.
+     * @param raw_data a pointer to the raw byte stream
+     * @param bytesLen the number of bytes following raw_data to output
+     * @param bytesPerLine the number of hexadecimal bytes to print per line
+     * @return a fully formatted string
+     */
     std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
+
+    /**
+     * Formats the specified DID's raw data as a "hexadecimal view". This can be used with any DID
+     * that is not otherwise supported.
+     * @param raw_data a pointer to the raw DID byte stream
+     * @param hdr the DID header
+     * @param bytesPerLine the number of hexadecimal bytes to print per line
+     * @return a fully formatted string
+     */
     std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
+    /** Bitmask selecting which dev_info_t fields devInfoToString()/getBuildAsString() render. */
     enum dev_info_fmt_e : uint16_t {
         DV_BIT_SERIALNO         = 0x0001,        //!< serial number
         DV_BIT_FIRMWARE_VER     = 0x0002,        //!< firmware version w/ optional release type
@@ -259,33 +279,169 @@ namespace utils {
      */
     std::string deviceIdString(uint16_t hdwId, uint64_t serial);
 
+    /**
+     * Renders the hardware type-major-minor portion of devInfo, e.g. "IMX-5.0", optionally
+     * appended with the sub-rev components (hardwareVer[2..3]) when showRev is true and they are
+     * non-zero.
+     * @param devInfo the dev_info_t supplying the hardware type and version bytes
+     * @param showRev if true, append the sub-rev components when present
+     * @return the rendered hardware-id string
+     */
     std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
+
+    /**
+     * Renders the type-major-minor portion of a packed hardware id, e.g. "IMX-5.0". This is a
+     * legacy-named alias of hdwIdToString() for callers that prefer this historical name; the
+     * packed form cannot carry the sub-rev bytes.
+     * @param hdwId packed hardware id
+     * @return the rendered hardware-id string
+     */
     std::string getHardwareAsString(is_hardware_t hdwId);
+
+    /**
+     * Renders the firmware version portion of devInfo, e.g. "fw2.1.7" or "fw2.1.7-rc.5", including
+     * the build-type suffix (alpha/beta/rc/devel/snap) when set.
+     * @param devInfo the dev_info_t supplying the firmware version and build type
+     * @param prefix  a prefix to prepend to the rendered version (defaults to "fw")
+     * @return the rendered firmware-version string
+     */
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
+
+    /**
+     * Renders the requested build-related fields of devInfo (commit hash, build key/number,
+     * build date, build time) as a single delimited string, per the DV_BIT_ flags requested.
+     * @param devInfo the dev_info_t supplying the build fields
+     * @param flags   a bitmask of dev_info_fmt_e DV_BIT_ values selecting which fields to render
+     * @param sep     the separator placed between each rendered field
+     * @return the rendered build-info string
+     */
     std::string getBuildAsString(const dev_info_t& devInfo, uint16_t flags = -1, const std::string& sep = " ");
 
-    /// Parse a hardware identity string (inverse of getHardwareAsString). Accepts "<TYPE>-<major>.<minor>[.<p2>[.<p3>]]"
-    /// e.g. "IMX-5.0", "GPX-1.0.2", "uINS-3.2". Populates devInfo.hardwareType and hardwareVer[0..3].
-    /// Returns false on unrecognized type prefix or malformed version — caller should leave devInfo unchanged.
+    /**
+     * Parses a hardware identity string (inverse of getHardwareAsString()). Accepts
+     * "<TYPE>-<major>.<minor>[.<p2>[.<p3>]]", e.g. "IMX-5.0", "GPX-1.0.2", "uINS-3.2". Populates
+     * devInfo.hardwareType and hardwareVer[0..3].
+     * @param s       the hardware identity string to parse
+     * @param devInfo the dev_info_t to populate; left unchanged if parsing fails
+     * @return false on unrecognized type prefix or malformed version, otherwise true
+     */
     bool parseHardwareFromString(const std::string& s, dev_info_t& devInfo);
 
-    /// Parse a firmware version string (inverse of getFirmwareAsString). Accepts optional "fw" prefix followed by
-    /// "<M>.<m>.<p>" and an optional build-type suffix "-alpha|-beta|-rc|-devel|-snap" with optional ".<build>".
-    /// Populates devInfo.firmwareVer[0..3] and buildType ('a'|'b'|'c'|'d'|'s'|0 for production/no suffix).
-    /// The legacy "-r" suffix and unknown suffixes are normalized to 0 (production). Returns false on malformed input.
+    /**
+     * Parses a firmware version string (inverse of getFirmwareAsString()). Accepts an optional
+     * "fw" prefix followed by "<M>.<m>.<p>" and an optional build-type suffix
+     * "-alpha|-beta|-rc|-devel|-snap" with an optional ".<build>". Populates
+     * devInfo.firmwareVer[0..3] and buildType ('a'|'b'|'c'|'d'|'s'|0 for production/no suffix).
+     * The legacy "-r" suffix and unknown suffixes are normalized to 0 (production).
+     * @param s       the firmware version string to parse
+     * @param devInfo the dev_info_t to populate
+     * @return false on malformed input, otherwise true
+     */
     bool parseFirmwareFromString(const std::string& s, dev_info_t& devInfo);
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 
+    /**
+     * @return the current system clock as a string with millisecond precision
+     */
     std::string getCurrentTimestamp();
+
+    /**
+     * Formats a string representation of devInfo, in the specific format also understood by
+     * devInfoFromString(): "SN[serialNo]: [hdwType]-[hdwVer], fw[fwVersion] b[buildNum][buildType]
+     * [buildDate] [buildTime] (addlInfo)", e.g. "SN102934: IMX-5.0, fw2.1.7 b83c 2024-09-18
+     * 15:35:43 (p12 cmp)". Not all dev_info_t fields are rendered, but the majority are.
+     * @param devInfo the dev_info_t struct that provides the values to render
+     * @param flags   a bitmask of dev_info_fmt_e DV_BIT_ values selecting which fields to render
+     * @return a std::string representation of devInfo
+     */
     std::string devInfoToString(const dev_info_t& devInfo, uint16_t flags = -1);
+
+    /**
+     * Parses and populates a dev_info_t struct from an input string (inverse of
+     * devInfoToString()). Works by attempting to parse a series of "components" from the input
+     * string, removing each successfully parsed component from the string, and then trying again
+     * until the string is fully consumed or fails to match any component patterns.
+     * @param str     the string to parse
+     * @param devInfo the dev_info_t struct to parse into
+     * @return a bitmask of dev_info_fmt_e DV_BIT_ values indicating which components were parsed
+     */
     uint16_t devInfoFromString(const std::string& str, dev_info_t& devInfo);
+
+    /**
+     * Converts the dev_info_t build date/time into a single uint64_t that is still
+     * human-readable, but numerically significant and suitable for sorting, e.g.
+     * [2024, 05, 01, 23, 18, 35] becomes (uint64_t) 20240501231835.
+     * @param a         the dev_info_t whose build date/time will be used
+     * @param useMillis if true, append the build milliseconds as an additional low-order digit group
+     * @return the packed, sortable build date/time value
+     */
     uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
+
+    /**
+     * Generates a potential/expected firmware filename based on the given devInfo. E.g. given a
+     * devInfo describing an IMX-5.0 running firmware 2.5.1, built on 2025-05-31 at 20:10:07, this
+     * returns something like "IS_IMX-5_v2.5.1+2025-05-31-201007.hex" -- typically the firmware
+     * file that was used to load that firmware.
+     * @param devInfo the dev_info_t describing the firmware; passed by value since buildMillisecond
+     *                is zeroed internally before formatting
+     * @return the generated firmware filename
+     */
     std::string firmwareFileFromDevInfo(dev_info_t devInfo);
 
+    /**
+     * Compares the serial number and full hardware version (hardwareVer[0..3]) of two dev_info_t
+     * structs for an exact match.
+     * @param info1 the first dev_info_t to compare
+     * @param info2 the second dev_info_t to compare
+     * @return true if the serial number and hardware version match exactly, otherwise false
+     */
     bool devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2);
+
+    /**
+     * Performs a series of tests, based on the flags bitmask, to determine if two dev_info_t
+     * structs are effective matches. This is not a byte-for-byte match, but rather a filter of
+     * specific sets of fields within the dev_info_t struct to make a determination of equality.
+     * For example, this can test whether the main firmware version matches (major, minor, patch),
+     * but disregard whether the build date/time matches, etc.
+     * @param info1 the first dev_info_t to compare
+     * @param info2 the second dev_info_t to compare with
+     * @param flags a bitmask of dev_info_fmt_e DV_BIT_ values identifying the fields to test, and
+     *              other related comparison flags (e.g. DV_BIT_EXACT_MATCH)
+     * @return true if the two match the specified flags, otherwise false
+     */
     bool devInfoVersionMatch(const dev_info_t &info1, const dev_info_t &info2, int flags = DV_BIT_FIRMWARE_VER | DV_BIT_BUILD_COMMIT | DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME);
+
+    /**
+     * Determines if two dev_info_t structs describe compatible hardware (same hardware type,
+     * major/minor version, and run state). Used primarily to determine if a firmware is
+     * compatible with a target device.
+     * @param a the first dev_info_t to compare
+     * @param b the second dev_info_t to compare
+     * @return true if the two dev_info_t structs are "compatible", otherwise false
+     */
     bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
+
+    /**
+     * Compares the full firmware version (firmwareVer[0..3], buildType, build date/time, and
+     * build key) of two dev_info_t structs. Equivalent to compareFirmwareVersions(a, b, 0xFFFF).
+     * @param a dev_info_t representing a particular firmware version
+     * @param b dev_info_t representing a particular firmware version
+     * @return an integer representing the difference between a and b; 0 if both are equal, >0 if
+     *   a > b, and <0 if a < b. The magnitude reflects which components differ (each compared
+     *   component occupies its own bit range of the result) but is not itself a meaningful distance.
+     */
     int64_t compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
+
+    /**
+     * Compares the firmware version fields of two dev_info_t structs selected by fields. A
+     * comparator suitable for use by std::map<> to order dev_info_t by firmware version.
+     * @param a      dev_info_t representing a particular firmware version
+     * @param b      dev_info_t representing a particular firmware version
+     * @param fields a bitmask of dev_info_fmt_e DV_BIT_ values selecting which components to compare
+     * @return an integer representing the difference between a and b; 0 if both are equal, >0 if
+     *   a > b, and <0 if a < b. The magnitude reflects which components differ (each compared
+     *   component occupies its own bit range of the result) but is not itself a meaningful distance.
+     */
     int64_t compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b, uint16_t fields);
 
     // int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
@@ -317,6 +473,12 @@ namespace utils {
      */
     uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
 
+    /**
+     * Checks whether domainName is a syntactically valid DNS domain name (RFC-1035-style labels,
+     * with support for punycode "xn--" labels), and no longer than 254 characters.
+     * @param domainName the domain name string to validate
+     * @return true if domainName is a syntactically valid domain name, otherwise false
+     */
     bool validDomainName(const std::string& domainName);
 
     /**
@@ -337,10 +499,14 @@ namespace utils {
         std::string path;       //!< path component (e.g. an NTRIP mountpoint); empty if absent
         std::string query;      //!< query component; empty if absent
 
-        bool hasScheme() const { return !scheme.empty(); }     //!< true if a scheme was present
-        bool hasHost() const { return !host.empty(); }         //!< true if a host was present
-        bool hasPort() const { return port >= 0; }             //!< true if a valid port was present
-        bool hasUserinfo() const { return !user.empty() || !password.empty(); } //!< true if userinfo was present
+        /** @return true if a scheme was present */
+        bool hasScheme() const { return !scheme.empty(); }
+        /** @return true if a host was present */
+        bool hasHost() const { return !host.empty(); }
+        /** @return true if a valid port was present */
+        bool hasPort() const { return port >= 0; }
+        /** @return true if userinfo was present */
+        bool hasUserinfo() const { return !user.empty() || !password.empty(); }
     };
 
     /**
@@ -387,14 +553,31 @@ namespace utils {
     std::string generateUUIDv4();
 };
 
+/**
+ * A fixed-size, in-memory std::streambuf that also tracks which byte ranges have been written
+ * (via insert()), so a caller can later query whether a given range has been populated. Useful
+ * for assembling a buffer out-of-order (e.g. from out-of-order network chunks).
+ */
 class ByteBuffer : public std::streambuf {
 public:
+    /**
+     * Allocates a zero-initialized buffer of the given size and prepares the get/put pointers to
+     * span it.
+     * @param size the fixed size, in bytes, of the buffer
+     */
     ByteBuffer(std::size_t size) : size_(size) {
         buffer_.resize(size_, 0); // Initialize buffer with zeros
         setg(buffer_.data(), buffer_.data(), buffer_.data() + buffer_.size());
         setp(buffer_.data(), buffer_.data() + buffer_.size());
     }
 
+    /**
+     * Copies len bytes from data into the buffer starting at pos, and records [pos, pos+len) as
+     * an initialized range (merging it with any adjacent/overlapping previously-initialized ranges).
+     * @param pos  the byte offset within the buffer to write to
+     * @param data the bytes to copy in
+     * @param len  the number of bytes to copy
+     */
     void insert(std::size_t pos, const uint8_t* data, std::size_t len) {
         if (pos + len > buffer_.size()) {
             throw std::out_of_range("Insert position out of range");
@@ -404,22 +587,36 @@ public:
         merge_initialized_ranges();
     }
 
+    /** @return the current read position, as an offset from the start of the buffer */
     std::size_t tellg() const {
         return gptr() - eback();
     }
 
+    /** @return the current write position, as an offset from the start of the buffer */
     std::size_t tellp() const {
         return pptr() - pbase();
     }
 
+    /** @return the current value of the internal write-position counter */
     std::size_t data_size() const {
         return current_write_pos_;
     }
 
+    /**
+     * Moves the read position to the given offset from the start of the buffer.
+     * @param pos the byte offset to seek the read position to
+     */
     void seekg(std::size_t pos) {
         setg(eback(), eback() + pos, egptr());
     }
 
+    /**
+     * Checks whether the byte range [pos, pos+len) has been fully populated by one or more prior
+     * insert() calls.
+     * @param pos the starting byte offset of the range to check
+     * @param len the length, in bytes, of the range to check
+     * @return true if the entire range has been initialized, otherwise false
+     */
     bool is_initialized(std::size_t pos, std::size_t len) const {
         auto end_pos = pos + len;
         for (const auto& range : initialized_ranges_) {
@@ -453,27 +650,49 @@ private:
     }
 };
 
+/**
+ * A std::iostream front-end for a ByteBuffer, providing the same tellg()/tellp()/seekg()/
+ * data_size()/is_initialized() convenience accessors directly on the stream.
+ */
 class ByteBufferStream : public std::iostream {
 public:
+    /**
+     * Binds this stream to the given ByteBuffer, which must outlive the stream.
+     * @param buffer the ByteBuffer to read/write through this stream
+     */
     ByteBufferStream(ByteBuffer& buffer)
             : std::iostream(&buffer), buffer_(buffer) {}
 
+    /** @return the current read position, as an offset from the start of the underlying buffer */
     std::size_t tellg() const {
         return buffer_.tellg();
     }
 
+    /** @return the current write position, as an offset from the start of the underlying buffer */
     std::size_t tellp() const {
         return buffer_.tellp();
     }
 
+    /** @return the current value of the underlying buffer's internal write-position counter */
     std::size_t data_size() const {
         return buffer_.data_size();
     }
 
+    /**
+     * Moves the read position to the given offset from the start of the underlying buffer.
+     * @param pos the byte offset to seek the read position to
+     */
     void seekg(std::size_t pos) {
         buffer_.seekg(pos);
     }
 
+    /**
+     * Checks whether the byte range [pos, pos+len) of the underlying buffer has been fully
+     * populated by one or more prior ByteBuffer::insert() calls.
+     * @param pos the starting byte offset of the range to check
+     * @param len the length, in bytes, of the range to check
+     * @return true if the entire range has been initialized, otherwise false
+     */
     bool is_initialized(std::size_t pos, std::size_t len) const {
         return buffer_.is_initialized(pos, len);
     }
@@ -484,10 +703,19 @@ private:
 
 
 // #define FN_PROFILER_ENABLED
+/**
+ * RAII scoped function-timing profiler: on destruction, logs (at IS_LOG_FN_PROFILER) the elapsed
+ * time since construction if it exceeds threshold, along with any intermediate mark() timestamps.
+ * Compiles to a complete no-op unless FN_PROFILER_ENABLED is defined.
+ */
 class FnProfiler {
 public:
 #ifdef FN_PROFILER_ENABLED
-    // Constructor records the start time and function name
+    /**
+     * Starts timing, recording the current time and an identifying label for the log output.
+     * @param functionName a label (typically the function name) to identify this timing in the log output
+     * @param threshold    the minimum elapsed microseconds required for the destructor to emit a log message
+     */
     FnProfiler(const std::string& functionName, uint32_t threshold = 100) : m_functionName(functionName), m_threshold(threshold), m_startTime(std::chrono::high_resolution_clock::now()) { }
 
     // Destructor calculates and prints the duration
@@ -507,6 +735,11 @@ public:
         }
     }
 
+    /**
+     * Records an intermediate timestamp, labeled with msg, to be reported (relative to the start
+     * time and the previous mark) alongside the total duration when this FnProfiler is destroyed.
+     * @param msg a label describing this checkpoint
+     */
     void mark(const std::string& msg) {
         markers.emplace_back(std::make_pair(std::chrono::high_resolution_clock::now(), msg));
     }
@@ -517,19 +750,37 @@ private:
     std::chrono::high_resolution_clock::time_point m_startTime;
     std::vector<std::pair<std::chrono::high_resolution_clock::time_point, std::string>> markers;
 #else
+    /**
+     * No-op constructor used when FN_PROFILER_ENABLED is not defined.
+     * @param functionName unused
+     * @param threshold    unused
+     */
     FnProfiler(const std::string& functionName, uint32_t threshold = 100) { (void) functionName; (void) threshold; }
 
     // Destructor calculates and prints the duration
     ~FnProfiler() { }
 
+    /**
+     * No-op when FN_PROFILER_ENABLED is not defined.
+     * @param msg unused
+     */
     void mark(const std::string& msg) { (void) msg; }
 #endif
 };
 
+/**
+ * RAII helper that invokes an arbitrary callable (its type F is deduced from the constructor
+ * argument) when it goes out of scope, regardless of how the scope is exited (normal return,
+ * early return, or exception). Non-copyable and non-movable to prevent the wrapped callable from
+ * accidentally being invoked more than once.
+ */
 template <typename F>
 class Finalizer {
     F f;
 public:
+    /**
+     * @param f the callable to invoke when this Finalizer is destroyed
+     */
     explicit Finalizer(F f) : f(std::move(f)) {}
     ~Finalizer() { f(); }
 
