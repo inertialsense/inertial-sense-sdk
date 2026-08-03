@@ -4290,7 +4290,7 @@ typedef struct
 
 } gpx_flash_cfg_t;
 
-/** @brief (DID_GPX_STATUS) GPX status flags, reported in gpx_status_t.status. Packs a communications parse-error counter, per-port Rx-traffic-not-detected flags, an update-confirmed flag, and a general fault region (bits 16-31) covering RTK/GNSS/RTOS/DMA fault flags plus a fatal-fault sub-field (GPX_STATUS_FATAL_MASK) that reports the specific cause the last time a critical CPU reset occurred. GPX_STATUS_FATAL_RESET_LOW_POW..GPX_STATUS_FATAL_UNKNOWN are raw cause codes, not individual bit flags -- shift the code left by GPX_STATUS_FATAL_OFFSET and mask with GPX_STATUS_FATAL_MASK to read/write the sub-field. */
+/** @brief (DID_GPX_STATUS) GPX status flags, reported in gpx_status_t.status. Packs a communications parse-error counter, per-port Rx-traffic-detected flags, an update-confirmed flag, and a general fault region (bits 16-31) covering RTK/GNSS/RTOS/DMA fault flags plus a fatal-fault sub-field (GPX_STATUS_FATAL_MASK) that reports the specific cause the last time a critical CPU reset occurred. GPX_STATUS_FATAL_RESET_LOW_POW..GPX_STATUS_FATAL_UNKNOWN are raw cause codes, not individual bit flags -- shift the code left by GPX_STATUS_FATAL_OFFSET and mask with GPX_STATUS_FATAL_MASK to read/write the sub-field. */
 enum eGpxStatus
 {
     GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,  //!< Mask for the communications parse error count field
