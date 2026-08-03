@@ -207,10 +207,10 @@ typedef uint32_t eDataIDs;
 // END DATA IDENTIFIERS --------------------------------------------------------------------------
 
 /** Maximum number of satellite channels */
-#define MAX_NUM_SATELLITES  50
+#define MAX_NUM_SATELLITES  80
 
 /** Maximum number of satellite signals */
-#define MAX_NUM_SAT_SIGNALS 100
+#define MAX_NUM_SAT_SIGNALS 160
 
 /** Maximum length of device info manufacturer string (must be a multiple of 4) */
 #define DEVINFO_MANUFACTURER_STRLEN 24
@@ -224,7 +224,11 @@ typedef uint32_t eDataIDs;
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 // #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
-#define PROTOCOL_VERSION_CHAR3      0   // Non-breaking changes (Payload):
+// SN-8405: MAX_NUM_SATELLITES/MAX_NUM_SAT_SIGNALS increased (80/160). Wire size is computed
+// dynamically from actual satellite/signal count, so old/new peers interoperate normally in the
+// overwhelming majority of cases; a peer running the prior protocol version only NACKs a
+// gnss_sig_t dataset if the receiver is actually tracking >=146 discrete signals at once.
+#define PROTOCOL_VERSION_CHAR3      1   // Non-breaking changes (Payload):
 
 /** Rtk rover receiver index */
 #define RECEIVER_INDEX_GNSS1            1   // DO NOT CHANGE
