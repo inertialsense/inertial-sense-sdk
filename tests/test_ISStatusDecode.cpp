@@ -259,10 +259,10 @@ std::string legacyRenderGpxStatusReference(uint32_t status)
     std::stringstream buff;
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
     BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK     , "0x0000000F - Communications parse error count");
-    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED , "0x00000010 - COM0 RX traffic not detected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED , "0x00000020 - COM1 RX traffic not detected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED , "0x00000040 - COM2 RX traffic not detected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED  , "0x00000080 - USB RX traffic not detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_DETECTED     , "0x00000010 - COM0 RX traffic detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_DETECTED     , "0x00000020 - COM1 RX traffic detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_DETECTED     , "0x00000040 - COM2 RX traffic detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_DETECTED      , "0x00000080 - USB RX traffic detected in last 30 seconds.");
     BIT_MSG(status, GPX_STATUS_UPDATE_CONFIRMED             , "0x00000100 - Update confirmed.");
     BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED      , "0x00010000 - RTK buffer overflow.");
     BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME         , "0x00100000 - GNSS receiver time fault");
@@ -901,22 +901,21 @@ TEST(ISStatusDecode, GpxStatus_RoundTrip_RandomSweep)
     }
 }
 
-// SN-8402: the four RX-traffic subfields are a status, not a fault (isError stays false,
-// consistent with them being excluded from GPX_STATUS_GENERAL_FAULT_MASK) -- but a boolean-style
-// consumer (the status-ribbon chart) needs boolInvert=true so the positively-worded "detected" name
-// shows true when the underlying NOT_DETECTED bit is clear. Confirms the schema data, not any
-// particular consumer's rendering (that's covered on the Logalyzer side).
-TEST(ISStatusDecode, GpxStatus_RxTrafficSubfields_PositiveNameNotFaultButInverted)
+// SN-8402: GPX_STATUS_COM*_RX_TRAFFIC_DETECTED (bits 4-7) were redefined from the prior
+// ..._NOT_DETECTED (same mask, inverted meaning) so the wire bit itself carries positive
+// polarity -- these are a status, not a fault, so isError stays false. No display-side
+// inversion needed: the raw bit now directly matches the positive name.
+TEST(ISStatusDecode, GpxStatus_RxTrafficSubfields_PositivePolarityNotFault)
 {
     const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
     ASSERT_NE(dec, nullptr);
 
     struct Want { const char* name; uint32_t mask; };
     const Want wants[] = {
-        { "COM0 RX traffic detected", (uint32_t)GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED },
-        { "COM1 RX traffic detected", (uint32_t)GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED },
-        { "COM2 RX traffic detected", (uint32_t)GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED },
-        { "USB RX traffic detected",  (uint32_t)GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED },
+        { "COM0 RX traffic detected", (uint32_t)GPX_STATUS_COM0_RX_TRAFFIC_DETECTED },
+        { "COM1 RX traffic detected", (uint32_t)GPX_STATUS_COM1_RX_TRAFFIC_DETECTED },
+        { "COM2 RX traffic detected", (uint32_t)GPX_STATUS_COM2_RX_TRAFFIC_DETECTED },
+        { "USB RX traffic detected",  (uint32_t)GPX_STATUS_USB_RX_TRAFFIC_DETECTED },
     };
 
     for (const auto& w : wants) {
@@ -927,10 +926,10 @@ TEST(ISStatusDecode, GpxStatus_RxTrafficSubfields_PositiveNameNotFaultButInverte
         EXPECT_EQ(sf->name, w.name);
         EXPECT_EQ(sf->kind, eStatusSubfieldKind::Bit);
         EXPECT_FALSE(sf->isError) << w.name << " is a status, not a fault";
-        EXPECT_TRUE(sf->boolInvert) << w.name;
-        // legacyText / RenderStatusFromDecode's line output is unaffected by the rename or the
-        // invert flag -- still only emitted when the raw NOT_DETECTED bit is actually set.
-        EXPECT_NE(sf->legacyText.find("not detected"), std::string::npos) << w.name;
+        // legacyText / RenderStatusFromDecode's line output: emitted (positive-worded) only when
+        // the bit is actually set -- i.e. only when traffic IS detected.
+        EXPECT_NE(sf->legacyText.find("detected"), std::string::npos) << w.name;
+        EXPECT_EQ(sf->legacyText.find("not detected"), std::string::npos) << w.name;
         EXPECT_EQ(RenderStatusFromDecode(*dec, w.mask), legacyRenderGpxStatusReference(w.mask));
     }
 }

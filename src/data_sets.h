@@ -4293,10 +4293,10 @@ enum eGpxStatus
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,                //!< Bit offset of GPX_STATUS_COM_PARSE_ERR_COUNT_MASK within status
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)  //!< Extract the communications parse error count from a status value
 
-    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000010,  //!< Rx communications not detected on serial port 0 in the last 30 seconds
-    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000020,  //!< Rx communications not detected on serial port 1 in the last 30 seconds
-    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000040,  //!< Rx communications not detected on serial port 2 in the last 30 seconds
-    GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED      = (int)0x00000080,  //!< Rx communications not detected on USB in the last 30 seconds
+    GPX_STATUS_COM0_RX_TRAFFIC_DETECTED         = (int)0x00000010,  //!< Rx communications detected on serial port 0 in the last 30 seconds
+    GPX_STATUS_COM1_RX_TRAFFIC_DETECTED         = (int)0x00000020,  //!< Rx communications detected on serial port 1 in the last 30 seconds
+    GPX_STATUS_COM2_RX_TRAFFIC_DETECTED         = (int)0x00000040,  //!< Rx communications detected on serial port 2 in the last 30 seconds
+    GPX_STATUS_USB_RX_TRAFFIC_DETECTED          = (int)0x00000080,  //!< Rx communications detected on USB in the last 30 seconds
 
     GPX_STATUS_UPDATE_CONFIRMED                 = (int)0x00000100,  //!< Update confirmed
 
