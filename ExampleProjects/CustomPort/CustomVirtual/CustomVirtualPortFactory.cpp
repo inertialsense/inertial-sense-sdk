@@ -43,7 +43,6 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
     }
     else
         return nullptr;
-        
 
     /** Need a port_handle_t reference to our port to use for our own validation and to return from bind */
     port_handle_t port = (port_handle_t) customPort;
@@ -53,7 +52,7 @@ port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint1
      */
     portValidate(port);
 
-    /** STEP 9: Use the SDK's msg logger utility to add valuable user messages to a log output file (inertial_sense.log)
+    /** STEP 7: Use the SDK's msg logger utility to add valuable user messages to a log output file (inertial_sense.log)
      */        
     log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bind new comm port '%s'", portName(port));
 
@@ -123,8 +122,8 @@ void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);
         
-        if (validatePort(name, pType ) && match) {
-            portCallback(this, pType, name);
+        if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
+            portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
         }
     }
 } //locatePorts

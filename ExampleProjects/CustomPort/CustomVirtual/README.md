@@ -8,11 +8,11 @@ This project is constructed as both a walk-through and a template for users wish
 
 One is the `base_port_t` which is a C struct object that provides a data-in and data-out genericized interface to layer on top of the data transportation mechanism underneath that the user creates, custom to their application.  It “knows the essential things” about a port.  It provides a framework for maintaining port status and performing port operations.  Many port implementations can be used and the header file provides port definitions used across the entire product line & SDK.  
 
-The second is the `PortFactory` which is an abstract C++ class that is responsible for discovery of available ports of a particular type.  There should be one implementation for each type of discoverable port.  A name or some other identifier can be used by the port implementation to create the port.  The `PortFactory` constructor does not really create a port, but the class provides binding to a port, and this operation does return a port handle.  Each factory is responsible for identifying & validating possible ports of a particular type.  Also responsible for allocating, configuring, and deallocating a port of that type, by its name.  As an abstract class, this allows for third-party locators to be implemented for custom port types.
+The second is the `PortFactory` which is an abstract C++ class that is responsible for discovery of available ports of a particular type.  There should be one implementation for each type of discoverable port.  A name or another identifier can be used by the port implementation to create the port.  The `PortFactory` provides binding to a port, and this operation does return a port handle.  Each factory is responsible for identifying & validating possible ports of a particular type.  Also responsible for allocating, configuring, and deallocating a port of that type, by its name.  As an abstract class, this allows for third-party locators to be implemented for custom port types.
 
-Finally, we demonstrate the `PortManager`, which uses the custom port factory to create and keep a known list of available ports based on given search parameters.  It will provide access to a port factory's bound ports as requested.
+Finally, we demonstrate the `PortManager`, which uses the custom port factory to create and keep a known list of available ports, optionally filtered to a limited set, or all.  It will provide access to a port factory's bound ports as requested.
 
-In this example we use a simple virtual serial test port for our `base_port_t` implementation, which is built upon the SDK's ring buffer.  Loopback and internally bridged test ports are available, but the loopback ports are used by default in this example.  Our custom `PortFactory` then binds to this port and we demonstrate the usage of the required minimum port factory operations.  The application main provides an entry point for the user to identify the port and calls on the port factory to find and bind it through the `PortManager`.  Then, a simple data write/read/compare is performed through the loopback port, demonstrating the `base_port_t` interface.  See this dependency (dashed) and process (solid) diagram for an overview:
+In this example we use a simple virtual serial test port for our `base_port_t` implementation, which is built upon the SDK's ring buffer.  Only loopback test mode is available in this example.  Our custom `PortFactory` then binds to as many of these ports as indicated and we demonstrate the usage of the required minimum port factory operations.  The application main provides an entry point for the user to identify the port and calls on the port factory to find and bind it through the `PortManager`.  Then, a simple data write/read/compare is performed through the loopback port, demonstrating the `base_port_t` interface.  See this dependency (dashed) and process (solid) diagram for an overview:
 
 ```mermaid
 graph TD
@@ -124,7 +124,7 @@ In our example, we will create a custom virtual port `custom_port_t` built upon 
 ```
 
 ### Step 2: Extend base_port_t With New Structure
-We create a virtual port defined in [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h), which has both loopback and internally bridged passthrough ports, so that the example can be demonstrated without specialized hardware:
+We create a virtual port defined in [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h), so that the example can be demonstrated without specialized hardware:
 
 ```C
 typedef struct custom_port_s {
@@ -148,17 +148,11 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
 //etc
 ```
 
-As this is a virtual port that does not rely on any hardware or third-party drivers, we can create more than one that share largely the same characteristics, and/or customize some for a specific purpose.  In [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp), a fixed set of ports:
-
-```C
-custom_port_t g_customPorts[NUM_COM_PORTS] = {};
-```
-
-In this project we have created and initialized six virtual ports.  Two are loopback ports, and four are bridged together with one other port in two distinct pairs.  Only the two loopback ports are demonstrated in our application, but a user could easily modify it to include all these virtual ports.
+As this is a virtual port that does not rely on any hardware or third-party drivers, we can create more than one that share the same characteristics.  Optionally, a user could customize some for a specific purpose.  We will later show where and how these are dynamically allocated in our example.  
 
 
 ### Step 3: Complete Port Implementation
-In [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we define various port functions that leverage the underlying transport mechanism of the port, which in this case is the SDK ring buffer, as seen here:
+In [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we define various port functions that leverage the underlying transport mechanism, which in this case is the SDK ring buffer, as seen here:
 
 ```C
 static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
@@ -180,24 +174,13 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
 These will provide the underlying functionality for the `base_port_t` extension once properly assigned to the base port's API.  As you review this example project or complete your own port implementation, it may be useful to compare [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h) and [base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h) to see how the base port is defined and extended, and understand the API.  In this example, we have demonstrated only a minimal subset of the available port functions in `base_port_t`, but there are many options beyond simply read and write to enable the usage of a wide variety of underlying transport mechanisms.
 
 
-In our [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we provide an initialization function for all six virtual ports that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation:  
+In our [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we provide an initialization function for the virtual ports that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation:  
 ```C++
-void initCustomPorts() {
-   int portNum = 0;
-   for (custom_port_t& port : g_customPorts) {
-      port.base.pnum = portNum;
-      port.base.ptype = PORT_TYPE__COMM;
-      if (portNum <= 1)
-         port.base.ptype |= PORT_TYPE__LOOPBACK;  // only PORT0 and PORT1 are Loopbacks
-
-      port.base.portRead = customPortRead;
-      port.base.portWrite = customPortWrite;
-      //etc
-
-      SNPRINTF((char *)port.name, PORT_NAME_SIZE, "TEST%1d", portNum);
-         
-      portNum++;
-    }
+void initCustomPort(custom_port_t& port, const std::string& pName, uint16_t pType) {
+   //...       
+   port.base.portRead = customPortRead;
+   port.base.portWrite = customPortWrite;
+   //...      
 }
 ```
 
@@ -219,16 +202,6 @@ See the [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-s
 class CustomVirtualPortFactory : public PortFactory
 ```
 
-With many projects using real port devices and relying on their driver initialization, your custom port factory constructor can be empty.  In our case, we have to build and init our own virtual ports, so let's do the necessary init of the `base_port_t` and its implementation in our custom port factory constructor.  We use our init support function we created for our port implementation in [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp):
-
-```C++
-CustomVirtualPortFactory() {
-   /** This init routine assigns the base port functions of the underlying port implementation, for all virtual ports
-   */
-   initCustomPorts();
-}
-```
-
 The .cpp file body will define at a minimum the following virtual `PortFactory` functions, which we demonstrate in this example with these forward declarations:
 ```C++
 port_handle_t CustomVirtualPortFactory::bindPort(const std::string& pName, uint16_t pType);
@@ -237,10 +210,14 @@ bool CustomVirtualPortFactory::validatePort(const std::string& pName, uint16_t p
 void CustomVirtualPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType)
 ```
 
+We add a list of possible port names to this class, which also serves to indicate how many virtual ports we can create and use.  In this example, the default is two.  When running the application, you will specify on the command line which to use in the demonstration.
+```C++
+const std::array<const char*, 2> portNames = { "TEST0", "TEST1" };
+```
 
 ### Step 5: Complete Custom Port Factory Implementation
 
-Example headers for .cpp file, which should include our new port factory header and any C++ libraries and SDK utilities that are useful for the way we want the port factory to handle our custom port implementation:
+We put our new factory implementation in [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp).  Example headers for this file follow, which should include our new port factory header and any C++ libraries and SDK utilities that are useful for the way we want the port factory to handle our custom port:
 ```C++
 #include <vector>
 #include <regex>
@@ -251,15 +228,14 @@ Example headers for .cpp file, which should include our new port factory header 
 
 We next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
 
-`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use the globally defined custom array of test ports accessed via macro, with the names of the ports being `TEST0`, `TEST1`, etc.  A sample from our `bindPort()` code showing the handle we return:
+`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use dynamic allocation.  We allocate one custom port on each bind operation, with the names of the ports being `TEST0`, `TEST1`, etc, as defined in our `CustomVirtualPortFactory` header.  We then call our port implementation's init function we created in [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) for the new port.  A sample from our `bindPort()` code showing the handle we return:
 
 ```C++
-custom_port_t* customPort;
-if (pName == "TEST0") {
-   customPort = TEST0_PORT;
-}
-else if (pName == "TEST1") {
-   customPort = TEST1_PORT;
+custom_port_t* customPort = new custom_port_t();
+
+if (customPort) {
+   /** Set up our new port */
+   initCustomPort(*customPort, pName, pType);
 }
 else
    return nullptr;
@@ -268,21 +244,18 @@ else
 port_handle_t port = (port_handle_t) customPort;
 ```
 
-The purpose of `locatePorts()` is to walk through available ports to find any that match a given search pattern parameter, and then make a callback jump to the `PortManager` handler function for each one found, which enables the manager to discover ports. The first portion of this function will be our custom code for identifying the names of the available virtual ports we've created.  The second portion will be the validation and then callback jump, such as shown here:
+The purpose of `locatePorts()` is to walk through available ports to find any that match a given search pattern parameter, and then make a callback jump to the `PortManager` handler function for each one found, which enables the manager to discover ports. Each one is validated using the port types this factory supports, coded into the validation and callback calls.  We are identifying loopback comm ports from base_port.h definitions in this case.  For a different scenario, you might instead use the `locatePorts()` pType argument, which we ignore in our example.
 
 ```C++
 for (auto& name : portNames) {
    auto match = std::regex_match(name, matchPattern);
-   if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {            
+   if (validatePort(name, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM) ) && match) {
       portCallback(this, (PORT_TYPE__LOOPBACK | PORT_TYPE__COMM), name);
    }
 }
 ```
 
-Finally, `releasePort()` will do any cleanup or freeing of memory for the ports we created, as needed, since the port is no longer to be used.  This is called by the `PortManager` destructor by default.
-
-After completing the implementation of these four required functions, add in additional support functions to the [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp) file as needed for the specific application.  
-
+Finally, `releasePort()` will do any cleanup or freeing of memory for the ports we created, as needed, since the port is no longer to be used.  This is called by the `PortManager` destructor by default.  After completing the implementation of these four required functions, add in additional support functions to the [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp) file as needed for the specific application.  
 
 
 ### Step 6: Create Example Application
@@ -294,29 +267,67 @@ Create a new .cpp file for the application, which for us is [main.cpp](https://g
 #include "PortManager.h"
 ```
 
-Add forward declarations for any custom application functions if needed (we are not using any in this example), and then create `main()`.  This will be the entry point for the application.  
+Add forward declarations for any custom application functions if needed (we are not using any in this example), and then create `main()`.  This will be the entry point for the application.  Our `main()` uses the command line arg for identifying a virtual port in a "minimal" example of setting up a custom serial port connection.  
 
-Our `main()` uses the command line arg for identifying a virtual serial port in a "minimal" example of setting up a custom serial port connection.  Uses `PortManager` and `PortFactory` to bind a `port_handle_t` to the named `base_port_t` port. With the handle, the port is opened, which is in loopback mode in this case, and a simple write/read test is performed.
+```C
+int main(int argc, char* argv[])
+{
+    if (argc < 2)
+    {
+        printf("Please pass the virtual loopback port as the only argument (i.e. TEST0 or TEST1)\r\n");
+        return -1;
+    }
+
+    printf("Attempting to bind and open virtual port %s\r\n", argv[1]);
+```
+
+We will shortly demonstrate how it uses `PortManager` and `PortFactory` to bind a `port_handle_t` to the named `base_port_t` port. With the handle, the port is opened, which is in loopback mode in this case, and a simple write/read test is performed.
 
 
-### Step 7: Instantiate the Port Manager and New Custom Port Factory
-In `main()`, we start by first doing a nominal check on the command line argument with some usage statement upon invoke error.  Then we create our communications management by instantiating one `PortManager` and one `CustomVirtualPortFactory` and registering the factory with the manager, like so:
+### Step 7: Incorporate Logging
+The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our Port Factory extension in CustomVirtualPortFactory.cpp.  The [msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  Log commands can be added like so, from a line in CustomVirtualPortFactory.cpp:
+
+```C++
+log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bind new comm port '%s'", portName(port));
+   ```
+
+In our main appliaction code we can set the log level to determine which messages will be logged and which ignored:
+```C++
+IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
+```
+
+Facility definitions like `IS_LOG_PORT` or `IS_LOG_PORT_FACTORY` identify which module is logging.
+
+
+### Step 8: Instantiate the Port Manager and New Custom Port Factory
+In `main()`, we started by first doing a nominal check on the command line argument with some usage statement upon invoke error.  Then we create our communications management by instantiating one `PortManager` and one `CustomVirtualPortFactory` and registering the factory with the manager, like so:
 ```C++
 PortManager& pm = PortManager::getInstance();
 CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
 pm.addPortFactory(&vpf);
 ```
 
-Port init happens in the `CustomVirtualPortFactory` constructor.  Then we are interested in finding all ports matching a certain name pattern and type, but then we'll reference the one specifically indicated on the command line, which is virtual loopback in this case.  Then we need to request our port.
+We are interested in the Port Manager finding all available ports, then we'll reference the one specifically indicated on the command line and request it.
 ```C++    
-pm.discoverPorts(R"(TEST\d\0?)", PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
-port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);    
+pm.discoverPorts(); 
+port_handle_t port = pm.getPort(argv[1]);
 ```
 
- We are identifying the port type (from base_port.h definitions) which is virtual loopback comms in this case.  The `bindPort()` implementation should also validate the port, per the validation method we specify in the [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp) `validatePort()` definition.  Though we had to implement those functions, processing is all handled through the `PortManager`.  Now that we have a port returned from `PortManager`'s `getPort()`, we can start to communicate through it.
+Port init happens as the Port Manager discovers ports via the `CustomVirtualPortFactory` locate, validate, and bind operations.  Though we had to implement those functions, processing is all handled through the `PortManager` and not directed by our application main.  
 
 
-### Step 8: Exercise the Loopback Port
+### Step 9: Begin Exercise of Base Port Interface
+
+Now that we have a port returned from `PortManager`'s `getPort()`, we can validate, open, and then start to communicate through it.  We run the base port's own validity check and open the port in preparation for testing.
+
+```C++
+if ( !portIsValid(port) ) {
+//...
+if (!portIsOpened(port) && (portOpen(port) != PORT_ERROR__NONE)) {
+   //...
+```
+
+### Step 10: Run the Loopback Test
 In a loop executed a fixed number of iterations, send to and receive a hard coded message on the loopback port.  Use the API of the SDK base port C object, with hooked functions (such as `portWrite()`) implemented by the underlying virtual test port.
 
 ```C++
@@ -330,17 +341,8 @@ while (portIsOpened(port) && run_cnt > 0) {
 //...			
 ```   
 
-For feedback to the user running these data transfers, the logging function described in the next step can log the actions of the `CustomVirtualPortFactory` functions we implemented, the actions of our port implementation functions, and/or the results of our loopback data transfers, etc.
+For feedback to the user running these data transfers, note the logging function described previously can log the actions of the `CustomVirtualPortFactory` functions we implemented.
 
-
-### Step 9: Incorporate Logging
-The [msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  We demonstrate its use in this example.  Add log commands to your application code as desired, like so:
-
-```C++
-log_msg(IS_LOG_PORT, IS_LOG_LEVEL_INFO, "Loopback test good on comm port '%s', %d bytes sent/recvd", portName(port), rbytes);
-   ```
-
-Facility definitions like `IS_LOG_PORT` or `IS_LOG_PORT_FACTORY` identify which module is logging.
 
 
 ## Compile & Run (Linux)
@@ -370,24 +372,21 @@ Facility definitions like `IS_LOG_PORT` or `IS_LOG_PORT_FACTORY` identify which 
    ```
    *Note that only TEST0 and TEST1 are available by default in this example code, and TEST2 through TEST5 would require modifications to the code to support*
 
+6. View output from the application
+   ```
+   Attempting to bind and open virtual port TEST0
+   Attempting to send msg 'IMPORTANT MESSAGE'
+   Loopback test good on comm port 'TEST0', 17 bytes sent/recvd
+   Program complete, see inertial_sense.log for more results details
+   ```
+
 6. View logged results in the file called `inertial_sense.log` that is written local to the app executable.  You should see something like this:
    ```
-   [22:08:12.002905] INFO   (IS_LOG_PORT_FACTORY) :: Locating ports with regex pattern 'TEST\d\0?'
-   [22:08:12.002998] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST0'
-   [22:08:12.003031] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST1'
-   [22:08:12.003038] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST2'
-   [22:08:12.003044] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST3'
-   [22:08:12.003050] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST4'
-   [22:08:12.003056] INFO   (IS_LOG_PORT_FACTORY) :: Found port 'TEST5'
-   [22:08:12.003470] INFO   (IS_LOG_PORT_FACTORY) :: Bound new comm port 'TEST0'
-   [22:08:12.003853] INFO   (IS_LOG_PORT_FACTORY) :: Bound new comm port 'TEST1'
-   [22:08:12.005206] INFO   (IS_LOG_PORT) :: Attempting to send msg 'IMPORTANT MESSAGE'
-   [22:08:13.005375] INFO   (IS_LOG_PORT) :: Loopback test good on comm port 'TEST0', 17 bytes sent/recvd
-   [22:08:13.005418] INFO   (IS_LOG_PORT) :: Attempting to send msg 'IMPORTANT MESSAGE'
-   [22:08:14.005627] INFO   (IS_LOG_PORT) :: Loopback test good on comm port 'TEST0', 17 bytes sent/recvd
-   [22:08:14.005754] INFO   (IS_LOG_PORT_FACTORY) :: Releasing comm port 'TEST0'
-   [22:08:14.005784] INFO   (IS_LOG_PORT_FACTORY) :: Releasing comm port 'TEST1'
-
+   [14:22:27.837833] INFO   (IS_LOG_PORT_FACTORY) :: Locating ports with regex pattern '(.+)'
+   [14:22:27.838297] INFO   (IS_LOG_PORT_FACTORY) :: Bind new comm port 'TEST0'
+   [14:22:27.838640] INFO   (IS_LOG_PORT_FACTORY) :: Bind new comm port 'TEST1'
+   [14:22:28.838805] INFO   (IS_LOG_PORT_FACTORY) :: Release comm port 'TEST0'
+   [14:22:28.838846] INFO   (IS_LOG_PORT_FACTORY) :: Release comm port 'TEST1'
    ```
 
 ## Compile & Run (Windows MS Visual Studio) - Not Yet Implemented

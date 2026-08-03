@@ -42,32 +42,41 @@ int main(int argc, char* argv[])
     }
 
     printf("Attempting to bind and open virtual port %s\r\n", argv[1]);
+
+
+    /** STEP 7: Set the SDK message logger verbosity level, as we use the logger for
+     * some custom status and error messages
+     */
+    IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
+
     
-    /** STEP 7: We need a singleton Port Manager and CustomVirtualPortFactory,
+    /** STEP 8: We need a singleton Port Manager and CustomVirtualPortFactory,
      * we'll make local references, and we register the virtual port factory
      */
     PortManager& pm = PortManager::getInstance();
     CustomVirtualPortFactory& vpf =  CustomVirtualPortFactory::getInstance();
     pm.addPortFactory(&vpf);
           
-    /** We are interested in finding all ports matching a certain name pattern, but then we'll reference the one
-     specifically indicated on the command line, which is virtual loopback in this case
-    */
-    pm.discoverPorts(vpf.discoverPattern, PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);
-    port_handle_t port = pm.getPort(argv[1], PORT_TYPE__COMM | PORT_TYPE__LOOPBACK);    
-    
-    if (port == nullptr) {
+    /** Let the PM find all available ports, then ask for the one specifically indicated on the command line by name */
+    pm.discoverPorts();
+    port_handle_t port = pm.getPort(argv[1]);
+
+
+    /** STEP 9:  Now that we have a port handle, begin use of base_port interface, check on validity
+     */
+    if ( !portIsValid(port) ) {
         printf("Failed to allocate port\r\n");
         return -2;
     }
 
-    /** Binding a port does not open a port.. so let's open it using base_port functions */
+    /** Open port using base_port functions */
     if (!portIsOpened(port) && (portOpen(port) != PORT_ERROR__NONE)) {
         printf("Failed to open port\r\n");
         return -3;
     }
 
-    /** STEP 8: In a loop, send to and receive messages from the loopback port.   
+    
+    /** STEP 10: In a loop, send to and receive messages from the loopback port.   
      */
     const unsigned char wbuf[] = "IMPORTANT MESSAGE";
     unsigned int wlen = strlen(reinterpret_cast<const char*>(wbuf));

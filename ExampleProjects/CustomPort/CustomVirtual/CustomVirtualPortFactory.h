@@ -33,12 +33,7 @@ public:
     }
 
     /** Default constructor */
-    CustomVirtualPortFactory() {
-        /** STEP 9: On construction, set the SDK message logger verbosity level, as we use the logger in this class for
-         * some custom status and error messages
-         */
-        IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
-    }
+    CustomVirtualPortFactory() { }
     
     /** Remove certain constructors/operators, because we're a singleton... */
     CustomVirtualPortFactory(CustomVirtualPortFactory const &) = delete;
@@ -52,9 +47,6 @@ public:
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
     port_handle_t bindPort(const std::string& pName, uint16_t pType = 0) override;
     bool releasePort(port_handle_t port) override;
-
-    /** This regex pattern is used by the Port Manager to search for ports by name */
-    const char* discoverPattern = R"(TEST\d\0?)";
 
 private:
     /** Make this private for our singleton pattern */
