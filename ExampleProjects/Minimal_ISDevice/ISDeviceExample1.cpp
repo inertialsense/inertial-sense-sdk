@@ -65,8 +65,11 @@ int main_explained(const char* portStr) {
     }
 
     // With a valid, opened port, we can instance an ISDevice - in this case, an IMX-5.0 and associate the port to it.
-    ISDevice* device = new ISDevice(IS_HARDWARE_IMX_5_0, port);
-
+    // NOTE: ISDevice derives from std::enable_shared_from_this, and several of its methods (connect/validate/step)
+    // call shared_from_this() internally. It MUST therefore be owned by a std::shared_ptr - allocating it with a raw
+    // 'new' would leave it without a control block and throw std::bad_weak_ptr at the first such call.
+    std::shared_ptr<ISDevice> device = std::make_shared<ISDevice>(IS_HARDWARE_IMX_5_0, port);
+    
     if (!device->isConnected())
         exit(3); // this is another way we can confirm the connected status of the device
 
@@ -128,7 +131,9 @@ int main_minimal(const char* portStr) {
     port_handle_t port = SerialPortFactory::getInstance().bindPort(portStr);
 
     // create a new IMX-5.0 device and bind the associated port
-    ISDevice* device = new ISDevice(IS_HARDWARE_IMX_5_0, port);
+    // NOTE: ISDevice uses shared_from_this() internally, so it must be owned by a std::shared_ptr (make_shared),
+    // not a raw 'new' - otherwise connect()/validate()/step() throw std::bad_weak_ptr.
+    std::shared_ptr<ISDevice> device = std::make_shared<ISDevice>(IS_HARDWARE_IMX_5_0, port);
 
     // connect to the device
     if (!device->connect()) {
