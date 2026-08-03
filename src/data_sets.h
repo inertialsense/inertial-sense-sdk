@@ -2833,6 +2833,8 @@ enum eRTKConfigBits
 
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CLEAR_CUR_PORT       = (int)0x04000000,  //!< If this bit is set in conjunction with setting the current port, this clears the current port
 
+    RTK_CFG_BITS_MULTIPATH_MITIGATION                   = (int)0x08000000,  //!< Enable multipath detection and mitigation in RTK solutiion
+
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_CUR_PORT),  //!< Mask of RTK base and output RTCM3 data on the current serial ports
 
     RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK                  = (
