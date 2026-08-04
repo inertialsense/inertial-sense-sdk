@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    printf("Attempting to bind and open virtual port %s\r\n", argv[1]);
+    printf("Attempting to bind and use virtual port %s\r\n", argv[1]);
 
 
     /** STEP 7: Set the SDK message logger verbosity level, as we use the logger for

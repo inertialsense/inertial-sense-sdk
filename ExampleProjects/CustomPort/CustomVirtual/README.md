@@ -64,26 +64,25 @@ The following implementation instructions identify some examples of similar code
 
 #### Project Files
 
-* [main.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/main.cpp)
-* [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp)
-* [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h)
-* [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp)
-* [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.h)
-
+* [main.cpp](./main.cpp)
+* [custom_virtual_port.cpp](./custom_virtual_port.cpp)
+* [custom_virtual_port.h](./custom_virtual_port.h)
+* [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp)
+* [CustomVirtualPortFactory.h](./CustomVirtualPortFactory.h)
 
 Note these are local to this folder.
 
 #### SDK Files
 
-* [com_manager.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/com_manager.h)
-* [core/base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h)
-* [core/msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h)
-* [ISUtilities.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISUtilities.h)
-* [PortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/PortFactory.h)
-* [PortManager.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/PortManager.h)
-* [ring_buffer.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ring_buffer.h)
+* [com_manager.h](../../../src/com_manager.h)
+* [core/base_port.h](../../../src/core/base_port.h)
+* [core/msg_logger.h](../../../src/core/msg_logger.h)
+* [ISUtilities.h](../../../src/ISUtilities.h)
+* [PortFactory.h](../../../src/PortFactory.h)
+* [PortManager.h](../../../src/PortManager.h)
+* [ring_buffer.h](../../../src/ring_buffer.h)
 
-Note paths relative to SDK src/ folder.
+Note files/paths list entries relative to SDK `src/` folder.
 
 ## Implementation
 
@@ -176,7 +175,7 @@ These will provide the underlying functionality for the `base_port_t` extension 
 
 In our [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we provide an initialization function for the virtual ports that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation:  
 ```C++
-void initCustomPort(custom_port_t& port, const std::string& pName, uint16_t pType) {
+void initCustomPort(custom_port_t& port, const std::string& pName, const uint16_t pType) {
    //...       
    port.base.portRead = customPortRead;
    port.base.portWrite = customPortWrite;
@@ -228,7 +227,7 @@ We put our new factory implementation in [CustomVirtualPortFactory.cpp](https://
 
 We next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
 
-`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, you'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use dynamic allocation.  We allocate one custom port on each bind operation, with the names of the ports being `TEST0`, `TEST1`, etc, as defined in our `CustomVirtualPortFactory` header.  We then call our port implementation's init function we created in [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) for the new port.  A sample from our `bindPort()` code showing the handle we return:
+`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, we'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use dynamic allocation.  We allocate one custom port on each bind operation, with the names of the ports being `TEST0`, `TEST1`, etc, as defined in our `CustomVirtualPortFactory` header.  We then call our port implementation's init function we created in [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) for the new port.  A sample from our `bindPort()` code showing the handle we return:
 
 ```C++
 custom_port_t* customPort = new custom_port_t();
@@ -323,7 +322,7 @@ Now that we have a port returned from `PortManager`'s `getPort()`, we can valida
 ```C++
 if ( !portIsValid(port) ) {
 //...
-if (!portIsOpened(port) && (portOpen(port) != PORT_ERROR__NONE)) {
+if ( !portIsOpened(port) ) {
    //...
 ```
 
@@ -374,7 +373,7 @@ For feedback to the user running these data transfers, note the logging function
 
 6. View output from the application
    ```
-   Attempting to bind and open virtual port TEST0
+   Attempting to bind and use virtual port TEST0
    Attempting to send msg 'IMPORTANT MESSAGE'
    Loopback test good on comm port 'TEST0', 17 bytes sent/recvd
    Program complete, see inertial_sense.log for more results details
