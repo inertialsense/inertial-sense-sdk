@@ -60,6 +60,6 @@ static int customPortValidate(port_handle_t port);
     
 /** Other internal support functions, not hooked to the base_port API
  */
-void initCustomPort(custom_port_t& port, const std::string& pName, uint16_t pType);
+void initCustomPort(custom_port_t& port, const std::string& pName, const uint16_t pType);
 
 #endif // CUSTOM_VIRTUAL_PORT_H

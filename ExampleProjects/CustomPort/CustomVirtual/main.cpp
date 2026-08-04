@@ -69,8 +69,8 @@ int main(int argc, char* argv[])
         return -2;
     }
 
-    /** Open port using base_port functions */
-    if (!portIsOpened(port) && (portOpen(port) != PORT_ERROR__NONE)) {
+    /** Check if port open, which it always should be because we don't need to open our virtual ports */
+    if ( !portIsOpened(port) ) {
         printf("Failed to open port\r\n");
         return -3;
     }

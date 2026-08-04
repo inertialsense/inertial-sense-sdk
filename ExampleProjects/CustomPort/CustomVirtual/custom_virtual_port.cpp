@@ -16,10 +16,6 @@
 #define TIME_USEC()             current_timeUs()
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 
-/** STEP 2: For this example, we use a fixed stack allocation of our ports
- */
-//custom_port_t g_customPorts[NUM_COM_PORTS] = {};
-
 
 /** STEP 3: Implementations of our core functions for this custom virtual port
  */
@@ -66,7 +62,7 @@ static int customPortValidate(port_handle_t port) {
 /** Implementations of our support functions for this custom virtual port go here; we have an
  * initializer that configures a virtual port after allocation/bind
  */
-void initCustomPort(custom_port_t& port, const std::string& pName, uint16_t pType) {
+void initCustomPort(custom_port_t& port, const std::string& pName, const uint16_t pType) {
 
     port.base.ptype = pType;
 

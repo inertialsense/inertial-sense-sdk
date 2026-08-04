@@ -157,15 +157,15 @@ In [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk
 ```C
 static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
-    return ringBufRead(&((custom_port_t*)port)->portRingBuf, buf, len);
+   return ringBufRead(&((custom_port_t*)port)->portRingBuf, buf, len);
 }
 
 static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
 {
-    custom_port_t* destPort = boundPorts[portId(port)];
+   custom_port_t* destPort = static_cast<custom_port_t*>(port);  //loopback
 
-    if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
-    {   
+   if (ringBufWrite(&destPort->portRingBuf, (unsigned char*)buf, len))
+   {   
    //...
 }
 //etc
