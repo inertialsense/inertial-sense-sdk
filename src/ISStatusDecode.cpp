@@ -495,10 +495,15 @@ status_field_decode_t buildGpxStatusDecode()
     // Parse-error count is rendered by the legacy code as a presence flag (any of the low nibble),
     // not a number — model it as a Bit on the count mask.
     d.subfields.push_back(gerr("COM parse errors", GPX_STATUS_COM_PARSE_ERR_COUNT_MASK, "0x0000000F - Communications parse error count"));
-    d.subfields.push_back(gerr("COM0 RX traffic lost", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED, "0x00000010 - COM0 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerr("COM1 RX traffic lost", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED, "0x00000020 - COM1 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerr("COM2 RX traffic lost", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED, "0x00000040 - COM2 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerr("USB RX traffic lost", GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED, "0x00000080 - USB RX traffic not detected in last 30 seconds."));
+    // SN-8402: these four are a status, not a fault (deliberately outside GPX_STATUS_GENERAL_FAULT_MASK,
+    // isError stays false). The bit itself was redefined (GPX_STATUS_COM*_RX_TRAFFIC_NOT_DETECTED ->
+    // GPX_STATUS_COM*_RX_TRAFFIC_DETECTED, same mask, inverted meaning) so the wire value now directly
+    // matches its positive name -- no display-side inversion needed. Firmware that sets this bit
+    // (communications.cpp) was updated to match.
+    d.subfields.push_back(gerr("COM0 RX traffic detected", GPX_STATUS_COM0_RX_TRAFFIC_DETECTED, "0x00000010 - COM0 RX traffic detected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM1 RX traffic detected", GPX_STATUS_COM1_RX_TRAFFIC_DETECTED, "0x00000020 - COM1 RX traffic detected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM2 RX traffic detected", GPX_STATUS_COM2_RX_TRAFFIC_DETECTED, "0x00000040 - COM2 RX traffic detected in last 30 seconds."));
+    d.subfields.push_back(gerr("USB RX traffic detected", GPX_STATUS_USB_RX_TRAFFIC_DETECTED, "0x00000080 - USB RX traffic detected in last 30 seconds."));
     d.subfields.push_back(gerr("Firmware image confirmed", GPX_STATUS_UPDATE_CONFIRMED, "0x00000100 - Update confirmed."));
     d.subfields.push_back(gerr("RTK buffer overflow", GPX_STATUS_FAULT_RTK_QUEUE_LIMITED, "0x00010000 - RTK buffer overflow."));
     d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME, "0x00100000 - GNSS receiver time fault"));

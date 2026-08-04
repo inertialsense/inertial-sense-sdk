@@ -204,10 +204,10 @@ typedef uint32_t eDataIDs;
 // END DATA IDENTIFIERS --------------------------------------------------------------------------
 
 /** Maximum number of satellite channels */
-#define MAX_NUM_SATELLITES  50
+#define MAX_NUM_SATELLITES  80
 
 /** Maximum number of satellite signals */
-#define MAX_NUM_SAT_SIGNALS 100
+#define MAX_NUM_SAT_SIGNALS 160
 
 /** Maximum length of device info manufacturer string (must be a multiple of 4) */
 #define DEVINFO_MANUFACTURER_STRLEN 24
@@ -221,7 +221,11 @@ typedef uint32_t eDataIDs;
 
 // Increment w/ non-breaking changes (in data_sets.h) that would still backward compatibility with older protocols
 // #define PROTOCOL_VERSION_CHAR2   .   // Non-breaking changes (Packet):   (defined in ISComm.h)
-#define PROTOCOL_VERSION_CHAR3      0   // Non-breaking changes (Payload):
+// SN-8405: MAX_NUM_SATELLITES/MAX_NUM_SAT_SIGNALS increased (80/160). Wire size is computed
+// dynamically from actual satellite/signal count, so old/new peers interoperate normally in the
+// overwhelming majority of cases; a peer running the prior protocol version only NACKs a
+// gnss_sig_t dataset if the receiver is actually tracking >=146 discrete signals at once.
+#define PROTOCOL_VERSION_CHAR3      1   // Non-breaking changes (Payload):
 
 /** Rtk rover receiver index */
 #define RECEIVER_INDEX_GNSS1            1   // DO NOT CHANGE
@@ -4286,17 +4290,17 @@ typedef struct
 
 } gpx_flash_cfg_t;
 
-/** @brief (DID_GPX_STATUS) GPX status flags, reported in gpx_status_t.status. Packs a communications parse-error counter, per-port Rx-traffic-not-detected flags, an update-confirmed flag, and a general fault region (bits 16-31) covering RTK/GNSS/RTOS/DMA fault flags plus a fatal-fault sub-field (GPX_STATUS_FATAL_MASK) that reports the specific cause the last time a critical CPU reset occurred. GPX_STATUS_FATAL_RESET_LOW_POW..GPX_STATUS_FATAL_UNKNOWN are raw cause codes, not individual bit flags -- shift the code left by GPX_STATUS_FATAL_OFFSET and mask with GPX_STATUS_FATAL_MASK to read/write the sub-field. */
+/** @brief (DID_GPX_STATUS) GPX status flags, reported in gpx_status_t.status. Packs a communications parse-error counter, per-port Rx-traffic-detected flags, an update-confirmed flag, and a general fault region (bits 16-31) covering RTK/GNSS/RTOS/DMA fault flags plus a fatal-fault sub-field (GPX_STATUS_FATAL_MASK) that reports the specific cause the last time a critical CPU reset occurred. GPX_STATUS_FATAL_RESET_LOW_POW..GPX_STATUS_FATAL_UNKNOWN are raw cause codes, not individual bit flags -- shift the code left by GPX_STATUS_FATAL_OFFSET and mask with GPX_STATUS_FATAL_MASK to read/write the sub-field. */
 enum eGpxStatus
 {
     GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,  //!< Mask for the communications parse error count field
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,                //!< Bit offset of GPX_STATUS_COM_PARSE_ERR_COUNT_MASK within status
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)  //!< Extract the communications parse error count from a status value
 
-    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000010,  //!< Rx communications not detected on serial port 0 in the last 30 seconds
-    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000020,  //!< Rx communications not detected on serial port 1 in the last 30 seconds
-    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000040,  //!< Rx communications not detected on serial port 2 in the last 30 seconds
-    GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED      = (int)0x00000080,  //!< Rx communications not detected on USB in the last 30 seconds
+    GPX_STATUS_COM0_RX_TRAFFIC_DETECTED         = (int)0x00000010,  //!< Rx communications detected on serial port 0 in the last 30 seconds
+    GPX_STATUS_COM1_RX_TRAFFIC_DETECTED         = (int)0x00000020,  //!< Rx communications detected on serial port 1 in the last 30 seconds
+    GPX_STATUS_COM2_RX_TRAFFIC_DETECTED         = (int)0x00000040,  //!< Rx communications detected on serial port 2 in the last 30 seconds
+    GPX_STATUS_USB_RX_TRAFFIC_DETECTED          = (int)0x00000080,  //!< Rx communications detected on USB in the last 30 seconds
 
     GPX_STATUS_UPDATE_CONFIRMED                 = (int)0x00000100,  //!< Update confirmed
 
