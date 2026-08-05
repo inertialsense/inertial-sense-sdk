@@ -390,4 +390,4 @@ For feedback to the user running these data transfers, note the logging function
 
 ## Support
 
-If this doesn't cover everything you need, feel free to reach out to us at <a href="support@inertialsense.com">inertial-sense-sdk</a>, and we will be happy to help.
+If this doesn't cover everything you need, feel free to reach out to us via <a href="support@inertialsense.com">email</a>, and we will be happy to help.
