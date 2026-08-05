@@ -214,12 +214,28 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
 
     case PLATFORM_CFG_TYPE_IG2:
     case PLATFORM_CFG_TYPE_IG2_1:
-    case PLATFORM_CFG_TYPE_BRK_1:
+    case PLATFORM_CFG_TYPE_BRK_GPX:
     case PLATFORM_CFG_TYPE_TBED3:
         SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
         SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
         SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_GPX);
         SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_GPX);
+        break;
+
+    case PLATFORM_CFG_TYPE_BRK_2_X20:
+        // Same port setup as BRK-1, with the onboard u-blox X20 GNSS receiver
+        SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
+        SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
+        break;
+
+    case PLATFORM_CFG_TYPE_BRK_2_SG5:
+        // Same port setup as BRK-1, with the onboard Septentrio GNSS receiver
+        SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
+        SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_SER0);
+        SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_SEPTENTRIO);
+        SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_SEPTENTRIO);
         break;
 
     case PLATFORM_CFG_TYPE_LAMBDA_G1:
@@ -284,7 +300,8 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
         break;
         // G13
     case PLATFORM_CFG_TYPE_IG2_1:
-    case PLATFORM_CFG_TYPE_BRK_1:
+    case PLATFORM_CFG_TYPE_BRK_GPX:
+    case PLATFORM_CFG_TYPE_BRK_2_SG5:
         *ioConfig2 |= IO_CFG2_GNSS2_PPS_SOURCE_G13<<IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
         break;
     }

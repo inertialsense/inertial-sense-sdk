@@ -3156,7 +3156,9 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                                                          = (int)0x0000003F,  //!< Mask for platform/carrier-board type field
     PLATFORM_CFG_TYPE_FROM_MANF_OTP                                                 = (int)0x00000080,  //!< Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                                                          = (int)0,   //!< No/unknown carrier board (IMX-5 default)
-    PLATFORM_CFG_TYPE_BRK_1                                                         = (int)1,   //!< IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_GPX                                                       = (int)1,   //!< IS-IMX-GPX-DEV, external GPX-1 module:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_2_X20                                                     = (int)2,   //!< IS-IMX-GPX-DEV-2, onboard u-blox X20:     PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_2_SG5                                                     = (int)3,   //!< IS-IMX-GPX-DEV-2, onboard Septentrio:     PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
     PLATFORM_CFG_TYPE_RUG4_X20                                                      = (int)5,   //!< PCB RUG-4-X20:       PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG4_SG5                                                      = (int)6,   //!< PCB RUG-4-SG5:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
     PLATFORM_CFG_TYPE_RUG4_GPX                                                      = (int)7,   //!< PCB RUG-4-GPX:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
@@ -3174,7 +3176,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA                                             = (int)19,  //!< Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA                                             = (int)20,  //!< Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_IG2_1                                                         = (int)21,  //!< IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_COUNT                                                         = (int)24,  //!< Number of defined platform/carrier-board types
+    PLATFORM_CFG_TYPE_COUNT                                                         = (int)22,  //!< Number of defined platform/carrier-board types
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                                                        = (int)0x0000FF00,  //!< Mask for carrier-specific preset selector field
