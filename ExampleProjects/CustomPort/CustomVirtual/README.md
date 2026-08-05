@@ -388,16 +388,6 @@ For feedback to the user running these data transfers, note the logging function
    [14:22:28.838846] INFO   (IS_LOG_PORT_FACTORY) :: Release comm port 'TEST1'
    ```
 
-## Compile & Run (Windows MS Visual Studio) - Not Yet Implemented
-<strike>
-1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\CustomPort\CustomVirtual\VS_project\CustomVirtual.sln)
-2. Build (F7)
-3. Run executable
-   ``` bash
-   C:\inertial-sense-sdk\ExampleProjects\CustomPort\CustomVirtual\VS_project\Release\CustomVirtual.exe TEST0
-   ```
-</strike>
-
 ## Summary
 
-If this doesn't cover everything you need, feel free to reach out to us on the <a href="https://github.com/inertialsense/inertial-sense-sdk">inertial-sense-sdk</a> GitHub repository, and we will be happy to help.
+If this doesn't cover everything you need, feel free to reach out to us at <a href="support@inertialsense.com">inertial-sense-sdk</a>, and we will be happy to help.
