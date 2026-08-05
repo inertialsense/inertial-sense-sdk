@@ -369,7 +369,7 @@ For feedback to the user running these data transfers, note the logging function
    ``` bash
    ./CustomVirtual TEST0
    ```
-   *Note that only TEST0 and TEST1 are available by default in this example code, and TEST2 through TEST5 would require modifications to the code to support*
+   *Note that only TEST0 and TEST1 are available by default in this example code, and adding more ports would require simple modifications to the code to support*
 
 6. View output from the application
    ```
@@ -388,6 +388,6 @@ For feedback to the user running these data transfers, note the logging function
    [14:22:28.838846] INFO   (IS_LOG_PORT_FACTORY) :: Release comm port 'TEST1'
    ```
 
-## Summary
+## Support
 
 If this doesn't cover everything you need, feel free to reach out to us at <a href="support@inertialsense.com">inertial-sense-sdk</a>, and we will be happy to help.
