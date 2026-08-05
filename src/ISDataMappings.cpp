@@ -520,10 +520,10 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
         + std::to_string(BIT_CMD_FULL_STATIONARY) + "=start full, "
         + std::to_string(BIT_CMD_BASIC_MOVING) + "=start basic, "
         + std::to_string(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) + "=start full HA, "
-        + std::to_string(BIT_CMD_IMU_REJECT) + "=IMU fault rejection, "
-        + std::to_string(BIT_CMD_IMU_REJECT_CONTINUOUS) + "=IMU fault rejection continuous, "
-        + std::to_string(BIT_CMD_IMU_INVALID_DATA) + "=IMU invalid data, "
-        + std::to_string(BIT_CMD_IMU_SATURATED_SENSOR) + "=IMU saturated sensor]");
+        + std::to_string(BIT_CMD_IMU_REJECT) + "=IMU fault rej., "
+        + std::to_string(BIT_CMD_IMU_REJECT_CONTINUOUS) + "=IMU fault rej. cont., "
+        + std::to_string(BIT_CMD_IMU_INVALID_DATA) + "=IMU invalid, "
+        + std::to_string(BIT_CMD_IMU_SATURATED_SENSOR) + "=IMU saturated]");
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
@@ -543,9 +543,9 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
         + std::to_string(BIT_TEST_MODE_SIM_GNSS_NOISE) + "=GNSS noise, "
         + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, "
         + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow, "
-        + std::to_string(BIT_TEST_MODE_IMU_FAULT_REJECTION) + "=IMU fault rejection, "
-        + std::to_string(BIT_TEST_MODE_IMU_INVALID_DATA) + "=IMU invalid data, "
-        + std::to_string(BIT_TEST_MODE_IMU_SATURATION_DATA) + "=IMU saturation data");
+        + std::to_string(BIT_TEST_MODE_IMU_FAULT_REJECTION) + "=IMU fault rej., "
+        + std::to_string(BIT_TEST_MODE_IMU_INVALID_DATA) + "=IMU invalid, "
+        + std::to_string(BIT_TEST_MODE_IMU_SATURATION_DATA) + "=IMU saturation");
     mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
