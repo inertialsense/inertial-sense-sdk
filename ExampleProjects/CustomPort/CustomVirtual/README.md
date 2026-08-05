@@ -87,7 +87,7 @@ Note files/paths list entries relative to SDK `src/` folder.
 ## Implementation
 
 ### Step 1: Create Port Implementation Header
-We must identify and source or build the underlying transport mechanism.  The `PortFactory` is designed to provide a base class for building a port discoverer, upon any lower level port type.  Our port implementation extends the SDK `base_port_t` C object, and `base_port_t` then provides an API for access using a set of function hooks for methods implemented in the code.  The `base_port_t` comes with definitions for all kinds of different port types.  See the SDK [base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h).
+We must identify and source or build the underlying transport mechanism.  The `PortFactory` is designed to provide a base class for building a port discoverer, upon any lower level port type.  Our port implementation extends the SDK `base_port_t` C object, and `base_port_t` then provides an API for access using a set of function hooks for methods implemented in the code.  The `base_port_t` comes with definitions for all kinds of different port types.  See the SDK [base_port.h](../../../src/core/base_port.h).
 
 Some of the port types defined in base_port.h:
 ```C
@@ -115,7 +115,7 @@ typedef struct base_port_s {
 } base_port_t;
 ```
 
-In our example, we will create a custom virtual port `custom_port_t` built upon the SDK ring buffer construct.  We add required includes to the new header file, which in this case is [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h):
+In our example, we will create a custom virtual port `custom_port_t` built upon the SDK ring buffer construct.  We add required includes to the new header file, which in this case is [custom_virtual_port.h](./custom_virtual_port.h):
 ```C
 #include "core/base_port.h"
 #include "ring_buffer.h"  //optional, depends upon your implementation
@@ -123,7 +123,7 @@ In our example, we will create a custom virtual port `custom_port_t` built upon 
 ```
 
 ### Step 2: Extend base_port_t With New Structure
-We create a virtual port defined in [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h), so that the example can be demonstrated without specialized hardware:
+We create a virtual port defined in [custom_virtual_port.h](./custom_virtual_port.h), so that the example can be demonstrated without specialized hardware:
 
 ```C
 typedef struct custom_port_s {
@@ -151,7 +151,7 @@ As this is a virtual port that does not rely on any hardware or third-party driv
 
 
 ### Step 3: Complete Port Implementation
-In [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we define various port functions that leverage the underlying transport mechanism, which in this case is the SDK ring buffer, as seen here:
+In [custom_virtual_port.cpp](./custom_virtual_port.cpp) we define various port functions that leverage the underlying transport mechanism, which in this case is the SDK ring buffer, as seen here:
 
 ```C
 static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
@@ -170,10 +170,10 @@ static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigne
 //etc
 ```
 
-These will provide the underlying functionality for the `base_port_t` extension once properly assigned to the base port's API.  As you review this example project or complete your own port implementation, it may be useful to compare [custom_virtual_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.h) and [base_port.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/base_port.h) to see how the base port is defined and extended, and understand the API.  In this example, we have demonstrated only a minimal subset of the available port functions in `base_port_t`, but there are many options beyond simply read and write to enable the usage of a wide variety of underlying transport mechanisms.
+These will provide the underlying functionality for the `base_port_t` extension once properly assigned to the base port's API.  As you review this example project or complete your own port implementation, it may be useful to compare [custom_virtual_port.h](./custom_virtual_port.h) and [base_port.h](../../../src/core/base_port.h) to see how the base port is defined and extended, and understand the API.  In this example, we have demonstrated only a minimal subset of the available port functions in `base_port_t`, but there are many options beyond simply read and write to enable the usage of a wide variety of underlying transport mechanisms.
 
 
-In our [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) we provide an initialization function for the virtual ports that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation:  
+In our [custom_virtual_port.cpp](./custom_virtual_port.cpp) we provide an initialization function for the virtual ports that links the handles of our virtual port implementation to the `base_port_t`, allowing us to use the generic `base_port_t` API regardless of the details of the underlying implementation:  
 ```C++
 void initCustomPort(custom_port_t& port, const std::string& pName, const uint16_t pType) {
    //...       
@@ -187,7 +187,7 @@ These and many settings are shared for all our virtual ports, each being the sam
 
 
 ### Step 4: Extend PortFactory with New Class
-This example creates the `CustomVirtualPortFactory` derived class specified by the files [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.h) and [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp).  With these files we will derive a new port factory from the SDK `PortFactory` class.
+This example creates the `CustomVirtualPortFactory` derived class specified by the files [CustomVirtualPortFactory.h](./CustomVirtualPortFactory.h) and [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp).  With these files we will derive a new port factory from the SDK `PortFactory` class.
 
 Example headers for .h file, which will include the new port implementation we've created:
 ```C++
@@ -196,7 +196,7 @@ Example headers for .h file, which will include the new port implementation we'v
 #include "custom_virtual_port.h"
 ```
 
-See the [CustomVirtualPortFactory.h](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.h) file for configuration example of the singleton port factory, required class members and functions, etc.  The header file defines a child class that inherits from `PortFactory`, as in:
+See the [CustomVirtualPortFactory.h](./CustomVirtualPortFactory.h) file for configuration example of the singleton port factory, required class members and functions, etc.  The header file defines a child class that inherits from `PortFactory`, as in:
 ```C++
 class CustomVirtualPortFactory : public PortFactory
 ```
@@ -216,7 +216,7 @@ const std::array<const char*, 2> portNames = { "TEST0", "TEST1" };
 
 ### Step 5: Complete Custom Port Factory Implementation
 
-We put our new factory implementation in [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp).  Example headers for this file follow, which should include our new port factory header and any C++ libraries and SDK utilities that are useful for the way we want the port factory to handle our custom port:
+We put our new factory implementation in [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp).  Example headers for this file follow, which should include our new port factory header and any C++ libraries and SDK utilities that are useful for the way we want the port factory to handle our custom port:
 ```C++
 #include <vector>
 #include <regex>
@@ -227,7 +227,7 @@ We put our new factory implementation in [CustomVirtualPortFactory.cpp](https://
 
 We next complete the four required minimum functions for a port factory implementation.  Because we are using `PortManager`, we can do all the `PortFactory` work through it rather than directly, so we don't actually need to write any code in our application to access these four required custom port factory functions.  We only implement them.  The application code will interact with the `PortManager` and `base_port_t` interfaces only.
 
-`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, we'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use dynamic allocation.  We allocate one custom port on each bind operation, with the names of the ports being `TEST0`, `TEST1`, etc, as defined in our `CustomVirtualPortFactory` header.  We then call our port implementation's init function we created in [custom_virtual_port.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/custom_virtual_port.cpp) for the new port.  A sample from our `bindPort()` code showing the handle we return:
+`validatePort()` will check the name and type of the port, called at the beginning of the bind process.  In `bindPort()`, after completing port validation, we'll need to return a `port_handle_t` (that points to a `base_port_t` and by extension our `custom_port_t`) to the caller after identifying or allocating your port.  In this example, we use dynamic allocation.  We allocate one custom port on each bind operation, with the names of the ports being `TEST0`, `TEST1`, etc, as defined in our `CustomVirtualPortFactory` header.  We then call our port implementation's init function we created in [custom_virtual_port.cpp](./custom_virtual_port.cpp) for the new port.  A sample from our `bindPort()` code showing the handle we return:
 
 ```C++
 custom_port_t* customPort = new custom_port_t();
@@ -254,11 +254,11 @@ for (auto& name : portNames) {
 }
 ```
 
-Finally, `releasePort()` will do any cleanup or freeing of memory for the ports we created, as needed, since the port is no longer to be used.  This is called by the `PortManager` destructor by default.  After completing the implementation of these four required functions, add in additional support functions to the [CustomVirtualPortFactory.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/CustomVirtualPortFactory.cpp) file as needed for the specific application.  
+Finally, `releasePort()` will do any cleanup or freeing of memory for the ports we created, as needed, since the port is no longer to be used.  This is called by the `PortManager` destructor by default.  After completing the implementation of these four required functions, add in additional support functions to the [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp) file as needed for the specific application.  
 
 
 ### Step 6: Create Example Application
-Create a new .cpp file for the application, which for us is [main.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomPort/CustomVirtual/main.cpp) in this example.  Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference the new `PortFactory` class, and don't forget the `PortManager`:
+Create a new .cpp file for the application, which for us is [main.cpp](./main.cpp) in this example.  Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference the new `PortFactory` class, and don't forget the `PortManager`:
 ```C++
 #include <stdio.h>
 #include "ISUtilities.h"
@@ -284,7 +284,7 @@ We will shortly demonstrate how it uses `PortManager` and `PortFactory` to bind 
 
 
 ### Step 7: Incorporate Logging
-The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our Port Factory extension in CustomVirtualPortFactory.cpp.  The [msg_logger.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  Log commands can be added like so, from a line in CustomVirtualPortFactory.cpp:
+The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our Port Factory extension in CustomVirtualPortFactory.cpp.  The [msg_logger.h](../../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  Log commands can be added like so, from a line in CustomVirtualPortFactory.cpp:
 
 ```C++
 log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bind new comm port '%s'", portName(port));
