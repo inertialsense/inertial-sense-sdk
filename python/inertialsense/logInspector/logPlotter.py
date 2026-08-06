@@ -1535,6 +1535,53 @@ class logPlot:
         except:
             print(RED + "problem plotting imuStatus: " + str(sys.exc_info()[1]) + RESET)
 
+    def imusStatus(self, fig=None, axs=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('IMUs Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            axisLabels = ['X Gyr OK', 'Y Gyr OK', 'Z Gyr OK', 'X Acc OK', 'Y Acc OK', 'Z Acc OK']
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+
+                time   = self.getData(d, DID_IMUS_RAW, 'time')
+                status = self.getData(d, DID_IMUS_RAW, 'status')
+                if not len(time):
+                    continue
+
+                towOffset = self.getGpsTowOffset(d)
+                if len(towOffset) > 0:
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                imuCount = self.log.c_log.numImuDevices
+
+                for imuIdx in range(imuCount):
+                    shift = imuIdx * 6    # eImusStatus: 6 status bits per IMU device (IMUS_STATUS_IMU_OK_BITSIZE)
+                    for bit, label in enumerate(axisLabels):
+                        ax.plot(time, -cnt * 1.5 + ((status & (1 << (shift + bit))) != 0))
+                        if r: ax.text(labelX, -cnt * 1.5, 'IMU%d %s' % (imuIdx, label), transform=ax.get_yaxis_transform())
+                        cnt += 1
+                    cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x40000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'Gyro Saturation', transform=ax.get_yaxis_transform())
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x80000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'Accel Saturation', transform=ax.get_yaxis_transform())
+                cnt += 1
+
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            return self.saveFigJoinAxes(ax, axs, fig, 'imusStatus')
+        except:
+            print(RED + "problem plotting imusStatus: " + str(sys.exc_info()[1]) + RESET)
+
     def insStatus(self, fig=None, axs=None):
         try:
             if fig is None:

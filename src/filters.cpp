@@ -249,8 +249,8 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
         {
             mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
 
-            if (!excl[idev] != ((di->status & mask) != 0))
-            {
+            if (excl[idev] && ((di->status & mask) != 0))
+            {   // TODO: remove later.  Debugging code to catch excluded IMUs that are still reporting valid data.  This should never happen.
                 volatile int j=0;
                 j++;
             }
