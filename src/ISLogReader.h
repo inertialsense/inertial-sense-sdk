@@ -306,10 +306,14 @@ public:
     /**
      * Returns the device's packed hardware id (`is_hardware_t`),
      * encoding hardware type + major + minor revs. Derived from the
-     * first `DID_DEV_INFO` record's payload via the same scan that
-     * populates `deviceId()`. The filename fallback cannot produce an
-     * `hdwId`, so this returns 0 (`IS_HARDWARE_NONE`) for segments
-     * without a logged DEV_INFO record.
+     * first `dev_info_t`-bearing record via the same scan that
+     * populates `deviceId()` — `DID_DEV_INFO`, `DID_GPX_DEV_INFO` or
+     * `DID_EVB_DEV_INFO`, all of which carry the same payload struct.
+     * (Before SN-8445 only `DID_DEV_INFO` was accepted, so a GPX-only
+     * log yielded 0 here and rendered as `???-0.0::SN<serial>`.)
+     * The filename fallback cannot produce an `hdwId`, so this still
+     * returns 0 (`IS_HARDWARE_NONE`) for a log carrying NO device-info
+     * record of any kind.
      *
      * Pair with `deviceId()` to form a canonical device label via
      * `utils::deviceIdString(hdwId(), deviceId())`.
