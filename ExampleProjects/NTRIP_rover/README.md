@@ -8,93 +8,68 @@ This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/t
 
 ```C++
 // Change these include paths to the correct paths for your project
-#include "../../src/ISComm.h"
-#include "../../src/serialPortPlatform.h"
-#include "../../src/ISStream.h"
-#include "../../src/ISClient.h"
-#include "../../src/protocol_nmea.h"
+#include "../../src/PortManager.h"
+#include "../../src/DeviceManager.h"
+#include "../../src/ISDevice.h"
+#include "../../src/NtripCorrectionService.h"
 ```
 
-### Step 2: Init comm instance
+### Step 2: Extend ISDevice
+
+Extend `ISDevice` to bind to the physical serial port and wire up an `NtripCorrectionService` that forwards received corrections to the device's port. Overriding `onIsbDataHandler()` lets you parse the messages you care about (position, RTK status, etc.) as they arrive.
 
 ```C++
-	is_comm_instance_t comm;
-	uint8_t buffer[2048];
+class NtripRover : public ISDevice {
+public:
+    NtripCorrectionService ntrip;
 
-	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Consider using callbacks
+    NtripRover(const std::string& serPort, const std::string& ntrip_url) : ISDevice(), ntripUrl(ntrip_url) {
+        // bind to the physical serial port (hardware) and assign to the device
+        assignPort(SerialPortFactory::getInstance().bindPort(serPort, PORT_TYPE__UNKNOWN));
+
+        // tell the NtripCorrectionService to forward the received corrections to this device's port
+        ntrip.addPort(port);
+    }
+    ...
+};
 ```
 
-### Step 3: Initialize and open serial port
+### Step 3: Connect and configure the device
 
 ```C++
-	serial_port_t serialPort;
+NtripRover myRover(serialPort, ntripUrl);
 
-	// Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
-	//  you will need to handle the serial port creation, open and reads yourself. In this
-	//  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
-	serialPortPlatformInit(&serialPort);
+if (!myRover.connect()) {
+    printf("Unable to connect to the specified port.\r\n");
+    return -2;
+}
 
-	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
-	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
-	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_921600, 1))
-	{
-		printf("Failed to open serial port on com port %s\r\n", argv[1]);
-		return -2;
-	}
+myRover.configure();    // Stops existing broadcasts and enables the messages we need (SYS_PARAMS, GPX_STATUS, GNSS1_POS, GNSS1_RTK_POS_REL)
 ```
 
-### STEP 4: Connect to the RTK base (sever)
+### Step 4: Connect to the RTK base (NTRIP caster)
 
-```c++
-	// Connection string follows the following format:
-	// [type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]
-	// i.e. TCP:RTCM3:192.168.1.100:7777:mount:user:password
-	if ((s_clientStream = cISClient::OpenConnectionToServer(argv[2])) == NULLPTR)
-	{
-		printf("Failed to open RTK base connection %s\r\n", argv[2]);
-		return -2;
-	}
-```
-
-### Step 5: Stop any message broadcasting
-
-```c++
-	// Stop all broadcasts on the device
-	int messageSize = is_comm_stop_broadcasts(comm);
-	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
-	{
-		printf("Failed to encode and write stop broadcasts message\r\n");
-	}
-```
-
-### Step 6: Enable message broadcasting
-
-To use NTRIP, we must enable the DID_GPS1_POS message which will be rebroadcast as NMEA GGA every 5 seconds to the RTK NTRIP base station.  
+The `NtripCorrectionService` handles the HTTP GET / basic-auth handshake and RTCM3 forwarding once a 3D fix is available:
 
 ```C++
-int enable_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
-{
-	int n = is_comm_get_data_to_buf(buffer, bufferSize, comm, DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
-	{
-		printf("Failed to encode and write get GPS message\r\n");
-		return -5;
-	}
-	n = is_comm_get_data_to_buf(buffer, bufferSize, comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
-	{
-		printf("Failed to encode and write get GPS message\r\n");
-		return -5;
-	}
-	return 0;
+// Connection string follows the standard NTRIP URL format:
+// ntrip://<username>:<password>@<host>:<port>/<mountpoint>
+if (!ntrip.isConnected())
+    ntrip.connect(ntripUrl);
+else
+    ntrip.step();   // process and forward received corrections
+```
+
+### Step 5: Main loop
+
+```C++
+while (1) {
+    myRover.step();   // drives both the device and, once connected, the NTRIP correction service
+    SLEEP_MS(1);
 }
 ```
 
-### Step 7: Handle received data 
-
-See the ISNtripRoverExample.cpp for details.
+See [ISNtripRoverExampleV3.cpp](ISNtripRoverExampleV3.cpp) for the full, working example, including forwarding the rover's GGA position back to the base every 5 seconds and printing fix status/RTK stats.
 
 ## Compile & Run (Linux/Mac)
 
@@ -128,7 +103,7 @@ See the ISNtripRoverExample.cpp for details.
    ```
 6. Run executable
    ``` bash
-   ./bin/ISNtripRoverExample /dev/ttyUSB0 TCP:RTCM3:192.168.1.100:7777:mount:user:password
+   ./bin/ISNtripRoverExample /dev/ttyUSB0 ntrip://user:password@192.168.1.100:7777/mount
    ```
 ## Compile & Run (Windows MS Visual Studio)
 
