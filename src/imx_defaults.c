@@ -111,11 +111,11 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break;
-        case PLATFORM_CFG_TYPE_RUG3_G1:
+        case PLATFORM_CFG_TYPE_RUG3_G1: 
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break ;
-        default:    // RUG_G0, RUG3_G1, RUG3_G2, RUG4_X20: onboard u-blox receiver (ZED-F9P / X20)
+        default:    // RUG3_G2
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
             break;
