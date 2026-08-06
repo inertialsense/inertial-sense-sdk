@@ -664,8 +664,10 @@ std::pair<const uint8_t*, std::size_t> ISLogReader::rawBytes() const noexcept {
 }
 
 void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
-    deviceId_ = 0;
-    hdwId_    = 0;
+    deviceId_   = 0;
+    hdwId_      = 0;
+    devInfo_    = dev_info_t{};
+    hasDevInfo_ = false;
 
     // 1) Walk the raw bytes via `is_comm_parse_byte` looking for the first DID_DEV_INFO packet. We can't shortcut to
     //    the record's `.offset` because that is the ISB packet *start* (framing + header + payload + checksum), not
@@ -703,6 +705,12 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
             if (info.serialNumber != 0) {
                 deviceId_ = info.serialNumber;
                 hdwId_    = static_cast<uint16_t>(ENCODE_DEV_INFO_TO_HDW_ID(info));
+                // Retain the whole struct, not just the two fields we distill from
+                // it (SN-8463). Firmware version, build info and the rest were being
+                // parsed and thrown away, leaving consumers unable to report a device
+                // beyond serial + hardware id.
+                devInfo_    = info;
+                hasDevInfo_ = true;
                 return;
             }
             // First DEV_INFO had a zero serial — partial-update record or test fixture stub. Stop scanning; let the
