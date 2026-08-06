@@ -172,7 +172,7 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 
     // Multiple IMU Averaging - optimized for speed
     int ndev;
-    float mean, y;
+    float mean;
     uint32_t mask, baseS, base, axisMaskBase;
 
     result->status = imus->status & IMUS_STATUS_SATURATION_MASK;
@@ -200,11 +200,9 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
             {
                 mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
 
-                if (isens == 0) y = imus->I[idev].pqr[iaxis];
-                else            y = imus->I[idev].acc[iaxis];
-
                 if (imus->status & mask) {
-                    mean += y;
+                    if (isens == 0) mean += imus->I[idev].pqr[iaxis];
+                    else            mean += imus->I[idev].acc[iaxis];
                     ndev++;
                 }
             }
@@ -220,40 +218,11 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 }
 
 
-int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
-{
-    STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
-
-    imu_t imu = {};
-    imu.time = di->time;
-    imu.status = di->status;
-
-    int ndev = 0;
-
-    for (int idev = 0; idev < numDevices; idev++)
-    {
-        if (exclude[idev]) continue;
-        add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
-        add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
-        ndev++;
-    }
-
-    if (ndev > 0)
-    {
-        mul_Vec3_X(imu.I.pqr, imu.I.pqr, inv_count_upto10(ndev));
-        mul_Vec3_X(imu.I.acc, imu.I.acc, inv_count_upto10(ndev));
-    }
-
-    *result = imu;
-    return ndev;
-}
-
-
 void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
 {
     STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
 
-    float mean, y;
+    float mean;
     int ndev;
     const bool *excl;
     uint32_t mask, baseS, base, axisMaskBase;
@@ -280,11 +249,15 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
         {
             mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
 
-            if (isens == 0) y = di->I[idev].pqr[iaxis];
-            else            y = di->I[idev].acc[iaxis];
+            if (!excl[idev] != ((di->status & mask) != 0))
+            {
+                volatile int j=0;
+                j++;
+            }
 
             if (!excl[idev] && (di->status & mask)) {
-                mean += y;
+                if (isens == 0) mean += di->I[idev].pqr[iaxis];
+                else            mean += di->I[idev].acc[iaxis];
                 ndev++;
             }
         }
@@ -297,8 +270,6 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
         }
         res[iaxis] = mean;
     }
-    result->time = di->time;
-    // result->status = di->status & IMUS_STATUS_SATURATION_MASK;
 }
 
 

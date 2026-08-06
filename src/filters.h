@@ -530,16 +530,6 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices);
 
 /**
- * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual IMUs.
- * @param result     Output: averaged IMU sample.
- * @param di         Input: multiple IMUs' samples (numDevices of them).
- * @param numDevices Number of IMU devices (and samples) in di.
- * @param exclude    Per-IMU exclusion flags (length numDevices); true excludes that IMU from the average.
- * @return 1 on success, 0 on failure (e.g. all IMUs excluded).
- */
-int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude);
-
-/**
  * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual gyro/accelerometer axes.
  * @param result       Output: averaged IMU sample.
  * @param di           Input: multiple IMUs' samples (numDevices of them).
