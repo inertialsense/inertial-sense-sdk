@@ -938,9 +938,13 @@ TEST(ISStatusDecode, GnssStatus2_RenderJamAndSpoofDetectedTogether)
 
     const std::string jamOnly   = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED);
     const std::string spoofOnly = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED);
+    ASSERT_FALSE(jamOnly.empty());
+    ASSERT_FALSE(spoofOnly.empty());
 
-    EXPECT_NE(rendered.find(jamOnly.substr(0, jamOnly.size() - 1)), std::string::npos);
-    EXPECT_NE(rendered.find(spoofOnly.substr(0, spoofOnly.size() - 1)), std::string::npos);
+    // Search for the full single-flag rendering (including its trailing newline) as a substring
+    // of the combined rendering, so an empty/broken render can't produce a vacuous match.
+    EXPECT_NE(rendered.find(jamOnly), std::string::npos);
+    EXPECT_NE(rendered.find(spoofOnly), std::string::npos);
     EXPECT_NE(both & dec->errorMask, 0u);   // both bits set -> field is in an error state
 }
 
