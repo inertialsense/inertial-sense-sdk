@@ -480,6 +480,29 @@ status_field_decode_t buildGnssStatusDecode()
     return d;
 }
 
+/**
+ * @brief GNSS pos/vel `status2` decode table (eGnssStatus2): jam/spoof interference flags on
+ *        `gnss_pos_t.status2` (DID_GNSS1_POS / DID_GNSS2_POS). "status2" is unambiguous on the
+ *        wire, so it is registered and looked up directly under that key (see GetStatusDecode).
+ */
+status_field_decode_t buildGnssStatus2Decode()
+{
+    status_field_decode_t d;
+    d.fieldName = "status2";
+    d.errorMask = (uint32_t)GNSS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK;
+
+    d.subfields.push_back(bitField("GNSS Possible Jam", GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT, false,
+        "0x01 - Possible RF jamming detected on the GNSS antenna"));
+    d.subfields.push_back(bitField("GNSS Jam Detected", GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED, true,
+        "0x02 - RF jamming confirmed on the GNSS antenna"));
+    d.subfields.push_back(bitField("GNSS Possible Spoof", GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT, false,
+        "0x04 - Possible GNSS spoofing detected"));
+    d.subfields.push_back(bitField("GNSS Spoof Detected", GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED, true,
+        "0x08 - GNSS spoofing confirmed"));
+
+    return d;
+}
+
 /** @brief GPX status decode table (eGpxStatus). Registered under key "gpxStatus" (field "status"). */
 status_field_decode_t buildGpxStatusDecode()
 {
@@ -896,6 +919,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("sysStatus",          buildSysStatusDecode());
         m.emplace("genFaultCode",       buildGenFaultCodeDecode());
         m.emplace("gnssStatus",         buildGnssStatusDecode());
+        m.emplace("status2",           buildGnssStatus2Decode());
         m.emplace("gpxStatus",          buildGpxStatusDecode());
         m.emplace("gpxHdwStatus",       buildGpxHdwStatusDecode());
         m.emplace("gnssInitState",      buildGnssInitStateDecode());
