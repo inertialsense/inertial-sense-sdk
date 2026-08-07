@@ -532,13 +532,11 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices);
 /**
  * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual gyro/accelerometer axes.
  * @param result       Output: averaged IMU sample.
- * @param di           Input: multiple IMUs' samples (numDevices of them).
- * @param numDevices   Number of IMU devices (and samples) in di.
- * @param exclude_gyro Per-axis gyro exclusion flags (X/Y/Z); true excludes that axis from the average.
- * @param exclude_acc  Per-axis accelerometer exclusion flags (X/Y/Z); true excludes that axis from the average.
- * @param iaxis        Axis index (0=X, 1=Y, 2=Z) being processed by this call.
+ * @param imus         Input: multiple IMUs' samples (numDevices of them).
+ * @param numDevices   Number of IMU devices (and samples) in imus.
+ * @param excDevices   Array of faulty device flags.
  */
-void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);
+void multiToSingleImuAxis(imu_t *result, const imus_t *imus, const int numDevices, bool excDevices[2][3][MAX_IMU_DEVICES]);
 
 /**
  * @brief Duplicate one IMU sample to fill a multi-IMU (imus_t) sample.

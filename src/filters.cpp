@@ -166,13 +166,12 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 }
 
 
+/* Multiple IMU Averaging - optimized for speed
+*/
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 {
     STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
 
-    // Multiple IMU Averaging - optimized for speed
-    int ndev;
-    float mean;
     uint32_t mask, baseS, base, axisMaskBase;
 
     result->status = imus->status & IMUS_STATUS_SATURATION_MASK;
@@ -194,8 +193,9 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
         for (int iaxis = 0; iaxis < 3; iaxis++)
         {
             axisMaskBase = baseS << iaxis;
-            mean = 0.0f;
-            ndev = 0;
+            int ndev = 0;
+            float mean = 0.0f;
+
             for (int idev = 0; idev < numDevices; idev++)
             {
                 mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
@@ -218,13 +218,10 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 }
 
 
-void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
+void multiToSingleImuAxis(imu_t *result, const imus_t *imus, const int numDevices, bool excDevices[2][3][MAX_IMU_DEVICES])
 {
     STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
 
-    float mean;
-    int ndev;
-    const bool *excl;
     uint32_t mask, baseS, base, axisMaskBase;
 
     // Loop over gyros (isens = 0) and accelerometers (isens = 1)
@@ -235,41 +232,45 @@ void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices,
         if (isens == 0) {
             baseS = IMUS_STATUS_GYR_X_OK;
             base  = IMU_STATUS_GYR_X_OK;
-            excl  = exclude_gyro;
         }
         else {
             baseS = IMUS_STATUS_ACC_X_OK;
             base  = IMU_STATUS_ACC_X_OK;
-            excl  = exclude_acc;
         }
-        axisMaskBase = baseS << iaxis;
-        ndev = 0;
-        mean = 0.0f;
-        for (int idev = 0; idev < numDevices; idev++)
+
+        for (int iaxis = 0; iaxis < 3; iaxis++)
         {
-            mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
+            axisMaskBase = baseS << iaxis;
+            int ndev = 0;
+            float mean = 0.0f;
 
-            if (excl[idev] && ((di->status & mask) != 0))
-            {   // TODO: remove later.  Debugging code to catch excluded IMUs that are still reporting valid data.  This should never happen.
-                volatile int j=0;
-                j++;
-            }
+            for (int idev = 0; idev < numDevices; idev++)
+            {
+                mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
 
-            if (!excl[idev] && (di->status & mask)) {
-                if (isens == 0) mean += di->I[idev].pqr[iaxis];
-                else            mean += di->I[idev].acc[iaxis];
-                ndev++;
+                if (excDevices[isens][iaxis][idev] && ((imus->status & mask) != 0))
+                {   // TODO: remove later.  Debugging code to catch excluded IMUs that are still reporting valid data.  This should never happen.
+                    volatile int j=0;
+                    j++;
+                }
+
+                if (!excDevices[isens][iaxis][idev] && (imus->status & mask)) {
+                    if (isens == 0) mean += imus->I[idev].pqr[iaxis];
+                    else            mean += imus->I[idev].acc[iaxis];
+                    ndev++;
+                }
             }
+            if (ndev > 0) { 
+                mean *= inv_count_upto10(ndev);
+                result->status |= (base << iaxis);
+            }
+            else {
+                result->status &= ~(base << iaxis);  // No valid data
+            }
+            res[iaxis] = mean;
         }
-        if (ndev > 0) { 
-            mean *= inv_count_upto10(ndev);
-            result->status |= (base << iaxis);
-        }
-        else {
-            result->status &= ~(base << iaxis);  // No valid data
-        }
-        res[iaxis] = mean;
     }
+    result->time = imus->time;
 }
 
 
