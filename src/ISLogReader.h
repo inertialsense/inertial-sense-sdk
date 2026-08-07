@@ -36,6 +36,7 @@
 
 #include "ISError.h"
 #include "ISLogIndex.h"
+#include "data_sets.h"      // dev_info_t, returned by devInfo()
 #include "ISLogSource.h"
 #include "ISRecordView.h"
 #include "ISTimeStamp.h"
@@ -306,10 +307,14 @@ public:
     /**
      * Returns the device's packed hardware id (`is_hardware_t`),
      * encoding hardware type + major + minor revs. Derived from the
-     * first `DID_DEV_INFO` record's payload via the same scan that
-     * populates `deviceId()`. The filename fallback cannot produce an
-     * `hdwId`, so this returns 0 (`IS_HARDWARE_NONE`) for segments
-     * without a logged DEV_INFO record.
+     * first `dev_info_t`-bearing record via the same scan that
+     * populates `deviceId()` — `DID_DEV_INFO`, `DID_GPX_DEV_INFO` or
+     * `DID_EVB_DEV_INFO`, all of which carry the same payload struct.
+     * (Before SN-8445 only `DID_DEV_INFO` was accepted, so a GPX-only
+     * log yielded 0 here and rendered as `???-0.0::SN<serial>`.)
+     * The filename fallback cannot produce an `hdwId`, so this still
+     * returns 0 (`IS_HARDWARE_NONE`) for a log carrying NO device-info
+     * record of any kind.
      *
      * Pair with `deviceId()` to form a canonical device label via
      * `utils::deviceIdString(hdwId(), deviceId())`.
@@ -318,6 +323,36 @@ public:
      *          logged.
      */
     uint16_t hdwId() const noexcept { return hdwId_; }
+
+    /**
+     * Returns the full `dev_info_t` recovered by the device-id scan.
+     *
+     * `deviceId()` and `hdwId()` are both distillations of this struct, and
+     * everything else it carries — firmware version, build number, build date
+     * and time, protocol version, hardware type/rev, manufacturer, add-on info
+     * — was previously parsed and discarded, leaving a consumer no way to report
+     * a device beyond serial + hardware id. Retained for SN-8463 (Logalyzer
+     * Devices-tab tooltips), which needs the firmware/build summary.
+     *
+     * Only populated by the DEV_INFO scan path. A log carrying no device-info
+     * record of any kind (or one whose first such record has a zero serial)
+     * leaves this default-constructed, so callers MUST gate on
+     * @ref hasDevInfo before formatting it — an all-zero `dev_info_t` renders
+     * as a plausible-looking but entirely fictitious device.
+     *
+     * @return  Const reference to the retained payload; all-zero if none was
+     *          found.
+     */
+    const dev_info_t& devInfo() const noexcept { return devInfo_; }
+
+    /**
+     * Reports whether @ref devInfo carries a real parsed payload.
+     *
+     * True only when the scan found a `dev_info_t`-bearing record with a
+     * non-zero serial. False when the serial came from the filename fallback,
+     * which recovers nothing else.
+     */
+    bool hasDevInfo() const noexcept { return hasDevInfo_; }
 
     // -----------------------------------------------------------------
     // Iteration
@@ -632,6 +667,8 @@ private:
     uint64_t                               truncationOffset_   = 0;
     uint64_t                               deviceId_           = 0;
     uint16_t                               hdwId_              = 0;
+    dev_info_t                             devInfo_            {};
+    bool                                   hasDevInfo_         = false;
     std::vector<std::string>               warnings_;
     std::filesystem::path                  rawPath_;
     std::filesystem::path                  idxPath_;
