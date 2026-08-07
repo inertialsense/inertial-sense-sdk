@@ -664,8 +664,10 @@ std::pair<const uint8_t*, std::size_t> ISLogReader::rawBytes() const noexcept {
 }
 
 void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
-    deviceId_ = 0;
-    hdwId_    = 0;
+    deviceId_   = 0;
+    hdwId_      = 0;
+    devInfo_    = dev_info_t{};
+    hasDevInfo_ = false;
 
     // 1) Walk the raw bytes via `is_comm_parse_byte` looking for the first DID_DEV_INFO packet. We can't shortcut to
     //    the record's `.offset` because that is the ISB packet *start* (framing + header + payload + checksum), not
@@ -685,7 +687,17 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
             if (p != _PTYPE_INERTIAL_SENSE_DATA && p != _PTYPE_INERTIAL_SENSE_CMD) {
                 continue;
             }
-            if (comm.rxPkt.dataHdr.id != DID_DEV_INFO) continue;
+            // Accept EVERY DID whose payload is a `dev_info_t`, not just DID_DEV_INFO.
+            // A GPX-only capture files its device info under DID_GPX_DEV_INFO (120) and an
+            // EVB under DID_EVB_DEV_INFO — identical struct, so ENCODE_DEV_INFO_TO_HDW_ID
+            // works on all three unchanged. Matching only DID_DEV_INFO meant a GPX-only log
+            // fell through to the filename fallback, which recovers the serial but cannot
+            // recover a hardware id, so every device rendered as "???-0.0::SN<serial>"
+            // (reported by Kyle 2026-08-06 against a 14-device GPX capture).
+            const auto didId = comm.rxPkt.dataHdr.id;
+            if (didId != DID_DEV_INFO &&
+                didId != DID_GPX_DEV_INFO &&
+                didId != DID_EVB_DEV_INFO) continue;
             if (comm.rxPkt.dataHdr.size != sizeof(dev_info_t)) continue;
 
             dev_info_t info{};
@@ -693,6 +705,12 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
             if (info.serialNumber != 0) {
                 deviceId_ = info.serialNumber;
                 hdwId_    = static_cast<uint16_t>(ENCODE_DEV_INFO_TO_HDW_ID(info));
+                // Retain the whole struct, not just the two fields we distill from
+                // it (SN-8463). Firmware version, build info and the rest were being
+                // parsed and thrown away, leaving consumers unable to report a device
+                // beyond serial + hardware id.
+                devInfo_    = info;
+                hasDevInfo_ = true;
                 return;
             }
             // First DEV_INFO had a zero serial — partial-update record or test fixture stub. Stop scanning; let the

@@ -86,16 +86,52 @@ public:
     uint64_t deviceId() const noexcept { return deviceId_; }
 
     /**
-     * Returns the device's packed hardware id (`is_hardware_t`).
-     * Forwarded from the first segment — within a composition, every
-     * segment shares the same physical device, so the hardware id is
-     * a single shared value (asserted in `compose`).
+     * Returns the full `dev_info_t` from the first segment that carries one.
      *
-     * @return  Packed hardware id, or 0 if no DEV_INFO record was
-     *          logged in any segment.
+     * Not simply `segments_.front()` as `hdwId()` does: a composition is
+     * ordered by time, and the first segment is not guaranteed to be the one
+     * holding a device-info record — a capture that rolled a new file mid-run
+     * commonly emits DEV_INFO only in a later segment. Scan for the first
+     * segment that actually has one.
+     *
+     * @return  Reference to the retained payload, or an all-zero struct if NO
+     *          segment carried a device-info record. Gate on @ref hasDevInfo.
+     */
+    const dev_info_t& devInfo() const noexcept {
+        for (const auto& s : segments_) {
+            if (s.hasDevInfo()) return s.devInfo();
+        }
+        static const dev_info_t kEmpty{};
+        return kEmpty;
+    }
+
+    //! True when any segment carried a real device-info record.
+    bool hasDevInfo() const noexcept {
+        for (const auto& s : segments_) {
+            if (s.hasDevInfo()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns the device's packed hardware id (`is_hardware_t`). Within a
+     * composition every segment is the same physical device (asserted in
+     * `compose`), so this is a single shared value.
+     *
+     * @return  Packed hardware id, or 0 if no DEV_INFO record was logged in
+     *          ANY segment.
      */
     uint16_t hdwId() const noexcept {
-        return segments_.empty() ? uint16_t{0} : segments_.front().hdwId();
+        // First segment with a NON-ZERO hdwId, not simply the first segment
+        // (SN-8445). Segment order is chronological, and a capture that rolled
+        // files mid-run may emit DEV_INFO only in a later segment; taking
+        // `front()` unconditionally then reported `???-0.0` for a device whose
+        // hardware id was sitting in segment 1. Falls back to 0 when no segment
+        // has one, which is the pre-existing "no device-info anywhere" case.
+        for (const auto& s : segments_) {
+            if (s.hdwId() != 0) return s.hdwId();
+        }
+        return uint16_t{0};
     }
 
     /** @return  Total record count across all segments. */
