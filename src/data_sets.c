@@ -772,6 +772,8 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GNSS_BASE_RAW]          = GRMC_BITS_GNSS_BASE_RAW,
     [DID_GPX_SYS_FAULT]         = GRMC_BITS_GPX_SYS_FAULT,
     [DID_GNSS1_RCVR_POS]         = GRMC_BITS_GNSS1_RCVR_POS,
+    [DID_EXT_AIDING_POS]         = GRMC_BITS_EXT_AIDING_POS,
+    [DID_EXT_AIDING_VEL]         = GRMC_BITS_EXT_AIDING_VEL,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -804,6 +806,8 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_DID_GPX_PORT_MON]     = GRMC_PRESET_GPX_PORT_MON_PERIOD_MS,
     [GRMC_BIT_POS_DID_GNSS_BASE_RAW]     = 1,
     [GRMC_BIT_POS_GNSS1_RCVR_POS]        = 1,
+    [GRMC_BIT_POS_EXT_AIDING_POS]        = 1,
+    [GRMC_BIT_POS_EXT_AIDING_VEL]        = 1,
 };
 
 #ifndef GPX_1

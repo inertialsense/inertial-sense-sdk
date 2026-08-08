@@ -2198,6 +2198,8 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_GNSS_BASE_RAW  = 25,  //!< DID_GNSS_BASE_RAW - raw observation data forwarded from the RTK base station
     GRMC_BIT_POS_DID_GPX_SYS_FAULT  = 26,  //!< DID_GPX_SYS_FAULT - GPX system fault/exception info
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
+    GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
+    GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -2229,6 +2231,8 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GNSS_BASE_RAW         (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
 #define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
 #define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
+#define GRMC_BITS_EXT_AIDING_POS        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_POS)
+#define GRMC_BITS_EXT_AIDING_VEL        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_VEL)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
