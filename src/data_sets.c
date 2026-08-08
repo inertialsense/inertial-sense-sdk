@@ -263,6 +263,14 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         offsetof(survey_in_t, lla[2])
     };
 
+    static uint16_t offsetsExtAidingPos[] =
+    {
+        3,
+        offsetof(ext_aiding_pos_t, pos[0]),
+        offsetof(ext_aiding_pos_t, pos[1]),
+        offsetof(ext_aiding_pos_t, pos[2])
+    };
+
     static uint16_t* s_doubleOffsets[] =
     {
         0,                      //  0: DID_NULL
@@ -371,8 +379,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 103: DID_CAL_MOTION_GYR
         0,                      // 104: DID_CAL_MOTION_ACC
         0,                      // 105: DID_CAL_MOTION_MAG
-        0,                      // 106:
-        0,                      // 107:
+        offsetsExtAidingPos,    // 106: DID_EXT_AIDING_POS
+        0,                      // 107: DID_EXT_AIDING_VEL
         0,                      // 108:
         0,                      // 109:
         0,                      // 110:
@@ -561,8 +569,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 103: DID_CAL_MOTION_GYR
         0,                      // 104: DID_CAL_MOTION_ACC
         0,                      // 105: DID_CAL_MOTION_MAG
-        0,                      // 106:
-        0,                      // 107:
+        0,                      // 106: DID_EXT_AIDING_POS
+        0,                      // 107: DID_EXT_AIDING_VEL
         0,                      // 108:
         0,                      // 109:
         0,                      // 110:
