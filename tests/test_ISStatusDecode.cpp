@@ -259,10 +259,10 @@ std::string legacyRenderGpxStatusReference(uint32_t status)
     std::stringstream buff;
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
     BIT_MSG(status, GPX_STATUS_COM_PARSE_ERR_COUNT_MASK     , "0x0000000F - Communications parse error count");
-    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED , "0x00000010 - COM0 RX traffic not detected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED , "0x00000020 - COM1 RX traffic not detected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED , "0x00000040 - COM2 RX traffic not detected in last 30 seconds.");
-    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED  , "0x00000080 - USB RX traffic not detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM0_RX_TRAFFIC_DETECTED     , "0x00000010 - COM0 RX traffic detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM1_RX_TRAFFIC_DETECTED     , "0x00000020 - COM1 RX traffic detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_COM2_RX_TRAFFIC_DETECTED     , "0x00000040 - COM2 RX traffic detected in last 30 seconds.");
+    BIT_MSG(status, GPX_STATUS_USB_RX_TRAFFIC_DETECTED      , "0x00000080 - USB RX traffic detected in last 30 seconds.");
     BIT_MSG(status, GPX_STATUS_UPDATE_CONFIRMED             , "0x00000100 - Update confirmed.");
     BIT_MSG(status, GPX_STATUS_FAULT_RTK_QUEUE_LIMITED      , "0x00010000 - RTK buffer overflow.");
     BIT_MSG(status, GPX_STATUS_FAULT_GNSS_RCVR_TIME         , "0x00100000 - GNSS receiver time fault");
@@ -848,6 +848,106 @@ TEST(ISStatusDecode, GnssStatus_StructuredDecode)
     EXPECT_EQ(fix->values.size(), 13u);
 }
 
+// ---- GNSS status2 (jam/spoof, SN-8126) ----------------------------------------
+
+TEST(ISStatusDecode, GnssStatus2_RegisteredForBothGnssPosDids)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(GetStatusDecode(DID_GNSS1_POS, "status2"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_GNSS2_POS, "status2"), dec);
+}
+
+TEST(ISStatusDecode, GnssStatus2_AllFourFlagsPresentWithDistinctLabels)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+    ASSERT_NE(dec, nullptr);
+    ASSERT_EQ(dec->subfields.size(), 4u);
+
+    const uint32_t expectedMasks[4] = {
+        (uint32_t)GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT,
+        (uint32_t)GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED,
+        (uint32_t)GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT,
+        (uint32_t)GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED,
+    };
+
+    for (const auto& sf : dec->subfields)
+    {
+        EXPECT_EQ(sf.kind, eStatusSubfieldKind::Bit);
+
+        bool maskMatched = false;
+        for (uint32_t m : expectedMasks)
+            if (sf.mask == m) maskMatched = true;
+        EXPECT_TRUE(maskMatched) << "unexpected mask 0x" << std::hex << sf.mask;
+
+        // No two sub-fields share a label.
+        int labelCount = 0;
+        for (const auto& other : dec->subfields)
+            if (other.name == sf.name) ++labelCount;
+        EXPECT_EQ(labelCount, 1) << "duplicate label \"" << sf.name << "\"";
+    }
+
+    // Every expected mask is present exactly once.
+    for (uint32_t m : expectedMasks)
+    {
+        int matchCount = 0;
+        for (const auto& sf : dec->subfields)
+            if (sf.mask == m) ++matchCount;
+        EXPECT_EQ(matchCount, 1) << "mask 0x" << std::hex << m << " not present exactly once";
+    }
+}
+
+TEST(ISStatusDecode, GnssStatus2_ErrorMaskCoversOnlyConfirmedBits)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, (uint32_t)GNSS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK);
+    EXPECT_EQ(dec->errorMask & (uint32_t)GNSS_STATUS2_FLAGS_JAM_SPOOF_POSSIBLE_MASK, 0u);
+}
+
+TEST(ISStatusDecode, GnssStatus2_RenderEachFlagIndividually)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+    ASSERT_NE(dec, nullptr);
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+
+    const std::string possibleJam  = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT);
+    const std::string jamDetected  = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED);
+    const std::string possibleSpoof = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT);
+    const std::string spoofDetected = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED);
+
+    for (const std::string& s : {possibleJam, jamDetected, possibleSpoof, spoofDetected})
+        EXPECT_FALSE(s.empty());
+
+    // "Possible" and "confirmed" must render as visibly distinct text for the same interference type.
+    EXPECT_NE(possibleJam, jamDetected);
+    EXPECT_NE(possibleSpoof, spoofDetected);
+    // All four flags must be distinguishable from each other.
+    EXPECT_NE(possibleJam, possibleSpoof);
+    EXPECT_NE(jamDetected, spoofDetected);
+}
+
+TEST(ISStatusDecode, GnssStatus2_RenderJamAndSpoofDetectedTogether)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t both = (uint32_t)GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED | (uint32_t)GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED;
+    const std::string rendered = RenderStatusFromDecode(*dec, both);
+
+    const std::string jamOnly   = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED);
+    const std::string spoofOnly = RenderStatusFromDecode(*dec, (uint32_t)GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED);
+    ASSERT_FALSE(jamOnly.empty());
+    ASSERT_FALSE(spoofOnly.empty());
+
+    // Search for the full single-flag rendering (including its trailing newline) as a substring
+    // of the combined rendering, so an empty/broken render can't produce a vacuous match.
+    EXPECT_NE(rendered.find(jamOnly), std::string::npos);
+    EXPECT_NE(rendered.find(spoofOnly), std::string::npos);
+    EXPECT_NE(both & dec->errorMask, 0u);   // both bits set -> field is in an error state
+}
+
 // ---- DID-aware lookup ---------------------------------------------------------
 
 TEST(ISStatusDecode, DidAwareLookup_StatusFieldDisambiguation)
@@ -898,6 +998,39 @@ TEST(ISStatusDecode, GpxStatus_RoundTrip_RandomSweep)
         const uint32_t v = xorshift32(s);
         ASSERT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxStatusReference(v))
             << "iteration " << i << " value 0x" << std::hex << v;
+    }
+}
+
+// SN-8402: GPX_STATUS_COM*_RX_TRAFFIC_DETECTED (bits 4-7) were redefined from the prior
+// ..._NOT_DETECTED (same mask, inverted meaning) so the wire bit itself carries positive
+// polarity -- these are a status, not a fault, so isError stays false. No display-side
+// inversion needed: the raw bit now directly matches the positive name.
+TEST(ISStatusDecode, GpxStatus_RxTrafficSubfields_PositivePolarityNotFault)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxStatus");
+    ASSERT_NE(dec, nullptr);
+
+    struct Want { const char* name; uint32_t mask; };
+    const Want wants[] = {
+        { "COM0 RX traffic detected", (uint32_t)GPX_STATUS_COM0_RX_TRAFFIC_DETECTED },
+        { "COM1 RX traffic detected", (uint32_t)GPX_STATUS_COM1_RX_TRAFFIC_DETECTED },
+        { "COM2 RX traffic detected", (uint32_t)GPX_STATUS_COM2_RX_TRAFFIC_DETECTED },
+        { "USB RX traffic detected",  (uint32_t)GPX_STATUS_USB_RX_TRAFFIC_DETECTED },
+    };
+
+    for (const auto& w : wants) {
+        const status_subfield_t* sf = nullptr;
+        for (const auto& cand : dec->subfields)
+            if (cand.mask == w.mask) { sf = &cand; break; }
+        ASSERT_NE(sf, nullptr) << w.name;
+        EXPECT_EQ(sf->name, w.name);
+        EXPECT_EQ(sf->kind, eStatusSubfieldKind::Bit);
+        EXPECT_FALSE(sf->isError) << w.name << " is a status, not a fault";
+        // legacyText / RenderStatusFromDecode's line output: emitted (positive-worded) only when
+        // the bit is actually set -- i.e. only when traffic IS detected.
+        EXPECT_NE(sf->legacyText.find("detected"), std::string::npos) << w.name;
+        EXPECT_EQ(sf->legacyText.find("not detected"), std::string::npos) << w.name;
+        EXPECT_EQ(RenderStatusFromDecode(*dec, w.mask), legacyRenderGpxStatusReference(w.mask));
     }
 }
 
