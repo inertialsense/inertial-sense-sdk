@@ -530,15 +530,6 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices);
 
 /**
- * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual gyro/accelerometer axes.
- * @param result       Output: averaged IMU sample.
- * @param imus         Input: multiple IMUs' samples (numDevices of them).
- * @param numDevices   Number of IMU devices (and samples) in imus.
- * @param excDevices   Array of faulty device flags.
- */
-void multiToSingleImuAxis(imu_t *result, const imus_t *imus, const int numDevices, bool excDevices[2][3][MAX_IMU_DEVICES]);
-
-/**
  * @brief Duplicate one IMU sample to fill a multi-IMU (imus_t) sample.
  * @param result     Output: multi-IMU sample with every device set to imu.
  * @param imu        Input: single IMU sample to duplicate.

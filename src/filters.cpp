@@ -172,33 +172,23 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 {
     STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
 
-    uint32_t mask, baseS, base, axisMaskBase;
-
     result->status = imus->status & IMUS_STATUS_SATURATION_MASK;
 
     // Loop over gyros (isens = 0) and accelerometers (isens = 1)
     for (int isens = 0; isens < 2; isens++)
     {
-        float *res = (isens == 0) ? result->I.pqr : result->I.acc;
-
-        if (isens == 0) {
-            baseS = IMUS_STATUS_GYR_X_OK;
-            base  = IMU_STATUS_GYR_X_OK;
-        }
-        else {
-            baseS = IMUS_STATUS_ACC_X_OK;
-            base  = IMU_STATUS_ACC_X_OK;
-        }
+        float *res     = (isens == 0) ? result->I.pqr : result->I.acc;
+        uint32_t baseS = (isens == 0) ? IMUS_STATUS_GYR_X_OK : IMUS_STATUS_ACC_X_OK;
+        uint32_t base  = (isens == 0) ? IMU_STATUS_GYR_X_OK : IMU_STATUS_ACC_X_OK;
 
         for (int iaxis = 0; iaxis < 3; iaxis++)
         {
-            axisMaskBase = baseS << iaxis;
             int ndev = 0;
             float mean = 0.0f;
 
             for (int idev = 0; idev < numDevices; idev++)
             {
-                mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
+                uint32_t mask = baseS << (iaxis + idev * IMUS_STATUS_IMU_OK_BITSIZE);
 
                 if (imus->status & mask) {
                     if (isens == 0) mean += imus->I[idev].pqr[iaxis];
@@ -210,62 +200,6 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
             if (ndev > 0) {
                 mean *= inv_count_upto10(ndev);
                 result->status |= (base << iaxis);
-            }
-            res[iaxis] = mean;
-        }
-    }
-    result->time = imus->time;
-}
-
-
-void multiToSingleImuAxis(imu_t *result, const imus_t *imus, const int numDevices, bool excDevices[2][3][MAX_IMU_DEVICES])
-{
-    STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
-
-    uint32_t mask, baseS, base, axisMaskBase;
-
-    // Loop over gyros (isens = 0) and accelerometers (isens = 1)
-    for (int isens = 0; isens < 2; isens++)
-    {
-        float *res = (isens == 0) ? result->I.pqr : result->I.acc;
-
-        if (isens == 0) {
-            baseS = IMUS_STATUS_GYR_X_OK;
-            base  = IMU_STATUS_GYR_X_OK;
-        }
-        else {
-            baseS = IMUS_STATUS_ACC_X_OK;
-            base  = IMU_STATUS_ACC_X_OK;
-        }
-
-        for (int iaxis = 0; iaxis < 3; iaxis++)
-        {
-            axisMaskBase = baseS << iaxis;
-            int ndev = 0;
-            float mean = 0.0f;
-
-            for (int idev = 0; idev < numDevices; idev++)
-            {
-                mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
-
-                if (excDevices[isens][iaxis][idev] && ((imus->status & mask) != 0))
-                {   // TODO: remove later.  Debugging code to catch excluded IMUs that are still reporting valid data.  This should never happen.
-                    volatile int j=0;
-                    j++;
-                }
-
-                if (!excDevices[isens][iaxis][idev] && (imus->status & mask)) {
-                    if (isens == 0) mean += imus->I[idev].pqr[iaxis];
-                    else            mean += imus->I[idev].acc[iaxis];
-                    ndev++;
-                }
-            }
-            if (ndev > 0) { 
-                mean *= inv_count_upto10(ndev);
-                result->status |= (base << iaxis);
-            }
-            else {
-                result->status &= ~(base << iaxis);  // No valid data
             }
             res[iaxis] = mean;
         }
