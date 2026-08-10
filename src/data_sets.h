@@ -565,7 +565,17 @@ typedef struct PACKED
 #define ENCODE_DEV_INFO_TO_UNIQUE_ID(devinfo)   (((uint64_t)(ENCODE_DEV_INFO_TO_HDW_ID(devinfo)) << 48) | (uint64_t)devinfo.serialNumber)
 #define DECODE_UNIQUE_ID_TO_HDW_ID(devId)       ((uint16_t)((devId >> 48) & 0xFFFF))
 #define DECODE_UNIQUE_ID_TO_SERIALNO(devId)     ((uint32_t)devId)
-#define DEV_INFO_MATCHES_HDW_ID(di,             hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
+// Per-field wildcard-aware match: a field in hdwId that's all-1s within its own width (i.e.
+// encoded from major/minor -1, or a IS_HARDWARE_TYPE_MIXED type) matches any value in that field;
+// otherwise that field must match di's encoded value exactly. A flat bitwise-subset check across
+// the whole packed value (the previous implementation) is NOT equivalent to this: a concrete type
+// value can be a bit-subset of a different concrete type value (e.g. IS_HARDWARE_TYPE_UINS=1 and
+// IS_HARDWARE_TYPE_EVB=2 are both bit-subsets of IS_HARDWARE_TYPE_IMX=3), which wrongly matched.
+#define DEV_INFO_MATCHES_HDW_ID(di,             hdwId)     ( \
+    ( ((hdwId) & HDW_TYPE__MASK)  == HDW_TYPE__MASK  || ((ENCODE_DEV_INFO_TO_HDW_ID(di) ^ (hdwId)) & HDW_TYPE__MASK)  == 0 ) && \
+    ( ((hdwId) & HDW_MAJOR__MASK) == HDW_MAJOR__MASK || ((ENCODE_DEV_INFO_TO_HDW_ID(di) ^ (hdwId)) & HDW_MAJOR__MASK) == 0 ) && \
+    ( ((hdwId) & HDW_MINOR__MASK) == HDW_MINOR__MASK || ((ENCODE_DEV_INFO_TO_HDW_ID(di) ^ (hdwId)) & HDW_MINOR__MASK) == 0 ) \
+)
 
 #define IS_HDW_TYPE_PERIPHERAL  0x20    // non-peripherals are 0-31, peripherals are 32-63
 /**
