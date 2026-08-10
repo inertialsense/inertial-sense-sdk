@@ -191,14 +191,16 @@ private:
     // ~ImxDeviceFactory() override = default;
 
     /**
-     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo resolves to any IMX hardware type (IMX-5, IMX-6, or future IMX revisions).
+     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo's hardware type is IS_HARDWARE_TYPE_IMX (IMX-5, IMX-6, or any other hardware version encoded under that same type).
      * @param devInfo the device information uniquely identifying the specific device.
      * @param port an associated port (optional) that this device should be bound to.
      * @return a new ISDevice if devInfo's hardware type is IMX, otherwise nullptr.
      */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
         if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
+        {
             return std::make_shared<ISDevice>(devInfo, port);
+        }
 
         return nullptr;
     }
