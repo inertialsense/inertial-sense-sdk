@@ -174,7 +174,7 @@ private:
     uint32_t deviceTimeout = 3000;  //!< Default per-device validation timeout (ms); should match DeviceManager::DISCOVERY__DEFAULT_TIMEOUT
 };
 
-/** @brief DeviceFactory singleton for IMX-5 devices; allocates an ISDevice only for devices whose hardware Id resolves to IS_HARDWARE_IMX_5_0. */
+/** @brief DeviceFactory singleton for IMX devices; allocates an ISDevice only for devices whose hardware type is IS_HARDWARE_TYPE_IMX (any IMX version). */
 class ImxDeviceFactory : public DeviceFactory {
 public:
     /**
@@ -191,14 +191,16 @@ private:
     // ~ImxDeviceFactory() override = default;
 
     /**
-     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo resolves to an IMX-5 hardware Id.
+     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo's hardware type is IS_HARDWARE_TYPE_IMX (IMX-5, IMX-6, or any other hardware version encoded under that same type).
      * @param devInfo the device information uniquely identifying the specific device.
      * @param port an associated port (optional) that this device should be bound to.
-     * @return a new ISDevice if devInfo is an IMX-5, otherwise nullptr.
+     * @return a new ISDevice if devInfo's hardware type is IMX, otherwise nullptr.
      */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
-        if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
+        if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
+        {
             return std::make_shared<ISDevice>(devInfo, port);
+        }
 
         return nullptr;
     }
