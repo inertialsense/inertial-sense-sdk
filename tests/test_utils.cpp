@@ -197,6 +197,54 @@ TEST(test_utils, getHardwareAsString_still_renders_subrev_when_present) {
 }
 
 // ============================================================
+// DEV_INFO_MATCHES_HDW_ID — wildcard-aware hardware-ID matching.
+//
+// SN-8386 regression: the previous implementation was a flat bitwise-subset
+// check ((full & hdwId) == full) across the whole packed ID, which is NOT
+// equivalent to a per-field wildcard match. IS_HARDWARE_TYPE_UINS (1) and
+// IS_HARDWARE_TYPE_EVB (2) are both bit-subsets of IS_HARDWARE_TYPE_IMX (3),
+// so uINS/EVB devices wrongly matched IS_HARDWARE_IMX (major/minor wildcard).
+// ============================================================
+
+static dev_info_t makeDevInfo(int hdwType, int major, int minor) {
+    dev_info_t info{};
+    info.hardwareType = (uint16_t)hdwType;
+    info.hardwareVer[0] = (uint8_t)major;
+    info.hardwareVer[1] = (uint8_t)minor;
+    return info;
+}
+
+TEST(test_utils, devInfoMatchesHdwId_wildcardMatchesAnyVersionOfItsOwnType) {
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 5, 0), IS_HARDWARE_IMX));
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 6, 0), IS_HARDWARE_IMX));
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 7, 3), IS_HARDWARE_IMX)); // hypothetical future IMX
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_GPX, 1, 0), IS_HARDWARE_GPX));
+}
+
+TEST(test_utils, devInfoMatchesHdwId_wildcardRejectsOtherTypes) {
+    // The SN-8386 regression: these must NOT match IS_HARDWARE_IMX.
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_UINS, 3, 2), IS_HARDWARE_IMX));
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_EVB, 2, 0), IS_HARDWARE_IMX));
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_GPX, 1, 0), IS_HARDWARE_IMX));
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 6, 0), IS_HARDWARE_GPX));
+}
+
+TEST(test_utils, devInfoMatchesHdwId_exactMatchStillRequiresAllFields) {
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 5, 0), IS_HARDWARE_IMX_5_0));
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 6, 0), IS_HARDWARE_IMX_5_0));
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 5, 1), IS_HARDWARE_IMX_5_0));
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_UINS, 3, 2), IS_HARDWARE_UINS_3_2));
+    EXPECT_FALSE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_EVB, 2, 0), IS_HARDWARE_UINS_3_2));
+}
+
+TEST(test_utils, devInfoMatchesHdwId_anyWildcardMatchesEveryType) {
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_IMX, 5, 0), IS_HARDWARE_ANY));
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_UINS, 3, 2), IS_HARDWARE_ANY));
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_EVB, 2, 0), IS_HARDWARE_ANY));
+    EXPECT_TRUE(DEV_INFO_MATCHES_HDW_ID(makeDevInfo(IS_HARDWARE_TYPE_GPX, 1, 0), IS_HARDWARE_ANY));
+}
+
+// ============================================================
 // deviceIdString — the canonical "<hdw>::SN<n>" composer.
 // ============================================================
 
