@@ -21,7 +21,30 @@
 #include "TcpPortFactory.h"
 #include "TcpServerPortFactory.h"
 #include "PortManager.h"
+#include "Rtcm3CorrectionServer.h"
 
+
+// SN-8478: Rtcm3CorrectionServer/cltool silently succeeded when the RTCM3 listener failed to
+// bind/listen. Force a real bind() failure (a second listener on an already-bound port) and
+// verify it's observable both via the pre-existing forensic accessor and via configure()'s
+// (previously discarded) return value.
+TEST(test_PortFactory, tcpServerPortFactory_reportsListenFailure) {
+    const int testPort = 14478; // arbitrary, distinct from other tests in this binary
+
+    Rtcm3CorrectionServer firstServer(testPort, "127.0.0.1");
+    ASSERT_EQ(firstServer.getLastListenError().first, TCP_LISTEN_CTX__NONE)
+        << "first listener should bind/listen cleanly on an unused port";
+
+    Rtcm3CorrectionServer secondServer(testPort, "127.0.0.1");
+    auto secondListenError = secondServer.getLastListenError();
+    EXPECT_EQ(secondListenError.first, TCP_LISTEN_CTX__BIND)
+        << "second listener on the same port should fail at bind()";
+    EXPECT_NE(secondListenError.second, 0) << "a platform errno/WSAGetLastError() should be recorded";
+
+    // configure() must propagate the same failure via its own return value now (SN-8478),
+    // not leave it discoverable only via the separate getLastListenError() accessor.
+    EXPECT_FALSE(secondServer.configure(testPort, "127.0.0.1"));
+}
 
 TEST(test_PortFactory, tcpServerPortFactory) {
     
