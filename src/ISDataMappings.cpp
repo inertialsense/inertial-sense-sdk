@@ -1181,6 +1181,26 @@ static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t di
     mapper.AddMember2("wheelConfig.radius", offsetof(ground_vehicle_t, wheelConfig.radius), DATA_TYPE_F32, "m", "Wheel radius");
 }
 
+static void PopulateMapExtAidingPos(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<ext_aiding_pos_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &ext_aiding_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT");
+    mapper.AddMember("status", &ext_aiding_pos_t::status, DATA_TYPE_UINT32, "", "Frame of measurement: 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray("pos", &ext_aiding_pos_t::pos, DATA_TYPE_F64, 3, {"m"}, {"Position {x,y,z}, in the frame given by status (ECEF expected)"}, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("offset", &ext_aiding_pos_t::offset, DATA_TYPE_F32, 3, {"m"}, {"Point of measurement relative to IMU origin, in IMU (body) frame {x,y,z}"}, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("var", &ext_aiding_pos_t::var, DATA_TYPE_F32, 3, {"m^2"}, {"Observation variance per axis, in NED.  Must be non-zero or the observation is discarded"}, DATA_FLAGS_FIXED_DECIMAL_4);
+}
+
+static void PopulateMapExtAidingVel(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<ext_aiding_vel_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &ext_aiding_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT");
+    mapper.AddMember("status", &ext_aiding_vel_t::status, DATA_TYPE_UINT32, "", "Frame of measurement: 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray("vel", &ext_aiding_vel_t::vel, DATA_TYPE_F32, 3, {SYM_M_PER_S}, {"Velocity {vx,vy,vz}, in the frame given by status (ECEF expected)"}, DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddArray("offset", &ext_aiding_vel_t::offset, DATA_TYPE_F32, 3, {"m"}, {"Point of measurement relative to IMU origin, in IMU (body) frame {x,y,z}"}, DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddArray("var", &ext_aiding_vel_t::var, DATA_TYPE_F32, 3, {"m^2/s^2"}, {"Observation variance per axis, in NED.  Must be non-zero or the observation is discarded"}, DATA_FLAGS_FIXED_DECIMAL_4);
+}
+
 static void PopulateMapSystemCommand(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_command_t> mapper(data_set, did);
@@ -2258,8 +2278,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_CAL_MOTION_GYR",               // 103
     "DID_CAL_MOTION_ACC",               // 104
     "DID_CAL_MOTION_MAG",               // 105
-    "UNUSED_106",                       // 106
-    "UNUSED_107",                       // 107
+    "DID_EXT_AIDING_POS",               // 106
+    "DID_EXT_AIDING_VEL",               // 107
     "UNUSED_108",                       // 108
     "UNUSED_109",                       // 109
     "UNUSED_110",                       // 110
@@ -2333,6 +2353,8 @@ cISDataMappings::cISDataMappings()
     PopulateMapMagnetometer(m_data_set, DID_MAGNETOMETER);
     PopulateMapBarometer(m_data_set, DID_BAROMETER);
     PopulateMapWheelEncoder(m_data_set, DID_WHEEL_ENCODER);
+    PopulateMapExtAidingPos(m_data_set, DID_EXT_AIDING_POS);
+    PopulateMapExtAidingVel(m_data_set, DID_EXT_AIDING_VEL);
 
     PopulateMapGnssPos(m_data_set, DID_GNSS1_RTK_POS);
     PopulateMapGnssRtkRel(m_data_set, DID_GNSS1_RTK_POS_REL);

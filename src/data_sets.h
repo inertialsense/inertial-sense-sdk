@@ -172,9 +172,11 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_GYR              (eDataIDs)103   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_EXT_POS                     (eDataIDs)106   /**< (ext_pos_t) External position observation */
-#define DID_EXT_VEL                     (eDataIDs)107   /**< (ext_vel_t) External velocity observation */
-// #define DID_EXTERNAL_AIDING             (eDataIDs)106   /**< (external_aiding_u) External aiding information. */
+#define DID_EXT_AIDING_POS              (eDataIDs)106   /**< (ext_aiding_pos_t) External aiding position observation, input to the INS/EKF */
+#define DID_EXT_AIDING_VEL              (eDataIDs)107   /**< (ext_aiding_vel_t) External aiding velocity observation, input to the INS/EKF */
+// RESERVED: a future consolidated external-aiding message (DID + sub-ID + SID-dependent payload,
+// covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
+// under SN-7740. The two flat DIDs above are the initial subset; see SN-7740 before adding more.
 
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
@@ -2196,6 +2198,8 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_GNSS_BASE_RAW  = 25,  //!< DID_GNSS_BASE_RAW - raw observation data forwarded from the RTK base station
     GRMC_BIT_POS_DID_GPX_SYS_FAULT  = 26,  //!< DID_GPX_SYS_FAULT - GPX system fault/exception info
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
+    GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
+    GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -2227,6 +2231,8 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GNSS_BASE_RAW         (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
 #define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
 #define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
+#define GRMC_BITS_EXT_AIDING_POS        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_POS)
+#define GRMC_BITS_EXT_AIDING_VEL        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_VEL)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -3313,34 +3319,34 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-/** @brief External aiding status bitflags, used with ext_vel_t.status (DID_EXTERNAL_AIDING). Reports the frame of measurement for the external aiding sensor. */
-enum eExternalAidingStatus
+/** @brief Frame of measurement for an external aiding observation, held in the low nibble of ext_aiding_pos_t.status / ext_aiding_vel_t.status (DID_EXT_AIDING_POS, DID_EXT_AIDING_VEL). Note 0 is not a valid frame. */
+enum eExtAidingFrame
 {
-    EP_STATUS_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
-    EP_STATUS_FRAME_ECEF    = 1,           //!< ECEF frame
-    EP_STATUS_FRAME_NED     = 2,           //!< NED frame
-    EP_STATUS_FRAME_BODY    = 3            //!< Body frame
+    EXT_AIDING_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
+    EXT_AIDING_FRAME_ECEF    = 1,           //!< ECEF frame
+    EXT_AIDING_FRAME_NED     = 2,           //!< NED frame
+    EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
 };
 
-/** @brief External position sensor sample. */
+/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is expected in ECEF; var is expected in NED. */
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< frame of measurement: 0=ECEF, 1=NED (see eExternalAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
-    float      var[3];       //!< observation variance 
-} ext_pos_t;
+    float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_pos_t;
 
-/** @brief External velocity sensor sample. */
+/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is expected in ECEF; var is expected in NED. */
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< frame of measurement: 0=ECEF, 1=NED, 2=Body (see eExternalAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
     float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
-    float      var[3];       //!< observation variance 
-} ext_vel_t;
+    float      var[3];       //!< observation variance, per axis, in NED (m^2/s^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_vel_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
 enum eDynamicModel
