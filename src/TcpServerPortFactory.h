@@ -49,6 +49,9 @@ enum eTcpListenErrorContext {
     TCP_LISTEN_CTX__LISTEN    = 5,      //!< listen() failed
 };
 
+//!< Human-readable names for eTcpListenErrorContext, indexed by enum value
+[[maybe_unused]] inline static const char* tcp_listen_error_context_names[] = { "none", "socket()", "fcntl(F_GETFL)", "fcntl/ioctlsocket(non-blocking)", "bind()", "listen()" };
+
 /**
  * Unlike other PortFactories, TcpServerPortFactory is NOT a singleton - since there may be multiple instances which listen an unique ports, etc.
  * By this same logic, it may make sense that no PortFactory should be a singleton; but this is definitely the first case that warrants it
