@@ -3168,7 +3168,13 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                                                          = (int)0x0000003F,  //!< Mask for platform/carrier-board type field
     PLATFORM_CFG_TYPE_FROM_MANF_OTP                                                 = (int)0x00000080,  //!< Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                                                          = (int)0,   //!< No/unknown carrier board (IMX-5 default)
-    PLATFORM_CFG_TYPE_RUG3_G0                                                       = (int)8,   //!< PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_BRK_GPX                                                       = (int)1,   //!< IS-IMX-GPX-DEV, external GPX-1 module:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_2_X20                                                     = (int)2,   //!< IS-IMX-GPX-DEV-2, onboard u-blox X20:     PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_2_SG5                                                     = (int)3,   //!< IS-IMX-GPX-DEV-2, onboard Septentrio:     PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_X20                                                      = (int)5,   //!< PCB RUG-4-X20:       PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_RUG4_SG5                                                      = (int)6,   //!< PCB RUG-4-SG5:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_RUG4_GPX                                                      = (int)7,   //!< PCB RUG-4-GPX:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_RUG_G0                                                        = (int)8,   //!< PCB RUG-3.x.         PPS disabled
     PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,   //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G2                                                       = (int)10,  //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                                                       = (int)11,  //!< EVB-2 carrier board
@@ -3181,10 +3187,8 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_LAMBDA_G2                                                     = (int)18,  //!< Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA                                             = (int)19,  //!< Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA                                             = (int)20,  //!< Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_IMX_BRK_1                                                     = (int)21,  //!< IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_RUG4_G2                                                       = (int)22,  //!< PCB RUG-4.x:         PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_IG2_1                                                         = (int)23,  //!< IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_COUNT                                                         = (int)24,  //!< Number of defined platform/carrier-board types
+    PLATFORM_CFG_TYPE_IG2_1                                                         = (int)21,  //!< IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_COUNT                                                         = (int)22,  //!< Number of defined platform/carrier-board types
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                                                        = (int)0x0000FF00,  //!< Mask for carrier-specific preset selector field
@@ -3203,12 +3207,27 @@ enum ePlatformConfig
     PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GNSS1__S0_GNSS2   = 9,  //!< RUG-3 preset: Ser2 TTL (pins 8,10), Ser1 GNSS1, Ser0 GNSS2
     PLATFORM_CFG_RUG3_PRESET__COUNT                                                 = 10,  //!< Number of defined RUG-3 presets
 
+    // RUG-4 - Presets
+    PLATFORM_CFG_RUG4_PRESET__0__PRESETS_DISABLED                                   = 0,  //!< RUG-4 preset: don't use presets. IOEXP_BITS can be set directly.
+    PLATFORM_CFG_RUG4_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS              = 1,  //!< RUG-4 preset: Ser0 RS232 (pins 7,9), CAN (pins 11,12), Ser1 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GNSS              = 2,  //!< RUG-4 preset: Ser0 TTL (pins 7,9), CAN (pins 11,12), Ser1 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GNSS              = 3,  //!< RUG-4 preset: Ser0 TTL (pins 7,9), Ser2 TTL (pins 8,10), Ser1 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GNSS              = 4,  //!< RUG-4 preset: Ser0 RS232 (pins 7,9), Ser1 RS232 (pins 8,10), Ser2 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__5__S1_RS485_7_8_9_10_____________S2_GNSS              = 5,  //!< RUG-4 preset: Ser1 RS485 (pins 7,8,9,10), Ser2 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__6__SPI_7_8_9_10__________________S2_GNSS              = 6,  //!< RUG-4 preset: SPI (pins 7,8,9,10), Ser2 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__7__S1_RS232_8_10_________________S2_GNSS              = 7,  //!< RUG-4 preset: Ser1 RS232 (pins 8,10), Ser2 GNSS1+2 (RUG-4 default)
+    PLATFORM_CFG_RUG4_PRESET__8_________________CAN_11_12______S1_GNSS              = 8,  //!< RUG-4 preset: CAN (pins 11,12), Ser1 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__9__S2_TTL_8_10___________________S1_GNSS              = 9,  //!< RUG-4 preset: Ser2 TTL (pins 8,10), Ser1 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__COUNT                                                 = 10,  //!< Number of defined RUG-4 presets
+
+    // RUGGED PRESETS
     PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT                                            = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1,  //!< Default preset for RUG-3-G0
     PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT                                            = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2,  //!< Default preset for RUG-3-G2
+    PLATFORM_CFG_RUG4_PRESET_DEFAULT                                                = PLATFORM_CFG_RUG4_PRESET__7__S1_RS232_8_10_________________S2_GNSS,  //!< Default preset for RUG-4 (X20/SG5/GPX)
 
-    // RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
-    PLATFORM_CFG_RUG3_IOEXP_BIT_MASK                                                = (int)0x00FF0000,  //!< Mask for RUG-3 I/O-expander raw bits field (used only when presets are disabled)
-    PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET                                              = (int)16,           //!< Bit offset of PLATFORM_CFG_RUG3_IOEXP_BIT_MASK within platformConfig
+    // RUGGED - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUGx
+    PLATFORM_CFG_RUG_IOEXP_BIT_MASK                                                = (int)0x00FF0000,  //!< Mask for RUG-3 I/O-expander raw bits field (used only when presets are disabled)
+    PLATFORM_CFG_RUG_IOEXP_BIT_OFFSET                                              = (int)16,           //!< Bit offset of PLATFORM_CFG_RUG_IOEXP_BIT_MASK within platformConfig
 
     RUG3_IOEXP_BIT_OFFSET_n232_485                                                  = (int)0,  //!< RUG-3 I/O expander bit: n232/485 select
     RUG3_IOEXP_BIT_OFFSET_n232_TTL                                                  = (int)1,  //!< RUG-3 I/O expander bit: n232/TTL select
