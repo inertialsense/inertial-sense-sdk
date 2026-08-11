@@ -87,11 +87,12 @@ public:
      * @param port TCP port to listen on.
      * @param listenAddr local IP address to bind the listening socket to.
      * @param max_connections maximum number of simultaneous client connections to accept.
+     * @return true if the listener is up (see startListening()), false on failure (see getLastListenError()).
      */
-    void configure(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) {
+    bool configure(int port = 7777, std::string listenAddr = "127.0.0.1", int max_connections = 10) {
         stopListening();
         TcpServerPortFactory::configure(port, listenAddr, max_connections);
-        startListening();
+        return startListening();
     }
 
     /** @brief Stop accepting new connections, close all client ports, and terminate any still-open client connections. */
