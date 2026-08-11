@@ -606,14 +606,28 @@ private:
     void buildIndexFromScan();
 
     /**
-     * Resolves the device id by inspecting the first
-     * `DID_DEV_INFO` record's serial number, falling back to
-     * filename parsing.
+     * @brief Resolves the device id from the segment's `dev_info_t` records, falling back to filename parsing.
      *
-     * @param rawPath  Path the segment was opened from. Used only
-     *                 for the filename-fallback path.
+     * Prefers `DID_DEV_INFO` (the logging device's own record). `DID_GPX_DEV_INFO` / `DID_EVB_DEV_INFO` describe an
+     * attached peripheral and are adopted only when the segment carries no primary record — which is the GPX-only
+     * capture case. Records with a zero serial are skipped rather than treated as terminal.
+     *
+     * @param rawPath  Path the segment was opened from. Used only for the filename-fallback path.
+     * @note SN-8445 / SN-8463. The ranking (rather than first-match) is what keeps the segments of one mixed
+     *       IMX+GPX log agreeing on a device id, which `ISDeviceLog::fromSegments` requires.
      */
     void deriveDeviceId(const std::filesystem::path& rawPath);
+
+    /**
+     * @brief Adopts a `dev_info_t` as this segment's identity.
+     *
+     * Sets the device id, the packed hardware id, and retains the whole struct so consumers can report firmware and
+     * build info rather than just serial plus hardware id.
+     *
+     * @param info  A `dev_info_t` with a non-zero serial number.
+     * @note SN-8463 — the retained struct is what `devInfo()` / `hasDevInfo()` expose.
+     */
+    void adoptDevInfo(const dev_info_t& info) noexcept;
 
     /**
      * Computes the end-of-bytes offset for the record at the given
