@@ -1860,6 +1860,11 @@ typedef struct PACKED
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 #define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
 
+// External aiding inputs.  Relayed unmodified on receipt, so the output rate follows whatever the
+// source produces rather than a period multiple.
+#define RMC_BITS_EXT_AIDING_POS         0x0020000000000000
+#define RMC_BITS_EXT_AIDING_VEL         0x0040000000000000
+
 #define RMC_BITS_EVENT                  0x0800000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
@@ -1887,6 +1892,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE\
+                                            | RMC_BITS_EXT_AIDING_POS \
+                                            | RMC_BITS_EXT_AIDING_VEL \
                                             | RMC_BITS_GPX_SYS_FAULT)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
@@ -5264,6 +5271,8 @@ typedef union PACKED
     barometer_t                     baro;           //!< DID_BAROMETER
     wheel_encoder_t                 wheelEncoder;   //!< DID_WHEEL_ENCODER
     ground_vehicle_t                groundVehicle;  //!< DID_GROUND_VEHICLE
+    ext_aiding_pos_t                extAidingPos;   //!< DID_EXT_AIDING_POS
+    ext_aiding_vel_t                extAidingVel;   //!< DID_EXT_AIDING_VEL
     pos_measurement_t               posMeasurement; //!< DID_POSITION_MEASUREMENT
     pimu_t                          pImu;           //!< DID_PIMU / DID_REFERENCE_PIMU
     gnss_pos_t                      gnssPos;        //!< DID_GNSS1_POS / DID_GNSS2_POS / DID_GNSS1_RTK_POS / DID_GNSS1_RCVR_POS
