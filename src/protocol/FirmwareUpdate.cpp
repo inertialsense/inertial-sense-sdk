@@ -276,7 +276,13 @@ namespace fwUpdate {
             case TARGET_IMX5: return "IMX-5";
             case TARGET_GPX1: return "GPX-1";
             case TARGET_IMX6: return "IMX-6";
-            case TARGET_UBLOX_F9P: return "uBlox F9P";
+            case TARGET_UBLOX:
+                switch (target & 0x0F) {
+                    case 1: return "u-blox.1";
+                    case 2: return "u-blox.2";
+                    default: return "u-blox";
+                }
+                break;
             case TARGET_SONY_CXD5610:
                 switch (target & 0x0F) {
                     case 1: return "CXD5610.1";

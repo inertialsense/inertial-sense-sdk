@@ -151,10 +151,10 @@ namespace fwUpdate {
         TARGET_DFU_IMX6 = (TARGET_DFU_FLAG | TARGET_IMX6),       //!< IMX-6, addressed via USB DFU
         TARGET_SMP_IMX6 = (TARGET_SMP_FLAG | TARGET_IMX6),       //!< IMX-6, addressed via SMP
 
-        TARGET_UBLOX_F9P = 0x110,             //!< u-blox F9P GNSS receiver (base target; use a masked variant to address a specific instance)
-        TARGET_UBLOX_F9P__1 = 0x111,          //!< u-blox F9P GNSS receiver, instance 1
-        TARGET_UBLOX_F9P__2 = 0x112,          //!< u-blox F9P GNSS receiver, instance 2
-        TARGET_UBLOX_F9P__ALL = 0x11F,        //!< u-blox F9P GNSS receiver, all instances (mask covering both)
+        TARGET_UBLOX = 0x110,                 //!< u-blox GNSS receiver, model-agnostic (base target; use a masked variant to address a specific instance)
+        TARGET_UBLOX__1 = 0x111,              //!< u-blox GNSS receiver, instance 1
+        TARGET_UBLOX__2 = 0x112,              //!< u-blox GNSS receiver, instance 2
+        TARGET_UBLOX__ALL = 0x11F,            //!< u-blox GNSS receiver, all instances (mask covering both)
 
         TARGET_SONY_CXD5610 = 0x120,          //!< Sony CXD5610 GNSS receiver (base target; use a masked variant to address a specific instance)
         TARGET_SONY_CXD5610__1 = 0x121,       //!< Sony CXD5610 GNSS receiver, instance 1
