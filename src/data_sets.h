@@ -174,6 +174,7 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_EXT_AIDING_POS              (eDataIDs)106   /**< (ext_aiding_pos_t) External aiding position observation, input to the INS/EKF */
 #define DID_EXT_AIDING_VEL              (eDataIDs)107   /**< (ext_aiding_vel_t) External aiding velocity observation, input to the INS/EKF */
+// The following External aiding DIDs are under development.  Contact Inertial Sense for more information on their use and availability.
 #define DID_EXT_AIDING_SPEED            (eDataIDs)108   /**< (ext_aiding_speed_t) External aiding speed (scalar) observation, input to the INS/EKF */
 #define DID_EXT_AIDING_DIR_SPEED        (eDataIDs)109   /**< (ext_aiding_dir_speed_t) External aiding directional speed (e.g. airspeed) observation, input to the INS/EKF */
 #define DID_EXT_AIDING_HEADING          (eDataIDs)110   /**< (ext_aiding_heading_t) External aiding heading observation, input to the INS/EKF */
