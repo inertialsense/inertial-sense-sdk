@@ -179,7 +179,7 @@ typedef uint32_t eDataIDs;
 #define DID_EXT_AIDING_DIR_SPEED        (eDataIDs)109   /**< (ext_aiding_dir_speed_t) External aiding directional speed (e.g. airspeed) observation, input to the INS/EKF */
 #define DID_EXT_AIDING_HEADING          (eDataIDs)110   /**< (ext_aiding_heading_t) External aiding heading observation, input to the INS/EKF */
 #define DID_EXT_AIDING_ATTITUDE         (eDataIDs)111   /**< (ext_aiding_attitude_t) External aiding attitude observation, input to the INS/EKF */
-#define DID_EXT_AIDING_IMU              (eDataIDs)112   /**< (ext_aiding_imu_t) External IMU (gyro/accel) input. Not currently fused by the INS/EKF; reserved for a future consistency-check or blended time-update path. */
+#define DID_EXT_IMU                     (eDataIDs)112   /**< (imu_t) External IMU (gyro/accel) input. Not currently fused by the INS/EKF; reserved for a future consistency-check or blended time-update path. */
 // RESERVED: a future consolidated external-aiding message (DID + sub-ID + SID-dependent payload,
 // covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
 // under SN-7740. The flat DIDs above are the initial subset; see SN-7740 before adding more.
@@ -1874,7 +1874,7 @@ typedef struct PACKED
 #define RMC_BITS_EXT_AIDING_DIR_SPEED   0x0100000000000000
 #define RMC_BITS_EXT_AIDING_HEADING     0x0200000000000000
 #define RMC_BITS_EXT_AIDING_ATTITUDE    0x0400000000000000
-// NOTE: DID_EXT_AIDING_IMU has no RMC bit - out of free bits below RMC_BITS_EVENT (RMC_BITS_MASK
+// NOTE: DID_EXT_IMU has no RMC bit - out of free bits below RMC_BITS_EVENT (RMC_BITS_MASK
 // excludes the top nibble, so bits 60+ aren't usable here). It is writable/pollable but not
 // relayed for logging the way the other external aiding DIDs are. Free a bit here if that's needed.
 
@@ -3464,17 +3464,6 @@ typedef struct PACKED
     float      att[4];       //!< attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}
     float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), in the roll/pitch/yaw tangent space. Must have a non-zero diagonal or the observation is discarded.
 } ext_aiding_attitude_t;
-
-/** @brief (DID_EXT_AIDING_IMU) External IMU (gyro/accel) input, supplied by a host or external sensor. Not currently fused by the INS/EKF; the DID exists for streaming/logging an external IMU alongside the primary one. */
-typedef struct PACKED
-{
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< reserved, set to 0
-    float      pqr[3];       //!< angular rate, IMU/body frame {p,q,r} (rad/s)
-    float      acc[3];       //!< linear acceleration, IMU/body frame {x,y,z} (m/s^2)
-    float      pqrVar[3];    //!< gyro noise variance, per axis ((rad/s)^2)
-    float      accVar[3];    //!< accelerometer noise variance, per axis ((m/s^2)^2)
-} ext_aiding_imu_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
 enum eDynamicModel
@@ -5369,7 +5358,7 @@ typedef union PACKED
     ext_aiding_dir_speed_t          extAidingDirSpeed; //!< DID_EXT_AIDING_DIR_SPEED
     ext_aiding_heading_t            extAidingHeading;  //!< DID_EXT_AIDING_HEADING
     ext_aiding_attitude_t           extAidingAttitude; //!< DID_EXT_AIDING_ATTITUDE
-    ext_aiding_imu_t                extAidingImu;      //!< DID_EXT_AIDING_IMU
+    imu_t                           extAidingImu;      //!< DID_EXT_IMU
     pos_measurement_t               posMeasurement; //!< DID_POSITION_MEASUREMENT
     pimu_t                          pImu;           //!< DID_PIMU / DID_REFERENCE_PIMU
     gnss_pos_t                      gnssPos;        //!< DID_GNSS1_POS / DID_GNSS2_POS / DID_GNSS1_RTK_POS / DID_GNSS1_RCVR_POS

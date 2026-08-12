@@ -1240,16 +1240,6 @@ static void PopulateMapExtAidingAttitude(data_set_t data_set[DID_COUNT], uint32_
     mapper.AddArray("var", &ext_aiding_attitude_t::var, DATA_TYPE_F32, 9, {"rad^2"}, {"3x3 row-major attitude-error covariance, in the roll/pitch/yaw tangent space.  Must have a non-zero diagonal or the observation is discarded"}, DATA_FLAGS_FIXED_DECIMAL_4);
 }
 
-static void PopulateMapExtAidingImu(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-    DataMapper<ext_aiding_imu_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &ext_aiding_imu_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT");
-    mapper.AddMember("status", &ext_aiding_imu_t::status, DATA_TYPE_UINT32, "", "reserved", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("pqr", &ext_aiding_imu_t::pqr, DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Angular rate, IMU (body) frame {p,q,r}"}, DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-    mapper.AddArray("acc", &ext_aiding_imu_t::acc, DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration, IMU (body) frame {x,y,z}"}, DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddArray("pqrVar", &ext_aiding_imu_t::pqrVar, DATA_TYPE_F32, 3, {"(rad/s)^2"}, {"Gyro noise variance per axis"}, DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("accVar", &ext_aiding_imu_t::accVar, DATA_TYPE_F32, 3, {"(m/s^2)^2"}, {"Accelerometer noise variance per axis"}, DATA_FLAGS_FIXED_DECIMAL_4);
-}
 
 static void PopulateMapSystemCommand(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -2331,10 +2321,10 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EXT_AIDING_POS",               // 106
     "DID_EXT_AIDING_VEL",               // 107
     "DID_EXT_AIDING_SPEED",             // 108
-    "DID_EXT_AIDING_IMU",               // 109
-    "DID_EXT_AIDING_DIR_SPEED",         // 110
-    "DID_EXT_AIDING_HEADING",           // 111
-    "DID_EXT_AIDING_ATTITUDE",          // 112
+    "DID_EXT_AIDING_DIR_SPEED",         // 109
+    "DID_EXT_AIDING_HEADING",           // 110
+    "DID_EXT_AIDING_ATTITUDE",          // 111
+    "DID_EXT_IMU",                      // 112
     "UNUSED_113",                       // 113
     "UNUSED_114",                       // 114
     "UNUSED_115",                       // 115
@@ -2409,7 +2399,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapExtAidingDirSpeed(m_data_set, DID_EXT_AIDING_DIR_SPEED);
     PopulateMapExtAidingHeading(m_data_set, DID_EXT_AIDING_HEADING);
     PopulateMapExtAidingAttitude(m_data_set, DID_EXT_AIDING_ATTITUDE);
-    PopulateMapExtAidingImu(m_data_set, DID_EXT_AIDING_IMU);
+    PopulateMapImu(m_data_set, DID_EXT_IMU, "External IMU.");
 
     PopulateMapGnssPos(m_data_set, DID_GNSS1_RTK_POS);
     PopulateMapGnssRtkRel(m_data_set, DID_GNSS1_RTK_POS_REL);
