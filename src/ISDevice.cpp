@@ -654,12 +654,23 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
         case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
         default: typeName = "\?\?\?"; break;
     }
-    out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
-    if (!(flags & COMPACT_HARDWARE_VER)) {
-        if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
-            out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-            if (devInfo.hardwareVer[3] != 0)
-                out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+    if ((devInfo.hardwareType == IS_HDW_GNSS_UBLOX) && (devInfo.hardwareVer[0] != 0)) {
+        // u-blox receivers do not report a meaningful hardware version, so hardwareVer[] carries the
+        // MODEL IDENTITY instead: [0] = product-line letter as ('X' - 'A'), [1] = model number,
+        // [2] = variant letter as ('D' - 'A') or 0. Render the designation an operator recognizes --
+        // "UBX-X20D" / "UBX-F9P" / "UBX-M8" -- rather than a meaningless "UBX-23.20.3".
+        // The encoding is self-describing, so new models need no table here.
+        out += utils::string_format("%s-%c%u", typeName, (char)('A' + devInfo.hardwareVer[0]), devInfo.hardwareVer[1]);
+        if (devInfo.hardwareVer[2] != 0)
+            out += utils::string_format("%c", (char)('A' + devInfo.hardwareVer[2]));
+    } else {
+        out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+        if (!(flags & COMPACT_HARDWARE_VER)) {
+            if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+                out += utils::string_format(".%u", devInfo.hardwareVer[2]);
+                if (devInfo.hardwareVer[3] != 0)
+                    out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+            }
         }
     }
     out += ")";
