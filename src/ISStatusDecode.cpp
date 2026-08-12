@@ -908,6 +908,141 @@ status_field_decode_t buildImuStatusDecode()
     return d;
 }
 
+// --- Flash-config fields (nvm_flash_cfg_t / gpx_flash_cfg_t, SN-8491) --------------------------
+// These are configuration bitfields/enums, not status/fault fields, so errorMask stays 0 for all
+// of them. None had a prior renderer, so (unlike the tables above) there is no legacy oracle to
+// reproduce byte-for-byte -- correctness is verified directly against the eGnssSatSigConst /
+// eDynamicModel / eSysConfigBits symbols in data_sets.h (see test_ISStatusDecode.cpp).
+
+/**
+ * @brief gnssSatSigConst decode table (eGnssSatSigConst). Shared verbatim by nvm_flash_cfg_t and
+ *        gpx_flash_cfg_t -- both fields are documented as using this same enum (see the
+ *        gpx_flash_cfg_t doc comment in data_sets.h), and the unused, GPX-only-in-name
+ *        eGpxGnssSatSigConst enum is dead code (never referenced by any field). Registered under
+ *        the unambiguous key "gnssSatSigConst"; each per-constellation value is a multi-bit mask
+ *        (e.g. GPS spans 2 bits) but is decoded as a single Bit-kind flag -- "any bit in this
+ *        constellation's mask set" means "this constellation is enabled", matching how the field
+ *        was already hand-documented (e.g. "0x0003=GPS").
+ */
+status_field_decode_t buildGnssSatSigConstDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "gnssSatSigConst";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("GPS", GNSS_SAT_SIG_CONST_GPS, false, "0x0003 - GPS"));
+    d.subfields.push_back(bitField("QZSS", GNSS_SAT_SIG_CONST_QZS, false, "0x000C - QZSS"));
+    d.subfields.push_back(bitField("Galileo", GNSS_SAT_SIG_CONST_GAL, false, "0x0030 - Galileo"));
+    d.subfields.push_back(bitField("BeiDou", GNSS_SAT_SIG_CONST_BDS, false, "0x00C0 - BeiDou"));
+    d.subfields.push_back(bitField("GLONASS", GNSS_SAT_SIG_CONST_GLO, false, "0x0300 - GLONASS"));
+    d.subfields.push_back(bitField("SBAS", GNSS_SAT_SIG_CONST_SBS, false, "0x1000 - SBAS"));
+    d.subfields.push_back(bitField("IRNSS / NavIC", GNSS_SAT_SIG_CONST_IRN, false, "0x2000 - IRNSS / NavIC"));
+    d.subfields.push_back(bitField("IMES", GNSS_SAT_SIG_CONST_IME, false, "0x4000 - IMES"));
+    return d;
+}
+
+/**
+ * @brief dynamicModel decode table (eDynamicModel). Shared verbatim by nvm_flash_cfg_t and
+ *        gpx_flash_cfg_t (same enum). A scalar enum: DYNAMIC_MODEL_* values are contiguous
+ *        0..DYNAMIC_MODEL_COUNT-1, so makeScalarEnum's index->name mapping applies directly.
+ */
+status_field_decode_t buildDynamicModelDecode()
+{
+    static const char* const models[] = {
+        "Portable", "Fixed position", "Stationary", "Pedestrian", "Ground vehicle",
+        "Marine", "Airborne <1g", "Airborne <2g", "Airborne <4g", "Wrist", "Indoor",
+    };
+    return makeScalarEnum("dynamicModel", models, (uint32_t)DYNAMIC_MODEL_COUNT);
+}
+
+/**
+ * @brief IMX sysCfgBits decode table (eSysConfigBits), used with nvm_flash_cfg_t.sysCfgBits. A
+ *        configuration bitfield, not a status field -- errorMask stays 0. Two multi-bit Enum
+ *        sub-fields (mag recal mode, brownout-reset threshold) use maskShift like the GNSS status
+ *        fix-type field above. UNUSED1 (bit 0) is a reserved/unused bit and is deliberately not
+ *        decoded (nothing to tell the user).
+ */
+status_field_decode_t buildImxSysCfgBitsDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sysCfgBits";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("Mag continuous cal enabled", SYS_CFG_BITS_ENABLE_MAG_CONTINUOUS_CAL, false,
+        "0x00000002 - Enable mag continuous calibration"));
+    d.subfields.push_back(bitField("Auto mag recal enabled", SYS_CFG_BITS_AUTO_MAG_RECAL, false,
+        "0x00000004 - Enable automatic mag recalibration"));
+    d.subfields.push_back(bitField("Mag declination estimation disabled", SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION, false,
+        "0x00000008 - Disable mag declination estimation"));
+    d.subfields.push_back(bitField("LEDs disabled", SYS_CFG_BITS_DISABLE_LEDS, false,
+        "0x00000010 - Disable LEDs"));
+
+    {
+        const uint32_t mask  = (uint32_t)SYS_CFG_BITS_MAG_RECAL_MODE_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "Mag recal mode";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { 0, "Mag recal mode: Disabled",   "", false },
+            { 1, "Mag recal mode: Multi-axis", "", false },
+            { 2, "Mag recal mode: Single-axis","", false },
+        };
+        s.defaultLegacyText = "Mag recal mode: unknown(%d)";
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("WMM declination enabled", SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION, false,
+        "0x00000800 - Use World Magnetic Model (WMM) for mag declination"));
+    d.subfields.push_back(bitField("Magnetometer fusion disabled", SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION, false,
+        "0x00001000 - Disable magnetometer fusion"));
+    d.subfields.push_back(bitField("Barometer fusion disabled", SYS_CFG_BITS_DISABLE_BAROMETER_FUSION, false,
+        "0x00002000 - Disable barometer fusion"));
+    d.subfields.push_back(bitField("GNSS1 fusion disabled", SYS_CFG_BITS_DISABLE_GNSS1_FUSION, false,
+        "0x00004000 - Disable GNSS 1 fusion"));
+    d.subfields.push_back(bitField("GNSS2 fusion disabled", SYS_CFG_BITS_DISABLE_GNSS2_FUSION, false,
+        "0x00008000 - Disable GNSS 2 fusion"));
+    d.subfields.push_back(bitField("Auto zero-velocity updates disabled", SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES, false,
+        "0x00010000 - Disable automatic Zero Velocity Updates (ZUPT)"));
+    d.subfields.push_back(bitField("Auto zero-angular-rate updates disabled", SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES, false,
+        "0x00020000 - Disable automatic Zero Angular Rate Updates (ZARU)"));
+    d.subfields.push_back(bitField("INS EKF disabled", SYS_CFG_BITS_DISABLE_INS_EKF, false,
+        "0x00040000 - Disable INS EKF updates"));
+    d.subfields.push_back(bitField("Auto BIT on startup disabled", SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP, false,
+        "0x00080000 - Prevent built-in test (BIT) from running automatically on startup"));
+    d.subfields.push_back(bitField("Wheel encoder fusion disabled", SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION, false,
+        "0x00100000 - Disable wheel encoder fusion"));
+    d.subfields.push_back(bitField("GNSS antenna offset estimation enabled", SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION, false,
+        "0x00200000 - Enable rover GNSS antenna offset estimation in RTK compassing mode"));
+
+    {
+        const uint32_t mask  = (uint32_t)SYS_CFG_BITS_BOR_THRESHOLD_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "Brownout reset threshold";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_0, "Brownout reset threshold: 1.65-1.75V (default)", "", false },
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_1, "Brownout reset threshold: 2.0-2.1V",              "", false },
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_2, "Brownout reset threshold: 2.25-2.35V",            "", false },
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V",              "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("Reference IMU used in EKF", SYS_CFG_USE_REFERENCE_IMU_IN_EKF, false,
+        "0x01000000 - Use reference IMU in EKF instead of onboard IMU"));
+    d.subfields.push_back(bitField("EKF ref point stationary on strobe input", SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT, false,
+        "0x02000000 - Reference point stationary on strobe input"));
+
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -930,6 +1065,9 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("calBitStatus",       buildImxCalBitDecode());
         m.emplace("gpxBitResults",      buildGpxBitResultsDecode());
         m.emplace("gpxBitState",        buildGpxBitStateDecode());
+        m.emplace("gnssSatSigConst",    buildGnssSatSigConstDecode());
+        m.emplace("dynamicModel",       buildDynamicModelDecode());
+        m.emplace("sysCfgBits",         buildImxSysCfgBitsDecode());
         return m;
     }();
     return r;
@@ -1052,5 +1190,12 @@ const status_field_decode_t* GetStatusDecode(uint32_t did, const std::string& fi
         return GetStatusDecodeByField("imuStatus");
     if (fieldName == "status")
         return GetStatusDecodeByField("gnssStatus");   // GNSS pos/vel status (DIDs 13/14/6/30/31/54)
+    // "sysCfgBits" is shared by nvm_flash_cfg_t (eSysConfigBits) and gpx_flash_cfg_t
+    // (eGpxSysConfigBits) -- two DIFFERENT enums with the same on-wire field name. The IMX table
+    // is registered directly under the key "sysCfgBits" (SN-8491); GPX's own table doesn't exist
+    // yet, so explicitly return nullptr for it rather than falling through to the key lookup
+    // below and silently handing back the wrong (IMX) table for a GPX DID.
+    if (fieldName == "sysCfgBits" && did == DID_GPX_FLASH_CFG)
+        return nullptr;   // TODO(SN-8491 phase 2): register/route a "gpxSysCfgBits" table here.
     return GetStatusDecodeByField(fieldName);
 }

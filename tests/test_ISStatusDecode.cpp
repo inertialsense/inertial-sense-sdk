@@ -1248,3 +1248,134 @@ TEST(ISStatusDecode, ImuStatus_RenderIsStableAndAdditive)
     EXPECT_NE(a.find(accFaultRej), std::string::npos);
     EXPECT_NE(a.find(satGyr), std::string::npos);
 }
+
+// ---- Flash-config fields (nvm_flash_cfg_t / gpx_flash_cfg_t, SN-8491) ---------
+
+TEST(ISStatusDecode, GnssSatSigConst_AllEightConstellationsPresentAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssSatSigConst");
+    ASSERT_NE(dec, nullptr);
+    ASSERT_EQ(dec->subfields.size(), 8u);
+
+    const uint32_t masks[8] = {
+        (uint32_t)GNSS_SAT_SIG_CONST_GPS, (uint32_t)GNSS_SAT_SIG_CONST_QZS,
+        (uint32_t)GNSS_SAT_SIG_CONST_GAL, (uint32_t)GNSS_SAT_SIG_CONST_BDS,
+        (uint32_t)GNSS_SAT_SIG_CONST_GLO, (uint32_t)GNSS_SAT_SIG_CONST_SBS,
+        (uint32_t)GNSS_SAT_SIG_CONST_IRN, (uint32_t)GNSS_SAT_SIG_CONST_IME,
+    };
+    for (uint32_t m : masks) {
+        int matchCount = 0;
+        for (const auto& sf : dec->subfields)
+            if (sf.mask == m) ++matchCount;
+        EXPECT_EQ(matchCount, 1) << "mask 0x" << std::hex << m << " not present exactly once";
+    }
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+
+    // GNSS_SAT_SIG_CONST_DEFAULT excludes IRNSS and IMES -- the rendered default must mention
+    // every constellation it includes and NEITHER of the two it excludes.
+    const std::string rendered = RenderStatusFromDecode(*dec, (uint32_t)GNSS_SAT_SIG_CONST_DEFAULT);
+    for (const char* included : { "GPS", "QZSS", "Galileo", "BeiDou", "GLONASS", "SBAS" })
+        EXPECT_NE(rendered.find(included), std::string::npos) << included << " missing from default rendering";
+    for (const char* excluded : { "IRNSS", "IMES" })
+        EXPECT_EQ(rendered.find(excluded), std::string::npos) << excluded << " should not be in the default rendering";
+}
+
+TEST(ISStatusDecode, GnssSatSigConst_ErrorMaskAlwaysZero)
+{
+    // Constellation selection is a config choice, not a fault condition.
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssSatSigConst");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);
+}
+
+TEST(ISStatusDecode, DynamicModel_IsScalarEnumCoveringEveryDefinedModel)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("dynamicModel");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_TRUE(dec->scalarEnum);
+    ASSERT_EQ(dec->subfields.size(), 1u);
+    EXPECT_EQ(dec->subfields.front().values.size(), (size_t)DYNAMIC_MODEL_COUNT);
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_PORTABLE), "Portable");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_GROUND_VEHICLE), "Ground vehicle");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_WRIST), "Wrist");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_INDOOR), "Indoor");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_COUNT), "");   // one past the last defined model
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_IndependentBitsRenderNonEmptyAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);   // configuration bits, not faults
+
+    const uint32_t bits[] = {
+        (uint32_t)SYS_CFG_BITS_ENABLE_MAG_CONTINUOUS_CAL, (uint32_t)SYS_CFG_BITS_AUTO_MAG_RECAL,
+        (uint32_t)SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION, (uint32_t)SYS_CFG_BITS_DISABLE_LEDS,
+        (uint32_t)SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION, (uint32_t)SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION,
+        (uint32_t)SYS_CFG_BITS_DISABLE_BAROMETER_FUSION, (uint32_t)SYS_CFG_BITS_DISABLE_GNSS1_FUSION,
+        (uint32_t)SYS_CFG_BITS_DISABLE_GNSS2_FUSION, (uint32_t)SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES,
+        (uint32_t)SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES, (uint32_t)SYS_CFG_BITS_DISABLE_INS_EKF,
+        (uint32_t)SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP, (uint32_t)SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION,
+        (uint32_t)SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION, (uint32_t)SYS_CFG_USE_REFERENCE_IMU_IN_EKF,
+        (uint32_t)SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT,
+    };
+
+    std::vector<std::string> rendered;
+    for (uint32_t b : bits) {
+        const std::string s = RenderStatusFromDecode(*dec, b);
+        EXPECT_FALSE(s.empty()) << "bit 0x" << std::hex << b;
+        rendered.push_back(s);
+    }
+    for (size_t i = 0; i < rendered.size(); ++i)
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j]) << "bits " << i << " and " << j << " render identically";
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_MagRecalModeSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t multiAxis  = 1u << SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET;
+    const uint32_t singleAxis = 2u << SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET;
+    const std::string multi  = RenderStatusFromDecode(*dec, multiAxis);
+    const std::string single = RenderStatusFromDecode(*dec, singleAxis);
+    EXPECT_NE(multi, single);
+    EXPECT_NE(multi.find("Mag recal mode: Multi-axis"), std::string::npos);
+    EXPECT_NE(single.find("Mag recal mode: Single-axis"), std::string::npos);
+    // Value 0 (disabled) still renders a line -- it's a meaningful Enum state, not absence.
+    EXPECT_NE(RenderStatusFromDecode(*dec, 0u).find("Mag recal mode: Disabled"), std::string::npos);
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_BrownoutThresholdSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t level3 = (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3 << SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
+    EXPECT_NE(RenderStatusFromDecode(*dec, level3).find("2.5-2.6V"), std::string::npos);
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_UnusedBit0ContributesNoBitOfItsOwn)
+{
+    // UNUSED1 (bit 0) is reserved/unused and is deliberately not given its own Bit subfield, so
+    // setting it must not change the rendering at all vs. an all-zero value -- the two always-on
+    // Enum subfields (mag recal mode, brownout threshold) still render their "off"/default state
+    // either way, but UNUSED1 itself must not add a line.
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)UNUSED1), RenderStatusFromDecode(*dec, 0u));
+}
+
+TEST(ISStatusDecode, GpxFlashCfg_SysCfgBits_NotYetRoutedReturnsNullNotImxTable)
+{
+    // gpx_flash_cfg_t::sysCfgBits shares the on-wire field name "sysCfgBits" with
+    // nvm_flash_cfg_t but uses a DIFFERENT enum (eGpxSysConfigBits). Until SN-8491 phase 2 adds
+    // its own table, DID-aware lookup must return nullptr here -- NOT silently hand back the IMX
+    // table, which would misrender every GPX config bit.
+    EXPECT_EQ(GetStatusDecode(DID_GPX_FLASH_CFG, "sysCfgBits"), nullptr);
+    EXPECT_NE(GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits"), nullptr);
+    EXPECT_EQ(GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits"), GetStatusDecodeByField("sysCfgBits"));
+}

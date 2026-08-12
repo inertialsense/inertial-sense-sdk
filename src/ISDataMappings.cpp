@@ -498,6 +498,74 @@ std::string renderImuStatus(const data_info_t& info, std::any value, int arrayId
     }
 }
 
+/**
+ * @brief a custom data renderer for gnssSatSigConst (eGnssSatSigConst), shared verbatim by
+ *        nvm_flash_cfg_t and gpx_flash_cfg_t
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGnssSatSigConst(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT16) || (info.size != 2) || (info.name != "gnssSatSigConst"))
+        return "";
+
+    try {
+        uint16_t gnssSatSigConst = std::any_cast<uint16_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("gnssSatSigConst");
+        return dec ? RenderStatusFromDecode(*dec, (uint32_t)gnssSatSigConst) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for dynamicModel (eDynamicModel), shared verbatim by
+ *        nvm_flash_cfg_t and gpx_flash_cfg_t
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderDynamicModel(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "dynamicModel"))
+        return "";
+
+    try {
+        uint8_t dynamicModel = std::any_cast<uint8_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("dynamicModel");
+        return dec ? RenderStatusFromDecode(*dec, (uint32_t)dynamicModel) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::sysCfgBits (eSysConfigBits). GPX's
+ *        gpx_flash_cfg_t::sysCfgBits uses a different enum (eGpxSysConfigBits) and is not
+ *        rendered by this function -- see the GetStatusDecode() disambiguation in
+ *        ISStatusDecode.cpp.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderImxSysCfgBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sysCfgBits"))
+        return "";
+
+    try {
+        uint32_t sysCfgBits = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+        return dec ? RenderStatusFromDecode(*dec, sysCfgBits) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -1313,15 +1381,15 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssTimeSyncPeriodMs", &nvm_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.", 0, 1.0);
     mapper.AddMember("gnssTimeUserDelay", &nvm_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
     mapper.AddMember("gnssMinimumElevation", &nvm_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GNSS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-    mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0);
+    mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0).renderExtended = renderGnssSatSigConst;
 
-    mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0);
+    mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0).renderExtended = renderDynamicModel;
     str = "AutobaudOff [0x1=Ser0, 0x2=Ser1], 0x4=AutoMagRecal, 0x8=DisableMagDecEst, ";
     str += "0x10=DisableLeds, ";
     str += "0x100=1AxisMagRecal, ";
     str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GNSS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
-    mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxSysCfgBits;
     str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
     str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
@@ -1402,8 +1470,8 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("gnss1AntOffset", &gpx_flash_cfg_t::gnss1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     str = " offset from Sensor Frame origin to GNSS2 antenna.";
     mapper.AddArray("gnss2AntOffset", &gpx_flash_cfg_t::gnss2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
-    mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist");
+    mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssSatSigConst;
+    mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist").renderExtended = renderDynamicModel;
     mapper.AddMember("debug", &gpx_flash_cfg_t::debug, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("gnssTimeSyncPeriodMs", &gpx_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.");
     mapper.AddMember("gnssTimeUserDelay", &gpx_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
