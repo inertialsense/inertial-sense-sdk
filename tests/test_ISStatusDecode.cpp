@@ -17,6 +17,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "ISStatusDecode.h"
 #include "data_sets.h"
@@ -1145,4 +1146,105 @@ TEST(ISStatusDecode, GpxBitState_RoundTrip)
     for (uint32_t v = 0; v <= 255; ++v) {                        // includes the UNKNOWN(n) default path
         EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxBitStateReference((uint8_t)v)) << "state " << v;
     }
+}
+
+// ---- imu_t / pimu_t status (eImuStatus, SN-8491) --------------------------------
+//
+// The "imuStatus" table itself was added alongside the original SN-7919 work but was never
+// exercised by a test or wired to a renderer (SN-8491 does the wiring in ISDataMappings.cpp).
+// There is no legacy hand-written renderer to reproduce byte-for-byte here (unlike the other
+// tables above), so these tests assert the table's structure/semantics directly against the
+// eImuStatus enum instead of a round-trip oracle.
+
+TEST(ISStatusDecode, ImuStatus_RegisteredAndRoutesForImuAndPimu)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(GetStatusDecode(DID_IMU, "status"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_PIMU, "status"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_REFERENCE_IMU, "status"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_REFERENCE_PIMU, "status"), dec);
+    // Must not be confused with the GNSS/GPX "status" tables that share the same on-wire name.
+    EXPECT_NE(GetStatusDecode(DID_GNSS1_POS, "status"), dec);
+    EXPECT_NE(GetStatusDecode(DID_GPX_STATUS, "status"), dec);
+}
+
+TEST(ISStatusDecode, ImuStatus_AllSixSensorOkBitsPresentAndNotErrors)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t okMasks[6] = {
+        (uint32_t)IMU_STATUS_GYR_X_OK, (uint32_t)IMU_STATUS_GYR_Y_OK, (uint32_t)IMU_STATUS_GYR_Z_OK,
+        (uint32_t)IMU_STATUS_ACC_X_OK, (uint32_t)IMU_STATUS_ACC_Y_OK, (uint32_t)IMU_STATUS_ACC_Z_OK,
+    };
+    for (uint32_t m : okMasks) {
+        const status_subfield_t* sf = nullptr;
+        for (const auto& cand : dec->subfields)
+            if (cand.mask == m) { sf = &cand; break; }
+        ASSERT_NE(sf, nullptr) << "mask 0x" << std::hex << m;
+        EXPECT_EQ(sf->kind, eStatusSubfieldKind::Bit);
+        EXPECT_FALSE(sf->isError) << "sensor-OK bit 0x" << std::hex << m << " must not be an error";
+    }
+}
+
+TEST(ISStatusDecode, ImuStatus_FaultAndSaturationBitsAreErrors)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t errorMasks[4] = {
+        (uint32_t)IMU_STATUS_GYR_FAULT_REJECT, (uint32_t)IMU_STATUS_ACC_FAULT_REJECT,
+        (uint32_t)IMU_STATUS_SATURATION_GYR,   (uint32_t)IMU_STATUS_SATURATION_ACC,
+    };
+    for (uint32_t m : errorMasks) {
+        const status_subfield_t* sf = nullptr;
+        for (const auto& cand : dec->subfields)
+            if (cand.mask == m) { sf = &cand; break; }
+        ASSERT_NE(sf, nullptr) << "mask 0x" << std::hex << m;
+        EXPECT_TRUE(sf->isError) << "fault/saturation bit 0x" << std::hex << m << " must be an error";
+        EXPECT_NE(dec->errorMask & m, 0u) << "errorMask must cover 0x" << std::hex << m;
+    }
+
+    // errorMask must cover exactly these four bits, nothing else.
+    uint32_t expectedErrorMask = 0;
+    for (uint32_t m : errorMasks) expectedErrorMask |= m;
+    EXPECT_EQ(dec->errorMask, expectedErrorMask);
+}
+
+TEST(ISStatusDecode, ImuStatus_RenderEachBitIndividually_NonEmptyAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+
+    std::vector<std::string> rendered;
+    for (const auto& sf : dec->subfields)
+        rendered.push_back(RenderStatusFromDecode(*dec, sf.mask));
+
+    for (size_t i = 0; i < rendered.size(); ++i) {
+        EXPECT_FALSE(rendered[i].empty()) << "subfield \"" << dec->subfields[i].name << "\"";
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j])
+                << "subfields \"" << dec->subfields[i].name << "\" and \"" << dec->subfields[j].name << "\" render identically";
+    }
+}
+
+TEST(ISStatusDecode, ImuStatus_RenderIsStableAndAdditive)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t combo = (uint32_t)IMU_STATUS_GYR_X_OK | (uint32_t)IMU_STATUS_ACC_FAULT_REJECT | (uint32_t)IMU_STATUS_SATURATION_GYR;
+    const std::string a = RenderStatusFromDecode(*dec, combo);
+    const std::string b = RenderStatusFromDecode(*dec, combo);
+    EXPECT_EQ(a, b);   // deterministic/stable for the same input
+
+    const std::string gyrXOk       = RenderStatusFromDecode(*dec, (uint32_t)IMU_STATUS_GYR_X_OK);
+    const std::string accFaultRej  = RenderStatusFromDecode(*dec, (uint32_t)IMU_STATUS_ACC_FAULT_REJECT);
+    const std::string satGyr       = RenderStatusFromDecode(*dec, (uint32_t)IMU_STATUS_SATURATION_GYR);
+    EXPECT_NE(a.find(gyrXOk), std::string::npos);
+    EXPECT_NE(a.find(accFaultRej), std::string::npos);
+    EXPECT_NE(a.find(satGyr), std::string::npos);
 }

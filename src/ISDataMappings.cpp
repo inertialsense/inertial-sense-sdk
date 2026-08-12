@@ -298,6 +298,29 @@ std::string renderGnssStatusBits(const data_info_t& info, std::any value, int ar
     }
 }
 
+/**
+ * @brief a custom data renderer for GNSS status2 (jam/spoof interference flags)
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGnssStatus2(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "status2"))
+        return "";
+
+    // SN-8126 built the "status2" decode table (jam/spoof flags); SN-8491 wires it up here so
+    // EvalTool actually shows it as a tooltip.
+    try {
+        uint8_t status2 = std::any_cast<uint8_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+        return dec ? RenderStatusFromDecode(*dec, status2) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 std::string renderGpxStatus_status(const data_info_t& info, std::any value, int arrayIdx, int flags) {
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
@@ -445,6 +468,30 @@ std::string renderGpxBitState(const data_info_t& info, std::any value, int array
         uint8_t state = std::any_cast<uint8_t>(value);
         const status_field_decode_t* dec = GetStatusDecodeByField("gpxBitState");
         return dec ? RenderStatusFromDecode(*dec, state) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for imu_t / pimu_t status (eImuStatus)
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderImuStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
+        return "";
+
+    // The "imuStatus" decode table (eImuStatus) was built alongside the original SN-7919 work but
+    // never wired to a renderer; SN-8491 adds this thin wrapper (mirroring renderInsStatus) and
+    // assigns it to imu_t/pimu_t::status.
+    try {
+        uint32_t imuStatus = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+        return dec ? RenderStatusFromDecode(*dec, imuStatus) : std::string();
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -609,7 +656,7 @@ static void PopulateMapImu(data_set_t data_set[DID_COUNT], uint32_t did, string 
     mapper.AddMember("time", &imu_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray2("pqr", offsetof(imu_t, I.pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     mapper.AddArray2("acc", offsetof(imu_t, I.acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImuStatus;
 }
 
 static void PopulateMapImus(data_set_t data_set[DID_COUNT], uint32_t did, string description)
@@ -749,7 +796,7 @@ static void PopulateMapGnssPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GNSS leap seconds (GNSS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GNSS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
+    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX ).renderExtended = renderGnssStatus2;
 }
 
 static void PopulateMapGnssVel(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1087,7 +1134,7 @@ static void PopulateMapPimu(data_set_t data_set[DID_COUNT], uint32_t did, string
     DataMapper<pimu_t> mapper(data_set, did);
     mapper.AddMember("time", &pimu_t::time, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("dt", &pimu_t::dt, DATA_TYPE_F32, "s", "Integration period.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImuStatus;
     mapper.AddArray("theta", &pimu_t::theta, DATA_TYPE_F32, 3, {SYM_DEG}, {"IMU delta theta coning and sculling integrals in body/IMU frame.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
