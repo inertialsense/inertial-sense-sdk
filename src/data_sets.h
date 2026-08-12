@@ -3383,7 +3383,7 @@ enum eExtAidingFrame
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED (see eExtAidingFrame)
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
