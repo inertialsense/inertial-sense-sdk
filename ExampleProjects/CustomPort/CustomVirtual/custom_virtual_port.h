@@ -1,0 +1,65 @@
+/**
+ * @file custom_virtual_port.h
+ * @brief From a collection of functions and classes that might be useful when writing/running unit tests,
+ * ported to use as customer example of building a custom port implementation to extend base_port
+ *
+ * @author TylerS
+ * @remark Originated as Walt Johnson's tests/test_serial_utils.h
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ */
+
+#ifndef CUSTOM_VIRTUAL_PORT_H
+#define CUSTOM_VIRTUAL_PORT_H
+
+/** STEP 1: Include IS core, other needed SDK header files here, and port implementation files
+ * as required
+ */
+#include "core/base_port.h"
+#include "ring_buffer.h"  //optional, depends upon your implementation
+#include "com_manager.h" //optional, depends upon your implementation
+#include <string>
+
+/**
+ * PORT IMPLEMENTATION used for unit and functional tests
+ * This is a generic port implementation that provides loopback capability
+ * There are 6 ports defined:
+ *      LOOPBACK:
+ *         All data that is written to the port is placed into a ringbuffer which feeds subsequent reads
+ *         If no data has been written, there is not data to be read.  If you want to test synchronous
+ *         functionality, use a loopback and perform all your writes, then read from the same port to
+ *         ensure the data was written (or is read/parsed) correctly.
+ */
+
+#define PORT_BUFFER_SIZE    8192
+#define PORT_NAME_SIZE      6
+
+
+/** STEP 2: Create a custom port declaration, extending base_port_t
+ */
+typedef struct custom_port_s {
+    union {
+        base_port_t base;
+        comm_port_t comm;  //optional depending upon your application
+    };
+
+    // Used to simulate serial ports
+    ring_buf_t      portRingBuf;
+    uint8_t         portBuffer[PORT_BUFFER_SIZE];
+    uint8_t         name[PORT_NAME_SIZE];
+} custom_port_t;
+
+
+/** Declarations for the core port functions which will provide the underlying implementation for the base_port
+ */
+static int customPortRead(port_handle_t port, unsigned char* buf, unsigned int len);
+static int customPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len);
+static int customPortFree(port_handle_t port);
+static int customPortAvailable(port_handle_t port);
+static const char* customPortName(port_handle_t port);
+static int customPortValidate(port_handle_t port);
+    
+/** Other internal support functions, not hooked to the base_port API
+ */
+void initCustomPort(custom_port_t& port, const std::string& pName, const uint16_t pType);
+
+#endif // CUSTOM_VIRTUAL_PORT_H

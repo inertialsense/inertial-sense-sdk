@@ -21,7 +21,54 @@
 #include "TcpPortFactory.h"
 #include "TcpServerPortFactory.h"
 #include "PortManager.h"
+#include "Rtcm3CorrectionServer.h"
 
+
+// SN-8478: Rtcm3CorrectionServer/cltool silently succeeded when the RTCM3 listener failed to
+// bind/listen. Force a real bind() failure and verify it's observable both via the pre-existing
+// forensic accessor and via configure()'s (previously discarded) return value.
+//
+// The port is occupied by a plain, non-SDK socket rather than a second Rtcm3CorrectionServer:
+// TcpServerPortFactory::startListening() unconditionally sets SO_REUSEADDR on Windows, which
+// (unlike POSIX) is permissive enough to let a second SDK listener bind the same address:port
+// that's already actively listening -- so two SDK listeners on one port doesn't reliably fail
+// there. SO_EXCLUSIVEADDRUSE on the occupier blocks that regardless of the later socket's options.
+TEST(test_PortFactory, tcpServerPortFactory_reportsListenFailure) {
+    const int testPort = 14478; // arbitrary, distinct from other tests in this binary
+
+#ifdef PLATFORM_IS_WINDOWS
+    SOCKET occupierFd = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_NE(occupierFd, INVALID_SOCKET);
+    int exclusive = 1;
+    ASSERT_EQ(setsockopt(occupierFd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (char*)&exclusive, sizeof(exclusive)), 0);
+#else
+    int occupierFd = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_GT(occupierFd, 0);
+#endif
+
+    sockaddr_in occupierAddr = {};
+    occupierAddr.sin_family = AF_INET;
+    occupierAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    occupierAddr.sin_port = htons((uint16_t)testPort);
+    ASSERT_EQ(bind(occupierFd, (sockaddr*)&occupierAddr, sizeof(occupierAddr)), 0);
+    ASSERT_EQ(listen(occupierFd, 1), 0);
+
+    Rtcm3CorrectionServer server(testPort, "127.0.0.1");
+    auto listenError = server.getLastListenError();
+    EXPECT_EQ(listenError.first, TCP_LISTEN_CTX__BIND)
+        << "listener should fail at bind() -- the port is already occupied";
+    EXPECT_NE(listenError.second, 0) << "a platform errno/WSAGetLastError() should be recorded";
+
+    // configure() must propagate the same failure via its own return value now (SN-8478),
+    // not leave it discoverable only via the separate getLastListenError() accessor.
+    EXPECT_FALSE(server.configure(testPort, "127.0.0.1"));
+
+#ifdef PLATFORM_IS_WINDOWS
+    closesocket(occupierFd);
+#else
+    close(occupierFd);
+#endif
+}
 
 TEST(test_PortFactory, tcpServerPortFactory) {
     
