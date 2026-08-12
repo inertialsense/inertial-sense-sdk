@@ -172,6 +172,17 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_GYR              (eDataIDs)103   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_EXT_AIDING_POS              (eDataIDs)106   /**< (ext_aiding_pos_t) External aiding position observation, input to the INS/EKF */
+#define DID_EXT_AIDING_VEL              (eDataIDs)107   /**< (ext_aiding_vel_t) External aiding velocity observation, input to the INS/EKF */
+// The following External aiding DIDs are under development.  Contact Inertial Sense for more information on their use and availability.
+#define DID_EXT_AIDING_SPEED            (eDataIDs)108   /**< (ext_aiding_speed_t) External aiding speed (scalar) observation, input to the INS/EKF */
+#define DID_EXT_AIDING_DIR_SPEED        (eDataIDs)109   /**< (ext_aiding_dir_speed_t) External aiding directional speed (e.g. airspeed) observation, input to the INS/EKF */
+#define DID_EXT_AIDING_HEADING          (eDataIDs)110   /**< (ext_aiding_heading_t) External aiding heading observation, input to the INS/EKF */
+#define DID_EXT_AIDING_ATTITUDE         (eDataIDs)111   /**< (ext_aiding_attitude_t) External aiding attitude observation, input to the INS/EKF */
+#define DID_EXT_IMU                     (eDataIDs)112   /**< (imu_t) External IMU (gyro/accel) input. Not currently fused by the INS/EKF; reserved for a future consistency-check or blended time-update path. */
+// RESERVED: a future consolidated external-aiding message (DID + sub-ID + SID-dependent payload,
+// covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
+// under SN-7740. The flat DIDs above are the initial subset; see SN-7740 before adding more.
 
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
@@ -1365,7 +1376,6 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val;    //!< Sensor value (units are source-dependent)
 } gen_1axis_sensor_t;
 
@@ -1373,7 +1383,6 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_3axis_sensor_t;
 
@@ -1381,9 +1390,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val1[3]; //!< First 3-axis sensor value {x,y,z} (units are source-dependent)
-
     float                   val2[3]; //!< Second 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_dual_3axis_sensor_t;
 
@@ -1391,7 +1398,6 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     double                  val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_3axis_sensord_t;
 
@@ -1860,6 +1866,18 @@ typedef struct PACKED
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 #define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
 
+// External aiding inputs.  Relayed unmodified on receipt, so the output rate follows whatever the
+// source produces rather than a period multiple.
+#define RMC_BITS_EXT_AIDING_POS         0x0020000000000000
+#define RMC_BITS_EXT_AIDING_VEL         0x0040000000000000
+#define RMC_BITS_EXT_AIDING_SPEED       0x0080000000000000
+#define RMC_BITS_EXT_AIDING_DIR_SPEED   0x0100000000000000
+#define RMC_BITS_EXT_AIDING_HEADING     0x0200000000000000
+#define RMC_BITS_EXT_AIDING_ATTITUDE    0x0400000000000000
+// NOTE: DID_EXT_IMU has no RMC bit - out of free bits below RMC_BITS_EVENT (RMC_BITS_MASK
+// excludes the top nibble, so bits 60+ aren't usable here). It is writable/pollable but not
+// relayed for logging the way the other external aiding DIDs are. Free a bit here if that's needed.
+
 #define RMC_BITS_EVENT                  0x0800000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
@@ -1887,6 +1905,12 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE\
+                                            | RMC_BITS_EXT_AIDING_POS \
+                                            | RMC_BITS_EXT_AIDING_VEL \
+                                            | RMC_BITS_EXT_AIDING_SPEED \
+                                            | RMC_BITS_EXT_AIDING_DIR_SPEED \
+                                            | RMC_BITS_EXT_AIDING_HEADING \
+                                            | RMC_BITS_EXT_AIDING_ATTITUDE \
                                             | RMC_BITS_GPX_SYS_FAULT)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
@@ -2208,6 +2232,8 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_GNSS_BASE_RAW  = 25,  //!< DID_GNSS_BASE_RAW - raw observation data forwarded from the RTK base station
     GRMC_BIT_POS_DID_GPX_SYS_FAULT  = 26,  //!< DID_GPX_SYS_FAULT - GPX system fault/exception info
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
+    GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
+    GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -2239,6 +2265,8 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GNSS_BASE_RAW         (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
 #define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
 #define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
+#define GRMC_BITS_EXT_AIDING_POS        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_POS)
+#define GRMC_BITS_EXT_AIDING_VEL        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_VEL)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -3343,6 +3371,99 @@ typedef struct PACKED
     wheel_config_t          wheelConfig;   //!< Wheel transform, track width, and wheel radius
 
 } ground_vehicle_t;
+
+/** @brief Frame of measurement for an external aiding observation, held in the low nibble of ext_aiding_pos_t.status / ext_aiding_vel_t.status (DID_EXT_AIDING_POS, DID_EXT_AIDING_VEL). Note 0 is not a valid frame. */
+enum eExtAidingFrame
+{
+    EXT_AIDING_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
+    EXT_AIDING_FRAME_ECEF    = 1,           //!< ECEF frame
+    EXT_AIDING_FRAME_NED     = 2,           //!< NED frame
+    EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
+};
+
+/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is expected in ECEF; var is expected in NED. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED (see eExtAidingFrame)
+    double     pos[3];       //!< position {x,y,z} (m)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_pos_t;
+
+/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is expected in ECEF; var is expected in NED. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
+    float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance, per axis, in NED (m^2/s^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_vel_t;
+
+/** @brief Type of scalar speed carried by ext_aiding_speed_t.status (DID_EXT_AIDING_SPEED), held in the low nibble. Note 0 is not a valid type. */
+enum eExtAidingSpeedType
+{
+    EXT_AIDING_SPEED_TYPE_MASK          = 0x0000000F,  //!< Mask for the speed type
+    EXT_AIDING_SPEED_TYPE_3D            = 1,           //!< speed is the full 3D velocity magnitude, |v|
+    EXT_AIDING_SPEED_TYPE_HORIZONTAL    = 2            //!< speed is the horizontal (ground) velocity magnitude only, |v_NE|
+};
+
+/** @brief (DID_EXT_AIDING_SPEED) External aiding scalar speed observation (e.g. a wheel-speed sensor or GNSS-derived ground speed with no direction), supplied by a host or external sensor as an input to the INS/EKF. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType)
+    float      speed;        //!< speed (m/s)
+    float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+} ext_aiding_speed_t;
+
+/** @brief (DID_EXT_AIDING_DIR_SPEED) External aiding directional speed observation (e.g. airspeed from a pitot tube), supplied by a host or external sensor as an input to the INS/EKF. `direction` is a unit vector in the IMU/body frame (e.g. [1,0,0] for a sensor measuring speed along the body X axis); `speed` is the velocity component along that direction at the point of measurement. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< reserved, set to 0
+    float      speed;        //!< speed along `direction` (m/s)
+    float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      direction[3]; //!< unit vector, in IMU/body frame, along which `speed` is measured (e.g. [1,0,0] for forward-pointing airspeed)
+} ext_aiding_dir_speed_t;
+
+/** @brief Type of heading carried by ext_aiding_heading_t.status (DID_EXT_AIDING_HEADING), held in the low nibble. Note 0 is not a valid type. */
+enum eExtAidingHeadingType
+{
+    EXT_AIDING_HEADING_TYPE_MASK        = 0x0000000F,  //!< Mask for the heading type
+    EXT_AIDING_HEADING_TYPE_TRUE        = 1,           //!< true heading (body X axis bearing relative to true north)
+    EXT_AIDING_HEADING_TYPE_MAGNETIC    = 2,           //!< magnetic heading (body X axis bearing relative to magnetic north); converted to true heading using the EKF's declination estimate
+    EXT_AIDING_HEADING_TYPE_COURSE      = 3            //!< course over ground (direction of travel, i.e. velocity bearing - not necessarily the same as body heading)
+};
+
+/** @brief (DID_EXT_AIDING_HEADING) External aiding heading observation, supplied by a host or external sensor as an input to the INS/EKF. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType)
+    float      heading;      //!< heading (rad), 0 = north, positive clockwise, range [-pi, pi]
+    float      var;          //!< observation variance (rad^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_heading_t;
+
+/** @brief Representation of ext_aiding_attitude_t.att, carried in ext_aiding_attitude_t.status (DID_EXT_AIDING_ATTITUDE), held in the low nibble. Note 0 is not a valid type. */
+enum eExtAidingAttitudeType
+{
+    EXT_AIDING_ATTITUDE_TYPE_MASK       = 0x0000000F,  //!< Mask for the attitude representation
+    EXT_AIDING_ATTITUDE_TYPE_EULER      = 1,           //!< att = {roll, pitch, yaw} (rad); att[3] unused
+    EXT_AIDING_ATTITUDE_TYPE_QUATERNION = 2            //!< att = {w, x, y, z}
+};
+
+/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle roll/pitch/yaw rotation vector regardless of whether `att` is euler or quaternion. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType)
+    float      att[4];       //!< attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}
+    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), in the roll/pitch/yaw tangent space. Must have a non-zero diagonal or the observation is discarded.
+} ext_aiding_attitude_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
 enum eDynamicModel
@@ -5231,6 +5352,13 @@ typedef union PACKED
     barometer_t                     baro;           //!< DID_BAROMETER
     wheel_encoder_t                 wheelEncoder;   //!< DID_WHEEL_ENCODER
     ground_vehicle_t                groundVehicle;  //!< DID_GROUND_VEHICLE
+    ext_aiding_pos_t                extAidingPos;   //!< DID_EXT_AIDING_POS
+    ext_aiding_vel_t                extAidingVel;   //!< DID_EXT_AIDING_VEL
+    ext_aiding_speed_t              extAidingSpeed;   //!< DID_EXT_AIDING_SPEED
+    ext_aiding_dir_speed_t          extAidingDirSpeed; //!< DID_EXT_AIDING_DIR_SPEED
+    ext_aiding_heading_t            extAidingHeading;  //!< DID_EXT_AIDING_HEADING
+    ext_aiding_attitude_t           extAidingAttitude; //!< DID_EXT_AIDING_ATTITUDE
+    imu_t                           extAidingImu;      //!< DID_EXT_IMU
     pos_measurement_t               posMeasurement; //!< DID_POSITION_MEASUREMENT
     pimu_t                          pImu;           //!< DID_PIMU / DID_REFERENCE_PIMU
     gnss_pos_t                      gnssPos;        //!< DID_GNSS1_POS / DID_GNSS2_POS / DID_GNSS1_RTK_POS / DID_GNSS1_RCVR_POS
