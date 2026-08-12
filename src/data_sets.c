@@ -381,11 +381,11 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 105: DID_CAL_MOTION_MAG
         offsetsExtAidingPos,    // 106: DID_EXT_AIDING_POS
         0,                      // 107: DID_EXT_AIDING_VEL
-        0,                      // 108:
-        0,                      // 109:
-        0,                      // 110:
-        0,                      // 111:
-        0,                      // 112:
+        0,                      // 108: DID_EXT_AIDING_SPEED
+        0,                      // 109: DID_EXT_AIDING_IMU
+        0,                      // 110: DID_EXT_AIDING_DIR_SPEED
+        0,                      // 111: DID_EXT_AIDING_HEADING
+        0,                      // 112: DID_EXT_AIDING_ATTITUDE
         0,                      // 113:
         0,                      // 114:
         0,                      // 115:
@@ -571,11 +571,11 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 105: DID_CAL_MOTION_MAG
         0,                      // 106: DID_EXT_AIDING_POS
         0,                      // 107: DID_EXT_AIDING_VEL
-        0,                      // 108:
-        0,                      // 109:
-        0,                      // 110:
-        0,                      // 111:
-        0,                      // 112:
+        0,                      // 108: DID_EXT_AIDING_SPEED
+        0,                      // 109: DID_EXT_AIDING_IMU
+        0,                      // 110: DID_EXT_AIDING_DIR_SPEED
+        0,                      // 111: DID_EXT_AIDING_HEADING
+        0,                      // 112: DID_EXT_AIDING_ATTITUDE
         0,                      // 113:
         0,                      // 114:
         0,                      // 115:
@@ -686,6 +686,11 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GROUND_VEHICLE]        = RMC_BITS_GROUND_VEHICLE,
     [DID_EXT_AIDING_POS]        = RMC_BITS_EXT_AIDING_POS,
     [DID_EXT_AIDING_VEL]        = RMC_BITS_EXT_AIDING_VEL,
+    [DID_EXT_AIDING_SPEED]      = RMC_BITS_EXT_AIDING_SPEED,
+    [DID_EXT_AIDING_DIR_SPEED]  = RMC_BITS_EXT_AIDING_DIR_SPEED,
+    [DID_EXT_AIDING_HEADING]    = RMC_BITS_EXT_AIDING_HEADING,
+    [DID_EXT_AIDING_ATTITUDE]   = RMC_BITS_EXT_AIDING_ATTITUDE,
+    // NOTE: DID_EXT_AIDING_IMU intentionally has no RMC bit; see data_sets.h.
     [DID_IMU_MAG]               = RMC_BITS_IMU_MAG,
     [DID_PIMU_MAG]              = RMC_BITS_PIMU_MAG,
     [DID_EVENT]                 = RMC_BITS_EVENT,
