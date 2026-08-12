@@ -1382,7 +1382,6 @@ typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
     float                   val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
-    float                   pos[3]; //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
 } gen_3axis_sensor_t;
 
 /** @brief Generic dual 3-axis single-precision sensor sample: a timestamped pair of 3-element vectors, reused across multiple DIDs that report two related 3-axis sensors together (e.g. uncalibrated + calibrated, or two redundant sensors). */
@@ -1398,7 +1397,6 @@ typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
     double                  val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
-    float                   pos[3]; //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
 } gen_3axis_sensord_t;
 
 /** @brief (DID_SYS_SENSORS) Raw/calibrated output from the system's onboard sensors: IMU (gyro/accelerometer), magnetometer, barometer, humidity, and analog/voltage monitor inputs. */
