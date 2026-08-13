@@ -234,11 +234,47 @@ struct BitName { uint64_t mask; const char* name; };
  * @brief Render one line per set bit in `value` whose mask appears in `names`, in `names` order.
  *        Bits not present in `names` are silently skipped (not garbage/unknown lines).
  */
-std::string renderBitNameList(uint64_t value, std::initializer_list<BitName> names) {
+std::string renderBitNameList(uint64_t value, const std::vector<BitName>& names) {
     std::stringstream buff;
     for (const auto& bn : names)
         if (value & bn.mask) buff << bn.name << std::endl;
     return buff.str();
+}
+
+/**
+ * @brief The eRTKConfigBits bit/name list, shared by renderRTKCfgBits (nvm_flash_cfg_t and
+ *        gpx_flash_cfg_t's RTKCfgBits field) and renderRtkMode (gpx_status_t::rtkMode). (Kyle,
+ *        2026-08-13: gpx_status_t.rtkMode's own hand-written tooltip description in this file
+ *        implied a DIFFERENT bit layout than eRTKConfigBits -- e.g. its bit 0x40 read as an RTCM
+ *        Ser0 output, where eRTKConfigBits' bit 0x40 is GNSS1_UBLOX_SER2 -- and no dedicated named
+ *        enum backs rtkMode anywhere in the codebase. Confirmed treating rtkMode as reusing
+ *        eRTKConfigBits' actual bit positions (per its data_sets.h doc comment) and disregarding
+ *        that inconsistent hand-written string, rather than inventing unreferenced hex literals
+ *        for a scheme that may never have been real.
+ */
+const std::vector<BitName>& RtkConfigBitNames() {
+    static const std::vector<BitName> names = {
+        { RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK, "RTK Positioning (0x00000002)" },
+        { RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK,  "RTK Compassing (0x00000004)" },
+        { RTK_CFG_BITS_BASE_MODE,                       "RTK Base enabled (0x000FFFF0)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0,    "GNSS1 UBLOX Ser0 (0x00000010)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1,    "GNSS1 UBLOX Ser1 (0x00000020)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2,    "GNSS1 UBLOX Ser2 (0x00000040)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB,     "GNSS1 UBLOX USB (0x00000080)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0,    "GNSS1 RTCM3 Ser0 (0x00000100)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1,    "GNSS1 RTCM3 Ser1 (0x00000200)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2,    "GNSS1 RTCM3 Ser2 (0x00000400)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB,     "GNSS1 RTCM3 USB (0x00000800)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0,    "GNSS2 UBLOX Ser0 (0x00001000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1,    "GNSS2 UBLOX Ser1 (0x00002000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2,    "GNSS2 UBLOX Ser2 (0x00004000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB,     "GNSS2 UBLOX USB (0x00008000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0,    "GNSS2 RTCM3 Ser0 (0x00010000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1,    "GNSS2 RTCM3 Ser1 (0x00020000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2,    "GNSS2 RTCM3 Ser2 (0x00040000)" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB,     "GNSS2 RTCM3 USB (0x00080000)" },
+    };
+    return names;
 }
 
 /**
@@ -263,27 +299,31 @@ std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayI
 
     try {
         uint32_t rtkCfgBits = std::any_cast<uint32_t>(value);
-        return renderBitNameList(rtkCfgBits, {
-            { RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK, "RTK Positioning (0x00000002)" },
-            { RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK,  "RTK Compassing (0x00000004)" },
-            { RTK_CFG_BITS_BASE_MODE,                       "RTK Base enabled (0x000FFFF0)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0,    "GNSS1 UBLOX Ser0 (0x00000010)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1,    "GNSS1 UBLOX Ser1 (0x00000020)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2,    "GNSS1 UBLOX Ser2 (0x00000040)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB,     "GNSS1 UBLOX USB (0x00000080)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0,    "GNSS1 RTCM3 Ser0 (0x00000100)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1,    "GNSS1 RTCM3 Ser1 (0x00000200)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2,    "GNSS1 RTCM3 Ser2 (0x00000400)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB,     "GNSS1 RTCM3 USB (0x00000800)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0,    "GNSS2 UBLOX Ser0 (0x00001000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1,    "GNSS2 UBLOX Ser1 (0x00002000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2,    "GNSS2 UBLOX Ser2 (0x00004000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB,     "GNSS2 UBLOX USB (0x00008000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0,    "GNSS2 RTCM3 Ser0 (0x00010000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1,    "GNSS2 RTCM3 Ser1 (0x00020000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2,    "GNSS2 RTCM3 Ser2 (0x00040000)" },
-            { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB,     "GNSS2 RTCM3 USB (0x00080000)" },
-        });
+        return renderBitNameList(rtkCfgBits, RtkConfigBitNames());
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for gpx_status_t::rtkMode. Reuses the exact same eRTKConfigBits
+ *        bit/name list as renderRTKCfgBits -- rtkMode's own data_sets.h doc comment says "(see
+ *        eRTKConfigBits)"; its bit positions are treated as authoritative over this file's
+ *        pre-existing (and, on inspection, internally inconsistent) hand-written description
+ *        string for the field, per Kyle's 2026-08-13 call (see RtkConfigBitNames() above).
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderRtkMode(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "rtkMode"))
+        return "";
+
+    try {
+        uint32_t rtkMode = std::any_cast<uint32_t>(value);
+        return renderBitNameList(rtkMode, RtkConfigBitNames());
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -1817,11 +1857,15 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("navOutputPeriodMs", &gpx_status_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("flashCfgChecksum", &gpx_status_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
  
-    string str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
-    mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    // SN-8491 (Kyle, 2026-08-13): this description previously read "Rover [0x1=G1, 0x2=G2],
+    // 0x8=GCompass, BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], BaseOutG2
+    // [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], 0x1000=MovingBasePos,
+    // 0x4000=SameHdwRvrBase" -- a bit layout inconsistent with eRTKConfigBits (e.g. its 0x40 read
+    // as an RTCM output, not GNSS1_UBLOX_SER2) and backed by no dedicated enum anywhere. Per
+    // Kyle's confirmation, rtkMode's actual bits are eRTKConfigBits' (matching its own data_sets.h
+    // doc comment); replaced with an accurate description and wired to the same renderExtended
+    // (renderRtkMode) used for RTKCfgBits.
+    mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", "RTK mode bits (see eRTKConfigBits)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRtkMode;
     for (int i=0; i<GNSS_RECEIVER_COUNT; i++)
     {
         mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)").renderExtended = renderGpxStatus_gnssInitState;

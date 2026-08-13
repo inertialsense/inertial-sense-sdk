@@ -46,6 +46,7 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_FLASH_CONFIG, "ioConfig2", (uint8_t)IO_CFG2_USE_GNSS2_AS_SOURCE, "Use GNSS2", "DID_FLASH_CONFIG.ioConfig2" },
         { DID_FLASH_CONFIG, "sensorConfig", (uint32_t)SENSOR_CFG_DISABLE_MAGNETOMETER, "Disable magnetometer sensor", "DID_FLASH_CONFIG.sensorConfig" },
         { DID_GPX_FLASH_CFG, "sysCfgBits", (uint32_t)GPX_SYS_CFG_BITS_DISABLE_VCC_RF, "VCC_RF", "DID_GPX_FLASH_CFG.sysCfgBits" },
+        { DID_GPX_STATUS, "rtkMode", (uint32_t)RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB, "GNSS2 RTCM3 USB", "DID_GPX_STATUS.rtkMode" },
     };
     return cases;
 }
@@ -360,4 +361,29 @@ TEST(ISDataMappingsRenderExtended, SensorConfig_NotWiredForGpxFlashCfg)
     const map_name_to_info_t* gpxMap = cISDataMappings::NameToInfoMap(DID_GPX_FLASH_CFG);
     ASSERT_NE(gpxMap, nullptr);
     EXPECT_EQ(gpxMap->find("sensorConfig"), gpxMap->end());
+}
+
+// ---- gpx_status_t::rtkMode (reuses eRTKConfigBits, Kyle 2026-08-13) -----------
+
+TEST(ISDataMappingsRenderExtended, RtkMode_RendersIdenticallyToRTKCfgBitsForSameRawValue)
+{
+    // Per Kyle's 2026-08-13 confirmation, rtkMode's actual bit positions ARE eRTKConfigBits' --
+    // the field's own pre-existing hand-written description string (now replaced) implied a
+    // different, inconsistent layout with no enum ever backing it. Confirm the same raw value
+    // decodes identically whether read from rtkMode or RTKCfgBits.
+    const data_info_t* rtkMode    = FindMappedField(DID_GPX_STATUS, "rtkMode");
+    const data_info_t* rtkCfgBits = FindMappedField(DID_FLASH_CONFIG, "RTKCfgBits");
+    ASSERT_NE(rtkMode, nullptr);
+    ASSERT_NE(rtkCfgBits, nullptr);
+
+    const uint32_t value = (uint32_t)RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK | (uint32_t)RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1;
+    EXPECT_EQ(CallRenderExtended(*rtkMode, value), CallRenderExtended(*rtkCfgBits, value));
+    EXPECT_FALSE(CallRenderExtended(*rtkMode, value).empty());
+}
+
+TEST(ISDataMappingsRenderExtended, RtkMode_ZeroRendersEmpty)
+{
+    const data_info_t* info = FindMappedField(DID_GPX_STATUS, "rtkMode");
+    ASSERT_NE(info, nullptr);
+    EXPECT_EQ(CallRenderExtended(*info, (uint32_t)0), "");
 }
