@@ -335,7 +335,12 @@ void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t
     s_cm.getData(port, did, size, offset, period);
 }
 
-void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period)
+void comManagerGetDataFlags(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint8_t flags)
+{
+    s_cm.getData(port, did, size, offset, period, flags);
+}
+
+void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint8_t flags)
 {
     // Create and Send request packet
     p_data_get_t get;
@@ -344,7 +349,7 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
     get.size = size;
     get.period = period;
 
-    if (port && send(port, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0)) {
+    if (port && send(port, PKT_TYPE_GET_DATA | flags, &get, 0, sizeof(get), 0)) {
         // if send() is true, then an error occurred...
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.

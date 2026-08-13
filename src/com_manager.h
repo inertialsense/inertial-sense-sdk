@@ -283,6 +283,15 @@ void stepSendMessages(void);
 void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
 
 /**
+ * @brief Same as comManagerGetData(), with an additional ISB packet flags parameter (see
+ *        eISBPacketFlags) OR'd into the request -- e.g. ISB_FLAGS_GET_DATA_PRESERVE_STREAM,
+ *        which asks a device that supports it not to stop an existing broadcast for this DID on
+ *        this port when period is 0 (SN-8471). comManagerGetData() is equivalent to calling this
+ *        with flags=0.
+ */
+void comManagerGetDataFlags(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint8_t flags);
+
+/**
  * @brief Request a device to broadcast a preset collection of messages via RMC bits.
  *
  * @param port       Port handle to send the request to.
@@ -544,7 +553,7 @@ public:
      * @param offset Byte offset into the data structure; 0 = start.
      * @param period Broadcast period in step multiples; 0 = one-shot request.
      */
-    void getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
+    void getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint8_t flags = 0);
 
     /**
      * @brief Request broadcast of a preset collection of messages via RMC bits.

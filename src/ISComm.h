@@ -244,6 +244,22 @@ typedef enum
     ISB_FLAGS_MASK                          = 0xF0, //!< Bitmask for the packet flags field (upper nibble)
     ISB_FLAGS_EXTENDED_PAYLOAD              = 0x10, //!< Payload exceeds 2048 bytes and continues in the next packet
     ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x20, //!< First two bytes of the payload contain the data-set byte offset
+
+    /**
+     * @brief Only meaningful on a PKT_TYPE_GET_DATA packet whose p_data_get_t::period is 0. A
+     *        plain period=0 GET_DATA is a genuine one-shot request (deliver the current value
+     *        once) -- but on a device that also honors this flag, it ALSO implicitly stops any
+     *        existing broadcast for that DID on the requesting port, since there was previously
+     *        no way to distinguish "just poll me a value" from "stop this stream" (SN-8471).
+     *        Setting this bit tells a device that supports it: if this DID's broadcast bit is
+     *        already set on this port, leave it alone (deliver the one-shot reply without
+     *        disturbing the existing stream). Unset (the default for every existing caller),
+     *        behavior is unchanged. Ignored on older firmware that doesn't recognize it -- an
+     *        unrecognized upper-nibble flag bit is never validated/rejected by the parser, so a
+     *        period=0 GET_DATA from a newer client talking to older firmware still stops any
+     *        existing stream exactly as it always has.
+     */
+    ISB_FLAGS_GET_DATA_PRESERVE_STREAM      = 0x40,
 } eISBPacketFlags;
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
