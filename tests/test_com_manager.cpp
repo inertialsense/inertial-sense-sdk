@@ -1088,10 +1088,19 @@ TEST(ComManager, Evb2DataForwardTest)
 // received payload didn't include it, rather than trust whatever memory happens to be there.
 // Uses a fresh, local ISComManager (mirroring tcm.cm elsewhere in this file) rather than the
 // global s_cm/free-function API, so this doesn't depend on any other test's registration state.
+// init() must be called before getDataRequest() -- broadcastMessages is a raw pointer with no
+// default member initializer, so an un-init'd ISComManager dereferences garbage and segfaults.
+
+static ISComManager makeInitializedComManager()
+{
+    ISComManager cm;
+    cm.init(NULL, TASK_PERIOD_MS, 0, 0, 0, 0, &g_cmBufBcastMsg);
+    return cm;
+}
 
 TEST(ComManager, GetDataRequest_SanitizesFlagsFromShortLegacyPacket)
 {
-    ISComManager cm;
+    ISComManager cm = makeInitializedComManager();
     p_data_get_t req = {};
     req.id = DID_DEV_INFO;
     req.period = 0;
@@ -1105,7 +1114,7 @@ TEST(ComManager, GetDataRequest_SanitizesFlagsFromShortLegacyPacket)
 
 TEST(ComManager, GetDataRequest_TrustsFlagsFromFullSizePacket)
 {
-    ISComManager cm;
+    ISComManager cm = makeInitializedComManager();
     p_data_get_t req = {};
     req.id = DID_DEV_INFO;
     req.period = 0;
@@ -1122,7 +1131,7 @@ TEST(ComManager, GetDataRequest_DefaultReceivedSizeTrustsFlags)
     // comManagerGetDataRequest()'s receivedPayloadSize defaults to sizeof(p_data_get_t) -- for
     // any caller constructing req itself (not decoding one off the wire), flags should be
     // trusted as-is with no explicit size argument needed.
-    ISComManager cm;
+    ISComManager cm = makeInitializedComManager();
     p_data_get_t req = {};
     req.id = DID_DEV_INFO;
     req.period = 0;
