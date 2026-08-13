@@ -1349,12 +1349,13 @@ TEST(ISStatusDecode, ImxSysCfgBits_MagRecalModeSubfield)
     // Value 0 (disabled) still renders a line -- it's a meaningful Enum state, not absence.
     EXPECT_NE(RenderStatusFromDecode(*dec, 0u).find("Mag recal mode: Disabled"), std::string::npos);
 
-    // Kyle, 2026-08-13: Enum entries previously rendered bare (no hex) unless legacyText was
-    // hand-set -- confirm every Enum-kind line now carries the same "0xHEX - " prefix as Bit-kind
-    // lines, derived from the raw (pre-shift) field value.
-    ExpectHexPrefixedLine(multi, multiAxis, "Mag recal mode: Multi-axis", 8);
-    ExpectHexPrefixedLine(single, singleAxis, "Mag recal mode: Single-axis", 8);
-    ExpectHexPrefixedLine(RenderStatusFromDecode(*dec, 0u), 0u, "Mag recal mode: Disabled", 8);
+    // Kyle, 2026-08-13: this is a multi-bit field (3 bits at offset 8) -- confirm it renders the
+    // "bits[hi:lo]=0xN - " annotation rather than a nibble-straddling shifted-hex value.
+    const uint32_t magRecalMask = (uint32_t)SYS_CFG_BITS_MAG_RECAL_MODE_MASK;
+    const uint32_t magRecalShift = (uint32_t)SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET;
+    ExpectEnumSubfieldLine(multi, magRecalMask, magRecalShift, multiAxis >> magRecalShift, "Mag recal mode: Multi-axis");
+    ExpectEnumSubfieldLine(single, magRecalMask, magRecalShift, singleAxis >> magRecalShift, "Mag recal mode: Single-axis");
+    ExpectEnumSubfieldLine(RenderStatusFromDecode(*dec, 0u), magRecalMask, magRecalShift, 0u, "Mag recal mode: Disabled");
 }
 
 TEST(ISStatusDecode, ImxSysCfgBits_BrownoutThresholdSubfield)
@@ -1365,7 +1366,9 @@ TEST(ISStatusDecode, ImxSysCfgBits_BrownoutThresholdSubfield)
     const uint32_t level3 = (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3 << SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
     const std::string rendered = RenderStatusFromDecode(*dec, level3);
     EXPECT_NE(rendered.find("2.5-2.6V"), std::string::npos);
-    ExpectHexPrefixedLine(rendered, level3, "Brownout reset threshold: 2.5-2.6V", 8);
+    // Multi-bit field (2 bits at offset 22) -- bit-range annotation, not shifted-hex.
+    ExpectEnumSubfieldLine(rendered, (uint32_t)SYS_CFG_BITS_BOR_THRESHOLD_MASK, (uint32_t)SYS_CFG_BITS_BOR_THRESHOLD_OFFSET,
+        (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V");
 }
 
 TEST(ISStatusDecode, ImxSysCfgBits_UnusedBit0ContributesNoBitOfItsOwn)
@@ -1410,7 +1413,9 @@ TEST(ISStatusDecode, GpxSysCfgBits_VccRfBitAndBrownoutThreshold)
     const uint32_t level3 = (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3 << GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
     const std::string level3Rendered = RenderStatusFromDecode(*dec, level3);
     EXPECT_NE(level3Rendered.find("2.5-2.6V"), std::string::npos);
-    ExpectHexPrefixedLine(level3Rendered, level3, "Brownout reset threshold: 2.5-2.6V", 8);
+    // Multi-bit field (2 bits at offset 22) -- bit-range annotation, not shifted-hex.
+    ExpectEnumSubfieldLine(level3Rendered, (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK, (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET,
+        (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V");
 }
 
 TEST(ISStatusDecode, GpxSysCfgBits_IsMuchSmallerThanImxTable)
@@ -1594,8 +1599,11 @@ TEST(ISStatusDecode, IoConfig_G1G2FunctionSubfield)
     // even though the always-on Enums elsewhere in the table still render their own defaults.
     EXPECT_EQ(RenderStatusFromDecode(*dec, 0u).find("G1/G2:"), std::string::npos);
 
-    ExpectHexPrefixedLine(canBus, (uint32_t)IO_CONFIG_G1G2_CAN_BUS, "G1/G2: CAN Bus", 8);
-    ExpectHexPrefixedLine(i2c, (uint32_t)IO_CONFIG_G1G2_I2C, "G1/G2: I2C", 8);
+    // Multi-bit field (3 bits, mask 0xE at offset 1) -- bit-range annotation, not shifted-hex.
+    const uint32_t g1g2Mask = (uint32_t)IO_CONFIG_G1G2_MASK;
+    const uint32_t g1g2Shift = (uint32_t)__builtin_ctz(g1g2Mask);
+    ExpectEnumSubfieldLine(canBus, g1g2Mask, g1g2Shift, (uint32_t)IO_CONFIG_G1G2_CAN_BUS >> g1g2Shift, "G1/G2: CAN Bus");
+    ExpectEnumSubfieldLine(i2c, g1g2Mask, g1g2Shift, (uint32_t)IO_CONFIG_G1G2_I2C >> g1g2Shift, "G1/G2: I2C");
 }
 
 TEST(ISStatusDecode, IoConfig_Gnss1PpsSourceSubfield)
@@ -1681,8 +1689,11 @@ TEST(ISStatusDecode, SensorConfig_GyroAndAccelFullScaleAreIndependentAlwaysOnEnu
     EXPECT_NE(rendered.find("Gyro FS: 4000 deg/s"), std::string::npos);
     EXPECT_NE(rendered.find("Accel FS: 16g"), std::string::npos);
 
-    ExpectHexPrefixedLine(rendered, gyro4000, "Gyro FS: 4000 deg/s", 8);
-    ExpectHexPrefixedLine(rendered, acc16g, "Accel FS: 16g", 8);
+    // Multi-bit fields (3 bits each) -- bit-range annotation, not shifted-hex.
+    ExpectEnumSubfieldLine(rendered, (uint32_t)SENSOR_CFG_GYR_FS_MASK, (uint32_t)SENSOR_CFG_GYR_FS_OFFSET,
+        (uint32_t)SENSOR_CFG_GYR_FS_4000, "Gyro FS: 4000 deg/s");
+    ExpectEnumSubfieldLine(rendered, (uint32_t)SENSOR_CFG_ACC_FS_MASK, (uint32_t)SENSOR_CFG_ACC_FS_OFFSET,
+        (uint32_t)SENSOR_CFG_ACC_FS_16G, "Accel FS: 16g");
     EXPECT_EQ(rendered.find("Gyro FS: 250 deg/s"), std::string::npos);
     EXPECT_EQ(rendered.find("Accel FS: 2g"), std::string::npos);
 }

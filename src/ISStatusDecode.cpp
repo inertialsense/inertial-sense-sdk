@@ -1567,13 +1567,26 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
                 if (vl.value == raw)
                 {
                     if (vl.legacyText.empty())
+                    {
                         // No legacy string to preserve (this Enum value was never rendered before
-                        // SN-8491) -- auto-prepend "0xHEX - " from the value/shift themselves
-                        // (never a hand-typed literal that could drift) to match the "0xHEX -
-                        // description" convention every other renderExtended function in this file
-                        // uses. Kyle, 2026-08-13: confirmed one consistent hex-prefix style
-                        // everywhere, replacing this fallback's previous bare-label-only behavior.
-                        buff << utils::string_format("0x%08X - %s", vl.value << sf.shift, vl.label.c_str()) << std::endl;
+                        // SN-8491). Auto-derive an annotation from sf.mask itself (never a
+                        // hand-typed literal that could drift): a single-bit mask renders as a
+                        // plain "0xHEX - " prefix, same as a Bit-kind line, since one set bit is
+                        // always unambiguous regardless of hex-nibble alignment. A multi-bit mask
+                        // instead renders "bits[hi:lo]=0xN - " -- these subfields are rarely
+                        // nibble-aligned (e.g. a 3-bit field at offset 19), so a shifted-hex value
+                        // straddling a nibble boundary can't be visually correlated back to the raw
+                        // field by a human reader, whereas an explicit bit range always can. Kyle,
+                        // 2026-08-13: confirmed bit-range annotation over forcing hex-prefix
+                        // consistency here, even though it means Bit-kind and multi-bit Enum-kind
+                        // lines now use two different annotation styles.
+                        const int lo = sf.mask ? __builtin_ctz(sf.mask) : 0;
+                        const int hi = sf.mask ? (31 - __builtin_clz(sf.mask)) : 0;
+                        if (hi == lo)
+                            buff << utils::string_format("0x%08X - %s", vl.value << sf.shift, vl.label.c_str()) << std::endl;
+                        else
+                            buff << utils::string_format("bits[%d:%d]=0x%X - %s", hi, lo, vl.value, vl.label.c_str()) << std::endl;
+                    }
                     else
                         buff << vl.legacyText << std::endl;
                     matched = true;

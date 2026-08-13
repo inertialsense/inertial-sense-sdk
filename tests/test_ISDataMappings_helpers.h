@@ -97,16 +97,49 @@ inline void ExpectRenderExtendedWired(const RenderExtendedWiringCase& c)
 
 /**
  * @brief Assert that `rendered` contains a "0xHEX - name" line for `mask`, where HEX is the
- *        mask value itself formatted to `hexDigits` digits -- the consistent hex-prefix
- *        convention (Kyle, 2026-08-13) all renderExtended output must follow. The expected prefix
- *        is computed from `mask` with the same format string the production code uses, rather
- *        than hand-typed as a literal, so this can't silently drift from the real bit value.
+ *        mask value itself formatted to `hexDigits` digits. This is the single-bit-flag
+ *        convention: a lone set bit's hex is always unambiguous regardless of nibble alignment,
+ *        so `renderBitNameList()`'s callers (RTKCfgBits, rtkMode, grmcBits, grmcNMEABits, or
+ *        rmc_t.bits -- all flat single-bit-flag lists) and single-bit Bit-kind decode-table lines
+ *        keep this format. For multi-bit Enum-kind decode-table subfields, see
+ *        `ExpectEnumSubfieldLine()` below instead (Kyle, 2026-08-13: bit-range annotation over
+ *        hex there, since those fields are rarely nibble-aligned). The expected prefix is
+ *        computed from `mask` with the same format string the production code uses, rather than
+ *        hand-typed as a literal, so this can't silently drift from the real bit value.
  */
 inline void ExpectHexPrefixedLine(const std::string& rendered, unsigned long long mask, const std::string& name, int hexDigits = 16)
 {
     char hexbuf[24];
     std::snprintf(hexbuf, sizeof(hexbuf), (hexDigits <= 8) ? "0x%08llX" : "0x%016llX", mask);
     const std::string expectedLine = std::string(hexbuf) + " - " + name;
+    EXPECT_NE(rendered.find(expectedLine), std::string::npos)
+        << "expected line \"" << expectedLine << "\" not found in \"" << rendered << "\"";
+}
+
+/**
+ * @brief Assert that `rendered` contains the line `RenderStatusFromDecode()`'s Enum case produces
+ *        for a subfield with the given `mask`/`shift`, given its raw (pre-shift) enum index
+ *        `rawIndexValue` -- "bits[hi:lo]=0xN - name" for a multi-bit mask, or "0xHEX - name" for a
+ *        single-bit mask (mirroring production's own single-bit-vs-multi-bit branch). `hi`/`lo`
+ *        are derived from `mask` via the same ctz/clz approach production uses, never hand-typed,
+ *        so a future re-bit-packing of a field can't silently desync the test from reality.
+ */
+inline void ExpectEnumSubfieldLine(const std::string& rendered, uint32_t mask, uint32_t shift, unsigned long long rawIndexValue, const std::string& name)
+{
+    const int lo = mask ? __builtin_ctz(mask) : 0;
+    const int hi = mask ? (31 - __builtin_clz(mask)) : 0;
+    char buf[64];
+    std::string expectedLine;
+    if (hi == lo)
+    {
+        std::snprintf(buf, sizeof(buf), "0x%08llX", rawIndexValue << shift);
+        expectedLine = std::string(buf) + " - " + name;
+    }
+    else
+    {
+        std::snprintf(buf, sizeof(buf), "bits[%d:%d]=0x%llX", hi, lo, rawIndexValue);
+        expectedLine = std::string(buf) + " - " + name;
+    }
     EXPECT_NE(rendered.find(expectedLine), std::string::npos)
         << "expected line \"" << expectedLine << "\" not found in \"" << rendered << "\"";
 }
