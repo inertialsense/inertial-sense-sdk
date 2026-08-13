@@ -1043,6 +1043,59 @@ status_field_decode_t buildImxSysCfgBitsDecode()
     return d;
 }
 
+/**
+ * @brief rmc_t::options decode table (RMC_OPTIONS_*), used with both DID_RMC and DID_GPX_RMC
+ *        (one shared table/renderer, same as gnssSatSigConst/dynamicModel -- see PopulateMapRmc).
+ *        Registered under the internal key "rmcOptions"; nmea_msgs_t::options shares the same
+ *        RMC_OPTIONS_* semantics but is a different field/DID, out of this ticket's scope, so this
+ *        table is looked up only via a hardcoded key from renderRmcOptions, never through the
+ *        ambiguous "options" on-wire name.
+ *
+ *        Port selection (SER0/SER1/SER2/USB) is 4 independent Bit subfields covering the
+ *        meaningful low nibble of RMC_OPTIONS_PORT_MASK; the upper nibble (0x10-0x80) is
+ *        undocumented/unused and, like sysCfgBits' UNUSED1, is deliberately not decoded.
+ *        RMC_OPTIONS_PORT_CURRENT (0x00, no port bit set) intentionally renders nothing -- a port
+ *        selection of "current" is the default/unremarkable case, consistent with how the rest of
+ *        this table's Bit subfields render silence for "off".
+ *
+ *        NMEA_SPEED_FILTER is a 2-bit Enum with only 2 of its 4 possible values defined
+ *        (Enable=1, Disable=2); 0 ("not specified") and 3 (undefined) render nothing, unlike
+ *        sysCfgBits' mag-recal-mode Enum where 0 was itself a meaningful "Disabled" state.
+ */
+status_field_decode_t buildRmcOptionsDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "options";   // on-wire field name (registry key is "rmcOptions")
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("Port: Ser0", RMC_OPTIONS_PORT_SER0, false, "0x00000001 - Output on Serial 0"));
+    d.subfields.push_back(bitField("Port: Ser1", RMC_OPTIONS_PORT_SER1, false, "0x00000002 - Output on Serial 1"));
+    d.subfields.push_back(bitField("Port: Ser2", RMC_OPTIONS_PORT_SER2, false, "0x00000004 - Output on Serial 2"));
+    d.subfields.push_back(bitField("Port: USB",  RMC_OPTIONS_PORT_USB,  false, "0x00000008 - Output on USB"));
+    d.subfields.push_back(bitField("Preserve control", RMC_OPTIONS_PRESERVE_CTRL, false,
+        "0x00000100 - Preserve current message bits (OR new bits in, don't replace)"));
+    d.subfields.push_back(bitField("Persistent", RMC_OPTIONS_PERSISTENT, false,
+        "0x00000200 - Save current port RMC to flash; persists across reboot"));
+
+    {
+        const uint32_t mask  = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "NMEA speed filter";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE,  "NMEA speed filter: Enabled",  "", false },
+            { (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE, "NMEA speed filter: Disabled", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -1068,6 +1121,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("gnssSatSigConst",    buildGnssSatSigConstDecode());
         m.emplace("dynamicModel",       buildDynamicModelDecode());
         m.emplace("sysCfgBits",         buildImxSysCfgBitsDecode());
+        m.emplace("rmcOptions",         buildRmcOptionsDecode());
         return m;
     }();
     return r;

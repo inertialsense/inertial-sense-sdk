@@ -34,6 +34,8 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_FLASH_CONFIG,   "dynamicModel", (uint8_t)DYNAMIC_MODEL_GROUND_VEHICLE, "Ground vehicle", "DID_FLASH_CONFIG.dynamicModel" },
         { DID_GPX_FLASH_CFG,  "dynamicModel", (uint8_t)DYNAMIC_MODEL_AIRBORNE_2G,    "Airborne <2g",   "DID_GPX_FLASH_CFG.dynamicModel" },
         { DID_FLASH_CONFIG,   "sysCfgBits", (uint32_t)SYS_CFG_BITS_AUTO_MAG_RECAL, "automatic mag recalibration", "DID_FLASH_CONFIG.sysCfgBits" },
+        { DID_RMC,     "options", (uint32_t)RMC_OPTIONS_PORT_USB,     "USB",       "DID_RMC.options" },
+        { DID_GPX_RMC, "options", (uint32_t)RMC_OPTIONS_PERSISTENT,   "persists across reboot", "DID_GPX_RMC.options" },
     };
     return cases;
 }
@@ -131,5 +133,42 @@ TEST(ISDataMappingsRenderExtended, GpxFlashCfg_SysCfgBits_DeliberatelyNotWiredYe
     ASSERT_NE(info, nullptr);
     const std::string rendered = CallRenderExtended(*info, (uint32_t)SYS_CFG_BITS_AUTO_MAG_RECAL);
     EXPECT_EQ(rendered.find("Auto mag recal"), std::string::npos) << "leaked IMX-specific decoded text: \"" << rendered << "\"";
+    EXPECT_NE(rendered.find("0x"), std::string::npos) << "expected the generic hex fallback, got: \"" << rendered << "\"";
+}
+
+TEST(ISDataMappingsRenderExtended, RmcOptions_SharedBetweenRmcAndGpxRmc)
+{
+    // DID_RMC and DID_GPX_RMC are both registered by the single PopulateMapRmc() function, so the
+    // same raw options value must render identically regardless of which DID it came from.
+    const data_info_t* rmc    = FindMappedField(DID_RMC, "options");
+    const data_info_t* gpxRmc = FindMappedField(DID_GPX_RMC, "options");
+    ASSERT_NE(rmc, nullptr);
+    ASSERT_NE(gpxRmc, nullptr);
+
+    const uint32_t value = (uint32_t)RMC_OPTIONS_PORT_SER0 | (uint32_t)RMC_OPTIONS_PRESERVE_CTRL;
+    EXPECT_EQ(CallRenderExtended(*rmc, value), CallRenderExtended(*gpxRmc, value));
+    EXPECT_FALSE(CallRenderExtended(*rmc, value).empty());
+}
+
+TEST(ISDataMappingsRenderExtended, RmcOptions_MatchesDecodeTableDirectly)
+{
+    const data_info_t* info = FindMappedField(DID_RMC, "options");
+    ASSERT_NE(info, nullptr);
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t value = (uint32_t)RMC_OPTIONS_PORT_SER2 | (uint32_t)RMC_OPTIONS_PERSISTENT;
+    EXPECT_EQ(CallRenderExtended(*info, value), RenderStatusFromDecode(*dec, value));
+}
+
+TEST(ISDataMappingsRenderExtended, NmeaMsgsOptions_DeliberatelyNotWiredYet)
+{
+    // nmea_msgs_t::options (DID_NMEA_BCAST_PERIOD) shares RMC_OPTIONS_* semantics but is a
+    // different field/DID, out of this ticket's stated scope (DID_RMC/DID_GPX_RMC only). Confirm
+    // it wasn't accidentally wired just by virtue of also being literally named "options".
+    const data_info_t* info = FindMappedField(DID_NMEA_BCAST_PERIOD, "options");
+    ASSERT_NE(info, nullptr);
+    const std::string rendered = CallRenderExtended(*info, (uint32_t)RMC_OPTIONS_PORT_USB);
+    EXPECT_EQ(rendered.find("USB"), std::string::npos) << "leaked decoded text: \"" << rendered << "\"";
     EXPECT_NE(rendered.find("0x"), std::string::npos) << "expected the generic hex fallback, got: \"" << rendered << "\"";
 }

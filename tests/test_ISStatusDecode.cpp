@@ -1379,3 +1379,77 @@ TEST(ISStatusDecode, GpxFlashCfg_SysCfgBits_NotYetRoutedReturnsNullNotImxTable)
     EXPECT_NE(GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits"), nullptr);
     EXPECT_EQ(GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits"), GetStatusDecodeByField("sysCfgBits"));
 }
+
+// ---- rmc_t::options (RMC_OPTIONS_*, SN-8491) ----------------------------------
+
+TEST(ISStatusDecode, RmcOptions_PortBitsRenderNonEmptyAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PORT_CURRENT), "");   // 0x00: "current port" is silent, not an error
+
+    const uint32_t ports[] = {
+        (uint32_t)RMC_OPTIONS_PORT_SER0, (uint32_t)RMC_OPTIONS_PORT_SER1,
+        (uint32_t)RMC_OPTIONS_PORT_SER2, (uint32_t)RMC_OPTIONS_PORT_USB,
+    };
+    std::vector<std::string> rendered;
+    for (uint32_t p : ports) {
+        const std::string s = RenderStatusFromDecode(*dec, p);
+        EXPECT_FALSE(s.empty()) << "port bit 0x" << std::hex << p;
+        rendered.push_back(s);
+    }
+    for (size_t i = 0; i < rendered.size(); ++i)
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j]);
+}
+
+TEST(ISStatusDecode, RmcOptions_AllPortsSetRendersAllFourIndividually)
+{
+    // RMC_OPTIONS_PORT_ALL == RMC_OPTIONS_PORT_MASK (0xFF) implies all 4 meaningful port bits,
+    // so it should render each port's line individually rather than needing a distinct "All" label.
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    const std::string rendered = RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PORT_ALL);
+    for (const char* port : { "Serial 0", "Serial 1", "Serial 2", "USB" })
+        EXPECT_NE(rendered.find(port), std::string::npos) << port << " missing when all ports selected";
+}
+
+TEST(ISStatusDecode, RmcOptions_PreserveCtrlAndPersistentBits)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    const std::string preserve   = RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PRESERVE_CTRL);
+    const std::string persistent = RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PERSISTENT);
+    EXPECT_NE(preserve.find("Preserve"), std::string::npos);
+    EXPECT_NE(persistent.find("persists across reboot"), std::string::npos);
+    EXPECT_NE(preserve, persistent);
+}
+
+TEST(ISStatusDecode, RmcOptions_NmeaSpeedFilterSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t enable  = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE  << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET;
+    const uint32_t disable = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET;
+    const std::string enabled  = RenderStatusFromDecode(*dec, enable);
+    const std::string disabled = RenderStatusFromDecode(*dec, disable);
+    EXPECT_NE(enabled.find("Enabled"), std::string::npos);
+    EXPECT_NE(disabled.find("Disabled"), std::string::npos);
+    EXPECT_NE(enabled, disabled);
+
+    // Unlike sysCfgBits' mag-recal-mode Enum, 0 ("not specified") is NOT a meaningful state here --
+    // only Enable(1)/Disable(2) are defined, so an all-zero value renders nothing at all.
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+}
+
+TEST(ISStatusDecode, RmcOptions_RegisteredForBothRmcDids)
+{
+    // "options" is ambiguous (nmea_msgs_t also has one), so rmcOptions is looked up only via its
+    // internal key from renderRmcOptions -- never through GetStatusDecode(did, "options"). Confirm
+    // the table itself is DID-agnostic content-wise: it applies equally whichever DID uses it.
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->fieldName, "options");
+}

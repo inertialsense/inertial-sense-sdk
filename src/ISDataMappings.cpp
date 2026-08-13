@@ -566,6 +566,28 @@ std::string renderImxSysCfgBits(const data_info_t& info, std::any value, int arr
     }
 }
 
+/**
+ * @brief a custom data renderer for rmc_t::options (RMC_OPTIONS_*), shared verbatim by
+ *        DID_RMC and DID_GPX_RMC (both registered by PopulateMapRmc())
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderRmcOptions(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "options"))
+        return "";
+
+    try {
+        uint32_t options = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+        return dec ? RenderStatusFromDecode(*dec, options) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -785,7 +807,7 @@ static void PopulateMapRmc(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<rmc_t> mapper(data_set, did);
     mapper.AddMember("bits", &rmc_t::bits, DATA_TYPE_UINT64, "", "Data stream enable bits for the specified ports.  (see RMC_BITS_...)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("options", &rmc_t::options, DATA_TYPE_UINT32, "", "Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("options", &rmc_t::options, DATA_TYPE_UINT32, "", "Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRmcOptions;
 }
 
 void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
