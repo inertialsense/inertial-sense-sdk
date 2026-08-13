@@ -36,6 +36,12 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_FLASH_CONFIG,   "sysCfgBits", (uint32_t)SYS_CFG_BITS_AUTO_MAG_RECAL, "automatic mag recalibration", "DID_FLASH_CONFIG.sysCfgBits" },
         { DID_RMC,     "options", (uint32_t)RMC_OPTIONS_PORT_USB,     "USB",       "DID_RMC.options" },
         { DID_GPX_RMC, "options", (uint32_t)RMC_OPTIONS_PERSISTENT,   "persists across reboot", "DID_GPX_RMC.options" },
+        { DID_FLASH_CONFIG,  "RTKCfgBits", (uint32_t)RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0, "GNSS1 UBLOX Ser0", "DID_FLASH_CONFIG.RTKCfgBits" },
+        { DID_GPX_FLASH_CFG, "RTKCfgBits", (uint32_t)RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK, "RTK Compassing", "DID_GPX_FLASH_CFG.RTKCfgBits" },
+        { DID_GPX_STATUS, "grmcBitsSer0",     (uint64_t)GRMC_BITS_STATUS,   "GPX status", "DID_GPX_STATUS.grmcBitsSer0" },
+        { DID_GPX_STATUS, "grmcNMEABitsSer0", (uint64_t)NMEA_RMC_BITS_GNGGA, "$GNGGA",     "DID_GPX_STATUS.grmcNMEABitsSer0" },
+        { DID_RMC,     "bits", (uint64_t)RMC_BITS_GNSS1_POS, "GNSS1 position", "DID_RMC.bits" },
+        { DID_GPX_RMC, "bits", (uint64_t)RMC_BITS_GPX_STATUS, "GPX status",    "DID_GPX_RMC.bits" },
     };
     return cases;
 }
@@ -171,4 +177,118 @@ TEST(ISDataMappingsRenderExtended, NmeaMsgsOptions_DeliberatelyNotWiredYet)
     const std::string rendered = CallRenderExtended(*info, (uint32_t)RMC_OPTIONS_PORT_USB);
     EXPECT_EQ(rendered.find("USB"), std::string::npos) << "leaked decoded text: \"" << rendered << "\"";
     EXPECT_NE(rendered.find("0x"), std::string::npos) << "expected the generic hex fallback, got: \"" << rendered << "\"";
+}
+
+// ---- RTKCfgBits (flattened, list-style, Kyle 2026-08-13) ----------------------
+
+TEST(ISDataMappingsRenderExtended, RTKCfgBits_SharedBetweenImxAndGpx)
+{
+    const data_info_t* imx = FindMappedField(DID_FLASH_CONFIG, "RTKCfgBits");
+    const data_info_t* gpx = FindMappedField(DID_GPX_FLASH_CFG, "RTKCfgBits");
+    ASSERT_NE(imx, nullptr);
+    ASSERT_NE(gpx, nullptr);
+
+    const uint32_t value = (uint32_t)RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB | (uint32_t)RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK;
+    EXPECT_EQ(CallRenderExtended(*imx, value), CallRenderExtended(*gpx, value));
+    EXPECT_FALSE(CallRenderExtended(*imx, value).empty());
+}
+
+TEST(ISDataMappingsRenderExtended, RTKCfgBits_EachBitIndependentNoGating)
+{
+    // Flattened rendering: a per-port output bit renders on its own, with no dependency on
+    // RTK_CFG_BITS_BASE_MODE or any GNSS1/GNSS2 UBLOX/RTCM3 sub-mask also being "set" as a
+    // precondition (those are themselves just ORs of the per-port bits, not independent gates).
+    const data_info_t* info = FindMappedField(DID_FLASH_CONFIG, "RTKCfgBits");
+    ASSERT_NE(info, nullptr);
+    const std::string rendered = CallRenderExtended(*info, (uint32_t)RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1);
+    EXPECT_NE(rendered.find("GNSS1 RTCM3 Ser1"), std::string::npos);
+    // The BASE_MODE summary line is present too, since this bit is part of that OR-mask.
+    EXPECT_NE(rendered.find("RTK Base enabled"), std::string::npos);
+}
+
+TEST(ISDataMappingsRenderExtended, RTKCfgBits_ZeroRendersEmpty)
+{
+    const data_info_t* info = FindMappedField(DID_FLASH_CONFIG, "RTKCfgBits");
+    ASSERT_NE(info, nullptr);
+    EXPECT_EQ(CallRenderExtended(*info, (uint32_t)0), "");
+}
+
+// ---- grmcBits* / grmcNMEABits* (list-style, Kyle 2026-08-13) ------------------
+
+TEST(ISDataMappingsRenderExtended, GrmcBits_SharedAcrossAllFourPorts)
+{
+    const data_info_t* ser0 = FindMappedField(DID_GPX_STATUS, "grmcBitsSer0");
+    const data_info_t* ser1 = FindMappedField(DID_GPX_STATUS, "grmcBitsSer1");
+    const data_info_t* ser2 = FindMappedField(DID_GPX_STATUS, "grmcBitsSer2");
+    const data_info_t* usb  = FindMappedField(DID_GPX_STATUS, "grmcBitsUSB");
+    ASSERT_NE(ser0, nullptr); ASSERT_NE(ser1, nullptr); ASSERT_NE(ser2, nullptr); ASSERT_NE(usb, nullptr);
+
+    const uint64_t value = (uint64_t)GRMC_BITS_GNSS1_RAW | (uint64_t)GRMC_BITS_GPX_SYS_FAULT;
+    const std::string rendered = CallRenderExtended(*ser0, value);
+    EXPECT_EQ(rendered, CallRenderExtended(*ser1, value));
+    EXPECT_EQ(rendered, CallRenderExtended(*ser2, value));
+    EXPECT_EQ(rendered, CallRenderExtended(*usb, value));
+    EXPECT_NE(rendered.find("GNSS1 raw"), std::string::npos);
+    EXPECT_NE(rendered.find("GPX system fault"), std::string::npos);
+}
+
+TEST(ISDataMappingsRenderExtended, GrmcNmeaBits_SharedAcrossAllFourPorts)
+{
+    const data_info_t* ser0 = FindMappedField(DID_GPX_STATUS, "grmcNMEABitsSer0");
+    const data_info_t* usb  = FindMappedField(DID_GPX_STATUS, "grmcNMEABitsUSB");
+    ASSERT_NE(ser0, nullptr); ASSERT_NE(usb, nullptr);
+
+    const uint64_t value = (uint64_t)NMEA_RMC_BITS_GNRMC | (uint64_t)NMEA_RMC_BITS_PIMU;
+    const std::string rendered = CallRenderExtended(*ser0, value);
+    EXPECT_EQ(rendered, CallRenderExtended(*usb, value));
+    EXPECT_NE(rendered.find("$GNRMC"), std::string::npos);
+    EXPECT_NE(rendered.find("$PIMU"), std::string::npos);
+}
+
+TEST(ISDataMappingsRenderExtended, GrmcBitsAndGrmcNmeaBits_ZeroRendersEmpty)
+{
+    const data_info_t* grmc = FindMappedField(DID_GPX_STATUS, "grmcBitsSer0");
+    const data_info_t* nmea = FindMappedField(DID_GPX_STATUS, "grmcNMEABitsSer0");
+    ASSERT_NE(grmc, nullptr);
+    ASSERT_NE(nmea, nullptr);
+    EXPECT_EQ(CallRenderExtended(*grmc, (uint64_t)0), "");
+    EXPECT_EQ(CallRenderExtended(*nmea, (uint64_t)0), "");
+}
+
+// ---- rmc_t.bits (list-style, Kyle 2026-08-13) ---------------------------------
+
+TEST(ISDataMappingsRenderExtended, RmcBits_SharedBetweenRmcAndGpxRmc)
+{
+    const data_info_t* rmc    = FindMappedField(DID_RMC, "bits");
+    const data_info_t* gpxRmc = FindMappedField(DID_GPX_RMC, "bits");
+    ASSERT_NE(rmc, nullptr);
+    ASSERT_NE(gpxRmc, nullptr);
+
+    const uint64_t value = (uint64_t)RMC_BITS_PIMU | (uint64_t)RMC_BITS_GPX_STATUS;
+    const std::string rendered = CallRenderExtended(*rmc, value);
+    EXPECT_EQ(rendered, CallRenderExtended(*gpxRmc, value));
+    EXPECT_NE(rendered.find("PIMU"), std::string::npos);
+    EXPECT_NE(rendered.find("GPX status"), std::string::npos);
+}
+
+TEST(ISDataMappingsRenderExtended, RmcBits_NotConfusedWithGrmcBits)
+{
+    // rmc_t.bits (RMC_BITS_*) and gpx_status_t.grmcBits* (GRMC_BITS_*) are different namespaces
+    // despite the similar name -- RMC_BITS_GPX_STATUS (bit 46) and GRMC_BITS_STATUS (bit 2) both
+    // decode to "GPX status" text but via completely different bit positions/renderers. Confirm
+    // a raw grmcBits-shaped value fed to rmc_t.bits does NOT coincidentally decode the same way.
+    const data_info_t* rmcBits  = FindMappedField(DID_RMC, "bits");
+    const data_info_t* grmcBits = FindMappedField(DID_GPX_STATUS, "grmcBitsSer0");
+    ASSERT_NE(rmcBits, nullptr);
+    ASSERT_NE(grmcBits, nullptr);
+
+    const uint64_t value = (uint64_t)GRMC_BITS_STATUS;   // bit 2 -- meaningless in RMC_BITS_* space
+    EXPECT_NE(CallRenderExtended(*rmcBits, value), CallRenderExtended(*grmcBits, value));
+}
+
+TEST(ISDataMappingsRenderExtended, RmcBits_ZeroRendersEmpty)
+{
+    const data_info_t* info = FindMappedField(DID_RMC, "bits");
+    ASSERT_NE(info, nullptr);
+    EXPECT_EQ(CallRenderExtended(*info, (uint64_t)0), "");
 }
