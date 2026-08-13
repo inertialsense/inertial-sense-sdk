@@ -1500,6 +1500,14 @@ int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t o
     return is_comm_write(port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
+bool isbStream_shouldPreserve(uint64_t currentBits, uint64_t didBitMask, uint32_t currentPeriodMultiple, int requestedPeriod, bool preserveIfStreaming)
+{
+    return requestedPeriod == 0
+        && preserveIfStreaming
+        && (currentBits & didBitMask) != 0
+        && currentPeriodMultiple != 0;
+}
+
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     // Header

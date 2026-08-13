@@ -53,6 +53,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "data_sets.h"
 #include "stddef.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -545,6 +546,35 @@ enum eGetDataFlags
      */
     GET_DATA_FLAGS_PRESERVE_STREAM = 0x0001,
 };
+
+/**
+ * @brief True if a period=0 GET_DATA/RMC request should leave the DID's existing broadcast
+ *        state untouched rather than disabling it.
+ *
+ *        A plain period=0 GET_DATA is a genuine one-shot poll, but both GPX's isb_enable_stream()
+ *        and IMX's cmMsgHandlerRmc() historically also used it to implicitly stop any existing
+ *        broadcast for that DID on the requesting port -- there was no way for a caller to say
+ *        "just poll me a value, don't disturb whatever's already streaming." A caller that
+ *        recognizes this sets GET_DATA_FLAGS_PRESERVE_STREAM (above); this returns true only when
+ *        there's actually something to preserve: the requested period is 0, the flag is set, the
+ *        DID's broadcast-enable bit is currently set, AND its period multiple is nonzero (SN-8471).
+ *
+ *        The period-multiple check matters specifically for IMX: cmMsgHandlerRmc() sets the bit
+ *        immediately (via OR) but the actual clear happens one broadcast cycle later, in
+ *        sendRmcMessage(), once it observes periodMultiple==0 for that DID -- so there's a narrow
+ *        window where the bit reads as set even though a just-processed period=0 request already
+ *        queued it for clearing. Checking periodMultiple too avoids incorrectly treating that
+ *        transient state as "actively streaming." GPX's isb_enable_stream() keeps its bit and
+ *        periodMultiple in sync immediately, so the check is always consistent there, but passing
+ *        it costs nothing and keeps one shared, unambiguous contract for both callers.
+ *
+ * @param currentBits           the port's current broadcast-enable bits (grmci_t.rmc.bits or rmci_t.rmc.bits)
+ * @param didBitMask            the specific bit for the DID being requested/enabled (e.g. g_gpxDidToGrmcBit[did] or g_didToRmcBit[did])
+ * @param currentPeriodMultiple the DID's current period-multiple value on this port, before this request is applied
+ * @param requestedPeriod       the requested broadcast period; 0 means "one-shot / disable"
+ * @param preserveIfStreaming   true if the request explicitly asked not to disturb an existing stream
+ */
+bool isbStream_shouldPreserve(uint64_t currentBits, uint64_t didBitMask, uint32_t currentPeriodMultiple, int requestedPeriod, bool preserveIfStreaming);
 
 /** Represents the body header of an ACK or NACK packet */
 typedef struct

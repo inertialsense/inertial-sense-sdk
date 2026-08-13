@@ -1308,6 +1308,63 @@ TEST(ISComm, LegacyGetDataHelpersSendZeroFlags)
     EXPECT_EQ(request->flags, 0);
 }
 
+// isbStream_shouldPreserve() -- the SN-8471 decision logic shared by GPX's isb_enable_stream()
+// and IMX's cmMsgHandlerRmc() that lets a period=0 poll leave an already-streaming DID's bit
+// alone instead of clearing it (see GET_DATA_FLAGS_PRESERVE_STREAM above).
+namespace {
+constexpr uint64_t kIsbStreamDidBit = 1ull << 5;
+constexpr uint64_t kIsbStreamOtherBit = 1ull << 9;
+constexpr uint32_t kIsbStreamNonZeroPeriod = 250;
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_PreservesWhenStreamingAndFlagSetAndPeriodZero)
+{
+    EXPECT_TRUE(isbStream_shouldPreserve(kIsbStreamDidBit | kIsbStreamOtherBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenFlagNotSet)
+{
+    // This is today's exact pre-SN-8471 behavior: default (flag unset) always clears.
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, false));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenBitNotCurrentlySet)
+{
+    // Nothing to preserve -- not streaming yet, so a plain period=0 poll behaves as a normal
+    // one-shot with no side effect either way.
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamOtherBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenPeriodIsNonZero)
+{
+    // A nonzero requested period is an explicit enable/refresh request, not a poll -- the flag
+    // is irrelevant here; the caller proceeds with its normal set-the-bit behavior.
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 100, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenBitZeroAndCurrentBitsZero)
+{
+    EXPECT_FALSE(isbStream_shouldPreserve(0, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_IsIndependentOfOtherBits)
+{
+    // Only the specific DID's own bit matters -- other unrelated bits being set/clear doesn't
+    // change the verdict for this DID.
+    EXPECT_TRUE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamOtherBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenCurrentPeriodMultipleIsZero)
+{
+    // IMX-specific scenario: cmMsgHandlerRmc() sets the bit immediately (via OR) but the actual
+    // clear happens one broadcast cycle later, in sendRmcMessage(), once it observes
+    // periodMultiple==0 -- so there's a narrow window where the bit reads as set even though a
+    // just-processed period=0 request already queued it for clearing. periodMultiple==0 here
+    // means "already queued for removal, nothing genuinely active to preserve."
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, 0, 0, true));
+}
+
 
 #if TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS
 uint8_t rxBuf[8192] = {0};
