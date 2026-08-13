@@ -244,22 +244,6 @@ typedef enum
     ISB_FLAGS_MASK                          = 0xF0, //!< Bitmask for the packet flags field (upper nibble)
     ISB_FLAGS_EXTENDED_PAYLOAD              = 0x10, //!< Payload exceeds 2048 bytes and continues in the next packet
     ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x20, //!< First two bytes of the payload contain the data-set byte offset
-
-    /**
-     * @brief Only meaningful on a PKT_TYPE_GET_DATA packet whose p_data_get_t::period is 0. A
-     *        plain period=0 GET_DATA is a genuine one-shot request (deliver the current value
-     *        once) -- but on a device that also honors this flag, it ALSO implicitly stops any
-     *        existing broadcast for that DID on the requesting port, since there was previously
-     *        no way to distinguish "just poll me a value" from "stop this stream" (SN-8471).
-     *        Setting this bit tells a device that supports it: if this DID's broadcast bit is
-     *        already set on this port, leave it alone (deliver the one-shot reply without
-     *        disturbing the existing stream). Unset (the default for every existing caller),
-     *        behavior is unchanged. Ignored on older firmware that doesn't recognize it -- an
-     *        unrecognized upper-nibble flag bit is never validated/rejected by the parser, so a
-     *        period=0 GET_DATA from a newer client talking to older firmware still stops any
-     *        existing stream exactly as it always has.
-     */
-    ISB_FLAGS_GET_DATA_PRESERVE_STREAM      = 0x40,
 } eISBPacketFlags;
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
@@ -515,7 +499,20 @@ typedef struct
     uint8_t             buf[MAX_DATASET_SIZE];
 } p_data_buf_t;
 
-/** Represents the complete body of a PKT_TYPE_GET_DATA packet */
+/**
+ * @brief Represents the complete body of a PKT_TYPE_GET_DATA packet.
+ *
+ * `flags` was appended after `period` (SN-8471) -- older senders never included it, and the wire
+ * framing is self-describing (packet_hdr_t::payloadSize is explicit, not inferred from
+ * sizeof(p_data_get_t)), so this is a backward/forward-compatible growth: older firmware
+ * receiving a newer, larger request simply never reads past its own (smaller) compiled struct,
+ * and newer firmware receiving an older, shorter request must not trust `flags` unless it first
+ * confirms the actual received payload was large enough to include it -- see
+ * GET_DATA_FLAGS_PRESERVE_STREAM below and ISComManager::getDataRequest()'s receivedPayloadSize
+ * parameter. Any code constructing a p_data_get_t locally (not just decoding one off the wire)
+ * must explicitly initialize `flags` (e.g. `= {}` or an explicit assignment) -- it is easy to
+ * accidentally send uninitialized stack garbage in this field otherwise.
+ */
 typedef struct
 {
     /** Data ID being requested */
@@ -529,7 +526,25 @@ typedef struct
 
     /**    The broadcast source period multiple.  0 for a one-time broadcast.  */
     uint16_t            period;
+
+    /** Request flags -- see GET_DATA_FLAGS_PRESERVE_STREAM. Always 0 from any sender that predates SN-8471. */
+    uint16_t            flags;
 } p_data_get_t;
+
+enum eGetDataFlags
+{
+    /**
+     * @brief Only meaningful when `period` is 0. A plain period=0 GET_DATA is a genuine one-shot
+     *        request (deliver the current value once) -- but a device may also use it to
+     *        implicitly stop any existing broadcast for that DID on the requesting port, since
+     *        there was previously no way to distinguish "just poll me a value" from "stop this
+     *        stream" (SN-8471). Setting this bit tells a device that supports it: if this DID's
+     *        broadcast bit is already set on this port, leave it alone (deliver the one-shot
+     *        reply without disturbing the existing stream). Unset (the default for every
+     *        pre-SN-8471 caller and every older client), behavior is unchanged.
+     */
+    GET_DATA_FLAGS_PRESERVE_STREAM = 0x0001,
+};
 
 /** Represents the body header of an ACK or NACK packet */
 typedef struct

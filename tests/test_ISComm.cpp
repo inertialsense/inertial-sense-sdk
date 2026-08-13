@@ -1192,10 +1192,10 @@ TEST(ISComm, IsCommGetDataTest)
 }
 #endif
 
-// SN-8471: ISB_FLAGS_GET_DATA_PRESERVE_STREAM is a new upper-nibble packet flag telling a device
-// that supports it not to stop an existing broadcast when a period=0 GET_DATA is otherwise a
-// plain one-shot poll. These tests confirm it round-trips correctly over the wire and that an
-// older/unaware decoder path (i.e. code that only masks with PKT_TYPE_MASK) is unaffected.
+// SN-8471: GET_DATA_FLAGS_PRESERVE_STREAM is a new bit in p_data_get_t::flags (appended after
+// the legacy 4-field layout) telling a device that supports it not to stop an existing broadcast
+// when a period=0 GET_DATA is otherwise a plain one-shot poll. These tests confirm the new field
+// round-trips correctly over the wire.
 TEST(ISComm, GetDataPreserveStreamFlagRoundTrips)
 {
     uint8_t txBuf[256];
@@ -1204,48 +1204,7 @@ TEST(ISComm, GetDataPreserveStreamFlagRoundTrips)
     get.size   = 0;
     get.offset = 0;
     get.period = 0;
-
-    is_comm_instance_t txComm{};
-    uint8_t txCommBuf[256];
-    is_comm_init(&txComm, txCommBuf, sizeof(txCommBuf), nullptr);
-    int n = is_comm_write_to_buf(txBuf, sizeof(txBuf), &txComm, PKT_TYPE_GET_DATA | ISB_FLAGS_GET_DATA_PRESERVE_STREAM, 0, sizeof(get), 0, &get);
-    ASSERT_GT(n, 0);
-
-    is_comm_instance_t rxComm{};
-    uint8_t rxCommBuf[256];
-    is_comm_init(&rxComm, rxCommBuf, sizeof(rxCommBuf), nullptr);
-
-    bool parsed = false;
-    for (int i = 0; i < n; ++i)
-    {
-        protocol_type_t pt = is_comm_parse_byte(&rxComm, txBuf[i]);
-        if (pt == _PTYPE_INERTIAL_SENSE_CMD)
-        {
-            parsed = true;
-            break;
-        }
-    }
-    ASSERT_TRUE(parsed);
-
-    // The flag survives decode, and the packet is still correctly identified as GET_DATA (the
-    // lower nibble -- the actual type -- is unaffected by the new upper-nibble bit).
-    EXPECT_EQ(rxComm.rxPkt.hdr.flags & PKT_TYPE_MASK, (uint8_t)PKT_TYPE_GET_DATA);
-    EXPECT_NE(rxComm.rxPkt.hdr.flags & ISB_FLAGS_GET_DATA_PRESERVE_STREAM, 0);
-
-    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
-    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
-    EXPECT_EQ(request->id, (uint16_t)DID_GPX_STATUS);
-    EXPECT_EQ(request->period, 0);
-}
-
-TEST(ISComm, GetDataWithoutPreserveStreamFlagDoesNotSetIt)
-{
-    // Control case: a plain GET_DATA (today's default, e.g. from an older client or any existing
-    // caller that hasn't opted in) must not have the new flag set.
-    uint8_t txBuf[256];
-    p_data_get_t get = {};
-    get.id     = DID_SYS_PARAMS;
-    get.period = 0;
+    get.flags  = GET_DATA_FLAGS_PRESERVE_STREAM;
 
     is_comm_instance_t txComm{};
     uint8_t txCommBuf[256];
@@ -1268,7 +1227,85 @@ TEST(ISComm, GetDataWithoutPreserveStreamFlagDoesNotSetIt)
         }
     }
     ASSERT_TRUE(parsed);
-    EXPECT_EQ(rxComm.rxPkt.hdr.flags & ISB_FLAGS_GET_DATA_PRESERVE_STREAM, 0);
+
+    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
+    ASSERT_GE(rxComm.rxPkt.data.size, sizeof(p_data_get_t));
+    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
+    EXPECT_EQ(request->id, (uint16_t)DID_GPX_STATUS);
+    EXPECT_EQ(request->period, 0);
+    EXPECT_EQ(request->flags & GET_DATA_FLAGS_PRESERVE_STREAM, GET_DATA_FLAGS_PRESERVE_STREAM);
+}
+
+TEST(ISComm, GetDataWithoutPreserveStreamFlagDoesNotSetIt)
+{
+    // Control case: a plain GET_DATA (today's default, e.g. from an older client or any existing
+    // caller that hasn't opted in) must not have the new flag set.
+    uint8_t txBuf[256];
+    p_data_get_t get = {};
+    get.id     = DID_SYS_PARAMS;
+    get.period = 0;
+    get.flags  = 0;
+
+    is_comm_instance_t txComm{};
+    uint8_t txCommBuf[256];
+    is_comm_init(&txComm, txCommBuf, sizeof(txCommBuf), nullptr);
+    int n = is_comm_write_to_buf(txBuf, sizeof(txBuf), &txComm, PKT_TYPE_GET_DATA, 0, sizeof(get), 0, &get);
+    ASSERT_GT(n, 0);
+
+    is_comm_instance_t rxComm{};
+    uint8_t rxCommBuf[256];
+    is_comm_init(&rxComm, rxCommBuf, sizeof(rxCommBuf), nullptr);
+
+    bool parsed = false;
+    for (int i = 0; i < n; ++i)
+    {
+        protocol_type_t pt = is_comm_parse_byte(&rxComm, txBuf[i]);
+        if (pt == _PTYPE_INERTIAL_SENSE_CMD)
+        {
+            parsed = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(parsed);
+
+    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
+    ASSERT_GE(rxComm.rxPkt.data.size, sizeof(p_data_get_t));
+    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
+    EXPECT_EQ(request->flags & GET_DATA_FLAGS_PRESERVE_STREAM, 0);
+}
+
+// SN-8471: is_comm_get_data()/is_comm_get_data_to_buf() build a p_data_get_t on the stack without
+// zero-initializing it (`p_data_get_t get;`, not `= {}`) -- confirm they explicitly set .flags=0
+// rather than sending whatever garbage happened to be on the stack in that field.
+TEST(ISComm, LegacyGetDataHelpersSendZeroFlags)
+{
+    uint8_t txBuf[256];
+    is_comm_instance_t txComm{};
+    uint8_t txCommBuf[256];
+    is_comm_init(&txComm, txCommBuf, sizeof(txCommBuf), nullptr);
+
+    int n = is_comm_get_data_to_buf(txBuf, sizeof(txBuf), &txComm, DID_DEV_INFO, 0, 0, 0);
+    ASSERT_GT(n, 0);
+
+    is_comm_instance_t rxComm{};
+    uint8_t rxCommBuf[256];
+    is_comm_init(&rxComm, rxCommBuf, sizeof(rxCommBuf), nullptr);
+
+    bool parsed = false;
+    for (int i = 0; i < n; ++i)
+    {
+        protocol_type_t pt = is_comm_parse_byte(&rxComm, txBuf[i]);
+        if (pt == _PTYPE_INERTIAL_SENSE_CMD)
+        {
+            parsed = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(parsed);
+    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
+    ASSERT_GE(rxComm.rxPkt.data.size, sizeof(p_data_get_t));
+    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
+    EXPECT_EQ(request->flags, 0);
 }
 
 

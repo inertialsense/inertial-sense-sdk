@@ -335,12 +335,12 @@ void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t
     s_cm.getData(port, did, size, offset, period);
 }
 
-void comManagerGetDataFlags(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint8_t flags)
+void comManagerGetDataFlags(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint16_t flags)
 {
     s_cm.getData(port, did, size, offset, period, flags);
 }
 
-void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint8_t flags)
+void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint16_t flags)
 {
     // Create and Send request packet
     p_data_get_t get;
@@ -348,8 +348,9 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
     get.offset = offset;
     get.size = size;
     get.period = period;
+    get.flags = flags;
 
-    if (port && send(port, PKT_TYPE_GET_DATA | flags, &get, 0, sizeof(get), 0)) {
+    if (port && send(port, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0)) {
         // if send() is true, then an error occurred...
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
@@ -561,7 +562,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
             }
         }
 #endif
-        if (getDataRequest(port, (p_data_get_t*)(pkt->data.ptr)))
+        if (getDataRequest(port, (p_data_get_t*)(pkt->data.ptr), pkt->data.size))
         {
             sendAck(port, pkt, PKT_TYPE_NACK);
         }
@@ -636,12 +637,12 @@ bufTxRxPtr_t* ISComManager::getRegisteredDataInfo(uint16_t did)
 }
 
 // 0 on success. -1 on failure.
-int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req)
+int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req, uint32_t receivedPayloadSize)
 {
-    return s_cm.getDataRequest(port, req);
+    return s_cm.getDataRequest(port, req, receivedPayloadSize);
 }
 
-int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
+int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req, uint32_t receivedPayloadSize)
 {
     broadcast_msg_t* msg = NULL;
 
@@ -651,10 +652,21 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
         // invalid data id
         return -1;
     }
+
+    // SN-8471: req->flags was appended after the legacy 8-byte layout. An older sender's packet
+    // never included it -- the wire framing is self-describing (packet_hdr_t::payloadSize is
+    // explicit, not inferred from sizeof(p_data_get_t)), so an older sender's request arrives here
+    // with receivedPayloadSize < sizeof(p_data_get_t). The receive buffer is only zeroed once, at
+    // is_comm_init() -- not between subsequent packets -- so bytes past what was actually sent
+    // could still hold a previous packet's leftovers at this offset. Sanitize explicitly here,
+    // once, rather than have every consumer of req (cmMsgHandlerRmc, etc.) re-check this.
+    if (receivedPayloadSize < sizeof(p_data_get_t))
+        req->flags = 0;
+
     // Call RealtimeMessageController (RMC) handler
-    else if (cmMsgHandlerRmc && (cmMsgHandlerRmc(this, req, port) == 0))
+    if (cmMsgHandlerRmc && (cmMsgHandlerRmc(this, req, port) == 0))
     {
-        // Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
+        // Don't allow comManager broadcasts for messages handled by RealtimeMessageController.
         return 0;
     }
     // if size is 0 and offset is 0, set size to full data struct size
@@ -837,6 +849,9 @@ void ISComManager::disableDidBroadcast(port_handle_t port, uint16_t did)
         req.size = 0;
         req.offset = 0;
         req.period = 0;
+
+        // This is an explicit stop request, not a received GET_DATA -- never preserve (SN-8471).
+        req.flags = 0;
         cmMsgHandlerRmc(this, &req, port);
     }
 }

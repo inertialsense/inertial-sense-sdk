@@ -1482,6 +1482,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     get.offset = offset;
     get.size = size;
     get.period = periodMultiple;
+    get.flags = 0;
 
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
@@ -1494,6 +1495,7 @@ int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t o
     get.offset = offset;
     get.size = size;
     get.period = periodMultiple;
+    get.flags = 0;
 
     return is_comm_write(port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
