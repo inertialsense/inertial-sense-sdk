@@ -1345,6 +1345,117 @@ status_field_decode_t buildIoConfig2Decode()
     return d;
 }
 
+/**
+ * @brief nvm_flash_cfg_t::sensorConfig decode table (eSensorConfig). IMX-only -- gpx_flash_cfg_t
+ *        has no equivalent field. Five multi-bit Enum sub-fields (gyro/accel full-scale range,
+ *        gyro/accel DLPF bandwidth, sensor mounting rotation) plus 4 independent Bit flags
+ *        (disable magnetometer/barometer, IMU gyro/accel fault-detect enable). Every Enum value
+ *        this table lists has an explicit name in the source enum (including 0 -- e.g. 250 deg/s
+ *        is a real, meaningful gyro full-scale setting, not "unset"), so -- like ioConfig's GNSS
+ *        source/type fields -- all five always render a line, never silence. IMU_FAULT_DETECT_
+ *        OFFLINE/LARGE_BIAS/SENSOR_NOISE are explicitly disabled/reserved (defined as 0 in the
+ *        enum, "would be" comments only) and are not decoded.
+ */
+status_field_decode_t buildSensorConfigDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sensorConfig";
+    d.errorMask = 0;
+
+    {
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_GYR_FS_MASK << SENSOR_CFG_GYR_FS_OFFSET;
+        status_subfield_t s;
+        s.name = "Gyro full-scale range"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)SENSOR_CFG_GYR_FS_OFFSET;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_GYR_FS_250,  "Gyro FS: 250 deg/s",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_500,  "Gyro FS: 500 deg/s",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_1000, "Gyro FS: 1000 deg/s", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_2000, "Gyro FS: 2000 deg/s", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_4000, "Gyro FS: 4000 deg/s", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_MAX,  "Gyro FS: sensor max", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        // NOTE: SENSOR_CFG_ACC_FS_* are already pre-shift index values (0,1,2,3,4,...7), unlike
+        // eIoConfig's constants -- do NOT right-shift them again, only `s.mask`/`s.shift` (used to
+        // extract the raw field) need the shift amount.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_ACC_FS_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name = "Accel full-scale range"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_ACC_FS_2G,  "Accel FS: 2g",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_4G,  "Accel FS: 4g",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_8G,  "Accel FS: 8g",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_16G, "Accel FS: 16g",       "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_32G, "Accel FS: 32g",       "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_MAX, "Accel FS: sensor max","", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        // Same note as Accel FS above: SENSOR_CFG_GYR_DLPF_* are already pre-shift indices.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_GYR_DLPF_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name = "Gyro DLPF bandwidth"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_250HZ, "Gyro DLPF: 250 Hz", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_184HZ, "Gyro DLPF: 184 Hz", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_92HZ,  "Gyro DLPF: 92 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_41HZ,  "Gyro DLPF: 41 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_20HZ,  "Gyro DLPF: 20 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_10HZ,  "Gyro DLPF: 10 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_5HZ,   "Gyro DLPF: 5 Hz",   "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        // Same note as Accel FS above: SENSOR_CFG_ACC_DLPF_* are already pre-shift indices.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_ACC_DLPF_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name = "Accel DLPF bandwidth"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_218HZ,  "Accel DLPF: 218 Hz",       "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_218HZb, "Accel DLPF: 218 Hz (alt)", "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_99HZ,   "Accel DLPF: 99 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_45HZ,   "Accel DLPF: 45 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_21HZ,   "Accel DLPF: 21 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_10HZ,   "Accel DLPF: 10 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_5HZ,    "Accel DLPF: 5 Hz",         "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_SENSOR_ROTATION_MASK;
+        const uint32_t shift = (uint32_t)SENSOR_CFG_SENSOR_ROTATION_OFFSET;
+        static const char* const rotations[] = {
+            "0,0,0", "0,0,90", "0,0,180", "0,0,-90", "90,0,0", "90,0,90", "90,0,180", "90,0,-90",
+            "180,0,0", "180,0,90", "180,0,180", "180,0,-90", "-90,0,0", "-90,0,90", "-90,0,180", "-90,0,-90",
+            "0,90,0", "0,90,90", "0,90,180", "0,90,-90", "0,-90,0", "0,-90,90", "0,-90,180", "0,-90,-90",
+        };
+        status_subfield_t s;
+        s.name = "Sensor mounting rotation"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        for (uint32_t i = 0; i < (uint32_t)(sizeof(rotations) / sizeof(rotations[0])); ++i)
+            s.values.push_back({ i, std::string("Sensor rotation (roll,pitch,yaw deg): ") + rotations[i], "", false });
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("Magnetometer disabled", SENSOR_CFG_DISABLE_MAGNETOMETER, false,
+        "0x00400000 - Disable magnetometer sensor"));
+    d.subfields.push_back(bitField("Barometer disabled", SENSOR_CFG_DISABLE_BAROMETER, false,
+        "0x00800000 - Disable barometer sensor"));
+    d.subfields.push_back(bitField("IMU gyro fault detect enabled", SENSOR_CFG_IMU_FAULT_DETECT_GYR, false,
+        "0x01000000 - Enable multiple-IMU gyro fault detection"));
+    d.subfields.push_back(bitField("IMU accel fault detect enabled", SENSOR_CFG_IMU_FAULT_DETECT_ACC, false,
+        "0x02000000 - Enable multiple-IMU accelerometer fault detection"));
+
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -1373,6 +1484,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("rmcOptions",         buildRmcOptionsDecode());
         m.emplace("ioConfig2",          buildIoConfig2Decode());
         m.emplace("ioConfig",           buildIoConfigDecode());
+        m.emplace("sensorConfig",       buildSensorConfigDecode());
         return m;
     }();
     return r;

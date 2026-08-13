@@ -44,6 +44,7 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_GPX_RMC, "bits", (uint64_t)RMC_BITS_GPX_STATUS, "GPX status",    "DID_GPX_RMC.bits" },
         { DID_FLASH_CONFIG, "ioConfig",  (uint32_t)IO_CONFIG_IMU_1_DISABLE, "IMU 1 disable", "DID_FLASH_CONFIG.ioConfig" },
         { DID_FLASH_CONFIG, "ioConfig2", (uint8_t)IO_CFG2_USE_GNSS2_AS_SOURCE, "Use GNSS2", "DID_FLASH_CONFIG.ioConfig2" },
+        { DID_FLASH_CONFIG, "sensorConfig", (uint32_t)SENSOR_CFG_DISABLE_MAGNETOMETER, "Disable magnetometer sensor", "DID_FLASH_CONFIG.sensorConfig" },
     };
     return cases;
 }
@@ -327,4 +328,23 @@ TEST(ISDataMappingsRenderExtended, IoConfig_NotWiredForGpxFlashCfg)
     ASSERT_NE(gpxMap, nullptr);
     EXPECT_EQ(gpxMap->find("ioConfig"), gpxMap->end());
     EXPECT_EQ(gpxMap->find("ioConfig2"), gpxMap->end());
+}
+
+TEST(ISDataMappingsRenderExtended, SensorConfig_MatchesDecodeTableDirectly)
+{
+    const data_info_t* info = FindMappedField(DID_FLASH_CONFIG, "sensorConfig");
+    ASSERT_NE(info, nullptr);
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t value = (uint32_t)SENSOR_CFG_IMU_FAULT_DETECT_GYR | ((uint32_t)SENSOR_CFG_ACC_FS_8G << SENSOR_CFG_ACC_FS_OFFSET);
+    EXPECT_EQ(CallRenderExtended(*info, value), RenderStatusFromDecode(*dec, value));
+}
+
+TEST(ISDataMappingsRenderExtended, SensorConfig_NotWiredForGpxFlashCfg)
+{
+    // gpx_flash_cfg_t has no sensorConfig field at all.
+    const map_name_to_info_t* gpxMap = cISDataMappings::NameToInfoMap(DID_GPX_FLASH_CFG);
+    ASSERT_NE(gpxMap, nullptr);
+    EXPECT_EQ(gpxMap->find("sensorConfig"), gpxMap->end());
 }

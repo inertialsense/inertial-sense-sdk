@@ -1615,3 +1615,88 @@ TEST(ISStatusDecode, IoConfig_AllBitsSetDoesNotCrash)
     const std::string rendered = RenderStatusFromDecode(*dec, 0xFFFFFFFFu);
     EXPECT_FALSE(rendered.empty());
 }
+
+// ---- nvm_flash_cfg_t::sensorConfig (eSensorConfig, SN-8491) -------------------
+
+TEST(ISStatusDecode, SensorConfig_GyroAndAccelFullScaleAreIndependentAlwaysOnEnums)
+{
+    // Every value in both tables (including 0) is explicitly named in the source enum, so both
+    // always render -- verify the zero baseline includes both defaults.
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string baseline = RenderStatusFromDecode(*dec, 0u);
+    EXPECT_NE(baseline.find("Gyro FS: 250 deg/s"), std::string::npos);
+    EXPECT_NE(baseline.find("Accel FS: 2g"), std::string::npos);
+
+    const uint32_t gyro4000 = (uint32_t)SENSOR_CFG_GYR_FS_4000 << SENSOR_CFG_GYR_FS_OFFSET;
+    const uint32_t acc16g   = (uint32_t)SENSOR_CFG_ACC_FS_16G  << SENSOR_CFG_ACC_FS_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, gyro4000 | acc16g);
+    EXPECT_NE(rendered.find("Gyro FS: 4000 deg/s"), std::string::npos);
+    EXPECT_NE(rendered.find("Accel FS: 16g"), std::string::npos);
+    EXPECT_EQ(rendered.find("Gyro FS: 250 deg/s"), std::string::npos);
+    EXPECT_EQ(rendered.find("Accel FS: 2g"), std::string::npos);
+}
+
+TEST(ISStatusDecode, SensorConfig_GyroAndAccelDlpfDoNotCrossContaminate)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const uint32_t gyroDlpf20 = (uint32_t)SENSOR_CFG_GYR_DLPF_20HZ << SENSOR_CFG_GYR_DLPF_OFFSET;
+    const uint32_t accDlpf45 = (uint32_t)SENSOR_CFG_ACC_DLPF_45HZ << SENSOR_CFG_ACC_DLPF_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, gyroDlpf20 | accDlpf45);
+    EXPECT_NE(rendered.find("Gyro DLPF: 20 Hz"), std::string::npos);
+    EXPECT_NE(rendered.find("Accel DLPF: 45 Hz"), std::string::npos);
+    EXPECT_EQ(rendered.find("Gyro DLPF: 45 Hz"), std::string::npos);
+    EXPECT_EQ(rendered.find("Accel DLPF: 20 Hz"), std::string::npos);
+}
+
+TEST(ISStatusDecode, SensorConfig_AccelDlpf218HzAliasesAreDistinctLabels)
+{
+    // ACC_DLPF_218HZ(0) and ACC_DLPF_218HZb(1) are two distinct register values that both mean
+    // "218 Hz" per the source enum -- confirm they render as distinguishable text, not identical.
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const uint32_t a = (uint32_t)SENSOR_CFG_ACC_DLPF_218HZ  << SENSOR_CFG_ACC_DLPF_OFFSET;
+    const uint32_t b = (uint32_t)SENSOR_CFG_ACC_DLPF_218HZb << SENSOR_CFG_ACC_DLPF_OFFSET;
+    EXPECT_NE(RenderStatusFromDecode(*dec, a), RenderStatusFromDecode(*dec, b));
+}
+
+TEST(ISStatusDecode, SensorConfig_MountingRotationAllTwentyFourValuesAreDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    std::vector<std::string> rendered;
+    for (uint32_t r = 0; r < 24; ++r)
+        rendered.push_back(RenderStatusFromDecode(*dec, r << SENSOR_CFG_SENSOR_ROTATION_OFFSET));
+    for (size_t i = 0; i < rendered.size(); ++i) {
+        EXPECT_FALSE(rendered[i].empty()) << "rotation " << i;
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j]) << "rotations " << i << " and " << j << " render identically";
+    }
+    // 25-31 (out of the 24 defined range but still representable in the 5-bit field) render nothing.
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 30u << SENSOR_CFG_SENSOR_ROTATION_OFFSET).find("Sensor rotation"), std::string::npos);
+}
+
+TEST(ISStatusDecode, SensorConfig_MagBaroDisableAndImuFaultDetectBits)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string mag  = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_DISABLE_MAGNETOMETER);
+    const std::string baro = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_DISABLE_BAROMETER);
+    const std::string gyrFd = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_IMU_FAULT_DETECT_GYR);
+    const std::string accFd = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_IMU_FAULT_DETECT_ACC);
+    EXPECT_NE(mag.find("Disable magnetometer sensor"), std::string::npos);
+    EXPECT_NE(baro.find("Disable barometer sensor"), std::string::npos);
+    EXPECT_NE(gyrFd.find("multiple-IMU gyro fault detection"), std::string::npos);
+    EXPECT_NE(accFd.find("multiple-IMU accelerometer fault detection"), std::string::npos);
+    EXPECT_NE(mag, baro);
+    EXPECT_NE(gyrFd, accFd);
+}
+
+TEST(ISStatusDecode, SensorConfig_AllBitsSetDoesNotCrash)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string rendered = RenderStatusFromDecode(*dec, 0xFFFFFFFFu);
+    EXPECT_FALSE(rendered.empty());
+}

@@ -825,6 +825,27 @@ std::string renderIoConfig2(const data_info_t& info, std::any value, int arrayId
     }
 }
 
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::sensorConfig (eSensorConfig). IMX-only.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderSensorConfig(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sensorConfig"))
+        return "";
+
+    try {
+        uint32_t sensorConfig = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+        return dec ? RenderStatusFromDecode(*dec, sensorConfig) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -1661,7 +1682,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
     str += "Gyr DLPF (Hz) 0x0F00:[0=250, 1=184, 2=92, 3=41, 4=20, 5=10, 6=5], ";
     str += "Acc DLPF (Hz) 0xF000:[0=218, 1=218, 2=99, 3=45, 4=21, 5=10, 6=5], ";
-    mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderSensorConfig;
 
     mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
     mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GNSS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
