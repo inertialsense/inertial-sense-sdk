@@ -63,6 +63,7 @@ const unsigned char g_asciiToLowerMap[256] =
 };
 
 #define STR_ENDS_WITH(str, suffix)  ((str.length() >= suffix.length()) && (str.compare(str.length() - suffix.length(), std::string_view::npos, suffix)) == 0)
+#define STR_STARTS_WITH(str, prefix)  ((str.length() >= prefix.length()) && (str.compare(0, prefix.length(), prefix) == 0))
 
 
 
@@ -220,58 +221,306 @@ std::string renderGenFaultCode(const data_info_t& info, std::any value, int arra
 }
 
 /**
- * @brief a custom data renderer for RTKCfgBits
+ * @brief One (mask, name) pair for renderBitNameList(). Deliberately NOT part of the SN-7919
+ *        status_field_decode_t framework: RTKCfgBits, grmcBits, grmcNMEABits, and rmc_t.bits are
+ *        pure flat lists of independent enable flags with no sub-fields worth structuring, so a
+ *        full decode table would be pointless boilerplate. (Kyle, 2026-08-13: confirmed simple
+ *        list-enabled-names rendering, closer to the original hand-written renderRTKCfgBits style,
+ *        over building decode tables for these.)
+ */
+struct BitName { uint64_t mask; const char* name; };
+
+/**
+ * @brief Render one line per set bit in `value` whose mask appears in `names`, in `names` order.
+ *        Bits not present in `names` are silently skipped (not garbage/unknown lines). The
+ *        "0xHEX - " prefix is derived directly from `bn.mask` (single source of truth -- never a
+ *        hand-typed literal that could drift from the real mask), matching the "0xHEX -
+ *        description" convention used pervasively throughout the rest of this file's
+ *        renderExtended functions (insStatus, hdwStatus, sysCfgBits, etc.). `hexDigits` selects the
+ *        field's natural width for display (8 for a uint32_t field like RTKCfgBits/rtkMode, 16 for
+ *        a uint64_t field like grmcBits, grmcNMEABits, or rmc_t.bits) -- Kyle, 2026-08-13: confirmed
+ *        one consistent hex-prefix style across every renderExtended function, replacing
+ *        RTKCfgBits' prior "name (0xHEX)" postfix style and grmcBits/grmcNMEABits/rmc_t.bits'
+ *        prior no-hex-at-all style.
+ */
+std::string renderBitNameList(uint64_t value, const std::vector<BitName>& names, int hexDigits = 16) {
+    std::stringstream buff;
+    char hexbuf[24];
+    for (const auto& bn : names) {
+        if (!(value & bn.mask))
+            continue;
+        snprintf(hexbuf, sizeof(hexbuf), (hexDigits <= 8) ? "0x%08llX" : "0x%016llX", (unsigned long long)bn.mask);
+        buff << hexbuf << " - " << bn.name << std::endl;
+    }
+    return buff.str();
+}
+
+/**
+ * @brief The eRTKConfigBits bit/name list, shared by renderRTKCfgBits (nvm_flash_cfg_t and
+ *        gpx_flash_cfg_t's RTKCfgBits field) and renderRtkMode (gpx_status_t::rtkMode). (Kyle,
+ *        2026-08-13: gpx_status_t.rtkMode's own hand-written tooltip description in this file
+ *        implied a DIFFERENT bit layout than eRTKConfigBits -- e.g. its bit 0x40 read as an RTCM
+ *        Ser0 output, where eRTKConfigBits' bit 0x40 is GNSS1_UBLOX_SER2 -- and no dedicated named
+ *        enum backs rtkMode anywhere in the codebase. Confirmed treating rtkMode as reusing
+ *        eRTKConfigBits' actual bit positions (per its data_sets.h doc comment) and disregarding
+ *        that inconsistent hand-written string, rather than inventing unreferenced hex literals
+ *        for a scheme that may never have been real.
+ */
+const std::vector<BitName>& RtkConfigBitNames() {
+    static const std::vector<BitName> names = {
+        { RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK, "RTK Positioning" },
+        { RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK,  "RTK Compassing" },
+        { RTK_CFG_BITS_BASE_MODE,                       "RTK Base enabled" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0,    "GNSS1 UBLOX Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1,    "GNSS1 UBLOX Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2,    "GNSS1 UBLOX Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB,     "GNSS1 UBLOX USB" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0,    "GNSS1 RTCM3 Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1,    "GNSS1 RTCM3 Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2,    "GNSS1 RTCM3 Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB,     "GNSS1 RTCM3 USB" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0,    "GNSS2 UBLOX Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1,    "GNSS2 UBLOX Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2,    "GNSS2 UBLOX Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB,     "GNSS2 UBLOX USB" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0,    "GNSS2 RTCM3 Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1,    "GNSS2 RTCM3 Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2,    "GNSS2 RTCM3 Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB,     "GNSS2 RTCM3 USB" },
+    };
+    return names;
+}
+
+/**
+ * @brief a custom data renderer for RTKCfgBits (eRTKConfigBits), shared verbatim by
+ *        nvm_flash_cfg_t and gpx_flash_cfg_t
+ *
+ *        Flattened from the original nested/indented rendering (RTK_CFG_BITS_BASE_MODE gating a
+ *        GNSS1/GNSS2 UBLOX/RTCM3 choice, which itself gated 4 per-serial-port bits) to a single
+ *        flat list -- each bit renders independently regardless of any other bit's state. (Kyle,
+ *        2026-08-13: confirmed flattening over extending the decode-table model to preserve the
+ *        nesting.) RTK_CFG_BITS_BASE_MODE itself is the OR of all 16 per-port bits below it (not
+ *        an independent bit), so it still functions as a "some base output is enabled" summary
+ *        line alongside the individual bits, with no gating logic needed to produce that.
  * @param info
  * @param value
  * @return
  */
 std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
     if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "RTKCfgBits"))
         return "";
 
     try {
-        std::stringstream buff;
         uint32_t rtkCfgBits = std::any_cast<uint32_t>(value);
-        // extract the ROVER config
-        if ((rtkCfgBits & RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK)) {
-            buff << "RTK Positioning (0x00000002)" << std::endl;
-        }
-        if ((rtkCfgBits & RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK)) {
-            buff << "RTK Compassing (0x00000004)" << std::endl;
-        }
-        if ((rtkCfgBits & RTK_CFG_BITS_BASE_MODE)) {
-            buff << "RTK Base (enabled) (0x000FFFF0)" << std::endl;
-            if (rtkCfgBits & RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK) {
-                buff << " -- GNSS1 : UBLOX (0x000000F0)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0) buff << "     -- Ser0 (Enabled) (0x00000010)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1) buff << "     -- Ser1 (Enabled) (0x00000020)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2) buff << "     -- Ser2 (Enabled) (0x00000040)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB) buff << "     -- USB (Enabled) (0x00000080)" << std::endl;
-            }
-            if ((rtkCfgBits & RTK_CFG_BITS_BASE_GNSS1_RTCM3_MASK)) {
-                buff << " -- GNSS1 : RTCM3 (0x00000F00)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0) buff << "     -- Ser0 (Enabled) (0x00000100)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1) buff << "     -- Ser1 (Enabled) (0x00000200)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2) buff << "     -- Ser2 (Enabled) (0x00000400)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB) buff << "     -- USB (Enabled) (0x00000800)" << std::endl;
-            }
-            if (rtkCfgBits & RTK_CFG_BITS_BASE_GNSS2_UBLOX_MASK) {
-                buff << " -- GNSS2 : UBLOX (0x0000F000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0) buff << "     -- Ser0 (Enabled) (0x00001000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1) buff << "     -- Ser1 (Enabled) (0x00002000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2) buff << "     -- Ser2 (Enabled) (0x00004000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB) buff << "     -- USB (Enabled) (0x00008000)" << std::endl;
-            }
-            if ((rtkCfgBits & RTK_CFG_BITS_BASE_GNSS2_RTCM3_MASK)) {
-                buff << " -- GNSS2 : RTCM3 (0x000F0000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0) buff << "     -- Ser0 (Enabled) (0x00010000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1) buff << "     -- Ser1 (Enabled) (0x00020000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2) buff << "     -- Ser2 (Enabled) (0x00040000)" << std::endl;
-                if (rtkCfgBits & RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB) buff << "     -- USB (Enabled) (0x00080000)" << std::endl;
-            }
-        }
-        return buff.str();
+        return renderBitNameList(rtkCfgBits, RtkConfigBitNames(), 8);
     } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for gpx_status_t::rtkMode. Reuses the exact same eRTKConfigBits
+ *        bit/name list as renderRTKCfgBits -- rtkMode's own data_sets.h doc comment says "(see
+ *        eRTKConfigBits)"; its bit positions are treated as authoritative over this file's
+ *        pre-existing (and, on inspection, internally inconsistent) hand-written description
+ *        string for the field, per Kyle's 2026-08-13 call (see RtkConfigBitNames() above).
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderRtkMode(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "rtkMode"))
+        return "";
+
+    try {
+        uint32_t rtkMode = std::any_cast<uint32_t>(value);
+        return renderBitNameList(rtkMode, RtkConfigBitNames(), 8);
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for gpx_status_t::grmcBits{Ser0,Ser1,Ser2,USB} (GRMC_BITS_*).
+ *        The bit layout is identical across all 4 ports (only which port it applies to differs),
+ *        so one renderer/table covers all 4 AddMember calls -- not 4 separate ones. (Kyle,
+ *        2026-08-12: confirmed the per-port bit semantics are identical.)
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGpxGrmcBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT64) || (info.size != 8) || !STR_STARTS_WITH(info.name, std::string("grmcBits")))
+        return "";
+
+    try {
+        uint64_t bits = std::any_cast<uint64_t>(value);
+        return renderBitNameList(bits, {
+            { GRMC_BITS_DEV_INFO,        "Device info" },
+            { GRMC_BITS_FLASH_CFG,       "Flash config" },
+            { GRMC_BITS_STATUS,          "GPX status" },
+            { GRMC_BITS_RTOS_INFO,       "RTOS info" },
+            { GRMC_BITS_DEBUG_ARRAY,     "Debug array" },
+            { GRMC_BITS_GNSS1_POS,       "GNSS1 position" },
+            { GRMC_BITS_GNSS1_VEL,       "GNSS1 velocity" },
+            { GRMC_BITS_GNSS1_SAT,       "GNSS1 satellite info" },
+            { GRMC_BITS_GNSS1_SIG,       "GNSS1 signal info" },
+            { GRMC_BITS_GNSS1_RAW,       "GNSS1 raw observation/ephemeris" },
+            { GRMC_BITS_GNSS1_VERSION,   "GNSS1 receiver version" },
+            { GRMC_BITS_GNSS2_POS,       "GNSS2 position" },
+            { GRMC_BITS_GNSS2_VEL,       "GNSS2 velocity" },
+            { GRMC_BITS_GNSS2_SAT,       "GNSS2 satellite info" },
+            { GRMC_BITS_GNSS2_SIG,       "GNSS2 signal info" },
+            { GRMC_BITS_GNSS2_RAW,       "GNSS2 raw observation/ephemeris" },
+            { GRMC_BITS_GNSS2_VERSION,   "GNSS2 receiver version" },
+            { GRMC_BITS_GNSS1_RTK_POS,      "GNSS1 RTK position" },
+            { GRMC_BITS_GNSS1_RTK_POS_MISC, "GNSS1 RTK position misc" },
+            { GRMC_BITS_GNSS1_RTK_POS_REL,  "GNSS1 RTK relative position" },
+            { GRMC_BITS_GNSS2_RTK_CMP_MISC, "GNSS2 RTK compassing misc" },
+            { GRMC_BITS_GNSS2_RTK_CMP_REL,  "GNSS2 RTK compassing relative position/heading" },
+            { GRMC_BITS_DID_RTK_DEBUG,   "RTK debug" },
+            { GRMC_BITS_PORT_MON,        "Port monitor" },
+            { GRMC_BITS_GPX_PORT_MON,    "GPX port monitor" },
+            { GRMC_BITS_GNSS_BASE_RAW,   "GNSS base raw" },
+            { GRMC_BITS_GPX_SYS_FAULT,   "GPX system fault" },
+            { GRMC_BITS_GNSS1_RCVR_POS,  "GNSS1 receiver position" },
+            { GRMC_BITS_EXT_AIDING_POS,  "External aiding position" },
+            { GRMC_BITS_EXT_AIDING_VEL,  "External aiding velocity" },
+            { GRMC_BITS_PRESET,          "Preset" },
+        });
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for gpx_status_t::grmcNMEABits{Ser0,Ser1,Ser2,USB}
+ *        (NMEA_RMC_BITS_*, keyed off the 19 BASE eNmeaMsgId values -- the GSV per-constellation
+ *        special-case ID permutations (3840-3951) are a separate encoding, not independent enable
+ *        bits, so they're not part of this list). One renderer/table covers all 4 ports.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGpxGrmcNmeaBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT64) || (info.size != 8) || !STR_STARTS_WITH(info.name, std::string("grmcNMEABits")))
+        return "";
+
+    try {
+        uint64_t bits = std::any_cast<uint64_t>(value);
+        return renderBitNameList(bits, {
+            { NMEA_RMC_BITS_PIMU,   "$PIMU" },
+            { NMEA_RMC_BITS_PPIMU,  "$PPIMU" },
+            { NMEA_RMC_BITS_PRIMU,  "$PRIMU" },
+            { NMEA_RMC_BITS_PINS1,  "$PINS1" },
+            { NMEA_RMC_BITS_PINS2,  "$PINS2" },
+            { NMEA_RMC_BITS_PGPSP,  "$PGPSP" },
+            { NMEA_RMC_BITS_GNGGA,  "$GNGGA" },
+            { NMEA_RMC_BITS_GNGLL,  "$GNGLL" },
+            { NMEA_RMC_BITS_GNGSA,  "$GNGSA" },
+            { NMEA_RMC_BITS_GNRMC,  "$GNRMC" },
+            { NMEA_RMC_BITS_GNZDA,  "$GNZDA" },
+            { NMEA_RMC_BITS_PASHR,  "$PASHR" },
+            { NMEA_RMC_BITS_PSTRB,  "$PSTRB" },
+            { NMEA_RMC_BITS_INFO,   "$INFO" },
+            { NMEA_RMC_BITS_GNGSV,  "$GNGSV" },
+            { NMEA_RMC_BITS_GNVTG,  "$GNVTG" },
+            { NMEA_RMC_BITS_INTEL,  "$INTEL" },
+            { NMEA_RMC_BITS_POWGPS, "$POWGPS" },
+            { NMEA_RMC_BITS_POWTLV, "$POWTLV" },
+        });
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for rmc_t::bits (RMC_BITS_*), shared verbatim by DID_RMC and
+ *        DID_GPX_RMC (both registered by PopulateMapRmc()). NOT the same enum/namespace as
+ *        gpx_status_t.grmcBits* (GRMC_BITS_*) despite the similar name -- see the ISStatusDecode.h
+ *        disambiguation notes for the rmc_t.options renderer above this one's sibling field.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderRmcBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT64) || (info.size != 8) || (info.name != "bits"))
+        return "";
+
+    try {
+        uint64_t bits = std::any_cast<uint64_t>(value);
+        return renderBitNameList(bits, {
+            { RMC_BITS_INS1,                "INS1" },
+            { RMC_BITS_INS2,                "INS2" },
+            { RMC_BITS_INS3,                "INS3" },
+            { RMC_BITS_INS4,                "INS4" },
+            { RMC_BITS_IMU,                 "IMU" },
+            { RMC_BITS_PIMU,                "PIMU" },
+            { RMC_BITS_BAROMETER,           "Barometer" },
+            { RMC_BITS_MAGNETOMETER,        "Magnetometer" },
+            { RMC_BITS_IMUS,                "IMUs" },
+            { RMC_BITS_GNSS1_POS,           "GNSS1 position" },
+            { RMC_BITS_GNSS2_POS,           "GNSS2 position" },
+            { RMC_BITS_GNSS1_RAW,           "GNSS1 raw" },
+            { RMC_BITS_GNSS2_RAW,           "GNSS2 raw" },
+            { RMC_BITS_GNSS1_SAT,           "GNSS1 satellite info" },
+            { RMC_BITS_GNSS2_SAT,           "GNSS2 satellite info" },
+            { RMC_BITS_GNSS_BASE_RAW,       "GNSS base raw" },
+            { RMC_BITS_STROBE_IN_TIME,      "Strobe input time" },
+            { RMC_BITS_DIAGNOSTIC_MESSAGE,  "Diagnostic message" },
+            { RMC_BITS_IMUS_UNCAL,          "IMUs (uncalibrated)" },
+            { RMC_BITS_GNSS1_VEL,           "GNSS1 velocity" },
+            { RMC_BITS_GNSS2_VEL,           "GNSS2 velocity" },
+            { RMC_BITS_GNSS1_UBX_POS,       "GNSS1 UBX position" },
+            { RMC_BITS_GNSS1_RTK_POS,       "GNSS1 RTK position" },
+            { RMC_BITS_GNSS1_RTK_POS_REL,   "GNSS1 RTK relative position" },
+            { RMC_BITS_GNSS1_RTK_POS_MISC,  "GNSS1 RTK position misc" },
+            { RMC_BITS_INL2_NED_SIGMA,      "INL2 NED sigma" },
+            { RMC_BITS_RTK_STATE,           "RTK state" },
+            { RMC_BITS_RTK_CODE_RESIDUAL,   "RTK code residual" },
+            { RMC_BITS_RTK_PHASE_RESIDUAL,  "RTK phase residual" },
+            { RMC_BITS_WHEEL_ENCODER,       "Wheel encoder" },
+            { RMC_BITS_GROUND_VEHICLE,      "Ground vehicle" },
+            { RMC_BITS_IMU_MAG,             "IMU + Mag" },
+            { RMC_BITS_PIMU_MAG,            "PIMU + Mag" },
+            { RMC_BITS_GNSS1_RTK_HDG_REL,   "GNSS1 RTK heading relative" },
+            { RMC_BITS_GNSS1_RTK_HDG_MISC,  "GNSS1 RTK heading misc" },
+            { RMC_BITS_REFERENCE_IMU,       "Reference IMU" },
+            { RMC_BITS_REFERENCE_PIMU,      "Reference PIMU" },
+            { RMC_BITS_IMUS_RAW,            "IMUs raw" },
+            { RMC_BITS_IMU_RAW,             "IMU raw" },
+            { RMC_BITS_GNSS1_SIG,           "GNSS1 signal info" },
+            { RMC_BITS_GNSS2_SIG,           "GNSS2 signal info" },
+            { RMC_BITS_GPX_RTOS_INFO,       "GPX RTOS info" },
+            { RMC_BITS_GPX_DEBUG_ARRAY,     "GPX debug array" },
+            { RMC_BITS_GPX_STATUS,          "GPX status" },
+            { RMC_BITS_GPX_DEV_INFO,        "GPX device info" },
+            { RMC_BITS_GPX_RMC,             "GPX RMC" },
+            { RMC_BITS_GPX_SYS_FAULT,       "GPX system fault" },
+            { RMC_BITS_GPX_BIT,             "GPX BIT" },
+            { RMC_BITS_GPX_PORT_MON,        "GPX port monitor" },
+            { RMC_BITS_GPX_RTK_DBG,         "GPX RTK debug" },
+            { RMC_BITS_EXT_AIDING_POS,      "External aiding position" },
+            { RMC_BITS_EXT_AIDING_VEL,      "External aiding velocity" },
+            { RMC_BITS_EXT_AIDING_SPEED,    "External aiding speed" },
+            { RMC_BITS_EXT_AIDING_DIR_SPEED,"External aiding dir+speed" },
+            { RMC_BITS_EXT_AIDING_HEADING,  "External aiding heading" },
+            { RMC_BITS_EXT_AIDING_ATTITUDE, "External aiding attitude" },
+            { RMC_BITS_EVENT,               "Event" },
+            { RMC_BITS_INTERNAL_PPD,        "Internal post-processing data" },
+            { RMC_BITS_PRESET,              "Preset" },
+        });
+    } catch (std::bad_any_cast& e) {
+        (void)e;
         return "";
     }
 }
@@ -292,6 +541,29 @@ std::string renderGnssStatusBits(const data_info_t& info, std::any value, int ar
         uint32_t gpsStatusBits = std::any_cast<uint32_t>(value);
         const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
         return dec ? RenderStatusFromDecode(*dec, gpsStatusBits) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for GNSS status2 (jam/spoof interference flags)
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGnssStatus2(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "status2"))
+        return "";
+
+    // SN-8126 built the "status2" decode table (jam/spoof flags); SN-8491 wires it up here so
+    // EvalTool actually shows it as a tooltip.
+    try {
+        uint8_t status2 = std::any_cast<uint8_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("status2");
+        return dec ? RenderStatusFromDecode(*dec, status2) : std::string();
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -445,6 +717,206 @@ std::string renderGpxBitState(const data_info_t& info, std::any value, int array
         uint8_t state = std::any_cast<uint8_t>(value);
         const status_field_decode_t* dec = GetStatusDecodeByField("gpxBitState");
         return dec ? RenderStatusFromDecode(*dec, state) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for imu_t / pimu_t status (eImuStatus)
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderImuStatus(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "status"))
+        return "";
+
+    // The "imuStatus" decode table (eImuStatus) was built alongside the original SN-7919 work but
+    // never wired to a renderer; SN-8491 adds this thin wrapper (mirroring renderInsStatus) and
+    // assigns it to imu_t/pimu_t::status.
+    try {
+        uint32_t imuStatus = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+        return dec ? RenderStatusFromDecode(*dec, imuStatus) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for gnssSatSigConst (eGnssSatSigConst), shared verbatim by
+ *        nvm_flash_cfg_t and gpx_flash_cfg_t
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGnssSatSigConst(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT16) || (info.size != 2) || (info.name != "gnssSatSigConst"))
+        return "";
+
+    try {
+        uint16_t gnssSatSigConst = std::any_cast<uint16_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("gnssSatSigConst");
+        return dec ? RenderStatusFromDecode(*dec, (uint32_t)gnssSatSigConst) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for dynamicModel (eDynamicModel), shared verbatim by
+ *        nvm_flash_cfg_t and gpx_flash_cfg_t
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderDynamicModel(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "dynamicModel"))
+        return "";
+
+    try {
+        uint8_t dynamicModel = std::any_cast<uint8_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("dynamicModel");
+        return dec ? RenderStatusFromDecode(*dec, (uint32_t)dynamicModel) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::sysCfgBits (eSysConfigBits). GPX's
+ *        gpx_flash_cfg_t::sysCfgBits uses a different enum (eGpxSysConfigBits) and is not
+ *        rendered by this function -- see the GetStatusDecode() disambiguation in
+ *        ISStatusDecode.cpp.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderImxSysCfgBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sysCfgBits"))
+        return "";
+
+    try {
+        uint32_t sysCfgBits = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+        return dec ? RenderStatusFromDecode(*dec, sysCfgBits) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for gpx_flash_cfg_t::sysCfgBits (eGpxSysConfigBits). GPX-only,
+ *        a much smaller/different enum than the IMX counterpart despite the identical field name
+ *        -- see the GetStatusDecode() DID-based routing to the "gpxSysCfgBits" key.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGpxSysCfgBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sysCfgBits"))
+        return "";
+
+    try {
+        uint32_t sysCfgBits = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("gpxSysCfgBits");
+        return dec ? RenderStatusFromDecode(*dec, sysCfgBits) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for rmc_t::options (RMC_OPTIONS_*), shared verbatim by
+ *        DID_RMC and DID_GPX_RMC (both registered by PopulateMapRmc())
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderRmcOptions(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "options"))
+        return "";
+
+    try {
+        uint32_t options = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+        return dec ? RenderStatusFromDecode(*dec, options) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::ioConfig (eIoConfig). IMX-only.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderIoConfig(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "ioConfig"))
+        return "";
+
+    try {
+        uint32_t ioConfig = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+        return dec ? RenderStatusFromDecode(*dec, ioConfig) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::ioConfig2 (eIoConfig2). IMX-only.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderIoConfig2(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "ioConfig2"))
+        return "";
+
+    try {
+        uint8_t ioConfig2 = std::any_cast<uint8_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+        return dec ? RenderStatusFromDecode(*dec, (uint32_t)ioConfig2) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::sensorConfig (eSensorConfig). IMX-only.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderSensorConfig(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sensorConfig"))
+        return "";
+
+    try {
+        uint32_t sensorConfig = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+        return dec ? RenderStatusFromDecode(*dec, sensorConfig) : std::string();
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -624,7 +1096,7 @@ static void PopulateMapImu(data_set_t data_set[DID_COUNT], uint32_t did, string 
     mapper.AddMember("time", &imu_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray2("pqr", offsetof(imu_t, I.pqr), DATA_TYPE_F32, 3, {SYM_DEG_PER_S}, {"Angular rate.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     mapper.AddArray2("acc", offsetof(imu_t, I.acc), DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Linear acceleration.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &imu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImuStatus;
 }
 
 static void PopulateMapImus(data_set_t data_set[DID_COUNT], uint32_t did, string description)
@@ -684,8 +1156,8 @@ static void PopulateMapSysSensors(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapRmc(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<rmc_t> mapper(data_set, did);
-    mapper.AddMember("bits", &rmc_t::bits, DATA_TYPE_UINT64, "", "Data stream enable bits for the specified ports.  (see RMC_BITS_...)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("options", &rmc_t::options, DATA_TYPE_UINT32, "", "Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("bits", &rmc_t::bits, DATA_TYPE_UINT64, "", "Data stream enable bits for the specified ports.  (see RMC_BITS_...)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRmcBits;
+    mapper.AddMember("options", &rmc_t::options, DATA_TYPE_UINT32, "", "Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRmcOptions;
 }
 
 void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -764,7 +1236,7 @@ static void PopulateMapGnssPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("leapS", &gnss_pos_t::leapS, DATA_TYPE_UINT8, "", "GNSS leap seconds (GNSS-UTC). Receiver's best knowledge of the leap seconds offset from UTC to GNSS time.", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("satsUsed", &gnss_pos_t::satsUsed, DATA_TYPE_UINT8, "", "Number of satellites used in the solution", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cnoMeanSigma", &gnss_pos_t::cnoMeanSigma, DATA_TYPE_UINT8, "10dBHz", "10x standard deviation of CNO mean over past 5 seconds", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX );
+    mapper.AddMember("status2", &gnss_pos_t::status2, DATA_TYPE_UINT8, "", "(see eGnssStatus2) GNSS status2: [0x0X] Spoofing/Jamming status, [0xX0] Unused", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX ).renderExtended = renderGnssStatus2;
 }
 
 static void PopulateMapGnssVel(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1102,7 +1574,7 @@ static void PopulateMapPimu(data_set_t data_set[DID_COUNT], uint32_t did, string
     DataMapper<pimu_t> mapper(data_set, did);
     mapper.AddMember("time", &pimu_t::time, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("dt", &pimu_t::dt, DATA_TYPE_F32, "s", "Integration period.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &pimu_t::status, DATA_TYPE_UINT32, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImuStatus;
     mapper.AddArray("theta", &pimu_t::theta, DATA_TYPE_F32, 3, {SYM_DEG}, {"IMU delta theta coning and sculling integrals in body/IMU frame.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, {"m/s"}, {"IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
@@ -1281,28 +1753,28 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssTimeSyncPeriodMs", &nvm_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.", 0, 1.0);
     mapper.AddMember("gnssTimeUserDelay", &nvm_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
     mapper.AddMember("gnssMinimumElevation", &nvm_flash_cfg_t::gnssMinimumElevation, DATA_TYPE_F32, SYM_DEG, "GNSS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
-    mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0);
+    mapper.AddMember("gnssSatSigConst", &nvm_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0).renderExtended = renderGnssSatSigConst;
 
-    mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0);
+    mapper.AddMember("dynamicModel", &nvm_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0).renderExtended = renderDynamicModel;
     str = "AutobaudOff [0x1=Ser0, 0x2=Ser1], 0x4=AutoMagRecal, 0x8=DisableMagDecEst, ";
     str += "0x10=DisableLeds, ";
     str += "0x100=1AxisMagRecal, ";
     str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GNSS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
-    mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sysCfgBits", &nvm_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderImxSysCfgBits;
     str = "(see eRTKConfigBits) [0xedcba](";                // 0x000102
     str += "a=[POS=0x2,COMP=0x4], ";                        // POS  (a == 0x2)  0x000102
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
-    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig;
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig2;
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
     str += "Gyr DLPF (Hz) 0x0F00:[0=250, 1=184, 2=92, 3=41, 4=20, 5=10, 6=5], ";
     str += "Acc DLPF (Hz) 0xF000:[0=218, 1=218, 2=99, 3=45, 4=21, 5=10, 6=5], ";
-    mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderSensorConfig;
 
     mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
     mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GNSS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
@@ -1370,8 +1842,8 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("gnss1AntOffset", &gpx_flash_cfg_t::gnss1AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
     str = " offset from Sensor Frame origin to GNSS2 antenna.";
     mapper.AddArray("gnss2AntOffset", &gpx_flash_cfg_t::gnss2AntOffset, DATA_TYPE_F32, 3, {"m"}, {"X" + str, "Y" + str, "Z" + str});
-    mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist");
+    mapper.AddMember("gnssSatSigConst", &gpx_flash_cfg_t::gnssSatSigConst, DATA_TYPE_UINT16, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGnssSatSigConst;
+    mapper.AddMember("dynamicModel", &gpx_flash_cfg_t::dynamicModel, DATA_TYPE_UINT8, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist").renderExtended = renderDynamicModel;
     mapper.AddMember("debug", &gpx_flash_cfg_t::debug, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("gnssTimeSyncPeriodMs", &gpx_flash_cfg_t::gnssTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GNSS time synchronization pulse period.");
     mapper.AddMember("gnssTimeUserDelay", &gpx_flash_cfg_t::gnssTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GNSS time.  This parameter can be used to account for GNSS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3);
@@ -1384,7 +1856,7 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
-    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "System configuration bits (see eGpxSysConfigBits): 0x1=disable VCC_RF, brownout reset threshold", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxSysCfgBits;
     mapper.AddMember("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32);
     mapper.AddLlaDegM("refLla", offsetof(gpx_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
 
@@ -1400,25 +1872,29 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &gpx_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "General status flags (see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxStatus_status;;
     mapper.AddMember("hdwStatus",    &gpx_status_t::hdwStatus,    DATA_TYPE_UINT32, "", "Hardware status flags (see eGPXHdwStatusFlags)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxStatus_hdwStatus;
-    mapper.AddMember("grmcBitsSer0", &gpx_status_t::grmcBitsSer0, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsSer1", &gpx_status_t::grmcBitsSer1, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsSer2", &gpx_status_t::grmcBitsSer2, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsUSB",  &gpx_status_t::grmcBitsUSB,  DATA_TYPE_UINT64, "", "GPX RMC bit USB.",     DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("grmcBitsSer0", &gpx_status_t::grmcBitsSer0, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcBits;
+    mapper.AddMember("grmcBitsSer1", &gpx_status_t::grmcBitsSer1, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcBits;
+    mapper.AddMember("grmcBitsSer2", &gpx_status_t::grmcBitsSer2, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcBits;
+    mapper.AddMember("grmcBitsUSB",  &gpx_status_t::grmcBitsUSB,  DATA_TYPE_UINT64, "", "GPX RMC bit USB.",     DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcBits;
  
-    mapper.AddMember("grmcNMEABitsSer0", &gpx_status_t::grmcNMEABitsSer0, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcNMEABitsSer1", &gpx_status_t::grmcNMEABitsSer1, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcNMEABitsSer2", &gpx_status_t::grmcNMEABitsSer2, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcNMEABitsUSB",  &gpx_status_t::grmcNMEABitsUSB,  DATA_TYPE_UINT64, "", "GPX RMC NMEA bit USB.",     DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("grmcNMEABitsSer0", &gpx_status_t::grmcNMEABitsSer0, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcNmeaBits;
+    mapper.AddMember("grmcNMEABitsSer1", &gpx_status_t::grmcNMEABitsSer1, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcNmeaBits;
+    mapper.AddMember("grmcNMEABitsSer2", &gpx_status_t::grmcNMEABitsSer2, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcNmeaBits;
+    mapper.AddMember("grmcNMEABitsUSB",  &gpx_status_t::grmcNMEABitsUSB,  DATA_TYPE_UINT64, "", "GPX RMC NMEA bit USB.",     DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxGrmcNmeaBits;
  
     mapper.AddMember("mcuTemp", &gpx_status_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("navOutputPeriodMs", &gpx_status_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("flashCfgChecksum", &gpx_status_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
  
-    string str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
-    str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
-    str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
-    str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
-    mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    // SN-8491 (Kyle, 2026-08-13): this description previously read "Rover [0x1=G1, 0x2=G2],
+    // 0x8=GCompass, BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], BaseOutG2
+    // [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], 0x1000=MovingBasePos,
+    // 0x4000=SameHdwRvrBase" -- a bit layout inconsistent with eRTKConfigBits (e.g. its 0x40 read
+    // as an RTCM output, not GNSS1_UBLOX_SER2) and backed by no dedicated enum anywhere. Per
+    // Kyle's confirmation, rtkMode's actual bits are eRTKConfigBits' (matching its own data_sets.h
+    // doc comment); replaced with an accurate description and wired to the same renderExtended
+    // (renderRtkMode) used for RTKCfgBits.
+    mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", "RTK mode bits (see eRTKConfigBits)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRtkMode;
     for (int i=0; i<GNSS_RECEIVER_COUNT; i++)
     {
         mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),      DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)").renderExtended = renderGpxStatus_gnssInitState;
