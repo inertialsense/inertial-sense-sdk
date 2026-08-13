@@ -1369,15 +1369,47 @@ TEST(ISStatusDecode, ImxSysCfgBits_UnusedBit0ContributesNoBitOfItsOwn)
     EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)UNUSED1), RenderStatusFromDecode(*dec, 0u));
 }
 
-TEST(ISStatusDecode, GpxFlashCfg_SysCfgBits_NotYetRoutedReturnsNullNotImxTable)
+TEST(ISStatusDecode, GpxFlashCfg_SysCfgBits_RoutesToItsOwnTableNotImxTable)
 {
     // gpx_flash_cfg_t::sysCfgBits shares the on-wire field name "sysCfgBits" with
-    // nvm_flash_cfg_t but uses a DIFFERENT enum (eGpxSysConfigBits). Until SN-8491 phase 2 adds
-    // its own table, DID-aware lookup must return nullptr here -- NOT silently hand back the IMX
-    // table, which would misrender every GPX config bit.
-    EXPECT_EQ(GetStatusDecode(DID_GPX_FLASH_CFG, "sysCfgBits"), nullptr);
-    EXPECT_NE(GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits"), nullptr);
-    EXPECT_EQ(GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits"), GetStatusDecodeByField("sysCfgBits"));
+    // nvm_flash_cfg_t but uses a DIFFERENT, much smaller enum (eGpxSysConfigBits). DID-aware
+    // lookup must resolve to the GPX-specific table ("gpxSysCfgBits"), never the IMX one.
+    const status_field_decode_t* gpxDec = GetStatusDecode(DID_GPX_FLASH_CFG, "sysCfgBits");
+    const status_field_decode_t* imxDec = GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits");
+    ASSERT_NE(gpxDec, nullptr);
+    ASSERT_NE(imxDec, nullptr);
+    EXPECT_NE(gpxDec, imxDec);
+    EXPECT_EQ(gpxDec, GetStatusDecodeByField("gpxSysCfgBits"));
+    EXPECT_EQ(imxDec, GetStatusDecodeByField("sysCfgBits"));
+}
+
+// ---- gpx_flash_cfg_t::sysCfgBits (eGpxSysConfigBits, SN-8491) -----------------
+
+TEST(ISStatusDecode, GpxSysCfgBits_VccRfBitAndBrownoutThreshold)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxSysCfgBits");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);
+
+    const std::string vccRf = RenderStatusFromDecode(*dec, (uint32_t)GPX_SYS_CFG_BITS_DISABLE_VCC_RF);
+    EXPECT_NE(vccRf.find("Disable"), std::string::npos);
+    EXPECT_NE(vccRf.find("VCC_RF"), std::string::npos);
+    // Brownout threshold always renders (0 = a real, named default state).
+    EXPECT_NE(vccRf.find("1.65-1.75V (default)"), std::string::npos);
+
+    const uint32_t level3 = (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3 << GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
+    EXPECT_NE(RenderStatusFromDecode(*dec, level3).find("2.5-2.6V"), std::string::npos);
+}
+
+TEST(ISStatusDecode, GpxSysCfgBits_IsMuchSmallerThanImxTable)
+{
+    // The whole point of this being its own table: it should NOT resemble the IMX one in size.
+    const status_field_decode_t* gpxDec = GetStatusDecodeByField("gpxSysCfgBits");
+    const status_field_decode_t* imxDec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(gpxDec, nullptr);
+    ASSERT_NE(imxDec, nullptr);
+    EXPECT_EQ(gpxDec->subfields.size(), 2u);
+    EXPECT_GT(imxDec->subfields.size(), gpxDec->subfields.size());
 }
 
 // ---- rmc_t::options (RMC_OPTIONS_*, SN-8491) ----------------------------------

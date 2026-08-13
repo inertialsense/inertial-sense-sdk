@@ -45,6 +45,7 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_FLASH_CONFIG, "ioConfig",  (uint32_t)IO_CONFIG_IMU_1_DISABLE, "IMU 1 disable", "DID_FLASH_CONFIG.ioConfig" },
         { DID_FLASH_CONFIG, "ioConfig2", (uint8_t)IO_CFG2_USE_GNSS2_AS_SOURCE, "Use GNSS2", "DID_FLASH_CONFIG.ioConfig2" },
         { DID_FLASH_CONFIG, "sensorConfig", (uint32_t)SENSOR_CFG_DISABLE_MAGNETOMETER, "Disable magnetometer sensor", "DID_FLASH_CONFIG.sensorConfig" },
+        { DID_GPX_FLASH_CFG, "sysCfgBits", (uint32_t)GPX_SYS_CFG_BITS_DISABLE_VCC_RF, "VCC_RF", "DID_GPX_FLASH_CFG.sysCfgBits" },
     };
     return cases;
 }
@@ -131,18 +132,30 @@ TEST(ISDataMappingsRenderExtended, GnssSatSigConstAndDynamicModel_SharedBetweenI
     EXPECT_EQ(CallRenderExtended(*imxDyn, dynValue), "Marine");
 }
 
-TEST(ISDataMappingsRenderExtended, GpxFlashCfg_SysCfgBits_DeliberatelyNotWiredYet)
+TEST(ISDataMappingsRenderExtended, GpxFlashCfg_SysCfgBits_UsesItsOwnTableNotImxDecoder)
 {
-    // Phase-2 scope boundary: gpx_flash_cfg_t::sysCfgBits uses its own enum (eGpxSysConfigBits)
-    // and is NOT rendered by this ticket's phase-1 work -- it still falls through to the generic
-    // renderVariableAndStatsToString formatter every field gets by default (a plain hex string),
-    // NOT the IMX decoder (see the GetStatusDecode disambiguation this ticket added in
-    // ISStatusDecode.cpp). Guards against it silently "fixing itself" by leaking the IMX table.
+    // gpx_flash_cfg_t::sysCfgBits uses its own enum (eGpxSysConfigBits) and its own renderer
+    // (renderGpxSysCfgBits). Confirm IMX-specific decoded text never leaks in, even when fed a
+    // raw value that happens to also set a bit meaningful in the (unrelated) IMX enum.
     const data_info_t* info = FindMappedField(DID_GPX_FLASH_CFG, "sysCfgBits");
     ASSERT_NE(info, nullptr);
     const std::string rendered = CallRenderExtended(*info, (uint32_t)SYS_CFG_BITS_AUTO_MAG_RECAL);
     EXPECT_EQ(rendered.find("Auto mag recal"), std::string::npos) << "leaked IMX-specific decoded text: \"" << rendered << "\"";
-    EXPECT_NE(rendered.find("0x"), std::string::npos) << "expected the generic hex fallback, got: \"" << rendered << "\"";
+    // SYS_CFG_BITS_AUTO_MAG_RECAL (0x4) is not GPX_SYS_CFG_BITS_DISABLE_VCC_RF (0x1), so the GPX
+    // table's own Bit subfield shouldn't fire either -- only the always-on brownout default.
+    EXPECT_EQ(rendered.find("VCC_RF"), std::string::npos);
+    EXPECT_NE(rendered.find("1.65-1.75V (default)"), std::string::npos);
+}
+
+TEST(ISDataMappingsRenderExtended, GpxSysCfgBits_MatchesDecodeTableDirectly)
+{
+    const data_info_t* info = FindMappedField(DID_GPX_FLASH_CFG, "sysCfgBits");
+    ASSERT_NE(info, nullptr);
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxSysCfgBits");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t value = (uint32_t)GPX_SYS_CFG_BITS_DISABLE_VCC_RF;
+    EXPECT_EQ(CallRenderExtended(*info, value), RenderStatusFromDecode(*dec, value));
 }
 
 TEST(ISDataMappingsRenderExtended, RmcOptions_SharedBetweenRmcAndGpxRmc)

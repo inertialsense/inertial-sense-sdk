@@ -1456,6 +1456,42 @@ status_field_decode_t buildSensorConfigDecode()
     return d;
 }
 
+/**
+ * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits). GPX-only -- a much smaller
+ *        enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"), and NOT
+ *        the same enum despite the identical on-wire field name; registered under its own key
+ *        "gpxSysCfgBits" (see the GetStatusDecode DID-based guard added alongside the IMX table).
+ */
+status_field_decode_t buildGpxSysCfgBitsDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sysCfgBits";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("VCC_RF disabled", GPX_SYS_CFG_BITS_DISABLE_VCC_RF, false,
+        "0x00000001 - Disable (tri-state) VCC_RF output"));
+
+    {
+        const uint32_t mask  = (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK;
+        const uint32_t shift = (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
+        status_subfield_t s;
+        s.name  = "Brownout reset threshold";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_0, "Brownout reset threshold: 1.65-1.75V (default)", "", false },
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_1, "Brownout reset threshold: 2.0-2.1V",              "", false },
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_2, "Brownout reset threshold: 2.25-2.35V",            "", false },
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V",              "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -1485,6 +1521,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("ioConfig2",          buildIoConfig2Decode());
         m.emplace("ioConfig",           buildIoConfigDecode());
         m.emplace("sensorConfig",       buildSensorConfigDecode());
+        m.emplace("gpxSysCfgBits",      buildGpxSysCfgBitsDecode());
         return m;
     }();
     return r;
@@ -1609,10 +1646,10 @@ const status_field_decode_t* GetStatusDecode(uint32_t did, const std::string& fi
         return GetStatusDecodeByField("gnssStatus");   // GNSS pos/vel status (DIDs 13/14/6/30/31/54)
     // "sysCfgBits" is shared by nvm_flash_cfg_t (eSysConfigBits) and gpx_flash_cfg_t
     // (eGpxSysConfigBits) -- two DIFFERENT enums with the same on-wire field name. The IMX table
-    // is registered directly under the key "sysCfgBits" (SN-8491); GPX's own table doesn't exist
-    // yet, so explicitly return nullptr for it rather than falling through to the key lookup
-    // below and silently handing back the wrong (IMX) table for a GPX DID.
+    // is registered directly under the key "sysCfgBits"; route the GPX DID to its own table
+    // ("gpxSysCfgBits") rather than falling through to the key lookup below, which would silently
+    // hand back the wrong (IMX) table for a GPX DID.
     if (fieldName == "sysCfgBits" && did == DID_GPX_FLASH_CFG)
-        return nullptr;   // TODO(SN-8491 phase 2): register/route a "gpxSysCfgBits" table here.
+        return GetStatusDecodeByField("gpxSysCfgBits");
     return GetStatusDecodeByField(fieldName);
 }

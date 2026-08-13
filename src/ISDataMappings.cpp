@@ -762,6 +762,29 @@ std::string renderImxSysCfgBits(const data_info_t& info, std::any value, int arr
 }
 
 /**
+ * @brief a custom data renderer for gpx_flash_cfg_t::sysCfgBits (eGpxSysConfigBits). GPX-only,
+ *        a much smaller/different enum than the IMX counterpart despite the identical field name
+ *        -- see the GetStatusDecode() DID-based routing to the "gpxSysCfgBits" key.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderGpxSysCfgBits(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sysCfgBits"))
+        return "";
+
+    try {
+        uint32_t sysCfgBits = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("gpxSysCfgBits");
+        return dec ? RenderStatusFromDecode(*dec, sysCfgBits) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
  * @brief a custom data renderer for rmc_t::options (RMC_OPTIONS_*), shared verbatim by
  *        DID_RMC and DID_GPX_RMC (both registered by PopulateMapRmc())
  * @param info
@@ -1764,7 +1787,7 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
-    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "System configuration bits (see eGpxSysConfigBits): 0x1=disable VCC_RF, brownout reset threshold", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxSysCfgBits;
     mapper.AddMember("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32);
     mapper.AddLlaDegM("refLla", offsetof(gpx_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
 
