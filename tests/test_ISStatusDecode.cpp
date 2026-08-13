@@ -1601,7 +1601,7 @@ TEST(ISStatusDecode, IoConfig_G1G2FunctionSubfield)
 
     // Multi-bit field (3 bits, mask 0xE at offset 1) -- bit-range annotation, not shifted-hex.
     const uint32_t g1g2Mask = (uint32_t)IO_CONFIG_G1G2_MASK;
-    const uint32_t g1g2Shift = (uint32_t)__builtin_ctz(g1g2Mask);
+    const uint32_t g1g2Shift = TestMaskShift(g1g2Mask);
     ExpectEnumSubfieldLine(canBus, g1g2Mask, g1g2Shift, (uint32_t)IO_CONFIG_G1G2_CAN_BUS >> g1g2Shift, "G1/G2: CAN Bus");
     ExpectEnumSubfieldLine(i2c, g1g2Mask, g1g2Shift, (uint32_t)IO_CONFIG_G1G2_I2C >> g1g2Shift, "G1/G2: I2C");
 }

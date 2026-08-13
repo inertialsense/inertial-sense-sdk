@@ -26,6 +26,18 @@ uint32_t maskShift(uint32_t mask)
     return s;
 }
 
+/**
+ * @brief Index of the highest set bit of `mask` (0 if `mask` is 0). Portable bit-scan -- avoids
+ *        `__builtin_clz`, which doesn't exist on MSVC and broke the Windows CI build (SN-8491,
+ *        2026-08-13).
+ */
+uint32_t maskHighBit(uint32_t mask)
+{
+    uint32_t h = 0;
+    while (mask >>= 1) ++h;
+    return h;
+}
+
 /** @brief Build a single on/off-bit sub-field descriptor. */
 status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const char* legacy)
 {
@@ -1580,12 +1592,12 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
                         // 2026-08-13: confirmed bit-range annotation over forcing hex-prefix
                         // consistency here, even though it means Bit-kind and multi-bit Enum-kind
                         // lines now use two different annotation styles.
-                        const int lo = sf.mask ? __builtin_ctz(sf.mask) : 0;
-                        const int hi = sf.mask ? (31 - __builtin_clz(sf.mask)) : 0;
+                        const uint32_t lo = sf.shift;   // sf.shift is always mask's own lowest set bit, by construction
+                        const uint32_t hi = maskHighBit(sf.mask);
                         if (hi == lo)
                             buff << utils::string_format("0x%08X - %s", vl.value << sf.shift, vl.label.c_str()) << std::endl;
                         else
-                            buff << utils::string_format("bits[%d:%d]=0x%X - %s", hi, lo, vl.value, vl.label.c_str()) << std::endl;
+                            buff << utils::string_format("bits[%u:%u]=0x%X - %s", hi, lo, vl.value, vl.label.c_str()) << std::endl;
                     }
                     else
                         buff << vl.legacyText << std::endl;

@@ -117,17 +117,45 @@ inline void ExpectHexPrefixedLine(const std::string& rendered, unsigned long lon
 }
 
 /**
+ * @brief Index of the highest set bit of `mask` (0 if `mask` is 0). Portable bit-scan -- avoids
+ *        `__builtin_clz`, which doesn't exist on MSVC and broke the Windows CI build (SN-8491,
+ *        2026-08-13). Mirrors `maskHighBit()` in ISStatusDecode.cpp (not reusable here directly --
+ *        that one lives in an anonymous namespace in a different translation unit).
+ */
+inline uint32_t TestMaskHighBit(uint32_t mask)
+{
+    uint32_t h = 0;
+    while (mask >>= 1) ++h;
+    return h;
+}
+
+/**
+ * @brief Trailing-zero count of `mask` (0 if `mask` is 0). Portable bit-scan -- avoids
+ *        `__builtin_ctz`, same MSVC caveat as `TestMaskHighBit()` above. Mirrors `maskShift()` in
+ *        ISStatusDecode.cpp, for tests that need a field's shift and have no `*_OFFSET` macro to
+ *        read it from directly (e.g. `IO_CONFIG_G1G2_MASK`'s constants are raw in-place values).
+ */
+inline uint32_t TestMaskShift(uint32_t mask)
+{
+    if (mask == 0) return 0;
+    uint32_t s = 0;
+    while (!(mask & 1u)) { mask >>= 1; ++s; }
+    return s;
+}
+
+/**
  * @brief Assert that `rendered` contains the line `RenderStatusFromDecode()`'s Enum case produces
  *        for a subfield with the given `mask`/`shift`, given its raw (pre-shift) enum index
  *        `rawIndexValue` -- "bits[hi:lo]=0xN - name" for a multi-bit mask, or "0xHEX - name" for a
- *        single-bit mask (mirroring production's own single-bit-vs-multi-bit branch). `hi`/`lo`
- *        are derived from `mask` via the same ctz/clz approach production uses, never hand-typed,
- *        so a future re-bit-packing of a field can't silently desync the test from reality.
+ *        single-bit mask (mirroring production's own single-bit-vs-multi-bit branch). `lo` is
+ *        `shift` itself (always the mask's own lowest set bit, by construction); `hi` is derived
+ *        from `mask`, never hand-typed, so a future re-bit-packing of a field can't silently
+ *        desync the test from reality.
  */
 inline void ExpectEnumSubfieldLine(const std::string& rendered, uint32_t mask, uint32_t shift, unsigned long long rawIndexValue, const std::string& name)
 {
-    const int lo = mask ? __builtin_ctz(mask) : 0;
-    const int hi = mask ? (31 - __builtin_clz(mask)) : 0;
+    const uint32_t lo = shift;
+    const uint32_t hi = TestMaskHighBit(mask);
     char buf[64];
     std::string expectedLine;
     if (hi == lo)
@@ -137,7 +165,7 @@ inline void ExpectEnumSubfieldLine(const std::string& rendered, uint32_t mask, u
     }
     else
     {
-        std::snprintf(buf, sizeof(buf), "bits[%d:%d]=0x%llX", hi, lo, rawIndexValue);
+        std::snprintf(buf, sizeof(buf), "bits[%u:%u]=0x%llX", hi, lo, rawIndexValue);
         expectedLine = std::string(buf) + " - " + name;
     }
     EXPECT_NE(rendered.find(expectedLine), std::string::npos)
