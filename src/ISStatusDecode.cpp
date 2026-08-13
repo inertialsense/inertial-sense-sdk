@@ -1096,6 +1096,255 @@ status_field_decode_t buildRmcOptionsDecode()
     return d;
 }
 
+/**
+ * @brief nvm_flash_cfg_t::ioConfig decode table (eIoConfig). IMX-only -- gpx_flash_cfg_t has no
+ *        equivalent field. The largest table in this file: 5 small multi-bit Enum pin-function
+ *        fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
+ *        GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local
+ *        helper to avoid duplicating the value list and risking the two copies drifting), and 6
+ *        independent Bit flags (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT,
+ *        IMU_1/2/3_DISABLE). Undefined/reserved values within a multi-bit field's range (e.g.
+ *        raw 0 in the G6G7 field, which has no named ..._DEFAULT-distinct-from-COM1 state) render
+ *        nothing for that sub-field, same convention as sysCfgBits/ioConfig2.
+ */
+status_field_decode_t buildIoConfigDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "ioConfig";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("Strobe trigger high", IO_CONFIG_STROBE_TRIGGER_HIGH, false,
+        "0x00000001 - Strobe (input and output) trigger on rising edge (falling edge if clear)"));
+
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G1G2_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G1/G2 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G1G2_STROBE_INPUT_G2) >> shift, "G1/G2: Strobe input on G2",         "", false },
+            { ((uint32_t)IO_CONFIG_G1G2_CAN_BUS)         >> shift, "G1/G2: CAN Bus",                     "", false },
+            { ((uint32_t)IO_CONFIG_G1G2_COM2)            >> shift, "G1/G2: General comms on Ser2",       "", false },
+            { ((uint32_t)IO_CONFIG_G1G2_I2C)             >> shift, "G1/G2: I2C",                         "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G9_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G9 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G9_STROBE_INPUT)      >> shift, "G9: Strobe input",              "", false },
+            { ((uint32_t)IO_CONFIG_G9_STROBE_OUTPUT_NAV) >> shift, "G9: Nav update strobe output",  "", false },
+            { ((uint32_t)IO_CONFIG_G9_SPI_DRDY)          >> shift, "G9: SPI DRDY",                   "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G6G7_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G6/G7 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G6G7_COM1) >> shift, "G6/G7: General comms on Ser1", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G5G8_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G5/G8 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G5G8_STROBE_INPUT_G5)    >> shift, "G5/G8: Strobe input on G5",         "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_STROBE_INPUT_G8)    >> shift, "G5/G8: Strobe input on G8",         "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_STROBE_INPUT_G5_G8) >> shift, "G5/G8: Strobe input on G5 and G8",  "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_G6G7_SPI_ENABLE)    >> shift, "G5/G8: Enable SPI on G6/G7",        "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_QDEC_INPUT)         >> shift, "G5/G8: Quadrature wheel encoder input", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("G15 strobe input", IO_CONFIG_G15_STROBE_INPUT, false,
+        "0x00000800 - G15 (GNSS PPS) strobe input"));
+
+    {
+        const uint32_t mask  = (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_MASK << IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name  = "GNSS1 PPS source";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_DISABLED, "GNSS1 PPS source: Disabled", "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G15,      "GNSS1 PPS source: G15",      "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G2,       "GNSS1 PPS source: G2",       "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G5,       "GNSS1 PPS source: G5",       "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G12,      "GNSS1 PPS source: G12",      "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G9,       "GNSS1 PPS source: G9",       "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("GNSS1 skip init", IO_CONFIG_GNSS1_NO_INIT, false,
+        "0x00001000 - Skip GNSS1 initialization"));
+
+    // GNSS1/GNSS2 source and type share the same value sets -- build each list once.
+    auto gnssSourceValues = []() {
+        return std::vector<status_value_label_t>{
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_DISABLE, "Disabled", "", false },
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_SER0,    "Ser0",     "", false },
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_SER1,    "Ser1",     "", false },
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_SER2,    "Ser2",     "", false },
+        };
+    };
+    auto gnssTypeValues = []() {
+        return std::vector<status_value_label_t>{
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_NONE,       "None",       "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_UBLOX,      "UBLOX",      "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_NMEA,       "NMEA",       "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_GPX,        "GPX",        "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_SEPTENTRIO, "Septentrio", "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_ISB,        "ISB (host pass-through)", "", false },
+        };
+    };
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS1_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS1 source"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS1_SOURCE_OFFSET;
+        s.values = gnssSourceValues();
+        for (auto& v : s.values) v.label = "GNSS1 source: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS2_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS2 source"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS2_SOURCE_OFFSET;
+        s.values = gnssSourceValues();
+        for (auto& v : s.values) v.label = "GNSS2 source: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS1_TYPE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS1 type"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS1_TYPE_OFFSET;
+        s.values = gnssTypeValues();
+        for (auto& v : s.values) v.label = "GNSS1 type: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS2_TYPE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS2 type"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS2_TYPE_OFFSET;
+        s.values = gnssTypeValues();
+        for (auto& v : s.values) v.label = "GNSS2 type: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("GNSS2 skip init", IO_CONFIG_GNSS2_NO_INIT, false,
+        "0x10000000 - Skip GNSS2 initialization"));
+    d.subfields.push_back(bitField("IMU1 disabled", IO_CONFIG_IMU_1_DISABLE, false,
+        "0x20000000 - IMU 1 disable"));
+    d.subfields.push_back(bitField("IMU2 disabled", IO_CONFIG_IMU_2_DISABLE, false,
+        "0x40000000 - IMU 2 disable"));
+    d.subfields.push_back(bitField("IMU3 disabled", IO_CONFIG_IMU_3_DISABLE, false,
+        "0x80000000 - IMU 3 disable"));
+
+    return d;
+}
+
+/**
+ * @brief nvm_flash_cfg_t::ioConfig2 decode table (eIoConfig2). IMX-only -- gpx_flash_cfg_t has no
+ *        equivalent field. Four small multi-bit Enum sub-fields, each a mutually-exclusive pin
+ *        function choice (every pin always has SOME function selected, so -- like sysCfgBits'
+ *        mag-recal-mode/brownout-threshold -- these always render a line, never silence) plus one
+ *        independent Bit flag (USE_GNSS2_AS_SOURCE).
+ */
+status_field_decode_t buildIoConfig2Decode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "ioConfig2";
+    d.errorMask = 0;
+
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_G11_MASK << IO_CFG2_G11_OFFSET;
+        status_subfield_t s;
+        s.name  = "G11 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_G11_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_G11_SWDIO,        "G11: SWDIO (debug)",   "", false },
+            { (uint32_t)IO_CFG2_G11_STROBE_INPUT, "G11: Strobe input",    "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_G12_MASK << IO_CFG2_G12_OFFSET;
+        status_subfield_t s;
+        s.name  = "G12 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_G12_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_G12_SWO,          "G12: SWO (debug)",           "", false },
+            { (uint32_t)IO_CFG2_G12_XSCL,         "G12: XSCL (secondary I2C)",  "", false },
+            { (uint32_t)IO_CFG2_G12_STROBE_INPUT, "G12: Strobe input",          "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_G13_MASK << IO_CFG2_G13_OFFSET;
+        status_subfield_t s;
+        s.name  = "G13 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_G13_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_G13_DRDY,         "G13: DRDY (data-ready output)", "", false },
+            { (uint32_t)IO_CFG2_G13_XSDA,         "G13: XSDA (secondary I2C)",     "", false },
+            { (uint32_t)IO_CFG2_G13_STROBE_INPUT, "G13: Strobe input",             "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("Use GNSS2 as NMEA source", IO_CFG2_USE_GNSS2_AS_SOURCE, false,
+        "0x20 - Use GNSS2 (instead of GNSS1) as the NMEA data source"));
+
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_MASK << IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name  = "GNSS2 PPS source";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_DISABLED, "GNSS2 PPS source: Disabled", "", false },
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G8,       "GNSS2 PPS source: G8",       "", false },
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G11,      "GNSS2 PPS source: G11",      "", false },
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G13,      "GNSS2 PPS source: G13",      "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -1122,6 +1371,8 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("dynamicModel",       buildDynamicModelDecode());
         m.emplace("sysCfgBits",         buildImxSysCfgBitsDecode());
         m.emplace("rmcOptions",         buildRmcOptionsDecode());
+        m.emplace("ioConfig2",          buildIoConfig2Decode());
+        m.emplace("ioConfig",           buildIoConfigDecode());
         return m;
     }();
     return r;

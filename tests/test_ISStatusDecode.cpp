@@ -1453,3 +1453,165 @@ TEST(ISStatusDecode, RmcOptions_RegisteredForBothRmcDids)
     ASSERT_NE(dec, nullptr);
     EXPECT_EQ(dec->fieldName, "options");
 }
+
+// ---- nvm_flash_cfg_t::ioConfig2 (eIoConfig2, SN-8491) -------------------------
+
+TEST(ISStatusDecode, IoConfig2_G11FunctionSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+    const std::string swdio  = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G11_SWDIO);
+    const std::string strobe = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G11_STROBE_INPUT_val);
+    EXPECT_NE(swdio.find("G11: SWDIO"), std::string::npos);
+    EXPECT_NE(strobe.find("G11: Strobe input"), std::string::npos);
+    EXPECT_NE(swdio, strobe);
+}
+
+TEST(ISStatusDecode, IoConfig2_G12AndG13AreIndependentSubfields)
+{
+    // G11 (bit 0), G12 (bits 2-1), and G13 (bits 4-3) must decode from their own bits only -- not
+    // "no cross-talk means silence": all four ioConfig2 Enum subfields always render SOME line
+    // (every pin always has a function selected), so setting only G12's bits still leaves G11,
+    // G13, and GNSS2-PPS-source at their default ("value 0") states, each rendering its own line.
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+    const std::string g12Xscl = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G12_XSCL_val);
+    EXPECT_NE(g12Xscl.find("G12: XSCL"), std::string::npos);
+    // G13 is still at its default (DRDY), G11 at its default (SWDIO) -- verify those specific
+    // defaults appear, not some other G12-driven value bleeding into them.
+    EXPECT_NE(g12Xscl.find("G13: DRDY"), std::string::npos);
+    EXPECT_NE(g12Xscl.find("G11: SWDIO"), std::string::npos);
+    EXPECT_EQ(g12Xscl.find("G13: Strobe"), std::string::npos);
+    EXPECT_EQ(g12Xscl.find("G13: XSDA"), std::string::npos);
+
+    const std::string g13Strobe = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G13_STROBE_INPUT_val);
+    EXPECT_NE(g13Strobe.find("G13: Strobe input"), std::string::npos);
+    EXPECT_NE(g13Strobe.find("G12: SWO"), std::string::npos);   // G12's own default, unaffected by G13's bits
+    EXPECT_EQ(g13Strobe.find("G12: XSCL"), std::string::npos);
+    EXPECT_EQ(g13Strobe.find("G12: Strobe"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig2_Gnss2PpsSourceAndUseGnss2AsSource)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u).empty(), false) << "always-on Enum defaults should still render something";
+
+    const std::string useGnss2 = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_USE_GNSS2_AS_SOURCE);
+    EXPECT_NE(useGnss2.find("Use GNSS2"), std::string::npos);
+
+    const std::string ppsG13 = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G13_val);
+    EXPECT_NE(ppsG13.find("GNSS2 PPS source: G13"), std::string::npos);
+}
+
+// ---- nvm_flash_cfg_t::ioConfig (eIoConfig, SN-8491) ---------------------------
+
+TEST(ISStatusDecode, IoConfig_ZeroBaselineIsTheFiveAlwaysOnEnumDefaults)
+{
+    // Unlike ioConfig2, ioConfig's G1/G2, G9, G6/G7, and G5/G8 function Enums have no named value
+    // for raw 0 (the source enum simply doesn't define one), so they stay silent. But GNSS1 PPS
+    // source and the GNSS1/2 source+type Enums DO have an explicitly named "Disabled"/"None" value
+    // at 0 (matching eIoConfig's own definitions), so those five always render -- this is the
+    // baseline every other bit's rendering gets compared against below.
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string baseline = RenderStatusFromDecode(*dec, 0u);
+    for (const char* expected : { "GNSS1 PPS source: Disabled", "GNSS1 source: Disabled", "GNSS2 source: Disabled", "GNSS1 type: None", "GNSS2 type: None" })
+        EXPECT_NE(baseline.find(expected), std::string::npos) << expected;
+    EXPECT_EQ(baseline.find("G1/G2:"), std::string::npos) << "G1/G2 has no named 0 value, should stay silent";
+}
+
+TEST(ISStatusDecode, IoConfig_StrobeAndG15BitsIndependent)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string baseline = RenderStatusFromDecode(*dec, 0u);
+
+    const std::string strobe = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_STROBE_TRIGGER_HIGH);
+    const std::string g15    = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_G15_STROBE_INPUT);
+    EXPECT_NE(strobe.find("Strobe (input and output) trigger on rising edge"), std::string::npos);
+    EXPECT_NE(g15.find("G15 (GNSS PPS) strobe input"), std::string::npos);
+    EXPECT_NE(strobe, g15);
+    // Both still carry the always-on Enum baseline alongside their own bit.
+    EXPECT_NE(strobe.find("GNSS1 PPS source: Disabled"), std::string::npos);
+    EXPECT_GT(strobe.length(), baseline.length());
+}
+
+TEST(ISStatusDecode, IoConfig_G1G2FunctionSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string canBus = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_G1G2_CAN_BUS);
+    const std::string i2c    = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_G1G2_I2C);
+    EXPECT_NE(canBus.find("G1/G2: CAN Bus"), std::string::npos);
+    EXPECT_NE(i2c.find("G1/G2: I2C"), std::string::npos);
+    EXPECT_NE(canBus, i2c);
+    // Raw 0 in the 3-bit G1/G2 field has no named value -- must not render anything for it,
+    // even though the always-on Enums elsewhere in the table still render their own defaults.
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u).find("G1/G2:"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_Gnss1PpsSourceSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const uint32_t g9Source = (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G9 << IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, g9Source);
+    EXPECT_NE(rendered.find("GNSS1 PPS source: G9"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_Gnss1AndGnss2SourceDoNotCrossContaminate)
+{
+    // GNSS1 source (bits 18-16) and GNSS2 source (bits 21-19) are adjacent, same value set --
+    // exactly where a mask/shift mistake would silently leak one into the other.
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+
+    uint32_t v = 0;
+    SET_IO_CFG_GNSS1_SOURCE(v, (uint32_t)IO_CONFIG_GNSS_SOURCE_SER0);
+    SET_IO_CFG_GNSS2_SOURCE(v, (uint32_t)IO_CONFIG_GNSS_SOURCE_SER2);
+    const std::string rendered = RenderStatusFromDecode(*dec, v);
+    EXPECT_NE(rendered.find("GNSS1 source: Ser0"), std::string::npos);
+    EXPECT_NE(rendered.find("GNSS2 source: Ser2"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS1 source: Ser2"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS2 source: Ser0"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_Gnss1AndGnss2TypeDoNotCrossContaminate)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+
+    uint32_t v = 0;
+    SET_IO_CFG_GNSS1_TYPE(v, (uint32_t)IO_CONFIG_GNSS_TYPE_UBLOX);
+    SET_IO_CFG_GNSS2_TYPE(v, (uint32_t)IO_CONFIG_GNSS_TYPE_SEPTENTRIO);
+    const std::string rendered = RenderStatusFromDecode(*dec, v);
+    EXPECT_NE(rendered.find("GNSS1 type: UBLOX"), std::string::npos);
+    EXPECT_NE(rendered.find("GNSS2 type: Septentrio"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS1 type: Septentrio"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS2 type: UBLOX"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_ImuDisableBitsIndependent)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string imu1 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_1_DISABLE);
+    const std::string imu2 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_2_DISABLE);
+    const std::string imu3 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_3_DISABLE);
+    EXPECT_NE(imu1.find("IMU 1 disable"), std::string::npos);
+    EXPECT_NE(imu2.find("IMU 2 disable"), std::string::npos);
+    EXPECT_NE(imu3.find("IMU 3 disable"), std::string::npos);
+    EXPECT_NE(imu1, imu2);
+    EXPECT_NE(imu2, imu3);
+}
+
+TEST(ISStatusDecode, IoConfig_AllBitsSetDoesNotCrash)
+{
+    // Fuzz-lite: every bit set at once must not throw, crash, or produce an empty result (many
+    // subfields have a defined value at their max range).
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string rendered = RenderStatusFromDecode(*dec, 0xFFFFFFFFu);
+    EXPECT_FALSE(rendered.empty());
+}

@@ -783,6 +783,48 @@ std::string renderRmcOptions(const data_info_t& info, std::any value, int arrayI
     }
 }
 
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::ioConfig (eIoConfig). IMX-only.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderIoConfig(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "ioConfig"))
+        return "";
+
+    try {
+        uint32_t ioConfig = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+        return dec ? RenderStatusFromDecode(*dec, ioConfig) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
+ * @brief a custom data renderer for nvm_flash_cfg_t::ioConfig2 (eIoConfig2). IMX-only.
+ * @param info
+ * @param value
+ * @return
+ */
+std::string renderIoConfig2(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT8) || (info.size != 1) || (info.name != "ioConfig2"))
+        return "";
+
+    try {
+        uint8_t ioConfig2 = std::any_cast<uint8_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+        return dec ? RenderStatusFromDecode(*dec, (uint32_t)ioConfig2) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -1612,8 +1654,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
-    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig;
+    mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig2;
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";

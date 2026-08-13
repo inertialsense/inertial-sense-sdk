@@ -42,6 +42,8 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_GPX_STATUS, "grmcNMEABitsSer0", (uint64_t)NMEA_RMC_BITS_GNGGA, "$GNGGA",     "DID_GPX_STATUS.grmcNMEABitsSer0" },
         { DID_RMC,     "bits", (uint64_t)RMC_BITS_GNSS1_POS, "GNSS1 position", "DID_RMC.bits" },
         { DID_GPX_RMC, "bits", (uint64_t)RMC_BITS_GPX_STATUS, "GPX status",    "DID_GPX_RMC.bits" },
+        { DID_FLASH_CONFIG, "ioConfig",  (uint32_t)IO_CONFIG_IMU_1_DISABLE, "IMU 1 disable", "DID_FLASH_CONFIG.ioConfig" },
+        { DID_FLASH_CONFIG, "ioConfig2", (uint8_t)IO_CFG2_USE_GNSS2_AS_SOURCE, "Use GNSS2", "DID_FLASH_CONFIG.ioConfig2" },
     };
     return cases;
 }
@@ -291,4 +293,38 @@ TEST(ISDataMappingsRenderExtended, RmcBits_ZeroRendersEmpty)
     const data_info_t* info = FindMappedField(DID_RMC, "bits");
     ASSERT_NE(info, nullptr);
     EXPECT_EQ(CallRenderExtended(*info, (uint64_t)0), "");
+}
+
+// ---- ioConfig / ioConfig2 (IMX-only, SN-8491) ---------------------------------
+
+TEST(ISDataMappingsRenderExtended, IoConfig_MatchesDecodeTableDirectly)
+{
+    const data_info_t* info = FindMappedField(DID_FLASH_CONFIG, "ioConfig");
+    ASSERT_NE(info, nullptr);
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t value = (uint32_t)IO_CONFIG_G15_STROBE_INPUT | (uint32_t)IO_CONFIG_IMU_3_DISABLE;
+    EXPECT_EQ(CallRenderExtended(*info, value), RenderStatusFromDecode(*dec, value));
+}
+
+TEST(ISDataMappingsRenderExtended, IoConfig2_MatchesDecodeTableDirectly)
+{
+    const data_info_t* info = FindMappedField(DID_FLASH_CONFIG, "ioConfig2");
+    ASSERT_NE(info, nullptr);
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+
+    const uint8_t value = (uint8_t)IO_CFG2_G13_XSDA_val;
+    EXPECT_EQ(CallRenderExtended(*info, value), RenderStatusFromDecode(*dec, (uint32_t)value));
+}
+
+TEST(ISDataMappingsRenderExtended, IoConfig_NotWiredForGpxFlashCfg)
+{
+    // gpx_flash_cfg_t has no ioConfig/ioConfig2 field at all -- confirm looking it up on the GPX
+    // DID simply fails cleanly rather than somehow resolving to the IMX field.
+    const map_name_to_info_t* gpxMap = cISDataMappings::NameToInfoMap(DID_GPX_FLASH_CFG);
+    ASSERT_NE(gpxMap, nullptr);
+    EXPECT_EQ(gpxMap->find("ioConfig"), gpxMap->end());
+    EXPECT_EQ(gpxMap->find("ioConfig2"), gpxMap->end());
 }
