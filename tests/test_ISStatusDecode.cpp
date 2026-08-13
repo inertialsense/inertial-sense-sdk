@@ -22,6 +22,7 @@
 #include "ISStatusDecode.h"
 #include "data_sets.h"
 #include "../src/data_sets.h"
+#include "test_ISDataMappings_helpers.h"
 
 namespace {
 
@@ -1347,6 +1348,13 @@ TEST(ISStatusDecode, ImxSysCfgBits_MagRecalModeSubfield)
     EXPECT_NE(single.find("Mag recal mode: Single-axis"), std::string::npos);
     // Value 0 (disabled) still renders a line -- it's a meaningful Enum state, not absence.
     EXPECT_NE(RenderStatusFromDecode(*dec, 0u).find("Mag recal mode: Disabled"), std::string::npos);
+
+    // Kyle, 2026-08-13: Enum entries previously rendered bare (no hex) unless legacyText was
+    // hand-set -- confirm every Enum-kind line now carries the same "0xHEX - " prefix as Bit-kind
+    // lines, derived from the raw (pre-shift) field value.
+    ExpectHexPrefixedLine(multi, multiAxis, "Mag recal mode: Multi-axis", 8);
+    ExpectHexPrefixedLine(single, singleAxis, "Mag recal mode: Single-axis", 8);
+    ExpectHexPrefixedLine(RenderStatusFromDecode(*dec, 0u), 0u, "Mag recal mode: Disabled", 8);
 }
 
 TEST(ISStatusDecode, ImxSysCfgBits_BrownoutThresholdSubfield)
@@ -1355,7 +1363,9 @@ TEST(ISStatusDecode, ImxSysCfgBits_BrownoutThresholdSubfield)
     ASSERT_NE(dec, nullptr);
 
     const uint32_t level3 = (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3 << SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
-    EXPECT_NE(RenderStatusFromDecode(*dec, level3).find("2.5-2.6V"), std::string::npos);
+    const std::string rendered = RenderStatusFromDecode(*dec, level3);
+    EXPECT_NE(rendered.find("2.5-2.6V"), std::string::npos);
+    ExpectHexPrefixedLine(rendered, level3, "Brownout reset threshold: 2.5-2.6V", 8);
 }
 
 TEST(ISStatusDecode, ImxSysCfgBits_UnusedBit0ContributesNoBitOfItsOwn)
@@ -1398,7 +1408,9 @@ TEST(ISStatusDecode, GpxSysCfgBits_VccRfBitAndBrownoutThreshold)
     EXPECT_NE(vccRf.find("1.65-1.75V (default)"), std::string::npos);
 
     const uint32_t level3 = (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3 << GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
-    EXPECT_NE(RenderStatusFromDecode(*dec, level3).find("2.5-2.6V"), std::string::npos);
+    const std::string level3Rendered = RenderStatusFromDecode(*dec, level3);
+    EXPECT_NE(level3Rendered.find("2.5-2.6V"), std::string::npos);
+    ExpectHexPrefixedLine(level3Rendered, level3, "Brownout reset threshold: 2.5-2.6V", 8);
 }
 
 TEST(ISStatusDecode, GpxSysCfgBits_IsMuchSmallerThanImxTable)
@@ -1581,6 +1593,9 @@ TEST(ISStatusDecode, IoConfig_G1G2FunctionSubfield)
     // Raw 0 in the 3-bit G1/G2 field has no named value -- must not render anything for it,
     // even though the always-on Enums elsewhere in the table still render their own defaults.
     EXPECT_EQ(RenderStatusFromDecode(*dec, 0u).find("G1/G2:"), std::string::npos);
+
+    ExpectHexPrefixedLine(canBus, (uint32_t)IO_CONFIG_G1G2_CAN_BUS, "G1/G2: CAN Bus", 8);
+    ExpectHexPrefixedLine(i2c, (uint32_t)IO_CONFIG_G1G2_I2C, "G1/G2: I2C", 8);
 }
 
 TEST(ISStatusDecode, IoConfig_Gnss1PpsSourceSubfield)
@@ -1665,6 +1680,9 @@ TEST(ISStatusDecode, SensorConfig_GyroAndAccelFullScaleAreIndependentAlwaysOnEnu
     const std::string rendered = RenderStatusFromDecode(*dec, gyro4000 | acc16g);
     EXPECT_NE(rendered.find("Gyro FS: 4000 deg/s"), std::string::npos);
     EXPECT_NE(rendered.find("Accel FS: 16g"), std::string::npos);
+
+    ExpectHexPrefixedLine(rendered, gyro4000, "Gyro FS: 4000 deg/s", 8);
+    ExpectHexPrefixedLine(rendered, acc16g, "Accel FS: 16g", 8);
     EXPECT_EQ(rendered.find("Gyro FS: 250 deg/s"), std::string::npos);
     EXPECT_EQ(rendered.find("Accel FS: 2g"), std::string::npos);
 }

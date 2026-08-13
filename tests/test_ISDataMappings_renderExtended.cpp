@@ -230,6 +230,18 @@ TEST(ISDataMappingsRenderExtended, RTKCfgBits_ZeroRendersEmpty)
     EXPECT_EQ(CallRenderExtended(*info, (uint32_t)0), "");
 }
 
+TEST(ISDataMappingsRenderExtended, RTKCfgBits_UsesConsistentHexPrefixNotPostfix)
+{
+    // Kyle, 2026-08-13: RTKCfgBits previously rendered "name (0xHEX)" (hex as a postfix), the odd
+    // one out versus every other renderExtended function's "0xHEX - name" prefix. Confirm it now
+    // matches -- 8 hex digits, since RTKCfgBits is a uint32_t field.
+    const data_info_t* info = FindMappedField(DID_FLASH_CONFIG, "RTKCfgBits");
+    ASSERT_NE(info, nullptr);
+    const std::string rendered = CallRenderExtended(*info, (uint32_t)RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK);
+    ExpectHexPrefixedLine(rendered, (uint32_t)RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK, "RTK Positioning", 8);
+    EXPECT_EQ(rendered.find("RTK Positioning (0x"), std::string::npos) << "stale postfix-hex style still present";
+}
+
 // ---- grmcBits* / grmcNMEABits* (list-style, Kyle 2026-08-13) ------------------
 
 TEST(ISDataMappingsRenderExtended, GrmcBits_SharedAcrossAllFourPorts)
@@ -272,6 +284,22 @@ TEST(ISDataMappingsRenderExtended, GrmcBitsAndGrmcNmeaBits_ZeroRendersEmpty)
     EXPECT_EQ(CallRenderExtended(*nmea, (uint64_t)0), "");
 }
 
+TEST(ISDataMappingsRenderExtended, GrmcBitsAndGrmcNmeaBits_NowHaveHexPrefix)
+{
+    // Kyle, 2026-08-13: grmcBits*/grmcNMEABits* previously had NO hex at all -- confirm they now
+    // carry the same "0xHEX - name" prefix as everything else. Both fields are uint64_t (16 digits).
+    const data_info_t* grmc = FindMappedField(DID_GPX_STATUS, "grmcBitsSer0");
+    const data_info_t* nmea = FindMappedField(DID_GPX_STATUS, "grmcNMEABitsSer0");
+    ASSERT_NE(grmc, nullptr);
+    ASSERT_NE(nmea, nullptr);
+
+    const std::string grmcRendered = CallRenderExtended(*grmc, (uint64_t)GRMC_BITS_GNSS1_RAW);
+    ExpectHexPrefixedLine(grmcRendered, (uint64_t)GRMC_BITS_GNSS1_RAW, "GNSS1 raw observation/ephemeris", 16);
+
+    const std::string nmeaRendered = CallRenderExtended(*nmea, (uint64_t)NMEA_RMC_BITS_GNRMC);
+    ExpectHexPrefixedLine(nmeaRendered, (uint64_t)NMEA_RMC_BITS_GNRMC, "$GNRMC", 16);
+}
+
 // ---- rmc_t.bits (list-style, Kyle 2026-08-13) ---------------------------------
 
 TEST(ISDataMappingsRenderExtended, RmcBits_SharedBetweenRmcAndGpxRmc)
@@ -308,6 +336,16 @@ TEST(ISDataMappingsRenderExtended, RmcBits_ZeroRendersEmpty)
     const data_info_t* info = FindMappedField(DID_RMC, "bits");
     ASSERT_NE(info, nullptr);
     EXPECT_EQ(CallRenderExtended(*info, (uint64_t)0), "");
+}
+
+TEST(ISDataMappingsRenderExtended, RmcBits_NowHasHexPrefix)
+{
+    // Kyle, 2026-08-13: rmc_t.bits previously had NO hex at all -- confirm it now carries the same
+    // "0xHEX - name" prefix as everything else (uint64_t field -> 16 digits).
+    const data_info_t* info = FindMappedField(DID_RMC, "bits");
+    ASSERT_NE(info, nullptr);
+    const std::string rendered = CallRenderExtended(*info, (uint64_t)RMC_BITS_PIMU);
+    ExpectHexPrefixedLine(rendered, (uint64_t)RMC_BITS_PIMU, "PIMU", 16);
 }
 
 // ---- ioConfig / ioConfig2 (IMX-only, SN-8491) ---------------------------------

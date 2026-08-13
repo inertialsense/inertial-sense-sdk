@@ -1566,7 +1566,16 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
             {
                 if (vl.value == raw)
                 {
-                    buff << (vl.legacyText.empty() ? vl.label : vl.legacyText) << std::endl;
+                    if (vl.legacyText.empty())
+                        // No legacy string to preserve (this Enum value was never rendered before
+                        // SN-8491) -- auto-prepend "0xHEX - " from the value/shift themselves
+                        // (never a hand-typed literal that could drift) to match the "0xHEX -
+                        // description" convention every other renderExtended function in this file
+                        // uses. Kyle, 2026-08-13: confirmed one consistent hex-prefix style
+                        // everywhere, replacing this fallback's previous bare-label-only behavior.
+                        buff << utils::string_format("0x%08X - %s", vl.value << sf.shift, vl.label.c_str()) << std::endl;
+                    else
+                        buff << vl.legacyText << std::endl;
                     matched = true;
                     break;
                 }

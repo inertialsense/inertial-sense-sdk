@@ -30,6 +30,7 @@
 #include <gtest/gtest.h>
 
 #include <any>
+#include <cstdio>
 #include <string>
 
 #include "ISDataMappings.h"
@@ -92,6 +93,22 @@ inline void ExpectRenderExtendedWired(const RenderExtendedWiringCase& c)
     const std::string rendered = CallRenderExtended(*info, c.representativeValue);
     EXPECT_NE(rendered.find(c.expectedSubstring), std::string::npos)
         << c.label << " renderExtended output \"" << rendered << "\" did not contain expected \"" << c.expectedSubstring << "\"";
+}
+
+/**
+ * @brief Assert that `rendered` contains a "0xHEX - name" line for `mask`, where HEX is the
+ *        mask value itself formatted to `hexDigits` digits -- the consistent hex-prefix
+ *        convention (Kyle, 2026-08-13) all renderExtended output must follow. The expected prefix
+ *        is computed from `mask` with the same format string the production code uses, rather
+ *        than hand-typed as a literal, so this can't silently drift from the real bit value.
+ */
+inline void ExpectHexPrefixedLine(const std::string& rendered, unsigned long long mask, const std::string& name, int hexDigits = 16)
+{
+    char hexbuf[24];
+    std::snprintf(hexbuf, sizeof(hexbuf), (hexDigits <= 8) ? "0x%08llX" : "0x%016llX", mask);
+    const std::string expectedLine = std::string(hexbuf) + " - " + name;
+    EXPECT_NE(rendered.find(expectedLine), std::string::npos)
+        << "expected line \"" << expectedLine << "\" not found in \"" << rendered << "\"";
 }
 
 #endif // IS_SDK_UNIT_TESTS_TEST_ISDATAMAPPINGS_HELPERS_H

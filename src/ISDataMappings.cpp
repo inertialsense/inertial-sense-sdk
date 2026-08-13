@@ -232,12 +232,26 @@ struct BitName { uint64_t mask; const char* name; };
 
 /**
  * @brief Render one line per set bit in `value` whose mask appears in `names`, in `names` order.
- *        Bits not present in `names` are silently skipped (not garbage/unknown lines).
+ *        Bits not present in `names` are silently skipped (not garbage/unknown lines). The
+ *        "0xHEX - " prefix is derived directly from `bn.mask` (single source of truth -- never a
+ *        hand-typed literal that could drift from the real mask), matching the "0xHEX -
+ *        description" convention used pervasively throughout the rest of this file's
+ *        renderExtended functions (insStatus, hdwStatus, sysCfgBits, etc.). `hexDigits` selects the
+ *        field's natural width for display (8 for a uint32_t field like RTKCfgBits/rtkMode, 16 for
+ *        a uint64_t field like grmcBits, grmcNMEABits, or rmc_t.bits) -- Kyle, 2026-08-13: confirmed
+ *        one consistent hex-prefix style across every renderExtended function, replacing
+ *        RTKCfgBits' prior "name (0xHEX)" postfix style and grmcBits/grmcNMEABits/rmc_t.bits'
+ *        prior no-hex-at-all style.
  */
-std::string renderBitNameList(uint64_t value, const std::vector<BitName>& names) {
+std::string renderBitNameList(uint64_t value, const std::vector<BitName>& names, int hexDigits = 16) {
     std::stringstream buff;
-    for (const auto& bn : names)
-        if (value & bn.mask) buff << bn.name << std::endl;
+    char hexbuf[24];
+    for (const auto& bn : names) {
+        if (!(value & bn.mask))
+            continue;
+        snprintf(hexbuf, sizeof(hexbuf), (hexDigits <= 8) ? "0x%08llX" : "0x%016llX", (unsigned long long)bn.mask);
+        buff << hexbuf << " - " << bn.name << std::endl;
+    }
     return buff.str();
 }
 
@@ -254,25 +268,25 @@ std::string renderBitNameList(uint64_t value, const std::vector<BitName>& names)
  */
 const std::vector<BitName>& RtkConfigBitNames() {
     static const std::vector<BitName> names = {
-        { RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK, "RTK Positioning (0x00000002)" },
-        { RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK,  "RTK Compassing (0x00000004)" },
-        { RTK_CFG_BITS_BASE_MODE,                       "RTK Base enabled (0x000FFFF0)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0,    "GNSS1 UBLOX Ser0 (0x00000010)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1,    "GNSS1 UBLOX Ser1 (0x00000020)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2,    "GNSS1 UBLOX Ser2 (0x00000040)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB,     "GNSS1 UBLOX USB (0x00000080)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0,    "GNSS1 RTCM3 Ser0 (0x00000100)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1,    "GNSS1 RTCM3 Ser1 (0x00000200)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2,    "GNSS1 RTCM3 Ser2 (0x00000400)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB,     "GNSS1 RTCM3 USB (0x00000800)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0,    "GNSS2 UBLOX Ser0 (0x00001000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1,    "GNSS2 UBLOX Ser1 (0x00002000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2,    "GNSS2 UBLOX Ser2 (0x00004000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB,     "GNSS2 UBLOX USB (0x00008000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0,    "GNSS2 RTCM3 Ser0 (0x00010000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1,    "GNSS2 RTCM3 Ser1 (0x00020000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2,    "GNSS2 RTCM3 Ser2 (0x00040000)" },
-        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB,     "GNSS2 RTCM3 USB (0x00080000)" },
+        { RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_MASK, "RTK Positioning" },
+        { RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_MASK,  "RTK Compassing" },
+        { RTK_CFG_BITS_BASE_MODE,                       "RTK Base enabled" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER0,    "GNSS1 UBLOX Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER1,    "GNSS1 UBLOX Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_SER2,    "GNSS1 UBLOX Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_UBLOX_USB,     "GNSS1 UBLOX USB" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER0,    "GNSS1 RTCM3 Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER1,    "GNSS1 RTCM3 Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_SER2,    "GNSS1 RTCM3 Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_USB,     "GNSS1 RTCM3 USB" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER0,    "GNSS2 UBLOX Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER1,    "GNSS2 UBLOX Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_SER2,    "GNSS2 UBLOX Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_UBLOX_USB,     "GNSS2 UBLOX USB" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER0,    "GNSS2 RTCM3 Ser0" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER1,    "GNSS2 RTCM3 Ser1" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_SER2,    "GNSS2 RTCM3 Ser2" },
+        { RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB,     "GNSS2 RTCM3 USB" },
     };
     return names;
 }
@@ -299,7 +313,7 @@ std::string renderRTKCfgBits(const data_info_t& info, std::any value, int arrayI
 
     try {
         uint32_t rtkCfgBits = std::any_cast<uint32_t>(value);
-        return renderBitNameList(rtkCfgBits, RtkConfigBitNames());
+        return renderBitNameList(rtkCfgBits, RtkConfigBitNames(), 8);
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -323,7 +337,7 @@ std::string renderRtkMode(const data_info_t& info, std::any value, int arrayIdx,
 
     try {
         uint32_t rtkMode = std::any_cast<uint32_t>(value);
-        return renderBitNameList(rtkMode, RtkConfigBitNames());
+        return renderBitNameList(rtkMode, RtkConfigBitNames(), 8);
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
