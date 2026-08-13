@@ -17,10 +17,12 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "ISStatusDecode.h"
 #include "data_sets.h"
 #include "../src/data_sets.h"
+#include "test_ISDataMappings_helpers.h"
 
 namespace {
 
@@ -1145,4 +1147,617 @@ TEST(ISStatusDecode, GpxBitState_RoundTrip)
     for (uint32_t v = 0; v <= 255; ++v) {                        // includes the UNKNOWN(n) default path
         EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderGpxBitStateReference((uint8_t)v)) << "state " << v;
     }
+}
+
+// ---- imu_t / pimu_t status (eImuStatus, SN-8491) --------------------------------
+//
+// The "imuStatus" table itself was added alongside the original SN-7919 work but was never
+// exercised by a test or wired to a renderer (SN-8491 does the wiring in ISDataMappings.cpp).
+// There is no legacy hand-written renderer to reproduce byte-for-byte here (unlike the other
+// tables above), so these tests assert the table's structure/semantics directly against the
+// eImuStatus enum instead of a round-trip oracle.
+
+TEST(ISStatusDecode, ImuStatus_RegisteredAndRoutesForImuAndPimu)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(GetStatusDecode(DID_IMU, "status"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_PIMU, "status"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_REFERENCE_IMU, "status"), dec);
+    EXPECT_EQ(GetStatusDecode(DID_REFERENCE_PIMU, "status"), dec);
+    // Must not be confused with the GNSS/GPX "status" tables that share the same on-wire name.
+    EXPECT_NE(GetStatusDecode(DID_GNSS1_POS, "status"), dec);
+    EXPECT_NE(GetStatusDecode(DID_GPX_STATUS, "status"), dec);
+}
+
+TEST(ISStatusDecode, ImuStatus_AllSixSensorOkBitsPresentAndNotErrors)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t okMasks[6] = {
+        (uint32_t)IMU_STATUS_GYR_X_OK, (uint32_t)IMU_STATUS_GYR_Y_OK, (uint32_t)IMU_STATUS_GYR_Z_OK,
+        (uint32_t)IMU_STATUS_ACC_X_OK, (uint32_t)IMU_STATUS_ACC_Y_OK, (uint32_t)IMU_STATUS_ACC_Z_OK,
+    };
+    for (uint32_t m : okMasks) {
+        const status_subfield_t* sf = nullptr;
+        for (const auto& cand : dec->subfields)
+            if (cand.mask == m) { sf = &cand; break; }
+        ASSERT_NE(sf, nullptr) << "mask 0x" << std::hex << m;
+        EXPECT_EQ(sf->kind, eStatusSubfieldKind::Bit);
+        EXPECT_FALSE(sf->isError) << "sensor-OK bit 0x" << std::hex << m << " must not be an error";
+    }
+}
+
+TEST(ISStatusDecode, ImuStatus_FaultAndSaturationBitsAreErrors)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t errorMasks[4] = {
+        (uint32_t)IMU_STATUS_GYR_FAULT_REJECT, (uint32_t)IMU_STATUS_ACC_FAULT_REJECT,
+        (uint32_t)IMU_STATUS_SATURATION_GYR,   (uint32_t)IMU_STATUS_SATURATION_ACC,
+    };
+    for (uint32_t m : errorMasks) {
+        const status_subfield_t* sf = nullptr;
+        for (const auto& cand : dec->subfields)
+            if (cand.mask == m) { sf = &cand; break; }
+        ASSERT_NE(sf, nullptr) << "mask 0x" << std::hex << m;
+        EXPECT_TRUE(sf->isError) << "fault/saturation bit 0x" << std::hex << m << " must be an error";
+        EXPECT_NE(dec->errorMask & m, 0u) << "errorMask must cover 0x" << std::hex << m;
+    }
+
+    // errorMask must cover exactly these four bits, nothing else.
+    uint32_t expectedErrorMask = 0;
+    for (uint32_t m : errorMasks) expectedErrorMask |= m;
+    EXPECT_EQ(dec->errorMask, expectedErrorMask);
+}
+
+TEST(ISStatusDecode, ImuStatus_RenderEachBitIndividually_NonEmptyAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+
+    std::vector<std::string> rendered;
+    for (const auto& sf : dec->subfields)
+        rendered.push_back(RenderStatusFromDecode(*dec, sf.mask));
+
+    for (size_t i = 0; i < rendered.size(); ++i) {
+        EXPECT_FALSE(rendered[i].empty()) << "subfield \"" << dec->subfields[i].name << "\"";
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j])
+                << "subfields \"" << dec->subfields[i].name << "\" and \"" << dec->subfields[j].name << "\" render identically";
+    }
+}
+
+TEST(ISStatusDecode, ImuStatus_RenderIsStableAndAdditive)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("imuStatus");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t combo = (uint32_t)IMU_STATUS_GYR_X_OK | (uint32_t)IMU_STATUS_ACC_FAULT_REJECT | (uint32_t)IMU_STATUS_SATURATION_GYR;
+    const std::string a = RenderStatusFromDecode(*dec, combo);
+    const std::string b = RenderStatusFromDecode(*dec, combo);
+    EXPECT_EQ(a, b);   // deterministic/stable for the same input
+
+    const std::string gyrXOk       = RenderStatusFromDecode(*dec, (uint32_t)IMU_STATUS_GYR_X_OK);
+    const std::string accFaultRej  = RenderStatusFromDecode(*dec, (uint32_t)IMU_STATUS_ACC_FAULT_REJECT);
+    const std::string satGyr       = RenderStatusFromDecode(*dec, (uint32_t)IMU_STATUS_SATURATION_GYR);
+    EXPECT_NE(a.find(gyrXOk), std::string::npos);
+    EXPECT_NE(a.find(accFaultRej), std::string::npos);
+    EXPECT_NE(a.find(satGyr), std::string::npos);
+}
+
+// ---- Flash-config fields (nvm_flash_cfg_t / gpx_flash_cfg_t, SN-8491) ---------
+
+TEST(ISStatusDecode, GnssSatSigConst_AllEightConstellationsPresentAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssSatSigConst");
+    ASSERT_NE(dec, nullptr);
+    ASSERT_EQ(dec->subfields.size(), 8u);
+
+    const uint32_t masks[8] = {
+        (uint32_t)GNSS_SAT_SIG_CONST_GPS, (uint32_t)GNSS_SAT_SIG_CONST_QZS,
+        (uint32_t)GNSS_SAT_SIG_CONST_GAL, (uint32_t)GNSS_SAT_SIG_CONST_BDS,
+        (uint32_t)GNSS_SAT_SIG_CONST_GLO, (uint32_t)GNSS_SAT_SIG_CONST_SBS,
+        (uint32_t)GNSS_SAT_SIG_CONST_IRN, (uint32_t)GNSS_SAT_SIG_CONST_IME,
+    };
+    for (uint32_t m : masks) {
+        int matchCount = 0;
+        for (const auto& sf : dec->subfields)
+            if (sf.mask == m) ++matchCount;
+        EXPECT_EQ(matchCount, 1) << "mask 0x" << std::hex << m << " not present exactly once";
+    }
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+
+    // GNSS_SAT_SIG_CONST_DEFAULT excludes IRNSS and IMES -- the rendered default must mention
+    // every constellation it includes and NEITHER of the two it excludes.
+    const std::string rendered = RenderStatusFromDecode(*dec, (uint32_t)GNSS_SAT_SIG_CONST_DEFAULT);
+    for (const char* included : { "GPS", "QZSS", "Galileo", "BeiDou", "GLONASS", "SBAS" })
+        EXPECT_NE(rendered.find(included), std::string::npos) << included << " missing from default rendering";
+    for (const char* excluded : { "IRNSS", "IMES" })
+        EXPECT_EQ(rendered.find(excluded), std::string::npos) << excluded << " should not be in the default rendering";
+}
+
+TEST(ISStatusDecode, GnssSatSigConst_ErrorMaskAlwaysZero)
+{
+    // Constellation selection is a config choice, not a fault condition.
+    const status_field_decode_t* dec = GetStatusDecodeByField("gnssSatSigConst");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);
+}
+
+TEST(ISStatusDecode, DynamicModel_IsScalarEnumCoveringEveryDefinedModel)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("dynamicModel");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_TRUE(dec->scalarEnum);
+    ASSERT_EQ(dec->subfields.size(), 1u);
+    EXPECT_EQ(dec->subfields.front().values.size(), (size_t)DYNAMIC_MODEL_COUNT);
+
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_PORTABLE), "Portable");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_GROUND_VEHICLE), "Ground vehicle");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_WRIST), "Wrist");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_INDOOR), "Indoor");
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)DYNAMIC_MODEL_COUNT), "");   // one past the last defined model
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_IndependentBitsRenderNonEmptyAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);   // configuration bits, not faults
+
+    const uint32_t bits[] = {
+        (uint32_t)SYS_CFG_BITS_ENABLE_MAG_CONTINUOUS_CAL, (uint32_t)SYS_CFG_BITS_AUTO_MAG_RECAL,
+        (uint32_t)SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION, (uint32_t)SYS_CFG_BITS_DISABLE_LEDS,
+        (uint32_t)SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION, (uint32_t)SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION,
+        (uint32_t)SYS_CFG_BITS_DISABLE_BAROMETER_FUSION, (uint32_t)SYS_CFG_BITS_DISABLE_GNSS1_FUSION,
+        (uint32_t)SYS_CFG_BITS_DISABLE_GNSS2_FUSION, (uint32_t)SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES,
+        (uint32_t)SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES, (uint32_t)SYS_CFG_BITS_DISABLE_INS_EKF,
+        (uint32_t)SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP, (uint32_t)SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION,
+        (uint32_t)SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION, (uint32_t)SYS_CFG_USE_REFERENCE_IMU_IN_EKF,
+        (uint32_t)SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT,
+    };
+
+    std::vector<std::string> rendered;
+    for (uint32_t b : bits) {
+        const std::string s = RenderStatusFromDecode(*dec, b);
+        EXPECT_FALSE(s.empty()) << "bit 0x" << std::hex << b;
+        rendered.push_back(s);
+    }
+    for (size_t i = 0; i < rendered.size(); ++i)
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j]) << "bits " << i << " and " << j << " render identically";
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_MagRecalModeSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t multiAxis  = 1u << SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET;
+    const uint32_t singleAxis = 2u << SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET;
+    const std::string multi  = RenderStatusFromDecode(*dec, multiAxis);
+    const std::string single = RenderStatusFromDecode(*dec, singleAxis);
+    EXPECT_NE(multi, single);
+    EXPECT_NE(multi.find("Mag recal mode: Multi-axis"), std::string::npos);
+    EXPECT_NE(single.find("Mag recal mode: Single-axis"), std::string::npos);
+    // Value 0 (disabled) still renders a line -- it's a meaningful Enum state, not absence.
+    EXPECT_NE(RenderStatusFromDecode(*dec, 0u).find("Mag recal mode: Disabled"), std::string::npos);
+
+    // Kyle, 2026-08-13: this is a multi-bit field (3 bits at offset 8) -- confirm it renders the
+    // "bits[hi:lo]=0xN - " annotation rather than a nibble-straddling shifted-hex value.
+    const uint32_t magRecalMask = (uint32_t)SYS_CFG_BITS_MAG_RECAL_MODE_MASK;
+    const uint32_t magRecalShift = (uint32_t)SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET;
+    ExpectEnumSubfieldLine(multi, magRecalMask, magRecalShift, multiAxis >> magRecalShift, "Mag recal mode: Multi-axis");
+    ExpectEnumSubfieldLine(single, magRecalMask, magRecalShift, singleAxis >> magRecalShift, "Mag recal mode: Single-axis");
+    ExpectEnumSubfieldLine(RenderStatusFromDecode(*dec, 0u), magRecalMask, magRecalShift, 0u, "Mag recal mode: Disabled");
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_BrownoutThresholdSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t level3 = (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3 << SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, level3);
+    EXPECT_NE(rendered.find("2.5-2.6V"), std::string::npos);
+    // Multi-bit field (2 bits at offset 22) -- bit-range annotation, not shifted-hex.
+    ExpectEnumSubfieldLine(rendered, (uint32_t)SYS_CFG_BITS_BOR_THRESHOLD_MASK, (uint32_t)SYS_CFG_BITS_BOR_THRESHOLD_OFFSET,
+        (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V");
+}
+
+TEST(ISStatusDecode, ImxSysCfgBits_UnusedBit0ContributesNoBitOfItsOwn)
+{
+    // UNUSED1 (bit 0) is reserved/unused and is deliberately not given its own Bit subfield, so
+    // setting it must not change the rendering at all vs. an all-zero value -- the two always-on
+    // Enum subfields (mag recal mode, brownout threshold) still render their "off"/default state
+    // either way, but UNUSED1 itself must not add a line.
+    const status_field_decode_t* dec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)UNUSED1), RenderStatusFromDecode(*dec, 0u));
+}
+
+TEST(ISStatusDecode, GpxFlashCfg_SysCfgBits_RoutesToItsOwnTableNotImxTable)
+{
+    // gpx_flash_cfg_t::sysCfgBits shares the on-wire field name "sysCfgBits" with
+    // nvm_flash_cfg_t but uses a DIFFERENT, much smaller enum (eGpxSysConfigBits). DID-aware
+    // lookup must resolve to the GPX-specific table ("gpxSysCfgBits"), never the IMX one.
+    const status_field_decode_t* gpxDec = GetStatusDecode(DID_GPX_FLASH_CFG, "sysCfgBits");
+    const status_field_decode_t* imxDec = GetStatusDecode(DID_FLASH_CONFIG, "sysCfgBits");
+    ASSERT_NE(gpxDec, nullptr);
+    ASSERT_NE(imxDec, nullptr);
+    EXPECT_NE(gpxDec, imxDec);
+    EXPECT_EQ(gpxDec, GetStatusDecodeByField("gpxSysCfgBits"));
+    EXPECT_EQ(imxDec, GetStatusDecodeByField("sysCfgBits"));
+}
+
+// ---- gpx_flash_cfg_t::sysCfgBits (eGpxSysConfigBits, SN-8491) -----------------
+
+TEST(ISStatusDecode, GpxSysCfgBits_VccRfBitAndBrownoutThreshold)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("gpxSysCfgBits");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);
+
+    const std::string vccRf = RenderStatusFromDecode(*dec, (uint32_t)GPX_SYS_CFG_BITS_DISABLE_VCC_RF);
+    EXPECT_NE(vccRf.find("Disable"), std::string::npos);
+    EXPECT_NE(vccRf.find("VCC_RF"), std::string::npos);
+    // Brownout threshold always renders (0 = a real, named default state).
+    EXPECT_NE(vccRf.find("1.65-1.75V (default)"), std::string::npos);
+
+    const uint32_t level3 = (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3 << GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
+    const std::string level3Rendered = RenderStatusFromDecode(*dec, level3);
+    EXPECT_NE(level3Rendered.find("2.5-2.6V"), std::string::npos);
+    // Multi-bit field (2 bits at offset 22) -- bit-range annotation, not shifted-hex.
+    ExpectEnumSubfieldLine(level3Rendered, (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK, (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET,
+        (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V");
+}
+
+TEST(ISStatusDecode, GpxSysCfgBits_IsMuchSmallerThanImxTable)
+{
+    // The whole point of this being its own table: it should NOT resemble the IMX one in size.
+    const status_field_decode_t* gpxDec = GetStatusDecodeByField("gpxSysCfgBits");
+    const status_field_decode_t* imxDec = GetStatusDecodeByField("sysCfgBits");
+    ASSERT_NE(gpxDec, nullptr);
+    ASSERT_NE(imxDec, nullptr);
+    EXPECT_EQ(gpxDec->subfields.size(), 2u);
+    EXPECT_GT(imxDec->subfields.size(), gpxDec->subfields.size());
+}
+
+// ---- rmc_t::options (RMC_OPTIONS_*, SN-8491) ----------------------------------
+
+TEST(ISStatusDecode, RmcOptions_PortBitsRenderNonEmptyAndDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->errorMask, 0u);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PORT_CURRENT), "");   // 0x00: "current port" is silent, not an error
+
+    const uint32_t ports[] = {
+        (uint32_t)RMC_OPTIONS_PORT_SER0, (uint32_t)RMC_OPTIONS_PORT_SER1,
+        (uint32_t)RMC_OPTIONS_PORT_SER2, (uint32_t)RMC_OPTIONS_PORT_USB,
+    };
+    std::vector<std::string> rendered;
+    for (uint32_t p : ports) {
+        const std::string s = RenderStatusFromDecode(*dec, p);
+        EXPECT_FALSE(s.empty()) << "port bit 0x" << std::hex << p;
+        rendered.push_back(s);
+    }
+    for (size_t i = 0; i < rendered.size(); ++i)
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j]);
+}
+
+TEST(ISStatusDecode, RmcOptions_AllPortsSetRendersAllFourIndividually)
+{
+    // RMC_OPTIONS_PORT_ALL == RMC_OPTIONS_PORT_MASK (0xFF) implies all 4 meaningful port bits,
+    // so it should render each port's line individually rather than needing a distinct "All" label.
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    const std::string rendered = RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PORT_ALL);
+    for (const char* port : { "Serial 0", "Serial 1", "Serial 2", "USB" })
+        EXPECT_NE(rendered.find(port), std::string::npos) << port << " missing when all ports selected";
+}
+
+TEST(ISStatusDecode, RmcOptions_PreserveCtrlAndPersistentBits)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    const std::string preserve   = RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PRESERVE_CTRL);
+    const std::string persistent = RenderStatusFromDecode(*dec, (uint32_t)RMC_OPTIONS_PERSISTENT);
+    EXPECT_NE(preserve.find("Preserve"), std::string::npos);
+    EXPECT_NE(persistent.find("persists across reboot"), std::string::npos);
+    EXPECT_NE(preserve, persistent);
+}
+
+TEST(ISStatusDecode, RmcOptions_NmeaSpeedFilterSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+
+    const uint32_t enable  = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE  << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET;
+    const uint32_t disable = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET;
+    const std::string enabled  = RenderStatusFromDecode(*dec, enable);
+    const std::string disabled = RenderStatusFromDecode(*dec, disable);
+    EXPECT_NE(enabled.find("Enabled"), std::string::npos);
+    EXPECT_NE(disabled.find("Disabled"), std::string::npos);
+    EXPECT_NE(enabled, disabled);
+
+    // Unlike sysCfgBits' mag-recal-mode Enum, 0 ("not specified") is NOT a meaningful state here --
+    // only Enable(1)/Disable(2) are defined, so an all-zero value renders nothing at all.
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u), "");
+}
+
+TEST(ISStatusDecode, RmcOptions_RegisteredForBothRmcDids)
+{
+    // "options" is ambiguous (nmea_msgs_t also has one), so rmcOptions is looked up only via its
+    // internal key from renderRmcOptions -- never through GetStatusDecode(did, "options"). Confirm
+    // the table itself is DID-agnostic content-wise: it applies equally whichever DID uses it.
+    const status_field_decode_t* dec = GetStatusDecodeByField("rmcOptions");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(dec->fieldName, "options");
+}
+
+// ---- nvm_flash_cfg_t::ioConfig2 (eIoConfig2, SN-8491) -------------------------
+
+TEST(ISStatusDecode, IoConfig2_G11FunctionSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+    const std::string swdio  = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G11_SWDIO);
+    const std::string strobe = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G11_STROBE_INPUT_val);
+    EXPECT_NE(swdio.find("G11: SWDIO"), std::string::npos);
+    EXPECT_NE(strobe.find("G11: Strobe input"), std::string::npos);
+    EXPECT_NE(swdio, strobe);
+}
+
+TEST(ISStatusDecode, IoConfig2_G12AndG13AreIndependentSubfields)
+{
+    // G11 (bit 0), G12 (bits 2-1), and G13 (bits 4-3) must decode from their own bits only -- not
+    // "no cross-talk means silence": all four ioConfig2 Enum subfields always render SOME line
+    // (every pin always has a function selected), so setting only G12's bits still leaves G11,
+    // G13, and GNSS2-PPS-source at their default ("value 0") states, each rendering its own line.
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+    const std::string g12Xscl = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G12_XSCL_val);
+    EXPECT_NE(g12Xscl.find("G12: XSCL"), std::string::npos);
+    // G13 is still at its default (DRDY), G11 at its default (SWDIO) -- verify those specific
+    // defaults appear, not some other G12-driven value bleeding into them.
+    EXPECT_NE(g12Xscl.find("G13: DRDY"), std::string::npos);
+    EXPECT_NE(g12Xscl.find("G11: SWDIO"), std::string::npos);
+    EXPECT_EQ(g12Xscl.find("G13: Strobe"), std::string::npos);
+    EXPECT_EQ(g12Xscl.find("G13: XSDA"), std::string::npos);
+
+    const std::string g13Strobe = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_G13_STROBE_INPUT_val);
+    EXPECT_NE(g13Strobe.find("G13: Strobe input"), std::string::npos);
+    EXPECT_NE(g13Strobe.find("G12: SWO"), std::string::npos);   // G12's own default, unaffected by G13's bits
+    EXPECT_EQ(g13Strobe.find("G12: XSCL"), std::string::npos);
+    EXPECT_EQ(g13Strobe.find("G12: Strobe"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig2_Gnss2PpsSourceAndUseGnss2AsSource)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig2");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u).empty(), false) << "always-on Enum defaults should still render something";
+
+    const std::string useGnss2 = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_USE_GNSS2_AS_SOURCE);
+    EXPECT_NE(useGnss2.find("Use GNSS2"), std::string::npos);
+
+    const std::string ppsG13 = RenderStatusFromDecode(*dec, (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G13_val);
+    EXPECT_NE(ppsG13.find("GNSS2 PPS source: G13"), std::string::npos);
+}
+
+// ---- nvm_flash_cfg_t::ioConfig (eIoConfig, SN-8491) ---------------------------
+
+TEST(ISStatusDecode, IoConfig_ZeroBaselineIsTheFiveAlwaysOnEnumDefaults)
+{
+    // Unlike ioConfig2, ioConfig's G1/G2, G9, G6/G7, and G5/G8 function Enums have no named value
+    // for raw 0 (the source enum simply doesn't define one), so they stay silent. But GNSS1 PPS
+    // source and the GNSS1/2 source+type Enums DO have an explicitly named "Disabled"/"None" value
+    // at 0 (matching eIoConfig's own definitions), so those five always render -- this is the
+    // baseline every other bit's rendering gets compared against below.
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string baseline = RenderStatusFromDecode(*dec, 0u);
+    for (const char* expected : { "GNSS1 PPS source: Disabled", "GNSS1 source: Disabled", "GNSS2 source: Disabled", "GNSS1 type: None", "GNSS2 type: None" })
+        EXPECT_NE(baseline.find(expected), std::string::npos) << expected;
+    EXPECT_EQ(baseline.find("G1/G2:"), std::string::npos) << "G1/G2 has no named 0 value, should stay silent";
+}
+
+TEST(ISStatusDecode, IoConfig_StrobeAndG15BitsIndependent)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string baseline = RenderStatusFromDecode(*dec, 0u);
+
+    const std::string strobe = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_STROBE_TRIGGER_HIGH);
+    const std::string g15    = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_G15_STROBE_INPUT);
+    EXPECT_NE(strobe.find("Strobe (input and output) trigger on rising edge"), std::string::npos);
+    EXPECT_NE(g15.find("G15 (GNSS PPS) strobe input"), std::string::npos);
+    EXPECT_NE(strobe, g15);
+    // Both still carry the always-on Enum baseline alongside their own bit.
+    EXPECT_NE(strobe.find("GNSS1 PPS source: Disabled"), std::string::npos);
+    EXPECT_GT(strobe.length(), baseline.length());
+}
+
+TEST(ISStatusDecode, IoConfig_G1G2FunctionSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string canBus = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_G1G2_CAN_BUS);
+    const std::string i2c    = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_G1G2_I2C);
+    EXPECT_NE(canBus.find("G1/G2: CAN Bus"), std::string::npos);
+    EXPECT_NE(i2c.find("G1/G2: I2C"), std::string::npos);
+    EXPECT_NE(canBus, i2c);
+    // Raw 0 in the 3-bit G1/G2 field has no named value -- must not render anything for it,
+    // even though the always-on Enums elsewhere in the table still render their own defaults.
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 0u).find("G1/G2:"), std::string::npos);
+
+    // Multi-bit field (3 bits, mask 0xE at offset 1) -- bit-range annotation, not shifted-hex.
+    const uint32_t g1g2Mask = (uint32_t)IO_CONFIG_G1G2_MASK;
+    const uint32_t g1g2Shift = TestMaskShift(g1g2Mask);
+    ExpectEnumSubfieldLine(canBus, g1g2Mask, g1g2Shift, (uint32_t)IO_CONFIG_G1G2_CAN_BUS >> g1g2Shift, "G1/G2: CAN Bus");
+    ExpectEnumSubfieldLine(i2c, g1g2Mask, g1g2Shift, (uint32_t)IO_CONFIG_G1G2_I2C >> g1g2Shift, "G1/G2: I2C");
+}
+
+TEST(ISStatusDecode, IoConfig_Gnss1PpsSourceSubfield)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const uint32_t g9Source = (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G9 << IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, g9Source);
+    EXPECT_NE(rendered.find("GNSS1 PPS source: G9"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_Gnss1AndGnss2SourceDoNotCrossContaminate)
+{
+    // GNSS1 source (bits 18-16) and GNSS2 source (bits 21-19) are adjacent, same value set --
+    // exactly where a mask/shift mistake would silently leak one into the other.
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+
+    uint32_t v = 0;
+    SET_IO_CFG_GNSS1_SOURCE(v, (uint32_t)IO_CONFIG_GNSS_SOURCE_SER0);
+    SET_IO_CFG_GNSS2_SOURCE(v, (uint32_t)IO_CONFIG_GNSS_SOURCE_SER2);
+    const std::string rendered = RenderStatusFromDecode(*dec, v);
+    EXPECT_NE(rendered.find("GNSS1 source: Ser0"), std::string::npos);
+    EXPECT_NE(rendered.find("GNSS2 source: Ser2"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS1 source: Ser2"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS2 source: Ser0"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_Gnss1AndGnss2TypeDoNotCrossContaminate)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+
+    uint32_t v = 0;
+    SET_IO_CFG_GNSS1_TYPE(v, (uint32_t)IO_CONFIG_GNSS_TYPE_UBLOX);
+    SET_IO_CFG_GNSS2_TYPE(v, (uint32_t)IO_CONFIG_GNSS_TYPE_SEPTENTRIO);
+    const std::string rendered = RenderStatusFromDecode(*dec, v);
+    EXPECT_NE(rendered.find("GNSS1 type: UBLOX"), std::string::npos);
+    EXPECT_NE(rendered.find("GNSS2 type: Septentrio"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS1 type: Septentrio"), std::string::npos);
+    EXPECT_EQ(rendered.find("GNSS2 type: UBLOX"), std::string::npos);
+}
+
+TEST(ISStatusDecode, IoConfig_ImuDisableBitsIndependent)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string imu1 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_1_DISABLE);
+    const std::string imu2 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_2_DISABLE);
+    const std::string imu3 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_3_DISABLE);
+    EXPECT_NE(imu1.find("IMU 1 disable"), std::string::npos);
+    EXPECT_NE(imu2.find("IMU 2 disable"), std::string::npos);
+    EXPECT_NE(imu3.find("IMU 3 disable"), std::string::npos);
+    EXPECT_NE(imu1, imu2);
+    EXPECT_NE(imu2, imu3);
+}
+
+TEST(ISStatusDecode, IoConfig_AllBitsSetDoesNotCrash)
+{
+    // Fuzz-lite: every bit set at once must not throw, crash, or produce an empty result (many
+    // subfields have a defined value at their max range).
+    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string rendered = RenderStatusFromDecode(*dec, 0xFFFFFFFFu);
+    EXPECT_FALSE(rendered.empty());
+}
+
+// ---- nvm_flash_cfg_t::sensorConfig (eSensorConfig, SN-8491) -------------------
+
+TEST(ISStatusDecode, SensorConfig_GyroAndAccelFullScaleAreIndependentAlwaysOnEnums)
+{
+    // Every value in both tables (including 0) is explicitly named in the source enum, so both
+    // always render -- verify the zero baseline includes both defaults.
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string baseline = RenderStatusFromDecode(*dec, 0u);
+    EXPECT_NE(baseline.find("Gyro FS: 250 deg/s"), std::string::npos);
+    EXPECT_NE(baseline.find("Accel FS: 2g"), std::string::npos);
+
+    const uint32_t gyro4000 = (uint32_t)SENSOR_CFG_GYR_FS_4000 << SENSOR_CFG_GYR_FS_OFFSET;
+    const uint32_t acc16g   = (uint32_t)SENSOR_CFG_ACC_FS_16G  << SENSOR_CFG_ACC_FS_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, gyro4000 | acc16g);
+    EXPECT_NE(rendered.find("Gyro FS: 4000 deg/s"), std::string::npos);
+    EXPECT_NE(rendered.find("Accel FS: 16g"), std::string::npos);
+
+    // Multi-bit fields (3 bits each) -- bit-range annotation, not shifted-hex.
+    ExpectEnumSubfieldLine(rendered, (uint32_t)SENSOR_CFG_GYR_FS_MASK, (uint32_t)SENSOR_CFG_GYR_FS_OFFSET,
+        (uint32_t)SENSOR_CFG_GYR_FS_4000, "Gyro FS: 4000 deg/s");
+    ExpectEnumSubfieldLine(rendered, (uint32_t)SENSOR_CFG_ACC_FS_MASK, (uint32_t)SENSOR_CFG_ACC_FS_OFFSET,
+        (uint32_t)SENSOR_CFG_ACC_FS_16G, "Accel FS: 16g");
+    EXPECT_EQ(rendered.find("Gyro FS: 250 deg/s"), std::string::npos);
+    EXPECT_EQ(rendered.find("Accel FS: 2g"), std::string::npos);
+}
+
+TEST(ISStatusDecode, SensorConfig_GyroAndAccelDlpfDoNotCrossContaminate)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const uint32_t gyroDlpf20 = (uint32_t)SENSOR_CFG_GYR_DLPF_20HZ << SENSOR_CFG_GYR_DLPF_OFFSET;
+    const uint32_t accDlpf45 = (uint32_t)SENSOR_CFG_ACC_DLPF_45HZ << SENSOR_CFG_ACC_DLPF_OFFSET;
+    const std::string rendered = RenderStatusFromDecode(*dec, gyroDlpf20 | accDlpf45);
+    EXPECT_NE(rendered.find("Gyro DLPF: 20 Hz"), std::string::npos);
+    EXPECT_NE(rendered.find("Accel DLPF: 45 Hz"), std::string::npos);
+    EXPECT_EQ(rendered.find("Gyro DLPF: 45 Hz"), std::string::npos);
+    EXPECT_EQ(rendered.find("Accel DLPF: 20 Hz"), std::string::npos);
+}
+
+TEST(ISStatusDecode, SensorConfig_AccelDlpf218HzAliasesAreDistinctLabels)
+{
+    // ACC_DLPF_218HZ(0) and ACC_DLPF_218HZb(1) are two distinct register values that both mean
+    // "218 Hz" per the source enum -- confirm they render as distinguishable text, not identical.
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const uint32_t a = (uint32_t)SENSOR_CFG_ACC_DLPF_218HZ  << SENSOR_CFG_ACC_DLPF_OFFSET;
+    const uint32_t b = (uint32_t)SENSOR_CFG_ACC_DLPF_218HZb << SENSOR_CFG_ACC_DLPF_OFFSET;
+    EXPECT_NE(RenderStatusFromDecode(*dec, a), RenderStatusFromDecode(*dec, b));
+}
+
+TEST(ISStatusDecode, SensorConfig_MountingRotationAllTwentyFourValuesAreDistinct)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    std::vector<std::string> rendered;
+    for (uint32_t r = 0; r < 24; ++r)
+        rendered.push_back(RenderStatusFromDecode(*dec, r << SENSOR_CFG_SENSOR_ROTATION_OFFSET));
+    for (size_t i = 0; i < rendered.size(); ++i) {
+        EXPECT_FALSE(rendered[i].empty()) << "rotation " << i;
+        for (size_t j = i + 1; j < rendered.size(); ++j)
+            EXPECT_NE(rendered[i], rendered[j]) << "rotations " << i << " and " << j << " render identically";
+    }
+    // 25-31 (out of the 24 defined range but still representable in the 5-bit field) render nothing.
+    EXPECT_EQ(RenderStatusFromDecode(*dec, 30u << SENSOR_CFG_SENSOR_ROTATION_OFFSET).find("Sensor rotation"), std::string::npos);
+}
+
+TEST(ISStatusDecode, SensorConfig_MagBaroDisableAndImuFaultDetectBits)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string mag  = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_DISABLE_MAGNETOMETER);
+    const std::string baro = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_DISABLE_BAROMETER);
+    const std::string gyrFd = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_IMU_FAULT_DETECT_GYR);
+    const std::string accFd = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG_IMU_FAULT_DETECT_ACC);
+    EXPECT_NE(mag.find("Disable magnetometer sensor"), std::string::npos);
+    EXPECT_NE(baro.find("Disable barometer sensor"), std::string::npos);
+    EXPECT_NE(gyrFd.find("multiple-IMU gyro fault detection"), std::string::npos);
+    EXPECT_NE(accFd.find("multiple-IMU accelerometer fault detection"), std::string::npos);
+    EXPECT_NE(mag, baro);
+    EXPECT_NE(gyrFd, accFd);
+}
+
+TEST(ISStatusDecode, SensorConfig_AllBitsSetDoesNotCrash)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig");
+    ASSERT_NE(dec, nullptr);
+    const std::string rendered = RenderStatusFromDecode(*dec, 0xFFFFFFFFu);
+    EXPECT_FALSE(rendered.empty());
 }
