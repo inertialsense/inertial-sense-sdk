@@ -137,12 +137,14 @@ int main(int argc, char* argv[])
     /** STEP 3: Stop any message broadcasting */
     is_comm_stop_broadcasts_all_ports(port);
 
+#if 1
     /** STEP 4: Set data configuration
      * Set INS output Euler rotation in radians to 90 degrees roll for mounting
      */
     float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
     is_comm_set_data(port, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation);
-
+#endif
+    
     /** STEP 5: Register callback for data handling
      * Any ISB protocol messages will call into this handler (defined above).
      */
