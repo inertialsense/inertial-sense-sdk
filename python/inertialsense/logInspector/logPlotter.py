@@ -315,6 +315,7 @@ class logPlot:
         self.timestamp = False
         self.xAxisSample = False
         self.showGnss2 = False
+        self.showReference = True
         self.gnssVelFilterMode = 0
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
@@ -372,6 +373,9 @@ class logPlot:
 
     def enableGnss2(self, enable):
         self.showGnss2 = enable
+
+    def enableReference(self, enable):
+        self.showReference = enable
 
     def setgnssVelFilterMode(self, filterMode):
         self.gnssVelFilterMode = filterMode
@@ -4944,7 +4948,7 @@ class logPlot:
                     xstr += "]"
                     print(xstr)
 
-                    if 1:
+                    if self.showReference:
                         # Show sensor valid status bit
                         if name=='acc':
                             valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
@@ -4954,7 +4958,6 @@ class logPlot:
                         ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
                         ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
 
-                    if 1:
                         for j in range(3):
                             ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
 
