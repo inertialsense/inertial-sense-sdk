@@ -749,6 +749,9 @@ public:
 private:
 
     static std::mutex dfuMutex;
+    /** Set by initLibUSB() from libusb_init()'s return value; getNumDevices() checks this before
+     *  calling any other libusb_* function on the (possibly never-initialized) default context. */
+    static bool libUsbAvailable;
     DFUDevice *curDevice;
 
     struct membuf: std::streambuf {
