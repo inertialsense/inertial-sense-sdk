@@ -19,7 +19,6 @@ graph TD
    A -.-> B(SerialPortFactory)   
    B-.-> E(PortFactory)
    C -.-> D(is_comm_instance_t)   
-   %%H -.-> B
    F <--> C
    %%comment
 ```
@@ -146,7 +145,7 @@ while (portIsOpened(port)) {
 	SLEEP_MS(1);
 }
 ```
-The data handling callback we provided allows us to specify what we do with those messages in our application.
+The data handling callback we provide, detailed in the next step, allows us to specify what we do with those messages in our application.
 
 ### Step 9: Handle received data 
 We create a callback handler from the ISComm parser, called for each InertialSense binary message that is successfully parsed.  ISComm gives it various arguments:  a context pointer that can be associated with the port/ISCOMM instance, a pointer to the packet/message structure of the parsed message, and the port the packet/message was received by.
@@ -201,11 +200,34 @@ This handler calls a custom function for each of the four demonstrated message t
    ``` bash
    ./ISCommExample /dev/ttyACM0
    ```
-7. You should observe data from the device, as in this DID_INS_1 type example:
+7. You should observe data from the device, something like these examples.  Note that values change if you alter the data configuration.
+	
+	DID_INS_1 type:
 	```
-	INS TimeOfWeek: 11.793s, LLA: 0.0000000,0.0000000, 0.00, Euler:  -0.5,  0.6,115.3
-	INS TimeOfWeek: 12.493s, LLA: 0.0000000,0.0000000, 0.00, Euler:  -0.5,  0.6,115.3
+	INS TimeOfWeek: 11.793s, LLA: 0.0000000,0.0000000, 0.00, Euler:  -0.5,  0.6,115.3	
 	INS TimeOfWeek: 13.193s, LLA: 0.0000000,0.0000000, 0.00, Euler:  -0.5,  0.6,115.3
+	...
+	```
+
+	DID_INS_2 type:
+	```
+	INS TimeOfWeek: 223.873s, LLA: 0.0000000,0.0000000, 0.00, Euler:  89.5,  0.7,115.3
+	INS TimeOfWeek: 224.573s, LLA: 0.0000000,0.0000000, 0.00, Euler:  89.5,  0.6,115.3
+	...
+	```
+
+	DID_GNSS1_POS type:
+	```
+	GPS TimeOfWeek: 364900ms, LLA: 0.0000000,0.0000000, 0.00
+	GPS TimeOfWeek: 384900ms, LLA: 0.0000000,0.0000000, 0.00
+	...
+	```
+
+	DID_IMU type:
+	```
+	IMU Time: 112.972s, PQR:  -0.0, -0.0, -0.0, ACC:   0.1,  0.1, -9.8,
+	IMU Time: 114.372s, PQR:  -0.0, -0.0, -0.0, ACC:   0.1,  0.1, -9.8,
+	...
 	```
 	Exit the application with Ctrl+C.
 
