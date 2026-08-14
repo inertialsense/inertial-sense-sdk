@@ -316,6 +316,7 @@ class logPlot:
         self.xAxisSample = False
         self.showGnss2 = False
         self.showReference = True
+        self.showUcal = True
         self.gnssVelFilterMode = 0
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
@@ -376,6 +377,9 @@ class logPlot:
 
     def enableReference(self, enable):
         self.showReference = enable
+
+    def enableUcal(self, enable):
+        self.showUcal = enable
 
     def setgnssVelFilterMode(self, filterMode):
         self.gnssVelFilterMode = filterMode
@@ -4860,8 +4864,8 @@ class logPlot:
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         numSensors = 5
         if name=='mag':
-            numSensors = 2
-        ax = fig.subplots(4, numSensors, sharex=True)
+            numSensors = 1
+        ax = fig.subplots(4, numSensors, sharex=True, squeeze=False)
 
         useSampleNumber = 1
         noData = True
@@ -4893,6 +4897,20 @@ class logPlot:
             time = 0.001 * self.getData(a, DID_SCOMP, 'timeMs')
             if np.any(time):
                 noData = False
+
+                ucalSensor = None
+                ucalX = None
+                if self.showUcal and (name == 'acc' or name == 'pqr'):
+                    ucalImus = self.getData(a, DID_SENSORS_UCAL, 'imus')
+                    if len(ucalImus) != 0:
+                        ucalSensor = ucalImus['I'][name]
+                        if useTemp:
+                            ucalX = self.getData(a, DID_SENSORS_UCAL, 'temp')
+                        elif useSampleNumber:
+                            ucalX = np.arange(ucalSensor.shape[0])
+                        else:
+                            ucalX = ucalImus['time']
+
                 imu = self.getData(a, DID_SCOMP, name)
                 status = self.getData(a, DID_SCOMP, 'status')
 
@@ -4922,6 +4940,12 @@ class logPlot:
                             x = np.arange(len(sensor[:,0]))
                         else:
                             x = time
+
+                    if ucalSensor is not None:
+                        ux = ucalX[:,i] if useTemp else ucalX
+                        ax[0,i].plot(ux, ucalSensor[:,i,0]*scalar, color='0.6', label="UCAL" if i==0 else None)
+                        ax[1,i].plot(ux, ucalSensor[:,i,1]*scalar, color='0.6')
+                        ax[2,i].plot(ux, ucalSensor[:,i,2]*scalar, color='0.6')
 
                     # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None)
                     ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[a])

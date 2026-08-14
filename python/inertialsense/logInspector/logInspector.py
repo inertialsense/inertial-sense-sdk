@@ -515,10 +515,6 @@ class LogInspectorWindow(QMainWindow):
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
         self.showGnss2 = QCheckBox("GNSS2", self)
         self.showGnss2.stateChanged.connect(self.changeShowGnss2Checkbox)
-        self.showReference = QCheckBox("Reference", self)
-        self.showReference.setToolTip("Show reference and Sensor Valid lines on SComp v Temp plots")
-        self.showReference.setChecked(True)
-        self.showReference.stateChanged.connect(self.changeShowReferenceCheckbox)
 
         self.VLayoutOptions1 = QVBoxLayout()
         self.VLayoutOptions1.setSpacing(0)
@@ -532,7 +528,6 @@ class LogInspectorWindow(QMainWindow):
         self.VLayoutOptions3 = QVBoxLayout()
         self.VLayoutOptions3.setSpacing(0)
         self.VLayoutOptions3.addWidget(self.showGnss2)
-        self.VLayoutOptions3.addWidget(self.showReference)
         
         if 0:   # Show GNSS Velocity Filter Input in UI
             self.GnssVelFilterLabel = QLabel(" GNSS Vel Filter", self)
@@ -697,12 +692,6 @@ class LogInspectorWindow(QMainWindow):
         for mplot in self.mplots:
             if mplot.plotter:
                 mplot.plotter.enableGnss2(state)
-                self.updatePlot()
-
-    def changeShowReferenceCheckbox(self, state):
-        for mplot in self.mplots:
-            if mplot.plotter:
-                mplot.plotter.enableReference(state)
                 self.updatePlot()
 
     def changeGnssVelFilterInput(self, text):
