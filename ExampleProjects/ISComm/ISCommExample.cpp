@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     spf.setBaudRate(921600);
     port_handle_t port = spf.bindPort(argv[1]);
 
-    if (port == nullptr) {
+    if (!portIsValid(port)) {
         printf("Failed to allocate port\r\n");
         return -2;
     }
