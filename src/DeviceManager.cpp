@@ -371,8 +371,20 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
     });
     knownDevices.erase(knownIter);
 
-    if (deleteDevice)
-        deviceEntry.factory->releaseDevice(deviceEntry.device);
+    // deviceEntry.factory is only populated by the remove_if lambda above, and only when a knownDevices
+    // entry matched this unique id. A device present in the main list without a matching knownDevices
+    // entry therefore leaves it null -- reachable when the device's devInfo now encodes a different
+    // hdwId than it did at registration, e.g. one that came back in a different mode. Calling through
+    // it unconditionally was a null-pointer call; without the factory there is nothing that knows how to
+    // free this device, so log and leave it to its shared_ptr rather than crashing.
+    if (deleteDevice) {
+        if (deviceEntry.factory) {
+            deviceEntry.factory->releaseDevice(deviceEntry.device);
+        } else {
+            log_warn(IS_LOG_DEVICE_MANAGER, "releaseDevice('%s'): no knownDevices entry for this id; cannot delegate deletion to a factory.",
+                     device->getIdAsString().c_str());
+        }
+    }
 
     return true;
 }
