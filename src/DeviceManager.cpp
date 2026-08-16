@@ -198,7 +198,12 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                             if (!handled) {
                                 log_debug(IS_LOG_DEVICE_MANAGER, "deviceHandler REJECTED %s on port '%s' by all factories. DeviceCount=%zu",
                                     ISDevice::getIdAsString(pp.devInfo).c_str(), portName(pp.port), size());
-                                if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+                                // Honor ON_COMPLETION here too -- it means "close once discovery is
+                                // completed, regardless of failure". A port whose device no registered
+                                // factory will allocate (e.g. an IMX-6 on a bench whose consumer only
+                                // registered IMX-5/GPX factories) otherwise stays open for the life of
+                                // the process, holding a relay/TCP session no one is using.
+                                if (options & (DISCOVERY__CLOSE_PORT_ON_FAILURE | DISCOVERY__CLOSE_PORT_ON_COMPLETION))
                                     portClose(pp.port);
                             }
                         }
@@ -445,7 +450,10 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     // if not, then we need to allocate it
     deviceEntry.device = factory->allocateDevice(devInfo, port);
     if (!deviceEntry.device) {
-        if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
+        // As above: ON_COMPLETION closes "regardless of failure", and a factory declining to allocate
+        // is a completion for this port as far as the caller is concerned. Without this, a declined
+        // port is left open indefinitely.
+        if (options & (DISCOVERY__CLOSE_PORT_ON_FAILURE | DISCOVERY__CLOSE_PORT_ON_COMPLETION))
             portClose(port);
         return false;   // allocated returned null, so no device created
     }

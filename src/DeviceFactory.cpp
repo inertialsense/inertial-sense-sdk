@@ -111,8 +111,12 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
     if (hint && hint->serialNumber != 0 && hint->hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
         ctx->device->devInfo = *hint;
         ctx->device->hdwId = ENCODE_DEV_INFO_TO_HDW_ID((*hint));
-        log_info(IS_LOG_DEVICE_FACTORY, "beginValidation: seeded hint for port '%s' (SN=%u, hwType=%d, hdwRunState=%d) — validation still required.",
-                 portName(port), hint->serialNumber, hint->hardwareType, hint->hdwRunState);
+        // DEBUG, not INFO: DeviceManager::discoverDevices() calls beginValidation() once per
+        // registered device factory for every port, so this emits (ports x factories) lines on every
+        // discovery pass -- e.g. 28 lines per sweep on a 14-device testbed with two factories
+        // registered. It's routine per-port bookkeeping, not something an operator needs by default.
+        log_debug(IS_LOG_DEVICE_FACTORY, "beginValidation: seeded hint for port '%s' (SN=%u, hwType=%d, hdwRunState=%d) — validation still required.",
+                  portName(port), hint->serialNumber, hint->hardwareType, hint->hdwRunState);
     }
 
     return ctx;

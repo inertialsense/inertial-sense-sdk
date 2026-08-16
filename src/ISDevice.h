@@ -238,10 +238,22 @@ public:
      * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
      * Can be overridden to provide custom configuration, etc on connection - just remember
      *  to call back into ISDevice::connect() in your new method.
-     * @param revalidate if true causes the device to validate after connecting (default = false)
-     * @return true if the connection is made/port opened, otherwise false
+     *
+     * Asynchronous transports (TCP) do not finish connecting within a single portOpen() call:
+     * tcpPortOpen() returns PORT_ERROR__NONE while the handshake is still in flight and leaves
+     * PORT_FLAG__OPENED clear, expecting the caller to keep polling. This function therefore
+     * re-invokes portOpen() until the port actually reports open, or @p openTimeoutMs elapses.
+     * Serial ports set PORT_FLAG__OPENED on the first call and are unaffected.
+     *
+     * @param revalidate    if true causes the device to validate after connecting (default = false)
+     * @param openTimeoutMs how long to keep polling portOpen() for the port to actually report
+     *                      open. Loopback/LAN handshakes complete in one or two polls; the default
+     *                      only bounds the pathological (unreachable host) case. Pass a smaller
+     *                      value from step()-driven loops that retry on their own.
+     * @return true if the port is genuinely open (and, when @p revalidate is set, validated),
+     *         otherwise false
      */
-    virtual bool connect(bool revalidate = false);
+    virtual bool connect(bool revalidate = false, uint32_t openTimeoutMs = 500);
 
     /**
      * Disconnects/closes the bound port to the device, if the port is VALID
@@ -758,6 +770,21 @@ public:
      */
     bool fwUpdate(p_data_t* msg = nullptr);
 
+    /**
+     * @brief Queries device info while the device is believed to be in the ISbootloader, handshaking
+     * first via handshakeISbl() if not already done.
+     *
+     * Public because a bootloader-mode devInfo can legitimately arrive from a discovery hint rather
+     * than from the device (RelayPortFactory seeds one), and a hint carries no parsable ISbl version.
+     * Callers that depend on the real bootloader version -- ISBFirmwareUpdater picks its flash offset
+     * from it -- must be able to ask the bootloader directly. Unlike validate(), this does not clear
+     * devInfo, so a failed probe leaves existing identity intact.
+     *
+     * @param timeout how long to wait for a response
+     * @return true if a valid ISbootloader device-info response was received before timeout.
+     */
+    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+
     /** @return true if a and this device share the same serial number and hardware type. */
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
@@ -824,8 +851,7 @@ private:
 
     /** @brief Performs the ISbootloader handshake (sends repeated handshake chars, waits for the device's response) required before queryDeviceInfoISbl() can succeed. @return true once handshaking completes (or the RX buffer could not be cleared, to avoid retrying indefinitely). */
     bool handshakeISbl();
-    /** @brief Queries device info while the device is believed to be in the ISbootloader, handshaking first via handshakeISbl() if not already done. @return true if a valid ISbootloader device-info response was received before timeout. */
-    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+    // NOTE: queryDeviceInfoISbl() is declared in the public section above -- ISBFirmwareUpdater needs it.
 
     /** @brief Periodic (SYNC_FLASH_CFG_CHECK_PERIOD_MS) IMX/GPX flash-config synchronization tick; no-op unless the device is running application firmware. */
     void SyncFlashConfig();

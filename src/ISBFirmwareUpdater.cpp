@@ -467,8 +467,14 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
     if (!portIsValid(device->port))
         return IS_OP_ERROR;
 
-    if (!portIsOpened(device->port))
-        portOpen(device->port);
+    // Go through ISDevice::connect() rather than a bare portOpen(): on an asynchronous transport (TCP)
+    // portOpen() reports PORT_ERROR__NONE while the connect handshake is still in flight and leaves
+    // PORT_FLAG__OPENED clear, so a single unpolled call leaves the port "opened" but not actually open.
+    // Everything below then fails silently -- queryDeviceInfoISbl() returns false at its own
+    // !portIsOpened() guard without even sending the query. connect() polls until the port really is
+    // open, and already no-ops when the port is valid and open; revalidate=false so it will not clear
+    // the devInfo we still need here.
+    device->connect();
 
     if (portType(device->port) & PORT_TYPE__COMM) {
         COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
@@ -483,6 +489,19 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
 
     if (device->devInfo.hdwRunState != HDW_STATE_BOOTLOADER)
         return IS_OP_ERROR; // there is nothing more we can do if we're not talking to the bootloader
+
+    // The app offset below is selected from the ISbl MAJOR version, so it has to come from the
+    // bootloader itself. devInfo can be populated entirely from a discovery hint without the device
+    // ever being probed -- RelayPortFactory seeds hdwRunState/serialNumber/hardwareType and synthesizes
+    // protocolVer, which is enough to satisfy ISDevice::hasDeviceInfo() and let validation be skipped --
+    // and a hint carries no parsable ISbl version ("ISbl.v6j **BOOTLOADER**" yields 0). Left unchecked
+    // that lands in the else below and aborts recovery with ERR_INVALID_TARGET, so a device sitting in
+    // the bootloader could never be reflashed automatically. Ask the bootloader directly when the major
+    // looks unset; unlike validate() this does not clear devInfo if the probe fails.
+    if (device->devInfo.firmwareVer[0] == 0) {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "(ISB) no ISbl version in devInfo (likely hint-seeded); querying the bootloader directly.");
+        device->queryDeviceInfoISbl(1000);
+    }
 
     // Determine app offset based on version
     if (device->devInfo.firmwareVer[0] == 1) {

@@ -372,8 +372,15 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
 
 
 bool ISDevice::validate(uint32_t timeout) {
-    if (!isConnected())
+    if (!isConnected()) {
+        // INFO, not debug: validating a closed port is a caller mistake in the same class as querying
+        // one, and not a hard failure -- but the caller should hear about it. This return also precedes
+        // every other trace in this function, so a silent exit here is indistinguishable from
+        // "validation ran and failed", which is a painful thing to debug.
+        log_info(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : port not valid/open (isConnected() false); cannot validate.",
+                 getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
         return false;
+    }
 
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
@@ -1693,14 +1700,8 @@ bool ISDevice::assignPort(port_handle_t newPort) {
     return true;
 }
 
-/**
- * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
- * Can be overridden to provide custom configuration, etc on connection - just remember
- *  to call back into ISDevice::connect() in your new method.
- * @param revalidate if true causes the device to validate after connecting (default = false)
- * @return true if the connection is made/port opened, otherwise false
- */
-bool ISDevice::connect(bool revalidate) {
+/** @copydoc ISDevice::connect */
+bool ISDevice::connect(bool revalidate, uint32_t openTimeoutMs) {
 
     if (!portIsValid(port) || !(portType(port) & PORT_TYPE__COMM))      // TODO?? Generally, device MUST use a COMM port, but ISbl is NOT a COMM protocol
         return false;   // port is invalid or incorrect type, so we can't connect it
@@ -1725,10 +1726,29 @@ bool ISDevice::connect(bool revalidate) {
             return false;   // don't attempt to reconnect until nextConnectMs has expired
         }
 
-        if (portOpen(port) != PORT_ERROR__NONE) {
+        // portOpen() on an asynchronous transport (TCP) reports PORT_ERROR__NONE while the connect()
+        // handshake is still in flight and deliberately leaves PORT_FLAG__OPENED clear -- its contract
+        // is that the caller keeps polling until the port actually opens (see tcpPortOpen() in
+        // core/tcpPort.c). Re-invoking portOpen() is what advances that state; sleeping alone never
+        // will. Treating the first PORT_ERROR__NONE as "connected" hands back a port that
+        // isConnected() still reports false for, which silently fails every subsequent query
+        // (validate(), ImxFlashConfig(), ...). Serial ports set PORT_FLAG__OPENED on the first call,
+        // so they break out immediately and are unaffected.
+        int portError = PORT_ERROR__NONE;
+        uint32_t openDeadlineMs = current_timeMs() + openTimeoutMs;
+        do {
+            portError = portOpen(port);
+            if ((portError != PORT_ERROR__NONE) || portIsOpened(port))
+                break;
+            SLEEP_MS(1);
+        } while (current_timeMs() < openDeadlineMs);
+
+        if ((portError != PORT_ERROR__NONE) || !portIsOpened(port)) {
             SLEEP_MS(15);
             nextConnectMs = current_timeMs() + 500; // if the connect fails, delay 500ms before trying again.
-            log_debug(IS_LOG_ISDEVICE, "Device failed to connect... You can retry this device again in %dms.", nextConnectMs - current_timeMs());
+            log_debug(IS_LOG_ISDEVICE, "Device failed to connect (%s)... You can retry this device again in %dms.",
+                      (portError != PORT_ERROR__NONE) ? "port error" : "handshake did not complete in time",
+                      nextConnectMs - current_timeMs());
             return false;
         }
     }
@@ -1743,7 +1763,10 @@ bool ISDevice::connect(bool revalidate) {
     // ONLY notify of DEVICE_CONNECTED, if the port was closed at the start of this function
     if (!alreadyOpened) {
         DeviceManager::getInstance().notifyListeners(shared_from_this(), DeviceManager::DEVICE_CONNECTED);  // notify that we've connected (if we are)
-        log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), (success ? " (revalidated)" : ""));
+        // Only claim revalidation when we actually attempted it -- `success` is initialized true, so
+        // reporting on it alone printed "(revalidated)" for every connect(false) call.
+        log_debug(IS_LOG_ISDEVICE, "Connected to ISDevice::%s%s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(),
+                  (revalidate ? (success ? " (revalidated)" : " (revalidation FAILED)") : ""));
     }
     was_connected = success;
     return success;
