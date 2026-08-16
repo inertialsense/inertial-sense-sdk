@@ -61,6 +61,16 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
         return false;
 
     log_more_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
+
+    // Close before freeing the port: serialPortClose() closes the fd and frees
+    // the platform handle, and this is the last chance to do either. Deleting an
+    // open port leaked both, one fd per port, for the life of the process --
+    // PortManager::discoverPorts() releases a port for every tty that
+    // disappears, so any long-running consumer that sees devices come and go
+    // (bridgeboard's relay, EvalTool, cltool) walked toward RLIMIT_NOFILE.
+    // No-ops when the port was never opened or is already closed.
+    serialPortClose(port);
+
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
