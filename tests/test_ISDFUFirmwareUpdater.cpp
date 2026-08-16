@@ -89,3 +89,19 @@ TEST(ISDFUFirmwareUpdater_Finalize, LibusbErrorName_NamesDistinctCodes) {
     EXPECT_STRNE(DFUDevice::libusbErrorName(LIBUSB_ERROR_NO_DEVICE),
                  DFUDevice::libusbErrorName(LIBUSB_ERROR_IO));
 }
+
+// --- getNumDevices() before initLibUSB(): SN-8492 regression -----------------------------------
+//
+// getNumDevices() previously called libusb_get_device_list(NULL, ...) unconditionally, and
+// initLibUSB() discarded libusb_init()'s return value -- so on any environment where libusb_init()
+// fails (no USB subsystem, restricted permissions, sandboxing), the default context stayed
+// uninitialized and getNumDevices() segfaulted inside pthread_mutex_lock on first call. This test
+// exercises the exact failure precondition directly: getNumDevices() called before initLibUSB()
+// has EVER succeeded in this process, relying on ISDFUFirmwareUpdater::libUsbAvailable's true
+// default-initialized value (false). MUST run before any test/call in this binary invokes
+// initLibUSB() successfully, since that flag is process-wide, static, and has no reset hook.
+
+TEST(ISDFUFirmwareUpdater_LibUsbInit, GetNumDevices_BeforeInit_ReturnsZeroInsteadOfCrashing) {
+    EXPECT_EQ(0, ISDFUFirmwareUpdater::getNumDevices());
+    EXPECT_EQ(0, ISDFUFirmwareUpdater::getNumDevices(0x1234, 0x5678));
+}

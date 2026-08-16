@@ -9,15 +9,13 @@ include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 include_directories(
     ${IS_SDK_DIR}/src
     ${IS_SDK_DIR}/src/core
-    ${IS_SDK_DIR}/src/libusb/libusb
-    ${IS_SDK_DIR}/tests/
 )
 
 # Define the executable
 add_executable(${PROJECT_NAME}
-    CustomVirtualExample.cpp
+    main.cpp
     CustomVirtualPortFactory.cpp
-    ${IS_SDK_DIR}/tests/test_serial_utils.cpp
+    custom_virtual_port.cpp
 )
 
 # Build using C11 and CXX20

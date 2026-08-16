@@ -1003,6 +1003,13 @@ static int cltool_createHost()
     inertialSenseInterface.StopBroadcasts();
 
     g_correctionOutput = std::make_shared<Rtcm3CorrectionServer>(srcDevice, g_commandLineOptions.baseConnection);
+    auto listenError = g_correctionOutput->getLastListenError();
+    if (listenError.first != TCP_LISTEN_CTX__NONE)
+    {
+        cout << "Failed to start RTCM3 correction server on " << g_commandLineOptions.baseConnection
+             << " (" << tcp_listen_error_context_names[listenError.first] << ": " << strerror(listenError.second) << ")" << endl;
+        return -1;
+    }
     MessageStats::mul_stats_t rtcm3Stats;
     g_correctionOutput->setMessageStats(&rtcm3Stats);
 

@@ -663,15 +663,41 @@ std::pair<const uint8_t*, std::size_t> ISLogReader::rawBytes() const noexcept {
     return { rawSource_->data(), rawSource_->size() };
 }
 
-void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
-    deviceId_ = 0;
-    hdwId_    = 0;
+void ISLogReader::adoptDevInfo(const dev_info_t& info) noexcept {
+    deviceId_ = info.serialNumber;
+    hdwId_    = static_cast<uint16_t>(ENCODE_DEV_INFO_TO_HDW_ID(info));
+    // Retain the whole struct, not just the two fields we distill from it (SN-8463). Firmware version, build info
+    // and the rest were being parsed and thrown away, leaving consumers unable to report a device beyond serial
+    // plus hardware id.
+    devInfo_    = info;
+    hasDevInfo_ = true;
+}
 
-    // 1) Walk the raw bytes via `is_comm_parse_byte` looking for the first DID_DEV_INFO packet. We can't shortcut to
+void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
+    deviceId_   = 0;
+    hdwId_      = 0;
+    devInfo_    = dev_info_t{};
+    hasDevInfo_ = false;
+
+    // 1) Walk the raw bytes via `is_comm_parse_byte` looking for a `dev_info_t`-bearing packet. We can't shortcut to
     //    the record's `.offset` because that is the ISB packet *start* (framing + header + payload + checksum), not
     //    the payload offset — we need the parser to hand us `comm.rxPkt.data.ptr`, which points into the dev_info_t
-    //    payload proper. Bounded: terminate at the first DEV_INFO packet so this is at most a single early-exit
-    //    linear pass.
+    //    payload proper.
+    //
+    //    Three DIDs carry an identical `dev_info_t`: DID_DEV_INFO is the *logging* device's own record, while
+    //    DID_GPX_DEV_INFO (120) and DID_EVB_DEV_INFO (93) describe an attached PERIPHERAL. They are not
+    //    interchangeable as an identity source, so DID_DEV_INFO always wins and a peripheral record is only adopted
+    //    when the segment carries no primary record at all. A GPX-only capture has just the GPX record, which is the
+    //    case SN-8445 exists to serve — without it such logs recover a serial from the filename but no hardware id,
+    //    and render as "???-0.0::SN<serial>".
+    //
+    //    Ranking rather than first-match matters because a MIXED capture contains both, in an order that varies
+    //    between rollover segments. First-match made two segments of one log derive two different device ids, and
+    //    `ISDeviceLog::fromSegments` then rejected the whole log as Corrupted (SN-8445 regression, caught by the
+    //    goldenlogs suite on imx#1648 against an IMX+GPX capture).
+    //
+    //    Cost: a segment holding a primary record still early-exits on it. Only a segment with no primary record is
+    //    scanned to the end — the same single linear pass the no-dev_info case has always cost.
     if (rawSource_ && rawSource_->size() > 0) {
         is_comm_instance_t comm{};
         uint8_t commBuf[PKT_BUF_SIZE];
@@ -680,24 +706,43 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
 
         const uint8_t* base = rawSource_->data();
         const std::size_t total = rawSource_->size();
+
+        dev_info_t peripheral{};              // first peripheral record seen, held in reserve
+        bool       havePeripheral = false;
+
         for (std::size_t i = 0; i < total; ++i) {
             protocol_type_t p = is_comm_parse_byte(&comm, base[i]);
             if (p != _PTYPE_INERTIAL_SENSE_DATA && p != _PTYPE_INERTIAL_SENSE_CMD) {
                 continue;
             }
-            if (comm.rxPkt.dataHdr.id != DID_DEV_INFO) continue;
+            const auto didId = comm.rxPkt.dataHdr.id;
+            const bool isPrimary    = (didId == DID_DEV_INFO);
+            const bool isPeripheral = (didId == DID_GPX_DEV_INFO || didId == DID_EVB_DEV_INFO);
+            if (!isPrimary && !isPeripheral) continue;
             if (comm.rxPkt.dataHdr.size != sizeof(dev_info_t)) continue;
 
             dev_info_t info{};
             std::memcpy(&info, comm.rxPkt.data.ptr, sizeof(info));
-            if (info.serialNumber != 0) {
-                deviceId_ = info.serialNumber;
-                hdwId_    = static_cast<uint16_t>(ENCODE_DEV_INFO_TO_HDW_ID(info));
+
+            // A zero serial is a partial-update record, an unprovisioned unit, or a fixture stub. Keep scanning: a
+            // later record in the same segment may be complete. (This used to abort the scan, which meant one stub
+            // early in a segment hid every valid record behind it.)
+            if (info.serialNumber == 0) continue;
+
+            if (isPrimary) {
+                adoptDevInfo(info);
                 return;
             }
-            // First DEV_INFO had a zero serial — partial-update record or test fixture stub. Stop scanning; let the
-            // filename fallback handle it.
-            break;
+            if (!havePeripheral) {
+                peripheral     = info;
+                havePeripheral = true;
+            }
+            // Keep scanning — a primary record later in this segment outranks the peripheral one.
+        }
+
+        if (havePeripheral) {
+            adoptDevInfo(peripheral);
+            return;
         }
     }
 

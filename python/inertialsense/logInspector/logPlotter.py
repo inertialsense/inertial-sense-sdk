@@ -2023,24 +2023,26 @@ class logPlot:
                     if r: ax.text(labelX, -cnt * 1.5, 'Com parse err count', transform=ax.get_yaxis_transform())
                     cnt += 1
 
-                    ### No Comms flags
-                    # Shift amounts must match each mask's own bit position (GPX_STATUS_COM0/1/2_RX_TRAFFIC_NOT_DETECTED
-                    # and GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED are bits 4-7 -- these were previously shifted by
+                    ### Comms Detected flags
+                    # Shift amounts must match each mask's own bit position (GPX_STATUS_COM0/1/2_RX_TRAFFIC_DETECTED
+                    # and GPX_STATUS_USB_RX_TRAFFIC_DETECTED are bits 4-7 -- these were previously shifted by
                     # 8-11, which always evaluates to 0 regardless of the actual bit's state).
+                    # SN-8402: bit meaning was inverted (formerly ..._NOT_DETECTED, set = no comms);
+                    # 1 now means comms WERE detected in the last 30s, matching the label.
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000010) >> 4))
-                    if r: ax.text(labelX, -cnt * 1.5, 'No Ser0 Comms', transform=ax.get_yaxis_transform())
+                    if r: ax.text(labelX, -cnt * 1.5, 'Ser0 Comms Detected', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000020) >> 5))
-                    if r: ax.text(labelX, -cnt * 1.5, 'No Ser1 Comms', transform=ax.get_yaxis_transform())
+                    if r: ax.text(labelX, -cnt * 1.5, 'Ser1 Comms Detected', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000040) >> 6))
-                    if r: ax.text(labelX, -cnt * 1.5, 'No Ser2 Comms', transform=ax.get_yaxis_transform())
+                    if r: ax.text(labelX, -cnt * 1.5, 'Ser2 Comms Detected', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ax.plot(time[ind], -cnt * 1.5 + ((status[ind] & 0x00000080) >> 7))
-                    if r: ax.text(labelX, -cnt * 1.5, 'No USB Comms', transform=ax.get_yaxis_transform())
+                    if r: ax.text(labelX, -cnt * 1.5, 'USB Comms Detected', transform=ax.get_yaxis_transform())
                     cnt += 1
 
                     ### General Faults

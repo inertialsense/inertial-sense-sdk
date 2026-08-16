@@ -26,10 +26,24 @@
 //    };
 
 std::mutex ISDFUFirmwareUpdater::dfuMutex;
+bool ISDFUFirmwareUpdater::libUsbAvailable = false;
 
 void ISDFUFirmwareUpdater::initLibUSB() {
-    libusb_init(NULL);
-    log_info(IS_LOG_FWUPDATE, "DFU: libusb initialized");
+    // BUGFIX (pending SN ticket): libusb_init()'s return value was previously discarded, so a
+    // failed init (e.g. no /dev/bus/usb -- no USB subsystem present, as in a container with no
+    // hardware passthrough, or a sandboxed/permission-restricted environment) left the default
+    // context uninitialized while this unconditionally logged "libusb initialized" success.
+    // getNumDevices() then called libusb_get_device_list(NULL, ...) on that broken context,
+    // segfaulting inside pthread_mutex_lock on the first DFU discovery poll. Mirrors the
+    // already-correct pattern in ISBootloaderThread.cpp:58 (m_use_dfu = libusb_init(NULL) ==
+    // LIBUSB_SUCCESS).
+    int result = libusb_init(NULL);
+    libUsbAvailable = (result == LIBUSB_SUCCESS);
+    if (libUsbAvailable) {
+        log_info(IS_LOG_FWUPDATE, "DFU: libusb initialized");
+    } else {
+        log_error(IS_LOG_FWUPDATE, "DFU: libusb_init() failed (%d) -- DFU device discovery disabled", result);
+    }
 }
 
 void ISDFUFirmwareUpdater::exitLibUSB() {
@@ -183,6 +197,9 @@ size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devic
  * Uses the same mutex as getAvailableDevices() for consistent access.
  */
 int ISDFUFirmwareUpdater::getNumDevices(uint16_t vid, uint16_t pid) {
+    if (!libUsbAvailable)      // initLibUSB() never succeeded -- the default context is unusable
+        return 0;
+
     int count = 0;
     // No mutex needed — libusb enumeration is thread-safe, and we only read descriptors here.
     libusb_device **device_list;

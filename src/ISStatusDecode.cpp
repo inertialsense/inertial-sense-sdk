@@ -26,6 +26,18 @@ uint32_t maskShift(uint32_t mask)
     return s;
 }
 
+/**
+ * @brief Index of the highest set bit of `mask` (0 if `mask` is 0). Portable bit-scan -- avoids
+ *        `__builtin_clz`, which doesn't exist on MSVC and broke the Windows CI build (SN-8491,
+ *        2026-08-13).
+ */
+uint32_t maskHighBit(uint32_t mask)
+{
+    uint32_t h = 0;
+    while (mask >>= 1) ++h;
+    return h;
+}
+
 /** @brief Build a single on/off-bit sub-field descriptor. */
 status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const char* legacy)
 {
@@ -480,6 +492,29 @@ status_field_decode_t buildGnssStatusDecode()
     return d;
 }
 
+/**
+ * @brief GNSS pos/vel `status2` decode table (eGnssStatus2): jam/spoof interference flags on
+ *        `gnss_pos_t.status2` (DID_GNSS1_POS / DID_GNSS2_POS). "status2" is unambiguous on the
+ *        wire, so it is registered and looked up directly under that key (see GetStatusDecode).
+ */
+status_field_decode_t buildGnssStatus2Decode()
+{
+    status_field_decode_t d;
+    d.fieldName = "status2";
+    d.errorMask = (uint32_t)GNSS_STATUS2_FLAGS_JAM_SPOOF_DETECTED_MASK;
+
+    d.subfields.push_back(bitField("GNSS Possible Jam", GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_JAM_DETECT, false,
+        "0x01 - Possible RF jamming detected on the GNSS antenna"));
+    d.subfields.push_back(bitField("GNSS Jam Detected", GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED, true,
+        "0x02 - RF jamming confirmed on the GNSS antenna"));
+    d.subfields.push_back(bitField("GNSS Possible Spoof", GNSS_STATUS2_FLAGS_GNSS_POSSIBLE_SPOOF_DETECT, false,
+        "0x04 - Possible GNSS spoofing detected"));
+    d.subfields.push_back(bitField("GNSS Spoof Detected", GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED, true,
+        "0x08 - GNSS spoofing confirmed"));
+
+    return d;
+}
+
 /** @brief GPX status decode table (eGpxStatus). Registered under key "gpxStatus" (field "status"). */
 status_field_decode_t buildGpxStatusDecode()
 {
@@ -495,10 +530,15 @@ status_field_decode_t buildGpxStatusDecode()
     // Parse-error count is rendered by the legacy code as a presence flag (any of the low nibble),
     // not a number — model it as a Bit on the count mask.
     d.subfields.push_back(gerr("COM parse errors", GPX_STATUS_COM_PARSE_ERR_COUNT_MASK, "0x0000000F - Communications parse error count"));
-    d.subfields.push_back(gerr("COM0 RX traffic lost", GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED, "0x00000010 - COM0 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerr("COM1 RX traffic lost", GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED, "0x00000020 - COM1 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerr("COM2 RX traffic lost", GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED, "0x00000040 - COM2 RX traffic not detected in last 30 seconds."));
-    d.subfields.push_back(gerr("USB RX traffic lost", GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED, "0x00000080 - USB RX traffic not detected in last 30 seconds."));
+    // SN-8402: these four are a status, not a fault (deliberately outside GPX_STATUS_GENERAL_FAULT_MASK,
+    // isError stays false). The bit itself was redefined (GPX_STATUS_COM*_RX_TRAFFIC_NOT_DETECTED ->
+    // GPX_STATUS_COM*_RX_TRAFFIC_DETECTED, same mask, inverted meaning) so the wire value now directly
+    // matches its positive name -- no display-side inversion needed. Firmware that sets this bit
+    // (communications.cpp) was updated to match.
+    d.subfields.push_back(gerr("COM0 RX traffic detected", GPX_STATUS_COM0_RX_TRAFFIC_DETECTED, "0x00000010 - COM0 RX traffic detected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM1 RX traffic detected", GPX_STATUS_COM1_RX_TRAFFIC_DETECTED, "0x00000020 - COM1 RX traffic detected in last 30 seconds."));
+    d.subfields.push_back(gerr("COM2 RX traffic detected", GPX_STATUS_COM2_RX_TRAFFIC_DETECTED, "0x00000040 - COM2 RX traffic detected in last 30 seconds."));
+    d.subfields.push_back(gerr("USB RX traffic detected", GPX_STATUS_USB_RX_TRAFFIC_DETECTED, "0x00000080 - USB RX traffic detected in last 30 seconds."));
     d.subfields.push_back(gerr("Firmware image confirmed", GPX_STATUS_UPDATE_CONFIRMED, "0x00000100 - Update confirmed."));
     d.subfields.push_back(gerr("RTK buffer overflow", GPX_STATUS_FAULT_RTK_QUEUE_LIMITED, "0x00010000 - RTK buffer overflow."));
     d.subfields.push_back(gerr("GNSS receiver time fault", GPX_STATUS_FAULT_GNSS_RCVR_TIME, "0x00100000 - GNSS receiver time fault"));
@@ -880,6 +920,590 @@ status_field_decode_t buildImuStatusDecode()
     return d;
 }
 
+// --- Flash-config fields (nvm_flash_cfg_t / gpx_flash_cfg_t, SN-8491) --------------------------
+// These are configuration bitfields/enums, not status/fault fields, so errorMask stays 0 for all
+// of them. None had a prior renderer, so (unlike the tables above) there is no legacy oracle to
+// reproduce byte-for-byte -- correctness is verified directly against the eGnssSatSigConst /
+// eDynamicModel / eSysConfigBits symbols in data_sets.h (see test_ISStatusDecode.cpp).
+
+/**
+ * @brief gnssSatSigConst decode table (eGnssSatSigConst). Shared verbatim by nvm_flash_cfg_t and
+ *        gpx_flash_cfg_t -- both fields are documented as using this same enum (see the
+ *        gpx_flash_cfg_t doc comment in data_sets.h), and the unused, GPX-only-in-name
+ *        eGpxGnssSatSigConst enum is dead code (never referenced by any field). Registered under
+ *        the unambiguous key "gnssSatSigConst"; each per-constellation value is a multi-bit mask
+ *        (e.g. GPS spans 2 bits) but is decoded as a single Bit-kind flag -- "any bit in this
+ *        constellation's mask set" means "this constellation is enabled", matching how the field
+ *        was already hand-documented (e.g. "0x0003=GPS").
+ */
+status_field_decode_t buildGnssSatSigConstDecode()
+{
+    status_field_decode_t d;
+    d.fieldName = "gnssSatSigConst";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("GPS", GNSS_SAT_SIG_CONST_GPS, false, "0x0003 - GPS"));
+    d.subfields.push_back(bitField("QZSS", GNSS_SAT_SIG_CONST_QZS, false, "0x000C - QZSS"));
+    d.subfields.push_back(bitField("Galileo", GNSS_SAT_SIG_CONST_GAL, false, "0x0030 - Galileo"));
+    d.subfields.push_back(bitField("BeiDou", GNSS_SAT_SIG_CONST_BDS, false, "0x00C0 - BeiDou"));
+    d.subfields.push_back(bitField("GLONASS", GNSS_SAT_SIG_CONST_GLO, false, "0x0300 - GLONASS"));
+    d.subfields.push_back(bitField("SBAS", GNSS_SAT_SIG_CONST_SBS, false, "0x1000 - SBAS"));
+    d.subfields.push_back(bitField("IRNSS / NavIC", GNSS_SAT_SIG_CONST_IRN, false, "0x2000 - IRNSS / NavIC"));
+    d.subfields.push_back(bitField("IMES", GNSS_SAT_SIG_CONST_IME, false, "0x4000 - IMES"));
+    return d;
+}
+
+/**
+ * @brief dynamicModel decode table (eDynamicModel). Shared verbatim by nvm_flash_cfg_t and
+ *        gpx_flash_cfg_t (same enum). A scalar enum: DYNAMIC_MODEL_* values are contiguous
+ *        0..DYNAMIC_MODEL_COUNT-1, so makeScalarEnum's index->name mapping applies directly.
+ */
+status_field_decode_t buildDynamicModelDecode()
+{
+    static const char* const models[] = {
+        "Portable", "Fixed position", "Stationary", "Pedestrian", "Ground vehicle",
+        "Marine", "Airborne <1g", "Airborne <2g", "Airborne <4g", "Wrist", "Indoor",
+    };
+    return makeScalarEnum("dynamicModel", models, (uint32_t)DYNAMIC_MODEL_COUNT);
+}
+
+/**
+ * @brief IMX sysCfgBits decode table (eSysConfigBits), used with nvm_flash_cfg_t.sysCfgBits. A
+ *        configuration bitfield, not a status field -- errorMask stays 0. Two multi-bit Enum
+ *        sub-fields (mag recal mode, brownout-reset threshold) use maskShift like the GNSS status
+ *        fix-type field above. UNUSED1 (bit 0) is a reserved/unused bit and is deliberately not
+ *        decoded (nothing to tell the user).
+ */
+status_field_decode_t buildImxSysCfgBitsDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sysCfgBits";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("Mag continuous cal enabled", SYS_CFG_BITS_ENABLE_MAG_CONTINUOUS_CAL, false,
+        "0x00000002 - Enable mag continuous calibration"));
+    d.subfields.push_back(bitField("Auto mag recal enabled", SYS_CFG_BITS_AUTO_MAG_RECAL, false,
+        "0x00000004 - Enable automatic mag recalibration"));
+    d.subfields.push_back(bitField("Mag declination estimation disabled", SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION, false,
+        "0x00000008 - Disable mag declination estimation"));
+    d.subfields.push_back(bitField("LEDs disabled", SYS_CFG_BITS_DISABLE_LEDS, false,
+        "0x00000010 - Disable LEDs"));
+
+    {
+        const uint32_t mask  = (uint32_t)SYS_CFG_BITS_MAG_RECAL_MODE_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "Mag recal mode";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { 0, "Mag recal mode: Disabled",   "", false },
+            { 1, "Mag recal mode: Multi-axis", "", false },
+            { 2, "Mag recal mode: Single-axis","", false },
+        };
+        s.defaultLegacyText = "Mag recal mode: unknown(%d)";
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("WMM declination enabled", SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION, false,
+        "0x00000800 - Use World Magnetic Model (WMM) for mag declination"));
+    d.subfields.push_back(bitField("Magnetometer fusion disabled", SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION, false,
+        "0x00001000 - Disable magnetometer fusion"));
+    d.subfields.push_back(bitField("Barometer fusion disabled", SYS_CFG_BITS_DISABLE_BAROMETER_FUSION, false,
+        "0x00002000 - Disable barometer fusion"));
+    d.subfields.push_back(bitField("GNSS1 fusion disabled", SYS_CFG_BITS_DISABLE_GNSS1_FUSION, false,
+        "0x00004000 - Disable GNSS 1 fusion"));
+    d.subfields.push_back(bitField("GNSS2 fusion disabled", SYS_CFG_BITS_DISABLE_GNSS2_FUSION, false,
+        "0x00008000 - Disable GNSS 2 fusion"));
+    d.subfields.push_back(bitField("Auto zero-velocity updates disabled", SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES, false,
+        "0x00010000 - Disable automatic Zero Velocity Updates (ZUPT)"));
+    d.subfields.push_back(bitField("Auto zero-angular-rate updates disabled", SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES, false,
+        "0x00020000 - Disable automatic Zero Angular Rate Updates (ZARU)"));
+    d.subfields.push_back(bitField("INS EKF disabled", SYS_CFG_BITS_DISABLE_INS_EKF, false,
+        "0x00040000 - Disable INS EKF updates"));
+    d.subfields.push_back(bitField("Auto BIT on startup disabled", SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP, false,
+        "0x00080000 - Prevent built-in test (BIT) from running automatically on startup"));
+    d.subfields.push_back(bitField("Wheel encoder fusion disabled", SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION, false,
+        "0x00100000 - Disable wheel encoder fusion"));
+    d.subfields.push_back(bitField("GNSS antenna offset estimation enabled", SYS_CFG_BITS_ENABLE_GNSS_ANTENNA_OFFSET_ESTIMATION, false,
+        "0x00200000 - Enable rover GNSS antenna offset estimation in RTK compassing mode"));
+
+    {
+        const uint32_t mask  = (uint32_t)SYS_CFG_BITS_BOR_THRESHOLD_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "Brownout reset threshold";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_0, "Brownout reset threshold: 1.65-1.75V (default)", "", false },
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_1, "Brownout reset threshold: 2.0-2.1V",              "", false },
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_2, "Brownout reset threshold: 2.25-2.35V",            "", false },
+            { (uint32_t)SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V",              "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("Reference IMU used in EKF", SYS_CFG_USE_REFERENCE_IMU_IN_EKF, false,
+        "0x01000000 - Use reference IMU in EKF instead of onboard IMU"));
+    d.subfields.push_back(bitField("EKF ref point stationary on strobe input", SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT, false,
+        "0x02000000 - Reference point stationary on strobe input"));
+
+    return d;
+}
+
+/**
+ * @brief rmc_t::options decode table (RMC_OPTIONS_*), used with both DID_RMC and DID_GPX_RMC
+ *        (one shared table/renderer, same as gnssSatSigConst/dynamicModel -- see PopulateMapRmc).
+ *        Registered under the internal key "rmcOptions"; nmea_msgs_t::options shares the same
+ *        RMC_OPTIONS_* semantics but is a different field/DID, out of this ticket's scope, so this
+ *        table is looked up only via a hardcoded key from renderRmcOptions, never through the
+ *        ambiguous "options" on-wire name.
+ *
+ *        Port selection (SER0/SER1/SER2/USB) is 4 independent Bit subfields covering the
+ *        meaningful low nibble of RMC_OPTIONS_PORT_MASK; the upper nibble (0x10-0x80) is
+ *        undocumented/unused and, like sysCfgBits' UNUSED1, is deliberately not decoded.
+ *        RMC_OPTIONS_PORT_CURRENT (0x00, no port bit set) intentionally renders nothing -- a port
+ *        selection of "current" is the default/unremarkable case, consistent with how the rest of
+ *        this table's Bit subfields render silence for "off".
+ *
+ *        NMEA_SPEED_FILTER is a 2-bit Enum with only 2 of its 4 possible values defined
+ *        (Enable=1, Disable=2); 0 ("not specified") and 3 (undefined) render nothing, unlike
+ *        sysCfgBits' mag-recal-mode Enum where 0 was itself a meaningful "Disabled" state.
+ */
+status_field_decode_t buildRmcOptionsDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "options";   // on-wire field name (registry key is "rmcOptions")
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("Port: Ser0", RMC_OPTIONS_PORT_SER0, false, "0x00000001 - Output on Serial 0"));
+    d.subfields.push_back(bitField("Port: Ser1", RMC_OPTIONS_PORT_SER1, false, "0x00000002 - Output on Serial 1"));
+    d.subfields.push_back(bitField("Port: Ser2", RMC_OPTIONS_PORT_SER2, false, "0x00000004 - Output on Serial 2"));
+    d.subfields.push_back(bitField("Port: USB",  RMC_OPTIONS_PORT_USB,  false, "0x00000008 - Output on USB"));
+    d.subfields.push_back(bitField("Preserve control", RMC_OPTIONS_PRESERVE_CTRL, false,
+        "0x00000100 - Preserve current message bits (OR new bits in, don't replace)"));
+    d.subfields.push_back(bitField("Persistent", RMC_OPTIONS_PERSISTENT, false,
+        "0x00000200 - Save current port RMC to flash; persists across reboot"));
+
+    {
+        const uint32_t mask  = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "NMEA speed filter";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE,  "NMEA speed filter: Enabled",  "", false },
+            { (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE, "NMEA speed filter: Disabled", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    return d;
+}
+
+/**
+ * @brief nvm_flash_cfg_t::ioConfig decode table (eIoConfig). IMX-only -- gpx_flash_cfg_t has no
+ *        equivalent field. The largest table in this file: 5 small multi-bit Enum pin-function
+ *        fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
+ *        GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local
+ *        helper to avoid duplicating the value list and risking the two copies drifting), and 6
+ *        independent Bit flags (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT,
+ *        IMU_1/2/3_DISABLE). Undefined/reserved values within a multi-bit field's range (e.g.
+ *        raw 0 in the G6G7 field, which has no named ..._DEFAULT-distinct-from-COM1 state) render
+ *        nothing for that sub-field, same convention as sysCfgBits/ioConfig2.
+ */
+status_field_decode_t buildIoConfigDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "ioConfig";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("Strobe trigger high", IO_CONFIG_STROBE_TRIGGER_HIGH, false,
+        "0x00000001 - Strobe (input and output) trigger on rising edge (falling edge if clear)"));
+
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G1G2_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G1/G2 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G1G2_STROBE_INPUT_G2) >> shift, "G1/G2: Strobe input on G2",         "", false },
+            { ((uint32_t)IO_CONFIG_G1G2_CAN_BUS)         >> shift, "G1/G2: CAN Bus",                     "", false },
+            { ((uint32_t)IO_CONFIG_G1G2_COM2)            >> shift, "G1/G2: General comms on Ser2",       "", false },
+            { ((uint32_t)IO_CONFIG_G1G2_I2C)             >> shift, "G1/G2: I2C",                         "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G9_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G9 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G9_STROBE_INPUT)      >> shift, "G9: Strobe input",              "", false },
+            { ((uint32_t)IO_CONFIG_G9_STROBE_OUTPUT_NAV) >> shift, "G9: Nav update strobe output",  "", false },
+            { ((uint32_t)IO_CONFIG_G9_SPI_DRDY)          >> shift, "G9: SPI DRDY",                   "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G6G7_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G6/G7 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G6G7_COM1) >> shift, "G6/G7: General comms on Ser1", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)IO_CONFIG_G5G8_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name  = "G5/G8 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { ((uint32_t)IO_CONFIG_G5G8_STROBE_INPUT_G5)    >> shift, "G5/G8: Strobe input on G5",         "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_STROBE_INPUT_G8)    >> shift, "G5/G8: Strobe input on G8",         "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_STROBE_INPUT_G5_G8) >> shift, "G5/G8: Strobe input on G5 and G8",  "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_G6G7_SPI_ENABLE)    >> shift, "G5/G8: Enable SPI on G6/G7",        "", false },
+            { ((uint32_t)IO_CONFIG_G5G8_QDEC_INPUT)         >> shift, "G5/G8: Quadrature wheel encoder input", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("G15 strobe input", IO_CONFIG_G15_STROBE_INPUT, false,
+        "0x00000800 - G15 (GNSS PPS) strobe input"));
+
+    {
+        const uint32_t mask  = (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_MASK << IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name  = "GNSS1 PPS source";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_DISABLED, "GNSS1 PPS source: Disabled", "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G15,      "GNSS1 PPS source: G15",      "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G2,       "GNSS1 PPS source: G2",       "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G5,       "GNSS1 PPS source: G5",       "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G12,      "GNSS1 PPS source: G12",      "", false },
+            { (uint32_t)IO_CFG_GNSS1_PPS_SOURCE_G9,       "GNSS1 PPS source: G9",       "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("GNSS1 skip init", IO_CONFIG_GNSS1_NO_INIT, false,
+        "0x00001000 - Skip GNSS1 initialization"));
+
+    // GNSS1/GNSS2 source and type share the same value sets -- build each list once.
+    auto gnssSourceValues = []() {
+        return std::vector<status_value_label_t>{
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_DISABLE, "Disabled", "", false },
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_SER0,    "Ser0",     "", false },
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_SER1,    "Ser1",     "", false },
+            { (uint32_t)IO_CONFIG_GNSS_SOURCE_SER2,    "Ser2",     "", false },
+        };
+    };
+    auto gnssTypeValues = []() {
+        return std::vector<status_value_label_t>{
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_NONE,       "None",       "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_UBLOX,      "UBLOX",      "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_NMEA,       "NMEA",       "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_GPX,        "GPX",        "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_SEPTENTRIO, "Septentrio", "", false },
+            { (uint32_t)IO_CONFIG_GNSS_TYPE_ISB,        "ISB (host pass-through)", "", false },
+        };
+    };
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS1_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS1 source"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS1_SOURCE_OFFSET;
+        s.values = gnssSourceValues();
+        for (auto& v : s.values) v.label = "GNSS1 source: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS2_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS2 source"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS2_SOURCE_OFFSET;
+        s.values = gnssSourceValues();
+        for (auto& v : s.values) v.label = "GNSS2 source: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS1_TYPE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS1 type"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS1_TYPE_OFFSET;
+        s.values = gnssTypeValues();
+        for (auto& v : s.values) v.label = "GNSS1 type: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS2_TYPE_OFFSET;
+        status_subfield_t s;
+        s.name = "GNSS2 type"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)IO_CONFIG_GNSS2_TYPE_OFFSET;
+        s.values = gnssTypeValues();
+        for (auto& v : s.values) v.label = "GNSS2 type: " + v.label;
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("GNSS2 skip init", IO_CONFIG_GNSS2_NO_INIT, false,
+        "0x10000000 - Skip GNSS2 initialization"));
+    d.subfields.push_back(bitField("IMU1 disabled", IO_CONFIG_IMU_1_DISABLE, false,
+        "0x20000000 - IMU 1 disable"));
+    d.subfields.push_back(bitField("IMU2 disabled", IO_CONFIG_IMU_2_DISABLE, false,
+        "0x40000000 - IMU 2 disable"));
+    d.subfields.push_back(bitField("IMU3 disabled", IO_CONFIG_IMU_3_DISABLE, false,
+        "0x80000000 - IMU 3 disable"));
+
+    return d;
+}
+
+/**
+ * @brief nvm_flash_cfg_t::ioConfig2 decode table (eIoConfig2). IMX-only -- gpx_flash_cfg_t has no
+ *        equivalent field. Four small multi-bit Enum sub-fields, each a mutually-exclusive pin
+ *        function choice (every pin always has SOME function selected, so -- like sysCfgBits'
+ *        mag-recal-mode/brownout-threshold -- these always render a line, never silence) plus one
+ *        independent Bit flag (USE_GNSS2_AS_SOURCE).
+ */
+status_field_decode_t buildIoConfig2Decode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "ioConfig2";
+    d.errorMask = 0;
+
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_G11_MASK << IO_CFG2_G11_OFFSET;
+        status_subfield_t s;
+        s.name  = "G11 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_G11_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_G11_SWDIO,        "G11: SWDIO (debug)",   "", false },
+            { (uint32_t)IO_CFG2_G11_STROBE_INPUT, "G11: Strobe input",    "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_G12_MASK << IO_CFG2_G12_OFFSET;
+        status_subfield_t s;
+        s.name  = "G12 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_G12_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_G12_SWO,          "G12: SWO (debug)",           "", false },
+            { (uint32_t)IO_CFG2_G12_XSCL,         "G12: XSCL (secondary I2C)",  "", false },
+            { (uint32_t)IO_CFG2_G12_STROBE_INPUT, "G12: Strobe input",          "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_G13_MASK << IO_CFG2_G13_OFFSET;
+        status_subfield_t s;
+        s.name  = "G13 function";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_G13_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_G13_DRDY,         "G13: DRDY (data-ready output)", "", false },
+            { (uint32_t)IO_CFG2_G13_XSDA,         "G13: XSDA (secondary I2C)",     "", false },
+            { (uint32_t)IO_CFG2_G13_STROBE_INPUT, "G13: Strobe input",             "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("Use GNSS2 as NMEA source", IO_CFG2_USE_GNSS2_AS_SOURCE, false,
+        "0x20 - Use GNSS2 (instead of GNSS1) as the NMEA data source"));
+
+    {
+        const uint32_t mask = (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_MASK << IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        status_subfield_t s;
+        s.name  = "GNSS2 PPS source";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_OFFSET;
+        s.values = {
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_DISABLED, "GNSS2 PPS source: Disabled", "", false },
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G8,       "GNSS2 PPS source: G8",       "", false },
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G11,      "GNSS2 PPS source: G11",      "", false },
+            { (uint32_t)IO_CFG2_GNSS2_PPS_SOURCE_G13,      "GNSS2 PPS source: G13",      "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    return d;
+}
+
+/**
+ * @brief nvm_flash_cfg_t::sensorConfig decode table (eSensorConfig). IMX-only -- gpx_flash_cfg_t
+ *        has no equivalent field. Five multi-bit Enum sub-fields (gyro/accel full-scale range,
+ *        gyro/accel DLPF bandwidth, sensor mounting rotation) plus 4 independent Bit flags
+ *        (disable magnetometer/barometer, IMU gyro/accel fault-detect enable). Every Enum value
+ *        this table lists has an explicit name in the source enum (including 0 -- e.g. 250 deg/s
+ *        is a real, meaningful gyro full-scale setting, not "unset"), so -- like ioConfig's GNSS
+ *        source/type fields -- all five always render a line, never silence. IMU_FAULT_DETECT_
+ *        OFFLINE/LARGE_BIAS/SENSOR_NOISE are explicitly disabled/reserved (defined as 0 in the
+ *        enum, "would be" comments only) and are not decoded.
+ */
+status_field_decode_t buildSensorConfigDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sensorConfig";
+    d.errorMask = 0;
+
+    {
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_GYR_FS_MASK << SENSOR_CFG_GYR_FS_OFFSET;
+        status_subfield_t s;
+        s.name = "Gyro full-scale range"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)SENSOR_CFG_GYR_FS_OFFSET;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_GYR_FS_250,  "Gyro FS: 250 deg/s",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_500,  "Gyro FS: 500 deg/s",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_1000, "Gyro FS: 1000 deg/s", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_2000, "Gyro FS: 2000 deg/s", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_4000, "Gyro FS: 4000 deg/s", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_FS_MAX,  "Gyro FS: sensor max", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        // NOTE: SENSOR_CFG_ACC_FS_* are already pre-shift index values (0,1,2,3,4,...7), unlike
+        // eIoConfig's constants -- do NOT right-shift them again, only `s.mask`/`s.shift` (used to
+        // extract the raw field) need the shift amount.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_ACC_FS_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name = "Accel full-scale range"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_ACC_FS_2G,  "Accel FS: 2g",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_4G,  "Accel FS: 4g",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_8G,  "Accel FS: 8g",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_16G, "Accel FS: 16g",       "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_32G, "Accel FS: 32g",       "", false },
+            { (uint32_t)SENSOR_CFG_ACC_FS_MAX, "Accel FS: sensor max","", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        // Same note as Accel FS above: SENSOR_CFG_GYR_DLPF_* are already pre-shift indices.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_GYR_DLPF_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name = "Gyro DLPF bandwidth"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_250HZ, "Gyro DLPF: 250 Hz", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_184HZ, "Gyro DLPF: 184 Hz", "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_92HZ,  "Gyro DLPF: 92 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_41HZ,  "Gyro DLPF: 41 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_20HZ,  "Gyro DLPF: 20 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_10HZ,  "Gyro DLPF: 10 Hz",  "", false },
+            { (uint32_t)SENSOR_CFG_GYR_DLPF_5HZ,   "Gyro DLPF: 5 Hz",   "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        // Same note as Accel FS above: SENSOR_CFG_ACC_DLPF_* are already pre-shift indices.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_ACC_DLPF_MASK;
+        const uint32_t shift = maskShift(mask);
+        status_subfield_t s;
+        s.name = "Accel DLPF bandwidth"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        s.values = {
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_218HZ,  "Accel DLPF: 218 Hz",       "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_218HZb, "Accel DLPF: 218 Hz (alt)", "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_99HZ,   "Accel DLPF: 99 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_45HZ,   "Accel DLPF: 45 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_21HZ,   "Accel DLPF: 21 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_10HZ,   "Accel DLPF: 10 Hz",        "", false },
+            { (uint32_t)SENSOR_CFG_ACC_DLPF_5HZ,    "Accel DLPF: 5 Hz",         "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+    {
+        const uint32_t mask  = (uint32_t)SENSOR_CFG_SENSOR_ROTATION_MASK;
+        const uint32_t shift = (uint32_t)SENSOR_CFG_SENSOR_ROTATION_OFFSET;
+        static const char* const rotations[] = {
+            "0,0,0", "0,0,90", "0,0,180", "0,0,-90", "90,0,0", "90,0,90", "90,0,180", "90,0,-90",
+            "180,0,0", "180,0,90", "180,0,180", "180,0,-90", "-90,0,0", "-90,0,90", "-90,0,180", "-90,0,-90",
+            "0,90,0", "0,90,90", "0,90,180", "0,90,-90", "0,-90,0", "0,-90,90", "0,-90,180", "0,-90,-90",
+        };
+        status_subfield_t s;
+        s.name = "Sensor mounting rotation"; s.kind = K::Enum; s.mask = mask; s.shift = shift;
+        for (uint32_t i = 0; i < (uint32_t)(sizeof(rotations) / sizeof(rotations[0])); ++i)
+            s.values.push_back({ i, std::string("Sensor rotation (roll,pitch,yaw deg): ") + rotations[i], "", false });
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("Magnetometer disabled", SENSOR_CFG_DISABLE_MAGNETOMETER, false,
+        "0x00400000 - Disable magnetometer sensor"));
+    d.subfields.push_back(bitField("Barometer disabled", SENSOR_CFG_DISABLE_BAROMETER, false,
+        "0x00800000 - Disable barometer sensor"));
+    d.subfields.push_back(bitField("IMU gyro fault detect enabled", SENSOR_CFG_IMU_FAULT_DETECT_GYR, false,
+        "0x01000000 - Enable multiple-IMU gyro fault detection"));
+    d.subfields.push_back(bitField("IMU accel fault detect enabled", SENSOR_CFG_IMU_FAULT_DETECT_ACC, false,
+        "0x02000000 - Enable multiple-IMU accelerometer fault detection"));
+
+    return d;
+}
+
+/**
+ * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits). GPX-only -- a much smaller
+ *        enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"), and NOT
+ *        the same enum despite the identical on-wire field name; registered under its own key
+ *        "gpxSysCfgBits" (see the GetStatusDecode DID-based guard added alongside the IMX table).
+ */
+status_field_decode_t buildGpxSysCfgBitsDecode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sysCfgBits";
+    d.errorMask = 0;
+
+    d.subfields.push_back(bitField("VCC_RF disabled", GPX_SYS_CFG_BITS_DISABLE_VCC_RF, false,
+        "0x00000001 - Disable (tri-state) VCC_RF output"));
+
+    {
+        const uint32_t mask  = (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK;
+        const uint32_t shift = (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET;
+        status_subfield_t s;
+        s.name  = "Brownout reset threshold";
+        s.kind  = K::Enum;
+        s.mask  = mask;
+        s.shift = shift;
+        s.values = {
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_0, "Brownout reset threshold: 1.65-1.75V (default)", "", false },
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_1, "Brownout reset threshold: 2.0-2.1V",              "", false },
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_2, "Brownout reset threshold: 2.25-2.35V",            "", false },
+            { (uint32_t)GPX_SYS_CFG_BITS_BOR_LEVEL_3, "Brownout reset threshold: 2.5-2.6V",              "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    return d;
+}
+
 /** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
 const std::map<std::string, status_field_decode_t>& registry()
 {
@@ -891,6 +1515,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("sysStatus",          buildSysStatusDecode());
         m.emplace("genFaultCode",       buildGenFaultCodeDecode());
         m.emplace("gnssStatus",         buildGnssStatusDecode());
+        m.emplace("status2",           buildGnssStatus2Decode());
         m.emplace("gpxStatus",          buildGpxStatusDecode());
         m.emplace("gpxHdwStatus",       buildGpxHdwStatusDecode());
         m.emplace("gnssInitState",      buildGnssInitStateDecode());
@@ -901,6 +1526,14 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("calBitStatus",       buildImxCalBitDecode());
         m.emplace("gpxBitResults",      buildGpxBitResultsDecode());
         m.emplace("gpxBitState",        buildGpxBitStateDecode());
+        m.emplace("gnssSatSigConst",    buildGnssSatSigConstDecode());
+        m.emplace("dynamicModel",       buildDynamicModelDecode());
+        m.emplace("sysCfgBits",         buildImxSysCfgBitsDecode());
+        m.emplace("rmcOptions",         buildRmcOptionsDecode());
+        m.emplace("ioConfig2",          buildIoConfig2Decode());
+        m.emplace("ioConfig",           buildIoConfigDecode());
+        m.emplace("sensorConfig",       buildSensorConfigDecode());
+        m.emplace("gpxSysCfgBits",      buildGpxSysCfgBitsDecode());
         return m;
     }();
     return r;
@@ -945,7 +1578,29 @@ std::string RenderStatusFromDecode(const status_field_decode_t& dec, uint32_t va
             {
                 if (vl.value == raw)
                 {
-                    buff << (vl.legacyText.empty() ? vl.label : vl.legacyText) << std::endl;
+                    if (vl.legacyText.empty())
+                    {
+                        // No legacy string to preserve (this Enum value was never rendered before
+                        // SN-8491). Auto-derive an annotation from sf.mask itself (never a
+                        // hand-typed literal that could drift): a single-bit mask renders as a
+                        // plain "0xHEX - " prefix, same as a Bit-kind line, since one set bit is
+                        // always unambiguous regardless of hex-nibble alignment. A multi-bit mask
+                        // instead renders "bits[hi:lo]=0xN - " -- these subfields are rarely
+                        // nibble-aligned (e.g. a 3-bit field at offset 19), so a shifted-hex value
+                        // straddling a nibble boundary can't be visually correlated back to the raw
+                        // field by a human reader, whereas an explicit bit range always can. Kyle,
+                        // 2026-08-13: confirmed bit-range annotation over forcing hex-prefix
+                        // consistency here, even though it means Bit-kind and multi-bit Enum-kind
+                        // lines now use two different annotation styles.
+                        const uint32_t lo = sf.shift;   // sf.shift is always mask's own lowest set bit, by construction
+                        const uint32_t hi = maskHighBit(sf.mask);
+                        if (hi == lo)
+                            buff << utils::string_format("0x%08X - %s", vl.value << sf.shift, vl.label.c_str()) << std::endl;
+                        else
+                            buff << utils::string_format("bits[%u:%u]=0x%X - %s", hi, lo, vl.value, vl.label.c_str()) << std::endl;
+                    }
+                    else
+                        buff << vl.legacyText << std::endl;
                     matched = true;
                     break;
                 }
@@ -1023,5 +1678,12 @@ const status_field_decode_t* GetStatusDecode(uint32_t did, const std::string& fi
         return GetStatusDecodeByField("imuStatus");
     if (fieldName == "status")
         return GetStatusDecodeByField("gnssStatus");   // GNSS pos/vel status (DIDs 13/14/6/30/31/54)
+    // "sysCfgBits" is shared by nvm_flash_cfg_t (eSysConfigBits) and gpx_flash_cfg_t
+    // (eGpxSysConfigBits) -- two DIFFERENT enums with the same on-wire field name. The IMX table
+    // is registered directly under the key "sysCfgBits"; route the GPX DID to its own table
+    // ("gpxSysCfgBits") rather than falling through to the key lookup below, which would silently
+    // hand back the wrong (IMX) table for a GPX DID.
+    if (fieldName == "sysCfgBits" && did == DID_GPX_FLASH_CFG)
+        return GetStatusDecodeByField("gpxSysCfgBits");
     return GetStatusDecodeByField(fieldName);
 }

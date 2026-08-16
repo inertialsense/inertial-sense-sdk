@@ -172,6 +172,17 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_MOTION_GYR              (eDataIDs)103   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_ACC              (eDataIDs)104   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
 #define DID_CAL_MOTION_MAG              (eDataIDs)105   /**< INTERNAL USE ONLY (sensor_mcal_group_t) */
+#define DID_EXT_AIDING_POS              (eDataIDs)106   /**< (ext_aiding_pos_t) External aiding position observation, input to the INS/EKF */
+#define DID_EXT_AIDING_VEL              (eDataIDs)107   /**< (ext_aiding_vel_t) External aiding velocity observation, input to the INS/EKF */
+// The following External aiding DIDs are under development.  Contact Inertial Sense for more information on their use and availability.
+#define DID_EXT_AIDING_SPEED            (eDataIDs)108   /**< (ext_aiding_speed_t) External aiding speed (scalar) observation, input to the INS/EKF */
+#define DID_EXT_AIDING_DIR_SPEED        (eDataIDs)109   /**< (ext_aiding_dir_speed_t) External aiding directional speed (e.g. airspeed) observation, input to the INS/EKF */
+#define DID_EXT_AIDING_HEADING          (eDataIDs)110   /**< (ext_aiding_heading_t) External aiding heading observation, input to the INS/EKF */
+#define DID_EXT_AIDING_ATTITUDE         (eDataIDs)111   /**< (ext_aiding_attitude_t) External aiding attitude observation, input to the INS/EKF */
+#define DID_EXT_IMU                     (eDataIDs)112   /**< (imu_t) External IMU (gyro/accel) input. Not currently fused by the INS/EKF; reserved for a future consistency-check or blended time-update path. */
+// RESERVED: a future consolidated external-aiding message (DID + sub-ID + SID-dependent payload,
+// covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
+// under SN-7740. The flat DIDs above are the initial subset; see SN-7740 before adding more.
 
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
@@ -565,7 +576,17 @@ typedef struct PACKED
 #define ENCODE_DEV_INFO_TO_UNIQUE_ID(devinfo)   (((uint64_t)(ENCODE_DEV_INFO_TO_HDW_ID(devinfo)) << 48) | (uint64_t)devinfo.serialNumber)
 #define DECODE_UNIQUE_ID_TO_HDW_ID(devId)       ((uint16_t)((devId >> 48) & 0xFFFF))
 #define DECODE_UNIQUE_ID_TO_SERIALNO(devId)     ((uint32_t)devId)
-#define DEV_INFO_MATCHES_HDW_ID(di,             hdwId)     ( (ENCODE_DEV_INFO_TO_HDW_ID(di) & hdwId) == ENCODE_DEV_INFO_TO_HDW_ID(di) )
+// Per-field wildcard-aware match: a field in hdwId that's all-1s within its own width (i.e.
+// encoded from major/minor -1, or a IS_HARDWARE_TYPE_MIXED type) matches any value in that field;
+// otherwise that field must match di's encoded value exactly. A flat bitwise-subset check across
+// the whole packed value (the previous implementation) is NOT equivalent to this: a concrete type
+// value can be a bit-subset of a different concrete type value (e.g. IS_HARDWARE_TYPE_UINS=1 and
+// IS_HARDWARE_TYPE_EVB=2 are both bit-subsets of IS_HARDWARE_TYPE_IMX=3), which wrongly matched.
+#define DEV_INFO_MATCHES_HDW_ID(di,             hdwId)     ( \
+    ( ((hdwId) & HDW_TYPE__MASK)  == HDW_TYPE__MASK  || ((ENCODE_DEV_INFO_TO_HDW_ID(di) ^ (hdwId)) & HDW_TYPE__MASK)  == 0 ) && \
+    ( ((hdwId) & HDW_MAJOR__MASK) == HDW_MAJOR__MASK || ((ENCODE_DEV_INFO_TO_HDW_ID(di) ^ (hdwId)) & HDW_MAJOR__MASK) == 0 ) && \
+    ( ((hdwId) & HDW_MINOR__MASK) == HDW_MINOR__MASK || ((ENCODE_DEV_INFO_TO_HDW_ID(di) ^ (hdwId)) & HDW_MINOR__MASK) == 0 ) \
+)
 
 #define IS_HDW_TYPE_PERIPHERAL  0x20    // non-peripherals are 0-31, peripherals are 32-63
 /**
@@ -1353,7 +1374,6 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val;    //!< Sensor value (units are source-dependent)
 } gen_1axis_sensor_t;
 
@@ -1361,7 +1381,6 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_3axis_sensor_t;
 
@@ -1369,9 +1388,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     float                   val1[3]; //!< First 3-axis sensor value {x,y,z} (units are source-dependent)
-
     float                   val2[3]; //!< Second 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_dual_3axis_sensor_t;
 
@@ -1379,7 +1396,6 @@ typedef struct PACKED
 typedef struct PACKED
 {
     double                  time;   //!< Time in seconds (meaning is source-dependent; typically time since boot up or GPS time of week)
-
     double                  val[3]; //!< 3-axis sensor value {x,y,z} (units are source-dependent)
 } gen_3axis_sensord_t;
 
@@ -1848,6 +1864,18 @@ typedef struct PACKED
 #define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 #define RMC_BITS_GPX_RTK_DBG            0x0010000000000000
 
+// External aiding inputs.  Relayed unmodified on receipt, so the output rate follows whatever the
+// source produces rather than a period multiple.
+#define RMC_BITS_EXT_AIDING_POS         0x0020000000000000
+#define RMC_BITS_EXT_AIDING_VEL         0x0040000000000000
+#define RMC_BITS_EXT_AIDING_SPEED       0x0080000000000000
+#define RMC_BITS_EXT_AIDING_DIR_SPEED   0x0100000000000000
+#define RMC_BITS_EXT_AIDING_HEADING     0x0200000000000000
+#define RMC_BITS_EXT_AIDING_ATTITUDE    0x0400000000000000
+// NOTE: DID_EXT_IMU has no RMC bit - out of free bits below RMC_BITS_EVENT (RMC_BITS_MASK
+// excludes the top nibble, so bits 60+ aren't usable here). It is writable/pollable but not
+// relayed for logging the way the other external aiding DIDs are. Free a bit here if that's needed.
+
 #define RMC_BITS_EVENT                  0x0800000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
@@ -1875,6 +1903,12 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE\
+                                            | RMC_BITS_EXT_AIDING_POS \
+                                            | RMC_BITS_EXT_AIDING_VEL \
+                                            | RMC_BITS_EXT_AIDING_SPEED \
+                                            | RMC_BITS_EXT_AIDING_DIR_SPEED \
+                                            | RMC_BITS_EXT_AIDING_HEADING \
+                                            | RMC_BITS_EXT_AIDING_ATTITUDE \
                                             | RMC_BITS_GPX_SYS_FAULT)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
@@ -2196,6 +2230,8 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_GNSS_BASE_RAW  = 25,  //!< DID_GNSS_BASE_RAW - raw observation data forwarded from the RTK base station
     GRMC_BIT_POS_DID_GPX_SYS_FAULT  = 26,  //!< DID_GPX_SYS_FAULT - GPX system fault/exception info
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
+    GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
+    GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -2227,6 +2263,8 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GNSS_BASE_RAW         (0x0000000000000001 << GRMC_BIT_POS_DID_GNSS_BASE_RAW)
 #define GRMC_BITS_GPX_SYS_FAULT         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_SYS_FAULT)
 #define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
+#define GRMC_BITS_EXT_AIDING_POS        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_POS)
+#define GRMC_BITS_EXT_AIDING_VEL        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_VEL)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2833,6 +2871,8 @@ enum eRTKConfigBits
 
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CLEAR_CUR_PORT       = (int)0x04000000,  //!< If this bit is set in conjunction with setting the current port, this clears the current port
 
+    RTK_CFG_BITS_MULTIPATH_MITIGATION                   = (int)0x08000000,  //!< Enable multipath detection and mitigation in RTK solutiion
+
     RTK_CFG_BITS_BASE_OUTPUT_RTCM3_CUR_PORT_MASK        = (RTK_CFG_BITS_BASE_OUTPUT_GNSS1_RTCM3_CUR_PORT | RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_CUR_PORT),  //!< Mask of RTK base and output RTCM3 data on the current serial ports
 
     RTK_CFG_BITS_BASE_GNSS1_UBLOX_MASK                  = (
@@ -3156,7 +3196,13 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_MASK                                                          = (int)0x0000003F,  //!< Mask for platform/carrier-board type field
     PLATFORM_CFG_TYPE_FROM_MANF_OTP                                                 = (int)0x00000080,  //!< Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                                                          = (int)0,   //!< No/unknown carrier board (IMX-5 default)
-    PLATFORM_CFG_TYPE_RUG3_G0                                                       = (int)8,   //!< PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_BRK_GPX                                                       = (int)1,   //!< IS-IMX-GPX-DEV, external GPX-1 module:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_2_X20                                                     = (int)2,   //!< IS-IMX-GPX-DEV-2, onboard u-blox X20:     PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_BRK_2_SG5                                                     = (int)3,   //!< IS-IMX-GPX-DEV-2, onboard Septentrio:     PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_RUG4_X20                                                      = (int)5,   //!< PCB RUG-4-X20:       PPS1 on G15 (pin 20)
+    PLATFORM_CFG_TYPE_RUG4_SG5                                                      = (int)6,   //!< PCB RUG-4-SG5:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_RUG4_GPX                                                      = (int)7,   //!< PCB RUG-4-GPX:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
+    PLATFORM_CFG_TYPE_RUG_G0                                                        = (int)8,   //!< PCB RUG-3.x.         PPS disabled
     PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,   //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G2                                                       = (int)10,  //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                                                       = (int)11,  //!< EVB-2 carrier board
@@ -3169,10 +3215,8 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_LAMBDA_G2                                                     = (int)18,  //!< Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA                                             = (int)19,  //!< Enable UBX input from Lambda
     PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA                                             = (int)20,  //!< Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_IMX_BRK_1                                                     = (int)21,  //!< IS-IMX-GPX-DEV-1:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_RUG4_G2                                                       = (int)22,  //!< PCB RUG-4.x:         PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_IG2_1                                                         = (int)23,  //!< IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
-    PLATFORM_CFG_TYPE_COUNT                                                         = (int)24,  //!< Number of defined platform/carrier-board types
+    PLATFORM_CFG_TYPE_IG2_1                                                         = (int)21,  //!< IG-2.1 and later:    PPS1 on G15 (pin 20), PPS2 on G13 (pin 14)
+    PLATFORM_CFG_TYPE_COUNT                                                         = (int)22,  //!< Number of defined platform/carrier-board types
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                                                        = (int)0x0000FF00,  //!< Mask for carrier-specific preset selector field
@@ -3191,12 +3235,27 @@ enum ePlatformConfig
     PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GNSS1__S0_GNSS2   = 9,  //!< RUG-3 preset: Ser2 TTL (pins 8,10), Ser1 GNSS1, Ser0 GNSS2
     PLATFORM_CFG_RUG3_PRESET__COUNT                                                 = 10,  //!< Number of defined RUG-3 presets
 
+    // RUG-4 - Presets
+    PLATFORM_CFG_RUG4_PRESET__0__PRESETS_DISABLED                                   = 0,  //!< RUG-4 preset: don't use presets. IOEXP_BITS can be set directly.
+    PLATFORM_CFG_RUG4_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS              = 1,  //!< RUG-4 preset: Ser0 RS232 (pins 7,9), CAN (pins 11,12), Ser1 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GNSS              = 2,  //!< RUG-4 preset: Ser0 TTL (pins 7,9), CAN (pins 11,12), Ser1 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GNSS              = 3,  //!< RUG-4 preset: Ser0 TTL (pins 7,9), Ser2 TTL (pins 8,10), Ser1 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GNSS              = 4,  //!< RUG-4 preset: Ser0 RS232 (pins 7,9), Ser1 RS232 (pins 8,10), Ser2 GNSS1
+    PLATFORM_CFG_RUG4_PRESET__5__S1_RS485_7_8_9_10_____________S2_GNSS              = 5,  //!< RUG-4 preset: Ser1 RS485 (pins 7,8,9,10), Ser2 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__6__SPI_7_8_9_10__________________S2_GNSS              = 6,  //!< RUG-4 preset: SPI (pins 7,8,9,10), Ser2 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__7__S1_RS232_8_10_________________S2_GNSS              = 7,  //!< RUG-4 preset: Ser1 RS232 (pins 8,10), Ser2 GNSS1+2 (RUG-4 default)
+    PLATFORM_CFG_RUG4_PRESET__8_________________CAN_11_12______S1_GNSS              = 8,  //!< RUG-4 preset: CAN (pins 11,12), Ser1 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__9__S2_TTL_8_10___________________S1_GNSS              = 9,  //!< RUG-4 preset: Ser2 TTL (pins 8,10), Ser1 GNSS1+2
+    PLATFORM_CFG_RUG4_PRESET__COUNT                                                 = 10,  //!< Number of defined RUG-4 presets
+
+    // RUGGED PRESETS
     PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT                                            = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GNSS1,  //!< Default preset for RUG-3-G0
     PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT                                            = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GNSS1__S0_GNSS2,  //!< Default preset for RUG-3-G2
+    PLATFORM_CFG_RUG4_PRESET_DEFAULT                                                = PLATFORM_CFG_RUG4_PRESET__7__S1_RS232_8_10_________________S2_GNSS,  //!< Default preset for RUG-4 (X20/SG5/GPX)
 
-    // RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
-    PLATFORM_CFG_RUG3_IOEXP_BIT_MASK                                                = (int)0x00FF0000,  //!< Mask for RUG-3 I/O-expander raw bits field (used only when presets are disabled)
-    PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET                                              = (int)16,           //!< Bit offset of PLATFORM_CFG_RUG3_IOEXP_BIT_MASK within platformConfig
+    // RUGGED - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUGx
+    PLATFORM_CFG_RUG_IOEXP_BIT_MASK                                                = (int)0x00FF0000,  //!< Mask for RUG-3 I/O-expander raw bits field (used only when presets are disabled)
+    PLATFORM_CFG_RUG_IOEXP_BIT_OFFSET                                              = (int)16,           //!< Bit offset of PLATFORM_CFG_RUG_IOEXP_BIT_MASK within platformConfig
 
     RUG3_IOEXP_BIT_OFFSET_n232_485                                                  = (int)0,  //!< RUG-3 I/O expander bit: n232/485 select
     RUG3_IOEXP_BIT_OFFSET_n232_TTL                                                  = (int)1,  //!< RUG-3 I/O expander bit: n232/TTL select
@@ -3310,6 +3369,99 @@ typedef struct PACKED
     wheel_config_t          wheelConfig;   //!< Wheel transform, track width, and wheel radius
 
 } ground_vehicle_t;
+
+/** @brief Frame of measurement for an external aiding observation, held in the low nibble of ext_aiding_pos_t.status / ext_aiding_vel_t.status (DID_EXT_AIDING_POS, DID_EXT_AIDING_VEL). Note 0 is not a valid frame. */
+enum eExtAidingFrame
+{
+    EXT_AIDING_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
+    EXT_AIDING_FRAME_ECEF    = 1,           //!< ECEF frame
+    EXT_AIDING_FRAME_NED     = 2,           //!< NED frame
+    EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
+};
+
+/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is expected in ECEF; var is expected in NED. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED (see eExtAidingFrame)
+    double     pos[3];       //!< position {x,y,z} (m)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_pos_t;
+
+/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is expected in ECEF; var is expected in NED. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
+    float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      var[3];       //!< observation variance, per axis, in NED (m^2/s^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_vel_t;
+
+/** @brief Type of scalar speed carried by ext_aiding_speed_t.status (DID_EXT_AIDING_SPEED), held in the low nibble. Note 0 is not a valid type. */
+enum eExtAidingSpeedType
+{
+    EXT_AIDING_SPEED_TYPE_MASK          = 0x0000000F,  //!< Mask for the speed type
+    EXT_AIDING_SPEED_TYPE_3D            = 1,           //!< speed is the full 3D velocity magnitude, |v|
+    EXT_AIDING_SPEED_TYPE_HORIZONTAL    = 2            //!< speed is the horizontal (ground) velocity magnitude only, |v_NE|
+};
+
+/** @brief (DID_EXT_AIDING_SPEED) External aiding scalar speed observation (e.g. a wheel-speed sensor or GNSS-derived ground speed with no direction), supplied by a host or external sensor as an input to the INS/EKF. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType)
+    float      speed;        //!< speed (m/s)
+    float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+} ext_aiding_speed_t;
+
+/** @brief (DID_EXT_AIDING_DIR_SPEED) External aiding directional speed observation (e.g. airspeed from a pitot tube), supplied by a host or external sensor as an input to the INS/EKF. `direction` is a unit vector in the IMU/body frame (e.g. [1,0,0] for a sensor measuring speed along the body X axis); `speed` is the velocity component along that direction at the point of measurement. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< reserved, set to 0
+    float      speed;        //!< speed along `direction` (m/s)
+    float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
+    float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
+    float      direction[3]; //!< unit vector, in IMU/body frame, along which `speed` is measured (e.g. [1,0,0] for forward-pointing airspeed)
+} ext_aiding_dir_speed_t;
+
+/** @brief Type of heading carried by ext_aiding_heading_t.status (DID_EXT_AIDING_HEADING), held in the low nibble. Note 0 is not a valid type. */
+enum eExtAidingHeadingType
+{
+    EXT_AIDING_HEADING_TYPE_MASK        = 0x0000000F,  //!< Mask for the heading type
+    EXT_AIDING_HEADING_TYPE_TRUE        = 1,           //!< true heading (body X axis bearing relative to true north)
+    EXT_AIDING_HEADING_TYPE_MAGNETIC    = 2,           //!< magnetic heading (body X axis bearing relative to magnetic north); converted to true heading using the EKF's declination estimate
+    EXT_AIDING_HEADING_TYPE_COURSE      = 3            //!< course over ground (direction of travel, i.e. velocity bearing - not necessarily the same as body heading)
+};
+
+/** @brief (DID_EXT_AIDING_HEADING) External aiding heading observation, supplied by a host or external sensor as an input to the INS/EKF. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType)
+    float      heading;      //!< heading (rad), 0 = north, positive clockwise, range [-pi, pi]
+    float      var;          //!< observation variance (rad^2).  Must be non-zero or the observation is discarded.
+} ext_aiding_heading_t;
+
+/** @brief Representation of ext_aiding_attitude_t.att, carried in ext_aiding_attitude_t.status (DID_EXT_AIDING_ATTITUDE), held in the low nibble. Note 0 is not a valid type. */
+enum eExtAidingAttitudeType
+{
+    EXT_AIDING_ATTITUDE_TYPE_MASK       = 0x0000000F,  //!< Mask for the attitude representation
+    EXT_AIDING_ATTITUDE_TYPE_EULER      = 1,           //!< att = {roll, pitch, yaw} (rad); att[3] unused
+    EXT_AIDING_ATTITUDE_TYPE_QUATERNION = 2            //!< att = {w, x, y, z}
+};
+
+/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle roll/pitch/yaw rotation vector regardless of whether `att` is euler or quaternion. */
+typedef struct PACKED
+{
+    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
+    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType)
+    float      att[4];       //!< attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}
+    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), in the roll/pitch/yaw tangent space. Must have a non-zero diagonal or the observation is discarded.
+} ext_aiding_attitude_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
 enum eDynamicModel
@@ -4290,17 +4442,17 @@ typedef struct
 
 } gpx_flash_cfg_t;
 
-/** @brief (DID_GPX_STATUS) GPX status flags, reported in gpx_status_t.status. Packs a communications parse-error counter, per-port Rx-traffic-not-detected flags, an update-confirmed flag, and a general fault region (bits 16-31) covering RTK/GNSS/RTOS/DMA fault flags plus a fatal-fault sub-field (GPX_STATUS_FATAL_MASK) that reports the specific cause the last time a critical CPU reset occurred. GPX_STATUS_FATAL_RESET_LOW_POW..GPX_STATUS_FATAL_UNKNOWN are raw cause codes, not individual bit flags -- shift the code left by GPX_STATUS_FATAL_OFFSET and mask with GPX_STATUS_FATAL_MASK to read/write the sub-field. */
+/** @brief (DID_GPX_STATUS) GPX status flags, reported in gpx_status_t.status. Packs a communications parse-error counter, per-port Rx-traffic-detected flags, an update-confirmed flag, and a general fault region (bits 16-31) covering RTK/GNSS/RTOS/DMA fault flags plus a fatal-fault sub-field (GPX_STATUS_FATAL_MASK) that reports the specific cause the last time a critical CPU reset occurred. GPX_STATUS_FATAL_RESET_LOW_POW..GPX_STATUS_FATAL_UNKNOWN are raw cause codes, not individual bit flags -- shift the code left by GPX_STATUS_FATAL_OFFSET and mask with GPX_STATUS_FATAL_MASK to read/write the sub-field. */
 enum eGpxStatus
 {
     GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,  //!< Mask for the communications parse error count field
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,                //!< Bit offset of GPX_STATUS_COM_PARSE_ERR_COUNT_MASK within status
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)  //!< Extract the communications parse error count from a status value
 
-    GPX_STATUS_COM0_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000010,  //!< Rx communications not detected on serial port 0 in the last 30 seconds
-    GPX_STATUS_COM1_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000020,  //!< Rx communications not detected on serial port 1 in the last 30 seconds
-    GPX_STATUS_COM2_RX_TRAFFIC_NOT_DETECTED     = (int)0x00000040,  //!< Rx communications not detected on serial port 2 in the last 30 seconds
-    GPX_STATUS_USB_RX_TRAFFIC_NOT_DETECTED      = (int)0x00000080,  //!< Rx communications not detected on USB in the last 30 seconds
+    GPX_STATUS_COM0_RX_TRAFFIC_DETECTED         = (int)0x00000010,  //!< Rx communications detected on serial port 0 in the last 30 seconds
+    GPX_STATUS_COM1_RX_TRAFFIC_DETECTED         = (int)0x00000020,  //!< Rx communications detected on serial port 1 in the last 30 seconds
+    GPX_STATUS_COM2_RX_TRAFFIC_DETECTED         = (int)0x00000040,  //!< Rx communications detected on serial port 2 in the last 30 seconds
+    GPX_STATUS_USB_RX_TRAFFIC_DETECTED          = (int)0x00000080,  //!< Rx communications detected on USB in the last 30 seconds
 
     GPX_STATUS_UPDATE_CONFIRMED                 = (int)0x00000100,  //!< Update confirmed
 
@@ -5198,6 +5350,13 @@ typedef union PACKED
     barometer_t                     baro;           //!< DID_BAROMETER
     wheel_encoder_t                 wheelEncoder;   //!< DID_WHEEL_ENCODER
     ground_vehicle_t                groundVehicle;  //!< DID_GROUND_VEHICLE
+    ext_aiding_pos_t                extAidingPos;   //!< DID_EXT_AIDING_POS
+    ext_aiding_vel_t                extAidingVel;   //!< DID_EXT_AIDING_VEL
+    ext_aiding_speed_t              extAidingSpeed;   //!< DID_EXT_AIDING_SPEED
+    ext_aiding_dir_speed_t          extAidingDirSpeed; //!< DID_EXT_AIDING_DIR_SPEED
+    ext_aiding_heading_t            extAidingHeading;  //!< DID_EXT_AIDING_HEADING
+    ext_aiding_attitude_t           extAidingAttitude; //!< DID_EXT_AIDING_ATTITUDE
+    imu_t                           extAidingImu;      //!< DID_EXT_IMU
     pos_measurement_t               posMeasurement; //!< DID_POSITION_MEASUREMENT
     pimu_t                          pImu;           //!< DID_PIMU / DID_REFERENCE_PIMU
     gnss_pos_t                      gnssPos;        //!< DID_GNSS1_POS / DID_GNSS2_POS / DID_GNSS1_RTK_POS / DID_GNSS1_RCVR_POS
