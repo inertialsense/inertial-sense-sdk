@@ -87,7 +87,30 @@ public:
         ISBootloader::cISBootloaderBase* ctx;         //!< the bootloader session created for this device, once identified (NULL until then)
         is_operation_result opResult;                 //!< result of the worker's most recent operation
         bool done;                                    //!< true once the worker thread has finished and can be joined
-        bool reuse_port;                              //!< true if the port should be reopened and reused in the next phase rather than treated as new
+        /**
+         * Answers exactly one question, asked by the `done && !allow_new_worker` gate in the discovery
+         * loops: an entry already exists for this port and its worker has finished -- may another
+         * worker still be started for it?
+         *
+         * Its SCOPE depends on something outside this struct, which is the trap. A phase whose join
+         * loop clears m_port_threads (app, ISB-version) cannot see the previous phase's entry, so the
+         * flag only governs re-spawning within that phase. The ISB-mode phase does NOT clear the map,
+         * so its entry survives into the update phase and this flag governs whether the update phase
+         * starts any worker at all. Setting it false there produces
+         * "No devices were updated (succeeded 0, failed 0)" -- measured.
+         *
+         * It was previously named `reuse_port` and documented as "the port should be reopened and
+         * reused in the next phase rather than treated as new". That reads as a port-ownership
+         * statement -- it has no bearing on openIfNeeded() or on who closes the port -- so workers set
+         * it for that meaning while the gate read it as "spawn another worker". The ISB-version phase's
+         * unconditional `true` consequently re-probed one device 17-23 times per run. Name it after the
+         * question the gate asks, not after a lifecycle notion nothing implements.
+         *
+         * Set true when another worker should follow: a transient failure such as a port that could not
+         * be opened, a device mid-reset, or a later phase that still has work to do for this port. A
+         * definite "no" (IS_OP_INCOMPATIBLE) is as final as a success.
+         */
+        bool allow_new_worker;
         bool force_isb;                                //!< true if an ISB bootloader update should be forced even if the version already appears compatible
 
         /**
@@ -98,7 +121,7 @@ public:
          * @param force_isb_update true to force an ISB bootloader update regardless of version
          */
         explicit thread_port_t(port_handle_t existingPort, bool force_isb_update = false)
-            : thread(nullptr), ctx(nullptr), opResult(IS_OP_OK), done(false), reuse_port(false),
+            : thread(nullptr), ctx(nullptr), opResult(IS_OP_OK), done(false), allow_new_worker(false),
               force_isb(force_isb_update), m_port(existingPort), m_ownsPort(false) { }
 
         /**
@@ -107,7 +130,7 @@ public:
          * @param force_isb_update true to force an ISB bootloader update regardless of version
          */
         explicit thread_port_t(const std::string& port_name, bool force_isb_update = false)
-            : thread(nullptr), ctx(nullptr), opResult(IS_OP_OK), done(false), reuse_port(false),
+            : thread(nullptr), ctx(nullptr), opResult(IS_OP_OK), done(false), allow_new_worker(false),
               force_isb(force_isb_update), m_ownsPort(true)
         {
             m_port = (port_handle_t)&m_ownedSerialPort;
@@ -287,6 +310,18 @@ private:
     /** Ports bound from URL targets by start_threads_for_url_targets(), keyed by target string.
      *  Workers borrow these, so ownership stays here and release_bound_ports() frees them. */
     static std::map<std::string, port_handle_t> m_boundPorts;
+
+    /**
+     * URL-target phases already attempted this sequence, keyed by "<target>|<worker function pointer>".
+     *
+     * Enforces exactly ONE worker per target per phase, i.e. no retry within a phase. The discovery loops
+     * re-run every ~100ms, so without this a failed worker is re-created continuously; each live worker
+     * also keeps m_port_devicesActive non-zero, which resets the loop's own no-device bail-out timer and
+     * prevents the sequence from ever finishing. Keying on the worker function means app-mode,
+     * isb-version, isb-mode and update each still get their one attempt and the sequence progresses.
+     * Cleared by release_bound_ports() at the start of a sequence.
+     */
+    static std::set<std::string> m_urlPhaseStarted;
 
     static bool m_continue_update;
 

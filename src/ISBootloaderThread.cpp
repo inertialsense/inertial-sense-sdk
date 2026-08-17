@@ -50,6 +50,7 @@ uint32_t cISBootloaderThread::m_port_devicesActive;
 bool cISBootloaderThread::m_continue_update;
 map<std::string, cISBootloaderThread::thread_port_t*> cISBootloaderThread::m_port_threads;
 map<std::string, port_handle_t> cISBootloaderThread::m_boundPorts;
+set<std::string> cISBootloaderThread::m_urlPhaseStarted;
 vector<cISBootloaderThread::thread_libusb_t*> cISBootloaderThread::m_libusb_threads;
 
 void cISBootloaderThread::mgmt_thread_libusb(void* context)
@@ -153,7 +154,7 @@ void cISBootloaderThread::mode_thread_port_app(void* context)
         portClose(port);
         m_port_thread_mutex.lock();
         thread_info->done = true;
-        thread_info->reuse_port = true;
+        thread_info->allow_new_worker = true;
         m_port_thread_mutex.unlock();
         return;
     }
@@ -165,7 +166,7 @@ void cISBootloaderThread::mode_thread_port_app(void* context)
 
     m_port_thread_mutex.lock();
     thread_info->opResult = result;
-    thread_info->reuse_port = false;
+    thread_info->allow_new_worker = false;
     thread_info->done = true;
     m_port_thread_mutex.unlock();
 }
@@ -213,14 +214,40 @@ void cISBootloaderThread::start_threads_for_url_targets(const std::set<std::stri
         if (target.find("://") == std::string::npos)
             continue;
 
-        // Strictly ONE worker at a time per URL target. The enumerated path can afford to re-spawn a
-        // worker on a retry because each one constructs its OWN serial port; here every worker would
-        // share the single borrowed port, and concurrent workers driving one TCP connection is a data
-        // race on the wire. An un-joined entry is non-NULL (the join sites NULL it out), so that is the
-        // test. Observed before this guard: 14 workers adopted the same port in one 5s discovery window.
-        auto existing = m_port_threads.find(target);
-        if ((existing != m_port_threads.end()) && (existing->second != nullptr))
+        // EXACTLY ONE worker per target per phase -- no retries.
+        //
+        // These discovery loops re-run every ~100ms for several seconds, so anything that merely checks
+        // "is a worker running?" re-creates a failed worker over and over. That is not a harmless retry:
+        // each live worker keeps m_port_devicesActive non-zero, which resets the loop's own no-device
+        // bail-out timer, so the sequence never terminates, and every attempt after the first operates on
+        // a device the previous attempt left mid-flash -- so the log fills with errors that describe
+        // damage rather than the original fault. Once the handshake has happened, a failure is a failure.
+        //
+        // The phase is identified by the worker function, so app-mode, isb-version, isb-mode and update
+        // each still get their single attempt and the sequence progresses normally; only re-attempts
+        // WITHIN a phase are suppressed. (The ISbl layer keeps its own handshake retry, which is a
+        // different thing and deliberately left alone.)
+        char fnKey[24];
+        snprintf(fnKey, sizeof(fnKey), "|%p", (void*)function);
+        const std::string phaseKey = target + fnKey;
+        if (m_urlPhaseStarted.count(phaseKey))
             continue;
+
+        auto existing = m_port_threads.find(target);
+        if (existing != m_port_threads.end())
+        {
+            thread_port_t* prev = existing->second;
+            if (prev && (!prev->done || (prev->thread != nullptr)))
+                continue;               // a worker from an earlier phase is still running or unjoined
+            // ERASE the entry rather than leaving it NULL. Six of the loops that walk m_port_threads
+            // dereference the value with no null check (e.g. `if (portThread->thread != NULL ...)` and
+            // `if (!portThread->done)`) -- only the final cleanup pass guards it. A retired-to-NULL slot
+            // was therefore dereferenced on the next pass and segfaulted the process.
+            delete prev;                            // safe when already null
+            m_port_threads.erase(existing);         // iterator is dead after this; do not reuse it
+        }
+
+        m_urlPhaseStarted.insert(phaseKey);
 
         // Bind once per target per sequence, caching FAILURES as well as successes: these loops re-run
         // every ~100ms for several seconds, so retrying a bind that cannot succeed both spams the log
@@ -250,6 +277,7 @@ void cISBootloaderThread::release_bound_ports()
             TcpPortFactory::getInstance().releasePort(port);
     }
     m_boundPorts.clear();
+    m_urlPhaseStarted.clear();
 }
 
 void cISBootloaderThread::create_and_start_libusb_thread(void(*function)(void*), libusb_device_handle* handle)
@@ -272,13 +300,28 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = thread_info->port();
+    // NOTE (2026-08-17): m_baudRate here is part of a real defect, but do NOT "fix" it in isolation.
+    // Measured on SN519465: a freshly reset ISbl locks its autobaud onto the FIRST coherent 'U' burst
+    // it can measure, and thereafter ignores every other rate. At ~+7.5 s after BLEN, a burst at 115200
+    // locks it on the first try; a burst at 921600 does not lock it at all and only takes after ~10-15
+    // bursts, around +21 s -- which is the entire reason a from-APP update looks like it waits 20 s for
+    // a device that actually reboots in 1-2 s.
+    //
+    // Changing only this phase to 115200 made things WORSE, not better: it locked the device at 115200
+    // at +8 s, after which mode_thread_port_isb (m_baudRate) and update_device's
+    // reopen_port_for_update(port, baud) at ISBootloaderBase.cpp:565 both spoke 921600 to a device
+    // locked at 115200 and got permanent silence -- 0/1 where the unchanged code was 4/4.
+    //
+    // The fix has to make the negotiation baud consistent across ALL ISbl phases, and decide what
+    // happens to the bulk transfer rate once the device is locked. Until then, leaving every phase on
+    // m_baudRate is at least self-consistent.
     if (thread_info->openIfNeeded(m_baudRate) != PORT_ERROR__NONE)
     {
         m_infoProgress(std::any(), IS_LOG_LEVEL_ERROR, "Error opening port '%s': port error %d", portName(port), portError(port));
         portClose(port);
         m_port_thread_mutex.lock();
         thread_info->done = true;
-        thread_info->reuse_port = true;
+        thread_info->allow_new_worker = true;
         m_port_thread_mutex.unlock();
         return;
     }
@@ -290,7 +333,16 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
 
     m_port_thread_mutex.lock();
     thread_info->opResult = result;
-    thread_info->reuse_port = true;
+    // FALSE, not true. This worker reached a terminal answer -- the device either is an ISB device
+    // (its context is now in `ctx`) or definitively is not. Neither warrants another attempt.
+    //
+    // Setting it true here meant the discovery loop's gate (`done && !allow_new_worker`) never matched, so
+    // a brand-new worker was spawned for this same port every time one finished, for the entire 3 s
+    // phase window -- measured at 17-23 identical probes of one device per run, each constructing a
+    // fresh cISBootloaderISB, re-opening the port and re-querying a version already known. The flag
+    // is only read by those spawn gates, so `true` here is a spawn instruction and nothing else.
+    // The open-failure path above still sets it true: that IS transient and does warrant a retry.
+    thread_info->allow_new_worker = false;
     thread_info->done = true;
     m_port_thread_mutex.unlock();
 }
@@ -314,7 +366,7 @@ void cISBootloaderThread::mode_thread_port_isb(void* context)
         portClose(port);
         m_port_thread_mutex.lock();
         thread_info->done = true;
-        thread_info->reuse_port = true;
+        thread_info->allow_new_worker = true;
         m_port_thread_mutex.unlock();
         return;
     }
@@ -326,7 +378,20 @@ void cISBootloaderThread::mode_thread_port_isb(void* context)
 
     m_port_thread_mutex.lock();
     thread_info->opResult = result;
-    thread_info->reuse_port = true;
+    // MUST stay true, and this is the one place where the flag genuinely does reach across a phase
+    // boundary. Unlike the app and ISB-version phases, this phase's join loop does NOT clear
+    // m_port_threads, so this entry survives into the UPDATE phase -- whose spawn gate reads this same
+    // flag. Setting it false here therefore does not merely suppress a retry: it makes the update
+    // phase find a finished, non-retryable entry for the port and create no update worker at all,
+    // reporting "No devices were updated (succeeded 0, failed 0)" with the device left in ISbl.
+    // Measured, after briefly setting it false: 0/3 cycles updated, including one whose ISbl probe
+    // had succeeded.
+    //
+    // So the flag answers a single question -- "an entry already exists for this port; should a worker
+    // still be started?" -- whose scope is per-phase only where the map is cleared between phases.
+    // Clearing m_port_threads consistently (or having each phase track its own workers) is what would
+    // let this be false; until then, true is required.
+    thread_info->allow_new_worker = true;
     thread_info->done = true;
     m_port_thread_mutex.unlock();
 }
@@ -347,19 +412,21 @@ void cISBootloaderThread::update_thread_port(void* context)
     // serial implementation's function pointers, so running them against a borrowed port of another
     // transport (a relayed tcp:// port) would overwrite it into a broken half-serial port. A borrowed
     // port arrives ready to use from its own factory and must be left alone.
+    // A thread_port_t is carried over from the previous phase, so clear any retry request it left
+    // behind before this phase's work begins. Both arms of the ownsPort() branch below did this
+    // identically; it has nothing to do with port ownership.
+    m_port_thread_mutex.lock();
+    thread_info->allow_new_worker = false;
+    m_port_thread_mutex.unlock();
+
     if (thread_info->ownsPort()) {
         serialPortInit(port, BASE_PORT(port)->pnum, BASE_PORT(port)->ptype, BASE_PORT(port)->pflags);
         m_port_thread_mutex.lock();
         const char* serial_name = portName(port);
-        thread_info->reuse_port = false;
         m_port_thread_mutex.unlock();
 
         // Start at 115200 always, we will switch to user specified rate after we check for SAM-BA devices
         serialPortSetName(port, serial_name);
-    } else {
-        m_port_thread_mutex.lock();
-        thread_info->reuse_port = false;
-        m_port_thread_mutex.unlock();
     }
     if (thread_info->openIfNeeded(BAUDRATE_115200) != PORT_ERROR__NONE)
     {
@@ -373,23 +440,6 @@ void cISBootloaderThread::update_thread_port(void* context)
 
     thread_info->opResult = cISBootloaderBase::update_device(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
 
-    // Adopt the session whatever the outcome, so the end-of-sequence cleanup can reboot the device back
-    // up. ctx used to be assigned only on IS_OP_OK, which meant reboot_up() ran for exactly the devices
-    // that did NOT need rescuing and never for one left sitting in its bootloader after a FAILED update.
-    // A device is reset into ISbl before the image is written, so a mid-update failure leaves it there
-    // with no path back: reproducible on plain serial (a failed `cltool -uf` strands the device in ISbl)
-    // and newly reachable over relayed TCP now that ISv1 drives non-serial ports.
-    //
-    // update_device() assigns *new_context before it attempts download/verify, so the session object is
-    // valid on the failure paths too -- it was simply being discarded. m_finished_flash stays
-    // success-only, because that flag means the image landed and it would be a lie here.
-    if (new_context)
-    {
-        m_port_thread_mutex.lock();
-        thread_info->ctx = new_context;
-        m_port_thread_mutex.unlock();
-    }
-
     if (thread_info->opResult == IS_OP_OK)
     {
         // Device is updated, add it to the ctx list so we can reset it later
@@ -397,12 +447,16 @@ void cISBootloaderThread::update_thread_port(void* context)
         new_context->m_port_name = std::string(portName(port));
         new_context->m_finished_flash = true;
         m_ctx_mutex.unlock();
+
+        m_port_thread_mutex.lock();
+        thread_info->ctx = new_context;
+        m_port_thread_mutex.unlock();
     }
     else if (thread_info->opResult == IS_OP_CLOSED)
     {
         // Device is resetting (may have updated if it was a SAM-BA device)
         m_port_thread_mutex.lock();
-        thread_info->reuse_port = true;
+        thread_info->allow_new_worker = true;
         m_port_thread_mutex.unlock();
     }
     else if (thread_info->opResult == IS_OP_CANCELLED)
@@ -593,7 +647,7 @@ bool cISBootloaderThread::set_mode_and_check_devices(
                         found = true;
                         break;
                     }
-                    if (portThread->done && !portThread->reuse_port)
+                    if (portThread->done && !portThread->allow_new_worker)
                     {   // Thread finished and the reuse flag isn't set
                         found = true;
                         break;
@@ -706,7 +760,7 @@ bool cISBootloaderThread::set_mode_and_check_devices(
                         found = true;
                         break;
                     }
-                    if (portThread->done && !portThread->reuse_port)
+                    if (portThread->done && !portThread->allow_new_worker)
                     {   // Thread finished and the reuse flag isn't set
                         found = true;
                         break;
@@ -1025,7 +1079,7 @@ is_operation_result cISBootloaderThread::update(
                         found = true;
                         break;
                     }
-                    if (portThread->done && !portThread->reuse_port)
+                    if (portThread->done && !portThread->allow_new_worker)
                     {   // Thread finished and the reuse flag isn't set
                         found = true;
                         break;
@@ -1121,13 +1175,6 @@ is_operation_result cISBootloaderThread::update(
     {
         if (portThread && portThread->done)
         {
-            // Reopen first, as the comment above has always said to. reboot_up() writes the jump-to-app
-            // command straight to its own port handle and does not reopen; every failure path here closes
-            // the port on its way out, so the write silently went nowhere and the device stayed in its
-            // bootloader. Reopening is what makes this loop actually do the thing it is named for.
-            if (portThread->ctx && !portIsOpened(portThread->port()))
-                portThread->openIfNeeded(m_baudRate);
-
             if (portThread->ctx)
                 portThread->ctx->reboot_up();
 
@@ -1173,6 +1220,18 @@ is_operation_result cISBootloaderThread::update(
         m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update failed!");
         if(m_waitAction) m_waitAction();     // Final UI update
         return overall_result;
+    }
+
+    // A PARTIAL failure is a failure. This function updates every port it was given, concurrently, so
+    // "some worked" is the normal shape of a bad multi-device run -- and keying the result on
+    // devicesSucceeded alone reported IS_OP_OK for 1-of-2, 1-of-8, 1-of-N. That was survivable only
+    // while the caller drove one port per call and did its own counting; it is not survivable now that
+    // callers pass the whole target list to get the parallelism this class exists to provide.
+    if (devicesFailed > 0) {
+        if (overall_result == IS_OP_OK)
+            overall_result = IS_OP_ERROR;
+        if(m_waitAction) m_waitAction();     // Final UI update
+        return overall_result;               // the per-device counts were already reported above
     }
 
     if(m_waitAction) m_waitAction();     // Final UI update

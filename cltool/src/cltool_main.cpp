@@ -762,13 +762,25 @@ static int cltool_updateFirmware()
 
     firmwareProgressContexts.clear();
 
-    // Drive the legacy (ISv1) updater directly, one explicitly-requested target at a time.
+    // Drive the legacy (ISv1) updater directly, passing EVERY explicitly-requested target in ONE call.
     //
     // This used to call InertialSense::BootloadFile(), which took the -c target and then re-expanded it
     // to every serial port it could enumerate (update_ports = all_ports - ports_user_ignore) -- so a
     // deliberate choice of one device silently became "every device attached". It also discarded the
-    // updater's result and always returned IS_OP_OK, so failures reported success. Identify the targets,
-    // then fire on each individually.
+    // updater's result and always returned IS_OP_OK, so failures reported success.
+    //
+    // Fixing those two things by looping one target per call was a mistake, and cost the whole point of
+    // cISBootloaderThread: it runs one worker per port per phase, so handing it the full target list
+    // updates N devices CONCURRENTLY. Serialising the calls made an N-device update take N times as long,
+    // and had a second-order cost -- the target list is captured once, so while target 1 was being
+    // flashed the names in the list aged, and a device that re-enumerated in the meantime was then looked
+    // for under a port that no longer existed (observed: SN62913 moved ttyACM2 -> ttyACM0 and was
+    // abandoned). One pass means one discovery window.
+    //
+    // Both original defects stay fixed regardless of batching: the targets are established HERE and the
+    // updater treats them as an inclusion set rather than re-expanding them, and update() now reports a
+    // partial failure instead of only a total one -- which it must, since batching removes the per-target
+    // accounting this loop used to do.
     std::vector<std::string> targets;
     if (g_commandLineOptions.comPort == "*")
         cISSerialPort::GetComPorts(targets);
@@ -791,27 +803,24 @@ static int cltool_updateFirmware()
 
     fwUpdate::pfnProgressCb verifyCb = (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0);
 
-    int updated = 0, failed = 0;
-    for (const std::string& target : targets)
-    {
-        std::vector<std::string> onePort = { target };
-        std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
+    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
+    int result = 0;
 
-        if (!cISBootloaderThread::set_mode_and_check_devices(onePort, g_commandLineOptions.baudRate, files,
-                bootloadUpdateCallback, verifyCb, cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter,
-                &confirm_device_list))
-        {   // Error, or no updatable device on this port
-            cout << "No updatable device found on " << target << endl;
-            failed++;
-            continue;
-        }
-
-        if (cISBootloaderThread::update(onePort, g_commandLineOptions.forceBootloaderUpdate,
+    if (!cISBootloaderThread::set_mode_and_check_devices(targets, g_commandLineOptions.baudRate, files,
+            bootloadUpdateCallback, verifyCb, cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter,
+            &confirm_device_list))
+    {   // Error, or no updatable device on any requested target
+        std::string targetList;
+        joinStrings(targets, ',', targetList);
+        cout << "No updatable device found on: " << targetList << endl;
+        result = -1;
+    }
+    else if (cISBootloaderThread::update(targets, g_commandLineOptions.forceBootloaderUpdate,
                 g_commandLineOptions.baudRate, files, bootloadUpdateCallback, verifyCb,
                 cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter) != IS_OP_OK)
-            failed++;
-        else
-            updated++;
+    {   // update() reports per-device status and counts itself, and now returns non-OK for a partial
+        // failure as well as a total one, so there is nothing to re-derive here.
+        result = -1;
     }
 
     printf("\n\r");
@@ -819,7 +828,7 @@ static int cltool_updateFirmware()
     fputs("\e[?25h", stdout);    // Turn cursor back on
 #endif
 
-    return ((updated > 0) && (failed == 0)) ? 0 : -1;
+    return result;
 }
 
 std::mutex print_mutex;
