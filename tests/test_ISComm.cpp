@@ -1192,6 +1192,179 @@ TEST(ISComm, IsCommGetDataTest)
 }
 #endif
 
+// SN-8471: GET_DATA_FLAGS_PRESERVE_STREAM is a new bit in p_data_get_t::flags (appended after
+// the legacy 4-field layout) telling a device that supports it not to stop an existing broadcast
+// when a period=0 GET_DATA is otherwise a plain one-shot poll. These tests confirm the new field
+// round-trips correctly over the wire.
+TEST(ISComm, GetDataPreserveStreamFlagRoundTrips)
+{
+    uint8_t txBuf[256];
+    p_data_get_t get = {};
+    get.id     = DID_GPX_STATUS;
+    get.size   = 0;
+    get.offset = 0;
+    get.period = 0;
+    get.flags  = GET_DATA_FLAGS_PRESERVE_STREAM;
+
+    is_comm_instance_t txComm{};
+    uint8_t txCommBuf[256];
+    is_comm_init(&txComm, txCommBuf, sizeof(txCommBuf), nullptr);
+    int n = is_comm_write_to_buf(txBuf, sizeof(txBuf), &txComm, PKT_TYPE_GET_DATA, 0, sizeof(get), 0, &get);
+    ASSERT_GT(n, 0);
+
+    is_comm_instance_t rxComm{};
+    uint8_t rxCommBuf[256];
+    is_comm_init(&rxComm, rxCommBuf, sizeof(rxCommBuf), nullptr);
+
+    bool parsed = false;
+    for (int i = 0; i < n; ++i)
+    {
+        protocol_type_t pt = is_comm_parse_byte(&rxComm, txBuf[i]);
+        if (pt == _PTYPE_INERTIAL_SENSE_CMD)
+        {
+            parsed = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(parsed);
+
+    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
+    ASSERT_GE(rxComm.rxPkt.data.size, sizeof(p_data_get_t));
+    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
+    EXPECT_EQ(request->id, (uint16_t)DID_GPX_STATUS);
+    EXPECT_EQ(request->period, 0);
+    EXPECT_EQ(request->flags & GET_DATA_FLAGS_PRESERVE_STREAM, GET_DATA_FLAGS_PRESERVE_STREAM);
+}
+
+TEST(ISComm, GetDataWithoutPreserveStreamFlagDoesNotSetIt)
+{
+    // Control case: a plain GET_DATA (today's default, e.g. from an older client or any existing
+    // caller that hasn't opted in) must not have the new flag set.
+    uint8_t txBuf[256];
+    p_data_get_t get = {};
+    get.id     = DID_SYS_PARAMS;
+    get.period = 0;
+    get.flags  = 0;
+
+    is_comm_instance_t txComm{};
+    uint8_t txCommBuf[256];
+    is_comm_init(&txComm, txCommBuf, sizeof(txCommBuf), nullptr);
+    int n = is_comm_write_to_buf(txBuf, sizeof(txBuf), &txComm, PKT_TYPE_GET_DATA, 0, sizeof(get), 0, &get);
+    ASSERT_GT(n, 0);
+
+    is_comm_instance_t rxComm{};
+    uint8_t rxCommBuf[256];
+    is_comm_init(&rxComm, rxCommBuf, sizeof(rxCommBuf), nullptr);
+
+    bool parsed = false;
+    for (int i = 0; i < n; ++i)
+    {
+        protocol_type_t pt = is_comm_parse_byte(&rxComm, txBuf[i]);
+        if (pt == _PTYPE_INERTIAL_SENSE_CMD)
+        {
+            parsed = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(parsed);
+
+    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
+    ASSERT_GE(rxComm.rxPkt.data.size, sizeof(p_data_get_t));
+    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
+    EXPECT_EQ(request->flags & GET_DATA_FLAGS_PRESERVE_STREAM, 0);
+}
+
+// SN-8471: is_comm_get_data()/is_comm_get_data_to_buf() build a p_data_get_t on the stack without
+// zero-initializing it (`p_data_get_t get;`, not `= {}`) -- confirm they explicitly set .flags=0
+// rather than sending whatever garbage happened to be on the stack in that field.
+TEST(ISComm, LegacyGetDataHelpersSendZeroFlags)
+{
+    uint8_t txBuf[256];
+    is_comm_instance_t txComm{};
+    uint8_t txCommBuf[256];
+    is_comm_init(&txComm, txCommBuf, sizeof(txCommBuf), nullptr);
+
+    int n = is_comm_get_data_to_buf(txBuf, sizeof(txBuf), &txComm, DID_DEV_INFO, 0, 0, 0);
+    ASSERT_GT(n, 0);
+
+    is_comm_instance_t rxComm{};
+    uint8_t rxCommBuf[256];
+    is_comm_init(&rxComm, rxCommBuf, sizeof(rxCommBuf), nullptr);
+
+    bool parsed = false;
+    for (int i = 0; i < n; ++i)
+    {
+        protocol_type_t pt = is_comm_parse_byte(&rxComm, txBuf[i]);
+        if (pt == _PTYPE_INERTIAL_SENSE_CMD)
+        {
+            parsed = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(parsed);
+    ASSERT_NE(rxComm.rxPkt.data.ptr, nullptr);
+    ASSERT_GE(rxComm.rxPkt.data.size, sizeof(p_data_get_t));
+    const p_data_get_t *request = (const p_data_get_t*)rxComm.rxPkt.data.ptr;
+    EXPECT_EQ(request->flags, 0);
+}
+
+// isbStream_shouldPreserve() -- the SN-8471 decision logic shared by GPX's isb_enable_stream()
+// and IMX's cmMsgHandlerRmc() that lets a period=0 poll leave an already-streaming DID's bit
+// alone instead of clearing it (see GET_DATA_FLAGS_PRESERVE_STREAM above).
+namespace {
+constexpr uint64_t kIsbStreamDidBit = 1ull << 5;
+constexpr uint64_t kIsbStreamOtherBit = 1ull << 9;
+constexpr uint32_t kIsbStreamNonZeroPeriod = 250;
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_PreservesWhenStreamingAndFlagSetAndPeriodZero)
+{
+    EXPECT_TRUE(isbStream_shouldPreserve(kIsbStreamDidBit | kIsbStreamOtherBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenFlagNotSet)
+{
+    // This is today's exact pre-SN-8471 behavior: default (flag unset) always clears.
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, false));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenBitNotCurrentlySet)
+{
+    // Nothing to preserve -- not streaming yet, so a plain period=0 poll behaves as a normal
+    // one-shot with no side effect either way.
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamOtherBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenPeriodIsNonZero)
+{
+    // A nonzero requested period is an explicit enable/refresh request, not a poll -- the flag
+    // is irrelevant here; the caller proceeds with its normal set-the-bit behavior.
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 100, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenBitZeroAndCurrentBitsZero)
+{
+    EXPECT_FALSE(isbStream_shouldPreserve(0, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_IsIndependentOfOtherBits)
+{
+    // Only the specific DID's own bit matters -- other unrelated bits being set/clear doesn't
+    // change the verdict for this DID.
+    EXPECT_TRUE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamOtherBit, kIsbStreamDidBit, kIsbStreamNonZeroPeriod, 0, true));
+}
+
+TEST(ISComm, IsbStreamShouldPreserve_DoesNotPreserveWhenCurrentPeriodMultipleIsZero)
+{
+    // IMX-specific scenario: cmMsgHandlerRmc() sets the bit immediately (via OR) but the actual
+    // clear happens one broadcast cycle later, in sendRmcMessage(), once it observes
+    // periodMultiple==0 -- so there's a narrow window where the bit reads as set even though a
+    // just-processed period=0 request already queued it for clearing. periodMultiple==0 here
+    // means "already queued for removal, nothing genuinely active to preserve."
+    EXPECT_FALSE(isbStream_shouldPreserve(kIsbStreamDidBit, kIsbStreamDidBit, 0, 0, true));
+}
+
 
 #if TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS
 uint8_t rxBuf[8192] = {0};
