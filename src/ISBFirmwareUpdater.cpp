@@ -18,6 +18,18 @@
 #define IMX5_ISBL_PAGES_EXPANDED    8           //!< v6j and later expose logical pages 0..7
 #define IMX5_WRP_RESERVED           0x8000u     //!< top 32K of the 8-page window is WRP calibration/config (not app-writable; see SN-8313)
 
+/**
+ * Longest a reboot wait may be held open by the keep-alive (SN-8514), measured from last_reboot.
+ *
+ * The keep-alive suppresses the host's 20 s watchdog, so it MUST be bounded: an unbounded keep-alive
+ * turns a genuine stall into a hang instead of a failure. Measured that the hard way -- an unbounded
+ * version held a wait-for-ISbl open for 466 s (448 heartbeats) on a device that never returned, where
+ * the session should have failed. Matches the 20 s give-up budget the UPDATE_DONE path already applies
+ * to the same wait, so the session's worst case is bounded at this budget plus the host's 20 s
+ * silence watchdog.
+ */
+#define ISB_REBOOT_KEEPALIVE_BUDGET_MS   20000u
+
 
 /**
  * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -122,6 +134,33 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         return false;
     nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
 
+    // SN-8514: keep-alive, hoisted above every device lookup and early return below.
+    //
+    // The host treats ANY received message as a keep-alive (FirmwareUpdate.cpp:708 -> resetTimeout) and
+    // its watchdog is 20s (FirmwareUpdate.h:445). The two per-state heartbeats further down both sit
+    // *after* a getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo)) lookup whose failure path exits
+    // early -- and a miss also nulls `device`, which then trips the `if (!device) return false` below on
+    // every later call. So the keep-alive went silent in exactly the window it exists to cover: while
+    // the device is mid-reboot and momentarily unfindable. Measured before this change: 0 emissions
+    // across a ~20s wait-for-ISbl and 1 across a ~22s wait-for-APP, against ~40 expected at the 500ms
+    // progress_interval. A keep-alive must never depend on the thing it is covering for.
+    //
+    // Only INITIALIZING/FINALIZING need this: those are the two states that wait on a rebooting device
+    // and produce no other traffic. Erase/write/verify already emit progress that resets the watchdog.
+    // It shares `nextProgressReport` with those per-state heartbeats so the two can never double-emit,
+    // and it reuses their exact wording so log-based tooling reads the same strings as before.
+    // The (now - last_reboot) bound is load-bearing, not defensive: the keep-alive suppresses the host's
+    // watchdog, so without a bound a device that never comes back is waited on forever instead of
+    // failing. Once the budget is spent we deliberately fall silent and let the watchdog do its job.
+    if ((progress_interval > 0) && (nextProgressReport < current_timeMs()) &&
+        ((session_status == fwUpdate::INITIALIZING) || (session_status == fwUpdate::FINALIZING)) &&
+        ((current_timeMs() - last_reboot) <= ISB_REBOOT_KEEPALIVE_BUDGET_MS)) {
+        nextProgressReport = current_timeMs() + progress_interval;
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into %s mode.",
+                                       ISDevice::getIdAsString(target_devInfo).c_str(),
+                                       (session_status == fwUpdate::INITIALIZING) ? "ISbl" : "APP");
+    }
+
     if (!device)    // nothing to do without a valid device
         return false;
 
@@ -148,9 +187,45 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // and open ports too quickly, before they are ready.  If attempt to connect() fails, we should throttle
         // back this and return
 
-        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+        // Hold the incoming (constructor-supplied) handle across the lookup: assigning the lookup result
+        // directly to the member would drop the last reference to the parent device on a miss, both
+        // discarding the fallback this error's own text implies was intended and leaving a null `device`
+        // for the next fwUpdate_step() to dereference.
+        device_handle_t parentDevice = device;
+        uint64_t targetId = ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo);
+        device = deviceManager.getDevice(targetId);
         if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
-            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", ISDevice::getIdAsString(target_devInfo).c_str());
+            device = parentDevice;
+            // Report BOTH sides of the failed comparison. getDevice() recomputes each device's unique id
+            // from its *live* devInfo, so a miss means either target_devInfo was never populated (a zeroed
+            // id) or the registry's copy of this device diverged from the app-mode snapshot taken in
+            // fwUpdate_startUpdate() -- notably ISDevice::validate() zeroes hdwId/devInfo for the duration
+            // of a query, so a device mid-validate is momentarily unfindable by id. Only emitted when the
+            // target id changes: fwUpdate_step() runs very frequently, and dumping the registry on every
+            // step would both flood the log and perturb the timing being diagnosed.
+            if (targetId != lastMissingTargetId) {
+                lastMissingTargetId = targetId;
+                std::string candidates;
+                for (auto candidate : deviceManager.getDevicesAsVector()) {
+                    if (!candidate) continue;
+                    char line[192];
+                    snprintf(line, sizeof(line), "\n    %s uid=0x%016llx hdwType=%u hdwVer=%u.%u sn=%u runState=%d",
+                             candidate->getIdAsString().c_str(),
+                             (unsigned long long)ENCODE_DEV_INFO_TO_UNIQUE_ID(candidate->devInfo),
+                             candidate->devInfo.hardwareType, candidate->devInfo.hardwareVer[0],
+                             candidate->devInfo.hardwareVer[1], candidate->devInfo.serialNumber,
+                             candidate->devInfo.hdwRunState);
+                    candidates += line;
+                }
+                if (candidates.empty())
+                    candidates = "\n    (DeviceManager is empty)";
+                log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater target device %s (uid=0x%016llx hdwType=%u hdwVer=%u.%u sn=%u runState=%d) cannot be located in DeviceManager, but is also not the parent device (%s). Registry holds:%s",
+                          ISDevice::getIdAsString(target_devInfo).c_str(), (unsigned long long)targetId,
+                          target_devInfo.hardwareType, target_devInfo.hardwareVer[0], target_devInfo.hardwareVer[1],
+                          target_devInfo.serialNumber, target_devInfo.hdwRunState,
+                          parentDevice ? parentDevice->getIdAsString().c_str() : "none",
+                          candidates.c_str());
+            }
             return false;
         }
 
@@ -270,9 +345,16 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     nextPortCheck = current_timeMs() + 1000;
                 }
 
-                // Re-fetch device (port may have changed after USB re-enumeration)
+                // Re-fetch device (port may have changed after USB re-enumeration). Hold the current
+                // handle across the lookup: assigning the result straight to the member drops the last
+                // reference on a miss, and every later fwUpdate_step() then returns at the
+                // `if (!device)` guard near the top -- which is what silenced the keep-alive and let the
+                // host's 20s watchdog fail an upload that had completed (SN-8514). Same defect, and same
+                // fix, as the lookup in the INITIALIZING block above.
+                device_handle_t priorDevice = device;
                 device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
                 if (!device) {
+                    device = priorDevice;
                     // Device not yet rediscovered — keep waiting (heartbeat above)
                     if ((current_timeMs() - last_reboot) > 20000) {
                         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
