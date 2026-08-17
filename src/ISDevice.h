@@ -414,8 +414,17 @@ public:
     int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendRaw(port, data, length) : -1; }
     /** @brief Sends a DID_* data set to the device (a "set data" request). @return bytes sent, or -1 if not connected or the device is in the bootloader. */
     int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendData(port, data, dataId, length, offset) : -1; }
-    /** @brief Requests the device broadcast (or fetch once, if period is 0) the given DID. No-op if not connected or the device is in the bootloader. */
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetData(port, dataId, length, offset, period); }
+    /**
+     * @brief Requests the device broadcast (or fetch once, if period is 0) the given DID. No-op if not connected or the device is in the bootloader.
+     * @param flags p_data_get_t request flags (see eGetDataFlags in ISComm.h). Most callers want
+     *              the default of 0; pass GET_DATA_FLAGS_PRESERVE_STREAM when polling with
+     *              period=0 to ask a device that supports it not to stop an existing broadcast
+     *              for this DID on this port (SN-8471) -- see GetDataPreserveStream().
+     */
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0, uint16_t flags=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataFlags(port, dataId, length, offset, period, flags); }
+
+    /** @brief Convenience for GetData(dataId, 0, 0, 0, GET_DATA_FLAGS_PRESERVE_STREAM) -- a one-shot poll that won't stop an existing broadcast for this DID on this port, on a device that supports the flag (SN-8471). */
+    void GetDataPreserveStream(eDataIDs dataId) { GetData(dataId, 0, 0, 0, GET_DATA_FLAGS_PRESERVE_STREAM); }
 
     /** @brief Requests the device broadcast a preset RMC (real-time message controller) bundle of messages. No-op if not connected or the device is in the bootloader. */
     void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
