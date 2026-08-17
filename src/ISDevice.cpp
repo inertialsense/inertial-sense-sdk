@@ -319,11 +319,19 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     do {
         int count = portReadTimeout(port, buf, 14, 50);
         if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55) {   // expected response
-            devInfo.firmwareVer[0] = buf[2];
-            devInfo.firmwareVer[1] = buf[3];
             // m_isb_props.rom_available = buf[4];
 
             if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
+                // firmwareVer is assigned HERE, inside the validity guard, not above it. Previously these
+                // two bytes were written as soon as the 0xAA55 prefix matched -- so a response that was
+                // long enough and correctly prefixed but had a malformed tail mutated devInfo and then
+                // returned false. A *failed* query dirtied the identity it was only meant to read,
+                // leaving bootloader version bytes stranded in a devInfo whose other fields are later
+                // filled in by an APP-mode path. That is the observed "fw6.106.0 / build 2000-00-00 with
+                // state=APP" mixed identity, which also blocks recovery: ISv2 trusts hdwRunState and
+                // fires an APP-mode reset at a device already sitting in ISbl.
+                devInfo.firmwareVer[0] = buf[2];
+                devInfo.firmwareVer[1] = buf[3];
                 switch ((ISBootloader::eProcessorType) buf[5]) {
                     case ISBootloader::IS_PROCESSOR_UNKNOWN:
                         devInfo.hardwareType = IS_HARDWARE_TYPE_UNKNOWN;
