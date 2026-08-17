@@ -252,13 +252,25 @@ class BuildTestManager:
             self.result = result
         return result
 
-    def build_cmake(self, project_name, project_dir):
+    def build_cmake(self, project_name, project_dir, cmake_args=None):
+        """
+        Configure and build a CMake project.
+
+        :param project_name: display name used in the build header/summary
+        :param project_dir: the project's source directory (build tree goes in <project_dir>/build)
+        :param cmake_args: optional list of extra -D flags forwarded to the configure step, for
+                           projects that need a non-default option (e.g. ci_hdw requires
+                           -DIS_SDK_BUILD_FROM_SOURCE=ON, otherwise it links a prebuilt
+                           libInertialSenseSDK.a as an IMPORTED target and SDK source edits are
+                           silently ignored)
+        :return: 0 on success, otherwise the failing subprocess's return code
+        """
         if not self.run_build:
             return
         project_dir = Path(project_dir)
 
         self.build_header(project_name)
-        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean, self.is_windows)
+        result = self.static_build_cmake(project_name, project_dir, self.build_type, self.run_clean, self.is_windows, cmake_args)
         self.build_footer(result)
         if result:
             self.result = result
@@ -343,8 +355,9 @@ class BuildTestManager:
 
 
     @staticmethod
-    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False):
+    def static_build_cmake(project_name, project_dir, build_type="Release", clean=False, is_windows=False, cmake_args=None):
         result = 0
+        cmake_args = list(cmake_args or [])
         suffix = f"-{build_type.lower()}" if is_windows else ""
         build_dir = project_dir / f"build{suffix}"
         if clean:
@@ -384,7 +397,8 @@ class BuildTestManager:
                         f'"{vcvars_path}" {arch} && '
                         f'cmake -G Ninja -B "{build_dir}" -S . '
                         f'-DCMAKE_BUILD_TYPE={build_type} '
-                        f'-DCMAKE_TOOLCHAIN_FILE="{vcpkg_toolchain}"'
+                        f'-DCMAKE_TOOLCHAIN_FILE="{vcpkg_toolchain}" '
+                        + " ".join(cmake_args)
                     )
                     subprocess.check_call(cmd_configure, shell=True, cwd=str(project_dir))
 
@@ -392,7 +406,7 @@ class BuildTestManager:
                     subprocess.check_call(cmd_build, shell=True, cwd=str(project_dir))
                 else:
                     subprocess.check_call(
-                        ["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"],
+                        ["cmake", "-B", "build", "-S", ".", f"-DCMAKE_BUILD_TYPE={build_type}"] + cmake_args,
                         cwd=str(project_dir)
                     )
                     subprocess.check_call(
