@@ -373,17 +373,30 @@ void cISBootloaderThread::update_thread_port(void* context)
 
     thread_info->opResult = cISBootloaderBase::update_device(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
 
+    // Adopt the session whatever the outcome, so the end-of-sequence cleanup can reboot the device back
+    // up. ctx used to be assigned only on IS_OP_OK, which meant reboot_up() ran for exactly the devices
+    // that did NOT need rescuing and never for one left sitting in its bootloader after a FAILED update.
+    // A device is reset into ISbl before the image is written, so a mid-update failure leaves it there
+    // with no path back: reproducible on plain serial (a failed `cltool -uf` strands the device in ISbl)
+    // and newly reachable over relayed TCP now that ISv1 drives non-serial ports.
+    //
+    // update_device() assigns *new_context before it attempts download/verify, so the session object is
+    // valid on the failure paths too -- it was simply being discarded. m_finished_flash stays
+    // success-only, because that flag means the image landed and it would be a lie here.
+    if (new_context)
+    {
+        m_port_thread_mutex.lock();
+        thread_info->ctx = new_context;
+        m_port_thread_mutex.unlock();
+    }
+
     if (thread_info->opResult == IS_OP_OK)
-    {   
+    {
         // Device is updated, add it to the ctx list so we can reset it later
         m_ctx_mutex.lock();
         new_context->m_port_name = std::string(portName(port));
         new_context->m_finished_flash = true;
         m_ctx_mutex.unlock();
-
-        m_port_thread_mutex.lock();
-        thread_info->ctx = new_context;
-        m_port_thread_mutex.unlock();
     }
     else if (thread_info->opResult == IS_OP_CLOSED)
     {
@@ -1108,6 +1121,13 @@ is_operation_result cISBootloaderThread::update(
     {
         if (portThread && portThread->done)
         {
+            // Reopen first, as the comment above has always said to. reboot_up() writes the jump-to-app
+            // command straight to its own port handle and does not reopen; every failure path here closes
+            // the port on its way out, so the write silently went nowhere and the device stayed in its
+            // bootloader. Reopening is what makes this loop actually do the thing it is named for.
+            if (portThread->ctx && !portIsOpened(portThread->port()))
+                portThread->openIfNeeded(m_baudRate);
+
             if (portThread->ctx)
                 portThread->ctx->reboot_up();
 
