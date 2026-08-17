@@ -96,13 +96,6 @@ public:
         int16_t discoveryTimeout = DeviceManager::DISCOVERY__DEFAULT_TIMEOUT;  //!< per-device discovery timeout (ms) used by this instance
     };
 
-    /** @brief Result of a single-port BootloadFile() attempt. */
-    typedef struct
-    {
-        std::string port;      //!< the port the bootload attempt was made on
-        std::string error;     //!< empty on success, otherwise a description of the failure
-    } bootload_result_t;
-
 
     /**
     * Constructor
@@ -326,34 +319,6 @@ public:
     void EnableDeviceValidation(bool enable) { m_enableDeviceValidation = enable; }
 
 #if !PLATFORM_IS_EMBEDDED
-    /**
-    * Bootload a file - if the bootloader fails, the device stays in bootloader mode and you must call BootloadFile again until it succeeds. If the bootloader gets stuck or has any issues, power cycle the device.
-    * Please ensure that all other connections to the com port are closed before calling this function.
-    *
-    * @param comPort the serial port the device is connected to
-    * @param serialNum the expected serial number of the device to bootload, used to confirm identity after reconnecting
-    * @param fileName path to the main application firmware file to upload
-    * @param blFileName path to the bootloader firmware file to upload (if the device's bootloader itself needs updating)
-    * @param forceBootloaderUpdate if true, updates the bootloader even if the device's bootloader version already appears current
-    * @param baudRate the baud rate to use while bootloading
-    * @param uploadProgress callback invoked with upload progress
-    * @param verifyProgress callback invoked with post-upload verification progress
-    * @param infoProgress callback invoked with general status/info messages
-    * @param waitAction callback invoked periodically while waiting, e.g. to allow UI pumping or cancellation checks
-    * @return IS_OP_OK on success, otherwise an is_operation_result error code
-    */
-    static is_operation_result BootloadFile(
-            const std::string& comPort,
-            const uint32_t serialNum,
-            const std::string& fileName,
-            const std::string& blFileName,
-            bool forceBootloaderUpdate,
-            int baudRate = IS_BAUDRATE_921600,
-            fwUpdate::pfnProgressCb uploadProgress = NULLPTR,
-            fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
-            fwUpdate::pfnStatusCb infoProgress = NULLPTR,
-            void (*waitAction)() = NULLPTR
-    );
 #endif
 
     /**

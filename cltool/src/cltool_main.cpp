@@ -761,19 +761,65 @@ static int cltool_updateFirmware()
     cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 
     firmwareProgressContexts.clear();
-    if (InertialSense::BootloadFile(
-            g_commandLineOptions.comPort,
-            0,
-            g_commandLineOptions.updateAppFirmwareFilename,
-            g_commandLineOptions.updateBootloaderFilename,
-            g_commandLineOptions.forceBootloaderUpdate,
-            g_commandLineOptions.baudRate,
-            bootloadUpdateCallback,
-            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0),
-            cltool_bootloadUpdateInfo,
-            cltool_firmwareUpdateWaiter
-  ) == IS_OP_OK) return 0;
-    return -1;
+
+    // Drive the legacy (ISv1) updater directly, one explicitly-requested target at a time.
+    //
+    // This used to call InertialSense::BootloadFile(), which took the -c target and then re-expanded it
+    // to every serial port it could enumerate (update_ports = all_ports - ports_user_ignore) -- so a
+    // deliberate choice of one device silently became "every device attached". It also discarded the
+    // updater's result and always returned IS_OP_OK, so failures reported success. Identify the targets,
+    // then fire on each individually.
+    std::vector<std::string> targets;
+    if (g_commandLineOptions.comPort == "*")
+        cISSerialPort::GetComPorts(targets);
+    else
+        splitString(g_commandLineOptions.comPort, ',', targets);
+
+    if (targets.empty())
+    {
+        cout << "No target ports to update." << endl;
+        return -1;
+    }
+
+    ISBootloader::firmwares_t files;
+    files.fw_uINS_3.path = g_commandLineOptions.updateAppFirmwareFilename;
+    files.bl_uINS_3.path = g_commandLineOptions.updateBootloaderFilename;
+    files.fw_IMX_5.path  = g_commandLineOptions.updateAppFirmwareFilename;
+    files.bl_IMX_5.path  = g_commandLineOptions.updateBootloaderFilename;
+    files.fw_EVB_2.path  = g_commandLineOptions.updateAppFirmwareFilename;
+    files.bl_EVB_2.path  = g_commandLineOptions.updateBootloaderFilename;
+
+    fwUpdate::pfnProgressCb verifyCb = (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0);
+
+    int updated = 0, failed = 0;
+    for (const std::string& target : targets)
+    {
+        std::vector<std::string> onePort = { target };
+        std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
+
+        if (!cISBootloaderThread::set_mode_and_check_devices(onePort, g_commandLineOptions.baudRate, files,
+                bootloadUpdateCallback, verifyCb, cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter,
+                &confirm_device_list))
+        {   // Error, or no updatable device on this port
+            cout << "No updatable device found on " << target << endl;
+            failed++;
+            continue;
+        }
+
+        if (cISBootloaderThread::update(onePort, g_commandLineOptions.forceBootloaderUpdate,
+                g_commandLineOptions.baudRate, files, bootloadUpdateCallback, verifyCb,
+                cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter) != IS_OP_OK)
+            failed++;
+        else
+            updated++;
+    }
+
+    printf("\n\r");
+#if !PLATFORM_IS_WINDOWS
+    fputs("\e[?25h", stdout);    // Turn cursor back on
+#endif
+
+    return ((updated > 0) && (failed == 0)) ? 0 : -1;
 }
 
 std::mutex print_mutex;

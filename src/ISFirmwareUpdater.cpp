@@ -24,7 +24,6 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& st
     if (device) {
         port = device->port;
         devInfo = &device->devInfo;
-        uint16_t targetHdwId = ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo);
 
         // At some point during the upgrade, we'll likely reset the device and we need to watch for the device to come back. But the EvalTool normally doesn't discovery
         // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
@@ -35,14 +34,28 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& st
         // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
         // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
         portListenerHdl = PortManager::getInstance().addPortListener(
-                [targetHdwId](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-                    if (event == PortManager::PORT_ADDED) {
-                        if ( DeviceManager::getInstance().discoverDevice(port, targetHdwId, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION) ) {
-                            log_info(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", DeviceManager::getInstance().getDevice(port)->getDescription().c_str())
-                        } else {
-                            log_info(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice.", portName.c_str())
-                            portClose(port);
-                        }
+                [](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
+                    if (event != PortManager::PORT_ADDED)
+                        return;
+
+                    // This is only the fast path. A device returning from a reboot may not answer yet, so a miss
+                    // here is expected rather than fatal -- step()'s once-per-second re-discovery retries every
+                    // port that still has no device associated. Two rules matter:
+                    //
+                    //  - Match IS_HARDWARE_ANY, not the device's pre-reboot hdwId: a device that just rebooted
+                    //    into the bootloader need not present the same hardware identity it did in APP mode.
+                    //  - Never close the port on a miss (neither explicitly nor via CLOSE_PORT_ON_FAILURE). We
+                    //    did not open it, and closing a port that just came back is actively harmful wherever a
+                    //    close is expensive to undo: on a relayed TCP port it surrenders the bridgeboard device
+                    //    slot, turning a sub-second retry into a full re-advertise/connect/validate cycle
+                    //    (measured ~30 s) -- far past the 20 s fwUpdate no-traffic timeout, so the session dies
+                    //    waiting for a device that was already back. On USB a close is nearly free, which is why
+                    //    this only ever showed up over the relay.
+                    if (DeviceManager::getInstance().discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__FORCE_REVALIDATION)) {
+                        device_handle_t found = DeviceManager::getInstance().getDevice(port);
+                        log_info(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", found ? found->getDescription().c_str() : portName.c_str())
+                    } else {
+                        log_info(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice yet; leaving it open for step() to retry.", portName.c_str())
                     }
                 }
         );
