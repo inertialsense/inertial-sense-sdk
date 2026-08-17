@@ -196,7 +196,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, port);
     
     // Tell device to stop broadcasting
-    serialPortWriteAscii(obj->m_port, "STPB", 4);
+    portWriteAscii(obj->m_port, "STPB", 4);
     device = obj->check_is_compatible();
     if (device)
     {
@@ -384,6 +384,31 @@ is_operation_result cISBootloaderBase::mode_device_isb
     return IS_OP_OK;
 }
 
+/**
+ * Close and reopen a port mid-update, whatever its transport.
+ *
+ * A SERIAL port must be reopened at the target baud -- that reopen IS how the ISbl baud switch gets
+ * applied, so the serial path still calls serialPortOpenRetry() with exactly the same arguments as
+ * before and its behaviour is unchanged. A borrowed NON-serial port (a relayed tcp:// port) has no
+ * baud and must not be reopened by name: serialPortOpenRetry() would try to open a serial device
+ * literally called "tcp://host:port" and fail with "Unable to open port at %d baud" -- which is why
+ * ISv1 over a relayed port could never get past this point, no matter what the thread layer did.
+ *
+ * @param port the port to cycle; serial or any other transport
+ * @param baud baud rate applied when reopening a serial port; ignored for other transports
+ * @return PORT_ERROR__NONE on success, otherwise the port layer's error
+ */
+static int reopen_port_for_update(port_handle_t port, int baud)
+{
+    portClose(port);
+    // The CLASS decides how to reopen: a serial port is reopened by name at a baud rate (that reopen is
+    // how the ISbl baud switch is applied), while any other transport is simply reopened. A raw UART and
+    // a COMM-parsed UART are different types but the same class, so compare portClass(), not portType().
+    if (portClass(port) == PORT_TYPE__UART)
+        return serialPortOpenRetry(port, portName(port), baud, 1);
+    return portOpen(port);
+}
+
 is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
@@ -468,7 +493,7 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
-    statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_MORE_INFO, "    | %s: Starting Serial Port device update.", portName(port));
+    statusfn(std::any(), eLogLevel::IS_LOG_LEVEL_MORE_INFO, "    | %s: Starting device firmware update.", portName(port));
 
     if (bl_EVB_2 || bl_uINS_3)
     {
@@ -537,10 +562,22 @@ is_operation_result cISBootloaderBase::update_device
         }
     }
 
-    portClose(port);
-    if (serialPortOpenRetry(port, portName(port), baud, 1) != PORT_ERROR__NONE)
+    int reopenResult = reopen_port_for_update(port, baud);
+    if (reopenResult != PORT_ERROR__NONE)
     {
-        statusfn(std::any(), IS_LOG_LEVEL_ERROR, "Unable to open port at %d baud", baud);
+        // Name the transport, the result and the port error. The old message quoted a baud rate
+        // unconditionally, so a failure reopening a non-serial port was indistinguishable from a serial
+        // baud problem -- it reported "Unable to open port at 921600 baud" for a tcp:// port, where baud
+        // is meaningless, and gave no way to tell which branch had even run.
+        if (portClass(port) == PORT_TYPE__UART)
+            statusfn(std::any(), IS_LOG_LEVEL_ERROR,
+                     "Unable to reopen serial port '%s' at %d baud (result %d, port error %d)",
+                     portName(port), baud, reopenResult, portError(port));
+        else
+            statusfn(std::any(), IS_LOG_LEVEL_ERROR,
+                     "Unable to reopen non-serial port '%s' (port type 0x%04X, result %d, port error %d); "
+                     "baud does not apply to this transport",
+                     portName(port), portType(port), reopenResult, portError(port));
         return IS_OP_ERROR;
     }
 
@@ -557,8 +594,7 @@ is_operation_result cISBootloaderBase::update_device
         // Strategy: sleep, retry ISB once more, then fall back to APP detection.
         SLEEP_MS(IS_REBOOT_DELAY_MS);
 
-        serialPortClose(port);
-        if (serialPortOpenRetry(port, portName(port), baud, 1) == PORT_ERROR__NONE)
+        if (reopen_port_for_update(port, baud) == PORT_ERROR__NONE)
         {
             obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
             device = obj->check_is_compatible();
@@ -571,11 +607,10 @@ is_operation_result cISBootloaderBase::update_device
 
             // ISB still not responding -- device likely booted into APP firmware.
             // Detect APP mode and, if found, reboot back to ISB before retrying.
-            serialPortClose(port);
-            if (serialPortOpenRetry(port, portName(port), baud, 1) == PORT_ERROR__NONE)
+            if (reopen_port_for_update(port, baud) == PORT_ERROR__NONE)
             {
                 cISBootloaderAPP* appObj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, port);
-                serialPortWriteAscii(appObj->m_port, "STPB", 4);
+                portWriteAscii(appObj->m_port, "STPB", 4);
                 uint32_t appDevice = appObj->check_is_compatible();
 
                 const char* enableCmd = NULL;
@@ -590,8 +625,7 @@ is_operation_result cISBootloaderBase::update_device
                     delete appObj;
                     SLEEP_MS(IS_REBOOT_DELAY_MS);
 
-                    serialPortClose(port);
-                    if (serialPortOpenRetry(port, portName(port), baud, 1) == PORT_ERROR__NONE)
+                    if (reopen_port_for_update(port, baud) == PORT_ERROR__NONE)
                     {
                         obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
                         device = obj->check_is_compatible();

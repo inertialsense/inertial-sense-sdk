@@ -45,8 +45,37 @@ std::mutex cISBootloaderISB::rst_serial_list_mutex;
 // #define BOOTLOADER_RESPONSE_DELAY   10       |
 // #define BOOTLOADER_REFRESH_DELAY    500     -+
 
-#define BOOTLOADER_HANDSHAKE_COUNT  10
+/** Number of 'U' characters in one handshake burst, and the gap between them.
+ *
+ * The protocol needs "at least 6" -- but that figure holds at a low baud, where a 'U' lasts ~87 us at
+ * 115200. At 921600 it lasts ~11 us, and the bootloader's autobaud measurement is correspondingly
+ * marginal: measured on SN519465, a burst of 10 locks it on the first try at 115200 and NOT AT ALL at
+ * 921600, where it took roughly 10-15 whole bursts (~20 s of a from-APP update) before it caught. As
+ * the bootloader autobauds exactly once and then ignores every other rate, that slow catch is not
+ * merely wasted time -- it is the window in which a mismatched probe can lock the device at the wrong
+ * rate and leave it unreachable.
+ *
+ * So the burst is long enough to give the autobaud plenty of samples at the top of the supported range
+ * rather than just enough at the bottom. It costs nothing in the common case: the probe asks for a
+ * version FIRST and only bursts when that goes unanswered, so an already-synchronized bootloader never
+ * sees a single 'U' (see query_isb_version()).
+ */
+#define BOOTLOADER_HANDSHAKE_COUNT  50
 #define BOOTLOADER_HANDSHAKE_DELAY  10
+
+/** Total wall-clock budget for obtaining a bootloader version response, including any re-syncs.
+ *  Measured against current_timeMs() rather than inferred from a retry count multiplied by the read
+ *  timeout: that inference is only correct while every read consumes its full timeout, and silently
+ *  collapses into "give up immediately" for any port that can return early. */
+#define ISB_VERSION_BUDGET_MS       3000
+/** Timeout for one version-response read. Deliberately generous: a relayed (TCP) port is materially
+ *  slower than a local UART, so a tighter value would manufacture re-syncs that are not needed. */
+#define ISB_VERSION_READ_TIMEOUT_MS 500
+/** Belt-and-braces cap on query attempts, independent of the time budget. A budget alone bounds only
+ *  elapsed time, not iteration count, so any step that unexpectedly stops blocking turns the probe into
+ *  a busy spin -- observed once at 112 million iterations inside a 3 s budget. Generously above the ~5
+ *  rounds the budget actually permits, so tripping this means something is wrong, and it says so. */
+#define ISB_VERSION_MAX_ATTEMPTS    64
 
 #define MAX_VERIFY_CHUNK_SIZE       1024
 #define BOOTLOADER_TIMEOUT_DEFAULT  3000
@@ -67,108 +96,227 @@ is_operation_result cISBootloaderISB::match_test(void* param)
     return IS_OP_ERROR;
 }
 
+/**
+ * Probes the bootloader for its version response, re-synchronizing it only when a probe goes
+ * unanswered.
+ *
+ * The version response is the ONLY reliable evidence that the bootloader is synchronized. The 'U'
+ * autobaud handshake is echoed once per sync, so a bootloader synchronized earlier -- by a previous
+ * probe, an earlier update phase, or an entirely earlier process -- answers commands while echoing
+ * nothing at all. That makes the handshake impossible to use as a precondition and misleading to
+ * report as a status: the old code handshaked first, reported "no handshake" whenever no echo came
+ * back, and then went on to succeed anyway on every device and every bootloader version.
+ *
+ * So the order is inverted. Ask for the version; if it answers we are synchronized and done. If it
+ * does not, THEN send the handshake burst as a recovery action -- ignoring its result, because an
+ * already-synchronized bootloader cannot acknowledge it -- and ask again. The old loop called
+ * handshake_sync() exactly once, before its retry loop, so a bootloader that was not synchronized at
+ * that one instant was never offered another chance; the only thing supplying further attempts was
+ * the discovery loop spawning whole new workers.
+ *
+ * @param budgetMs total wall-clock budget across all attempts
+ * @param attemptsOut if non-null, filled with the number of query attempts made
+ * @return true if a valid version response was decoded, in which case m_isb_major, m_isb_minor and
+ *         m_isb_props.rom_available are populated, plus m_isb_props.processor, m_isb_props.is_evb and
+ *         m_sn for version 6 and later
+ */
+bool cISBootloaderISB::query_isb_version(uint32_t budgetMs, isb_probe_detail_t* detail)
+{
+    uint8_t buf[14];
+    uint8_t lastBuf[14] = { 0 };
+    isb_probe_detail_t local;
+    isb_probe_detail_t& d = detail ? *detail : local;
+    int withData = 0, lastCount = 0, totalBytes = 0;
+    uint32_t startMs = current_timeMs();
+
+    for (;;)
+    {
+        d.attempts++;
+
+        if (!portIsOpened(m_port) && (portOpen(m_port) < PORT_ERROR__NONE))
+            return false;
+
+        // Flush before EVERY attempt. Asking for the version first means a stale 0xAA55 frame left in
+        // the RX buffer by an earlier probe or phase would otherwise satisfy this one, reporting a
+        // version that was never actually obtained from this exchange.
+        portFlush(m_port);
+
+        memset(buf, 0, sizeof(buf));
+
+        // A failed write means the port itself is gone, not that the device is quiet, and retrying it
+        // cannot help. Ignoring this result produced a BUSY SPIN: on a broken port the write fails, a
+        // closed socket makes portReadTimeout() return instantly instead of consuming its timeout, and
+        // handshake_sync() bails at its own first failed write BEFORE any of its SLEEP_MS -- so a round
+        // cost ~27 ns and the loop ran 112,178,502 times in its 3 s budget, hammering the socket.
+        // Nothing in an elapsed-time budget bounds iteration COUNT, so every step that is supposed to
+        // block has to be checked for having actually done so.
+        int wrote = portWrite(m_port, (uint8_t*)":020000041000EA", 15);
+        if (wrote != 15)
+        {
+            log_warn(IS_LOG_FWUPDATE, "[%s] version query write failed (%d of 15, port error %d) after "
+                                      "%d attempt%s; port is not usable",
+                     portName(m_port), wrote, portError(m_port), d.attempts, (d.attempts == 1) ? "" : "s");
+            return false;
+        }
+
+        // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
+        int count = portReadTimeout(m_port, buf, sizeof(buf), ISB_VERSION_READ_TIMEOUT_MS);
+        if ((count < 0) || !portIsOpened(m_port))
+        {   // hard port error, or the transport dropped under us -- same reasoning as the write above
+            log_warn(IS_LOG_FWUPDATE, "[%s] version query read failed (result %d, port error %d, %s) "
+                                      "after %d attempt%s; port is not usable",
+                     portName(m_port), count, portError(m_port),
+                     portIsOpened(m_port) ? "port open" : "PORT CLOSED",
+                     d.attempts, (d.attempts == 1) ? "" : "s");
+            return false;
+        }
+        if (count > 0)
+        {
+            withData++;
+            totalBytes += count;
+            lastCount = count;
+            memcpy(lastBuf, buf, sizeof(lastBuf));
+        }
+
+        if ((count >= 8) && (buf[0] == 0xAA) && (buf[1] == 0x55))
+        {
+            // A version 6+ reply is the full 14 bytes ending in ".\r\n", and the processor type,
+            // EVB flag and serial number live inside that frame -- so a short or unterminated one is
+            // retried rather than half-parsed. The old code accepted at 8 bytes and, on a bad tail,
+            // merely warned "parse error" and returned an assumed IMX-5 signature anyway, which is
+            // precisely how a truncated frame (the signature of the TCP partial-read defect) passed
+            // for a valid one. Pre-v6 bootloaders never send those fields, so they are still
+            // accepted on the header alone.
+            uint8_t major = buf[2];
+            bool full = (count >= 14) && (buf[11] == '.') && (buf[12] == '\r') && (buf[13] == '\n');
+            if ((major < 6) || full)
+            {
+                m_isb_major = major;
+                m_isb_minor = (char)buf[3];
+                m_isb_props.rom_available = buf[4];
+                if (full)
+                {
+                    m_isb_props.processor = (eProcessorType)buf[5];
+                    m_isb_props.is_evb = buf[6];
+                    memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+                }
+                else
+                {   // pre-v6 reply carries no serial number; do not leave a stale one in place
+                    m_sn = 0;
+                }
+                return true;
+            }
+        }
+
+        bool outOfTime = ((current_timeMs() - startMs) >= budgetMs);
+        bool outOfAttempts = (d.attempts >= ISB_VERSION_MAX_ATTEMPTS);
+        if (outOfTime || outOfAttempts)
+        {
+            // LOG ONLY -- deliberately nothing on the console / fwUpdate progress stream.
+            //
+            // A failed probe is not news to a user, because this function cannot know whether its
+            // failure matters. Its callers can: get_device_isb_version() and mode_device_isb() are
+            // advisory passes whose failure is routinely recovered by the update phase, while
+            // update_device() reports "Device response missing." when the device is genuinely
+            // unreachable. Reporting here made every from-APP update -- including the ones that
+            // succeed -- print two alarming "no response" lines, because those two advisory phases
+            // probe roughly 7 s and 14 s after the reboot command while the device measured ~21 s of
+            // total silence before it would answer anything.
+            //
+            // The log still gets everything: timings, how many handshake bursts were sent and whether
+            // any was acknowledged, and the raw bytes of the last reply. The old give-up path recorded
+            // none of this on either channel, so the one run whose evidence mattered was the run that
+            // kept none of it. "0 bytes total" versus "last rx : aa 55 06 6a 01 01" is precisely the
+            // distinction the TCP partial-read defect turned on.
+            char hex[80] = { 0 };
+            if (lastCount > 0)
+            {
+                int n = SNPRINTF(hex, sizeof(hex), ", last rx : ");
+                for (int i = 0; (i < lastCount) && (i < (int)sizeof(lastBuf)); i++)
+                    n += SNPRINTF(&hex[n], sizeof(hex) - n, "%02x ", lastBuf[i]);
+            }
+            log_warn(IS_LOG_FWUPDATE,
+                     "[%s] check_is_compatible response missing (%s): %d attempts in %u ms, %d handshake%s "
+                     "(%s), %d attempt%s returned data, %d bytes total%s",
+                     portName(m_port), outOfAttempts ? "ATTEMPT CAP -- probe is not blocking as expected"
+                                                     : "time budget",
+                     d.attempts, (unsigned)(current_timeMs() - startMs),
+                     d.handshakes, (d.handshakes == 1) ? "" : "s",
+                     d.handshakeAcked ? "acknowledged" : "none acknowledged",
+                     withData, (withData == 1) ? "" : "s", totalBytes, hex);
+            return false;
+        }
+
+        // Unanswered, so the bootloader may not be synchronized. Send the 'U' burst and ask again.
+        // The burst's own outcome does not gate anything -- an already-synchronized bootloader cannot
+        // acknowledge it -- but it IS recorded, because "a handshake was attempted and the bootloader
+        // did/did not echo" is real information about the device that the caller should be able to
+        // report either way.
+        d.handshakes++;
+        if (handshake_sync(m_port) == IS_OP_OK)
+            d.handshakeAcked = true;
+    }
+}
+
 eImageSignature cISBootloaderISB::check_is_compatible()
 {
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::check_is_compatible()");
-    uint8_t buf[14] = { 0 };
-    int count = 0;
-    int portResult = PORT_ERROR__NONE;
 
-    // portFlush(m_port);
-    // portRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    bool handshake = (hasHandshake || (handshake_sync(m_port) == IS_OP_OK));
-
-    logStatus(IS_LOG_LEVEL_MORE_INFO, "(ISB) Checking for ISB compatibility.");
-
-    SLEEP_MS(100);
-
-    for (int retry=0;; retry++)
-    {
-        if (!portIsOpened(m_port)) {
-            portResult = portOpen(m_port);
-            if (portResult < PORT_ERROR__NONE)
-                return (eImageSignature)IS_IMAGE_SIGN_NONE;
-        }
-
-        if ((count = portWrite(m_port, (uint8_t*)":020000041000EA", 15)) < PORT_ERROR__NONE)
-            portResult = count;
-
-        // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-#define READ_DELAY_MS   500
-        if ((count = portReadTimeout(m_port, buf, 14, READ_DELAY_MS)) < PORT_ERROR__NONE)
-            portResult = count;
-
-        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
-        {
-            break;
-        }
-
-        if (retry*READ_DELAY_MS > 5000)
-        {   // No response
-            logStatus(IS_LOG_LEVEL_WARN, "(ISB) Error: check_is_compatible response missing.");    // FIXME: This is an error (kind of), but it actually happens all the time; let's hide it for now
-            // TODO? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", portName(m_port));
-            return IS_IMAGE_SIGN_NONE;
-        }
-    }
-
-    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
-    
-    m_isb_major = buf[2];
-    m_isb_minor = (char)buf[3];
-    bool rom_available = buf[4];
-    uint8_t processor = 0xFF;
     m_isb_props.is_evb = false;
     m_sn = 0;
 
-    logStatus(IS_LOG_LEVEL_MORE_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
+    isb_probe_detail_t probe;
+    if (!query_isb_version(ISB_VERSION_BUDGET_MS, &probe))
+        return IS_IMAGE_SIGN_NONE;
 
-    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {   // Valid packet found
-        processor = (eProcessorType)buf[5];
-        m_isb_props.is_evb = buf[6];
-        memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+    // One line, stating what was learned and -- when a re-sync was needed to learn it -- that a
+    // handshake was attempted and whether the bootloader acknowledged it. Both outcomes are worth
+    // saying: an unacknowledged burst that is nonetheless followed by a version response is the
+    // normal signature of a bootloader that was already synchronized, whereas an acknowledged one
+    // means it had genuinely lost sync and has just regained it. The old wording reported neither --
+    // it said "no handshake" on every device and every version, as though that were a fault.
+    if (probe.handshakes == 0)
+    {
+        logStatus(IS_LOG_LEVEL_MORE_INFO, "(ISB) bootloader v%d%c", m_isb_major, m_isb_minor);
     }
     else
-    {   // Error parsing
-        char msg[200] = { 0 };
-        int n = 0;
-        for (int i=0; i<count; i++)
-        {
-            if (i%2 == 0)
-            {   // Add space every other 
-                n += SNPRINTF(&msg[n], sizeof(msg)-n, " ");
-            }
-            n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
-        }
-        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: check_is_compatible parse error:\n      0x %s", msg);
-        return (eImageSignature)valid_signatures;
+    {
+        char unanswered[48] = { 0 };
+        if (probe.attempts > 2)
+            SNPRINTF(unanswered, sizeof(unanswered), ", %d unanswered queries", probe.attempts - 1);
+
+        logStatus(IS_LOG_LEVEL_MORE_INFO, "(ISB) bootloader v%d%c, re-synced after %s handshake%s",
+                  m_isb_major, m_isb_minor,
+                  probe.handshakeAcked ? "successful" : "unacknowledged", unanswered);
     }
+
+    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
 
     if (m_isb_major >= 6)
     {   // v6 and up has EVB detection built-in
-        if (processor == IS_PROCESSOR_SAMx70)
-        {   
+        if (m_isb_props.processor == IS_PROCESSOR_SAMx70)
+        {
             valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
-            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            if (m_isb_props.rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
         }
-        else if (processor == IS_PROCESSOR_STM32L4)
+        else if (m_isb_props.processor == IS_PROCESSOR_STM32L4)
         {
             valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
-            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+            if (m_isb_props.rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
         }
     }
     else
     {
         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
-        if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+        if (m_isb_props.rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
 
     if (valid_signatures == 0)
     {
-        logStatus(IS_LOG_LEVEL_ERROR, "    | %s: (ISB) Error: Device has no valid ISB signature.", portName(m_port));
+        logStatus(IS_LOG_LEVEL_ERROR, "(ISB) Error: Device has no valid ISB signature.");
         // TODO?? m_info_callback(this, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", ((serial_port_t*)m_port)->portName);
     } else {
-        logStatus(IS_LOG_LEVEL_DEBUG, "    | %s: (ISB) Device is ISB compatible.", portName(m_port));
+        logStatus(IS_LOG_LEVEL_DEBUG, "(ISB) Device is ISB compatible.");
     }
 
     return (eImageSignature)valid_signatures;
@@ -275,18 +423,11 @@ uint32_t cISBootloaderISB::get_device_info()
 {
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::get_device_info()");
 
-    bool handshake = handshake_sync(m_port) == IS_OP_OK;
-    portFlush(m_port);
-
-    // Send command
-    portWrite(m_port, (uint8_t*)":020000041000EA", 15);
-
-    uint8_t buf[14] = { 0 };
-
-    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    int count = portReadTimeout(m_port, buf, 14, 1000);
-
-    if (count < 8 || buf[0] != 0xAA || buf[1] != 0x55)
+    // Same probe as check_is_compatible(): version first, handshake only as recovery. This call is a
+    // repeat of that exact exchange on the same object (update_device() calls check_is_compatible()
+    // and then this), so it deliberately emits NO status line of its own -- the version was already
+    // reported. Two identical "bootloader vX" lines under one worker was that duplication showing.
+    if (!query_isb_version(ISB_VERSION_BUDGET_MS, NULL))
     {   // Bad read
         m_isb_major = 0;
         m_isb_minor = 0;
@@ -297,23 +438,6 @@ uint32_t cISBootloaderISB::get_device_info()
 
         logStatus(IS_LOG_LEVEL_ERROR, "(ISB) get_device_info bad read.");
         return 0;
-    }
-
-    m_isb_major = buf[2];
-    m_isb_minor = (char)buf[3];
-    m_isb_props.rom_available = buf[4];
-
-    logStatus(IS_LOG_LEVEL_INFO, "    | (ISB) %s, bootloader v%d%c", (handshake ? "handshake" : "no handshake"), m_isb_major, m_isb_minor);
-
-    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {
-        m_isb_props.processor = (eProcessorType)buf[5];
-        m_isb_props.is_evb = buf[6];
-        memcpy(&m_sn, &buf[7], sizeof(uint32_t));
-    }
-    else
-    {
-        m_sn = 0;
     }
 
     if (m_isb_major == 1)
@@ -348,9 +472,9 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
 {
     static const uint8_t handshakerChar = 'U';
 
-    if (hasHandshake)
-        return IS_OP_OK;
-
+    // No "already handshaked" short-circuit. This is now called only as recovery for an unanswered
+    // version query, so skipping the burst on the strength of an earlier success is exactly wrong --
+    // it would let the first round consume the only attempt and leave every later round silent.
     log_more_debug(IS_LOG_FWUPDATE, "ISBootloaderISB::handshake_sync()");
     uint8_t readCh = 0;
 
@@ -358,10 +482,8 @@ is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
         while (portRead(port, &readCh, 1) == 1) {
-            if (readCh == handshakerChar) {
-                hasHandshake = true;
+            if (readCh == handshakerChar)
                 return IS_OP_OK;    // received a responding handshake char, so success
-            }
         }
 
         if (portWrite(port, &handshakerChar, 1) != 1) {

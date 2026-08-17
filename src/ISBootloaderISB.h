@@ -155,7 +155,28 @@ private:
     is_operation_result fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum);
     is_operation_result download_data(int startOffset, int endOffset);
 
-    bool hasHandshake = false;          // true if we've negotiated a handshake previously on this port/connection
+    /**
+     * @brief Probes the bootloader for its version response, re-synchronizing it only when a probe
+     *        goes unanswered.
+     *
+     * The version response is the only reliable evidence that the bootloader is synchronized: the 'U'
+     * autobaud handshake is echoed once per sync, so a bootloader synchronized by an earlier probe,
+     * phase or process answers commands while echoing nothing. Handshaking is therefore a recovery
+     * action here rather than a precondition, and its result is deliberately unused. There is
+     * intentionally no cached "already handshaked" state -- see handshake_sync().
+     *
+     * @param budgetMs total wall-clock budget across all attempts
+     * @param detail if non-null, filled with what the probe actually had to do, for reporting
+     * @return true if a valid version response was decoded, in which case m_isb_major, m_isb_minor
+     *         and m_isb_props.rom_available are populated, plus m_isb_props.processor,
+     *         m_isb_props.is_evb and m_sn for version 6 and later
+     */
+    struct isb_probe_detail_t {
+        int attempts = 0;               //!< version queries sent, including the one that succeeded
+        int handshakes = 0;             //!< handshake bursts sent as recovery; one per unanswered query
+        bool handshakeAcked = false;    //!< true if the bootloader echoed 'U' to any of those bursts
+    };
+    bool query_isb_version(uint32_t budgetMs, isb_probe_detail_t* detail = nullptr);
 
     // Verification parameters
     int m_currentPage;
