@@ -28,6 +28,25 @@ class NtripCorrectionService : public CorrectionService {
 
     public:
         /**
+         * Outcome of the most recent mount-point negotiation.
+         *
+         * A caster can refuse a client for several distinct reasons that all look identical at the
+         * socket level -- the connection stays up and simply never carries corrections -- so the
+         * reason has to be reported explicitly for a caller to be able to explain it to a user.
+         */
+        enum eNtripResult
+        {
+            NTRIP_RESULT_OK = 0,                    //!< mount point negotiated; the stream is live
+            NTRIP_RESULT_NOT_CONNECTED,             //!< no open socket, or connect() was never called
+            NTRIP_RESULT_SEND_FAILED,               //!< could not write the mount-point request
+            NTRIP_RESULT_TIMEOUT,                   //!< caster accepted the socket but never answered
+            NTRIP_RESULT_UNAUTHORIZED,              //!< credentials missing, wrong, or rejected
+            NTRIP_RESULT_MOUNTPOINT_UNAVAILABLE,    //!< mount point unknown to the caster
+            NTRIP_RESULT_CASTER_ERROR,              //!< caster answered with some other error status
+            NTRIP_RESULT_UNRECOGNIZED,              //!< reply matched no known Ntrip 1.0 or 2.0 form
+        };
+
+        /**
          * Default empty constructor.
          */
         NtripCorrectionService() { setMessageStats(&srcStats); };
@@ -69,6 +88,34 @@ class NtripCorrectionService : public CorrectionService {
         bool isConnected() { return portIsOpened(source); }
 
         /**
+         * @return the outcome of the most recent mount-point negotiation
+         */
+        eNtripResult getLastResult() const { return lastResult; }
+
+        /**
+         * The most recent negotiation outcome as text suitable for showing to a user.
+         *
+         * Never contains credentials -- callers put this straight on screen.
+         * @return a human-readable description; empty when the last negotiation succeeded
+         */
+        const std::string& getLastResultString() const { return lastResultStr; }
+
+        /**
+         * @brief Decides what a caster's response head means.
+         *
+         * Split out from negotiateMountPoint() so the decision is separable from the socket read that
+         * produced it -- the classification is the part that has to be right across both Ntrip dialects,
+         * and it is the part worth testing directly.
+         * @param statusLine the response's first line, already trimmed
+         * @param contentType the Content-Type field value, or empty if the caster sent none
+         * @param contentLength the Content-Length field value, or negative if the caster sent none
+         * @param[out] message human-readable description of the outcome; empty on success
+         * @return the classified result
+         */
+        static eNtripResult classifyResponse(const std::string& statusLine, const std::string& contentType,
+                                             long contentLength, std::string& message);
+
+        /**
          * @return true if at least one RTCM3 message has been received from the caster since connecting.
          */
         bool isReceivingCorrections() { return srcStats.rtcm3.size() > 0; }
@@ -108,10 +155,21 @@ class NtripCorrectionService : public CorrectionService {
          */
         bool negotiateMountPoint();
 
+        /**
+         * @brief Records the outcome of a negotiation attempt.
+         * @param result the classified result
+         * @param message human-readable description; must not contain credentials
+         * @return false always, so callers can "return setResult(...)" on the failure paths
+         */
+        bool setResult(eNtripResult result, const std::string& message);
+
         MessageStats::mul_stats_t srcStats;         //!< Per-protocol message statistics for the caster connection; CorrectionService only holds a pointer to stats, so this instance owns the storage.
         std::map<std::string, std::string> headers; //!< Custom headers which will be sent to the NTRIP caster when connecting
         std::string requestMsg;                      //!< Cached mount-point HTTP GET request, built in connect(), re-sent by negotiateMountPoint() on (re)connect
-        std::string casterUrl;                       //!< Cached caster URL, retained for log messages on reconnect
+        std::string casterUrl;                       //!< Cached caster URL as supplied, including any credentials; never log or display this -- use casterUrlSafe
+        std::string casterUrlSafe;                   //!< Cached caster URL with any userinfo replaced by "[hidden]"; safe for logs and UI
+        eNtripResult lastResult = NTRIP_RESULT_OK;   //!< Outcome of the most recent negotiateMountPoint()
+        std::string lastResultStr;                   //!< Human-readable form of lastResult; empty on success
 };
 
 
