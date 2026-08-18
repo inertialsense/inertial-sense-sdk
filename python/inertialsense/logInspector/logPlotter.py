@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
 import pandas as pd
-from scipy.signal import detrend, welch
+from scipy.signal import detrend, welch, butter, filtfilt, savgol_filter
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -276,6 +276,64 @@ def robust_lowpass(x, dt,
     robust_lowpass.y = y
 
     return y.copy(), xg.copy(), is_outlier.copy()
+
+def lowpass_filter(x, fs, cutoff=1.0, order=2, axis=0):
+    """
+    Zero-phase Butterworth low-pass filter for offline/batch data (e.g. plotting).
+
+    Args:
+        x: array of samples, filtered along `axis`
+        fs: sample rate (Hz) of x along `axis`
+        cutoff: corner frequency (Hz)
+        order: filter order
+        axis: axis along which to filter
+
+    Returns:
+        Filtered array, same shape as x. Returns a copy of x unchanged if fs/cutoff
+        or the data length make filtering ill-defined (e.g. too few samples).
+    """
+    x = np.asarray(x, dtype=float)
+    nyq = 0.5 * fs
+    if not np.isfinite(nyq) or nyq <= cutoff:
+        return x.copy()
+    b, a = butter(order, cutoff / nyq, btype='low')
+    padlen = 3 * max(len(a), len(b))
+    if x.shape[axis] <= padlen:
+        return x.copy()
+    return filtfilt(b, a, x, axis=axis)
+
+def savgol_lowpass_filter(x, fs, cutoff=1.0, polyorder=3, axis=0):
+    """
+    Savitzky-Golay (windowed polynomial fit) low-pass filter for offline/batch data.
+    Non-causal by construction (each point uses samples on both sides), so it is
+    inherently zero-phase without needing a separate forward/backward pass.
+
+    `cutoff` is translated to a window length using the Savitzky-Golay equivalent
+    -3dB bandwidth relation (Schafer, "What Is a Savitzky-Golay Filter?", 2011):
+        cutoff_norm (cycles/sample) ~= (polyorder + 1) / (3.2 * window_length - 4.6)
+
+    Args:
+        x: array of samples, filtered along `axis`
+        fs: sample rate (Hz) of x along `axis`
+        cutoff: approximate corner frequency (Hz)
+        polyorder: polynomial order fit within each window
+        axis: axis along which to filter
+
+    Returns:
+        Filtered array, same shape as x. Returns a copy of x unchanged if fs/cutoff
+        or the data length make filtering ill-defined (e.g. too few samples).
+    """
+    x = np.asarray(x, dtype=float)
+    if not np.isfinite(fs) or fs <= 0 or not np.isfinite(cutoff) or cutoff <= 0:
+        return x.copy()
+    cutoff_norm = cutoff / fs
+    window_length = int(round(((polyorder + 1) / cutoff_norm + 4.6) / 3.2))
+    window_length = max(window_length, polyorder + 2)
+    if window_length % 2 == 0:
+        window_length += 1
+    if x.shape[axis] <= window_length:
+        return x.copy()
+    return savgol_filter(x, window_length, polyorder, axis=axis, mode='interp')
 
 def getValidTimeInd(time, tol=100):
 
@@ -4899,11 +4957,15 @@ class logPlot:
                 noData = False
 
                 ucalSensor = None
+                ucalSensorLpf = None
                 ucalX = None
                 if self.showUcal and (name == 'acc' or name == 'pqr'):
                     ucalImus = self.getData(a, DID_SENSORS_UCAL, 'imus')
                     if len(ucalImus) != 0:
                         ucalSensor = ucalImus['I'][name]
+                        ucalDt = np.median(np.diff(ucalImus['time']))
+                        if ucalDt > 0 and np.isfinite(ucalDt):
+                            ucalSensorLpf = savgol_lowpass_filter(ucalSensor, fs=1.0/ucalDt, cutoff=0.0002, polyorder=1, axis=0)
                         if useTemp:
                             ucalX = self.getData(a, DID_SENSORS_UCAL, 'temp')
                         elif useSampleNumber:
@@ -4984,6 +5046,12 @@ class logPlot:
 
                         for j in range(3):
                             ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
+
+                    if ucalSensorLpf is not None:
+                        ux = ucalX[:,i] if useTemp else ucalX
+                        ax[0,i].plot(ux, ucalSensorLpf[:,i,0]*scalar, color='m', label="UCAL SavGol 0.0002Hz" if i==0 else None)
+                        ax[1,i].plot(ux, ucalSensorLpf[:,i,1]*scalar, color='m')
+                        ax[2,i].plot(ux, ucalSensorLpf[:,i,2]*scalar, color='m')
 
         if noData:
             return
