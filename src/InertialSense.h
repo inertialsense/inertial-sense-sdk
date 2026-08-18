@@ -671,6 +671,17 @@ private:
 
     device_listener_handle_t                m_deviceListenerHandle;  //!< handle for the deviceManagerHandler listener registered on the singleton DeviceManager; removed in ~InertialSense() so a destroyed instance never leaves a dangling listener
     PortManager::port_listener_handle_t     m_portListenerHandle;    //!< handle for the portManagerHandler listener registered on the singleton PortManager; removed in ~InertialSense()
+    /**
+     * Handle for the port listener updateFirmware() registers to catch devices re-enumerating mid-update.
+     *
+     * It is a MEMBER rather than a local because the lifetimes do not line up: updateFirmware() only
+     * starts the sessions and returns immediately, while the stepping (and therefore the reboots this
+     * listener exists to observe) happens later in the caller's loop. Releasing it before returning would
+     * defeat it entirely -- which is presumably why the release ended up commented out, leaving a
+     * listener registered on a SINGLETON, capturing by reference, for the rest of the process. Same
+     * defect as the two handles above, and the same fix: own it here, release it in ~InertialSense().
+     */
+    PortManager::port_listener_handle_t     m_fwUpdateListenerHandle;
 
 
     /** @brief Called each Update() to service the logger thread/state. @return false if the logger failed to open. */

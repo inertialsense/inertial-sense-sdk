@@ -244,6 +244,8 @@ InertialSense::~InertialSense()
     // against freed memory -> SEGV in deviceManagerHandler.
     deviceManager.removeDeviceListener(m_deviceListenerHandle);
     portManager.removePortListener(m_portListenerHandle);
+    if (m_fwUpdateListenerHandle)
+        portManager.removePortListener(m_fwUpdateListenerHandle);   // registered by updateFirmware()
 
     Close();
     DisableLogging();
@@ -801,20 +803,30 @@ is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevic
     // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
     // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
     // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
-    auto plHandle = portManager.addPortListener(
-            [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-                log_info(IS_LOG_PORT_MANAGER, "Detected port change (%s) during Firmware Update: %s", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
-                if (event == PortManager::PORT_ADDED) {
-                    deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+    // Register ONCE, capturing `this` rather than `[&]`, and keep the handle in a member released by
+    // ~InertialSense(). The previous form captured the enclosing frame by reference and its release was
+    // commented out, so the lambda stayed registered on the PortManager SINGLETON after updateFirmware()
+    // returned -- referring to a dead frame, and re-registered on every subsequent call. A later port
+    // event then ran it against freed memory. That is the identical defect the constructor's two
+    // listeners were fixed for (see ~InertialSense()), which is where this pattern comes from.
+    //
+    // It cannot simply be released at the end of this function: updateFirmware() only STARTS the
+    // sessions and returns, while the reboots this listener exists to observe happen later, in the
+    // caller's step loop.
+    if (!m_fwUpdateListenerHandle) {
+        m_fwUpdateListenerHandle = portManager.addPortListener(
+                [this](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
+                    log_debug(IS_LOG_PORT_MANAGER, "Detected port change (%s) during Firmware Update: %s", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
+                    if (event == PortManager::PORT_ADDED) {
+                        deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                    }
                 }
-            }
-    );
+        );
+    }
 
     for (auto device : deviceManager) {
         device->updateFirmware(targetDevice, cmds, fwUpdateStatus, waitAction);
     }
-
-    // portManager.removePortListener(plHandle);
 
 
 #if !PLATFORM_IS_WINDOWS
