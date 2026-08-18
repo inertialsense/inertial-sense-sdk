@@ -26,6 +26,44 @@
 #define MAX_VERIFY_CHUNK_SIZE               1024    //!< maximum number of bytes read back per verify-chunk request
 #define BOOTLOADER_TIMEOUT_DEFAULT          1000    //!< default timeout (ms) for an ISB command/ack exchange
 #define MAX_SEND_COUNT                      510     //!< maximum number of bytes sent per ISB write command
+/*
+ * ISB REPLY ALPHABET, and a TODO to decode it.
+ *
+ * The bootloader answers every command with a single character followed by CRLF, from one place --
+ * send_answer_frame(), cpp/hdw-src/bootloader/common/embeddedBootloader.c:644. Verified emitted:
+ *
+ *   ".\r\n"   OK.
+ *   "X\r\n"   Checksum error. By far the most reachable failure: every command group validates a
+ *              checksum (embeddedBootloader.c:841, 947, 1014, 1058, 1158, 1185). The link is alive and
+ *              one command was corrupted, so this is the ONE reply for which retrying the page is the
+ *              right response rather than failing the session.
+ *   "P\r\n"   Write error or bad address (:856, :878 errWRITE; :711, :1196 errADDRESS). Genuine flash
+ *              or addressing failure; not retryable.
+ *   "K\r\n"   Unknown OR UNEXPECTED command (:959, :1036, :1201, :1207, dispatcher default :1239;
+ *              errUNEXPECTED :939, :975). Unexpected means a state-machine violation -- e.g.
+ *              CMD_PROGRAM_START while not IDLE -- i.e. the host and device have desynchronised. Also
+ *              send_answer_frame()'s fallback when no status bit is set at all, which includes
+ *              DFU_CMD_STATUS_OK_NORETCHAR (0x0), since testing that against DFU_CMD_STATUS_OK is false.
+ *
+ * Enumerated in the firmware but NOT emitted, so not worth handling until that changes:
+ *   "L\r\n"   Security bit set. Dead code: both call sites are `if (security_active)` and
+ *              embeddedBootloader.c:498 assigns security_active = 0 with the real check commented out.
+ *   "NNNN\r\n" Blank-check failure, 4 hex digits of the failing page offset -- the only variable-length
+ *              reply. Reachable solely via CMD_BLANK_CHECK (CMD_GRP_UPLOAD), which no SDK path sends.
+ *
+ * TODO: the SDK recognises ONLY ".\r\n". waitForAck() slides past any non-matching byte hunting for it,
+ * and portWaitForTimeout() does the same, so X/P/K are silently discarded and every failure degrades into
+ * the same generic BOOTLOADER_TIMEOUT_DEFAULT timeout with no cause reported. Read the CRLF-terminated
+ * frame and classify the character instead. 11 call sites across ISBFirmwareUpdater.cpp (x6) and
+ * ISBootloaderISB.cpp (x5, two of which hand-roll memcmp(buf, ".\r\n", 3)), so it wants one shared
+ * helper rather than two parallel fixes. Order of value: X (report + retry the page), K (report the
+ * desync -- it is what a pipelining bug looks like from the wire), P (report; not retryable).
+ */
+
+/** 1 to collect a page write's ack at the start of the NEXT step instead of blocking for it, so the
+ *  round-trip overlaps whatever the step loop does in between. 0 restores the blocking write/ack pairing
+ *  (useful for A/B measurement). Measured on a 15-device bench: 162.1 s -> 61.2 s. */
+#define ISB_PIPELINED_PAGE_WRITES           1
 
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
 #define FLASH_PAGE_SIZE                     65536   //!< logical page size used for ISB page offsets (0x0000-0xFFFF); independent of the device's actual physical flash page size
@@ -238,7 +276,16 @@ private:
     is_operation_result select_page(int page);
     is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
     int is_isb_read_line(ByteBufferStream& byteStream, char line[HEX_BUFFER_SIZE]);
-    is_operation_result upload_hex_page(unsigned char* hexData, uint8_t byteCount);
+    /**
+     * Writes one page of hex payload to the bootloader.
+     * @param hexData the ASCII-hex payload for this page
+     * @param byteCount the number of BYTES (half the hex characters) this page carries
+     * @param pipelined true to return as soon as the write is issued, leaving its acknowledgement to be
+     *        collected by reapPendingPageWrite(); false to block for the acknowledgement and commit
+     *        inline. Callers that emit several pages in one pass must use false, since each page's
+     *        header is built from the committed currentOffset.
+     */
+    is_operation_result upload_hex_page(unsigned char* hexData, uint8_t byteCount, bool pipelined = false);
     is_operation_result upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent);
     is_operation_result fill_current_page();
     is_operation_result process_hex_stream(ByteBufferStream& byteStream);
@@ -322,6 +369,45 @@ private:
     int currentOffset = 0;
     int totalBytes = 0;
     int verifyCheckSum = 0;
+
+    /**
+     * A page write that has been sent but whose ".\r\n" acknowledgement has not yet been collected.
+     *
+     * Retains everything needed to (a) commit the write once it is acknowledged and (b) name it exactly
+     * if it is NAKed or times out -- the write is no longer on the stack when its outcome is known, so
+     * without this a failure could only be reported against whatever the stream had moved on to.
+     */
+    struct pendingPageWrite_t {
+        bool     active = false;        //!< true while an issued page write awaits acknowledgement
+        uint32_t seq = 0;               //!< monotonic page-write number, for traceability in messages
+        int      page = 0;              //!< currentPage the write was issued against
+        int      offset = 0;            //!< currentOffset the write was issued at
+        uint8_t  byteCount = 0;         //!< payload byte count of the write
+        int      verifyCheckSum = 0;    //!< running verify checksum INCLUDING this write; committed on ACK
+        uint32_t deadline = 0;          //!< current_timeMs() by which the ACK must have arrived
+        uint32_t elapsed = 0;           //!< waitForAck() progress accumulator
+    } pendingWrite;
+    uint32_t pageWriteSeq = 0;          //!< number of page writes issued this session
+
+    /**
+     * Collects the acknowledgement for an outstanding page write, committing it on success.
+     * @return IS_OP_OK acknowledged and committed; IS_OP_RETRY not yet arrived, try again next step;
+     *         IS_OP_ERROR the write's deadline expired
+     */
+    is_operation_result reapPendingPageWrite();
+
+    /**
+     * Blocks until an outstanding page write is acknowledged, so a caller may then perform a blocking
+     * ISB exchange of its own.
+     *
+     * Any blocking exchange issued while a pipelined write is outstanding consumes THAT write's
+     * acknowledgement instead of its own, and every subsequent exchange stays one ack ahead of itself
+     * until the last one has none left and times out. Only page-boundary work (select/begin-program/fill)
+     * takes this path, a handful of times per image, so blocking here costs nothing measurable.
+     *
+     * @return IS_OP_OK once nothing is outstanding, or IS_OP_ERROR if the write's deadline expired
+     */
+    is_operation_result drainPendingPageWrite();
 
     unsigned char output[HEX_BUFFER_SIZE * 2]{}; // big enough to store an entire extra line of buffer if needed
     const unsigned char* outputPtrEnd = output + (HEX_BUFFER_SIZE * 2);

@@ -967,6 +967,9 @@ ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t ti
 
 is_operation_result ISBFirmwareUpdater::select_page(int page)
 {
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;     // an outstanding pipelined write must be settled before a blocking exchange
+
     // Atmel select page command (0x06) is 4 bytes and the data is always 0301xxxx where xxxx is a 16 bit page number in hex
     unsigned char changePage[24];
 
@@ -990,6 +993,9 @@ is_operation_result ISBFirmwareUpdater::select_page(int page)
 
 is_operation_result ISBFirmwareUpdater::begin_program_for_current_page(int startOffset, int endOffset)
 {
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;     // an outstanding pipelined write must be settled before a blocking exchange
+
     // Atmel begin program command is 0x01, different from standard intel hex where command 0x01 is end of file
     // After the 0x01 is a 00 which means begin writing program
     // The begin program command uses the current page and specifies two 16 bit addresses that specify where in the current page
@@ -1042,12 +1048,18 @@ int ISBFirmwareUpdater::is_isb_read_line(ByteBufferStream& byteStream, char line
  * @param byteCount the number of binary bytes the hexData string represents (should be strlen(hexData) / 2)
  * @return is_operation_result IS_OP_OK if no error, otherwise IS_OP_ERROR
  */
-is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, uint8_t byteCount)
+is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, uint8_t byteCount, bool pipelined)
 {
     if (byteCount == 0)
     {
         return IS_OP_OK;
     }
+
+    // Settle any outstanding pipelined write FIRST: the page header below is built from currentOffset,
+    // which a pending write has not committed yet, and a blocking exchange would otherwise consume the
+    // pending write's acknowledgement rather than its own.
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;
 
     // create a program request with just the hex characters that will fit on this page
     unsigned char programLine[12];
@@ -1082,8 +1094,32 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%02X", checkSum);
 
+    if (pipelined && ISB_PIPELINED_PAGE_WRITES) {
+        // Issue the write and return WITHOUT waiting. reapPendingPageWrite() collects the ack at the top
+        // of the next step, so the round-trip overlaps whatever the step loop does in between -- with N
+        // devices sharing one loop, that is the other N-1 devices' service time.
+        //
+        // The commit is deferred with it: currentOffset is what the NEXT page's header is built from, so
+        // advancing it before the device has accepted this page would silently write the following page
+        // to the wrong offset on a NAK.
+        if (portWrite(device->port, checkSumHex, 2) != 2) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
+            return IS_OP_ERROR;
+        }
+
+        pendingWrite.active         = true;
+        pendingWrite.seq            = ++pageWriteSeq;
+        pendingWrite.page           = currentPage;
+        pendingWrite.offset         = currentOffset;
+        pendingWrite.byteCount      = byteCount;
+        pendingWrite.verifyCheckSum = newVerifyChecksum;
+        pendingWrite.deadline       = current_timeMs() + BOOTLOADER_TIMEOUT_DEFAULT;
+        pendingWrite.elapsed        = 0;
+        return IS_OP_OK;
+    }
+
     if (!portWriteAndWaitForTimeout(device->port, checkSumHex, 2, (unsigned char *) ".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT)) {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device (page %d, offset 0x%04X, %u bytes)", currentPage, currentOffset, byteCount);
         return IS_OP_ERROR;
     }
 
@@ -1092,6 +1128,45 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     verifyCheckSum = newVerifyChecksum;
 
     return IS_OP_OK;
+}
+
+is_operation_result ISBFirmwareUpdater::drainPendingPageWrite()
+{
+    while (pendingWrite.active) {
+        is_operation_result r = reapPendingPageWrite();
+        if (r == IS_OP_OK)    return IS_OP_OK;
+        if (r == IS_OP_ERROR) return IS_OP_ERROR;
+        SLEEP_US(200);
+    }
+    return IS_OP_OK;
+}
+
+is_operation_result ISBFirmwareUpdater::reapPendingPageWrite()
+{
+    if (!pendingWrite.active)
+        return IS_OP_OK;
+
+    float ackProgress = 0.0f;
+    if (waitForAck(".\r\n", "Writing Flash", BOOTLOADER_TIMEOUT_DEFAULT, pendingWrite.elapsed, ackProgress)) {
+        totalBytes    += pendingWrite.byteCount;
+        currentOffset  = pendingWrite.offset + pendingWrite.byteCount;
+        verifyCheckSum = pendingWrite.verifyCheckSum;
+        pendingWrite.active = false;
+        return IS_OP_OK;
+    }
+
+    if (current_timeMs() >= pendingWrite.deadline) {
+        // Report the write that actually failed. It left the stack long before its outcome was known, so
+        // without the retained context this could only be blamed on wherever the stream had moved on to.
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
+                                       "(ISB) No ack for page write #%u (page %d, offset 0x%04X, %u bytes) within %u ms.",
+                                       pendingWrite.seq, pendingWrite.page, pendingWrite.offset,
+                                       (unsigned)pendingWrite.byteCount, (unsigned)BOOTLOADER_TIMEOUT_DEFAULT);
+        pendingWrite.active = false;
+        return IS_OP_ERROR;
+    }
+
+    return IS_OP_RETRY;     // not in yet -- yield this rotation and check again next step
 }
 
 is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent)
@@ -1126,7 +1201,9 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
     if (charCount != 0)
     {
-        if (upload_hex_page(hexData, charCount / 2) != IS_OP_OK) {
+        // Pipelined: this is the last (usually only) page this call emits, so nothing after it depends
+        // on the commit landing before we return. The page-straddling branch above must stay blocking.
+        if (upload_hex_page(hexData, charCount / 2, true) != IS_OP_OK) {
             fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
             return IS_OP_ERROR;
         }
@@ -1138,6 +1215,9 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
 is_operation_result ISBFirmwareUpdater::fill_current_page()
 {
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;     // an outstanding pipelined write must be settled before a blocking exchange
+
     if (currentPage >= 7)
     {
         int i = 0;
@@ -1433,6 +1513,7 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
     switch (writeState) {
         case WRITE_INITIALIZE:
             fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initializing flash write.");
+            pendingWrite = {};              // a restart invalidates any outstanding page write
             currentPage = 0;
             currentOffset = m_isb_props.app_offset;
             totalBytes = 0; // FIXME??  Why was this: m_isb_props.app_offset;
@@ -1443,6 +1524,22 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
             break;
         case WRITE:
         {
+            // Collect the outstanding page's ack BEFORE emitting the next one. This is the whole point of
+            // the pipeline: by the time this device is serviced again the ack has normally already landed
+            // in the receive buffer, so the round-trip costs nothing instead of blocking the step loop.
+            if (pendingWrite.active) {
+                switch (reapPendingPageWrite()) {
+                    case IS_OP_RETRY:
+                        return writeState;              // not acked yet; give the rotation back
+                    case IS_OP_ERROR:
+                        writeState = WRITE_ERROR;
+                        session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
+                        return writeState;
+                    default:
+                        break;                          // acked and committed; emit the next page below
+                }
+            }
+
             switch (process_hex_stream(*imgStream)) {
                 case IS_OP_OK:  // normal operation, and still more data to process
                     writeState = WRITE;
