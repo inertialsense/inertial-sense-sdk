@@ -14,10 +14,12 @@
 static bool icontains(const std::string& haystack, const std::string& needle);
 static update_policy_e parsePolicyString(const std::string& str);
 
-#define LOG_FWUPDATE_STATUS(log_level, ...)   { do {                                                        \
+// Bare do{}while(0), no enclosing braces and no trailing semicolon, so one invocation plus the caller's
+// own `;` is exactly one statement. See IS_LOG_MSG in core/msg_logger.h.
+#define LOG_FWUPDATE_STATUS(log_level, ...)   do {                                                          \
     /* log_msg(IS_LOG_FWUPDATE, log_level, __VA_ARGS__); */                                                 \
     if (pfnStatus_cb) { pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), log_level, __VA_ARGS__); }    \
-} while (0); }                                                                                              \
+} while (0)
 
 
 ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& state) : FirmwareUpdateHost(), device(device), updateState(state) {
@@ -59,19 +61,18 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& st
                     //  - Never close the port on a miss (neither explicitly nor via CLOSE_PORT_ON_FAILURE). We
                     //    did not open it, and closing a port that just came back is actively harmful wherever a
                     //    close is expensive to undo: on a relayed TCP port it surrenders the bridgeboard device
-                    //    slot, turning a sub-second retry into a full re-advertise/connect/validate cycle
-                    //    (measured ~30 s) -- far past the 20 s fwUpdate no-traffic timeout, so the session dies
-                    //    waiting for a device that was already back. On USB a close is nearly free, which is why
-                    //    this only ever showed up over the relay.
+                    //    slot, turning a sub-second retry into a full re-advertise/connect/validate cycle of
+                    //    tens of seconds -- past the 20 s fwUpdate no-traffic timeout, so the session dies
+                    //    waiting for a device that is already back. On USB a close is nearly free.
                     //
-                    // The timeout stays at 500 ms because this blocking I/O runs INSIDE the port-event callback:
-                    // at 1500 ms, sixteen devices returning at once serialise into ~24 s of stalled event
-                    // delivery, and the longer wait was never observed to convert a miss into a hit anyway.
+                    // Keep the timeout short: this blocking I/O runs INSIDE the port-event callback, so a
+                    // longer wait multiplied by many devices returning at once stalls event delivery for all
+                    // of them.
                     if (DeviceManager::getInstance().discoverDevice(port, targetHdwId, 500, DeviceManager::DISCOVERY__FORCE_REVALIDATION)) {
                         device_handle_t found = DeviceManager::getInstance().getDevice(port);
-                        log_debug(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", found ? found->getDescription().c_str() : portName.c_str())
+                        log_debug(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", found ? found->getDescription().c_str() : portName.c_str());
                     } else {
-                        log_debug(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice yet; leaving it open for step() to retry.", portName.c_str())
+                        log_debug(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice yet; leaving it open for step() to retry.", portName.c_str());
                     }
                 }
         );
@@ -1149,8 +1150,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         filename = cmd["filename"];
         if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
         if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
-        // chunkSize, NOT progressRate -- this assigned to progressRate, so specifying chunkSize silently
-        // overrode the progress interval and never changed the chunk size at all.
+        // chunkSize, NOT progressRate -- these are separate settings and must not be conflated.
         if (cmd.hasArg("chunkSize")) chunkSize = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
         if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 

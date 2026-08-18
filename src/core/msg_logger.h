@@ -65,11 +65,14 @@ extern "C" {
  * @param level_code    the eLogLevel of this message
  * @param ...           printf-style format string and arguments
  */
-#define IS_LOG_MSG(facility, facility_name, level_code, ...) { do { \
+/* NOTE the shape: a bare do{...}while(0) with NO enclosing braces and NO trailing semicolon, so that one
+ * invocation plus the caller's own `;` is exactly ONE statement and a braceless `if (x) log_x(); else ...`
+ * still compiles. Do not add enclosing braces. */
+#define IS_LOG_MSG(facility, facility_name, level_code, ...) do { \
     if (IS_FACILITY_ENABLED(facility) && (IS_LOG_LEVEL_COMPILER >= level_code)) {        \
         static_log_msg(facility, level_code, facility_name, __VA_ARGS__); \
     } \
-} while (0); }
+} while (0)
 
 /**
  * Logs a message at an arbitrary level.
