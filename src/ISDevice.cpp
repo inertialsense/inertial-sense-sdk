@@ -281,35 +281,34 @@ bool ISDevice::handshakeISbl(port_handle_t port, int burstCount) {
         SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
 
-    // No echo. That is the NORMAL case for a bootloader that is already synchronized -- it echoes once
-    // per sync -- so this is reported, not treated as a fault. Callers must not gate on it; the version
-    // response is the only evidence of synchronization. Previously this returned true on exhaustion so
-    // that a cached flag would stop further attempts, which also made "acknowledged" unreportable.
+    // No echo is the NORMAL case for an already-synchronized bootloader -- it echoes once per sync -- so
+    // this is reported rather than treated as a fault. Callers must not gate on it; the version response is
+    // the only evidence of synchronization.
     return false;
 }
 
 bool ISDevice::queryIsblVersionFrame(port_handle_t port, uint8_t frame[14], uint32_t budgetMs, isbl_probe_t* detail)
 {
-    if (!portIsOpened(port))
-        return false;
-
     isbl_probe_t local;
     isbl_probe_t& d = detail ? *detail : local;
     const uint32_t startMs = current_timeMs();
 
+    // Wait for the port to be open rather than bailing on the first !portIsOpened(): on an asynchronous
+    // transport "not open yet" is transient, since a non-blocking connect returns PORT_ERROR__NONE while
+    // the handshake is still in flight and leaves PORT_FLAG__OPENED clear. portOpenRetry() returns
+    // immediately when the port is already open, so a local serial port pays nothing for this.
+    uint32_t openWaitMs = budgetMs / 4;
+    if (openWaitMs > ISBL_PORT_OPEN_WAIT_MS)  openWaitMs = ISBL_PORT_OPEN_WAIT_MS;
+    if (portOpenRetry(port, openWaitMs, 10) != PORT_ERROR__NONE)
+        return false;       // never became usable; d.portOpened stays false so the caller can say so
+    d.portOpened = true;
+
     // Both halves of the schedule -- how long one read may block, and how long a burst may run -- are
-    // derived from the caller's budget instead of being fixed, because the two classes of caller differ by
-    // more than an order of magnitude. A dedicated probe (the ISv1 path) hands over seconds and wants the
-    // generous read a relayed port needs. validate() and validateAsync() hand over ~250ms for ONE step of a
-    // round-robin that also tries NMEA and ISB, and expect to be re-entered on the next revolution.
-    //
-    // With a fixed ISBL_VERSION_READ_TIMEOUT_MS read and a fixed BOOTLOADER_HANDSHAKE_COUNT burst, that
-    // short call spent its whole budget -- twice over -- on a single unanswered read, then found the budget
-    // spent and returned before ever reaching the re-sync. A bootloader that needed a burst therefore never
-    // received one, no matter how many revolutions ran, which is what broke ISbl discovery for ISDevice
-    // (and so -list-devices) while leaving the ISv1 path, with its 3s budget, working. Capping the read at
-    // a quarter of the budget guarantees the first pass can still afford a burst; the burst is then
-    // truncated to whatever is actually left.
+    // derived from the caller's budget, because the two classes of caller differ by more than an order of
+    // magnitude. A dedicated probe (the ISv1 path) hands over seconds and wants the generous read a relayed
+    // port needs; validate()/validateAsync() hand over ~250ms for ONE step of a round-robin that also tries
+    // NMEA and ISB, and expect to be re-entered. Capping the read at a quarter of the budget guarantees the
+    // first pass can still afford a recovery burst, which is then truncated to whatever remains.
     uint32_t readMs = budgetMs / 4;
     if (readMs > ISBL_VERSION_READ_TIMEOUT_MS)  readMs = ISBL_VERSION_READ_TIMEOUT_MS;
     if (readMs < ISBL_VERSION_MIN_READ_MS)      readMs = ISBL_VERSION_MIN_READ_MS;
@@ -384,11 +383,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
 
     FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);
 
-    // Version-first negotiation, shared with the ISv1 path -- see queryIsblVersionFrame(). This replaced
-    // a handshake-first sequence that (a) sent its burst once, gated on a cached hasHandshake flag that
-    // latched true because the old handshakeISbl() returned true on exhaustion, and (b) retried only the
-    // READ, never re-sending the query or re-synchronizing. A bootloader that was not synchronized at
-    // that single instant was therefore never offered another chance.
+    // Version-first negotiation, shared with the ISv1 path -- see queryIsblVersionFrame().
     isbl_probe_t probe;
     if (queryIsblVersionFrame(port, buf, timeout, &probe)) {
         fn.mark("Got a response (" + std::to_string(probe.attempts) + " attempt(s), " +
@@ -400,14 +395,12 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
         // carries none of those -- parse nothing from it rather than reading uninitialised bytes.
         if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
             {
-                // firmwareVer is assigned HERE, inside the validity guard, not above it. Previously these
-                // two bytes were written as soon as the 0xAA55 prefix matched -- so a response that was
-                // long enough and correctly prefixed but had a malformed tail mutated devInfo and then
-                // returned false. A *failed* query dirtied the identity it was only meant to read,
-                // leaving bootloader version bytes stranded in a devInfo whose other fields are later
-                // filled in by an APP-mode path. That is the observed "fw6.106.0 / build 2000-00-00 with
-                // state=APP" mixed identity, which also blocks recovery: ISv2 trusts hdwRunState and
-                // fires an APP-mode reset at a device already sitting in ISbl.
+                // firmwareVer is assigned HERE, inside the validity guard, and not as soon as the 0xAA55
+                // prefix matches: a reply that is long enough and correctly prefixed but has a malformed
+                // tail must not mutate devInfo. A failed query has no business dirtying the identity it was
+                // only meant to read -- stranded bootloader version bytes in an otherwise APP-mode devInfo
+                // produce a mixed identity, and ISv2 trusts hdwRunState enough to fire an APP-mode reset at
+                // a device already sitting in ISbl.
                 devInfo.firmwareVer[0] = buf[2];
                 devInfo.firmwareVer[1] = buf[3];
                 switch ((ISBootloader::eProcessorType) buf[5]) {
@@ -494,6 +487,16 @@ bool ISDevice::validate(uint32_t timeout) {
             if (oldDevInfo.hdwRunState == HDW_STATE_APP) {
                 hdwId = oldHdwId;
                 devInfo = oldDevInfo;
+            } else if ((oldDevInfo.serialNumber != 0) && (oldDevInfo.hardwareType != 0)) {
+                // Not trusted enough to restore wholesale, but keep the identity keys: the unique id is
+                // (hdwId << 48) | serialNumber, and it is the only way getDevice(uid) can find this device
+                // again. A timed-out validation is no evidence that either field changed. hdwRunState stays
+                // UNKNOWN, so hasDeviceInfo() is false and a full revalidation is still required.
+                devInfo.serialNumber = oldDevInfo.serialNumber;
+                devInfo.hardwareType = oldDevInfo.hardwareType;
+                memcpy(devInfo.hardwareVer, oldDevInfo.hardwareVer, sizeof(devInfo.hardwareVer));
+                devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             }
             log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Device failed to validate in time.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout);
             return (queryDeviceInfoISbl(250) && hasDeviceInfo());

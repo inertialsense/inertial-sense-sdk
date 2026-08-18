@@ -51,11 +51,9 @@ std::mutex cISBootloaderISB::rst_serial_list_mutex;
  *  timeout: that inference is only correct while every read consumes its full timeout, and silently
  *  collapses into "give up immediately" for any port that can return early.
  *
- *  Generous because this is a DEDICATED probe -- the whole reason cISBootloaderISB opened the port -- so
- *  it can afford both the long read a relayed port needs and several full autobaud bursts. Contrast the
- *  ~250 ms that ISDevice::validate() spends, where the ISbl query is one step of a round-robin that gets
- *  re-entered; queryIsblVersionFrame() scales its schedule to whichever it is given. The burst length,
- *  per-read timeout and attempt cap all live with that shared implementation, in ISDevice.h. */
+ *  Generous because this is a DEDICATED probe, so it can afford both the long read a relayed port needs
+ *  and several full autobaud bursts. queryIsblVersionFrame() scales its schedule to the budget it is
+ *  given; the burst length, per-read timeout and attempt cap live with it in ISDevice.h. */
 #define ISB_VERSION_BUDGET_MS       3000
 
 #define MAX_VERIFY_CHUNK_SIZE       1024
@@ -82,18 +80,13 @@ is_operation_result cISBootloaderISB::match_test(void* param)
  * unanswered.
  *
  * The version response is the ONLY reliable evidence that the bootloader is synchronized. The 'U'
- * autobaud handshake is echoed once per sync, so a bootloader synchronized earlier -- by a previous
- * probe, an earlier update phase, or an entirely earlier process -- answers commands while echoing
- * nothing at all. That makes the handshake impossible to use as a precondition and misleading to
- * report as a status: the old code handshaked first, reported "no handshake" whenever no echo came
- * back, and then went on to succeed anyway on every device and every bootloader version.
+ * autobaud handshake is echoed once per sync, so a bootloader synchronized earlier -- by a previous probe,
+ * an earlier update phase, or an entirely earlier process -- answers commands while echoing nothing at all.
+ * The handshake is therefore unusable as a precondition and misleading as a status.
  *
- * So the order is inverted. Ask for the version; if it answers we are synchronized and done. If it
- * does not, THEN send the handshake burst as a recovery action -- ignoring its result, because an
- * already-synchronized bootloader cannot acknowledge it -- and ask again. The old loop sent its burst
- * exactly once, before its retry loop, so a bootloader that was not synchronized at that one instant was
- * never offered another chance; the only thing supplying further attempts was the discovery loop spawning
- * whole new workers.
+ * So: ask for the version; if it answers, we are synchronized and done. If it does not, send the handshake
+ * burst as a recovery action -- ignoring its result, since an already-synchronized bootloader cannot
+ * acknowledge it -- and ask again until the budget expires.
  *
  * @param budgetMs total wall-clock budget across all attempts
  * @param attemptsOut if non-null, filled with the number of query attempts made
@@ -115,10 +108,17 @@ bool cISBootloaderISB::query_isb_version(uint32_t budgetMs, isb_probe_detail_t* 
             detail->handshakes = probe.handshakes;
             detail->handshakeAcked = probe.handshakeAcked;
         }
-        log_warn(IS_LOG_FWUPDATE, "[%s] no ISbl version response: %d attempts, %d handshake%s (%s)",
-                 portName(m_port), probe.attempts, probe.handshakes,
-                 (probe.handshakes == 1) ? "" : "s",
-                 probe.handshakeAcked ? "acknowledged" : "none acknowledged");
+        // Distinguish "never had a usable port" from "asked and got no answer" -- otherwise both look
+        // like a probe that simply chose not to try.
+        if (!probe.portOpened) {
+            log_warn(IS_LOG_FWUPDATE, "[%s] no ISbl version response: the port never opened, so nothing was sent "
+                                      "(async transport still connecting, or the port is gone).", portName(m_port));
+        } else {
+            log_warn(IS_LOG_FWUPDATE, "[%s] no ISbl version response: %d attempts, %d handshake%s (%s)",
+                     portName(m_port), probe.attempts, probe.handshakes,
+                     (probe.handshakes == 1) ? "" : "s",
+                     probe.handshakeAcked ? "acknowledged" : "none acknowledged");
+        }
         return false;
     }
 

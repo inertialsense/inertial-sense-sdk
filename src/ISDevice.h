@@ -34,26 +34,30 @@ extern "C"
 }
 
 /* Number of 'U' characters in one ISbl autobaud burst, and the gap between them.
- * The protocol needs "at least 6", but that holds at a low baud: a 'U' lasts ~87us at 115200 and ~11us at
- * 921600, and the bootloader's autobaud measurement is correspondingly marginal. Measured on IMX-5: a
- * burst of 10 locks it on the first try at 115200 and NOT AT ALL at 921600, where it took roughly 10-15
- * whole bursts before catching. Since the bootloader autobauds once and then ignores other rates, that
- * slow catch is also the window in which a mismatched probe can lock it to the wrong rate. */
+ * The protocol needs "at least 6", but that holds only at a low baud: a 'U' lasts ~87us at 115200 and
+ * ~11us at 921600, where the bootloader's autobaud has far fewer samples to work with. The burst is
+ * therefore sized for the top of the supported range. The bootloader autobauds once and then ignores
+ * other rates, so a slow lock is also the window in which a mismatched probe can lock it to the wrong one. */
 #define BOOTLOADER_HANDSHAKE_COUNT  50
 #define BOOTLOADER_HANDSHAKE_DELAY  10
 /** Upper bound on a single ISbl version-response read, used when the caller's budget can afford it.
  *  Deliberately generous: a relayed (TCP) port is materially slower than a local UART, and a tighter
- *  value manufactures re-syncs that are not needed. See queryIsblVersionFrame() for how a short budget
- *  scales this down -- a read is never allowed to consume the whole budget. */
+ *  value manufactures re-syncs that are not needed. queryIsblVersionFrame() scales this down for a short
+ *  budget; a read is never allowed to consume the whole budget. */
 #define ISBL_VERSION_READ_TIMEOUT_MS 500
-/** Floor for that same read, so a very short budget still allows a response to arrive. Matches the read
- *  granularity of the handshake-first sequence this replaced. */
+/** Floor for that same read, so even a very short budget still allows a response to arrive. */
 #define ISBL_VERSION_MIN_READ_MS      50
 /** Belt-and-braces cap on query attempts, independent of the time budget. A budget alone bounds only
- *  elapsed time, not iteration count, so any step that unexpectedly stops blocking turns the probe into a
- *  busy spin -- observed once at 112 million iterations inside a 3 s budget. Generously above the handful
- *  of rounds any real budget permits, so tripping it means something else is wrong. */
+ *  elapsed time, not iteration count, so a step that stops blocking would turn the probe into a busy
+ *  spin. Set well above the handful of rounds any real budget permits, so tripping it means something
+ *  else is wrong. */
 #define ISBL_VERSION_MAX_ATTEMPTS     64
+/** Ceiling on how long the probe waits for the port to become open before giving up on it.
+ *
+ *  "Not open yet" is a transient state on an asynchronous transport rather than a fault: a non-blocking
+ *  connect (tcpPort) returns PORT_ERROR__NONE while the handshake is still in flight and leaves
+ *  PORT_FLAG__OPENED clear. Scaled down for short-budget callers, and free when the port is already open. */
+#define ISBL_PORT_OPEN_WAIT_MS      1000
 
 #define PRINT_DEBUG 0
 #if PRINT_DEBUG
@@ -794,6 +798,7 @@ public:
         int  attempts = 0;              //!< version queries sent, including the one that succeeded
         int  handshakes = 0;            //!< autobaud bursts sent as recovery; one per unanswered query
         bool handshakeAcked = false;    //!< true if the bootloader echoed 'U' to any of those bursts
+        bool portOpened = false;        //!< false if the port never became usable, so nothing was ever sent
     };
 
     /**
@@ -828,9 +833,8 @@ public:
      * exhausting the burst is the normal case rather than a fault. Use queryIsblVersionFrame() unless you
      * specifically need the burst alone.
      *
-     * This is the only implementation of the burst in the SDK. Both cISBootloaderISB (ISv1) and
-     * ISBFirmwareUpdater (ISv2) previously carried byte-identical private copies, which is how they came
-     * to disagree about whether exhausting the burst means failure.
+     * This is the only implementation of the burst in the SDK; both the ISv1 (cISBootloaderISB) and ISv2
+     * (ISBFirmwareUpdater) paths use it, so they cannot disagree about what exhausting a burst means.
      *
      * @param port the port to handshake on
      * @param burstCount how many 'U' characters to send before giving up; callers working to a deadline
