@@ -33,8 +33,27 @@ extern "C"
     #include "core/base_port.h"
 }
 
-#define BOOTLOADER_HANDSHAKE_COUNT  10
+/* Number of 'U' characters in one ISbl autobaud burst, and the gap between them.
+ * The protocol needs "at least 6", but that holds at a low baud: a 'U' lasts ~87us at 115200 and ~11us at
+ * 921600, and the bootloader's autobaud measurement is correspondingly marginal. Measured on IMX-5: a
+ * burst of 10 locks it on the first try at 115200 and NOT AT ALL at 921600, where it took roughly 10-15
+ * whole bursts before catching. Since the bootloader autobauds once and then ignores other rates, that
+ * slow catch is also the window in which a mismatched probe can lock it to the wrong rate. */
+#define BOOTLOADER_HANDSHAKE_COUNT  50
 #define BOOTLOADER_HANDSHAKE_DELAY  10
+/** Upper bound on a single ISbl version-response read, used when the caller's budget can afford it.
+ *  Deliberately generous: a relayed (TCP) port is materially slower than a local UART, and a tighter
+ *  value manufactures re-syncs that are not needed. See queryIsblVersionFrame() for how a short budget
+ *  scales this down -- a read is never allowed to consume the whole budget. */
+#define ISBL_VERSION_READ_TIMEOUT_MS 500
+/** Floor for that same read, so a very short budget still allows a response to arrive. Matches the read
+ *  granularity of the handshake-first sequence this replaced. */
+#define ISBL_VERSION_MIN_READ_MS      50
+/** Belt-and-braces cap on query attempts, independent of the time budget. A budget alone bounds only
+ *  elapsed time, not iteration count, so any step that unexpectedly stops blocking turns the probe into a
+ *  busy spin -- observed once at 112 million iterations inside a 3 s budget. Generously above the handful
+ *  of rounds any real budget permits, so tripping it means something else is wrong. */
+#define ISBL_VERSION_MAX_ATTEMPTS     64
 
 #define PRINT_DEBUG 0
 #if PRINT_DEBUG
@@ -770,6 +789,56 @@ public:
      */
     bool fwUpdate(p_data_t* msg = nullptr);
 
+    /** What an ISbl version probe had to do, for reporting. */
+    struct isbl_probe_t {
+        int  attempts = 0;              //!< version queries sent, including the one that succeeded
+        int  handshakes = 0;            //!< autobaud bursts sent as recovery; one per unanswered query
+        bool handshakeAcked = false;    //!< true if the bootloader echoed 'U' to any of those bursts
+    };
+
+    /**
+     * @brief Reads the ISbl version frame from a port, re-synchronizing the bootloader only when a query
+     *        goes unanswered.
+     *
+     * The version response is the only reliable evidence that the bootloader is synchronized: the 'U'
+     * autobaud handshake is echoed once per sync, so a bootloader synchronized by an earlier probe, phase
+     * or process answers commands while echoing nothing. So ask for the version first; only if that goes
+     * unanswered send a burst -- ignoring its result, since an already-synchronized bootloader cannot
+     * acknowledge it -- and ask again until the budget expires.
+     *
+     * Static and port-based so the ISv1 path (cISBootloaderISB), which operates on a bare port_handle_t
+     * and has no ISDevice, shares this negotiation. Returns the raw frame rather than parsed fields
+     * because the two callers need different parts of it: ISbl props (rom_available, is_evb) matter for
+     * image-signature selection but have no place in dev_info_t.
+     *
+     * @param port the port to probe
+     * @param frame receives the 14-byte response on success
+     * @param budgetMs total wall-clock budget across all attempts
+     * @param detail if non-null, filled with what the probe had to do
+     * @return true if a valid version frame was read (0xAA 0x55 header, and for v6+ the full 14 bytes
+     *         ending ".\r\n"), otherwise false
+     */
+    static bool queryIsblVersionFrame(port_handle_t port, uint8_t frame[14], uint32_t budgetMs = 3000,
+                                      isbl_probe_t* detail = nullptr);
+
+    /**
+     * @brief Sends one ISbl autobaud burst on a port.
+     *
+     * Success is not a precondition for anything: an already-synchronized bootloader will not echo, so
+     * exhausting the burst is the normal case rather than a fault. Use queryIsblVersionFrame() unless you
+     * specifically need the burst alone.
+     *
+     * This is the only implementation of the burst in the SDK. Both cISBootloaderISB (ISv1) and
+     * ISBFirmwareUpdater (ISv2) previously carried byte-identical private copies, which is how they came
+     * to disagree about whether exhausting the burst means failure.
+     *
+     * @param port the port to handshake on
+     * @param burstCount how many 'U' characters to send before giving up; callers working to a deadline
+     *        pass a smaller count so the burst fits the time they have left
+     * @return true if the bootloader echoed the handshake character, otherwise false
+     */
+    static bool handshakeISbl(port_handle_t port, int burstCount = BOOTLOADER_HANDSHAKE_COUNT);
+
     /**
      * @brief Queries device info while the device is believed to be in the ISbootloader, handshaking
      * first via handshakeISbl() if not already done.
@@ -822,7 +891,6 @@ private:
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
     unsigned int                syncCheckTimeMs = 0;
 
-    bool                        hasHandshake = false;                //!< indicator that this device has already negotiated a handshake, and shouldn't keep trying
     std::array<std::chrono::high_resolution_clock::time_point, _PTYPE_SIZE> lastRxTs; //!< An array of timestamps of when last data was received of a particular protocol type (ISB, NMEA, RTCM3, etc)
 
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> bcastMsgBuffers = {}; //!< pending/active BroadcastBinaryData() request slots
@@ -849,8 +917,6 @@ private:
     /** @brief Currently a no-op stub (body is commented out); intended to forward received data to an owning cISLogger. */
     void stepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    /** @brief Performs the ISbootloader handshake (sends repeated handshake chars, waits for the device's response) required before queryDeviceInfoISbl() can succeed. @return true once handshaking completes (or the RX buffer could not be cleared, to avoid retrying indefinitely). */
-    bool handshakeISbl();
     // NOTE: queryDeviceInfoISbl() is declared in the public section above -- ISBFirmwareUpdater needs it.
 
     /** @brief Periodic (SYNC_FLASH_CFG_CHECK_PERIOD_MS) IMX/GPX flash-config synchronization tick; no-op unless the device is running application firmware. */

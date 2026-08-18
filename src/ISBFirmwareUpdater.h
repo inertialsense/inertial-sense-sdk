@@ -268,7 +268,10 @@ private:
     bool sendCmd(const std::string& cmd, int chksumPos = -1);
     bool waitForAck(const std::string& ackStr, const std::string& progressMsg, uint32_t maxTimeout, uint32_t& elapsed, float& progress);
 
-    is_operation_result sync();
+    // No local sync()/handshake here on purpose. The ISbl autobaud burst lives in
+    // ISDevice::handshakeISbl(), and the negotiation that decides whether a burst is even needed lives in
+    // ISDevice::queryIsblVersionFrame() -- which this class reaches through device->queryDeviceInfoISbl().
+    // The burst this class used to carry was a byte-identical copy that no longer had any caller.
     uint32_t get_device_info();
     eImageSignature check_is_compatible();
     is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature = nullptr);

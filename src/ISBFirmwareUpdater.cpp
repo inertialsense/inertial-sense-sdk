@@ -633,28 +633,6 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
 }
 
 
-is_operation_result ISBFirmwareUpdater::sync()
-{
-    static const uint8_t handshakerChar = 'U';
-    uint8_t readCh = 0;
-
-    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
-    // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
-        while (portRead(device->port, &readCh, 1) == 1) {
-            if (readCh == handshakerChar)
-                return IS_OP_OK;    // received a responding handshake char, so success
-        }
-
-        if (portWrite(device->port, &handshakerChar, 1) != 1) {
-            return IS_OP_ERROR;   // failed to write, so there is an error
-        }
-        SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
-    }
-
-    return IS_OP_ERROR;
-}
-
 /**
  * Instructs the Firmware to reset into the ROM DFU bootloader. This will generally
  * reinitialize the device, forcing a drop of the serial connection. If this device

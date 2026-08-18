@@ -246,12 +246,13 @@ bool ISDevice::fwUpdate(p_data_t* msg) {
     return fwUpdateInProgress();
 }
 
-bool ISDevice::handshakeISbl() {
+bool ISDevice::handshakeISbl(port_handle_t port, int burstCount) {
     static const uint8_t handshakerChar = 'U';
     uint8_t readCh = 0;
 
-    // this call shouldn't really ever take longer than 120ms to execute - Sending 10x 'U' every 10ms + 20%
-    FnProfiler fn("ISDevice::handshakeISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", 120000);
+    // Costs burstCount * BOOTLOADER_HANDSHAKE_DELAY ms when the bootloader does not echo, which is the
+    // normal case (see the header). Callers on a deadline size burstCount accordingly.
+
     // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() called.", getIdAsString().c_str());
 
     // first, flush all incoming data and ensure we have a clean buffer...
@@ -260,15 +261,14 @@ bool ISDevice::handshakeISbl() {
             portFlush(port);
 
         if ((i == 4) && portAvailable(port)) {
-            log_warn(IS_LOG_ISDEVICE, "[%s] ISDevice::handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-            return true;   // unable to clear buffer, so we can't handshake, but return true anyway so we don't keep trying
+            log_warn(IS_LOG_ISDEVICE, "[%s] handshakeISbl() is unable to clear the port RX buffer. Handshaking is not possible.", portName(port));
+            return false;   // unable to clear the buffer, so no handshake happened
         }
     }
-    fn.mark("RX Buffer cleared. Starting handshake.");
 
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
     // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
+    for (int i = 0; i < burstCount; i++) {
         // OLD WAY : if (portWaitForTimeout(port, &handshakerChar, 1, 10)) {
         while (portRead(port, &readCh, 1) == 1) {
             if (readCh == handshakerChar)
@@ -281,47 +281,125 @@ bool ISDevice::handshakeISbl() {
         SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
     }
 
-    // if we got here without an error, and still haven't seen a valid handshake character
-    // then we probably never will (likely because its already seen a handshake before)
-    return true;    // go ahead and return true, so we don't keep trying
+    // No echo. That is the NORMAL case for a bootloader that is already synchronized -- it echoes once
+    // per sync -- so this is reported, not treated as a fault. Callers must not gate on it; the version
+    // response is the only evidence of synchronization. Previously this returned true on exhaustion so
+    // that a cached flag would stop further attempts, which also made "acknowledged" unreportable.
+    return false;
+}
+
+bool ISDevice::queryIsblVersionFrame(port_handle_t port, uint8_t frame[14], uint32_t budgetMs, isbl_probe_t* detail)
+{
+    if (!portIsOpened(port))
+        return false;
+
+    isbl_probe_t local;
+    isbl_probe_t& d = detail ? *detail : local;
+    const uint32_t startMs = current_timeMs();
+
+    // Both halves of the schedule -- how long one read may block, and how long a burst may run -- are
+    // derived from the caller's budget instead of being fixed, because the two classes of caller differ by
+    // more than an order of magnitude. A dedicated probe (the ISv1 path) hands over seconds and wants the
+    // generous read a relayed port needs. validate() and validateAsync() hand over ~250ms for ONE step of a
+    // round-robin that also tries NMEA and ISB, and expect to be re-entered on the next revolution.
+    //
+    // With a fixed ISBL_VERSION_READ_TIMEOUT_MS read and a fixed BOOTLOADER_HANDSHAKE_COUNT burst, that
+    // short call spent its whole budget -- twice over -- on a single unanswered read, then found the budget
+    // spent and returned before ever reaching the re-sync. A bootloader that needed a burst therefore never
+    // received one, no matter how many revolutions ran, which is what broke ISbl discovery for ISDevice
+    // (and so -list-devices) while leaving the ISv1 path, with its 3s budget, working. Capping the read at
+    // a quarter of the budget guarantees the first pass can still afford a burst; the burst is then
+    // truncated to whatever is actually left.
+    uint32_t readMs = budgetMs / 4;
+    if (readMs > ISBL_VERSION_READ_TIMEOUT_MS)  readMs = ISBL_VERSION_READ_TIMEOUT_MS;
+    if (readMs < ISBL_VERSION_MIN_READ_MS)      readMs = ISBL_VERSION_MIN_READ_MS;
+
+    while (d.attempts < ISBL_VERSION_MAX_ATTEMPTS) {
+        if ((current_timeMs() - startMs) >= budgetMs)
+            return false;       // the previous round's re-sync consumed the budget
+        d.attempts++;
+
+        // Terminate any PARTIAL COMMAND already sitting in the bootloader's parser, then clear our own RX
+        // buffer. Both halves are needed and they do different jobs: the newlines end a truncated command
+        // on the DEVICE (otherwise the version query below is appended to that fragment and rejected,
+        // which is what happens in the ISv2 path, where validate() has just probed the port with NMEA/ISB
+        // traffic), while the flush stops a stale 0xAA55 frame from an earlier probe satisfying this
+        // attempt and reporting a version it never obtained.
+        for (int i = 0; i < 5; i++) {
+            if (portWrite(port, (uint8_t*)"\n", 1) == 1) {
+                SLEEP_MS(2);
+                if (portAvailable(port))
+                    portFlush(port);
+            }
+        }
+        portFlush(port);
+
+        memset(frame, 0, 14);
+        if (portWrite(port, (uint8_t*)":020000041000EA", 15) != 15)
+            return false;       // the port is not usable; retrying cannot help
+
+        int count = portReadTimeout(port, frame, 14, readMs);
+        if ((count < 0) || !portIsOpened(port))
+            return false;       // hard port error, or the transport dropped under us
+
+        if ((count >= 8) && (frame[0] == 0xAA) && (frame[1] == 0x55)) {
+            // A version 6+ reply is the full 14 bytes ending ".\r\n", and the processor type, EVB flag and
+            // serial number live inside that frame -- so a short or unterminated one is retried rather
+            // than half-parsed. Pre-v6 bootloaders never send those fields and are accepted on the header.
+            bool full = (count >= 14) && (frame[11] == '.') && (frame[12] == '\r') && (frame[13] == '\n');
+            if ((frame[2] < 6) || full)
+                return true;
+        }
+
+        // Unanswered, so the bootloader may not be synchronized. Send a burst and ask again. Its result is
+        // recorded but never gates anything -- an already-synchronized bootloader cannot acknowledge it.
+        // A burst truncated by the budget is still worth sending: the bootloader's autobaud accumulates
+        // across bursts (roughly 10-15 of them at 921600), and a short-budget caller is re-entered
+        // repeatedly, so each revolution contributes. What is NOT worth sending is a burst so short it
+        // leaves no time to ask again -- that is the shape the old fixed schedule collapsed into.
+        uint32_t elapsed = current_timeMs() - startMs;
+        if (elapsed >= budgetMs)
+            return false;
+        int burstCount = (int)((budgetMs - elapsed) / BOOTLOADER_HANDSHAKE_DELAY);
+        if (burstCount > BOOTLOADER_HANDSHAKE_COUNT)
+            burstCount = BOOTLOADER_HANDSHAKE_COUNT;
+        if (burstCount <= 0)
+            return false;
+
+        d.handshakes++;
+        if (handshakeISbl(port, burstCount))
+            d.handshakeAcked = true;
+    }
+
+    // The attempt cap, not the budget. Reaching it means reads and bursts are both returning far faster
+    // than their nominal cost, which is a transport problem rather than an unsynchronized bootloader.
+    log_warn(IS_LOG_ISDEVICE, "[%s] queryIsblVersionFrame() gave up after %d attempts in %dms (budget %dms) "
+                              "-- reads are not consuming their timeout; check the transport.",
+             portName(port), d.attempts, current_timeMs() - startMs, budgetMs);
+    return false;
 }
 
 bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     uint8_t buf[64] = {};
-    if (!portIsOpened(port))
-        return false;
 
-    FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    //log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() called.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
-    if (!hasHandshake) {
-        hasHandshake = handshakeISbl();     // We have to handshake before we can do anything... if we've already handshaked, we won't go a response, so ignore this result
-        fn.mark("Handshake == " + std::to_string(hasHandshake));
-    }
+    FnProfiler fn("ISDevice::queryDeviceInfoISbl() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);
 
-    // clear any partial commands and flush the rx buffer
-    for (int i = 0; i < 5; i++) {
-        if (portWrite(port, (uint8_t*)"\n", 1) == 1) {
-            SLEEP_MS(2);
-            if (portAvailable(port))
-                portFlush(port);
-        }
-    }
-    fn.mark("Flushed Tx buffer.");
+    // Version-first negotiation, shared with the ISv1 path -- see queryIsblVersionFrame(). This replaced
+    // a handshake-first sequence that (a) sent its burst once, gated on a cached hasHandshake flag that
+    // latched true because the old handshakeISbl() returned true on exhaustion, and (b) retried only the
+    // READ, never re-sending the query or re-synchronizing. A bootloader that was not synchronized at
+    // that single instant was therefore never offered another chance.
+    isbl_probe_t probe;
+    if (queryIsblVersionFrame(port, buf, timeout, &probe)) {
+        fn.mark("Got a response (" + std::to_string(probe.attempts) + " attempt(s), " +
+                std::to_string(probe.handshakes) + " handshake(s), " +
+                (probe.handshakeAcked ? "acknowledged" : "not acknowledged") + ").");
 
-    // Query device
-    if (portWrite(port, (uint8_t*)":020000041000EA", 15) != 15)
-        return false;       // we couldn't send the entire string - so don't even bother waiting for a response. We'll have to try again later.
-
-    fn.mark("Query sent.");
-
-    // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-    uint32_t timeoutExpires = current_timeMs() + timeout;
-    do {
-        int count = portReadTimeout(port, buf, 14, 50);
-        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55) {   // expected response
-            // m_isb_props.rom_available = buf[4];
-
-            if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
+        // The processor type, EVB flag and serial number live in the v6+ tail, so only a full frame can
+        // populate devInfo. queryIsblVersionFrame() also accepts a pre-v6 header-only reply, which
+        // carries none of those -- parse nothing from it rather than reading uninitialised bytes.
+        if (buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n') {
+            {
                 // firmwareVer is assigned HERE, inside the validity guard, not above it. Previously these
                 // two bytes were written as soon as the 0xAA55 prefix matched -- so a response that was
                 // long enough and correctly prefixed but had a malformed tail mutated devInfo and then
@@ -364,16 +442,12 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                 devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
                 devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
                 memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
-                fn.mark("Got a response.");
                 return true;
             }
         }
-        SLEEP_MS(5);
-    } while (current_timeMs() < timeoutExpires);
+    }
 
-    // hdwId = IS_HARDWARE_TYPE_UNKNOWN;
-    // devInfo = {};
-    fn.mark("Timed-out waiting.");
+    fn.mark("No version response.");
     // log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::queryDeviceInfoISbl() no valid response received - Either not an ISDevice, or not in ISbootloader.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
     return false;
 }

@@ -118,13 +118,9 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    /**
-     * Performs the ISB handshake sequence (repeated 'U' characters) required before the bootloader
-     * will accept commands. A no-op if this instance has already handshaken successfully.
-     * @param port the serial port to handshake over
-     * @return IS_OP_OK once a handshake response is received, otherwise IS_OP_ERROR
-     */
-    is_operation_result handshake_sync(port_handle_t port);
+    // The ISB handshake burst used to be duplicated here. It now lives in ISDevice::handshakeISbl(), and
+    // query_isb_version() reaches it through ISDevice::queryIsblVersionFrame(), which owns the decision of
+    // whether a burst is needed at all.
 
     /** Clears the process-wide list of serial numbers already reset by reboot(). */
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
@@ -163,7 +159,8 @@ private:
      * autobaud handshake is echoed once per sync, so a bootloader synchronized by an earlier probe,
      * phase or process answers commands while echoing nothing. Handshaking is therefore a recovery
      * action here rather than a precondition, and its result is deliberately unused. There is
-     * intentionally no cached "already handshaked" state -- see handshake_sync().
+     * intentionally no cached "already handshaked" state: skipping the burst on the strength of an
+     * earlier success would let the first round consume the only attempt and leave every later one silent.
      *
      * @param budgetMs total wall-clock budget across all attempts
      * @param detail if non-null, filled with what the probe actually had to do, for reporting
