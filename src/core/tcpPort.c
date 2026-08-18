@@ -379,11 +379,10 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
     // function ("the maximum time to wait for 'len' bytes") and the behaviour serialPortReadTimeout()
     // provides, so protocol layers written against serial assume it.
     //
-    // Observed on the ISbl (ISv1) firmware path over a relayed port: a 14-byte device-info reply arriving
-    // as 8, 11 or 13 bytes ("check_is_compatible parse error", "get_device_info bad read"), and the 3-byte
-    // ".\r\n" page acknowledgement arriving split, which failed all 10 ack attempts and aborted the flash
-    // with "Upload hex page error". Worse, that ack loop re-sends its checksum per attempt, so a split ack
-    // desynchronises the stream and every later read compounds it.
+    // This matters most to the ISbl (ISv1) firmware path over a relayed port, where a short read turns a
+    // 14-byte device-info reply or a 3-byte ".\r\n" page acknowledgement into a parse failure. The ack loop
+    // there re-sends its checksum per attempt, so a split ack desynchronises the stream and every later
+    // read compounds it.
     //
     // Partial data is still returned when the timeout expires, so callers that legitimately accept short
     // reads keep working; the difference is that the full timeout budget is spent trying first.

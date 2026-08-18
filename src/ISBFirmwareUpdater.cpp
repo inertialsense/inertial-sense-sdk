@@ -19,13 +19,11 @@
 #define IMX5_WRP_RESERVED           0x8000u     //!< top 32K of the 8-page window is WRP calibration/config (not app-writable; see SN-8313)
 
 /**
- * Longest a reboot wait may be held open by the keep-alive (SN-8514), measured from last_reboot.
+ * Longest a reboot wait may be held open by the keep-alive, measured from last_reboot.
  *
- * The keep-alive suppresses the host's 20 s watchdog, so it MUST be bounded: an unbounded keep-alive
- * turns a genuine stall into a hang instead of a failure. Measured that the hard way -- an unbounded
- * version held a wait-for-ISbl open for 466 s (448 heartbeats) on a device that never returned, where
- * the session should have failed. Matches the 20 s give-up budget the UPDATE_DONE path already applies
- * to the same wait, so the session's worst case is bounded at this budget plus the host's 20 s
+ * The keep-alive suppresses the host's 20 s watchdog, so it MUST be bounded -- an unbounded keep-alive
+ * turns a genuine stall into a hang instead of a failure. Matches the 20 s give-up budget the UPDATE_DONE
+ * path already applies to the same wait, so the session's worst case is this budget plus the host's 20 s
  * silence watchdog.
  */
 #define ISB_REBOOT_KEEPALIVE_BUDGET_MS   20000u
@@ -140,10 +138,9 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     // its watchdog is 20s (FirmwareUpdate.h:445). The two per-state heartbeats further down both sit
     // *after* a getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo)) lookup whose failure path exits
     // early -- and a miss also nulls `device`, which then trips the `if (!device) return false` below on
-    // every later call. So the keep-alive went silent in exactly the window it exists to cover: while
-    // the device is mid-reboot and momentarily unfindable. Measured before this change: 0 emissions
-    // across a ~20s wait-for-ISbl and 1 across a ~22s wait-for-APP, against ~40 expected at the 500ms
-    // progress_interval. A keep-alive must never depend on the thing it is covering for.
+    // every later call. That would silence the keep-alive in exactly the window it exists to cover: while
+    // the device is mid-reboot and momentarily unfindable. A keep-alive must never depend on the thing it
+    // is covering for.
     //
     // Only INITIALIZING/FINALIZING need this: those are the two states that wait on a rebooting device
     // and produce no other traffic. Erase/write/verify already emit progress that resets the watchdog.
@@ -347,10 +344,9 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
 
                 // Re-fetch device (port may have changed after USB re-enumeration). Hold the current
                 // handle across the lookup: assigning the result straight to the member drops the last
-                // reference on a miss, and every later fwUpdate_step() then returns at the
-                // `if (!device)` guard near the top -- which is what silenced the keep-alive and let the
-                // host's 20s watchdog fail an upload that had completed (SN-8514). Same defect, and same
-                // fix, as the lookup in the INITIALIZING block above.
+                // reference on a miss, and every later fwUpdate_step() then returns at the `if (!device)`
+                // guard near the top -- silencing the keep-alive and letting the host's 20s watchdog fail
+                // an upload that had completed. Same as the lookup in the INITIALIZING block above.
                 device_handle_t priorDevice = device;
                 device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
                 if (!device) {

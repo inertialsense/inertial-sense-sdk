@@ -96,14 +96,12 @@ public:
          * loop clears m_port_threads (app, ISB-version) cannot see the previous phase's entry, so the
          * flag only governs re-spawning within that phase. The ISB-mode phase does NOT clear the map,
          * so its entry survives into the update phase and this flag governs whether the update phase
-         * starts any worker at all. Setting it false there produces
-         * "No devices were updated (succeeded 0, failed 0)" -- measured.
+         * starts any worker at all. Setting it false there yields
+         * "No devices were updated (succeeded 0, failed 0)".
          *
-         * It was previously named `reuse_port` and documented as "the port should be reopened and
-         * reused in the next phase rather than treated as new". That reads as a port-ownership
-         * statement -- it has no bearing on openIfNeeded() or on who closes the port -- so workers set
-         * it for that meaning while the gate read it as "spawn another worker". The ISB-version phase's
-         * unconditional `true` consequently re-probed one device 17-23 times per run. Name it after the
+         * The name matters: it has no bearing on openIfNeeded() or on who closes the port, so anything
+         * suggesting port ownership invites a worker to set it for that meaning while the spawn gate reads
+         * it as "start another worker". Name it after the
          * question the gate asks, not after a lifecycle notion nothing implements.
          *
          * Set true when another worker should follow: a transient failure such as a port that could not

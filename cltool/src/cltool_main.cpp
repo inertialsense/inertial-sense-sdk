@@ -764,23 +764,15 @@ static int cltool_updateFirmware()
 
     // Drive the legacy (ISv1) updater directly, passing EVERY explicitly-requested target in ONE call.
     //
-    // This used to call InertialSense::BootloadFile(), which took the -c target and then re-expanded it
-    // to every serial port it could enumerate (update_ports = all_ports - ports_user_ignore) -- so a
-    // deliberate choice of one device silently became "every device attached". It also discarded the
-    // updater's result and always returned IS_OP_OK, so failures reported success.
+    // ONE call, not one per target. cISBootloaderThread runs one worker per port per phase, so handing it
+    // the full target list updates N devices CONCURRENTLY; serialising the calls would make an N-device
+    // update take N times as long. It would also age the target list -- names are captured once, so a
+    // device that re-enumerates while an earlier target is being flashed would then be looked for under a
+    // port that no longer exists. One pass means one discovery window.
     //
-    // Fixing those two things by looping one target per call was a mistake, and cost the whole point of
-    // cISBootloaderThread: it runs one worker per port per phase, so handing it the full target list
-    // updates N devices CONCURRENTLY. Serialising the calls made an N-device update take N times as long,
-    // and had a second-order cost -- the target list is captured once, so while target 1 was being
-    // flashed the names in the list aged, and a device that re-enumerated in the meantime was then looked
-    // for under a port that no longer existed (observed: SN62913 moved ttyACM2 -> ttyACM0 and was
-    // abandoned). One pass means one discovery window.
-    //
-    // Both original defects stay fixed regardless of batching: the targets are established HERE and the
-    // updater treats them as an inclusion set rather than re-expanding them, and update() now reports a
-    // partial failure instead of only a total one -- which it must, since batching removes the per-target
-    // accounting this loop used to do.
+    // The targets are established HERE and the updater treats them as an inclusion set rather than
+    // re-expanding them to every enumerable port, so `-c <one device>` stays one device. update() reports
+    // partial failure, which it must, since batching removes any per-target accounting here.
     std::vector<std::string> targets;
     if (g_commandLineOptions.comPort == "*")
         cISSerialPort::GetComPorts(targets);
@@ -1442,11 +1434,9 @@ static int cltool_dataStreaming()
        }
         // An escaped exception is a FAILURE, and it has to say what it was.
         //
-        // This previously printed "Unknown exception..." and left exitCode untouched -- so a
-        // std::regex_error thrown out of a port scan aborted a 15-device firmware update, after every
-        // device had already been reset into its bootloader, and cltool exited 0. A caller (or a
-        // manufacturing fixture) had no way to tell that from success, and identifying the exception
-        // required attaching gdb with `catch throw`. Neither of those should ever have been necessary.
+        // Report the exception type and message, and set a failure exit code. A caller -- or a
+        // manufacturing fixture -- must be able to tell an aborted run from a successful one without
+        // attaching a debugger.
         catch (const std::exception& e)
         {
             cout << "Unhandled exception (" << typeid(e).name() << "): " << e.what() << endl;

@@ -251,7 +251,7 @@ void cISBootloaderThread::start_threads_for_url_targets(const std::set<std::stri
 
         // Bind once per target per sequence, caching FAILURES as well as successes: these loops re-run
         // every ~100ms for several seconds, so retrying a bind that cannot succeed both spams the log
-        // (observed 30+ identical errors in one run) and re-resolves the host each time.
+        // and re-resolves the host each time.
         auto bound = m_boundPorts.find(target);
         if (bound == m_boundPorts.end()) {
             // PORT_TYPE__TCP is required, not optional: TcpPortFactory::validatePort() rejects anything
@@ -300,12 +300,11 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = thread_info->port();
-    // NOTE (2026-08-17): m_baudRate here is part of a real defect, but do NOT "fix" it in isolation.
-    // Measured on SN519465: a freshly reset ISbl locks its autobaud onto the FIRST coherent 'U' burst
-    // it can measure, and thereafter ignores every other rate. At ~+7.5 s after BLEN, a burst at 115200
-    // locks it on the first try; a burst at 921600 does not lock it at all and only takes after ~10-15
-    // bursts, around +21 s -- which is the entire reason a from-APP update looks like it waits 20 s for
-    // a device that actually reboots in 1-2 s.
+    // m_baudRate here is part of a real defect, but do NOT "fix" it in isolation. A freshly reset ISbl
+    // locks its autobaud onto the FIRST coherent 'U' burst it can measure and thereafter ignores every
+    // other rate. Shortly after BLEN a burst at 115200 locks on the first try, while one at 921600 may not
+    // take for another ~10-15 bursts -- which is why a from-APP update can appear to wait ~20 s for a
+    // device that reboots in 1-2 s.
     //
     // Changing only this phase to 115200 made things WORSE, not better: it locked the device at 115200
     // at +8 s, after which mode_thread_port_isb (m_baudRate) and update_device's
@@ -338,8 +337,8 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
     //
     // Setting it true here meant the discovery loop's gate (`done && !allow_new_worker`) never matched, so
     // a brand-new worker was spawned for this same port every time one finished, for the entire 3 s
-    // phase window -- measured at 17-23 identical probes of one device per run, each constructing a
-    // fresh cISBootloaderISB, re-opening the port and re-querying a version already known. The flag
+    // phase window -- each one constructing a fresh cISBootloaderISB, re-opening the port and
+    // re-querying a version already known. The flag
     // is only read by those spawn gates, so `true` here is a spawn instruction and nothing else.
     // The open-failure path above still sets it true: that IS transient and does warrant a retry.
     thread_info->allow_new_worker = false;
@@ -384,8 +383,6 @@ void cISBootloaderThread::mode_thread_port_isb(void* context)
     // flag. Setting it false here therefore does not merely suppress a retry: it makes the update
     // phase find a finished, non-retryable entry for the port and create no update worker at all,
     // reporting "No devices were updated (succeeded 0, failed 0)" with the device left in ISbl.
-    // Measured, after briefly setting it false: 0/3 cycles updated, including one whose ISbl probe
-    // had succeeded.
     //
     // So the flag answers a single question -- "an entry already exists for this port; should a worker
     // still be started?" -- whose scope is per-phase only where the map is cleared between phases.
@@ -413,8 +410,7 @@ void cISBootloaderThread::update_thread_port(void* context)
     // transport (a relayed tcp:// port) would overwrite it into a broken half-serial port. A borrowed
     // port arrives ready to use from its own factory and must be left alone.
     // A thread_port_t is carried over from the previous phase, so clear any retry request it left
-    // behind before this phase's work begins. Both arms of the ownsPort() branch below did this
-    // identically; it has nothing to do with port ownership.
+    // behind before this phase's work begins. This is independent of port ownership.
     m_port_thread_mutex.lock();
     thread_info->allow_new_worker = false;
     m_port_thread_mutex.unlock();
@@ -559,13 +555,11 @@ bool cISBootloaderThread::set_mode_and_check_devices(
 
     // Only ever operate on the ports the caller explicitly asked for.
     //
-    // This was previously an EXCLUSION list: every port present at startup but not selected was
-    // collected into ports_user_ignore, and the work loops below touched any port NOT in that list.
-    // A port that appeared *after* that snapshot was therefore absent from the ignore list and got
-    // treated as selected -- and a device re-enumerating its USB CDC node (exactly what happens a
-    // few seconds after "Rebooting to APP mode...") reappears after startup. So `-c /dev/ttyACM99`
-    // would reboot an unrelated, unrequested device into the bootloader and then strand it there.
-    // An inclusion set cannot grow behind the caller's back.
+    // An INCLUSION set, deliberately: it cannot grow behind the caller's back. An exclusion list would,
+    // because a port appearing after the snapshot is absent from it and so counts as selected -- and a
+    // device re-enumerating its USB CDC node (which is what happens seconds after "Rebooting to APP
+    // mode...") appears exactly that way. That would let `-c /dev/ttyACM99` reboot an unrelated device
+    // into the bootloader and strand it there.
     std::set<std::string> targetPorts(comPorts.begin(), comPorts.end());
 
     m_continue_update = true;
@@ -1143,14 +1137,10 @@ is_operation_result cISBootloaderThread::update(
     }
     else
     {
-        // Nothing was updated. This used to report SUCCESS whenever overall_result was still its
-        // initial IS_OP_OK -- which is precisely the state reached when no device is ever found or
-        // initialized, because overall_result only goes non-OK when a device thread actually fails, and
-        // here no thread ran at all. The 3s no-device bail-out above lands right here, so `cltool -uf`
-        // against an unreachable device, or against a target that cannot be updated, printed
-        // "Update succeeded in 3.0 seconds" and exited 0 without writing a byte to anything.
-        // Updating nothing is not success, so return non-OK; the message stays descriptive because
-        // this also covers "no eligible target" rather than only a botched flash.
+        // Nothing was updated, which is not success. overall_result only goes non-OK when a device thread
+        // actually fails, so it is still IS_OP_OK when no device was ever found or initialized and no
+        // thread ran at all -- the 3s no-device bail-out above lands here. Return non-OK; the message
+        // stays descriptive because this also covers "no eligible target", not only a botched flash.
         if (overall_result == IS_OP_OK)
             overall_result = IS_OP_ERROR;
 
@@ -1200,9 +1190,8 @@ is_operation_result cISBootloaderThread::update(
     // Bound once per sequence rather than per phase, to avoid needless connect/teardown churn on a
     // relayed endpoint that every phase targets anyway. Note the relay's endpoint-persistence contract:
     // a commanded reset does NOT move the listening port -- within the reconnect timeout the port is
-    // preserved across the device's drop and return (validated relay-side 12/12, and observed here:
-    // SN62913 re-enumerated /dev/ttyACM1 -> /dev/ttyACM3 while its TCP port held). So a borrowed handle
-    // survives a reset and there is nothing to re-bind mid-reboot. It is legitimately dead only if the
+    // preserved across the device's drop and return, even while its tty re-enumerates underneath. So a
+    // borrowed handle survives a reset and there is nothing to re-bind mid-reboot. It is dead only if the
     // outage exceeds that timeout, in which case the device returns on a NEW port -- so never cache a
     // port across a full drop or a daemon restart, and never key anything off the tty name.
     release_bound_ports();

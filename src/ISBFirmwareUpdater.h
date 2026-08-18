@@ -62,7 +62,7 @@
 
 /** 1 to collect a page write's ack at the start of the NEXT step instead of blocking for it, so the
  *  round-trip overlaps whatever the step loop does in between. 0 restores the blocking write/ack pairing
- *  (useful for A/B measurement). Measured on a 15-device bench: 162.1 s -> 61.2 s. */
+ *  (useful for A/B measurement). Worth roughly a 2.5x reduction in total time on a multi-device bench. */
 #define ISB_PIPELINED_PAGE_WRITES           1
 
 // logical page size, offsets for pages are 0x0000 to 0xFFFF - flash page size on devices will vary and is not relevant to the bootloader client
@@ -271,7 +271,6 @@ private:
     // No local sync()/handshake here on purpose. The ISbl autobaud burst lives in
     // ISDevice::handshakeISbl(), and the negotiation that decides whether a burst is even needed lives in
     // ISDevice::queryIsblVersionFrame() -- which this class reaches through device->queryDeviceInfoISbl().
-    // The burst this class used to carry was a byte-identical copy that no longer had any caller.
     uint32_t get_device_info();
     eImageSignature check_is_compatible();
     is_operation_result fetch_device_info_and_signature(eImageSignature* out_signature = nullptr);

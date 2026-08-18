@@ -90,9 +90,7 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     // An unusable pattern must not abort a port scan by throwing out of it. std::regex's constructor
     // throws std::regex_error on any invalid expression, and callers reach this with strings they think
     // of as port SPECIFIERS rather than regexes -- cltool's default "*" (its all-ports token) is a valid
-    // glob and an invalid regex ('*' with nothing to repeat). That escaped all the way to cltool's
-    // catch(...), which printed "Unknown exception..." and exited 0, silently abandoning a 15-device
-    // firmware update that had already reset every device into its bootloader.
+    // glob and an invalid regex ('*' with nothing to repeat), and would otherwise escape this call.
     //
     // Fall back to matching everything, which is what a caller passing a wildcard meant anyway, and say
     // so loudly enough to be fixed at the call site.

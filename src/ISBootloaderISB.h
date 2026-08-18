@@ -118,7 +118,7 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    // The ISB handshake burst used to be duplicated here. It now lives in ISDevice::handshakeISbl(), and
+    // The ISB handshake burst lives in ISDevice::handshakeISbl(), and
     // query_isb_version() reaches it through ISDevice::queryIsblVersionFrame(), which owns the decision of
     // whether a burst is needed at all.
 
