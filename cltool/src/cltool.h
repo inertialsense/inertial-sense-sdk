@@ -140,6 +140,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     double replaySpeed = 1.0;
     cInertialSenseDisplay::eDisplayMode displayMode = cInertialSenseDisplay::DMODE_PRETTY;
     int verboseLevel = IS_LOG_LEVEL_INFO;
+    bool verboseLevelExplicit = false;      //!< true once -verbose/-ll has been given; stops other options overriding the user's choice
 
     uint64_t rmcPreset;
     bool persistentMessages;

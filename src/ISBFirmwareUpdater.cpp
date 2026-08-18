@@ -242,7 +242,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 return true;    // we'll keep in our current state until we can validate the device
 
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
                 for (int retry = 3; retry > 0; retry--) {
                     if (fetch_device_info_and_signature() == IS_OP_OK) {
