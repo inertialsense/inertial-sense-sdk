@@ -87,7 +87,23 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 }
 
 void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
-    std::regex matchPattern(pattern);
+    // An unusable pattern must not abort a port scan by throwing out of it. std::regex's constructor
+    // throws std::regex_error on any invalid expression, and callers reach this with strings they think
+    // of as port SPECIFIERS rather than regexes -- cltool's default "*" (its all-ports token) is a valid
+    // glob and an invalid regex ('*' with nothing to repeat). That escaped all the way to cltool's
+    // catch(...), which printed "Unknown exception..." and exited 0, silently abandoning a 15-device
+    // firmware update that had already reset every device into its bootloader.
+    //
+    // Fall back to matching everything, which is what a caller passing a wildcard meant anyway, and say
+    // so loudly enough to be fixed at the call site.
+    std::regex matchPattern;
+    try {
+        matchPattern.assign(pattern);
+    } catch (const std::regex_error& e) {
+        log_error(IS_LOG_PORT_FACTORY, "locatePorts(): pattern '%s' is not a valid regular expression (%s); "
+                                       "matching all ports instead.", pattern.c_str(), e.what());
+        matchPattern.assign("(.+)");
+    }
     getComPorts(portNames);
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);

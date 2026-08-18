@@ -88,6 +88,31 @@ namespace utils {
     std::string trim_copy(std::string s, const char* t = " \t\n\r\f\v");
 
     /**
+     * @brief Expands a shell-style GLOB (optionally a comma-separated list of them) into an equivalent
+     *        regular expression.
+     *
+     * Exists because glob and regex are different pattern languages that are easy to conflate, and the
+     * consequences are not cosmetic. Port discovery
+     * (PortManager::discoverPorts()/PortFactory::locatePorts()) consumes a REGEX, while command-line port
+     * specifiers are globs -- so passing one straight to the other threw std::regex_error out of a port
+     * scan on the very common "*" ("*" is a quantifier with no preceding atom), aborting a 15-device
+     * firmware update after every device had been reset into its bootloader.
+     *
+     * Translation, not escaping, so "/dev/ttyACM*" means what a user expects:
+     *   *  ->  .*        any run of characters
+     *   ?  ->  .         any single character
+     *   everything else is regex-escaped and matched literally, so "/dev/ttyACM0" does not also match
+     *   "/dev/ttyACMX" through an unescaped '.'.
+     *
+     * Glob character classes ("[a-z]") are deliberately NOT translated: the brackets are escaped and
+     * matched literally, since silently reinterpreting them is worse than not supporting them.
+     *
+     * @param globs a glob, or a comma-separated list of globs
+     * @return an equivalent regex; alternatives are joined with '|', and an empty input yields "(.+)"
+     */
+    std::string globToRegex(const std::string& globs);
+
+    /**
      * Base case for the variadic string_format() below; returns format unchanged, since there are
      * no substitutions to perform when no additional arguments are supplied.
      * @param format the string to return as-is

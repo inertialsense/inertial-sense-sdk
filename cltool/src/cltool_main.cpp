@@ -1358,7 +1358,7 @@ static int cltool_dataStreaming()
                 // per port"). Passing the resolved comPort scopes the periodic check to
                 // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts(g_commandLineOptions.comPort);
+                    PortManager::getInstance().discoverPorts(utils::globToRegex(g_commandLineOptions.comPort));
                     nextPortCheck = current_timeMs() + 1500;
                 }
 
@@ -1440,9 +1440,24 @@ static int cltool_dataStreaming()
                 }
             }
        }
+        // An escaped exception is a FAILURE, and it has to say what it was.
+        //
+        // This previously printed "Unknown exception..." and left exitCode untouched -- so a
+        // std::regex_error thrown out of a port scan aborted a 15-device firmware update, after every
+        // device had already been reset into its bootloader, and cltool exited 0. A caller (or a
+        // manufacturing fixture) had no way to tell that from success, and identifying the exception
+        // required attaching gdb with `catch throw`. Neither of those should ever have been necessary.
+        catch (const std::exception& e)
+        {
+            cout << "Unhandled exception (" << typeid(e).name() << "): " << e.what() << endl;
+            if (exitCode == EXIT_CODE_SUCCESS)
+                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
+        }
         catch (...)
         {
-            cout << "Unknown exception..." << endl;
+            cout << "Unknown exception (not derived from std::exception)..." << endl;
+            if (exitCode == EXIT_CODE_SUCCESS)
+                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
         }
     }
     else

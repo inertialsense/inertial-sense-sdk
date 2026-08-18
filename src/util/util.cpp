@@ -974,3 +974,41 @@ std::string utils::generateUUIDv4() {
 
     return std::string(buf);
 }
+
+std::string utils::globToRegex(const std::string& globs) {
+    if (globs.empty())
+        return "(.+)";      // match everything, matching PortManager::discoverPorts()'s own default
+
+    // Split on ',' locally rather than pulling ISUtilities.h in here just for splitString().
+    std::vector<std::string> parts;
+    for (size_t start = 0; start <= globs.size(); ) {
+        size_t comma = globs.find(',', start);
+        if (comma == std::string::npos) {
+            parts.push_back(globs.substr(start));
+            break;
+        }
+        parts.push_back(globs.substr(start, comma - start));
+        start = comma + 1;
+    }
+
+    std::string pattern;
+    for (const std::string& glob : parts) {
+        if (glob.empty())
+            continue;
+        if (!pattern.empty())
+            pattern += "|";
+        for (char c : glob) {
+            switch (c) {
+                case '*': pattern += ".*"; break;
+                case '?': pattern += '.';  break;
+                default:
+                    if (strchr("\\^$.|+()[]{}", c))
+                        pattern += '\\';    // literal: these are names, not expressions
+                    pattern += c;
+                    break;
+            }
+        }
+    }
+
+    return pattern.empty() ? "(.+)" : pattern;
+}
