@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <vector>
 #include <map>
+#include <set>
 #include <mutex>
 
 #include "serialPort.h"
@@ -42,14 +43,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 /**
  * Coordinates one bootloader "pass" across every connected device by fanning work out to a pool
- * of worker threads -- one thread per serial port (thread_serial_t) or per libusb DFU device
+ * of worker threads -- one thread per serial port (thread_port_t) or per libusb DFU device
  * (thread_libusb_t) -- and joining them back together before returning to the caller. All state
  * (device contexts, thread maps, progress/status callbacks) is static/process-wide: only one
  * update sequence may be in flight at a time, serialized by m_update_mutex.
  *
  * Thread lifecycle:
  *  - **Start**: set_mode_and_check_devices() and update() each spin up worker threads on demand
- *    (via create_and_start_serial_thread()/create_and_start_libusb_thread()) as new ports/devices
+ *    (via create_and_start_port_thread()/create_and_start_libusb_thread()) as new ports/devices
  *    are discovered, up to once per port/device per phase.
  *  - **Poll**: the calling thread polls each worker's `done` flag in a loop, optionally invoking
  *    a caller-supplied waitAction() callback every iteration (e.g. to pump a UI event loop) so the
@@ -73,37 +74,107 @@ public:
     cISBootloaderThread() {};
     ~cISBootloaderThread() {};
 
-    /** Per-serial-port worker-thread context used while mode-switching or updating one device. */
-    class thread_serial_t{
+    /**
+     * Per-port worker-thread context used while mode-switching or updating one device.
+     *
+     * The port may either be BORROWED from the caller (any transport -- serial, TCP, a relayed port)
+     * or OWNED by this worker, constructed from a serial port name for callers that only have a name.
+     * A borrowed port is never closed here; closing someone else's port is not ours to do.
+     */
+    class thread_port_t{
     public:
         void* thread;                                //!< opaque handle to the running worker thread, or NULL once joined
-        serial_port_t serialPort;                    //!< serial port state owned by this worker
         ISBootloader::cISBootloaderBase* ctx;         //!< the bootloader session created for this device, once identified (NULL until then)
         is_operation_result opResult;                 //!< result of the worker's most recent operation
         bool done;                                    //!< true once the worker thread has finished and can be joined
-        bool reuse_port;                              //!< true if the port should be reopened and reused in the next phase rather than treated as new
+        /**
+         * Answers exactly one question, asked by the `done && !allow_new_worker` gate in the discovery
+         * loops: an entry already exists for this port and its worker has finished -- may another
+         * worker still be started for it?
+         *
+         * Its SCOPE depends on something outside this struct, which is the trap. A phase whose join
+         * loop clears m_port_threads (app, ISB-version) cannot see the previous phase's entry, so the
+         * flag only governs re-spawning within that phase. The ISB-mode phase does NOT clear the map,
+         * so its entry survives into the update phase and this flag governs whether the update phase
+         * starts any worker at all. Setting it false there yields
+         * "No devices were updated (succeeded 0, failed 0)".
+         *
+         * The name matters: it has no bearing on openIfNeeded() or on who closes the port, so anything
+         * suggesting port ownership invites a worker to set it for that meaning while the spawn gate reads
+         * it as "start another worker". Name it after the
+         * question the gate asks, not after a lifecycle notion nothing implements.
+         *
+         * Set true when another worker should follow: a transient failure such as a port that could not
+         * be opened, a device mid-reset, or a later phase that still has work to do for this port. A
+         * definite "no" (IS_OP_INCOMPATIBLE) is as final as a success.
+         */
+        bool allow_new_worker;
         bool force_isb;                                //!< true if an ISB bootloader update should be forced even if the version already appears compatible
 
         /**
+         * Adopts a port the caller already owns, of any transport. This is the transport-agnostic path:
+         * the ISbl protocol layer only needs a port_handle_t, so a TCP/relayed port works here exactly
+         * as a serial one does.
+         * @param existingPort the caller's port; borrowed, not owned, and never closed by this worker
+         * @param force_isb_update true to force an ISB bootloader update regardless of version
+         */
+        explicit thread_port_t(port_handle_t existingPort, bool force_isb_update = false)
+            : thread(nullptr), ctx(nullptr), opResult(IS_OP_OK), done(false), allow_new_worker(false),
+              force_isb(force_isb_update), m_port(existingPort), m_ownsPort(false) { }
+
+        /**
+         * Convenience for callers that only have a serial port NAME: constructs and owns a serial port.
          * @param port_name the serial port name (e.g. "/dev/ttyACM0") this worker will operate on
          * @param force_isb_update true to force an ISB bootloader update regardless of version
          */
-        thread_serial_t(const std::string& port_name, bool force_isb_update = false) {
-            // FIXME: This is pretty jank... and ridiculous.  I can do better!
-            port_handle_t port = (port_handle_t)&(serialPort);
-            serialPortSetName(port, port_name.c_str());
-            serialPortInit(port, (int)m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM, 0);
-
-            ctx = NULL;
-            done = false;
-            force_isb = force_isb_update;
+        explicit thread_port_t(const std::string& port_name, bool force_isb_update = false)
+            : thread(nullptr), ctx(nullptr), opResult(IS_OP_OK), done(false), allow_new_worker(false),
+              force_isb(force_isb_update), m_ownsPort(true)
+        {
+            m_port = (port_handle_t)&m_ownedSerialPort;
+            serialPortSetName(m_port, port_name.c_str());
+            serialPortInit(m_port, (int)m_port_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM, 0);
         }
-        /** Closes the serial port and marks the worker done. */
-        virtual ~thread_serial_t() {
-            serialPortClose((port_handle_t)&serialPort);
+
+        /** Closes the port only if this worker created it, then marks the worker done. */
+        virtual ~thread_port_t() {
+            if (m_ownsPort)
+                serialPortClose(m_port);
             thread = NULL;
             done = true;
         }
+
+        /** @return the port this worker operates on, whatever its transport. */
+        port_handle_t port() const { return m_port; }
+
+        /** @return true if this worker constructed (and therefore closes) its own port. */
+        bool ownsPort() const { return m_ownsPort; }
+
+        /** @return true if the port is usable. Owned ports report via their serial errorCode; borrowed ports are validated generically. */
+        bool portUsable() const { return m_ownsPort ? (m_ownedSerialPort.errorCode == 0) : portIsValid(m_port); }
+
+        /**
+         * Opens the port if it is not already open. Owned serial ports use the retrying serial open (the
+         * device may still be re-enumerating); borrowed ports are opened through their own transport.
+         * @param baudRate baud rate to apply when opening an owned serial port
+         * @return PORT_ERROR__NONE on success
+         */
+        int openIfNeeded(int baudRate) {
+            if (portIsOpened(m_port))
+                return PORT_ERROR__NONE;
+            if (m_ownsPort)
+                return serialPortOpenRetry(m_port, portName(m_port), baudRate, 1);
+            // A borrowed port may be asynchronous: a non-blocking connect returns PORT_ERROR__NONE while
+            // the handshake is still in flight, leaving PORT_FLAG__OPENED clear. Reporting success there
+            // lets the worker start ISbl/APP protocol I/O against a socket that is not connected yet, so
+            // wait for the port to actually open -- as ISDevice::connect() and queryIsblVersionFrame() do.
+            return portOpenRetry(m_port, ISBL_BORROWED_PORT_OPEN_WAIT_MS, 10);
+        }
+
+    private:
+        serial_port_t m_ownedSerialPort = {};        //!< backing storage; used only by the name-based constructor
+        port_handle_t m_port = nullptr;              //!< the port in use, borrowed or owned
+        bool m_ownsPort = false;                     //!< true when m_port refers to m_ownedSerialPort
     };
 
     /** Per-libusb-device worker-thread context used while updating one DFU device. */
@@ -186,12 +257,38 @@ public:
     static bool m_update_in_progress;   //!< true while update() or set_mode_and_check_devices() is running
 
 private:
-    static void create_and_start_serial_thread(const std::string& port, void(*function)(void*), bool force_isb_update = false);
+    static void create_and_start_port_thread(const std::string& port, void(*function)(void*), bool force_isb_update = false);
+
+    /**
+     * Starts a worker on a port the caller already owns, rather than on a serial port name.
+     * @param port the port to adopt; borrowed, not owned, and never closed by the worker
+     * @param target the requested target string this port was resolved from, used as the worker's key
+     * @param function the worker entry point to run
+     * @param force_isb_update true to force an ISB bootloader update regardless of version
+     */
+    static void create_and_start_port_thread(port_handle_t port, const std::string& target, void(*function)(void*), bool force_isb_update = false);
+
+    /**
+     * Starts workers for every requested target that is a URL rather than a local serial port.
+     *
+     * The enumeration-driven loops can only ever see what cISSerialPort::GetComPorts() reports, so a
+     * requested `tcp://host:port` target was in the target set but never in the enumerated list, and
+     * therefore never got a worker at all -- the work set came back empty and the update reported
+     * "No devices were updated". This resolves such targets through TcpPortFactory and adopts them.
+     *
+     * @param targetPorts the caller's requested targets
+     * @param function the worker entry point to run for each URL target
+     * @param force_isb_update true to force an ISB bootloader update regardless of version
+     */
+    static void start_threads_for_url_targets(const std::set<std::string>& targetPorts, void(*function)(void*), bool force_isb_update = false);
+
+    /** Releases every port bound by start_threads_for_url_targets(); workers borrow, so they never do. */
+    static void release_bound_ports();
     static void create_and_start_libusb_thread(void(*function)(void*), libusb_device_handle* handle);
     static void get_device_isb_version_thread(void* context);
-    static void mode_thread_serial_app(void* context);
-    static void mode_thread_serial_isb(void* context);
-    static void update_thread_serial(void* context);
+    static void mode_thread_port_app(void* context);
+    static void mode_thread_port_isb(void* context);
+    static void update_thread_port(void* context);
     static void update_thread_libusb(void* context);
     static void mgmt_thread_libusb(void* context);
     static bool true_if_cancelled(void);
@@ -210,13 +307,29 @@ private:
     static uint32_t m_timeStart;
     static bool m_use_dfu;
     static uint32_t m_libusb_devicesActive;
-    static uint32_t m_serial_devicesActive;
+    static uint32_t m_port_devicesActive;
+
+    /** Ports bound from URL targets by start_threads_for_url_targets(), keyed by target string.
+     *  Workers borrow these, so ownership stays here and release_bound_ports() frees them. */
+    static std::map<std::string, port_handle_t> m_boundPorts;
+
+    /**
+     * URL-target phases already attempted this sequence, keyed by "<target>|<worker function pointer>".
+     *
+     * Enforces exactly ONE worker per target per phase, i.e. no retry within a phase. The discovery loops
+     * re-run every ~100ms, so without this a failed worker is re-created continuously; each live worker
+     * also keeps m_port_devicesActive non-zero, which resets the loop's own no-device bail-out timer and
+     * prevents the sequence from ever finishing. Keying on the worker function means app-mode,
+     * isb-version, isb-mode and update each still get their one attempt and the sequence progresses.
+     * Cleared by release_bound_ports() at the start of a sequence.
+     */
+    static std::set<std::string> m_urlPhaseStarted;
 
     static bool m_continue_update;
 
-    static std::map<std::string, thread_serial_t*> m_serial_threads;    // map of ports to corresponding threads
+    static std::map<std::string, thread_port_t*> m_port_threads;    // map of ports to corresponding threads
     static std::vector<thread_libusb_t*> m_libusb_threads;    // List of all libusb threads that have run or are running
-    static std::mutex m_serial_thread_mutex;
+    static std::mutex m_port_thread_mutex;
     static std::mutex m_libusb_thread_mutex;
 };
 

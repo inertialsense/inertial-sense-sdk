@@ -315,6 +315,118 @@ bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
     return true;
 }
 
+//! Case-insensitive lookup of a hardware type name against the same tables parseHardwareFromString()
+//! uses. @return the type value, or 0 (IS_HARDWARE_TYPE_UNKNOWN) when unrecognized.
+static uint8_t lookupHardwareTypeName(const std::string& typeName) {
+    // Skip index 0 ("UNKNOWN") -- it's a placeholder, not a real hardware type.
+    for (int i = 1; i < IS_HARDWARE_TYPE_COUNT; ++i) {
+        if (strcasecmp(typeName.c_str(), g_isHardwareTypeNames[i]) == 0)
+            return (uint8_t)i;
+    }
+    for (int i = 0; i < IS_HDW_GNSS_TYPE_COUNT; ++i) {
+        if (strcasecmp(typeName.c_str(), g_isGnssHardwareNames[i]) == 0)
+            return (uint8_t)(IS_HDW_TYPE_PERIPHERAL + 1 + i);
+    }
+    return IS_HARDWARE_TYPE_UNKNOWN;
+}
+
+bool utils::parseHardwareIdMask(const std::string& s, uint16_t& hdwId) {
+    if (s.empty())
+        return false;
+
+    // -1 encodes a field as all-1s, which is the wildcard DEV_INFO_MATCHES_HDW_ID() looks for. Both
+    // version fields start wild, so a bare family name ("IMX") matches every version of that type.
+    int major = -1, minor = -1;
+
+    const size_t dash = s.find('-');
+    const std::string typeName = (dash == std::string::npos) ? s : s.substr(0, dash);
+    if (typeName.empty())
+        return false;
+
+    const uint8_t type = lookupHardwareTypeName(typeName);
+    if (type == IS_HARDWARE_TYPE_UNKNOWN)
+        return false;
+
+    if (dash != std::string::npos) {
+        // "<major>[.<minor>[...]]" -- a field left off stays wild, so "IMX-5" is any IMX-5.x. Trailing
+        // version components beyond minor are not part of the packed id and are ignored.
+        const std::string verStr = s.substr(dash + 1);
+        if (verStr.empty())
+            return false;
+        const size_t dot = verStr.find('.');
+        const std::string majorStr = verStr.substr(0, dot);
+        if (majorStr.empty() || (majorStr.find_first_not_of("0123456789") != std::string::npos))
+            return false;
+        major = atoi(majorStr.c_str());
+
+        if (dot != std::string::npos) {
+            const std::string rest = verStr.substr(dot + 1);
+            const std::string minorStr = rest.substr(0, rest.find('.'));
+            if (!minorStr.empty()) {
+                if (minorStr.find_first_not_of("0123456789") != std::string::npos)
+                    return false;
+                minor = atoi(minorStr.c_str());
+            }
+        }
+    }
+
+    hdwId = ENCODE_HDW_ID(type, major, minor);
+    return true;
+}
+
+bool utils::parseDeviceIdMask(const std::string& s, uint64_t& idMask) {
+    if (s.empty())
+        return false;
+
+    is_hardware_t hdwId = IS_HARDWARE_ANY;   // wildcard until a hardware identity says otherwise
+    uint32_t serialNo = 0;                   // 0 means "any serial"
+
+    // Accept both "::" (canonical) and ":" (shorthand), matching ISDevice::parseDeviceIdString().
+    std::string hdwPart, snPart;
+    size_t sep = s.find("::");
+    size_t sepLen = 2;
+    if (sep == std::string::npos) {
+        sep = s.find(':');
+        sepLen = 1;
+    }
+
+    if (sep != std::string::npos) {
+        hdwPart = s.substr(0, sep);
+        snPart = s.substr(sep + sepLen);
+    } else {
+        // No separator, so the whole string is one part or the other. A leading digit, or an "SN" prefix
+        // followed by digits, is a serial number; anything else is a hardware identity.
+        const bool looksLikeSerial = isdigit((unsigned char)s[0]) ||
+            ((s.size() > 2) && (strncasecmp(s.c_str(), "SN", 2) == 0) && isdigit((unsigned char)s[2]));
+        if (looksLikeSerial)    snPart = s;
+        else                    hdwPart = s;
+    }
+
+    if (!hdwPart.empty() && !parseHardwareIdMask(hdwPart, hdwId))
+        return false;
+
+    if (!snPart.empty()) {
+        if (strncasecmp(snPart.c_str(), "SN", 2) == 0)
+            snPart = snPart.substr(2);
+        if (snPart.empty() || (snPart.find_first_not_of("0123456789") != std::string::npos))
+            return false;
+        serialNo = (uint32_t)strtoul(snPart.c_str(), nullptr, 10);
+    }
+
+    if (hdwPart.empty() && (serialNo == 0))
+        return false;       // nothing was actually specified
+
+    idMask = ((uint64_t)hdwId << 48) | serialNo;
+    return true;
+}
+
+bool utils::devInfoMatchesIdMask(const dev_info_t& devInfo, uint64_t idMask) {
+    const uint16_t hdwId = DECODE_UNIQUE_ID_TO_HDW_ID(idMask);
+    const uint32_t serialNo = DECODE_UNIQUE_ID_TO_SERIALNO(idMask);
+    return DEV_INFO_MATCHES_HDW_ID(devInfo, hdwId) &&
+           ((serialNo == 0) || (serialNo == devInfo.serialNumber));
+}
+
 bool utils::parseFirmwareFromString(const std::string& s, dev_info_t& devInfo) {
     // Strip optional "fw" prefix.
     std::string w = s;
@@ -973,4 +1085,42 @@ std::string utils::generateUUIDv4() {
              bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
 
     return std::string(buf);
+}
+
+std::string utils::globToRegex(const std::string& globs) {
+    if (globs.empty())
+        return "(.+)";      // match everything, matching PortManager::discoverPorts()'s own default
+
+    // Split on ',' locally rather than pulling ISUtilities.h in here just for splitString().
+    std::vector<std::string> parts;
+    for (size_t start = 0; start <= globs.size(); ) {
+        size_t comma = globs.find(',', start);
+        if (comma == std::string::npos) {
+            parts.push_back(globs.substr(start));
+            break;
+        }
+        parts.push_back(globs.substr(start, comma - start));
+        start = comma + 1;
+    }
+
+    std::string pattern;
+    for (const std::string& glob : parts) {
+        if (glob.empty())
+            continue;
+        if (!pattern.empty())
+            pattern += "|";
+        for (char c : glob) {
+            switch (c) {
+                case '*': pattern += ".*"; break;
+                case '?': pattern += '.';  break;
+                default:
+                    if (strchr("\\^$.|+()[]{}", c))
+                        pattern += '\\';    // literal: these are names, not expressions
+                    pattern += c;
+                    break;
+            }
+        }
+    }
+
+    return pattern.empty() ? "(.+)" : pattern;
 }

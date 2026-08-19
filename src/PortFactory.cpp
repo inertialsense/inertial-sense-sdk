@@ -61,6 +61,16 @@ bool SerialPortFactory::releasePort(port_handle_t port) {
         return false;
 
     log_more_debug(IS_LOG_PORT_FACTORY, "Releasing serial port '%s'", ((serial_port_t*)port)->portName);
+
+    // Close before freeing the port: serialPortClose() closes the fd and frees
+    // the platform handle, and this is the last chance to do either. Deleting an
+    // open port leaked both, one fd per port, for the life of the process --
+    // PortManager::discoverPorts() releases a port for every tty that
+    // disappears, so any long-running consumer that sees devices come and go
+    // (bridgeboard's relay, EvalTool, cltool) walked toward RLIMIT_NOFILE.
+    // No-ops when the port was never opened or is already closed.
+    serialPortClose(port);
+
     memset(port, 0, sizeof(serial_port_t));
     delete (serial_port_t*)port;
 
@@ -77,7 +87,21 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 }
 
 void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
-    std::regex matchPattern(pattern);
+    // An unusable pattern must not abort a port scan by throwing out of it. std::regex's constructor
+    // throws std::regex_error on any invalid expression, and callers reach this with strings they think
+    // of as port SPECIFIERS rather than regexes -- cltool's default "*" (its all-ports token) is a valid
+    // glob and an invalid regex ('*' with nothing to repeat), and would otherwise escape this call.
+    //
+    // Fall back to matching everything, which is what a caller passing a wildcard meant anyway, and say
+    // so loudly enough to be fixed at the call site.
+    std::regex matchPattern;
+    try {
+        matchPattern.assign(pattern);
+    } catch (const std::regex_error& e) {
+        log_error(IS_LOG_PORT_FACTORY, "locatePorts(): pattern '%s' is not a valid regular expression (%s); "
+                                       "matching all ports instead.", pattern.c_str(), e.what());
+        matchPattern.assign("(.+)");
+    }
     getComPorts(portNames);
     for (auto& name : portNames) {
         auto match = std::regex_match(name, matchPattern);
