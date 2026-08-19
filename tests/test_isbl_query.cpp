@@ -15,29 +15,31 @@
  * and fires the APP-mode STPB/BLEN reset at a device already sitting in ISbl, which cannot answer, so
  * it never reaches the "Target is in bootloader mode; promoting policy to FORCE" branch.
  *
- * No hardware needed. queryDeviceInfoISbl() only ever touches the port through
- * portWrite/portReadTimeout/portFlush/portAvailable, so a pty slave opened by name is indistinguishable
- * from a real serial port, and a responder on the master side can play an exact byte sequence.
- * posix_openpt() is used rather than openpty() so no extra link library is required.
+ * No hardware needed, and no OS-specific port either. queryDeviceInfoISbl() only ever touches the port
+ * through portWrite/portReadTimeout/portFlush/portAvailable, so any port implementing those is
+ * indistinguishable from a real serial port to it. This uses an SDK bridge test-port pair
+ * (test_serial_utils.h): everything written to one port lands in the paired port's ring buffer, so the
+ * test holds one end and plays the device while ISDevice drives the other -- the same topology a pty
+ * gives, without the pty.
  *
- * This is a true regression test: it FAILS on the parent commit and PASSES with the guard fix.
+ * What it pins, going forward: the query rejects a malformed reply, and rejecting it leaves devInfo
+ * exactly as it was. The original recipe reported failing on the commit before the guard; that is no
+ * longer reproducible by reintroducing the pre-guard write alone, since several other defects on this
+ * branch have been fixed in between, so treat the assertions rather than that claim as the contract.
  *
  * Test recipe contributed by the RemoteSerialPorts/bridgeboard agent, which found the ordering defect.
  */
 
 #include <gtest/gtest.h>
 
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <string>
 #include <thread>
 
 #include "ISDevice.h"
-#include "serialPort.h"
+#include "test_serial_utils.h"
 
 namespace {
 
@@ -64,54 +66,46 @@ constexpr uint8_t SENTINEL_0 = 0xAB;
 constexpr uint8_t SENTINEL_1 = 0xCD;
 
 /**
- * Plays the device side of the exchange on the pty master: swallow the handshake 'U's and the
+ * Plays the device side of the exchange on the far end of the bridge: swallow the handshake 'U's and the
  * five-byte "\n" Tx-clear loop, answer nothing until the version query arrives, then send the reply.
  *
  * Replying only after seeing the query matters: the clear loop calls portFlush(), so anything sent
  * earlier would be discarded and the read would legitimately time out for the wrong reason.
+ *
+ * @param peer  the paired port -- reads see what ISDevice wrote, writes land in ISDevice's ring buffer
+ * @param stop  set by the test so this returns even if the query never arrives
  */
-void respondOnce(int master, std::atomic<bool>& sawQuery) {
+void respondOnce(port_handle_t peer, std::atomic<bool>& sawQuery, std::atomic<bool>& stop) {
     std::string acc;
-    char buf[128];
-    while (true) {
-        ssize_t n = ::read(master, buf, sizeof(buf));
+    uint8_t buf[128];
+    while (!stop.load()) {
+        int n = portRead(peer, buf, sizeof(buf));
         if (n > 0) {
-            acc.append(buf, static_cast<size_t>(n));
+            acc.append(reinterpret_cast<const char*>(buf), static_cast<size_t>(n));
             if (acc.find(ISBL_QUERY) != std::string::npos) {
                 sawQuery = true;
-                (void)::write(master, ISBL_REPLY_BAD_TAIL, sizeof(ISBL_REPLY_BAD_TAIL));
+                portWrite(peer, ISBL_REPLY_BAD_TAIL, sizeof(ISBL_REPLY_BAD_TAIL));
                 return;
             }
             continue;
         }
-        if (n == 0)
-            return;                        // master closed by the test
-        if (errno != EINTR && errno != EAGAIN)
-            return;
+        // A test port never blocks, so yield rather than spin the ring buffer.
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
 } // namespace
 
 TEST(isbl_query, malformed_tail_response_leaves_devInfo_untouched) {
-    int master = ::posix_openpt(O_RDWR | O_NOCTTY);
-    ASSERT_GE(master, 0) << "posix_openpt failed: " << strerror(errno);
-    ASSERT_EQ(::grantpt(master), 0) << "grantpt failed: " << strerror(errno);
-    ASSERT_EQ(::unlockpt(master), 0) << "unlockpt failed: " << strerror(errno);
-
-    const char* slaveName = ::ptsname(master);
-    ASSERT_NE(slaveName, nullptr);
-    const std::string portName(slaveName);
+    // TEST2 <-> TEST3 is a bridge pair: ISDevice drives TEST2, the responder plays the device on TEST3.
+    initTestPorts();
+    port_handle_t port = (port_handle_t)TEST2_PORT;
+    port_handle_t peer = (port_handle_t)TEST3_PORT;
+    ASSERT_TRUE(portIsOpened(port)) << "bridge TEST2 should be VALID|OPENED after initTestPorts()";
 
     std::atomic<bool> sawQuery{false};
-    std::thread responder(respondOnce, master, std::ref(sawQuery));
-
-    serial_port_t sp = {};
-    port_handle_t port = (port_handle_t)&sp;
-    serialPortSetName(port, portName.c_str());
-    serialPortInit(port, 0, PORT_TYPE__UART | PORT_TYPE__COMM, 0);
-    ASSERT_GE(serialPortOpen(port, portName.c_str(), 921600, 1), 0)
-        << "could not open pty slave " << portName;
+    std::atomic<bool> stop{false};
+    std::thread responder(respondOnce, peer, std::ref(sawQuery), std::ref(stop));
 
     dev_info_t seed = {};
     auto device = std::make_shared<ISDevice>(seed, port);
@@ -134,8 +128,7 @@ TEST(isbl_query, malformed_tail_response_leaves_devInfo_untouched) {
         << "failed query overwrote firmwareVer[1] (got 0x" << std::hex
         << (int)device->devInfo.firmwareVer[1] << ") -- the pre-guard write is back";
 
-    serialPortClose(port);
-    ::close(master);
+    stop = true;
     if (responder.joinable())
         responder.join();
 }
