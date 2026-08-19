@@ -24,6 +24,7 @@
 #include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
+#include "util/util.h"
 
 extern "C"
 {
@@ -303,12 +304,43 @@ public:
      * @param serialNo the serial number to further match against, if not zero (default is zero)
      * @return true if this device matches the criteria, otherwise false;
      *
-     * Note that the HdwId is a bitwise check - meaning that a IS_HARDWARE_IMX and a IS_HARDWARE_IMX_5_0 will
-     * both match a device which is reporting as IS_HARDWARE_IMX_5_0
+     * Matching is PER-FIELD and wildcard-aware (DEV_INFO_MATCHES_HDW_ID): a type/major/minor field that is
+     * all-1s in hdwId_ -- as produced by encoding major/minor -1, or IS_HARDWARE_TYPE_MIXED -- matches any
+     * value in that field, and every other field must match exactly. So IS_HARDWARE_IMX and
+     * IS_HARDWARE_IMX_5_0 both match a device reporting IS_HARDWARE_IMX_5_0, while IS_HARDWARE_IMX_6_0 does
+     * not.
+     *
+     * A flat bitwise-subset test over the whole packed value is NOT equivalent and must not be used here:
+     * a concrete field value can be a bit-subset of a different concrete value, so e.g. an IMX-5.0 would
+     * match a mask for IMX-5.2 (minor 0 is a subset of every value).
      */
     inline bool matchesHdwId(uint16_t hdwId_, uint32_t serialNo = 0) const {
-        return ((hdwId == IS_HARDWARE_ANY) || ((hdwId & hdwId_) == hdwId)) &&
+        return ((hdwId == IS_HARDWARE_ANY) || DEV_INFO_MATCHES_HDW_ID(devInfo, hdwId_)) &&
                     ((serialNo == 0) || (serialNo == devInfo.serialNumber));
+    }
+
+    /**
+     * Tests this device against a unique-ID mask, as produced by utils::parseDeviceIdMask() from a
+     * selection string such as "IMX", "IMX-5.0", "SN62913" or "IMX-5.0::SN62913". Hardware type and
+     * serial number are two masks over one identity, so whichever part the selection omitted is wild.
+     *
+     * @param idMask the mask to test against
+     * @return true if this device satisfies every non-wildcard part of the mask
+     */
+    inline bool matchesIdMask(uint64_t idMask) const {
+        return utils::devInfoMatchesIdMask(devInfo, idMask);
+    }
+
+    /**
+     * Tests this device against a device selection string, parsing it on each call. Prefer
+     * matchesIdMask() with a mask parsed once when testing many devices against the same selection.
+     *
+     * @param spec the selection string; see utils::parseDeviceIdMask() for the accepted forms
+     * @return true if the selection parsed AND this device satisfies it
+     */
+    inline bool matchesIdSpec(const std::string& spec) const {
+        uint64_t idMask = 0;
+        return utils::parseDeviceIdMask(spec, idMask) && matchesIdMask(idMask);
     }
 
     /**

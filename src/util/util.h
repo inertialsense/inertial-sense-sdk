@@ -353,6 +353,52 @@ namespace utils {
     bool parseHardwareFromString(const std::string& s, dev_info_t& devInfo);
 
     /**
+     * Parses a hardware identity into a packed hardware-ID MASK, allowing the version to be omitted so a
+     * whole family can be named. Omitted fields are encoded all-1s, which DEV_INFO_MATCHES_HDW_ID() and
+     * ISDevice::matchesHdwId() treat as "match any value in this field".
+     *
+     * Where parseHardwareFromString() requires "<TYPE>-<major>.<minor>" and yields one concrete identity,
+     * this accepts the partial forms a selection needs:
+     *   "IMX"      -> any IMX, any version
+     *   "IMX-5"    -> any IMX-5.x
+     *   "IMX-5.0"  -> exactly IMX-5.0
+     * Type names come from the same tables parseHardwareFromString() uses, and are matched
+     * case-insensitively.
+     *
+     * @param s          the hardware identity or family to parse
+     * @param[out] hdwId the packed mask; unchanged if parsing fails
+     * @return false on an unrecognized type name or malformed version, otherwise true
+     */
+    bool parseHardwareIdMask(const std::string& s, uint16_t& hdwId);
+
+    /**
+     * Parses a device selection into a unique-ID MASK (packed hardware ID in bits 48-63, serial number in
+     * bits 0-31), leaving whichever part was omitted as a wildcard. Hardware type and serial number are two
+     * masks over one identity, so a selection may name either or both:
+     *   "IMX"               any IMX, any serial
+     *   "IMX-5.0"           exactly IMX-5.0, any serial
+     *   "SN62913", "62913"  that serial, any hardware
+     *   "IMX-5.0::SN62913"  both; ':' is accepted in place of '::'
+     *
+     * Compare ISDevice::parseDeviceIdString(), which identifies ONE device and so requires a serial number
+     * (returning 0 without one). This is the selection form, where an omitted part means "any".
+     *
+     * @param s           the selection to parse
+     * @param[out] idMask the packed mask; unchanged if parsing fails. A fully-wild selection yields
+     *                    (IS_HARDWARE_ANY << 48), which matches every device.
+     * @return false if neither a hardware identity nor a serial number could be read, otherwise true
+     */
+    bool parseDeviceIdMask(const std::string& s, uint64_t& idMask);
+
+    /**
+     * Tests a device's identity against a unique-ID mask from parseDeviceIdMask().
+     * @param devInfo the device identity to test
+     * @param idMask  the mask; wildcard hardware fields and a zero serial match anything
+     * @return true if devInfo satisfies every non-wildcard part of the mask
+     */
+    bool devInfoMatchesIdMask(const dev_info_t& devInfo, uint64_t idMask);
+
+    /**
      * Parses a firmware version string (inverse of getFirmwareAsString()). Accepts an optional
      * "fw" prefix followed by "<M>.<m>.<p>" and an optional build-type suffix
      * "-alpha|-beta|-rc|-devel|-snap" with an optional ".<build>". Populates
