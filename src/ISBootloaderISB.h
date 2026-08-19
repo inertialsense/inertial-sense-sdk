@@ -118,13 +118,9 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    /**
-     * Performs the ISB handshake sequence (repeated 'U' characters) required before the bootloader
-     * will accept commands. A no-op if this instance has already handshaken successfully.
-     * @param port the serial port to handshake over
-     * @return IS_OP_OK once a handshake response is received, otherwise IS_OP_ERROR
-     */
-    is_operation_result handshake_sync(port_handle_t port);
+    // The ISB handshake burst lives in ISDevice::handshakeISbl(), and
+    // query_isb_version() reaches it through ISDevice::queryIsblVersionFrame(), which owns the decision of
+    // whether a burst is needed at all.
 
     /** Clears the process-wide list of serial numbers already reset by reboot(). */
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
@@ -155,7 +151,29 @@ private:
     is_operation_result fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum);
     is_operation_result download_data(int startOffset, int endOffset);
 
-    bool hasHandshake = false;          // true if we've negotiated a handshake previously on this port/connection
+    /**
+     * @brief Probes the bootloader for its version response, re-synchronizing it only when a probe
+     *        goes unanswered.
+     *
+     * The version response is the only reliable evidence that the bootloader is synchronized: the 'U'
+     * autobaud handshake is echoed once per sync, so a bootloader synchronized by an earlier probe,
+     * phase or process answers commands while echoing nothing. Handshaking is therefore a recovery
+     * action here rather than a precondition, and its result is deliberately unused. There is
+     * intentionally no cached "already handshaked" state: skipping the burst on the strength of an
+     * earlier success would let the first round consume the only attempt and leave every later one silent.
+     *
+     * @param budgetMs total wall-clock budget across all attempts
+     * @param detail if non-null, filled with what the probe actually had to do, for reporting
+     * @return true if a valid version response was decoded, in which case m_isb_major, m_isb_minor
+     *         and m_isb_props.rom_available are populated, plus m_isb_props.processor,
+     *         m_isb_props.is_evb and m_sn for version 6 and later
+     */
+    struct isb_probe_detail_t {
+        int attempts = 0;               //!< version queries sent, including the one that succeeded
+        int handshakes = 0;             //!< handshake bursts sent as recovery; one per unanswered query
+        bool handshakeAcked = false;    //!< true if the bootloader echoed 'U' to any of those bursts
+    };
+    bool query_isb_version(uint32_t budgetMs, isb_probe_detail_t* detail = nullptr);
 
     // Verification parameters
     int m_currentPage;

@@ -32,6 +32,8 @@
 #define PORT_TYPE__LOOPBACK         0x00FE      //!< this port is a loopback to another port.
 #define PORT_TYPE__COMM             0x1000      //!< this is a modifier for other port types, indicating that the port is a communication port, with a is_comm instance and message/packet parsing capabilities
 
+#define PORT_TYPE__CLASS_MASK       0x0FFF      //!< selects the port CLASS from a port type, discarding modifiers such as PORT_TYPE__COMM; see portClass()
+
 #define PORT_FLAG__HDW              0x0001      //!< bit indicates that this port is static/hardware-defined
 #define PORT_FLAG__VALID            0x0002      //!< bit indicates that this port programmatically marked as valid; this allows an implementation to mark invalidate a port
 #define PORT_FLAG__OPENED           0x0004      //!< bit indicates that this port is opened, and able to process data
@@ -285,6 +287,35 @@ static inline uint16_t portId(port_handle_t port) {
  */
 static inline uint16_t portType(port_handle_t port) {
     return (port) ? BASE_PORT(port)->ptype : 0xFFFF;
+}
+
+/**
+ * returns the port CLASS for the specified port -- the underlying transport, with type modifiers removed.
+ *
+ * A port type is a class plus modifiers: the class (PORT_TYPE__UART, PORT_TYPE__TCP, ...) says what the
+ * transport IS, while modifiers such as PORT_TYPE__COMM say what it additionally DOES. A raw UART
+ * (PORT_TYPE__UART) and a COMM-parsed UART (PORT_TYPE__UART | PORT_TYPE__COMM) are therefore two distinct
+ * *types* in the same *class*, and code that cares about the transport -- how to open it, whether a baud
+ * rate applies, whether it can be reopened by name -- wants the class, not the type.
+ *
+ * Use portClass() when selecting behaviour per transport:
+ * @code{.cpp} if (portClass(port) == PORT_TYPE__UART) serialPortOpenRetry(port, portName(port), baud, 1); @endcode
+ *
+ * Use portType() when testing a modifier, which is a genuine flag and must be masked, not compared:
+ * @code{.cpp} if (portType(port) & PORT_TYPE__COMM) { ... }   // has a is_comm parser @endcode
+ *
+ * Do NOT mask against a class value -- class values are enumerated within PORT_TYPE__CLASS_MASK, so they
+ * share bits and a mask matches the wrong transports: `portType(port) & PORT_TYPE__UART` is also true for
+ * PORT_TYPE__TCP (0x0005 & 0x0001), and `& PORT_TYPE__TCP` is also true for PORT_TYPE__FILE (0x0007).
+ * Comparing portClass() for equality is the only correct test.
+ *
+ * @param port the port handle
+ * @return the port's class (a PORT_TYPE__* transport value), or PORT_TYPE__UNKNOWN if the port is
+ *         invalid/null or its type is unknown
+ */
+static inline uint16_t portClass(port_handle_t port) {
+    uint16_t ptype = portType(port);
+    return (ptype == PORT_TYPE__UNKNOWN) ? PORT_TYPE__UNKNOWN : (uint16_t)(ptype & PORT_TYPE__CLASS_MASK);
 }
 
 /**

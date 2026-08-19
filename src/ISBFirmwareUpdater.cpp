@@ -18,6 +18,24 @@
 #define IMX5_ISBL_PAGES_EXPANDED    8           //!< v6j and later expose logical pages 0..7
 #define IMX5_WRP_RESERVED           0x8000u     //!< top 32K of the 8-page window is WRP calibration/config (not app-writable; see SN-8313)
 
+/**
+ * Longest a reboot wait may be held open by the keep-alive, measured from last_reboot.
+ *
+ * The keep-alive suppresses the host's 20 s watchdog, so it MUST be bounded -- an unbounded keep-alive
+ * turns a genuine stall into a hang instead of a failure. Matches the 20 s give-up budget the UPDATE_DONE
+ * path already applies to the same wait, so the session's worst case is this budget plus the host's 20 s
+ * silence watchdog.
+ */
+#define ISB_REBOOT_KEEPALIVE_BUDGET_MS   20000u
+
+/**
+ * Longest the wait for a device to reach ISbl may be held open, measured from the FIRST reboot attempt
+ * rather than the latest. The retry in the INITIALIZING step re-issues rebootToISB() every 10-20 s, and
+ * that call restamps last_reboot -- so a bound derived from last_reboot can never expire, and a device
+ * that never reaches ISbl is waited on forever instead of failing. Generous enough for several retries.
+ */
+#define ISB_ISBL_PHASE_BUDGET_MS         60000u
+
 
 /**
  * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -122,6 +140,37 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         return false;
     nextStepMs = 0; // always reset back to 0 when elapsed so we don't get held up if the clock rolls over
 
+    // SN-8514: keep-alive, hoisted above every device lookup and early return below.
+    //
+    // The host treats ANY received message as a keep-alive (FirmwareUpdate.cpp:708 -> resetTimeout) and
+    // its watchdog is 20s (FirmwareUpdate.h:445). The two per-state heartbeats further down both sit
+    // *after* a getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo)) lookup whose failure path exits
+    // early -- and a miss also nulls `device`, which then trips the `if (!device) return false` below on
+    // every later call. That would silence the keep-alive in exactly the window it exists to cover: while
+    // the device is mid-reboot and momentarily unfindable. A keep-alive must never depend on the thing it
+    // is covering for.
+    //
+    // Only INITIALIZING/FINALIZING need this: those are the two states that wait on a rebooting device
+    // and produce no other traffic. Erase/write/verify already emit progress that resets the watchdog.
+    // It shares `nextProgressReport` with those per-state heartbeats so the two can never double-emit,
+    // and it reuses their exact wording so log-based tooling reads the same strings as before.
+    // The (now - last_reboot) bound is load-bearing, not defensive: the keep-alive suppresses the host's
+    // watchdog, so without a bound a device that never comes back is waited on forever instead of
+    // failing. Once the budget is spent we deliberately fall silent and let the watchdog do its job.
+    // INITIALIZING is measured from the phase start, not from last_reboot: its own retry restamps
+    // last_reboot, which would make that age never expire.
+    uint32_t keepAliveSince = (session_status == fwUpdate::INITIALIZING) ? isblPhaseStartMs : last_reboot;
+    uint32_t keepAliveBudget = (session_status == fwUpdate::INITIALIZING) ? ISB_ISBL_PHASE_BUDGET_MS
+                                                                         : ISB_REBOOT_KEEPALIVE_BUDGET_MS;
+    if ((progress_interval > 0) && (nextProgressReport < current_timeMs()) &&
+        ((session_status == fwUpdate::INITIALIZING) || (session_status == fwUpdate::FINALIZING)) &&
+        (keepAliveSince != 0) && ((current_timeMs() - keepAliveSince) <= keepAliveBudget)) {
+        nextProgressReport = current_timeMs() + progress_interval;
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into %s mode.",
+                                       ISDevice::getIdAsString(target_devInfo).c_str(),
+                                       (session_status == fwUpdate::INITIALIZING) ? "ISbl" : "APP");
+    }
+
     if (!device)    // nothing to do without a valid device
         return false;
 
@@ -148,9 +197,45 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // and open ports too quickly, before they are ready.  If attempt to connect() fails, we should throttle
         // back this and return
 
-        device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+        // Hold the incoming (constructor-supplied) handle across the lookup: assigning the lookup result
+        // directly to the member would drop the last reference to the parent device on a miss, both
+        // discarding the fallback this error's own text implies was intended and leaving a null `device`
+        // for the next fwUpdate_step() to dereference.
+        device_handle_t parentDevice = device;
+        uint64_t targetId = ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo);
+        device = deviceManager.getDevice(targetId);
         if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
-            log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater references a target device ID cannot be located, but which is also not the parent device?", ISDevice::getIdAsString(target_devInfo).c_str());
+            device = parentDevice;
+            // Report BOTH sides of the failed comparison. getDevice() recomputes each device's unique id
+            // from its *live* devInfo, so a miss means either target_devInfo was never populated (a zeroed
+            // id) or the registry's copy of this device diverged from the app-mode snapshot taken in
+            // fwUpdate_startUpdate() -- notably ISDevice::validate() zeroes hdwId/devInfo for the duration
+            // of a query, so a device mid-validate is momentarily unfindable by id. Only emitted when the
+            // target id changes: fwUpdate_step() runs very frequently, and dumping the registry on every
+            // step would both flood the log and perturb the timing being diagnosed.
+            if (targetId != lastMissingTargetId) {
+                lastMissingTargetId = targetId;
+                std::string candidates;
+                for (auto candidate : deviceManager.getDevicesAsVector()) {
+                    if (!candidate) continue;
+                    char line[192];
+                    snprintf(line, sizeof(line), "\n    %s uid=0x%016llx hdwType=%u hdwVer=%u.%u sn=%u runState=%d",
+                             candidate->getIdAsString().c_str(),
+                             (unsigned long long)ENCODE_DEV_INFO_TO_UNIQUE_ID(candidate->devInfo),
+                             candidate->devInfo.hardwareType, candidate->devInfo.hardwareVer[0],
+                             candidate->devInfo.hardwareVer[1], candidate->devInfo.serialNumber,
+                             candidate->devInfo.hdwRunState);
+                    candidates += line;
+                }
+                if (candidates.empty())
+                    candidates = "\n    (DeviceManager is empty)";
+                log_error(IS_LOG_FWUPDATE, "ISBFirmwareUpdater target device %s (uid=0x%016llx hdwType=%u hdwVer=%u.%u sn=%u runState=%d) cannot be located in DeviceManager, but is also not the parent device (%s). Registry holds:%s",
+                          ISDevice::getIdAsString(target_devInfo).c_str(), (unsigned long long)targetId,
+                          target_devInfo.hardwareType, target_devInfo.hardwareVer[0], target_devInfo.hardwareVer[1],
+                          target_devInfo.serialNumber, target_devInfo.hdwRunState,
+                          parentDevice ? parentDevice->getIdAsString().c_str() : "none",
+                          candidates.c_str());
+            }
             return false;
         }
 
@@ -167,7 +252,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 return true;    // we'll keep in our current state until we can validate the device
 
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
-                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
+                fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
 
                 for (int retry = 3; retry > 0; retry--) {
                     if (fetch_device_info_and_signature() == IS_OP_OK) {
@@ -176,10 +261,23 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 }
 
                 session_status = fwUpdate::READY;
+                isblPhaseStartMs = 0;       // phase complete; a later phase starts its own clock
             }
 
             if (session_status != fwUpdate::READY)
             { // device or no device -- we can still do this check.
+                // Give up on the PHASE, not just on a retry. Retrying forever cannot be right: the
+                // keep-alive above suppresses the host's watchdog, so without this the session would wait
+                // on a device that never reaches ISbl indefinitely.
+                if ((isblPhaseStartMs != 0) &&
+                    ((current_timeMs() - isblPhaseStartMs) > ISB_ISBL_PHASE_BUDGET_MS)) {
+                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
+                        "Device [%s] never reached ISbl mode within %us; giving up.",
+                        ISDevice::getIdAsString(target_devInfo).c_str(), ISB_ISBL_PHASE_BUDGET_MS / 1000);
+                    session_status = fwUpdate::ERR_TIMEOUT;
+                    fn.mark("Finished INITIALIZING step.");
+                    return false;
+                }
                 if ((current_timeMs() - last_reboot) > (device->hdwId == IS_HARDWARE_IMX_5_0 ? 10000 : 20000)) {
                     rebootToISB();  // try rebooting the device again.
                 }
@@ -257,12 +355,21 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 // received message as a keep-alive (FirmwareUpdate.cpp:708 → resetTimeout);
                 // without it, session_status flips to ERR_TIMEOUT after 20s and the parent
                 // reports "No Response from device" while the device is genuinely rebooting.
-                if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+                // Bounded for the same reason as the INITIALIZING/FINALIZING keep-alive: because it
+                // suppresses that watchdog, an unbounded keep-alive would wait on a device that never
+                // comes back forever instead of failing.
+                if ((progress_interval > 0) && (nextProgressReport < current_timeMs()) &&
+                    ((current_timeMs() - last_reboot) <= ISB_REBOOT_KEEPALIVE_BUDGET_MS)) {
                     nextProgressReport = current_timeMs() + progress_interval;
                     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO,
                         "Waiting for device [%s] to reboot into APP mode.",
                         ISDevice::getIdAsString(target_devInfo).c_str());
                 }
+
+                // One deadline governing every wait below. The image is fully written by this point, so
+                // no branch may block indefinitely on the device coming back -- the per-branch checks
+                // remain for their specific messages.
+                bool appWaitExpired = ((current_timeMs() - last_reboot) > ISB_REBOOT_KEEPALIVE_BUDGET_MS);
 
                 // Periodically trigger port rediscovery
                 if (current_timeMs() > nextPortCheck) {
@@ -270,11 +377,17 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                     nextPortCheck = current_timeMs() + 1000;
                 }
 
-                // Re-fetch device (port may have changed after USB re-enumeration)
+                // Re-fetch device (port may have changed after USB re-enumeration). Hold the current
+                // handle across the lookup: assigning the result straight to the member drops the last
+                // reference on a miss, and every later fwUpdate_step() then returns at the `if (!device)`
+                // guard near the top -- silencing the keep-alive and letting the host's 20s watchdog fail
+                // an upload that had completed. Same as the lookup in the INITIALIZING block above.
+                device_handle_t priorDevice = device;
                 device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
                 if (!device) {
+                    device = priorDevice;
                     // Device not yet rediscovered — keep waiting (heartbeat above)
-                    if ((current_timeMs() - last_reboot) > 20000) {
+                    if (appWaitExpired) {
                         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
                             "Timed out waiting for device [%s] to reboot into APP mode. Upload was successful.",
                             ISDevice::getIdAsString(target_devInfo).c_str());
@@ -285,17 +398,17 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 } else {
                     // Device found — try to connect and validate
                     if (portIsValid(device->port) && !device->isConnected()) {
-                        if (!device->connect(false))
-                            break;  // retry next cycle
+                        if (!device->connect(false) && !appWaitExpired)
+                            break;  // retry next cycle; once the budget is spent, report below
                     }
 
                     if (device->isConnected()) {
-                        if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
-                            break;  // keep waiting for validation
+                        if (!device->hasDeviceInfo() && (device->validateAsync() != 1) && !appWaitExpired)
+                            break;  // keep waiting for validation; a spent budget falls to the state check
 
                         if (device->devInfo.hdwRunState != HDW_STATE_APP) {
                             // Still in bootloader or unknown — keep waiting
-                            if ((current_timeMs() - last_reboot) > 20000) {
+                            if (appWaitExpired) {
                                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
                                     "Device [%s] rebooted but not in APP mode (state=%d). Upload was successful.",
                                     device->getIdAsString().c_str(), device->devInfo.hdwRunState);
@@ -308,8 +421,13 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                                 "Device [%s] confirmed running in APP mode.",
                                 device->getIdAsString().c_str());
                         }
-                    } else {
+                    } else if (!appWaitExpired) {
                         break;  // not yet connected
+                    } else {
+                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_WARN,
+                            "Device [%s] did not reopen its port after reboot. Upload was successful.",
+                            ISDevice::getIdAsString(target_devInfo).c_str());
+                        // Fall through to finish — the upload itself succeeded
                     }
                 }
 
@@ -467,8 +585,14 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
     if (!portIsValid(device->port))
         return IS_OP_ERROR;
 
-    if (!portIsOpened(device->port))
-        portOpen(device->port);
+    // Go through ISDevice::connect() rather than a bare portOpen(): on an asynchronous transport (TCP)
+    // portOpen() reports PORT_ERROR__NONE while the connect handshake is still in flight and leaves
+    // PORT_FLAG__OPENED clear, so a single unpolled call leaves the port "opened" but not actually open.
+    // Everything below then fails silently -- queryDeviceInfoISbl() returns false at its own
+    // !portIsOpened() guard without even sending the query. connect() polls until the port really is
+    // open, and already no-ops when the port is valid and open; revalidate=false so it will not clear
+    // the devInfo we still need here.
+    device->connect();
 
     if (portType(device->port) & PORT_TYPE__COMM) {
         COMM_PORT(device->port)->flags |= COMM_PORT_FLAG__EXPLICIT_READ;
@@ -483,6 +607,19 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
 
     if (device->devInfo.hdwRunState != HDW_STATE_BOOTLOADER)
         return IS_OP_ERROR; // there is nothing more we can do if we're not talking to the bootloader
+
+    // The app offset below is selected from the ISbl MAJOR version, so it has to come from the
+    // bootloader itself. devInfo can be populated entirely from a discovery hint without the device
+    // ever being probed -- RelayPortFactory seeds hdwRunState/serialNumber/hardwareType and synthesizes
+    // protocolVer, which is enough to satisfy ISDevice::hasDeviceInfo() and let validation be skipped --
+    // and a hint carries no parsable ISbl version ("ISbl.v6j **BOOTLOADER**" yields 0). Left unchecked
+    // that lands in the else below and aborts recovery with ERR_INVALID_TARGET, so a device sitting in
+    // the bootloader could never be reflashed automatically. Ask the bootloader directly when the major
+    // looks unset; unlike validate() this does not clear devInfo if the probe fails.
+    if (device->devInfo.firmwareVer[0] == 0) {
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "(ISB) no ISbl version in devInfo (likely hint-seeded); querying the bootloader directly.");
+        device->queryDeviceInfoISbl(1000);
+    }
 
     // Determine app offset based on version
     if (device->devInfo.firmwareVer[0] == 1) {
@@ -531,28 +668,6 @@ is_operation_result ISBFirmwareUpdater::fetch_device_info_and_signature(eImageSi
     return IS_OP_OK;
 }
 
-
-is_operation_result ISBFirmwareUpdater::sync()
-{
-    static const uint8_t handshakerChar = 'U';
-    uint8_t readCh = 0;
-
-    // Bootloader sync requires at least 6 'U' characters to be sent every 10ms.
-    // write a 'U' to handshake with the bootloader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_HANDSHAKE_COUNT; i++) {
-        while (portRead(device->port, &readCh, 1) == 1) {
-            if (readCh == handshakerChar)
-                return IS_OP_OK;    // received a responding handshake char, so success
-        }
-
-        if (portWrite(device->port, &handshakerChar, 1) != 1) {
-            return IS_OP_ERROR;   // failed to write, so there is an error
-        }
-        SLEEP_MS(BOOTLOADER_HANDSHAKE_DELAY);
-    }
-
-    return IS_OP_ERROR;
-}
 
 /**
  * Instructs the Firmware to reset into the ROM DFU bootloader. This will generally
@@ -624,6 +739,8 @@ bool ISBFirmwareUpdater::rebootToISB()
         }
 
         last_reboot = current_timeMs();
+        if (isblPhaseStartMs == 0)
+            isblPhaseStartMs = last_reboot;    // first attempt of this phase -- the clock the phase is bounded by
         nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
         device->disconnect(true);  // close AND invalidate the port; this port will have to be rediscovered to be used again.
         log_debug(IS_LOG_FWUPDATE, "Disconnecting after reboot; Waiting 2 seconds for device to return.");
@@ -866,6 +983,9 @@ ISBFirmwareUpdater::eraseState_t ISBFirmwareUpdater::eraseFlash_step(uint32_t ti
 
 is_operation_result ISBFirmwareUpdater::select_page(int page)
 {
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;     // an outstanding pipelined write must be settled before a blocking exchange
+
     // Atmel select page command (0x06) is 4 bytes and the data is always 0301xxxx where xxxx is a 16 bit page number in hex
     unsigned char changePage[24];
 
@@ -889,6 +1009,9 @@ is_operation_result ISBFirmwareUpdater::select_page(int page)
 
 is_operation_result ISBFirmwareUpdater::begin_program_for_current_page(int startOffset, int endOffset)
 {
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;     // an outstanding pipelined write must be settled before a blocking exchange
+
     // Atmel begin program command is 0x01, different from standard intel hex where command 0x01 is end of file
     // After the 0x01 is a 00 which means begin writing program
     // The begin program command uses the current page and specifies two 16 bit addresses that specify where in the current page
@@ -941,12 +1064,18 @@ int ISBFirmwareUpdater::is_isb_read_line(ByteBufferStream& byteStream, char line
  * @param byteCount the number of binary bytes the hexData string represents (should be strlen(hexData) / 2)
  * @return is_operation_result IS_OP_OK if no error, otherwise IS_OP_ERROR
  */
-is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, uint8_t byteCount)
+is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, uint8_t byteCount, bool pipelined)
 {
     if (byteCount == 0)
     {
         return IS_OP_OK;
     }
+
+    // Settle any outstanding pipelined write FIRST: the page header below is built from currentOffset,
+    // which a pending write has not committed yet, and a blocking exchange would otherwise consume the
+    // pending write's acknowledgement rather than its own.
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;
 
     // create a program request with just the hex characters that will fit on this page
     unsigned char programLine[12];
@@ -981,8 +1110,32 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     unsigned char checkSumHex[3];
     SNPRINTF((char*)checkSumHex, 3, "%02X", checkSum);
 
+    if (pipelined && ISB_PIPELINED_PAGE_WRITES) {
+        // Issue the write and return WITHOUT waiting. reapPendingPageWrite() collects the ack at the top
+        // of the next step, so the round-trip overlaps whatever the step loop does in between -- with N
+        // devices sharing one loop, that is the other N-1 devices' service time.
+        //
+        // The commit is deferred with it: currentOffset is what the NEXT page's header is built from, so
+        // advancing it before the device has accepted this page would silently write the following page
+        // to the wrong offset on a NAK.
+        if (portWrite(device->port, checkSumHex, 2) != 2) {
+            fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
+            return IS_OP_ERROR;
+        }
+
+        pendingWrite.active         = true;
+        pendingWrite.seq            = ++pageWriteSeq;
+        pendingWrite.page           = currentPage;
+        pendingWrite.offset         = currentOffset;
+        pendingWrite.byteCount      = byteCount;
+        pendingWrite.verifyCheckSum = newVerifyChecksum;
+        pendingWrite.deadline       = current_timeMs() + BOOTLOADER_TIMEOUT_DEFAULT;
+        pendingWrite.elapsed        = 0;
+        return IS_OP_OK;
+    }
+
     if (!portWriteAndWaitForTimeout(device->port, checkSumHex, 2, (unsigned char *) ".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT)) {
-        fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device");
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex_page(): Failed to write checksum to device (page %d, offset 0x%04X, %u bytes)", currentPage, currentOffset, byteCount);
         return IS_OP_ERROR;
     }
 
@@ -991,6 +1144,45 @@ is_operation_result ISBFirmwareUpdater::upload_hex_page(unsigned char* hexData, 
     verifyCheckSum = newVerifyChecksum;
 
     return IS_OP_OK;
+}
+
+is_operation_result ISBFirmwareUpdater::drainPendingPageWrite()
+{
+    while (pendingWrite.active) {
+        is_operation_result r = reapPendingPageWrite();
+        if (r == IS_OP_OK)    return IS_OP_OK;
+        if (r == IS_OP_ERROR) return IS_OP_ERROR;
+        SLEEP_US(200);
+    }
+    return IS_OP_OK;
+}
+
+is_operation_result ISBFirmwareUpdater::reapPendingPageWrite()
+{
+    if (!pendingWrite.active)
+        return IS_OP_OK;
+
+    float ackProgress = 0.0f;
+    if (waitForAck(".\r\n", "Writing Flash", BOOTLOADER_TIMEOUT_DEFAULT, pendingWrite.elapsed, ackProgress)) {
+        totalBytes    += pendingWrite.byteCount;
+        currentOffset  = pendingWrite.offset + pendingWrite.byteCount;
+        verifyCheckSum = pendingWrite.verifyCheckSum;
+        pendingWrite.active = false;
+        return IS_OP_OK;
+    }
+
+    if (current_timeMs() >= pendingWrite.deadline) {
+        // Report the write that actually failed. It left the stack long before its outcome was known, so
+        // without the retained context this could only be blamed on wherever the stream had moved on to.
+        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
+                                       "(ISB) No ack for page write #%u (page %d, offset 0x%04X, %u bytes) within %u ms.",
+                                       pendingWrite.seq, pendingWrite.page, pendingWrite.offset,
+                                       (unsigned)pendingWrite.byteCount, (unsigned)BOOTLOADER_TIMEOUT_DEFAULT);
+        pendingWrite.active = false;
+        return IS_OP_ERROR;
+    }
+
+    return IS_OP_RETRY;     // not in yet -- yield this rotation and check again next step
 }
 
 is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint16_t charCount, bool& dataSent)
@@ -1025,7 +1217,9 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
     if (charCount != 0)
     {
-        if (upload_hex_page(hexData, charCount / 2) != IS_OP_OK) {
+        // Pipelined: this is the last (usually only) page this call emits, so nothing after it depends
+        // on the commit landing before we return. The page-straddling branch above must stay blocking.
+        if (upload_hex_page(hexData, charCount / 2, true) != IS_OP_OK) {
             fwUpdate_sendProgress(IS_LOG_LEVEL_ERROR, "(ISB) Error in upload_hex(): Unknown!!");
             return IS_OP_ERROR;
         }
@@ -1037,6 +1231,9 @@ is_operation_result ISBFirmwareUpdater::upload_hex(unsigned char* hexData, uint1
 
 is_operation_result ISBFirmwareUpdater::fill_current_page()
 {
+    if (drainPendingPageWrite() != IS_OP_OK)
+        return IS_OP_ERROR;     // an outstanding pipelined write must be settled before a blocking exchange
+
     if (currentPage >= 7)
     {
         int i = 0;
@@ -1332,6 +1529,7 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
     switch (writeState) {
         case WRITE_INITIALIZE:
             fwUpdate_sendProgress(IS_LOG_LEVEL_DEBUG, "Initializing flash write.");
+            pendingWrite = {};              // a restart invalidates any outstanding page write
             currentPage = 0;
             currentOffset = m_isb_props.app_offset;
             totalBytes = 0; // FIXME??  Why was this: m_isb_props.app_offset;
@@ -1342,6 +1540,22 @@ ISBFirmwareUpdater::writeState_t ISBFirmwareUpdater::writeFlash_step(uint32_t ti
             break;
         case WRITE:
         {
+            // Collect the outstanding page's ack BEFORE emitting the next one. This is the whole point of
+            // the pipeline: by the time this device is serviced again the ack has normally already landed
+            // in the receive buffer, so the round-trip costs nothing instead of blocking the step loop.
+            if (pendingWrite.active) {
+                switch (reapPendingPageWrite()) {
+                    case IS_OP_RETRY:
+                        return writeState;              // not acked yet; give the rotation back
+                    case IS_OP_ERROR:
+                        writeState = WRITE_ERROR;
+                        session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
+                        return writeState;
+                    default:
+                        break;                          // acked and committed; emit the next page below
+                }
+            }
+
             switch (process_hex_stream(*imgStream)) {
                 case IS_OP_OK:  // normal operation, and still more data to process
                     writeState = WRITE;

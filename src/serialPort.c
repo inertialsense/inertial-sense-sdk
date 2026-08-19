@@ -29,13 +29,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 500;
 
-#define IS_PORT_FUNCTION_SUPPORTED(port, functionPtr, message)   { do {                                                 \
+/* Bare do{}while(0), no enclosing braces and no trailing semicolon, so one invocation plus the caller's
+ * own `;` is exactly one statement. See IS_LOG_MSG in core/msg_logger.h. */
+#define IS_PORT_FUNCTION_SUPPORTED(port, functionPtr, message)   do {                                                   \
     if (!portIsValid(port)) return PORT_ERROR__INVALID;                                                                 \
     if (SERIAL_PORT(port)->functionPtr == 0) {                                                                          \
         if (SERIAL_PORT(port)->pfnError) SERIAL_PORT(port)->pfnError(port, PORT_ERROR__NOT_SUPPORTED, ((message)));     \
         return PORT_ERROR__NOT_SUPPORTED;                                                                               \
     }                                                                                                                   \
-} while(0); }
+} while(0)
 
 
 int serialPortInit(port_handle_t port, int id, int type, int flags) {

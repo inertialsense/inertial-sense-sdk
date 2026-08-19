@@ -244,6 +244,8 @@ InertialSense::~InertialSense()
     // against freed memory -> SEGV in deviceManagerHandler.
     deviceManager.removeDeviceListener(m_deviceListenerHandle);
     portManager.removePortListener(m_portListenerHandle);
+    if (m_fwUpdateListenerHandle)
+        portManager.removePortListener(m_fwUpdateListenerHandle);   // registered by updateFirmware()
 
     Close();
     DisableLogging();
@@ -801,20 +803,30 @@ is_operation_result InertialSense::updateFirmware(fwUpdate::target_t targetDevic
     // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
     // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
     // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
-    auto plHandle = portManager.addPortListener(
-            [&](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-                log_info(IS_LOG_PORT_MANAGER, "Detected port change (%s) during Firmware Update: %s", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
-                if (event == PortManager::PORT_ADDED) {
-                    deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+    // Register ONCE, capturing `this` rather than `[&]`, and keep the handle in a member released by
+    // ~InertialSense(). The previous form captured the enclosing frame by reference and its release was
+    // commented out, so the lambda stayed registered on the PortManager SINGLETON after updateFirmware()
+    // returned -- referring to a dead frame, and re-registered on every subsequent call. A later port
+    // event then ran it against freed memory. That is the identical defect the constructor's two
+    // listeners were fixed for (see ~InertialSense()), which is where this pattern comes from.
+    //
+    // It cannot simply be released at the end of this function: updateFirmware() only STARTS the
+    // sessions and returns, while the reboots this listener exists to observe happen later, in the
+    // caller's step loop.
+    if (!m_fwUpdateListenerHandle) {
+        m_fwUpdateListenerHandle = portManager.addPortListener(
+                [this](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
+                    log_debug(IS_LOG_PORT_MANAGER, "Detected port change (%s) during Firmware Update: %s", event == PortManager::PORT_ADDED ? "Add" : "Remove", portName.c_str());
+                    if (event == PortManager::PORT_ADDED) {
+                        deviceManager.discoverDevice(port, IS_HARDWARE_ANY, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION);
+                    }
                 }
-            }
-    );
+        );
+    }
 
     for (auto device : deviceManager) {
         device->updateFirmware(targetDevice, cmds, fwUpdateStatus, waitAction);
     }
-
-    // portManager.removePortListener(plHandle);
 
 
 #if !PLATFORM_IS_WINDOWS
@@ -866,103 +878,6 @@ int InertialSense::getFirmwareUpdatePercent() {
 }
 
 #if !PLATFORM_IS_EMBEDDED
-[[ deprecated("This function is deprecated. It will be removed for the 3.0 SDK release.") ]]
-is_operation_result InertialSense::BootloadFile(
-        const string& comPort,
-        const uint32_t serialNum,
-        const string& fileName,
-        const string& blFileName,
-        bool forceBootloaderUpdate,
-        int baudRate,
-        fwUpdate::pfnProgressCb uploadProgress,
-        fwUpdate::pfnProgressCb verifyProgress,
-        fwUpdate::pfnStatusCb infoProgress,
-        void (*waitAction)()
-)
-{
-    vector<string> comPorts;
-
-    if (comPort == "*")
-    {
-        cISSerialPort::GetComPorts(comPorts);
-    }
-    else
-    {
-        splitString(comPort, ',', comPorts);
-    }
-    std::sort(comPorts.begin(), comPorts.end());
-
-    vector<string> all_ports;                   // List of ports connected
-    vector<string> update_ports;
-    vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
-
-    cISSerialPort::GetComPorts(all_ports);
-
-    // On non-Windows systems, try to interpret each user-specified port as a symlink and find what it is pointing to
-    // TODO: This only works for "/dev/" ports
-#if !PLATFORM_IS_WINDOWS
-    for (unsigned int k = 0; k < comPorts.size(); k++)
-    {
-        char buf[PATH_MAX];
-        int newsize = readlink(comPorts[k].c_str(), buf, sizeof(buf)-1);
-        if (newsize < 0)
-        {
-            continue;
-        }
-
-        buf[newsize] = '\0';
-        comPorts[k] = "/dev/" + string(buf);
-    }
-#endif
-
-    // Get the list of ports to ignore during the bootloading process
-    std::sort(all_ports.begin(), all_ports.end());
-    std::sort(comPorts.begin(), comPorts.end());
-    set_difference(
-            all_ports.begin(), all_ports.end(),
-            comPorts.begin(), comPorts.end(),
-            back_inserter(ports_user_ignore));
-
-    // file exists?
-    ifstream tmpStream(fileName);
-    if (!tmpStream.good())
-    {
-        printf("File does not exist: %s\n", fileName.c_str());
-        return IS_OP_ERROR;
-    }
-
-    ISBootloader::firmwares_t files;
-    files.fw_uINS_3.path = fileName;
-    files.bl_uINS_3.path = blFileName;
-    files.fw_IMX_5.path = fileName;
-    files.bl_IMX_5.path = blFileName;
-    files.fw_EVB_2.path = fileName;
-    files.bl_EVB_2.path = blFileName;
-
-    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
-    if (!cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction, &confirm_device_list))
-		return IS_OP_ERROR;   // Error or no devices found
-
-    cISSerialPort::GetComPorts(all_ports);
-
-    // Get the list of ports to ignore during the bootloading process
-    std::sort(all_ports.begin(), all_ports.end());
-    std::sort(ports_user_ignore.begin(), ports_user_ignore.end());
-    set_difference(
-            all_ports.begin(), all_ports.end(),
-            ports_user_ignore.begin(), ports_user_ignore.end(),
-            back_inserter(update_ports));
-
-    cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
-
-    printf("\n\r");
-
-    #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25h", stdout);    // Turn cursor back on
-    #endif
-
-    return IS_OP_OK;
-}
 #endif
 
 int InertialSense::OnPortError(port_handle_t port, int errCode, const char *errMsg) {
