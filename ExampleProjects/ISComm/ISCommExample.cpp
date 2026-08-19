@@ -12,13 +12,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <stdio.h>
 
-// STEP 1: Add Includes
-// Change these include paths to the correct paths for your project
+/** STEP 1: Add Includes
+ * Change these include paths to the correct paths for your project
+ */
 #include "ISComm.h"
 #include "ISPose.h"
 #include "ISUtilities.h"
 #include "PortFactory.h"
-#include "protocol_nmea.h"
+
 
 /**
  * Simple custom handler for the DID_INS_1 message
@@ -68,7 +69,7 @@ static void handleImuMessage(imu_t* imu)
         imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
-/**
+/** STEP 9: Handle received data
  * This is the callback handler from the ISComm parser; this will be called for each
  * InertialSense binary message that is successfully parsed.
  * @param ctx a context pointer that can be associated with the port/ISCOMM instance.
@@ -102,6 +103,12 @@ int isbDataHandler(void* ctx, p_data_t* data, port_handle_t port) {
      return 0;
 }
 
+
+
+/** STEP 2: App main, initialize and open serial port
+ * Initialize the serial port provided by name as arg to main (Windows, MAC or Linux) -
+ * if using an embedded system like Arduino, you will need to handle the serial port creation, open and reads yourself.
+ */
 int main(int argc, char* argv[])
 {
     if (argc < 2)
@@ -111,15 +118,12 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // STEP 2: Initialize and open serial port
-    // Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
-    //  you will need to handle the serial port creation, open and reads yourself.
-
+    /** The port handle that we receive will be used by ISComm throughout this application */
     SerialPortFactory& spf = SerialPortFactory::getInstance();
     spf.setBaudRate(921600);
     port_handle_t port = spf.bindPort(argv[1]);
 
-    if (port == nullptr) {
+    if (!portIsValid(port)) {
         printf("Failed to allocate port\r\n");
         return -2;
     }
@@ -130,20 +134,40 @@ int main(int argc, char* argv[])
         return -3;
     }
 
-    // STEP 3: Stop any message broadcasting
+    /** STEP 3: Stop any message broadcasting */
     is_comm_stop_broadcasts_all_ports(port);
 
-    // STEP 4: Bind callbacks to the port
-    // Any ISB protocol messages will call into this handler (defined above).
+#if 1
+    /** STEP 4: Set data configuration
+     * Set INS output Euler rotation in radians to 90 degrees roll for mounting
+     */
+    float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
+    is_comm_set_data(port, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation);
+#endif
+    
+    /** STEP 5: Register callback for data handling
+     * Any ISB protocol messages will call into this handler (defined above).
+     */
     is_comm_register_port_isb_handler(port, isbDataHandler);
 
-    // STEP 5: Enable message broadcasting
-    // Request INS1_1 message at 100x startupNavDtd (this should be about 100 x 7ms = 700ms)
+    /** STEP 6: Enable message broadcasting
+     * Request INS1_1 message at 100x startupNavDtd (this should be about 100 x 7ms = 700ms)
+     */
     is_comm_get_data(port, DID_INS_1, 0, 0, 100);
 
-    // STEP 6: In a loop, process and parse messages from the port.
-    // This should run a fairly fast rate, (1ms is typical) to avoid data from filling
-    // the COMM buffer, which could lead to data drop.
+#if 0
+    /** STEP 7: Save persistent messages */
+    system_command_t cfg;
+    cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
+    cfg.invCommand = ~cfg.command;
+    is_comm_set_data(port, DID_SYS_CMD, 0, 0, &cfg);
+#endif
+
+    /** STEP 8: Process received messages
+     * In a loop, process and parse messages from the port.
+     * This should run a fairly fast rate, (1ms is typical) to avoid data from filling
+     * the COMM buffer, which could lead to data drop.
+     */
     while (portIsOpened(port)) {
         is_comm_port_parse_messages(port);
         SLEEP_MS(1);

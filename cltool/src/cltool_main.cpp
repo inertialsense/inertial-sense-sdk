@@ -761,19 +761,66 @@ static int cltool_updateFirmware()
     cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 
     firmwareProgressContexts.clear();
-    if (InertialSense::BootloadFile(
-            g_commandLineOptions.comPort,
-            0,
-            g_commandLineOptions.updateAppFirmwareFilename,
-            g_commandLineOptions.updateBootloaderFilename,
-            g_commandLineOptions.forceBootloaderUpdate,
-            g_commandLineOptions.baudRate,
-            bootloadUpdateCallback,
-            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0),
-            cltool_bootloadUpdateInfo,
-            cltool_firmwareUpdateWaiter
-  ) == IS_OP_OK) return 0;
-    return -1;
+
+    // Drive the legacy (ISv1) updater directly, passing EVERY explicitly-requested target in ONE call.
+    //
+    // ONE call, not one per target. cISBootloaderThread runs one worker per port per phase, so handing it
+    // the full target list updates N devices CONCURRENTLY; serialising the calls would make an N-device
+    // update take N times as long. It would also age the target list -- names are captured once, so a
+    // device that re-enumerates while an earlier target is being flashed would then be looked for under a
+    // port that no longer exists. One pass means one discovery window.
+    //
+    // The targets are established HERE and the updater treats them as an inclusion set rather than
+    // re-expanding them to every enumerable port, so `-c <one device>` stays one device. update() reports
+    // partial failure, which it must, since batching removes any per-target accounting here.
+    std::vector<std::string> targets;
+    if (g_commandLineOptions.comPort == "*")
+        cISSerialPort::GetComPorts(targets);
+    else
+        splitString(g_commandLineOptions.comPort, ',', targets);
+
+    if (targets.empty())
+    {
+        cout << "No target ports to update." << endl;
+        return -1;
+    }
+
+    ISBootloader::firmwares_t files;
+    files.fw_uINS_3.path = g_commandLineOptions.updateAppFirmwareFilename;
+    files.bl_uINS_3.path = g_commandLineOptions.updateBootloaderFilename;
+    files.fw_IMX_5.path  = g_commandLineOptions.updateAppFirmwareFilename;
+    files.bl_IMX_5.path  = g_commandLineOptions.updateBootloaderFilename;
+    files.fw_EVB_2.path  = g_commandLineOptions.updateAppFirmwareFilename;
+    files.bl_EVB_2.path  = g_commandLineOptions.updateBootloaderFilename;
+
+    fwUpdate::pfnProgressCb verifyCb = (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0);
+
+    std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
+    int result = 0;
+
+    if (!cISBootloaderThread::set_mode_and_check_devices(targets, g_commandLineOptions.baudRate, files,
+            bootloadUpdateCallback, verifyCb, cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter,
+            &confirm_device_list))
+    {   // Error, or no updatable device on any requested target
+        std::string targetList;
+        joinStrings(targets, ',', targetList);
+        cout << "No updatable device found on: " << targetList << endl;
+        result = -1;
+    }
+    else if (cISBootloaderThread::update(targets, g_commandLineOptions.forceBootloaderUpdate,
+                g_commandLineOptions.baudRate, files, bootloadUpdateCallback, verifyCb,
+                cltool_bootloadUpdateInfo, cltool_firmwareUpdateWaiter) != IS_OP_OK)
+    {   // update() reports per-device status and counts itself, and now returns non-OK for a partial
+        // failure as well as a total one, so there is nothing to re-derive here.
+        result = -1;
+    }
+
+    printf("\n\r");
+#if !PLATFORM_IS_WINDOWS
+    fputs("\e[?25h", stdout);    // Turn cursor back on
+#endif
+
+    return result;
 }
 
 std::mutex print_mutex;
@@ -1303,7 +1350,7 @@ static int cltool_dataStreaming()
                 // per port"). Passing the resolved comPort scopes the periodic check to
                 // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts(g_commandLineOptions.comPort);
+                    PortManager::getInstance().discoverPorts(utils::globToRegex(g_commandLineOptions.comPort));
                     nextPortCheck = current_timeMs() + 1500;
                 }
 
@@ -1385,9 +1432,22 @@ static int cltool_dataStreaming()
                 }
             }
        }
+        // An escaped exception is a FAILURE, and it has to say what it was.
+        //
+        // Report the exception type and message, and set a failure exit code. A caller -- or a
+        // manufacturing fixture -- must be able to tell an aborted run from a successful one without
+        // attaching a debugger.
+        catch (const std::exception& e)
+        {
+            cout << "Unhandled exception (" << typeid(e).name() << "): " << e.what() << endl;
+            if (exitCode == EXIT_CODE_SUCCESS)
+                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
+        }
         catch (...)
         {
-            cout << "Unknown exception..." << endl;
+            cout << "Unknown exception (not derived from std::exception)..." << endl;
+            if (exitCode == EXIT_CODE_SUCCESS)
+                exitCode = EXIT_CODE_FIRMWARE_UPDATE_FAILED;
         }
     }
     else
