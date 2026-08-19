@@ -3057,9 +3057,9 @@ class logPlot:
         self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=True)
 
     def imusRawPqr(self, fig=None, axs=None):
-        self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False)
+        self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False, matchRowYAxis=True)
     def imusRawAcc(self, fig=None, axs=None):
-        self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False)
+        self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False, matchRowYAxis=True)
     def imusPqr(self, fig=None, axs=None):
         self.imuPQR(did=DID_IMUS, fig=fig, axs=axs, combineImus=False)
     def imusAcc(self, fig=None, axs=None):
@@ -3069,7 +3069,7 @@ class logPlot:
     def imusUncalAcc(self, fig=None, axs=None):
         self.imuAcc(did=DID_IMUS_UNCAL, fig=fig, axs=axs, combineImus=False)
 
-    def imuPQR(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
+    def imuPQR(self, did=DID_IMU, fig=None, axs=None, combineImus=False, matchRowYAxis=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3090,9 +3090,9 @@ class logPlot:
             (name, time, dt, sensors) = self.loadGyros(0, did=did)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (len(sensors)==1 or combineImus) and self.residual 
+        plotResidual = (len(sensors)==1 or combineImus) and self.residual
         if len(sensors):
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, sharey='row' if matchRowYAxis else False, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
@@ -3164,7 +3164,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
+    def imuAcc(self, did=DID_IMU, fig=None, axs=None, combineImus=False, matchRowYAxis=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3184,9 +3184,9 @@ class logPlot:
             (name, time, dt, sensors) = self.loadAccels(0, did=did)
         fig.suptitle(name + ' Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (len(sensors)==1 or combineImus) and self.residual 
+        plotResidual = (len(sensors)==1 or combineImus) and self.residual
         if len(sensors):
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, sharey='row' if matchRowYAxis else False, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
