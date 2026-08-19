@@ -28,6 +28,14 @@
  */
 #define ISB_REBOOT_KEEPALIVE_BUDGET_MS   20000u
 
+/**
+ * Longest the wait for a device to reach ISbl may be held open, measured from the FIRST reboot attempt
+ * rather than the latest. The retry in the INITIALIZING step re-issues rebootToISB() every 10-20 s, and
+ * that call restamps last_reboot -- so a bound derived from last_reboot can never expire, and a device
+ * that never reaches ISbl is waited on forever instead of failing. Generous enough for several retries.
+ */
+#define ISB_ISBL_PHASE_BUDGET_MS         60000u
+
 
 /**
  * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -149,9 +157,14 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     // The (now - last_reboot) bound is load-bearing, not defensive: the keep-alive suppresses the host's
     // watchdog, so without a bound a device that never comes back is waited on forever instead of
     // failing. Once the budget is spent we deliberately fall silent and let the watchdog do its job.
+    // INITIALIZING is measured from the phase start, not from last_reboot: its own retry restamps
+    // last_reboot, which would make that age never expire.
+    uint32_t keepAliveSince = (session_status == fwUpdate::INITIALIZING) ? isblPhaseStartMs : last_reboot;
+    uint32_t keepAliveBudget = (session_status == fwUpdate::INITIALIZING) ? ISB_ISBL_PHASE_BUDGET_MS
+                                                                         : ISB_REBOOT_KEEPALIVE_BUDGET_MS;
     if ((progress_interval > 0) && (nextProgressReport < current_timeMs()) &&
         ((session_status == fwUpdate::INITIALIZING) || (session_status == fwUpdate::FINALIZING)) &&
-        ((current_timeMs() - last_reboot) <= ISB_REBOOT_KEEPALIVE_BUDGET_MS)) {
+        (keepAliveSince != 0) && ((current_timeMs() - keepAliveSince) <= keepAliveBudget)) {
         nextProgressReport = current_timeMs() + progress_interval;
         fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Waiting for device [%s] to reboot into %s mode.",
                                        ISDevice::getIdAsString(target_devInfo).c_str(),
@@ -248,10 +261,23 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 }
 
                 session_status = fwUpdate::READY;
+                isblPhaseStartMs = 0;       // phase complete; a later phase starts its own clock
             }
 
             if (session_status != fwUpdate::READY)
             { // device or no device -- we can still do this check.
+                // Give up on the PHASE, not just on a retry. Retrying forever cannot be right: the
+                // keep-alive above suppresses the host's watchdog, so without this the session would wait
+                // on a device that never reaches ISbl indefinitely.
+                if ((isblPhaseStartMs != 0) &&
+                    ((current_timeMs() - isblPhaseStartMs) > ISB_ISBL_PHASE_BUDGET_MS)) {
+                    fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR,
+                        "Device [%s] never reached ISbl mode within %us; giving up.",
+                        ISDevice::getIdAsString(target_devInfo).c_str(), ISB_ISBL_PHASE_BUDGET_MS / 1000);
+                    session_status = fwUpdate::ERR_TIMEOUT;
+                    fn.mark("Finished INITIALIZING step.");
+                    return false;
+                }
                 if ((current_timeMs() - last_reboot) > (device->hdwId == IS_HARDWARE_IMX_5_0 ? 10000 : 20000)) {
                     rebootToISB();  // try rebooting the device again.
                 }
@@ -713,6 +739,8 @@ bool ISBFirmwareUpdater::rebootToISB()
         }
 
         last_reboot = current_timeMs();
+        if (isblPhaseStartMs == 0)
+            isblPhaseStartMs = last_reboot;    // first attempt of this phase -- the clock the phase is bounded by
         nextStepMs = last_reboot + 2000;   // Give a chance to reboot - don't attempt to process this device again for another 2 seconds.
         device->disconnect(true);  // close AND invalidate the port; this port will have to be rediscovered to be used again.
         log_debug(IS_LOG_FWUPDATE, "Disconnecting after reboot; Waiting 2 seconds for device to return.");

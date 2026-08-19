@@ -713,12 +713,13 @@ bool cISBootloaderThread::set_mode_and_check_devices(
     }
 
     if (m_uploadProgress(std::any(), 0.0f, "", 0, 0) == IS_OP_CANCELLED)
-    { 
-        m_continue_update = false; 
-        m_update_in_progress = false; 
-        m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
-        return false; 
+    {
+        m_continue_update = false;
+        m_update_in_progress = false;
+        release_bound_ports();      // cancelled here means update() never runs, so nothing else will
+        m_update_mutex.unlock();
+        if(m_waitAction) m_waitAction();
+        return false;
     }
 
     m_continue_update = true;
@@ -826,12 +827,13 @@ bool cISBootloaderThread::set_mode_and_check_devices(
     }
 
     if (m_uploadProgress(std::any(), 0.0f, ""/*"Waiting for device response."*/, 0, 0) == IS_OP_CANCELLED)
-    { 
-        m_continue_update = false; 
-        m_update_in_progress = false; 
-        m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
-        return false; 
+    {
+        m_continue_update = false;
+        m_update_in_progress = false;
+        release_bound_ports();      // cancelled here means update() never runs, so nothing else will
+        m_update_mutex.unlock();
+        if(m_waitAction) m_waitAction();
+        return false;
     }
 
     m_ctx_mutex.lock();
@@ -886,6 +888,16 @@ is_operation_result cISBootloaderThread::update(
     vector<string> portNames;                       // List of ports currently connected
 
     m_port_threads.clear();
+
+    // Backstop the release of URL-bound ports, so no exit from here can leave a TCP handle bound or a
+    // stale phase key in m_urlPhaseStarted -- a leftover key suppresses that phase's single worker on the
+    // NEXT sequence, which then reports "no devices" rather than the cancellation that caused it.
+    // The normal path still releases explicitly, before the update mutex is unlocked; this covers the
+    // cancellation returns, which unlock and return directly. release_bound_ports() is idempotent, so
+    // running it twice on the normal path costs a walk of an empty map.
+    struct bound_port_guard_t {
+        ~bound_port_guard_t() { release_bound_ports(); }
+    } boundPortGuard;
 
     // Only ever operate on the ports the caller explicitly asked for. See the note in
     // set_mode_and_check_devices() for why an exclusion list was unsafe here.

@@ -33,6 +33,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "core/base_port.h"
 #include "ISConstants.h"
 #include "ISSerialPort.h"
+
+/**
+ * How long a borrowed (possibly asynchronous) port is given to finish opening before the ISbl layer
+ * treats it as unusable. On a relayed/TCP port a non-blocking connect returns PORT_ERROR__NONE while
+ * the handshake is still in flight, leaving PORT_FLAG__OPENED clear -- so this is a wait for the port
+ * to become READY, not a timeout on the connect itself.
+ */
+#define ISBL_BORROWED_PORT_OPEN_WAIT_MS     1000u
+
 #include "libusb.h"
 #include "ISUtilities.h"
 #include "protocol/FirmwareUpdate.h"

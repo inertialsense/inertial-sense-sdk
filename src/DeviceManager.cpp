@@ -369,7 +369,11 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
         }
         return false;
     });
-    knownDevices.erase(knownIter);
+    // Erase the RANGE remove_if shifted to the tail, not a single iterator. remove_if returns the new
+    // logical end, which equals end() when nothing matched -- and the single-iterator erase(end()) is
+    // undefined behaviour, so a device with no knownDevices entry could crash here before reaching the
+    // null-factory guard below. The range form is also correct when several entries matched.
+    knownDevices.erase(knownIter, knownDevices.end());
 
     // deviceEntry.factory is only populated by the remove_if lambda above, and only when a knownDevices
     // entry matched this unique id. A device present in the main list without a matching knownDevices

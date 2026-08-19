@@ -164,7 +164,11 @@ public:
                 return PORT_ERROR__NONE;
             if (m_ownsPort)
                 return serialPortOpenRetry(m_port, portName(m_port), baudRate, 1);
-            return portOpen(m_port);
+            // A borrowed port may be asynchronous: a non-blocking connect returns PORT_ERROR__NONE while
+            // the handshake is still in flight, leaving PORT_FLAG__OPENED clear. Reporting success there
+            // lets the worker start ISbl/APP protocol I/O against a socket that is not connected yet, so
+            // wait for the port to actually open -- as ISDevice::connect() and queryIsblVersionFrame() do.
+            return portOpenRetry(m_port, ISBL_BORROWED_PORT_OPEN_WAIT_MS, 10);
         }
 
     private:

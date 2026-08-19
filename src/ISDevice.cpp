@@ -337,7 +337,16 @@ bool ISDevice::queryIsblVersionFrame(port_handle_t port, uint8_t frame[14], uint
         if (portWrite(port, (uint8_t*)":020000041000EA", 15) != 15)
             return false;       // the port is not usable; retrying cannot help
 
-        int count = portReadTimeout(port, frame, 14, readMs);
+        // readMs is the nominal cost of one read; what this read may actually spend is whatever is LEFT.
+        // The loop-top check can pass with only a few ms remaining, and the clear sequence above spends
+        // ~10ms more, so a read allowed its full nominal cost returns after the caller's deadline.
+        uint32_t readElapsed = current_timeMs() - startMs;
+        if (readElapsed >= budgetMs)
+            return false;
+        uint32_t thisReadMs = budgetMs - readElapsed;
+        if (thisReadMs > readMs)  thisReadMs = readMs;
+
+        int count = portReadTimeout(port, frame, 14, thisReadMs);
         if ((count < 0) || !portIsOpened(port))
             return false;       // hard port error, or the transport dropped under us
 
@@ -354,12 +363,14 @@ bool ISDevice::queryIsblVersionFrame(port_handle_t port, uint8_t frame[14], uint
         // recorded but never gates anything -- an already-synchronized bootloader cannot acknowledge it.
         // A burst truncated by the budget is still worth sending: the bootloader's autobaud accumulates
         // across bursts (roughly 10-15 of them at 921600), and a short-budget caller is re-entered
-        // repeatedly, so each revolution contributes. What is NOT worth sending is a burst so short it
-        // leaves no time to ask again -- that is the shape the old fixed schedule collapsed into.
+        // repeatedly, so each revolution contributes. A burst with no time left to ask again afterwards
+        // is not -- so one minimum read is held back, and a burst that cannot fit is not sent at all.
         uint32_t elapsed = current_timeMs() - startMs;
         if (elapsed >= budgetMs)
             return false;
-        int burstCount = (int)((budgetMs - elapsed) / BOOTLOADER_HANDSHAKE_DELAY);
+        uint32_t burstBudget = budgetMs - elapsed;
+        burstBudget = (burstBudget > ISBL_VERSION_MIN_READ_MS) ? (burstBudget - ISBL_VERSION_MIN_READ_MS) : 0;
+        int burstCount = (int)(burstBudget / BOOTLOADER_HANDSHAKE_DELAY);
         if (burstCount > BOOTLOADER_HANDSHAKE_COUNT)
             burstCount = BOOTLOADER_HANDSHAKE_COUNT;
         if (burstCount <= 0)

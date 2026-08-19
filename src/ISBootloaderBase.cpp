@@ -406,7 +406,10 @@ static int reopen_port_for_update(port_handle_t port, int baud)
     // a COMM-parsed UART are different types but the same class, so compare portClass(), not portType().
     if (portClass(port) == PORT_TYPE__UART)
         return serialPortOpenRetry(port, portName(port), baud, 1);
-    return portOpen(port);
+    // Same asynchronous-open race as the serial retry above guards against: on a relayed/TCP port
+    // portOpen() can report success while the connection is merely pending, and callers treat this
+    // helper's success as a completed reopen and immediately issue protocol commands.
+    return portOpenRetry(port, ISBL_BORROWED_PORT_OPEN_WAIT_MS, 10);
 }
 
 is_operation_result cISBootloaderBase::update_device
