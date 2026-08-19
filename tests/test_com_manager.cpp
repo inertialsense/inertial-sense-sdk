@@ -1080,3 +1080,65 @@ TEST(ComManager, Evb2DataForwardTest)
 }
 #endif
 
+// SN-8471: p_data_get_t::flags was appended after the legacy 4-field layout so older
+// senders (who never included it) stay wire-compatible -- but the receive buffer is only
+// zeroed once, at is_comm_init(), not between subsequent packets, so a shorter/older
+// request's unset trailing bytes could still hold a previous packet's leftovers at that
+// offset. ISComManager::getDataRequest() must sanitize req->flags whenever the actual
+// received payload didn't include it, rather than trust whatever memory happens to be there.
+// Uses a fresh, local ISComManager (mirroring tcm.cm elsewhere in this file) rather than the
+// global s_cm/free-function API, so this doesn't depend on any other test's registration state.
+// init() must be called before getDataRequest() -- broadcastMessages is a raw pointer with no
+// default member initializer, so an un-init'd ISComManager dereferences garbage and segfaults.
+
+static ISComManager makeInitializedComManager()
+{
+    ISComManager cm;
+    cm.init(NULL, TASK_PERIOD_MS, 0, 0, 0, 0, &g_cmBufBcastMsg);
+    return cm;
+}
+
+TEST(ComManager, GetDataRequest_SanitizesFlagsFromShortLegacyPacket)
+{
+    ISComManager cm = makeInitializedComManager();
+    p_data_get_t req = {};
+    req.id = DID_DEV_INFO;
+    req.period = 0;
+    req.flags = GET_DATA_FLAGS_PRESERVE_STREAM;  // simulate stale bytes left at this offset
+
+    // Simulate an older sender's packet that never included the flags field.
+    cm.getDataRequest(nullptr, &req, sizeof(p_data_get_t) - sizeof(req.flags));
+
+    EXPECT_EQ(req.flags, 0);
+}
+
+TEST(ComManager, GetDataRequest_TrustsFlagsFromFullSizePacket)
+{
+    ISComManager cm = makeInitializedComManager();
+    p_data_get_t req = {};
+    req.id = DID_DEV_INFO;
+    req.period = 0;
+    req.flags = GET_DATA_FLAGS_PRESERVE_STREAM;
+
+    // A full-size received payload genuinely included the flags field -- trust it.
+    cm.getDataRequest(nullptr, &req, sizeof(p_data_get_t));
+
+    EXPECT_EQ(req.flags, (uint16_t)GET_DATA_FLAGS_PRESERVE_STREAM);
+}
+
+TEST(ComManager, GetDataRequest_DefaultReceivedSizeTrustsFlags)
+{
+    // comManagerGetDataRequest()'s receivedPayloadSize defaults to sizeof(p_data_get_t) -- for
+    // any caller constructing req itself (not decoding one off the wire), flags should be
+    // trusted as-is with no explicit size argument needed.
+    ISComManager cm = makeInitializedComManager();
+    p_data_get_t req = {};
+    req.id = DID_DEV_INFO;
+    req.period = 0;
+    req.flags = GET_DATA_FLAGS_PRESERVE_STREAM;
+
+    cm.getDataRequest(nullptr, &req);
+
+    EXPECT_EQ(req.flags, (uint16_t)GET_DATA_FLAGS_PRESERVE_STREAM);
+}
+

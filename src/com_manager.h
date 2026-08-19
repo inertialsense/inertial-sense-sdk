@@ -283,6 +283,15 @@ void stepSendMessages(void);
 void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
 
 /**
+ * @brief Same as comManagerGetData(), with an additional request-flags parameter (see
+ *        eGetDataFlags in ISComm.h) written into p_data_get_t::flags -- e.g.
+ *        GET_DATA_FLAGS_PRESERVE_STREAM, which asks a device that supports it not to stop an
+ *        existing broadcast for this DID on this port when period is 0 (SN-8471).
+ *        comManagerGetData() is equivalent to calling this with flags=0.
+ */
+void comManagerGetDataFlags(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint16_t flags);
+
+/**
  * @brief Request a device to broadcast a preset collection of messages via RMC bits.
  *
  * @param port       Port handle to send the request to.
@@ -394,11 +403,20 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did);
 
 /**
  * @brief Process a GET_DATA request and schedule the requested broadcast.
- * @param port Port handle that sent the request.
- * @param req  Parsed GET_DATA request specifying the DID, offset, size, and period.
+ * @param port                Port handle that sent the request.
+ * @param req                 Parsed GET_DATA request specifying the DID, offset, size, period,
+ *                            and flags (see GET_DATA_FLAGS_PRESERVE_STREAM in ISComm.h).
+ * @param receivedPayloadSize Actual number of payload bytes received for this request (e.g.
+ *                            packet_t::data.size). If less than sizeof(p_data_get_t) -- i.e. the
+ *                            sender predates SN-8471's `flags` field -- req->flags is zeroed
+ *                            before any handler sees it, rather than trusting whatever bytes
+ *                            happen to sit in the (not-zeroed-between-packets) receive buffer at
+ *                            that offset. Defaults to sizeof(p_data_get_t) (trust flags as-is) for
+ *                            any caller constructing req itself rather than decoding one off the
+ *                            wire.
  * @return 0 on success, non-zero on failure.
  */
-int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req);
+int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req, uint32_t receivedPayloadSize = sizeof(p_data_get_t));
 
 /**
  * @brief Register a callback invoked whenever a packet parse error is detected.
@@ -544,7 +562,7 @@ public:
      * @param offset Byte offset into the data structure; 0 = start.
      * @param period Broadcast period in step multiples; 0 = one-shot request.
      */
-    void getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
+    void getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period, uint16_t flags = 0);
 
     /**
      * @brief Request broadcast of a preset collection of messages via RMC bits.
@@ -630,11 +648,12 @@ public:
 
 
     /**
-    * Internal use mostly, process a get data request for a message that needs to be broadcasted
+    * Internal use mostly, process a get data request for a message that needs to be broadcasted.
+    * See comManagerGetDataRequest() for receivedPayloadSize's role (SN-8471).
     *
     * @return 0 on success, anything else is failure
     */
-    int getDataRequest(port_handle_t port, p_data_get_t* req);
+    int getDataRequest(port_handle_t port, p_data_get_t* req, uint32_t receivedPayloadSize = sizeof(p_data_get_t));
 
 
     /**
