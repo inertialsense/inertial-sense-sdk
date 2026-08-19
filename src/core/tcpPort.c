@@ -3,6 +3,7 @@
 //
 
 #include "tcpPort.h"
+#include "ISUtilities.h"        // current_timeMs(), as used by base_port.c in this directory
 #include <errno.h>
 #include <stdbool.h>
 
@@ -14,6 +15,12 @@
 // Use WSAGetLastError() directly instead of redefining errno
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, (const char*)(optval), optlen)
 #define HANDLE_SOCKET_ERROR(tcpPort) do{ tcpPort->base.perror = WSAGetLastError(); return -WSAGetLastError(); } while(0)
+// Winsock reports through WSAGetLastError() rather than errno; these let the read loop below be written
+// once for both platforms instead of duplicated per #ifdef.
+#define SOCKET_LAST_ERROR()     WSAGetLastError()
+#define SOCKET_ERR_INTR         WSAEINTR
+#define SOCKET_ERR_WOULDBLOCK   WSAEWOULDBLOCK
+#define SOCKET_ERR_AGAIN        WSAEWOULDBLOCK
 #else
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -23,7 +30,38 @@
 #include <poll.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
 #define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->socket = -errno; tcpPort->base.perror = errno; return -errno; } while(0)
+#define SOCKET_LAST_ERROR()     errno
+#define SOCKET_ERR_INTR         EINTR
+#define SOCKET_ERR_WOULDBLOCK   EWOULDBLOCK
+#define SOCKET_ERR_AGAIN        EAGAIN
 #endif
+
+/**
+ * Waits up to timeoutMs for the socket to become readable (or otherwise report an event).
+ *
+ * Exists so the accumulating read loop in tcpPortReadTimeout() can be written once: POSIX has poll(),
+ * Winsock does not, but select() is available on both and is the portable choice here. A non-zero return
+ * means "something happened, attempt the recv()" -- including hangup/error events, which recv() then
+ * reports precisely (0 for a clean close, -1 with an error code otherwise).
+ *
+ * @param sock the socket descriptor to wait on
+ * @param timeoutMs milliseconds to wait
+ * @return >0 if the socket reported an event, 0 on timeout, <0 on error
+ */
+static int tcpPortWaitReadable(int sock, uint32_t timeoutMs) {
+    fd_set readSet;
+    FD_ZERO(&readSet);
+#ifdef PLATFORM_IS_WINDOWS
+    FD_SET((SOCKET)sock, &readSet);
+#else
+    FD_SET(sock, &readSet);
+#endif
+    struct timeval tv;
+    tv.tv_sec  = (long)(timeoutMs / 1000);
+    tv.tv_usec = (long)((timeoutMs % 1000) * 1000);
+    // First argument is ignored by Winsock, and must be highest-fd+1 on POSIX.
+    return select(sock + 1, &readSet, NULL, NULL, &tv);
+}
 
 /**
  * Returns the name, if any, associated with this port
@@ -328,39 +366,66 @@ int tcpPortReadTimeout(port_handle_t port, uint8_t* buf, unsigned int len, uint3
         return tcpPort->socket;
     }
 
-    // Use poll() to wait for data with timeout — works correctly regardless of
-    // blocking mode (SO_RCVTIMEO is ignored on non-blocking sockets on Linux).
-#ifdef PLATFORM_IS_WINDOWS
+    // Wait for readability explicitly rather than relying on SO_RCVTIMEO, which is ignored on
+    // non-blocking sockets on Linux and needed setting/clearing around every read on Windows.
     tcpPortSetBlocking(port, false);
-    DWORD tv = timeout;
-    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        HANDLE_SOCKET_ERROR(tcpPort);
-    }
-    ssize_t retval = recv(tcpPort->socket, buf, len, 0);
-    tv = 0;
-    if (SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
-        HANDLE_SOCKET_ERROR(tcpPort);
-    }
-#else
-    tcpPortSetBlocking(port, false);
-    struct pollfd pfd = { .fd = tcpPort->socket, .events = POLLIN };
-    int pollrc = poll(&pfd, 1, (int)timeout);
-    ssize_t retval;
-    if (pollrc > 0 && (pfd.revents & POLLIN)) {
-        retval = recv(tcpPort->socket, buf, len, 0);
-    } else if (pollrc == 0) {
-        return 0;  // Timeout — no data available
-    } else {
-        HANDLE_SOCKET_ERROR(tcpPort);
-        return -1;
-    }
-#endif
 
-    // Return
-    if (retval < 0) {
-        HANDLE_SOCKET_ERROR(tcpPort);
+    // Accumulate until 'len' bytes or the timeout expires -- do NOT return after a single recv().
+    //
+    // A readability wait returns as soon as ONE byte is available, and a lone recv() then returns only
+    // what happens to be in the socket buffer at that instant. TCP offers no framing guarantee, so a reply
+    // the peer sent as one write can arrive split across segments. Returning the first fragment breaks
+    // every caller that asks for an exact number of bytes -- which is the documented contract of this
+    // function ("the maximum time to wait for 'len' bytes") and the behaviour serialPortReadTimeout()
+    // provides, so protocol layers written against serial assume it.
+    //
+    // This matters most to the ISbl (ISv1) firmware path over a relayed port, where a short read turns a
+    // 14-byte device-info reply or a 3-byte ".\r\n" page acknowledgement into a parse failure. The ack loop
+    // there re-sends its checksum per attempt, so a split ack desynchronises the stream and every later
+    // read compounds it.
+    //
+    // Partial data is still returned when the timeout expires, so callers that legitimately accept short
+    // reads keep working; the difference is that the full timeout budget is spent trying first.
+    ssize_t retval = 0;
+    unsigned int received = 0;
+    uint32_t started = current_timeMs();
+    while (received < len) {
+        uint32_t elapsed = current_timeMs() - started;
+        if (elapsed >= timeout)
+            break;                                  // out of budget: return whatever arrived
+
+        int waitrc = tcpPortWaitReadable(tcpPort->socket, timeout - elapsed);
+        if (waitrc == 0)
+            break;                                  // timed out waiting for the remainder
+        if (waitrc < 0) {
+            if (SOCKET_LAST_ERROR() == SOCKET_ERR_INTR)
+                continue;                           // interrupted: keep waiting out the budget
+            HANDLE_SOCKET_ERROR(tcpPort);           // returns from this function
+        }
+
+        ssize_t n = recv(tcpPort->socket, (char*)(buf + received), (int)(len - received), 0);
+        if (n > 0) {
+            received += (unsigned int)n;
+            continue;
+        }
+        if (n == 0) {
+            // Remote closed. Report any bytes already collected; the next call reports the disconnect.
+            tcpPortClose(port);
+            tcpPort->base.perror = ENOTCONN;
+            return (received > 0) ? (int)received : 0;
+        }
+        int sockErr = SOCKET_LAST_ERROR();
+        if ((sockErr == SOCKET_ERR_INTR) || (sockErr == SOCKET_ERR_AGAIN) || (sockErr == SOCKET_ERR_WOULDBLOCK))
+            continue;                               // spurious wakeup; wait again within the budget
+        retval = n;
+        break;
     }
-    return retval;
+
+    if (received > 0)
+        return (int)received;                       // partial or complete data beats reporting an error
+    if (retval < 0)
+        HANDLE_SOCKET_ERROR(tcpPort);
+    return (int)retval;
 }
 
 /**

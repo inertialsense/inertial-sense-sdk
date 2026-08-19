@@ -123,7 +123,7 @@ bool ISmDnsPortFactory::releasePort(port_handle_t port) {
         return false;
     }
 
-    log_debug(IS_LOG_FACILITY_NONE, "Releasing network port '%s'", portName(port));
+    log_debug(IS_LOG_MDNS, "Releasing network port '%s'", portName(port));
     tcpPortDelete(port);
     delete static_cast<tcp_port_t*>(port);
 

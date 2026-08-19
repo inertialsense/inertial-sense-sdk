@@ -25,8 +25,8 @@
 #define IS_LOG_DEVICE_MANAGER      ((IS_LOG_DEVICE_FACTORY << 1))  //!< device manager logging
 #define IS_LOG_CHRONO_STATS        ((IS_LOG_DEVICE_MANAGER << 1))  //!< timing/chrono statistics logging
 #define IS_LOG_FN_PROFILER         ((IS_LOG_CHRONO_STATS << 1))    //!< FnProfiler function-timing logging
-#define IS_LOG_MDNS_CACHE          ((IS_LOG_FN_PROFILER << 1))     //!< mDNS cache logging
-#define IS_LOG_HTTP_REQUEST        ((IS_LOG_MDNS_CACHE << 1))      //!< HTTP request logging
+#define IS_LOG_MDNS                ((IS_LOG_FN_PROFILER << 1))     //!< mDNS activity: sockets, DNS-SD queries, record parsing, the record cache, ISmDnsPortFactory, service announcement
+#define IS_LOG_HTTP_REQUEST        ((IS_LOG_MDNS << 1))            //!< HTTP request logging
 #define IS_LOG_CORRECTIONS         ((IS_LOG_HTTP_REQUEST << 1))    //!< GNSS corrections logging
 #define IS_LOG_CALIBRATION         ((IS_LOG_CORRECTIONS << 1))     //!< calibration logging
 #define IS_LOG_ISLOG               ((IS_LOG_CALIBRATION << 1))     //!< ISLog / ISDeviceLog / ISLogReader file parse + load logging
