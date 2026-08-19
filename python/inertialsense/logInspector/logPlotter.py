@@ -4208,8 +4208,8 @@ class logPlot:
         ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
 
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'GNSS1 dt', 's')
-        self.configureSubplot(ax[1], 'GNSS2 dt', 's')
+        self.configureSubplot(ax[0], 'GNSS1 dt', 'ms')
+        self.configureSubplot(ax[1], 'GNSS2 dt', 'ms')
         self.configureSubplot(ax[2], 'RTK Compassing dt', 's')
         self.configureSubplot(ax[3], 'GNSS1 TOW Offset', 's')
         self.configureSubplot(ax[4], 'GNSS2 TOW Offset', 's')
@@ -4229,8 +4229,8 @@ class logPlot:
             indr = getValidTimeInd(timeRtk2)
             timeRtk2 = timeRtk2[indr]
 
-            dtGnss1 = np.diff(timeGnss1) / self.d
-            dtGnss2 = np.diff(timeGnss2) / self.d
+            dtGnss1 = np.diff(timeGnss1) / self.d * 1000.0
+            dtGnss2 = np.diff(timeGnss2) / self.d * 1000.0
             dtRtk2 = np.diff(timeRtk2) / self.d
 
             if self.xAxisSample:
@@ -4248,14 +4248,17 @@ class logPlot:
             ax[3].plot(xGnss1, towOffsetGnss1[1:])
             ax[4].plot(xGnss2, towOffsetGnss2[1:])
 
-            self.configureSubplot(ax[0],  f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
-            self.configureSubplot(ax[1],  f'GNSS2 dt: {np.mean(dtGnss2):.3f}s', 's')
+            if dtGnss1.size:
+                self.configureSubplot(ax[0],  f'GNSS1 dt: {np.mean(dtGnss1):.0f}ms (min: {np.min(dtGnss1):.0f}ms, max: {np.max(dtGnss1):.0f}ms)', 'ms')
+            if dtGnss2.size:
+                self.configureSubplot(ax[1],  f'GNSS2 dt: {np.mean(dtGnss2):.0f}ms (min: {np.min(dtGnss2):.0f}ms, max: {np.max(dtGnss2):.0f}ms)', 'ms')
             self.configureSubplot(ax[2],  f'RTK Compassing dt: {np.mean(dtRtk2):.3f}s', 's')
 
 
-        # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
+        # Don't zoom in closer than 5ms (0.005s) so we can easily see that the delta time is clean.
+        # ax[0]/ax[1] (GNSS1/GNSS2 dt) are plotted in ms, the rest in s, so the floor is scaled per axis.
         for i in range(len(ax)):
-            self.setPlotYSpanMin(ax[i], 0.005)
+            self.setPlotYSpanMin(ax[i], 5.0 if i in (0, 1) else 0.005)
 
         self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
