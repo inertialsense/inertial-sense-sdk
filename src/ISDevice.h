@@ -24,6 +24,7 @@
 #include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
 #include "protocol_nmea.h"
+#include "util/util.h"
 
 extern "C"
 {
@@ -33,8 +34,31 @@ extern "C"
     #include "core/base_port.h"
 }
 
-#define BOOTLOADER_HANDSHAKE_COUNT  10
+/* Number of 'U' characters in one ISbl autobaud burst, and the gap between them.
+ * The protocol needs "at least 6", but that holds only at a low baud: a 'U' lasts ~87us at 115200 and
+ * ~11us at 921600, where the bootloader's autobaud has far fewer samples to work with. The burst is
+ * therefore sized for the top of the supported range. The bootloader autobauds once and then ignores
+ * other rates, so a slow lock is also the window in which a mismatched probe can lock it to the wrong one. */
+#define BOOTLOADER_HANDSHAKE_COUNT  50
 #define BOOTLOADER_HANDSHAKE_DELAY  10
+/** Upper bound on a single ISbl version-response read, used when the caller's budget can afford it.
+ *  Deliberately generous: a relayed (TCP) port is materially slower than a local UART, and a tighter
+ *  value manufactures re-syncs that are not needed. queryIsblVersionFrame() scales this down for a short
+ *  budget; a read is never allowed to consume the whole budget. */
+#define ISBL_VERSION_READ_TIMEOUT_MS 500
+/** Floor for that same read, so even a very short budget still allows a response to arrive. */
+#define ISBL_VERSION_MIN_READ_MS      50
+/** Belt-and-braces cap on query attempts, independent of the time budget. A budget alone bounds only
+ *  elapsed time, not iteration count, so a step that stops blocking would turn the probe into a busy
+ *  spin. Set well above the handful of rounds any real budget permits, so tripping it means something
+ *  else is wrong. */
+#define ISBL_VERSION_MAX_ATTEMPTS     64
+/** Ceiling on how long the probe waits for the port to become open before giving up on it.
+ *
+ *  "Not open yet" is a transient state on an asynchronous transport rather than a fault: a non-blocking
+ *  connect (tcpPort) returns PORT_ERROR__NONE while the handshake is still in flight and leaves
+ *  PORT_FLAG__OPENED clear. Scaled down for short-budget callers, and free when the port is already open. */
+#define ISBL_PORT_OPEN_WAIT_MS      1000
 
 #define PRINT_DEBUG 0
 #if PRINT_DEBUG
@@ -238,10 +262,22 @@ public:
      * Connects the bound port to the device, if the port is valid and of PORT_TYPE__COMM
      * Can be overridden to provide custom configuration, etc on connection - just remember
      *  to call back into ISDevice::connect() in your new method.
-     * @param revalidate if true causes the device to validate after connecting (default = false)
-     * @return true if the connection is made/port opened, otherwise false
+     *
+     * Asynchronous transports (TCP) do not finish connecting within a single portOpen() call:
+     * tcpPortOpen() returns PORT_ERROR__NONE while the handshake is still in flight and leaves
+     * PORT_FLAG__OPENED clear, expecting the caller to keep polling. This function therefore
+     * re-invokes portOpen() until the port actually reports open, or @p openTimeoutMs elapses.
+     * Serial ports set PORT_FLAG__OPENED on the first call and are unaffected.
+     *
+     * @param revalidate    if true causes the device to validate after connecting (default = false)
+     * @param openTimeoutMs how long to keep polling portOpen() for the port to actually report
+     *                      open. Loopback/LAN handshakes complete in one or two polls; the default
+     *                      only bounds the pathological (unreachable host) case. Pass a smaller
+     *                      value from step()-driven loops that retry on their own.
+     * @return true if the port is genuinely open (and, when @p revalidate is set, validated),
+     *         otherwise false
      */
-    virtual bool connect(bool revalidate = false);
+    virtual bool connect(bool revalidate = false, uint32_t openTimeoutMs = 500);
 
     /**
      * Disconnects/closes the bound port to the device, if the port is VALID
@@ -268,12 +304,43 @@ public:
      * @param serialNo the serial number to further match against, if not zero (default is zero)
      * @return true if this device matches the criteria, otherwise false;
      *
-     * Note that the HdwId is a bitwise check - meaning that a IS_HARDWARE_IMX and a IS_HARDWARE_IMX_5_0 will
-     * both match a device which is reporting as IS_HARDWARE_IMX_5_0
+     * Matching is PER-FIELD and wildcard-aware (DEV_INFO_MATCHES_HDW_ID): a type/major/minor field that is
+     * all-1s in hdwId_ -- as produced by encoding major/minor -1, or IS_HARDWARE_TYPE_MIXED -- matches any
+     * value in that field, and every other field must match exactly. So IS_HARDWARE_IMX and
+     * IS_HARDWARE_IMX_5_0 both match a device reporting IS_HARDWARE_IMX_5_0, while IS_HARDWARE_IMX_6_0 does
+     * not.
+     *
+     * A flat bitwise-subset test over the whole packed value is NOT equivalent and must not be used here:
+     * a concrete field value can be a bit-subset of a different concrete value, so e.g. an IMX-5.0 would
+     * match a mask for IMX-5.2 (minor 0 is a subset of every value).
      */
     inline bool matchesHdwId(uint16_t hdwId_, uint32_t serialNo = 0) const {
-        return ((hdwId == IS_HARDWARE_ANY) || ((hdwId & hdwId_) == hdwId)) &&
+        return ((hdwId == IS_HARDWARE_ANY) || DEV_INFO_MATCHES_HDW_ID(devInfo, hdwId_)) &&
                     ((serialNo == 0) || (serialNo == devInfo.serialNumber));
+    }
+
+    /**
+     * Tests this device against a unique-ID mask, as produced by utils::parseDeviceIdMask() from a
+     * selection string such as "IMX", "IMX-5.0", "SN62913" or "IMX-5.0::SN62913". Hardware type and
+     * serial number are two masks over one identity, so whichever part the selection omitted is wild.
+     *
+     * @param idMask the mask to test against
+     * @return true if this device satisfies every non-wildcard part of the mask
+     */
+    inline bool matchesIdMask(uint64_t idMask) const {
+        return utils::devInfoMatchesIdMask(devInfo, idMask);
+    }
+
+    /**
+     * Tests this device against a device selection string, parsing it on each call. Prefer
+     * matchesIdMask() with a mask parsed once when testing many devices against the same selection.
+     *
+     * @param spec the selection string; see utils::parseDeviceIdMask() for the accepted forms
+     * @return true if the selection parsed AND this device satisfies it
+     */
+    inline bool matchesIdSpec(const std::string& spec) const {
+        uint64_t idMask = 0;
+        return utils::parseDeviceIdMask(spec, idMask) && matchesIdMask(idMask);
     }
 
     /**
@@ -758,6 +825,71 @@ public:
      */
     bool fwUpdate(p_data_t* msg = nullptr);
 
+    /** What an ISbl version probe had to do, for reporting. */
+    struct isbl_probe_t {
+        int  attempts = 0;              //!< version queries sent, including the one that succeeded
+        int  handshakes = 0;            //!< autobaud bursts sent as recovery; one per unanswered query
+        bool handshakeAcked = false;    //!< true if the bootloader echoed 'U' to any of those bursts
+        bool portOpened = false;        //!< false if the port never became usable, so nothing was ever sent
+    };
+
+    /**
+     * @brief Reads the ISbl version frame from a port, re-synchronizing the bootloader only when a query
+     *        goes unanswered.
+     *
+     * The version response is the only reliable evidence that the bootloader is synchronized: the 'U'
+     * autobaud handshake is echoed once per sync, so a bootloader synchronized by an earlier probe, phase
+     * or process answers commands while echoing nothing. So ask for the version first; only if that goes
+     * unanswered send a burst -- ignoring its result, since an already-synchronized bootloader cannot
+     * acknowledge it -- and ask again until the budget expires.
+     *
+     * Static and port-based so the ISv1 path (cISBootloaderISB), which operates on a bare port_handle_t
+     * and has no ISDevice, shares this negotiation. Returns the raw frame rather than parsed fields
+     * because the two callers need different parts of it: ISbl props (rom_available, is_evb) matter for
+     * image-signature selection but have no place in dev_info_t.
+     *
+     * @param port the port to probe
+     * @param frame receives the 14-byte response on success
+     * @param budgetMs total wall-clock budget across all attempts
+     * @param detail if non-null, filled with what the probe had to do
+     * @return true if a valid version frame was read (0xAA 0x55 header, and for v6+ the full 14 bytes
+     *         ending ".\r\n"), otherwise false
+     */
+    static bool queryIsblVersionFrame(port_handle_t port, uint8_t frame[14], uint32_t budgetMs = 3000,
+                                      isbl_probe_t* detail = nullptr);
+
+    /**
+     * @brief Sends one ISbl autobaud burst on a port.
+     *
+     * Success is not a precondition for anything: an already-synchronized bootloader will not echo, so
+     * exhausting the burst is the normal case rather than a fault. Use queryIsblVersionFrame() unless you
+     * specifically need the burst alone.
+     *
+     * This is the only implementation of the burst in the SDK; both the ISv1 (cISBootloaderISB) and ISv2
+     * (ISBFirmwareUpdater) paths use it, so they cannot disagree about what exhausting a burst means.
+     *
+     * @param port the port to handshake on
+     * @param burstCount how many 'U' characters to send before giving up; callers working to a deadline
+     *        pass a smaller count so the burst fits the time they have left
+     * @return true if the bootloader echoed the handshake character, otherwise false
+     */
+    static bool handshakeISbl(port_handle_t port, int burstCount = BOOTLOADER_HANDSHAKE_COUNT);
+
+    /**
+     * @brief Queries device info while the device is believed to be in the ISbootloader, handshaking
+     * first via handshakeISbl() if not already done.
+     *
+     * Public because a bootloader-mode devInfo can legitimately arrive from a discovery hint rather
+     * than from the device (RelayPortFactory seeds one), and a hint carries no parsable ISbl version.
+     * Callers that depend on the real bootloader version -- ISBFirmwareUpdater picks its flash offset
+     * from it -- must be able to ask the bootloader directly. Unlike validate(), this does not clear
+     * devInfo, so a failed probe leaves existing identity intact.
+     *
+     * @param timeout how long to wait for a response
+     * @return true if a valid ISbootloader device-info response was received before timeout.
+     */
+    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+
     /** @return true if a and this device share the same serial number and hardware type. */
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
@@ -795,7 +927,6 @@ private:
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
     unsigned int                syncCheckTimeMs = 0;
 
-    bool                        hasHandshake = false;                //!< indicator that this device has already negotiated a handshake, and shouldn't keep trying
     std::array<std::chrono::high_resolution_clock::time_point, _PTYPE_SIZE> lastRxTs; //!< An array of timestamps of when last data was received of a particular protocol type (ISB, NMEA, RTCM3, etc)
 
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> bcastMsgBuffers = {}; //!< pending/active BroadcastBinaryData() request slots
@@ -822,10 +953,7 @@ private:
     /** @brief Currently a no-op stub (body is commented out); intended to forward received data to an owning cISLogger. */
     void stepLogger(void* ctx, const p_data_t* data, port_handle_t port);
 
-    /** @brief Performs the ISbootloader handshake (sends repeated handshake chars, waits for the device's response) required before queryDeviceInfoISbl() can succeed. @return true once handshaking completes (or the RX buffer could not be cleared, to avoid retrying indefinitely). */
-    bool handshakeISbl();
-    /** @brief Queries device info while the device is believed to be in the ISbootloader, handshaking first via handshakeISbl() if not already done. @return true if a valid ISbootloader device-info response was received before timeout. */
-    bool queryDeviceInfoISbl(uint32_t timeout = 3000);
+    // NOTE: queryDeviceInfoISbl() is declared in the public section above -- ISBFirmwareUpdater needs it.
 
     /** @brief Periodic (SYNC_FLASH_CFG_CHECK_PERIOD_MS) IMX/GPX flash-config synchronization tick; no-op unless the device is running application firmware. */
     void SyncFlashConfig();

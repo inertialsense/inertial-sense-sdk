@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <regex>
 
 #include <gtest/gtest.h>
 
@@ -364,4 +365,92 @@ TEST(test_utils, parseFirmwareFromString_roundtrip) {
     // ISBL "firmware_ver" like "ISbl.v6j **BOOTLOADER**" is not parseable — helper returns false,
     // caller leaves fields at whatever they were.
     EXPECT_FALSE(utils::parseFirmwareFromString("ISbl.v6j **BOOTLOADER**", parsed));
+}
+
+/*
+ * utils::globToRegex()
+ *
+ * Regression origin: cltool passed its -c port specifier straight into
+ * PortManager::discoverPorts(), which consumes a REGEX. The default specifier is the all-ports token
+ * "*" -- a valid glob and an invalid regex ('*' with nothing to repeat) -- so std::regex's constructor
+ * threw std::regex_error out of a port scan, aborting a 15-device firmware update AFTER every device had
+ * been reset into its bootloader, while cltool reported success. The single most important property below
+ * is therefore simply that the output always compiles.
+ */
+
+/** Every output must be a compilable regex -- this is the invariant whose violation caused the outage. */
+TEST(test_utils, globToRegex_output_always_compiles) {
+    for (const char* spec : { "*", "", "?", "**", "*.*", "/dev/ttyACM*", "a,b,,c", "[a-z]", "+", "(", ")",
+                              "a+b", "$^", "{2}", "\\", "tcp://host.local:45007", "*,*" }) {
+        const std::string pattern = utils::globToRegex(spec);
+        EXPECT_NO_THROW({ std::regex re(pattern); }) << "spec '" << spec << "' produced '" << pattern << "'";
+    }
+}
+
+TEST(test_utils, globToRegex_star_matches_everything) {
+    std::regex re(utils::globToRegex("*"));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+    EXPECT_TRUE(std::regex_match(std::string("tcp://127.0.0.1:45007"), re));
+    EXPECT_TRUE(std::regex_match(std::string("COM3"), re));
+}
+
+TEST(test_utils, globToRegex_empty_matches_everything) {
+    std::regex re(utils::globToRegex(""));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+}
+
+TEST(test_utils, globToRegex_literal_name_matches_only_itself) {
+    std::regex re(utils::globToRegex("/dev/ttyACM0"));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+    EXPECT_FALSE(std::regex_match(std::string("/dev/ttyACM1"), re));
+    EXPECT_FALSE(std::regex_match(std::string("/dev/ttyACM01"), re));   // full match, not a prefix
+}
+
+/** '.' must be escaped, or a hostname would match unrelated names differing at that character. */
+TEST(test_utils, globToRegex_escapes_dot) {
+    std::regex re(utils::globToRegex("tcp://host.local:45007"));
+    EXPECT_TRUE(std::regex_match(std::string("tcp://host.local:45007"), re));
+    EXPECT_FALSE(std::regex_match(std::string("tcp://hostXlocal:45007"), re));
+}
+
+TEST(test_utils, globToRegex_star_expands_within_a_name) {
+    std::regex re(utils::globToRegex("/dev/ttyACM*"));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM14"), re));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM"), re));       // '*' allows zero characters
+    EXPECT_FALSE(std::regex_match(std::string("/dev/ttyUSB0"), re));
+}
+
+TEST(test_utils, globToRegex_question_mark_matches_exactly_one) {
+    std::regex re(utils::globToRegex("/dev/ttyACM?"));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+    EXPECT_FALSE(std::regex_match(std::string("/dev/ttyACM14"), re));
+    EXPECT_FALSE(std::regex_match(std::string("/dev/ttyACM"), re));
+}
+
+TEST(test_utils, globToRegex_comma_list_becomes_alternation) {
+    std::regex re(utils::globToRegex("/dev/ttyACM0,/dev/ttyACM1"));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM1"), re));
+    EXPECT_FALSE(std::regex_match(std::string("/dev/ttyACM2"), re));
+}
+
+TEST(test_utils, globToRegex_ignores_empty_list_entries) {
+    std::regex re(utils::globToRegex("/dev/ttyACM0,,/dev/ttyACM1,"));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM0"), re));
+    EXPECT_TRUE(std::regex_match(std::string("/dev/ttyACM1"), re));
+    EXPECT_FALSE(std::regex_match(std::string(""), re));     // an empty entry must not match everything
+}
+
+/** Brackets are documented as NOT translated: matched literally rather than as a character class. */
+TEST(test_utils, globToRegex_brackets_are_literal_not_a_character_class) {
+    std::regex re(utils::globToRegex("port[ab]"));
+    EXPECT_TRUE(std::regex_match(std::string("port[ab]"), re));
+    EXPECT_FALSE(std::regex_match(std::string("porta"), re));
+}
+
+TEST(test_utils, globToRegex_escapes_regex_metacharacters) {
+    std::regex re(utils::globToRegex("a+b(c)"));
+    EXPECT_TRUE(std::regex_match(std::string("a+b(c)"), re));
+    EXPECT_FALSE(std::regex_match(std::string("aab"), re));   // '+' must not act as a quantifier
 }

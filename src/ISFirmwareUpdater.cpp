@@ -14,17 +14,18 @@
 static bool icontains(const std::string& haystack, const std::string& needle);
 static update_policy_e parsePolicyString(const std::string& str);
 
-#define LOG_FWUPDATE_STATUS(log_level, ...)   { do {                                                        \
+// Bare do{}while(0), no enclosing braces and no trailing semicolon, so one invocation plus the caller's
+// own `;` is exactly one statement. See IS_LOG_MSG in core/msg_logger.h.
+#define LOG_FWUPDATE_STATUS(log_level, ...)   do {                                                          \
     /* log_msg(IS_LOG_FWUPDATE, log_level, __VA_ARGS__); */                                                 \
     if (pfnStatus_cb) { pfnStatus_cb(std::make_any<ISFirmwareUpdater*>(this), log_level, __VA_ARGS__); }    \
-} while (0); }                                                                                              \
+} while (0)
 
 
 ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& state) : FirmwareUpdateHost(), device(device), updateState(state) {
     if (device) {
         port = device->port;
         devInfo = &device->devInfo;
-        uint16_t targetHdwId = ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo);
 
         // At some point during the upgrade, we'll likely reset the device and we need to watch for the device to come back. But the EvalTool normally doesn't discovery
         // new devices (only new ports). So, let's use the PortManagers::port_listener mechanism to detect when new ports are discover, only during the Firmware Update
@@ -34,15 +35,44 @@ ISFirmwareUpdater::ISFirmwareUpdater(device_handle_t device, ISFwUpdateState& st
         // NOTE: its possible that the device may enumerate its port in the OS before the device is ready to respond to queries (though not likely). As a result, it's
         // possible that if the discoverDevice()'s timeout parameter is too low, we might miss the device - but too long, and its will block other pending ports/events.
         // We might consider a mechanism that records the new ports, and then continues to check them outside of the listener event.
+        // Gate on the hardware identity of the device being updated. Note this is only type+major+minor
+        // (e.g. "IMX-5.0") -- ENCODE_DEV_INFO_TO_HDW_ID carries no serial number -- so it narrows to the
+        // device's CLASS, not to the device itself. That is a weak gate on a bench of identical parts, but
+        // it is a great deal stronger than none.
+        uint16_t targetHdwId = ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo);
+
         portListenerHdl = PortManager::getInstance().addPortListener(
                 [targetHdwId](PortManager::port_event_e event, uint16_t portType, std::string portName, port_handle_t port, PortFactory& portFactory) {
-                    if (event == PortManager::PORT_ADDED) {
-                        if ( DeviceManager::getInstance().discoverDevice(port, targetHdwId, 500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE | DeviceManager::DISCOVERY__FORCE_REVALIDATION) ) {
-                            log_info(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", DeviceManager::getInstance().getDevice(port)->getDescription().c_str())
-                        } else {
-                            log_info(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice.", portName.c_str())
-                            portClose(port);
-                        }
+                    if (event != PortManager::PORT_ADDED)
+                        return;
+
+                    // This is only the fast path. A device returning from a reboot may not answer yet, so a miss
+                    // here is expected rather than fatal -- step()'s once-per-second re-discovery retries every
+                    // port that still has no device associated. Two rules matter:
+                    //
+                    //  - Filter on targetHdwId, NOT IS_HARDWARE_ANY. This callback fires for every port the
+                    //    system adds, not only the one being updated, and DISCOVERY__FORCE_REVALIDATION below
+                    //    first zeroes hdwRunState/firmwareVer on whichever device currently holds that port
+                    //    name. With a wildcard filter, an unrelated device arriving on a recycled port name
+                    //    would both wipe the incumbent's state AND be associated in its place: the kernel
+                    //    reuses freed /dev/ttyACM numbers, and across a multi-device reboot devices demonstrably
+                    //    come back on each other's node numbers. The filter cannot prevent the wipe, but it
+                    //    does stop a foreign device taking over the association.
+                    //  - Never close the port on a miss (neither explicitly nor via CLOSE_PORT_ON_FAILURE). We
+                    //    did not open it, and closing a port that just came back is actively harmful wherever a
+                    //    close is expensive to undo: on a relayed TCP port it surrenders the bridgeboard device
+                    //    slot, turning a sub-second retry into a full re-advertise/connect/validate cycle of
+                    //    tens of seconds -- past the 20 s fwUpdate no-traffic timeout, so the session dies
+                    //    waiting for a device that is already back. On USB a close is nearly free.
+                    //
+                    // Keep the timeout short: this blocking I/O runs INSIDE the port-event callback, so a
+                    // longer wait multiplied by many devices returning at once stalls event delivery for all
+                    // of them.
+                    if (DeviceManager::getInstance().discoverDevice(port, targetHdwId, 500, DeviceManager::DISCOVERY__FORCE_REVALIDATION)) {
+                        device_handle_t found = DeviceManager::getInstance().getDevice(port);
+                        log_debug(IS_LOG_FWUPDATE, "Discovered device [%s] while performing Firmware Updates.", found ? found->getDescription().c_str() : portName.c_str());
+                    } else {
+                        log_debug(IS_LOG_FWUPDATE, "Discovered new port [%s] while performing Firmware Updates, but couldn't associate an ISDevice yet; leaving it open for step() to retry.", portName.c_str());
                     }
                 }
         );
@@ -177,6 +207,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
 
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
+
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_COMMS);
 
     return result;
@@ -1120,7 +1151,8 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         filename = cmd["filename"];
         if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
         if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
-        if (cmd.hasArg("chunkSize")) progressRate = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
+        // chunkSize, NOT progressRate -- these are separate settings and must not be conflated.
+        if (cmd.hasArg("chunkSize")) chunkSize = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
         if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 
         // Resolve effective update policy for this upload

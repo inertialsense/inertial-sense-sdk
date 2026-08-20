@@ -58,7 +58,12 @@ int portReadTimeout_internal(port_handle_t port, uint8_t* buffer, unsigned int r
 
     uint32_t timeout = current_timeMs() + timeoutMs;
     uint16_t bytesPending = portAvailable(port);
-    while ((bytesPending < readCount) && (current_timeMs() > timeout)) {
+    // `current_timeMs() < timeout`, not `>`. The comparison was inverted, so the condition was false on
+    // entry (timeout is in the future) and the loop never ran even once: this function returned whatever
+    // bytes happened to be pending already and never waited for the rest, despite being the SDK's
+    // "blocking read n bytes with a timeout" primitive -- including as the fallback portReadTimeout() for
+    // any port that does not implement its own (base_port.h).
+    while ((bytesPending < readCount) && (current_timeMs() < timeout)) {
         SLEEP_MS(timeoutMs / 4);
         bytesPending = portAvailable(port);
     }

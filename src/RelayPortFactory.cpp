@@ -810,15 +810,23 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
     log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: starting SSE loop for '%s'", host.url.c_str());
     int backoffMs = SSE_RECONNECT_INITIAL_MS;
     while (!host.stopRequested.load()) {
-        httplib::Client sseClient(hostname, port);
-        sseClient.set_connection_timeout(HTTP_CONNECT_TIMEOUT_S);
-        sseClient.set_read_timeout(SSE_READ_TIMEOUT_S);
+        // Heap-allocated and shared with the abort hook below, NOT a stack local. The hook outlives
+        // this loop iteration (it stays installed through the backoff sleep, after a break out of
+        // the loop, and until the next iteration republishes it), so a hook capturing a stack
+        // client by reference calls stop() on freed memory -- a use-after-free that crashed
+        // ~RelayPortFactory() whenever a host's worker had already given up (e.g. an unreachable
+        // relay falling back to polling after DEFAULT_MAX_SSE_RETRIES).
+        auto sseClient = std::make_shared<httplib::Client>(hostname, port);
+        sseClient->set_connection_timeout(HTTP_CONNECT_TIMEOUT_S);
+        sseClient->set_read_timeout(SSE_READ_TIMEOUT_S);
 
         // Publish an abort hook so a concurrent setRelayHostEnabled(false) / removeRelayHost
         // / ~RelayPortFactory() can unblock the pending recv() without waiting for server silence.
+        // Captures the shared_ptr BY VALUE so the client stays alive as long as the hook can be
+        // invoked; a stop() on an already-idle client is a harmless no-op.
         {
             std::lock_guard<std::recursive_mutex> lock(mutex_);
-            host.sseAbortHook = [&sseClient]() { sseClient.stop(); };
+            host.sseAbortHook = [sseClient]() { sseClient->stop(); };
         }
 
         httplib::Headers headers;
@@ -961,7 +969,7 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
             return true;
         };
 
-        auto res = sseClient.Get(PATH_EVENTS_DEVICES, headers, on_chunk);
+        auto res = sseClient->Get(PATH_EVENTS_DEVICES, headers, on_chunk);
         host.streamConnected.store(false);
 
         // Clear the abort hook now that the client is about to be destroyed —
@@ -998,5 +1006,14 @@ void RelayPortFactory::sseWorkerLoop(RelayHost& host) {
             slept += 50;
         }
         backoffMs = std::min(backoffMs * 2, SSE_RECONNECT_MAX_MS);
+    }
+
+    // This worker is done (stop requested, or it fell back to polling after exhausting its SSE
+    // retries). Drop the abort hook so nothing later -- ~RelayPortFactory(), a disable, a remove --
+    // invokes a hook belonging to a thread that no longer exists, and so the client it holds is
+    // released now rather than lingering until the host is torn down.
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        host.sseAbortHook = nullptr;
     }
 }

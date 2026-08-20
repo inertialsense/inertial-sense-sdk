@@ -88,6 +88,31 @@ namespace utils {
     std::string trim_copy(std::string s, const char* t = " \t\n\r\f\v");
 
     /**
+     * @brief Expands a shell-style GLOB (optionally a comma-separated list of them) into an equivalent
+     *        regular expression.
+     *
+     * Exists because glob and regex are different pattern languages that are easy to conflate, and the
+     * consequences are not cosmetic. Port discovery
+     * (PortManager::discoverPorts()/PortFactory::locatePorts()) consumes a REGEX, while command-line port
+     * specifiers are globs -- so passing one straight to the other threw std::regex_error out of a port
+     * scan on the very common "*" ("*" is a quantifier with no preceding atom), aborting a 15-device
+     * firmware update after every device had been reset into its bootloader.
+     *
+     * Translation, not escaping, so "/dev/ttyACM*" means what a user expects:
+     *   *  ->  .*        any run of characters
+     *   ?  ->  .         any single character
+     *   everything else is regex-escaped and matched literally, so "/dev/ttyACM0" does not also match
+     *   "/dev/ttyACMX" through an unescaped '.'.
+     *
+     * Glob character classes ("[a-z]") are deliberately NOT translated: the brackets are escaped and
+     * matched literally, since silently reinterpreting them is worse than not supporting them.
+     *
+     * @param globs a glob, or a comma-separated list of globs
+     * @return an equivalent regex; alternatives are joined with '|', and an empty input yields "(.+)"
+     */
+    std::string globToRegex(const std::string& globs);
+
+    /**
      * Base case for the variadic string_format() below; returns format unchanged, since there are
      * no substitutions to perform when no additional arguments are supplied.
      * @param format the string to return as-is
@@ -326,6 +351,52 @@ namespace utils {
      * @return false on unrecognized type prefix or malformed version, otherwise true
      */
     bool parseHardwareFromString(const std::string& s, dev_info_t& devInfo);
+
+    /**
+     * Parses a hardware identity into a packed hardware-ID MASK, allowing the version to be omitted so a
+     * whole family can be named. Omitted fields are encoded all-1s, which DEV_INFO_MATCHES_HDW_ID() and
+     * ISDevice::matchesHdwId() treat as "match any value in this field".
+     *
+     * Where parseHardwareFromString() requires "<TYPE>-<major>.<minor>" and yields one concrete identity,
+     * this accepts the partial forms a selection needs:
+     *   "IMX"      -> any IMX, any version
+     *   "IMX-5"    -> any IMX-5.x
+     *   "IMX-5.0"  -> exactly IMX-5.0
+     * Type names come from the same tables parseHardwareFromString() uses, and are matched
+     * case-insensitively.
+     *
+     * @param s          the hardware identity or family to parse
+     * @param[out] hdwId the packed mask; unchanged if parsing fails
+     * @return false on an unrecognized type name or malformed version, otherwise true
+     */
+    bool parseHardwareIdMask(const std::string& s, uint16_t& hdwId);
+
+    /**
+     * Parses a device selection into a unique-ID MASK (packed hardware ID in bits 48-63, serial number in
+     * bits 0-31), leaving whichever part was omitted as a wildcard. Hardware type and serial number are two
+     * masks over one identity, so a selection may name either or both:
+     *   "IMX"               any IMX, any serial
+     *   "IMX-5.0"           exactly IMX-5.0, any serial
+     *   "SN62913", "62913"  that serial, any hardware
+     *   "IMX-5.0::SN62913"  both; ':' is accepted in place of '::'
+     *
+     * Compare ISDevice::parseDeviceIdString(), which identifies ONE device and so requires a serial number
+     * (returning 0 without one). This is the selection form, where an omitted part means "any".
+     *
+     * @param s           the selection to parse
+     * @param[out] idMask the packed mask; unchanged if parsing fails. A fully-wild selection yields
+     *                    (IS_HARDWARE_ANY << 48), which matches every device.
+     * @return false if neither a hardware identity nor a serial number could be read, otherwise true
+     */
+    bool parseDeviceIdMask(const std::string& s, uint64_t& idMask);
+
+    /**
+     * Tests a device's identity against a unique-ID mask from parseDeviceIdMask().
+     * @param devInfo the device identity to test
+     * @param idMask  the mask; wildcard hardware fields and a zero serial match anything
+     * @return true if devInfo satisfies every non-wildcard part of the mask
+     */
+    bool devInfoMatchesIdMask(const dev_info_t& devInfo, uint64_t idMask);
 
     /**
      * Parses a firmware version string (inverse of getFirmwareAsString()). Accepts an optional
