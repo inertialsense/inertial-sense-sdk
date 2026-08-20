@@ -625,19 +625,29 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     return data;
 }
 
-p_data_buf_t *cISLogger::ReadData(size_t devIndex) 
+p_data_buf_t *cISLogger::ReadData(size_t devIndex)
 {
     if (devIndex >= m_devices.size())
         return nullptr;
 
+    // ReadData(size_t) is itself deprecated (SN-7901); this is its own implementation calling
+    // through to the shared_ptr overload, not an external use of the legacy API.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return ReadData(DeviceLogs()[devIndex]);
+#pragma GCC diagnostic pop
 }
 
 p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 {
     while (devIndex < m_devices.size())
     {
+        // ReadNextData() is still the supported iteration API; it intentionally drives the
+        // legacy ReadData(size_t) path (SN-7901) until it's migrated to the ISLogReader stack.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         p_data_buf_t *data = ReadData(devIndex);
+#pragma GCC diagnostic pop
         if (data == NULL)
         {
             ++devIndex;
@@ -824,8 +834,13 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         dstDev->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
         // Copy data
+        // CopyLog() is still the supported log-conversion API; it intentionally drives the
+        // legacy ReadData() path (SN-7901) until it's migrated to the ISLogReader stack.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         for (g_copyReadCount = 0; (data = log.ReadData(srcDev)); g_copyReadCount++)
         {
+#pragma GCC diagnostic pop
 
 #if LOG_DEBUG_PRINT_READ
             double timestamp = cISDataMappings::Timestamp(&(data->hdr), data->buf);
