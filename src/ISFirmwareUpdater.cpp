@@ -1009,7 +1009,7 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
  * @brief processes the manifest command "target" responsible for setting the target device to apply all subsequent command towards.
  * @param args a set of positional arguments
  * This command has the following arguments:
- *     target ID [required] :: One of IMX5, IMX6, GPX1, GNSS1, GNSS2
+ *     target ID [required] :: One of IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2
  *     timeout [optional] :: the number of milliseconds to wait for a response from the requested target (defaults to 0ms, or no wait)
  *     interval [optional] :: the number of milliseconds between re-request attempts, while waiting for a response (0ms (default) mean do not send any additional re-requests)
  *     on_timeout [optional] :: a label to jump to in the event that the timeout occurs waiting for the device
@@ -1027,9 +1027,11 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
         else if (targetName == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);        // TODO: Remove this 06/30/2027 - obsoleted by CXD1
         else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);        // TODO: Remove this 06/30/2027 - obsoleted by CXD2
         else if (targetName == "SEPT") setTarget(fwUpdate::TARGET_SEPTENTRIO);
-        else if (targetName == "UBX") setTarget(fwUpdate::TARGET_UBLOX);
+        else if (targetName == "UBX1") setTarget(fwUpdate::TARGET_UBLOX__1);
+        else if (targetName == "UBX2") setTarget(fwUpdate::TARGET_UBLOX__2);
+        else if (targetName == "UBX") setTarget(fwUpdate::TARGET_UBLOX__1);      // bare name addresses the first receiver
         else {
-            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX)", targetName.c_str());
+            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2)", targetName.c_str());
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             return;
         }
