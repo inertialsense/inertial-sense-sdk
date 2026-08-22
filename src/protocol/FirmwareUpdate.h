@@ -223,7 +223,26 @@ namespace fwUpdate {
         REASON_INVALID_SEQID = 1,   //!< the last received chunk was out of order, so we're requesting the correct chunk id.
         REASON_WRITE_ERROR = 2,     //!< there was an error writing the data to FLASH (perhaps it took too long?)
         REASON_INVALID_SIZE = 3,    //!< unless the chunk id is the last chunk, the size of the chunk should always be the negotiated session_chunk_size;
+        REASON_TOO_FAST = 4,        //!< the device cannot take data this fast; the host should pace itself. See CHUNK_ID_PAUSE.
     };
+
+    /**
+     * Chunk id meaning "stop sending until told otherwise", valid only with REASON_TOO_FAST.
+     *
+     * Flow control. A device that buffers chunks can fill up while it works through what it has, and
+     * the only answer available to it otherwise is to refuse each arriving chunk -- which the host
+     * resends immediately, so a device that is merely busy gets hammered instead of given room. With
+     * this the device can ask for a pause and lift it when it is ready: a REQ_RESEND_CHUNK carrying
+     * REASON_TOO_FAST and this chunk id suspends sending indefinitely, and any later
+     * REQ_RESEND_CHUNK with a real chunk id resumes from there.
+     *
+     * REASON_TOO_FAST with a real chunk id is the milder form: send that chunk next, but wait a moment
+     * first.
+     */
+    static const uint16_t CHUNK_ID_PAUSE = 0xFFFF;
+
+    /** How long a host waits after a REASON_TOO_FAST naming a real chunk, before sending it. */
+    static const uint32_t FLOW_CONTROL_DELAY_MS = 20;
 
     /** Bitmask flags controlling how a device reset is performed (see msg_data_t::req_reset, fwUpdate_requestReset()/fwUpdate_performReset()). */
     enum reset_flags_e : uint16_t {
@@ -444,6 +463,7 @@ namespace fwUpdate {
         uint32_t last_message = 0;                              //!< the time (millis) since we last received a payload targeted for us.
         uint32_t timeout_duration = 20000;                      //!< the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //!< the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
+        bool pause_requested = false;                           //!< device side: the next auto-retry should ask the host to pause (see fwUpdate_requestChunkPause())
 
         target_t session_target = TARGET_HOST;                  //!< the target device this session is communicating with
         update_status_e session_status = NOT_STARTED;           //!< last known state of this session
@@ -731,6 +751,33 @@ namespace fwUpdate {
         bool fwUpdate_sendRetry(resend_reason_e reason);
 
         /**
+         * Sends a REQ_RESEND_CHUNK naming a specific chunk, rather than the next expected one.
+         *
+         * The host honours whatever chunk id it is given, resending from there -- so this is also how a
+         * device asks to go BACKWARDS, to a chunk it has already consumed but needs again.
+         * @param chunk_id the chunk to resume from, or CHUNK_ID_PAUSE with REASON_TOO_FAST to suspend
+         * @param reason why
+         * @return true if the request was sent
+         */
+        bool fwUpdate_sendRetryFrom(uint16_t chunk_id, resend_reason_e reason);
+
+        /**
+         * Asks the host to stop sending chunks until fwUpdate_resumeChunks() lifts it.
+         *
+         * Call this from fwUpdate_writeImageChunk() when there is no room, and still return a
+         * retryable status: the status is what stops the host advancing its chunk counter and hashing
+         * bytes the device never stored, and this is what stops it retrying in a tight loop meanwhile.
+         */
+        void fwUpdate_requestChunkPause() { pause_requested = true; }
+
+        /**
+         * Lifts a pause, resuming from @a chunk_id.
+         * @param chunk_id the next chunk wanted; normally last_chunk_id + 1
+         * @return true if the request was sent
+         */
+        bool fwUpdate_resumeChunks(uint16_t chunk_id) { return fwUpdate_sendRetryFrom(chunk_id, REASON_NONE); }
+
+        /**
          * Validates that the provided session Id has not be used in the last 10 updates
          * @param sessionId the session Id to validate
          * @returns true if valid otherwise false.
@@ -1000,6 +1047,16 @@ namespace fwUpdate {
 
         uint16_t next_chunk_id = 0;                     //!< the next chuck id to send, at the next send.
         uint16_t chunks_sent = 0;                       //!< the total number of chunks that have been sent, including resends
+
+        /**
+         * Flow control, as asked for by the device (REASON_TOO_FAST; see CHUNK_ID_PAUSE).
+         *
+         * chunks_paused holds sending indefinitely and is lifted only by a REQ_RESEND_CHUNK naming a
+         * real chunk. chunks_hold_until is the milder form: a short wait before the next send. Neither
+         * ends the session or counts as an error -- a device asking for room is not a device failing.
+         */
+        bool     chunks_paused = false;
+        uint32_t chunks_hold_until = 0;
 
         uint16_t progress_total = 0;                    //!< the total number of steps used to report completion progress
         uint16_t progress_num = 0;                      //!< the current step (between 0 an progress_total) to indicate the current completion progress

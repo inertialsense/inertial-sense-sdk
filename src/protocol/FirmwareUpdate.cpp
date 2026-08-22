@@ -600,7 +600,16 @@ namespace fwUpdate {
             printk("[FwUpdate] handleChunk RETRY write_error: chunk_id=%u offset=0x%x len=%u writeImageChunk_status=%d\n",
                    (unsigned)payload.data.chunk.chunk_id, (unsigned)chnk_offset, (unsigned)payload.data.chunk.data_len, (int)write_st);
 #endif
-            fwUpdate_sendRetry(REASON_WRITE_ERROR);
+            // A device with no room is busy, not broken. Asking the host to hold is the difference
+            // between it waiting and it resending as fast as the link allows -- which starves the very
+            // work that would free the room. The retryable status still stands, so the host does not
+            // advance its counter or hash bytes that were never stored.
+            if (pause_requested) {
+                pause_requested = false;
+                fwUpdate_sendRetryFrom(CHUNK_ID_PAUSE, REASON_TOO_FAST);
+            } else {
+                fwUpdate_sendRetry(REASON_WRITE_ERROR);
+            }
             return false;
         }
 
@@ -715,6 +724,22 @@ namespace fwUpdate {
     }
 
     /**
+     * Sends a REQ_RESEND_CHUNK naming a specific chunk rather than the next expected one.
+     * @param chunk_id the chunk to resume from, or CHUNK_ID_PAUSE with REASON_TOO_FAST to suspend
+     * @param reason why the request is being made
+     * @return true if the request was sent
+     */
+    bool FirmwareUpdateDevice::fwUpdate_sendRetryFrom(uint16_t chunk_id, resend_reason_e reason) {
+        payload_t response;
+        response.hdr.target_device = TARGET_HOST;
+        response.hdr.msg_type = MSG_REQ_RESEND_CHUNK;
+        response.data.req_resend.session_id = session_id;
+        response.data.req_resend.chunk_id = chunk_id;
+        response.data.req_resend.reason = reason;
+        return fwUpdate_sendPayload(response);
+    }
+
+    /**
      * Validates that the provided session Id has not be used in the last 10 updates
      * @param sessionId the session Id to validate
      * @returns true if valid otherwise false.
@@ -774,8 +799,21 @@ namespace fwUpdate {
                     return false; // this suggests that this message belongs to another session - we should ignore it.
                 return fwUpdate_handleUpdateProgress(payload);
             case MSG_REQ_RESEND_CHUNK:
+                if ((payload.data.req_resend.reason == REASON_TOO_FAST) &&
+                    (payload.data.req_resend.chunk_id == CHUNK_ID_PAUSE)) {
+                    // Hold everything. Not a resend and not an error: the chunk position is untouched,
+                    // and only a later request naming a real chunk lifts this.
+                    chunks_paused = true;
+                    return fwUpdate_handleResendChunk(payload);
+                }
+
+                chunks_paused = false;      // any real chunk id resumes, whatever the reason
                 resend_count += next_chunk_id - payload.data.req_resend.chunk_id;
                 next_chunk_id = payload.data.req_resend.chunk_id;
+
+                if (payload.data.req_resend.reason == REASON_TOO_FAST)
+                    chunks_hold_until = current_timeMs() + FLOW_CONTROL_DELAY_MS;
+
                 return fwUpdate_handleResendChunk(payload);
             case MSG_UPDATE_DONE:
                 session_status = payload.data.resp_done.status;
@@ -896,6 +934,15 @@ namespace fwUpdate {
         if (next_chunk_id >= session_total_chunks)
             return 0; // don't keep sending chunks... but also, don't "finish" the update (that's the remote's job).
 
+        // Honour flow control. The remaining count is returned rather than 0, so a caller cannot read
+        // "held for a moment" as "nothing left to send".
+        if (chunks_paused)
+            return (session_total_chunks - next_chunk_id);
+
+        if ((chunks_hold_until != 0) && (current_timeMs() < chunks_hold_until))
+            return (session_total_chunks - next_chunk_id);
+        chunks_hold_until = 0;
+
         // I'm exploiting the pack/unpack + build_buffer to allow building a payload in place, including room for the chunk data.
         msg->hdr.target_device = session_target;
         msg->hdr.msg_type = fwUpdate::MSG_UPDATE_CHUNK;
@@ -947,6 +994,8 @@ namespace fwUpdate {
         session_image_size = 0;
         session_image_slot = 0;
         next_chunk_id = 0;
+        chunks_paused = false;
+        chunks_hold_until = 0;
         md5_init(md5Context);
         return true;
     }
