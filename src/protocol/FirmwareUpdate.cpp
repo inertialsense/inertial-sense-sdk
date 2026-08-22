@@ -4,6 +4,8 @@
 
 #include "FirmwareUpdate.h"
 
+#include <string.h>     // strnlen(), bounding a device-supplied progress message
+
 #ifdef __ZEPHYR__
 #include <zephyr/random/random.h>
 #endif
@@ -221,8 +223,13 @@ namespace fwUpdate {
             case MSG_UPDATE_PROGRESS:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]",
                                     payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
-                if (payload->data.progress.msg_len > 0)
-                    cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %s", &payload->data.progress.message);
+                if (payload->data.progress.msg_len > 0) {
+                    // Bounded: a device that predates the terminator sends msg_len bytes with no NUL,
+                    // and %s would read past the message into the rest of the buffer.
+                    const char* m = (const char*)&payload->data.progress.message;
+                    cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %.*s",
+                                        (int)strnlen(m, payload->data.progress.msg_len), m);
+                }
                 break;
             case MSG_UPDATE_DONE:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s']",
@@ -417,13 +424,17 @@ namespace fwUpdate {
         if (message) {
             va_list ap;
             va_start(ap, message);
-            msg_len = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
+            int n = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
             va_end(ap);
+            if ((n < 0) || ((size_t)n >= sizeof(buffer) - 1))
+                return false;           // formatting failed, or the message would be truncated
+
+            // +1 for the terminator. msg_len is the number of bytes placed on the wire, and every
+            // consumer reads those bytes as a C string, so the NUL has to be among them. 0 still
+            // means "no message".
+            msg_len = (size_t)n + 1;
         } else
             memset(buffer, 0, sizeof(buffer));
-
-        if (msg_len >= sizeof(buffer)-1)
-            return false;
 
         payload_t msg;
         msg.hdr.target_device = TARGET_HOST; // progress messages always go back to the host.
@@ -802,7 +813,8 @@ namespace fwUpdate {
                 if ((payload.data.req_resend.reason == REASON_TOO_FAST) &&
                     (payload.data.req_resend.chunk_id == CHUNK_ID_PAUSE)) {
                     // Hold everything. Not a resend and not an error: the chunk position is untouched,
-                    // and only a later request naming a real chunk lifts this.
+                    // and only a later request naming a real chunk lifts this. The handler still runs,
+                    // because that is where a host adapts its pacing.
                     chunks_paused = true;
                     return fwUpdate_handleResendChunk(payload);
                 }
