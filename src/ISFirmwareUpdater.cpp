@@ -187,6 +187,14 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
     paceWindowStartMs = current_timeMs();
     paceWindowChunks = 0;
 
+    // Same reasoning applies to the give-up-guard counters: they're session-scoped state, so a
+    // package updating several targets in sequence must not let one target's near-miss count
+    // toward the next target's give-up threshold.
+    hasResentChunk = false;
+    last_resent_chunk = 0;
+    resent_chunkid_count = 0;
+    resent_chunkid_time = 0;
+
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
         // check into the current archive for this file
@@ -385,7 +393,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
         chunksSinceResend = 0;
     }
 
-    if (msg.data.req_resend.chunk_id == last_resent_chunk) {
+    if (hasResentChunk && (msg.data.req_resend.chunk_id == last_resent_chunk)) {
         resent_chunkid_count++;
         // Repeatedly failing the SAME chunk is a target that cannot store it, not one that is busy;
         // pacing will never fix that, so stop rather than retry forever.
@@ -406,6 +414,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
             return false;
         }
     } else {
+        hasResentChunk = true;
         last_resent_chunk = msg.data.req_resend.chunk_id;
         resent_chunkid_count = 0;
         resent_chunkid_time = current_ms;
@@ -1060,7 +1069,7 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
  * @brief processes the manifest command "target" responsible for setting the target device to apply all subsequent command towards.
  * @param args a set of positional arguments
  * This command has the following arguments:
- *     target ID [required] :: One of IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2
+ *     target ID [required] :: One of IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2, UBX (bare UBX addresses the first u-blox receiver, same as UBX1)
  *     timeout [optional] :: the number of milliseconds to wait for a response from the requested target (defaults to 0ms, or no wait)
  *     interval [optional] :: the number of milliseconds between re-request attempts, while waiting for a response (0ms (default) mean do not send any additional re-requests)
  *     on_timeout [optional] :: a label to jump to in the event that the timeout occurs waiting for the device
@@ -1082,7 +1091,7 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
         else if (targetName == "UBX2") setTarget(fwUpdate::TARGET_UBLOX__2);
         else if (targetName == "UBX") setTarget(fwUpdate::TARGET_UBLOX__1);      // bare name addresses the first receiver
         else {
-            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2)", targetName.c_str());
+            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2, UBX)", targetName.c_str());
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             return;
         }
@@ -1475,6 +1484,7 @@ void ISFirmwareUpdater::initialize() {
     maxAttempts = 5;                                        //!< the maximum number of attempts that will be made before we give up.
     attemptInterval = 350;                                  //!< the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
+    hasResentChunk = false;                                 //!< no req_resend seen yet this package
     last_resent_chunk = 0;                                  //!< the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
     resent_chunkid_count = 0;                               //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     resent_chunkid_time = 0;                                //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)

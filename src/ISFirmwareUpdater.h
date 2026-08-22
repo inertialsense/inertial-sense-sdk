@@ -584,6 +584,7 @@ private:
     int8_t maxAttempts = 5;                                 //!< the maximum number of attempts that will be made before we give up.
     uint16_t attemptInterval = 350;                         //!< the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
+    bool hasResentChunk = false;                            //!< whether last_resent_chunk holds a real chunk id yet; without this, chunk id 0 (a valid id) would be indistinguishable from "no resend seen yet"
     uint16_t last_resent_chunk = 0;                         //!< the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
     uint16_t resent_chunkid_count = 0;                      //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     uint32_t resent_chunkid_time = 0;                       //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
