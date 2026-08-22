@@ -120,7 +120,14 @@ namespace fwUpdate {
     typedef void (*pfnStatusCb)(const std::any& obj, eLogLevel level, const char* infoString, ...);
 
 
-#define FWUPDATE__MAX_CHUNK_SIZE   512                                  //!< maximum number of firmware-image bytes carried in a single UPDATE_CHUNK message
+#define FWUPDATE__MAX_CHUNK_SIZE   512                                  //!< maximum number of firmware-image bytes carried in a single UPDATE_CHUNK message.
+//   The transport would allow 1024 -- this plus 92 bytes of overhead has to fit MAX_PKT_BODY_SIZE
+//   (PKT_BUF_SIZE 2048, less packet overhead) -- and the negotiation degrades safely, since a
+//   device built against a smaller value answers REQ_UPDATE with ERR_MAX_CHUNK_SIZE and the host
+//   halves and retries. 512 is not a protocol limit but a measured one: at 1024 the resulting
+//   1116-byte payloads are dropped often enough on the host-to-IMX-to-GPX path (8 lost chunks in
+//   1920, against none at 512) that the backoff each loss triggers costs more than halving the
+//   round trips saves. Measured on an IG2: 66s at 1024 against 52s at 512.
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)       //!< maximum total payload_t size (chunk data plus header/message overhead)
 
     static constexpr uint32_t TARGET_TYPE_MASK = 0x0000FFF0;  //!< mask isolating a target_t's base product/type bits, stripping instance and protocol flags
@@ -464,6 +471,37 @@ namespace fwUpdate {
         uint32_t timeout_duration = 20000;                      //!< the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //!< the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
         bool pause_requested = false;                           //!< device side: the next auto-retry should ask the host to pause (see fwUpdate_requestChunkPause())
+
+        /**
+         * Device side: the host has been asked to hold and has not been resumed yet.
+         *
+         * A hold does not take effect instantly -- whatever the host had already put on the wire
+         * still arrives, ahead of the chunk this device is waiting for. Those are not a fault and
+         * must not be answered with REASON_INVALID_SEQID: a host that adapts its pace treats any
+         * non-NONE resend as a rate complaint and slows down for a sequence error that never
+         * happened. The resume names the chunk to continue from, so they can simply be dropped.
+         */
+        bool chunks_held = false;
+
+        /**
+         * The chunk id of the most recent resend/resume request, and how many out-of-sequence chunks
+         * have been dropped since it was sent. CHUNK_ID_PAUSE means no request is outstanding; the
+         * pause form is never recorded here, because it names no chunk.
+         *
+         * Stragglers keep arriving for a round trip after a resume, so clearing chunks_held is not
+         * on its own enough to stop them being reported as sequence errors. A request for the wanted
+         * chunk is already on the wire, and sending it again changes nothing -- except to the host,
+         * to which each one reads as a fresh fault.
+         *
+         * The count bounds that silence. If the wanted chunk is itself lost, the request has to be
+         * repeated or the transfer stalls with neither side speaking: the host would keep sending
+         * chunks that keep being dropped, refreshing the very timeout that would otherwise recover.
+         * The bound is well above any plausible in-flight window, so it only comes into play when a
+         * request genuinely needs repeating.
+         */
+        static const uint8_t MAX_DROPPED_STRAGGLERS = 16;
+        uint16_t resend_pending_id = CHUNK_ID_PAUSE;
+        uint8_t resend_stragglers = 0;
 
         target_t session_target = TARGET_HOST;                  //!< the target device this session is communicating with
         update_status_e session_status = NOT_STARTED;           //!< last known state of this session

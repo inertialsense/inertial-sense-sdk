@@ -594,12 +594,20 @@ private:
      * Starts optimistic and lets the target set the pace, rather than using a fixed guess that is
      * either too slow for every device or too fast for the worst one.
      *
-     * On REASON_TOO_FAST the new pace is measured rather than guessed: the target sustained
-     * paceWindowChunks over the window, so that ratio is the ms/chunk it can actually absorb --
-     * including whatever the holds cost, which is the overhead being eliminated. Pace just above it
-     * (CHUNK_RAISE_PERCENT) and the target should not need to ask again. Any other resend reason has
-     * no measurement behind it, so it falls back to raising the delay by half again; older devices
-     * cannot say TOO_FAST at all, and a resend is then the only rate signal on offer.
+     * On REASON_TOO_FAST naming a real chunk the new pace is measured rather than guessed: the target
+     * sustained paceWindowChunks over the window, so that ratio is the ms/chunk it can actually
+     * absorb -- including whatever the holds cost, which is the overhead being eliminated. Pace just
+     * above it (CHUNK_RAISE_PERCENT) and the target should not need to ask again. Any other resend
+     * reason has no measurement behind it, so it falls back to raising the delay by half again; older
+     * devices cannot say TOO_FAST at all, and a resend is then the only rate signal on offer.
+     *
+     * The CHUNK_ID_PAUSE form is exempt and leaves the pace untouched. A target that holds and later
+     * names the chunk to resume from is running its own flow control, not asking for a different
+     * steady-state rate, and some do so on a fixed period -- the CXD5610 holds at every 4086-byte
+     * frame boundary, waiting on the receiver's acknowledgement. Measuring that would fold the wait
+     * into the observed ms/chunk and then add it back on top as delay, so each hold would raise the
+     * pace and the next hold would measure the raised pace: it ratchets to CHUNK_DELAY_MAX_MS and
+     * never decays, because the holds arrive far more often than CHUNK_DECAY_CHUNKS.
      *
      * CHUNK_DECAY_CHUNKS sent without any resend takes CHUNK_DECAY_PERCENT back off, so a transient
      * penalty is repaid rather than taxing the rest of the transfer.
@@ -621,13 +629,16 @@ private:
      * reasons unrelated to the device being written.
      *
      * Bounds matter in both directions. The ceiling exists because the backoff is otherwise
-     * unbounded. The floor is the base, because decay is there to undo a penalty, not to probe below
-     * the rate the base already assumes is safe for a target that cannot signal at all.
+     * unbounded. The floor is the target's own starting delay (chunkDelayFloor), because decay is
+     * there to undo a penalty, not to probe below the rate that start already asserts is safe -- a
+     * target whose start was raised would otherwise be walked straight back down to the global base.
      *
      * A resume request (REASON_NONE) is not a complaint and does not raise the delay; neither does it
      * count toward the decay, since no chunk moved.
      */
-    static const uint16_t CHUNK_DELAY_BASE_MS  = 5;          //!< starting delay, per-upload reset, and decay floor
+    static const uint16_t CHUNK_DELAY_BASE_MS  = 5;          //!< default starting delay and decay floor; see startingChunkDelay()
+    static const uint32_t CXD_FRAME_BYTES      = 4086;       //!< a Sony CXD5610 firmware frame; see startingChunkDelay()
+    static const uint32_t CXD_FRAME_MS         = 50;         //!< and what one costs it: ~44ms on the 921600-baud update link, plus the acknowledgement
     static const uint16_t CHUNK_DELAY_MAX_MS   = 50;         //!< ceiling for the backoff
     static const uint16_t CHUNK_RAISE_PERCENT  = 10;         //!< margin above the measured rate, on REASON_TOO_FAST
     static const uint16_t CHUNK_DECAY_PERCENT  = 5;          //!< taken off the delay at each decay step
@@ -640,6 +651,16 @@ private:
     uint16_t chunksSinceResend = 0;                         //!< progress toward the next decay step
 
     /**
+     * The floor the decay may take chunkDelay down to, for the target currently being written.
+     *
+     * Per-target, and equal to that target's starting delay, because a target whose start was raised
+     * had a reason: the decay would otherwise walk it straight back down to the global base over the
+     * first few hundred clean chunks and undo the whole point of raising it. Decay exists to repay a
+     * penalty a target earned, not to probe below the rate its start already asserts is right.
+     */
+    uint16_t chunkDelayFloor = CHUNK_DELAY_BASE_MS;
+
+    /**
      * Measurement window for deriving a sustainable rate, spanning one REASON_TOO_FAST to the next.
      *
      * Anchored at the first chunk of each run, NOT at the request that closed the previous one --
@@ -649,13 +670,26 @@ private:
      */
     uint32_t paceWindowStartMs = 0;
     uint32_t paceWindowChunks = 0;
+    /**
+     * When the current hold began, or 0 if sending is not held.
+     *
+     * A target that paces itself with holds produces one per frame, and saying so each time buries
+     * the progress stream in messages about a transfer that is working. They stay in the log. What
+     * does belong in front of a user is a hold that has lasted long enough to be the reason progress
+     * appears stopped, which is why this is a timestamp rather than a flag.
+     */
+    uint32_t holdStartedMs = 0;
+
+    /** Multiple of the progress period a hold must exceed before it is reported as progress. */
+    static const uint32_t HOLD_REPORT_PROGRESS_PERIODS = 2;
+
     uint32_t nextChunkSend = 0;                             //!< don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;                           //!< the system time when the firmware was started (for performance reporting)
 
     std::deque<uint8_t> toHost;                             //!< a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
 
     fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
-    int slotNum = 0, chunkSize = 512, progressRate = 250;
+    int slotNum = 0, chunkSize = FWUPDATE__MAX_CHUNK_SIZE, progressRate = 250;
     bool forceUpdate = false;
 
     uint32_t nextPortCheck = 0;                             //!< time when the next port-check should be made, if this device has no bound port.
@@ -688,18 +722,45 @@ private:
             paceWindowStartMs = current_timeMs();
         paceWindowChunks += sent;
 
-        if (chunkDelay <= CHUNK_DELAY_BASE_MS) {
+        if (chunkDelay <= chunkDelayFloor) {
             chunksSinceResend = 0;      // already at the floor; there is nothing to give back
             return;
         }
         chunksSinceResend += sent;
-        while ((chunksSinceResend >= CHUNK_DECAY_CHUNKS) && (chunkDelay > CHUNK_DELAY_BASE_MS)) {
+        while ((chunksSinceResend >= CHUNK_DECAY_CHUNKS) && (chunkDelay > chunkDelayFloor)) {
             chunksSinceResend -= CHUNK_DECAY_CHUNKS;
             uint16_t lowered = (uint16_t)(chunkDelay - (((uint32_t)chunkDelay * CHUNK_DECAY_PERCENT) / 100));
             if (lowered >= chunkDelay)                  // the percentage rounded away to nothing
                 lowered = (uint16_t)(chunkDelay - 1);   // ... so move by the smallest step there is
-            chunkDelay = (lowered > CHUNK_DELAY_BASE_MS) ? lowered : CHUNK_DELAY_BASE_MS;
+            chunkDelay = (lowered > chunkDelayFloor) ? lowered : chunkDelayFloor;
         }
+    }
+
+    /**
+     * The per-chunk delay an upload to this target starts from.
+     *
+     * The base is right for a target that stores a chunk as it arrives. A Sony CXD5610 does not: it
+     * takes 4086-byte frames, cannot begin one until it has acknowledged the last, and acknowledges
+     * only once a whole frame has reached it -- 44ms of wire time at the 921600-baud update rate.
+     * Offering chunks faster than that buys nothing, because the receiver's own link is the limit,
+     * and it costs a hold at every frame boundary. Starting just above the frame rate lets the
+     * transfer run without ever stopping, which is worth more than the nominally faster pace.
+     *
+     * @param target the target being written
+     * @param chunk_size the negotiated chunk size, which sets how many chunks share a frame's cost
+     * @return the starting per-chunk delay in milliseconds
+     */
+    uint16_t startingChunkDelay(fwUpdate::target_t target, int chunk_size) {
+        if (fwUpdate_getTargetType(target) != fwUpdate::TARGET_SONY_CXD5610)
+            return CHUNK_DELAY_BASE_MS;
+
+        // Spread one frame's cost over the chunks that carry it, rounding up. Expressed this way the
+        // pace stays correct if the negotiated chunk size changes: fewer, larger chunks each have to
+        // wait proportionally longer, because what the receiver needs is the frame's worth of time.
+        const uint32_t ms = (((uint32_t)chunk_size * CXD_FRAME_MS) + CXD_FRAME_BYTES - 1) / CXD_FRAME_BYTES;
+        if (ms < CHUNK_DELAY_BASE_MS) return CHUNK_DELAY_BASE_MS;
+        if (ms > CHUNK_DELAY_MAX_MS)  return CHUNK_DELAY_MAX_MS;
+        return (uint16_t)ms;
     }
 
     /**
@@ -735,7 +796,7 @@ private:
     // int cmd_Reset(cmd_state& cmd);
 
 
-    fwUpdate::update_status_e initializeUpload(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 200);
+    fwUpdate::update_status_e initializeUpload(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = FWUPDATE__MAX_CHUNK_SIZE, int progressRate = 200);
 
     /**
      * Initializes a DFU-based firmware update targeting the specified USB device.

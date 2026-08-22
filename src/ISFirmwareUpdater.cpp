@@ -182,10 +182,12 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
     // Each upload re-learns its own pace. Carrying a backoff over would make a fast target inherit
     // the penalty earned by a slow one -- a package that updates several devices would get
     // progressively slower for reasons that have nothing to do with the device being written.
-    chunkDelay = CHUNK_DELAY_BASE_MS;
+    chunkDelayFloor = startingChunkDelay(_target, chunkSize);
+    chunkDelay = chunkDelayFloor;
     chunksSinceResend = 0;
     paceWindowStartMs = current_timeMs();
     paceWindowChunks = 0;
+    holdStartedMs = 0;
 
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
@@ -361,14 +363,30 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
     // may ask for room many times in one transfer, and the pause form carries the same chunk id every
     // time -- either would count a device that is merely busy toward a write-failure verdict.
     if (msg.data.req_resend.reason == fwUpdate::REASON_TOO_FAST) {
+        // The pause form has no chunk to send: sending is held until a resume names one. It also
+        // carries no rate to learn from, so the pace is left alone. A target that holds and then
+        // resumes is doing its own flow control and is not asking for a different steady-state pace;
+        // deriving one anyway folds the wait into the measured ms/chunk and then adds it back as
+        // delay, which ratchets the pace upward for as long as the target keeps holding. A target
+        // that instead names a real chunk is complaining about the rate, and that is worth measuring.
+        if (msg.data.req_resend.chunk_id == fwUpdate::CHUNK_ID_PAUSE) {
+            // A brief hold is how this protocol paces itself, not news. Reporting each one turns a
+            // transfer that is behaving exactly as designed into a wall of status messages, so it
+            // goes to the log and reaches the progress stream only if it lasts long enough to be
+            // the reason progress has stopped (see noteHoldForProgress()).
+            if (holdStartedMs == 0)
+                holdStartedMs = current_ms;
+            log_more_debug(IS_LOG_FWUPDATE, "Remote asked to hold; chunk delay unchanged at %ums (%u chunks into the pace window)",
+                           chunkDelay, (unsigned)paceWindowChunks);
+            return true;
+        }
+
+        holdStartedMs = 0;      // a real chunk id lifts the hold
+
         uint32_t sustained = paceWindowChunks;      // for the log line; derive resets the window
         derivePaceFromWindow(current_ms);
         LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote asked to slow down after %u chunks; chunk delay now %ums",
                             (unsigned)sustained, chunkDelay);
-
-        // The pause form has no chunk to send: sending is held until a resume names one.
-        if (msg.data.req_resend.chunk_id == fwUpdate::CHUNK_ID_PAUSE)
-            return true;
 
         return fwUpdate_sendNextChunk();
     }
@@ -411,7 +429,16 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
         resent_chunkid_time = current_ms;
     }
 
-    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+    // REASON_NONE naming a real chunk is a target lifting a hold, not reporting a fault, and it is
+    // the other half of every hold above -- so it belongs in the log for the same reason they do.
+    // A resend with a reason IS worth reporting: something went wrong.
+    if (msg.data.req_resend.reason == fwUpdate::REASON_NONE) {
+        holdStartedMs = 0;
+        log_more_debug(IS_LOG_FWUPDATE, "Remote resumed from chunk %d", msg.data.req_resend.chunk_id);
+    } else {
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+    }
+
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
 
@@ -431,6 +458,16 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     const char* message = (msg_len > 0) ? (const char*)&msg.data.progress.message : "";
     LOG_FWUPDATE_STATUS(static_cast<eLogLevel>(msg.data.progress.msg_level), "%.*s",
                         (int)strnlen(message, msg_len), message);
+
+    // The per-frame holds are silent by design, but one that has outlasted several progress reports
+    // is the explanation for a chunk count that has stopped moving, and saying nothing there reads
+    // as a hang.
+    if (holdStartedMs != 0) {
+        const uint32_t heldMs = current_timeMs() - holdStartedMs;
+        if (heldMs > (HOLD_REPORT_PROGRESS_PERIODS * (uint32_t)progressRate))
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Waiting on target; sending held for %ums", (unsigned)heldMs);
+    }
+
     return true;
 }
 
@@ -1194,7 +1231,7 @@ void ISFirmwareUpdater::cmd_Delay(ISFwUpdaterCmd& cmd) {
  * This command accepts the following arguments:
  *     filename [required] :: the path/filename of the image to upload to the device
  *     interval [optional] :: the period interval (in milliseconds) which the remote device should send progress/status reports (default = "250")
- *     chunkSize [optional] :: the size of each chunk to send (default = "512")
+ *     chunkSize [optional] :: the size of each chunk to send (default = FWUPDATE__MAX_CHUNK_SIZE; a device that cannot take that much says so and the host halves it)
  *     force [optional] :: if "true" will cause the upload to occur, bypassing version checking (default = "false");
  */
 void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
@@ -1205,7 +1242,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
         if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
         // chunkSize, NOT progressRate -- these are separate settings and must not be conflated.
-        if (cmd.hasArg("chunkSize")) chunkSize = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
+        if (cmd.hasArg("chunkSize")) chunkSize = std::strtol(cmd.getArg("chunkSize", std::to_string(FWUPDATE__MAX_CHUNK_SIZE)).c_str(), nullptr, 10);
         if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 
         // Resolve effective update policy for this upload
@@ -1479,8 +1516,10 @@ void ISFirmwareUpdater::initialize() {
     resent_chunkid_count = 0;                               //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     resent_chunkid_time = 0;                                //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
 
+    chunkDelayFloor = CHUNK_DELAY_BASE_MS;                  //!< raised per-target by initializeUpload()
     chunkDelay = CHUNK_DELAY_BASE_MS;                       //!< per-chunk pacing; adapts to the target
     chunksSinceResend = 0;                                  //!< progress toward the next decay step
+    holdStartedMs = 0;                                      //!< no hold outstanding
     paceWindowStartMs = 0;                                  //!< measurement window for the derived pace
     paceWindowChunks = 0;
     nextChunkSend = 0;                                      //!< don't send the next chunk until this time has expired.
@@ -1494,7 +1533,7 @@ void ISFirmwareUpdater::initialize() {
     activeCmd = &nullCmd;                                    //!< the name (without parameters) of the currently executing command
     failLabel.clear();                                      //!< a label to jump to, when an error occurs
     // requestPending = false;                                 //!< true is an update has been requested, but we're still waiting on a response.
-    slotNum = 0, chunkSize = 512, progressRate = 250;
+    slotNum = 0, chunkSize = FWUPDATE__MAX_CHUNK_SIZE, progressRate = 250;
     forceUpdate = false;
     pingInterval = 1000;                                    //!< delay between attempts to communicate with a target device
     pingNextRetry = 0;                                      //!< time for next ping

@@ -491,6 +491,10 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateDevice::fwUpdate_resetEngine() {
         resend_count = 0;
+        pause_requested = false;
+        chunks_held = false;  // a hold belonging to the previous session does not gate this one
+        resend_pending_id = CHUNK_ID_PAUSE;
+        resend_stragglers = 0;
         session_id = 0;       // the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         last_chunk_id = -1;   // the last received chunk id from a CHUNK message.  -1 == no chunk yet received; the next received chunk must be 0.
         session_status = NOT_STARTED;
@@ -584,6 +588,19 @@ namespace fwUpdate {
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
         if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) {
+            // ...unless this is a straggler: a chunk the host had already sent when it was told to
+            // wait, or one still in flight from before the resume it has since been given. Nothing
+            // was lost, and a request for the chunk actually wanted is already on the wire, so
+            // repeating it says nothing new -- while to an adaptive host each repeat reads as a
+            // fresh fault and slows the whole transfer down. Bounded, so that a wanted chunk which
+            // is itself lost still gets asked for again rather than both ends falling silent.
+            const uint16_t wanted = (uint16_t)(last_chunk_id + 1);
+            if (chunks_held)
+                return false;
+            if ((resend_pending_id == wanted) && (resend_stragglers < MAX_DROPPED_STRAGGLERS)) {
+                resend_stragglers++;
+                return false;
+            }
 #ifdef __ZEPHYR__
             printk("[FwUpdate] handleChunk RETRY out_of_seq: chunk_id=%u expected=%u (last=%u)\n",
                    (unsigned)payload.data.chunk.chunk_id, (unsigned)(last_chunk_id + 1), (unsigned)last_chunk_id);
@@ -724,14 +741,9 @@ namespace fwUpdate {
      * @return return true is a retry was sent, or false if a retry was not sent.  NOTE this is not an error, as a valid message will not send a retry.
      */
     bool FirmwareUpdateDevice::fwUpdate_sendRetry(resend_reason_e reason) {
-        payload_t response;
-        response.hdr.target_device = TARGET_HOST;
-        response.hdr.msg_type = MSG_REQ_RESEND_CHUNK;
-        response.data.req_resend.session_id = session_id;
-        response.data.req_resend.chunk_id = last_chunk_id + 1;
-        response.data.req_resend.reason = reason;
-        //resend_count++;
-        return fwUpdate_sendPayload(response);
+        // Same message, with the next wanted chunk filled in; sendRetryFrom() is where the record of
+        // what has been asked for is kept, so both spellings of "resend" go through it.
+        return fwUpdate_sendRetryFrom((uint16_t)(last_chunk_id + 1), reason);
     }
 
     /**
@@ -741,6 +753,15 @@ namespace fwUpdate {
      * @return true if the request was sent
      */
     bool FirmwareUpdateDevice::fwUpdate_sendRetryFrom(uint16_t chunk_id, resend_reason_e reason) {
+        // A request naming a real chunk is what lifts a hold, whatever its reason; only the pause
+        // form puts one in place. A real chunk id also becomes the outstanding request, so the
+        // stragglers that follow it can be told apart from a chunk that genuinely went missing.
+        chunks_held = (chunk_id == CHUNK_ID_PAUSE);
+        if (!chunks_held) {
+            resend_pending_id = chunk_id;
+            resend_stragglers = 0;
+        }
+
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_REQ_RESEND_CHUNK;
