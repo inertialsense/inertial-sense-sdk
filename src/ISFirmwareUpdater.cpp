@@ -184,6 +184,8 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
     // progressively slower for reasons that have nothing to do with the device being written.
     chunkDelay = CHUNK_DELAY_BASE_MS;
     chunksSinceResend = 0;
+    paceWindowStartMs = current_timeMs();
+    paceWindowChunks = 0;
 
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
@@ -355,28 +357,32 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
     // TODO: LOG msg.data.req_resend.reason
     uint32_t current_ms = current_timeMs();
 
-    // Back off. Any resend request except a resume means this target could not take the data at the
-    // rate it was offered, so slow down -- by half again, so a badly over-driven target reaches a
-    // workable pace in a few requests rather than dozens. Progress toward the next decay is
-    // forfeited: the run of clean chunks that was accumulating clearly was not clean.
-    if (msg.data.req_resend.reason != fwUpdate::REASON_NONE) {
-        uint32_t raised = (uint32_t)chunkDelay + (chunkDelay / 2);
-        chunkDelay = (raised < CHUNK_DELAY_MAX_MS) ? (uint16_t)raised : CHUNK_DELAY_MAX_MS;
-        chunksSinceResend = 0;
-    }
-
     // Flow control is not failure, so TOO_FAST never reaches the give-up accounting below. A target
     // may ask for room many times in one transfer, and the pause form carries the same chunk id every
     // time -- either would count a device that is merely busy toward a write-failure verdict.
     if (msg.data.req_resend.reason == fwUpdate::REASON_TOO_FAST) {
-        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote asked to slow down (chunk %d); chunk delay now %ums",
-                            msg.data.req_resend.chunk_id, chunkDelay);
+        uint32_t sustained = paceWindowChunks;      // for the log line; derive resets the window
+        derivePaceFromWindow(current_ms);
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote asked to slow down after %u chunks; chunk delay now %ums",
+                            (unsigned)sustained, chunkDelay);
 
         // The pause form has no chunk to send: sending is held until a resume names one.
         if (msg.data.req_resend.chunk_id == fwUpdate::CHUNK_ID_PAUSE)
             return true;
 
         return fwUpdate_sendNextChunk();
+    }
+
+    // Any other resend means this target could not take the data at the rate it was offered, but
+    // says nothing about what rate it could take -- so there is nothing to measure, and the delay
+    // goes up by half again. Progress toward the next decay is forfeited: the run of clean chunks
+    // that was accumulating clearly was not clean.
+    if (msg.data.req_resend.reason != fwUpdate::REASON_NONE) {
+        uint32_t raised = (uint32_t)chunkDelay + (chunkDelay / 2);
+        if (raised <= chunkDelay)
+            raised = (uint32_t)chunkDelay + 1;
+        chunkDelay = (raised < CHUNK_DELAY_MAX_MS) ? (uint16_t)raised : CHUNK_DELAY_MAX_MS;
+        chunksSinceResend = 0;
     }
 
     if (msg.data.req_resend.chunk_id == last_resent_chunk) {
@@ -1475,6 +1481,8 @@ void ISFirmwareUpdater::initialize() {
 
     chunkDelay = CHUNK_DELAY_BASE_MS;                       //!< per-chunk pacing; adapts to the target
     chunksSinceResend = 0;                                  //!< progress toward the next decay step
+    paceWindowStartMs = 0;                                  //!< measurement window for the derived pace
+    paceWindowChunks = 0;
     nextChunkSend = 0;                                      //!< don't send the next chunk until this time has expired.
     updateStartTime = 0;                                    //!< the system time when the firmware was started (for performance reporting)
 
