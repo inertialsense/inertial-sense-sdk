@@ -588,8 +588,39 @@ private:
     uint16_t resent_chunkid_count = 0;                      //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     uint32_t resent_chunkid_time = 0;                       //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
 
-    uint16_t chunkDelay = 5;                               //!< provides a throttling mechanism
-    uint16_t resendChunkDelay = 250;                        //!< provides a throttling mechanism when resending chunks
+    /**
+     * Adaptive per-chunk pacing.
+     *
+     * Starts optimistic and lets the target set the pace. A resend request raises the delay by half
+     * again; CHUNK_DECAY_CHUNKS sent without one lowers it by a quarter. So it climbs quickly away
+     * from a rate the target cannot take and drifts back down once it can, converging on that
+     * target's actual limit rather than on a fixed guess that is either too slow for every device
+     * or too fast for the worst one.
+     *
+     * Multiplicative rather than a fixed step because the useful range spans an order of magnitude:
+     * a badly over-driven target reaches a safe rate in a handful of requests instead of dozens, and
+     * the correction is proportionate to how wrong the current value is.
+     *
+     * The delay resets to the base at the start of each upload, so one slow target cannot tax the
+     * next -- a package that writes several devices would otherwise get progressively slower for
+     * reasons unrelated to the device being written.
+     *
+     * Bounds matter in both directions. The ceiling exists because the backoff is otherwise
+     * unbounded. The floor is the base, because decay is there to undo a penalty, not to probe below
+     * the rate the base already assumes is safe for a target that cannot signal at all.
+     *
+     * A resume request (REASON_NONE) is not a complaint and does not raise the delay; neither does it
+     * count toward the decay, since no chunk moved.
+     */
+    static const uint16_t CHUNK_DELAY_BASE_MS  = 5;          //!< starting delay, per-upload reset, and decay floor
+    static const uint16_t CHUNK_DELAY_MAX_MS   = 50;         //!< ceiling for the backoff
+    static const uint16_t CHUNK_DECAY_CHUNKS   = 50;         //!< chunks sent without a resend before the delay decays
+
+    /** Consecutive resends of one chunk that are tolerated before the upload is failed. */
+    static const uint16_t MAX_SAME_CHUNK_RESENDS = 25;
+
+    uint16_t chunkDelay = CHUNK_DELAY_BASE_MS;              //!< current per-chunk delay; see above
+    uint16_t chunksSinceResend = 0;                         //!< progress toward the next decay step
     uint32_t nextChunkSend = 0;                             //!< don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;                           //!< the system time when the firmware was started (for performance reporting)
 
@@ -616,6 +647,25 @@ private:
 
 
     void initialize();
+
+    /**
+     * Credits chunks that went out without the target asking for a resend, decaying the pace if
+     * enough have accumulated.
+     * @param sent the number of chunks accepted by the wire since the last call
+     */
+    void creditChunkProgress(uint16_t sent) {
+        if (chunkDelay <= CHUNK_DELAY_BASE_MS) {
+            chunksSinceResend = 0;      // already at the floor; there is nothing to give back
+            return;
+        }
+        chunksSinceResend += sent;
+        while ((chunksSinceResend >= CHUNK_DECAY_CHUNKS) && (chunkDelay > CHUNK_DELAY_BASE_MS)) {
+            chunksSinceResend -= CHUNK_DECAY_CHUNKS;
+            uint16_t lowered = (uint16_t)(chunkDelay - (chunkDelay / 4));    // -25%
+            chunkDelay = (lowered > CHUNK_DELAY_BASE_MS) ? lowered : CHUNK_DELAY_BASE_MS;
+        }
+    }
+
     ISFwUpdaterCmd& getNextQueuedCmd(ISFwUpdaterCmd* curCmd = nullptr);
     ISFwUpdaterCmd& jumpToStep(const std::string& stepLabel);
     ISFwUpdaterCmd& runCommand(ISFwUpdaterCmd& cmd);

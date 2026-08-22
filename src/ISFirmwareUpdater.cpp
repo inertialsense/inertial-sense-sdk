@@ -179,6 +179,12 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
     // std::lock_guard<std::recursive_mutex> lock(mutex);
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
+    // Each upload re-learns its own pace. Carrying a backoff over would make a fast target inherit
+    // the penalty earned by a slow one -- a package that updates several devices would get
+    // progressively slower for reasons that have nothing to do with the device being written.
+    chunkDelay = CHUNK_DELAY_BASE_MS;
+    chunksSinceResend = 0;
+
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
         // check into the current archive for this file
@@ -348,10 +354,36 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
 
     // TODO: LOG msg.data.req_resend.reason
     uint32_t current_ms = current_timeMs();
+
+    // Back off. Any resend request except a resume means this target could not take the data at the
+    // rate it was offered, so slow down -- by half again, so a badly over-driven target reaches a
+    // workable pace in a few requests rather than dozens. Progress toward the next decay is
+    // forfeited: the run of clean chunks that was accumulating clearly was not clean.
+    if (msg.data.req_resend.reason != fwUpdate::REASON_NONE) {
+        uint32_t raised = (uint32_t)chunkDelay + (chunkDelay / 2);
+        chunkDelay = (raised < CHUNK_DELAY_MAX_MS) ? (uint16_t)raised : CHUNK_DELAY_MAX_MS;
+        chunksSinceResend = 0;
+    }
+
+    // Flow control is not failure, so TOO_FAST never reaches the give-up accounting below. A target
+    // may ask for room many times in one transfer, and the pause form carries the same chunk id every
+    // time -- either would count a device that is merely busy toward a write-failure verdict.
+    if (msg.data.req_resend.reason == fwUpdate::REASON_TOO_FAST) {
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote asked to slow down (chunk %d); chunk delay now %ums",
+                            msg.data.req_resend.chunk_id, chunkDelay);
+
+        // The pause form has no chunk to send: sending is held until a resume names one.
+        if (msg.data.req_resend.chunk_id == fwUpdate::CHUNK_ID_PAUSE)
+            return true;
+
+        return fwUpdate_sendNextChunk();
+    }
+
     if (msg.data.req_resend.chunk_id == last_resent_chunk) {
         resent_chunkid_count++;
-        // If we have more than 10 consecutive write errors in more than 5 seconds, fail out
-        if ((resent_chunkid_count > 10) && (current_ms - resent_chunkid_time > 5000)) {
+        // Repeatedly failing the SAME chunk is a target that cannot store it, not one that is busy;
+        // pacing will never fix that, so stop rather than retry forever.
+        if ((resent_chunkid_count > MAX_SAME_CHUNK_RESENDS) && (current_ms - resent_chunkid_time > 5000)) {
             switch (msg.data.req_resend.reason) {
                 case fwUpdate::REASON_WRITE_ERROR:
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
@@ -360,6 +392,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                 case fwUpdate::REASON_INVALID_SIZE:
                     session_status = fwUpdate::ERR_INVALID_CHUNK;
                     break;
+                case fwUpdate::REASON_TOO_FAST:     // returned above; listed so the switch stays exhaustive
                 case fwUpdate::REASON_NONE:
                     break;
             }
@@ -367,12 +400,12 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
             return false;
         }
     } else {
+        last_resent_chunk = msg.data.req_resend.chunk_id;
         resent_chunkid_count = 0;
         resent_chunkid_time = current_ms;
     }
 
     LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
-    nextChunkSend = current_timeMs() + resendChunkDelay;
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
 
@@ -385,8 +418,13 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     progress_total = msg.data.progress.totl_chunks;
     progress_num = msg.data.progress.num_chunks;
     // percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
-    const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
-    LOG_FWUPDATE_STATUS(static_cast<eLogLevel>(msg.data.progress.msg_level), message);
+    // Bounded, and passed as an argument rather than as the format string: the text comes from the
+    // device, so a '%' in it would otherwise be interpreted, and a device that predates the wire
+    // terminator sends msg_len bytes with no NUL for %s to stop at.
+    const uint8_t msg_len = msg.data.progress.msg_len;
+    const char* message = (msg_len > 0) ? (const char*)&msg.data.progress.message : "";
+    LOG_FWUPDATE_STATUS(static_cast<eLogLevel>(msg.data.progress.msg_level), "%.*s",
+                        (int)strnlen(message, msg_len), message);
     return true;
 }
 
@@ -594,8 +632,15 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
     switch(session_status) {
         case fwUpdate::READY:
         case fwUpdate::IN_PROGRESS:
-            if (nextChunkSend < current_timeMs()) // don't send chunks too fast
+            if (nextChunkSend < current_timeMs()) { // don't send chunks too fast
+                // Credit whatever actually reached the wire. next_chunk_id advances only on a
+                // successful write, so this counts chunks the target has been given and has not
+                // complained about -- which is what earns the pace back.
+                uint16_t before = next_chunk_id;
                 fwUpdate_sendNextChunk();
+                if (next_chunk_id > before)
+                    creditChunkProgress((uint16_t)(next_chunk_id - before));
+            }
             break;
         case fwUpdate::FINISHED:
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
@@ -1428,8 +1473,8 @@ void ISFirmwareUpdater::initialize() {
     resent_chunkid_count = 0;                               //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     resent_chunkid_time = 0;                                //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
 
-    chunkDelay = 25;                                        //!< provides a throttling mechanism
-    resendChunkDelay = 250;                                   //!< provides a throttling mechanism
+    chunkDelay = CHUNK_DELAY_BASE_MS;                       //!< per-chunk pacing; adapts to the target
+    chunksSinceResend = 0;                                  //!< progress toward the next decay step
     nextChunkSend = 0;                                      //!< don't send the next chunk until this time has expired.
     updateStartTime = 0;                                    //!< the system time when the firmware was started (for performance reporting)
 
