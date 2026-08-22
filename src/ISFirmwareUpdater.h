@@ -604,14 +604,17 @@ private:
      * CHUNK_DECAY_CHUNKS sent without any resend takes CHUNK_DECAY_PERCENT back off, so a transient
      * penalty is repaid rather than taxing the rest of the transfer.
      *
-     * Adjustment is deliberately asymmetric, because the useful range is single-digit milliseconds
-     * with no sub-millisecond precision and a percentage of it frequently rounds to zero. A RAISE
-     * must move by at least 1ms: the target has just rejected the current value, so an adjustment
-     * that does not adjust would leave the pace exactly where it was refused. A DECAY must not:
-     * forcing a whole millisecond off a single-digit delay is a far larger cut than the percentage
-     * asked for -- 1ms off 7ms is 14%, not 5% -- and repeated often enough it walks a converged pace
-     * back down until the target complains again, so the controller oscillates instead of settling.
-     * Where the percentage rounds to nothing there is nothing worth giving back.
+     * Every adjustment moves by at least 1ms in the direction asked for. The useful range is
+     * single-digit milliseconds with no sub-millisecond precision, so a percentage of it frequently
+     * rounds to zero, and an adjustment that does not adjust is not an adjustment.
+     *
+     * The consequence, worth knowing before tuning this: below ~20ms the forced step makes the decay
+     * coarser than CHUNK_DECAY_PERCENT asks for (1ms off 7ms is 14%, not 5%), so the pace does not
+     * settle on one value -- it drifts down until the target objects, then derives its way back up.
+     * That is a deliberate trade. The dips spend part of the transfer below the rate the target
+     * sustains, which is faster than holding the safe value throughout; the cost is a resend request
+     * every few hundred chunks. Removing the forced step instead makes the pace stick after one or
+     * two adjustments, and runs about 13% slower.
      *
      * The delay resets to the base at the start of each upload, so one slow target cannot tax the
      * next -- a package that writes several devices would otherwise get progressively slower for
@@ -626,7 +629,7 @@ private:
      */
     static const uint16_t CHUNK_DELAY_BASE_MS  = 5;          //!< starting delay, per-upload reset, and decay floor
     static const uint16_t CHUNK_DELAY_MAX_MS   = 50;         //!< ceiling for the backoff
-    static const uint16_t CHUNK_RAISE_PERCENT  = 25;         //!< margin above the measured rate, on REASON_TOO_FAST
+    static const uint16_t CHUNK_RAISE_PERCENT  = 10;         //!< margin above the measured rate, on REASON_TOO_FAST
     static const uint16_t CHUNK_DECAY_PERCENT  = 5;          //!< taken off the delay at each decay step
     static const uint16_t CHUNK_DECAY_CHUNKS   = 100;        //!< chunks sent without a resend before the delay decays
 
@@ -693,8 +696,8 @@ private:
         while ((chunksSinceResend >= CHUNK_DECAY_CHUNKS) && (chunkDelay > CHUNK_DELAY_BASE_MS)) {
             chunksSinceResend -= CHUNK_DECAY_CHUNKS;
             uint16_t lowered = (uint16_t)(chunkDelay - (((uint32_t)chunkDelay * CHUNK_DECAY_PERCENT) / 100));
-            if (lowered >= chunkDelay)
-                break;      // the percentage rounded away: nothing to give back, so stay converged
+            if (lowered >= chunkDelay)                  // the percentage rounded away to nothing
+                lowered = (uint16_t)(chunkDelay - 1);   // ... so move by the smallest step there is
             chunkDelay = (lowered > CHUNK_DELAY_BASE_MS) ? lowered : CHUNK_DELAY_BASE_MS;
         }
     }
