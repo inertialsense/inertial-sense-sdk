@@ -631,6 +631,12 @@ static const is_hardware_t IS_HDW_SEPTENTRIO_G5  = ENCODE_HDW_ID(IS_HDW_GNSS_SEP
 static const is_hardware_t IS_HDW_SEPTENTRIO_P3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'P' - 'A', 3);
 static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'M' - 'A', 3);
 
+// Raw GPIO level read from the board-identity strap pin (GPX_nIMX_PIN) at early boot, used to tell an
+// IMX from a GPX on shared PCB variants (see board_init() in mcu/startup/init.c). These are boolean
+// pin-level values (0/1), NOT eIsHardwareType wire values (IS_HARDWARE_TYPE_IMX=3 / IS_HARDWARE_TYPE_GPX=4).
+#define BOARD_IS_IMX    0
+#define BOARD_IS_GPX    1
+
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 /// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
 extern const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT];

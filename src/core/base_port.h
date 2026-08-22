@@ -51,6 +51,8 @@
 #define PORT_ERROR__TIMEOUT             -7      //!< The port operation reported a timeout (could be read, write, open, etc)
 #define PORT_ERROR__INVALID_PARAMETER   -8      //!< The port was called with an invalid parameter
 
+#define EMBEDDED_USB_PORT_CLOSED        -99
+
 #define PORT_OP__READ               0x00        //!< A portLogger operation flag indicating a READ/RX was performed
 #define PORT_OP__WRITE              0x01        //!< A portLogger operation flag indicating a WRITE/TX was performed
 #define PORT_OP__OPEN               0x02        //!< A portLogger operation flag indicating a OPEN was performed
@@ -681,7 +683,10 @@ static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int
                 BASE_PORT(port)->stats->txBytesDropped += (len - bytesWritten);
             }
         }
-        else BASE_PORT(port)->stats->txDataDrops++, BASE_PORT(port)->stats->txBytesDropped += len;  // note the error, and the bytes dropped  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
+        else if (bytesWritten != EMBEDDED_USB_PORT_CLOSED) 
+        {
+            BASE_PORT(port)->stats->txDataDrops++, BASE_PORT(port)->stats->txBytesDropped += len;  // note the error, and the bytes dropped  FIXME: I'm not sure this will actually work - since we don't actually know they type of error
+        }
     }
     return bytesWritten;
 }
