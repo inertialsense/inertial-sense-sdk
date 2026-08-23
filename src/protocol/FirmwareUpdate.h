@@ -258,6 +258,7 @@ namespace fwUpdate {
         RESET_INTO_BOOTLOADER = 2,  //!< bit 1: indicates that the device should reset into the bootloader (this may not always be possible)
         RESET_CONFIG = 4,           //!< bit 2: indicates that the device should clear its configuration before performing the reset (Ie, factory restart?)
         RESET_UPSTREAM = 8,         //!< bit 3: indicates that this device should reset all of its upstream devices, in addition to itself
+        RESET_INTO_APPLICATION = 16,//!< bit 4: leave any loader/bootloader the device is sitting in and run its application (the counterpart of RESET_INTO_BOOTLOADER)
     };
 
     /** Bit positions within image_flagsMask_e / msg_data_t::req_update.image_flags. */

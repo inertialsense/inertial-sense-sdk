@@ -635,7 +635,7 @@ bool ISFirmwareUpdater::step() {
     }
 
     if (lastStatus != session_status) {
-        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
         lastStatus = session_status;
         fnStep.mark("Finished progress callbacks.");
     }
@@ -1464,9 +1464,20 @@ void ISFirmwareUpdater::cmd_resetDevice(ISFwUpdaterCmd& cmd) {
             return;
         }
 
-        // Skip reset if no upload was actually performed for this target (e.g. IF_NEWER with same version)
-        if (targetUploadPerformed.find(target) == targetUploadPerformed.end()) {
-            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping reset — no upload was performed for this target");
+        // A reset that belongs to an upgrade step is skipped when that step uploaded nothing -- an
+        // IF_NEWER target already at the right version should not be rebooted for no reason.
+        //
+        // Scoped to steps that actually carry an upload. A reset asked for on its own is a request in
+        // its own right, and MSG_REQ_RESET is a session-less protocol action a host may issue at any
+        // time; refusing it because no image happened to be sent first made an explicit reset
+        // silently do nothing.
+        bool stepHasUpload = false;
+        for (auto& c : commands) {
+            if ((c.step == cmd.step) && (c.cmd == "upload")) { stepHasUpload = true; break; }
+        }
+
+        if (stepHasUpload && (targetUploadPerformed.find(target) == targetUploadPerformed.end())) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping reset — this step's upload was not performed");
             cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
             cmd.resultMsg = "Reset skipped (no upload performed).";
             return;
