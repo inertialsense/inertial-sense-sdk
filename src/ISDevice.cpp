@@ -804,58 +804,9 @@ std::string ISDevice::getName(int flags) const {
  * @return A string containing the formatted firmware information.
  */
 std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
-    std::string out;
-
-    if (devInfo.hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
-        out += utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
-    } else {
-        // firmware version
-        out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
-        if (!(flags & COMPACT_BUILD_TYPE)) {
-            switch (devInfo.buildType) {
-                case 'a': out += "-alpha";  break;
-                case 'b': out += "-beta";   break;
-                case 'c': out += "-rc";     break;
-                case 'd': out += "-devel";  break;
-                case 's': out += "-snap";   break;
-                case '^': out += "-snap";   break;
-                default : out += "";        break;
-            }
-        } else {
-            out += (char)devInfo.buildType;
-        }
-        if (devInfo.firmwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.firmwareVer[3]);
-        if (devInfo.buildFlags & BUILD_FLAGS_DEBUG) 
-            out += "-debug";
-
-        if (devInfo.repoRevision && !(flags & OMIT_COMMIT_HASH)) {
-            out += utils::string_format(" %08x", devInfo.repoRevision);
-            if (devInfo.buildType == '^') {
-                out += "^";
-            }
-        }
-
-        if (devInfo.buildNumber && !(flags & OMIT_BUILD_KEY)) {
-            // build number/type
-            out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
-        }
-
-        if (!(flags & OMIT_BUILD_DATE)) {
-            // build date
-            out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-
-            if (!(flags & OMIT_BUILD_TIME)) {
-                // build time
-                out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-                if (devInfo.buildMillisecond && !(flags & OMIT_BUILD_MILLIS)) {
-                    out += utils::string_format(".%03u", devInfo.buildMillisecond);
-                }
-            }
-        }
-    }
-
-    return out;
+    // Rendering lives in utils so it is available without an ISDevice, and so there is one
+    // definition of how a firmware version is spelled. This remains the name callers use.
+    return utils::getFirmwareInfoAsString(devInfo, (uint16_t)flags);
 }
 
 std::string ISDevice::getFirmwareInfo(int flags) const {
