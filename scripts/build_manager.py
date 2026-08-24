@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import shlex
 import shutil
 import sys
 import subprocess
@@ -68,6 +69,10 @@ def parse_args(argv: list[str] | None = None):
     # Parse, but also keep unknown args to forward into child build scripts
     args, unknown = parser.parse_known_args(argv)
     args.forward_args = sys.argv[1:]
+    # forward_args carries this script's own flags as well (-t, --no-build, ...), so it cannot be handed
+    # to a child process that rejects options it does not know. unknown_args holds only what this parser
+    # left unclaimed, which is what a caller forwarding a specific flag wants.
+    args.unknown_args = unknown
     return args
 
 
@@ -106,6 +111,7 @@ class BuildTestManager:
 
         # Preserve any unknown flags for downstream scripts (parity with previous self.args)
         self.forward_args = list(getattr(args, "forward_args", []))
+        self.unknown_args = list(getattr(args, "unknown_args", []))
 
         # Resolve project_dir similarly to the original script
         if args.project_dir:
@@ -422,7 +428,32 @@ class BuildTestManager:
                 result = e.returncode
         return result
 
-    def test_exec(self, test_name, test_dir, exec_name=""):
+    def quote_args(self, args):
+        """
+        Quotes arguments for a shell=True invocation using the host's own quoting rules.
+
+        @param args  list of arguments, or None
+        @return      a single string ready to append to a command line, empty if there are no args
+        """
+        if not args:
+            return ""
+        args = [str(a) for a in args]
+        if self.is_windows:
+            return " " + subprocess.list2cmdline(args)
+        return " " + " ".join(shlex.quote(a) for a in args)
+
+    def test_exec(self, test_name, test_dir, exec_name="", test_args=None):
+        """
+        Runs a built test executable.
+
+        @param test_name  label used in the summary roll-up
+        @param test_dir   project directory; the executable is expected under its build/ subdirectory
+        @param exec_name  executable name without extension; defaults to test_name
+        @param test_args  extra arguments passed through to the executable. Forwarding is deliberate
+                          per call: a test binary is free to reject options it does not know, so this
+                          is never populated automatically from the command line.
+        @return           the executable's exit status, or 0
+        """
         if not self.run_test:
             return
         test_dir = str(test_dir) + "/build"
@@ -436,10 +467,12 @@ class BuildTestManager:
 
         test_dir = os.path.normpath(test_dir)
         exec_path = os.path.join(test_dir, exec_name)
+        exec_cmd = exec_path + self.quote_args(test_args)
 
         print(f"test_dir: {test_dir}")
         print(f"exec_name: {exec_name}")
         print(f"exec_path: {exec_path}")
+        print(f"exec_cmd: {exec_cmd}")
 
         if not os.path.isdir(test_dir):
             raise FileNotFoundError(f"Directory not found: {test_dir}")
@@ -450,7 +483,7 @@ class BuildTestManager:
         result = 0
         try:
             host_env = os.environ.copy()
-            subprocess.check_call(exec_path, cwd=test_dir, shell=True, env=host_env)
+            subprocess.check_call(exec_cmd, cwd=test_dir, shell=True, env=host_env)
         except subprocess.CalledProcessError as e:
             print(f"Error testing {test_name}!")
             result = e.returncode
