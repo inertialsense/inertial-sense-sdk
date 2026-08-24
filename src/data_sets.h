@@ -604,7 +604,7 @@ enum eIsHardwareType
     IS_HARDWARE_TYPE_EVB        = 2,   //!< EVB (evaluation board)
     IS_HARDWARE_TYPE_IMX        = 3,   //!< IMX
     IS_HARDWARE_TYPE_GPX        = 4,   //!< GPX
-    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  //!< Ublox F9P GNSS receiver
+    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  //!< u-blox GNSS receiver (model-agnostic: F9P, ZED-X20P, ...)
     IS_HDW_GNSS_SONY            = IS_HDW_TYPE_PERIPHERAL + 2,  //!< Sony CXD5610 GNSS receiver
     IS_HDW_GNSS_SEPTENTRIO      = IS_HDW_TYPE_PERIPHERAL + 3,  //!< Septentrio GNSS receiver
     IS_HDW_GNSS_STM_TESSIO      = IS_HDW_TYPE_PERIPHERAL + 4,  //!< STM Tessio GNSS receiver

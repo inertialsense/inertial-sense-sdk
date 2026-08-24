@@ -94,14 +94,14 @@ public:
         OMIT_PORT_NAME           = 0x0002,      //!< suppresses output of the device port
         COMPACT_HARDWARE_VER     = 0x0004,      //!< forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
         COMPACT_SERIALNO         = 0x0008,      //!< disables zero-padding of the serial number
-        COMPACT_BUILD_TYPE       = 0x0010,      //!< formats the build-type (when the firmware version is show) as a single character
+        COMPACT_BUILD_TYPE       = utils::FWI_COMPACT_BUILD_TYPE, //!< formats the build-type (when the firmware version is show) as a single character
 
-        // Version Options
-        OMIT_COMMIT_HASH         = 0x0100,      //!< suppresses the output of the commit hash/dirty status
-        OMIT_BUILD_KEY           = 0x0200,      //!< suppresses the output of the build host key and number
-        OMIT_BUILD_DATE          = 0x0400,      //!< suppresses the output of the build date
-        OMIT_BUILD_TIME          = 0x0800,      //!< suppresses the output of the build time
-        OMIT_BUILD_MILLIS        = 0x1000,      //!< suppresses the output of the build milliseconds when not zero
+        // Version Options -- aliases of the utils bits, so the two definitions cannot drift
+        OMIT_COMMIT_HASH         = utils::FWI_OMIT_COMMIT_HASH,   //!< suppresses the output of the commit hash/dirty status
+        OMIT_BUILD_KEY           = utils::FWI_OMIT_BUILD_KEY,     //!< suppresses the output of the build host key and number
+        OMIT_BUILD_DATE          = utils::FWI_OMIT_BUILD_DATE,    //!< suppresses the output of the build date
+        OMIT_BUILD_TIME          = utils::FWI_OMIT_BUILD_TIME,    //!< suppresses the output of the build time
+        OMIT_BUILD_MILLIS        = utils::FWI_OMIT_BUILD_MILLIS,  //!< suppresses the output of the build milliseconds when not zero
 
         ESSENTIAL_FIRMWARE_INFO  = (ISDevice::OMIT_COMMIT_HASH | ISDevice::OMIT_BUILD_KEY | ISDevice::OMIT_BUILD_MILLIS | ISDevice::OMIT_BUILD_DATE | ISDevice::OMIT_BUILD_TIME),
     };
