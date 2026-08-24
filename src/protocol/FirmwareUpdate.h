@@ -120,7 +120,14 @@ namespace fwUpdate {
     typedef void (*pfnStatusCb)(const std::any& obj, eLogLevel level, const char* infoString, ...);
 
 
-#define FWUPDATE__MAX_CHUNK_SIZE   512                                  //!< maximum number of firmware-image bytes carried in a single UPDATE_CHUNK message
+#define FWUPDATE__MAX_CHUNK_SIZE   512                                  //!< maximum number of firmware-image bytes carried in a single UPDATE_CHUNK message.
+//   The transport would allow 1024 -- this plus 92 bytes of overhead has to fit MAX_PKT_BODY_SIZE
+//   (PKT_BUF_SIZE 2048, less packet overhead) -- and the negotiation degrades safely, since a
+//   device built against a smaller value answers REQ_UPDATE with ERR_MAX_CHUNK_SIZE and the host
+//   halves and retries. 512 is not a protocol limit but a measured one: at 1024 the resulting
+//   1116-byte payloads are dropped often enough on the host-to-IMX-to-GPX path (8 lost chunks in
+//   1920, against none at 512) that the backoff each loss triggers costs more than halving the
+//   round trips saves. Measured on an IG2: 66s at 1024 against 52s at 512.
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)       //!< maximum total payload_t size (chunk data plus header/message overhead)
 
     static constexpr uint32_t TARGET_TYPE_MASK = 0x0000FFF0;  //!< mask isolating a target_t's base product/type bits, stripping instance and protocol flags
@@ -151,10 +158,10 @@ namespace fwUpdate {
         TARGET_DFU_IMX6 = (TARGET_DFU_FLAG | TARGET_IMX6),       //!< IMX-6, addressed via USB DFU
         TARGET_SMP_IMX6 = (TARGET_SMP_FLAG | TARGET_IMX6),       //!< IMX-6, addressed via SMP
 
-        TARGET_UBLOX_F9P = 0x110,             //!< u-blox F9P GNSS receiver (base target; use a masked variant to address a specific instance)
-        TARGET_UBLOX_F9P__1 = 0x111,          //!< u-blox F9P GNSS receiver, instance 1
-        TARGET_UBLOX_F9P__2 = 0x112,          //!< u-blox F9P GNSS receiver, instance 2
-        TARGET_UBLOX_F9P__ALL = 0x11F,        //!< u-blox F9P GNSS receiver, all instances (mask covering both)
+        TARGET_UBLOX = 0x110,                 //!< u-blox GNSS receiver, model-agnostic (base target; use a masked variant to address a specific instance)
+        TARGET_UBLOX__1 = 0x111,              //!< u-blox GNSS receiver, instance 1
+        TARGET_UBLOX__2 = 0x112,              //!< u-blox GNSS receiver, instance 2
+        TARGET_UBLOX__ALL = 0x11F,            //!< u-blox GNSS receiver, all instances (mask covering both)
 
         TARGET_SONY_CXD5610 = 0x120,          //!< Sony CXD5610 GNSS receiver (base target; use a masked variant to address a specific instance)
         TARGET_SONY_CXD5610__1 = 0x121,       //!< Sony CXD5610 GNSS receiver, instance 1
@@ -223,7 +230,26 @@ namespace fwUpdate {
         REASON_INVALID_SEQID = 1,   //!< the last received chunk was out of order, so we're requesting the correct chunk id.
         REASON_WRITE_ERROR = 2,     //!< there was an error writing the data to FLASH (perhaps it took too long?)
         REASON_INVALID_SIZE = 3,    //!< unless the chunk id is the last chunk, the size of the chunk should always be the negotiated session_chunk_size;
+        REASON_TOO_FAST = 4,        //!< the device cannot take data this fast; the host should pace itself. See CHUNK_ID_PAUSE.
     };
+
+    /**
+     * Chunk id meaning "stop sending until told otherwise", valid only with REASON_TOO_FAST.
+     *
+     * Flow control. A device that buffers chunks can fill up while it works through what it has, and
+     * the only answer available to it otherwise is to refuse each arriving chunk -- which the host
+     * resends immediately, so a device that is merely busy gets hammered instead of given room. With
+     * this the device can ask for a pause and lift it when it is ready: a REQ_RESEND_CHUNK carrying
+     * REASON_TOO_FAST and this chunk id suspends sending indefinitely, and any later
+     * REQ_RESEND_CHUNK with a real chunk id resumes from there.
+     *
+     * REASON_TOO_FAST with a real chunk id is the milder form: send that chunk next, but wait a moment
+     * first.
+     */
+    static const uint16_t CHUNK_ID_PAUSE = 0xFFFF;
+
+    /** How long a host waits after a REASON_TOO_FAST naming a real chunk, before sending it. */
+    static const uint32_t FLOW_CONTROL_DELAY_MS = 20;
 
     /** Bitmask flags controlling how a device reset is performed (see msg_data_t::req_reset, fwUpdate_requestReset()/fwUpdate_performReset()). */
     enum reset_flags_e : uint16_t {
@@ -232,6 +258,7 @@ namespace fwUpdate {
         RESET_INTO_BOOTLOADER = 2,  //!< bit 1: indicates that the device should reset into the bootloader (this may not always be possible)
         RESET_CONFIG = 4,           //!< bit 2: indicates that the device should clear its configuration before performing the reset (Ie, factory restart?)
         RESET_UPSTREAM = 8,         //!< bit 3: indicates that this device should reset all of its upstream devices, in addition to itself
+        RESET_INTO_APPLICATION = 16,//!< bit 4: leave any loader/bootloader the device is sitting in and run its application (the counterpart of RESET_INTO_BOOTLOADER)
     };
 
     /** Bit positions within image_flagsMask_e / msg_data_t::req_update.image_flags. */
@@ -444,6 +471,38 @@ namespace fwUpdate {
         uint32_t last_message = 0;                              //!< the time (millis) since we last received a payload targeted for us.
         uint32_t timeout_duration = 20000;                      //!< the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //!< the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
+        bool pause_requested = false;                           //!< device side: the next auto-retry should ask the host to pause (see fwUpdate_requestChunkPause())
+
+        /**
+         * Device side: the host has been asked to hold and has not been resumed yet.
+         *
+         * A hold does not take effect instantly -- whatever the host had already put on the wire
+         * still arrives, ahead of the chunk this device is waiting for. Those are not a fault and
+         * must not be answered with REASON_INVALID_SEQID: a host that adapts its pace treats any
+         * non-NONE resend as a rate complaint and slows down for a sequence error that never
+         * happened. The resume names the chunk to continue from, so they can simply be dropped.
+         */
+        bool chunks_held = false;
+
+        /**
+         * The chunk id of the most recent resend/resume request, and how many out-of-sequence chunks
+         * have been dropped since it was sent. CHUNK_ID_PAUSE means no request is outstanding; the
+         * pause form is never recorded here, because it names no chunk.
+         *
+         * Stragglers keep arriving for a round trip after a resume, so clearing chunks_held is not
+         * on its own enough to stop them being reported as sequence errors. A request for the wanted
+         * chunk is already on the wire, and sending it again changes nothing -- except to the host,
+         * to which each one reads as a fresh fault.
+         *
+         * The count bounds that silence. If the wanted chunk is itself lost, the request has to be
+         * repeated or the transfer stalls with neither side speaking: the host would keep sending
+         * chunks that keep being dropped, refreshing the very timeout that would otherwise recover.
+         * The bound is well above any plausible in-flight window, so it only comes into play when a
+         * request genuinely needs repeating.
+         */
+        static const uint8_t MAX_DROPPED_STRAGGLERS = 16;
+        uint16_t resend_pending_id = CHUNK_ID_PAUSE;
+        uint8_t resend_stragglers = 0;
 
         target_t session_target = TARGET_HOST;                  //!< the target device this session is communicating with
         update_status_e session_status = NOT_STARTED;           //!< last known state of this session
@@ -731,6 +790,33 @@ namespace fwUpdate {
         bool fwUpdate_sendRetry(resend_reason_e reason);
 
         /**
+         * Sends a REQ_RESEND_CHUNK naming a specific chunk, rather than the next expected one.
+         *
+         * The host honours whatever chunk id it is given, resending from there -- so this is also how a
+         * device asks to go BACKWARDS, to a chunk it has already consumed but needs again.
+         * @param chunk_id the chunk to resume from, or CHUNK_ID_PAUSE with REASON_TOO_FAST to suspend
+         * @param reason why
+         * @return true if the request was sent
+         */
+        bool fwUpdate_sendRetryFrom(uint16_t chunk_id, resend_reason_e reason);
+
+        /**
+         * Asks the host to stop sending chunks until fwUpdate_resumeChunks() lifts it.
+         *
+         * Call this from fwUpdate_writeImageChunk() when there is no room, and still return a
+         * retryable status: the status is what stops the host advancing its chunk counter and hashing
+         * bytes the device never stored, and this is what stops it retrying in a tight loop meanwhile.
+         */
+        void fwUpdate_requestChunkPause() { pause_requested = true; }
+
+        /**
+         * Lifts a pause, resuming from @a chunk_id.
+         * @param chunk_id the next chunk wanted; normally last_chunk_id + 1
+         * @return true if the request was sent
+         */
+        bool fwUpdate_resumeChunks(uint16_t chunk_id) { return fwUpdate_sendRetryFrom(chunk_id, REASON_NONE); }
+
+        /**
          * Validates that the provided session Id has not be used in the last 10 updates
          * @param sessionId the session Id to validate
          * @returns true if valid otherwise false.
@@ -1000,6 +1086,16 @@ namespace fwUpdate {
 
         uint16_t next_chunk_id = 0;                     //!< the next chuck id to send, at the next send.
         uint16_t chunks_sent = 0;                       //!< the total number of chunks that have been sent, including resends
+
+        /**
+         * Flow control, as asked for by the device (REASON_TOO_FAST; see CHUNK_ID_PAUSE).
+         *
+         * chunks_paused holds sending indefinitely and is lifted only by a REQ_RESEND_CHUNK naming a
+         * real chunk. chunks_hold_until is the milder form: a short wait before the next send. Neither
+         * ends the session or counts as an error -- a device asking for room is not a device failing.
+         */
+        bool     chunks_paused = false;
+        uint32_t chunks_hold_until = 0;
 
         uint16_t progress_total = 0;                    //!< the total number of steps used to report completion progress
         uint16_t progress_num = 0;                      //!< the current step (between 0 an progress_total) to indicate the current completion progress
