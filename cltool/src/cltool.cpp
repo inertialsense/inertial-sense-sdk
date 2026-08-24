@@ -976,10 +976,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose") || startsWith(a, "-ll"))
         {
+            // Offset past whichever spelling matched. A fixed offset reads beyond the terminator for
+            // the shorter one, so its argument never matches '=' and is dropped in silence.
+            const char* arg = a + (startsWith(a, "-verbose") ? 8 : 3);
+
             g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_INFO;
-            if (a[8] == '=')
+            if (*arg == '=')
             {
-                switch (a[9])
+                switch (arg[1])
                 {
                     case 'e': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_ERROR; break;
                     case 'w': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_WARN; break;
@@ -987,14 +991,16 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                     case 'I': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_INFO; break;
                     case 'd': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_DEBUG; break;
                     case 'D': g_commandLineOptions.verboseLevel = eLogLevel::IS_LOG_LEVEL_MORE_DEBUG; break;
-                    default: g_commandLineOptions.verboseLevel = (eLogLevel)atoi(&a[9]); break;
+                    default: g_commandLineOptions.verboseLevel = (eLogLevel)atoi(&arg[1]); break;
                 }
             } else {
-                const char* p = &a[8];
-                while (*p == '+' || *p == '-' ) {
-                    g_commandLineOptions.verboseLevel += (*p == '+' ? 1 : -1);
-                    p++;
+                int level = (int)g_commandLineOptions.verboseLevel;
+                for (const char* p = arg; (*p == '+') || (*p == '-'); p++)
+                {   // Clamped: stepping past either end would otherwise wrap and enable everything.
+                    level += (*p == '+' ? 1 : -1);
+                    level = _CLAMP(level, (int)eLogLevel::IS_LOG_LEVEL_NONE, (int)eLogLevel::IS_LOG_LEVEL_BOMBASTIC);
                 }
+                g_commandLineOptions.verboseLevel = (eLogLevel)level;
             }
             g_commandLineOptions.verboseLevelExplicit = true;    // -verbose/-ll wins over any option's implicit bump
             IS_SET_LOG_LEVEL((eLogLevel)g_commandLineOptions.verboseLevel);
@@ -1358,7 +1364,9 @@ void cltool_outputUsage()
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
     cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
-    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
+    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)." << endlbOn;
+    cout << "                 " << boldOff << "   '=n' also accepts a letter: e)rror w)arn i)nfo I)more-info d)ebug D)more-debug. Trailing '+'/'-' step up/down" << endlbOn;
+    cout << "                 " << boldOff << "   from info, one level each (-verbose++ = debug). '-ll' is a synonym for '-verbose' and takes the same forms." << endlbOn;
     cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
     cout << endlbOn;
