@@ -428,19 +428,21 @@ class BuildTestManager:
                 result = e.returncode
         return result
 
-    def quote_args(self, args):
+    def format_cmd_for_log(self, argv):
         """
-        Quotes arguments for a shell=True invocation using the host's own quoting rules.
+        Renders a command for a human reading a CI log, using the host's display conventions.
 
-        @param args  list of arguments, or None
-        @return      a single string ready to append to a command line, empty if there are no args
+        FOR DISPLAY ONLY -- this is not an escaping mechanism and nothing is executed through it.
+        Commands are launched from an argv list with shell=False, so no shell parses them and there is
+        no metacharacter to neutralize.
+
+        @param argv  the argv list being launched
+        @return      a single printable string
         """
-        if not args:
-            return ""
-        args = [str(a) for a in args]
+        argv = [str(a) for a in argv]
         if self.is_windows:
-            return " " + subprocess.list2cmdline(args)
-        return " " + " ".join(shlex.quote(a) for a in args)
+            return subprocess.list2cmdline(argv)
+        return shlex.join(argv)
 
     def test_exec(self, test_name, test_dir, exec_name="", test_args=None):
         """
@@ -453,6 +455,10 @@ class BuildTestManager:
                           per call: a test binary is free to reject options it does not know, so this
                           is never populated automatically from the command line.
         @return           the executable's exit status, or 0
+
+        The executable is launched from an argv list with shell=False. No shell is involved, so an
+        argument's contents cannot be interpreted as syntax -- which matters on Windows, where a
+        shell=True string is handed to `cmd.exe /c` and `&`, `|` and `%VAR%` would otherwise be live.
         """
         if not self.run_test:
             return
@@ -467,12 +473,12 @@ class BuildTestManager:
 
         test_dir = os.path.normpath(test_dir)
         exec_path = os.path.join(test_dir, exec_name)
-        exec_cmd = exec_path + self.quote_args(test_args)
+        exec_argv = [exec_path] + [str(a) for a in (test_args or [])]
 
         print(f"test_dir: {test_dir}")
         print(f"exec_name: {exec_name}")
         print(f"exec_path: {exec_path}")
-        print(f"exec_cmd: {exec_cmd}")
+        print(f"exec_cmd: {self.format_cmd_for_log(exec_argv)}")
 
         if not os.path.isdir(test_dir):
             raise FileNotFoundError(f"Directory not found: {test_dir}")
@@ -483,7 +489,7 @@ class BuildTestManager:
         result = 0
         try:
             host_env = os.environ.copy()
-            subprocess.check_call(exec_cmd, cwd=test_dir, shell=True, env=host_env)
+            subprocess.check_call(exec_argv, cwd=test_dir, shell=False, env=host_env)
         except subprocess.CalledProcessError as e:
             print(f"Error testing {test_name}!")
             result = e.returncode
