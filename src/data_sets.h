@@ -3208,7 +3208,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG4_X20                                                      = (int)5,   //!< PCB RUG-4-X20:       PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG4_SG5                                                      = (int)6,   //!< PCB RUG-4-SG5:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
     PLATFORM_CFG_TYPE_RUG4_GPX                                                      = (int)7,   //!< PCB RUG-4-GPX:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_RUG_G0                                                        = (int)8,   //!< PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_RUGn_G0                                                       = (int)8,   //!< PCB RUG-x.x. (i.e. RUG-3, RUG-4) PPS disabled
     PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,   //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G2                                                       = (int)10,  //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                                                       = (int)11,  //!< EVB-2 carrier board
