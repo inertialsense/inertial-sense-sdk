@@ -125,22 +125,18 @@ int main_explained(const char* portPattern)
  */
 int main(int argc, const char** argv) {
 
-#if PLATFORM_IS_LINUX
     const char* portPattern = "(.+)";   // NOTE: this is a MATCHING REGEX pattern (this one matches everything)
-#else
-    const char* portPattern = "COMM1";
-#endif
 
     if (argc > 2)
     {
-        printf("Usage: No argument allows automatic port discovery based on TBD.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)\r\n");
+        printf("Usage: No argument allows automatic port discovery based on universal pattern.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)\r\n");
         return -1;
     }
 
-    printf("CustomRobotDevice example application started");
+    printf("CustomRobotDevice example application started (ctrl+\\ to quit)");
     if (argc == 2) {
+        portPattern = argv[1];
         printf(", attempting to use port %s", portPattern);
-        portPattern = argv[1];     // take the first argument as the port to connect with
     }
     else
         printf(", attempting port discovery");
