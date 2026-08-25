@@ -570,11 +570,11 @@ bool ISDevice::validate(uint32_t timeout) {
  * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
  * @return ASYNC_STATE__TIMEOUT if the device fails to validate,
  *         ASYNC_STATE__PENDING if the device is still validating,
- *         ASYNC_STATE__SUCCESSif the device successfully validated.
+ *         ASYNC_STATE__SUCCESS if the device successfully validated.
  */
 int ISDevice::validateAsync(uint32_t timeout) {
     if (!isConnected())
-        return -1;
+        return ASYNC_STATE__FAILURE;
 
     uint32_t now = current_timeMs();
     FnProfiler fn("ISDevice::validateAsync() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
