@@ -17,7 +17,7 @@ void imxPlatformConfigErrorCheck(uint32_t *platformConfig)
     {
         type = PLATFORM_CFG_TYPE_NONE;
     }
-    else if (type == PLATFORM_CFG_TYPE_RUGX_G0 && preset > PLATFORM_CFG_RUG3_PRESET__COUNT)
+    else if (type == PLATFORM_CFG_TYPE_RUGn_G0 && preset > PLATFORM_CFG_RUG3_PRESET__COUNT)
     {
         preset = PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
     }
@@ -46,7 +46,7 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     uint32_t preset = (platformConfig&PLATFORM_CFG_PRESET_MASK)>>PLATFORM_CFG_PRESET_OFFSET;
 
     // is platform R3?
-    if (type != PLATFORM_CFG_TYPE_RUGX_G0 &&
+    if (type != PLATFORM_CFG_TYPE_RUGn_G0 &&
         type != PLATFORM_CFG_TYPE_RUG3_G1 &&
         type != PLATFORM_CFG_TYPE_RUG3_G2)  { return; }
 
@@ -107,7 +107,7 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
 
     switch (type)
     {
-        case PLATFORM_CFG_TYPE_RUGX_G0:
+        case PLATFORM_CFG_TYPE_RUGn_G0:
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break;
@@ -128,7 +128,7 @@ void imxPlatformConfigToRug4FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     uint32_t preset = (platformConfig&PLATFORM_CFG_PRESET_MASK)>>PLATFORM_CFG_PRESET_OFFSET;
 
     // is platform R4?
-    if (type != PLATFORM_CFG_TYPE_RUGX_G0 &&
+    if (type != PLATFORM_CFG_TYPE_RUGn_G0 &&
         type != PLATFORM_CFG_TYPE_RUG4_X20 &&
         type != PLATFORM_CFG_TYPE_RUG4_SG5 &&
         type != PLATFORM_CFG_TYPE_RUG4_GPX)  { return; }
@@ -196,11 +196,11 @@ void imxPlatformConfigToRug4FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_GPX);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_GPX);
             break;
-        case PLATFORM_CFG_TYPE_RUGX_G0:
+        case PLATFORM_CFG_TYPE_RUGn_G0:
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break;
-        default:    // RUGX_G0, RUG3_G1, RUG3_G2, RUG4_X20: onboard u-blox receiver (ZED-F9P / X20)
+        default:    // RUGn_G0 (RUG3_G0, RUG4_G0), RUG3_G1, RUG3_G2, RUG4_X20: onboard u-blox receiver (ZED-F9P / X20)
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
             break;
@@ -226,7 +226,7 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
         SET_IO_CFG_GNSS1_TYPE(  *ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         SET_IO_CFG_GNSS2_TYPE(  *ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
         break;
-    case PLATFORM_CFG_TYPE_RUGX_G0:
+    case PLATFORM_CFG_TYPE_RUGn_G0:
         // Shared value between RUG-3 (IMX-5) and RUG-4 (IMX-6) "no GPS" variants; dispatch based on which platform this firmware is built for
 #if defined(IMX_5)
         imxPlatformConfigToRug3FlashCfgIoConfig(ioConfig, platformConfig);
@@ -317,7 +317,7 @@ void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint8_t *ioConfig2,
     switch (type)
     {
         // Disabled
-    case PLATFORM_CFG_TYPE_RUGX_G0:               
+    case PLATFORM_CFG_TYPE_RUGn_G0:               
     case PLATFORM_CFG_TYPE_NONE:
         break;
         // G5
@@ -371,7 +371,7 @@ uint32_t imxPlatformConfigTypeToDefaultPlatformConfig(uint32_t platformType)
 // Return default platform preset based on platformType
 uint32_t imxPlatformConfigTypeToDefaultPlatformPreset(uint32_t platformType)
 {
-    if (platformType == PLATFORM_CFG_TYPE_RUGX_G0)
+    if (platformType == PLATFORM_CFG_TYPE_RUGn_G0)
         return PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT;
     else if (platformType == PLATFORM_CFG_TYPE_RUG3_G1 ||
              platformType == PLATFORM_CFG_TYPE_RUG3_G2)
