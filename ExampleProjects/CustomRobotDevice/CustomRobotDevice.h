@@ -12,7 +12,7 @@
 
 #ifdef __cplusplus
 
-/** STEP 4:  Create a custom child class that inherits from PortFactory 
+/** STEP 4:  Create a custom child class that inherits from ISDevice
  */
 
 /**Include IS core and other needed SDK header files here; 
@@ -21,6 +21,8 @@
  * virtual test ports
  */
 #include "PortFactory.h"
+#include "ISDevice.h"
+#include "ISDisplay.h"
 
 class CustomRobotDevice : public ISDevice {
 
@@ -30,13 +32,18 @@ public:
     double lastImxUptime = 0;
     double lastGpxUptime = 0;
 
-    CustomRobotDevice(const std::string& serPort, const std::string& ntrip_url) : ISDevice(), ntripUrl(ntrip_url) {
-        // bind to the physical serial port (hardware) and assign to the device
-        assignPort(SerialPortFactory::getInstance().bindPort(serPort, PORT_TYPE__UNKNOWN));
+    /** instance of a utility class that handles printing/formatting of various data sets received from the device */
+    cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::DMODE_PRETTY);
+    
+    CustomRobotDevice(const dev_info_t& _devInfo, port_handle_t _port) : ISDevice(_devInfo, _port) { }
 
-        // tell the NtripCorrectionService to forward the received corrections to this device's port
-        ntrip.addPort(port);
-    }
+    // CustomRobotDevice(const std::string& serPort, const std::string& ntrip_url) : ISDevice(), ntripUrl(ntrip_url) {
+    //     // bind to the physical serial port (hardware) and assign to the device
+    //     assignPort(SerialPortFactory::getInstance().bindPort(serPort, PORT_TYPE__UNKNOWN));
+
+    //     // tell the NtripCorrectionService to forward the received corrections to this device's port
+    //     ntrip.addPort(port);
+    // }
 
     // add disable data command here?
     ~CustomRobotDevice() override = default;
@@ -44,7 +51,12 @@ public:
     bool configure();
 
     bool step() override;
+
+    /** Various message handler types */
     int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
+    //int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port) override;
+    //int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
+    
 };
 
 

@@ -20,6 +20,8 @@
  * code that defines the interface used by this custom port factory; in this case the new
  * virtual test ports
  */
+#include "DeviceFactory.h"
+#include "CustomRobotDevice.h"
 
 /** @brief DeviceFactory singleton for IMX-5 devices; allocates an ISDevice only for devices whose hardware Id resolves to IS_HARDWARE_IMX_5_0. */
 class CustomDeviceFactory : public DeviceFactory {
@@ -44,8 +46,10 @@ private:
      * @return a new ISDevice if devInfo is an IMX-5, otherwise nullptr.
      */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
+
+        /** When we find IMX-5 dev info, we know we want to allocate a new custom device */
         if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
-            return std::make_shared<ISDevice>(devInfo, port);
+            return std::make_shared<CustomRobotDevice>(devInfo, port);
 
         return nullptr;
     }

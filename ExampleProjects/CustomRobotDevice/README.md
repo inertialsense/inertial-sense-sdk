@@ -4,15 +4,15 @@
 This [Custom Robot Device Example](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomRobotDevice) project demonstrates the creation of custom `ISDevice` and custom `DeviceFactory` child classes, using the Inertial Sense SDK.  It also shows how to use `PortManager` and `DeviceManager` to maintain the set of discovered ports and discovered devices that come out of factory operations.  A simple application can be built from the provided code out of the box.  **This example requires an IMX device to be connected to your workstation.**
 
 ## Purpose and Design
-This project is constructed as both a walk-through and a template for users wishing to learn how to make use of three modules of the SDK that would be important pieces for communications management.  
+This project is constructed as both a walk-through and a template for users wishing to learn how to make use of three modules of the SDK that would be important pieces for device management.  
 
 One is the `ISDevice` which is a C++ class that represents a single, physical Inertial Sense device (IMX or GPX) bound to a port.  It owns its identity (dev_info_t), synchronized flash/system-parameter state, and the comm-protocol handlers that parse data received from it. DeviceManager owns a collection of these; a caller that only ever talks to one device can use a standalone ISDevice directly without DeviceManager.
 
-The second is the `DeviceFactory` which is an abstract C++ class that is responsible for discovery of connected devices of a particular type.  There should be one implementation for each type of discoverable device.  It handles device-type identification and allocation: given a raw port, determine what kind of Inertial Sense device (if any) is attached and construct the matching `ISDevice` subclass.  The factory allocates a device object, and this operation returns a `device_handle_t`.  As an abstract class, this allows for third-party locators to be implemented for custom device types.
+The second is the `DeviceFactory` which is an abstract C++ class that is responsible for discovery of connected devices of a particular type.  There should be one implementation for each type of discoverable device.  It handles device-type identification and allocation: given a raw port, determines what kind of Inertial Sense device (if any) is attached and constructs the matching `ISDevice` subclass.  The factory allocates a device object, and this operation returns a `device_handle_t`.  As an abstract class, this allows for third-party locators to be implemented for custom device types.
 
 Finally, we demonstrate the `DeviceManager`, which uses the custom device factory to create and keep a known list of available devices, optionally filtered to a limited set, or all.  It will provide access to a factory's devices as requested.
 
-In this example we use a Linux platform USB serial port for our device connection.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port.  
+In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX unit.  Our custom device we are calling `CustomRobotDevice` and it is discovered via our `CustomDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  
 
 ~~Our custom `PortFactory` then binds to as many of these ports as indicated and we demonstrate the usage of the required minimum port factory operations.  The application main provides an entry point for the user to identify the port and calls on the port factory to find and bind it through the `PortManager`.  Then, a simple data write/read/compare is performed through the loopback port, demonstrating the `base_port_t` interface.  See this dependency (dashed) and process (solid) diagram for an overview:~~
 
@@ -36,7 +36,7 @@ graph TD
 ## Documentation Usage and Project Navigation
 In the [Implementation](#implementation) section of this README, you will find a series of sub-sections called Steps, which you may follow in order.  These Steps accomplish two purposes:  one is to provide a guided tour of the project files by reference and sample, and the second is to outline a process for how a user might go about creating their own versions of a custom implementation for their purposes.  This is done by explaining what has been created for you already by way of demonstration, and why each piece is critical. Thus, as you proceed through the Step sub-sections you will find that you are not being instructed to generate any new code, as it is a fully functional example already, but rather being introduced to how something similar could be created.
 
-Each Step is part of a project-level process, will reference one or more of the code files, and describe actions the user can take in the custom port or port factory creation.  Each code file in the local project folder will contain one or more commented sections each associated with a README Step section, and the Step sections in a given file may start at any Step number depending on when in the project-level process that file's contents come into play.
+Each Step is part of a project-level process, will reference one or more of the code files, and describe actions the user can take in the custom implementation creation.  Each code file in the local project folder will contain one or more commented sections each associated with a README Step section, and the Step sections in a given file may start at any Step number depending on when in the project-level process that file's contents come into play.
 
 Here is a visual representation of the STEP concept to help navigate:
 ```mermaid
@@ -68,10 +68,10 @@ The following implementation instructions identify some examples of similar code
 #### Project Files
 
 * [main.cpp](./main.cpp)
-* [custom_virtual_port.cpp](./custom_virtual_port.cpp)
-* [custom_virtual_port.h](./custom_virtual_port.h)
-* [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp)
-* [CustomVirtualPortFactory.h](./CustomVirtualPortFactory.h)
+* [CustomDeviceFactory.cpp](./CustomDeviceFactory.cpp)
+* [CustomDeviceFactory.h](./CustomDeviceFactory.h)
+* [CustomRobotDevice.cpp](./CustomRobotDevice.cpp)
+* [CustomRobotDevice.h](./CustomRobotDevice.h)
 
 Note these are local to this folder.
 
@@ -88,7 +88,7 @@ Note these are local to this folder.
 * [PortManager.h](../../../src/PortManager.h)
 
 
-Note files/paths list entries relative to SDK `src/` folder.
+Note file name list entries relative to SDK `src/` folder, with local relative path linked.
 
 ## Implementation
 

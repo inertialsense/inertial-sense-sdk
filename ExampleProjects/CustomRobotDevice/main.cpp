@@ -22,47 +22,40 @@
 #include "ISUtilities.h"
 #include "DeviceManager.h"
 #include "ISDevice.h"
-#include "ISDisplay.h"
 
 /** The port factory child class the user creates, inheriting from PortFactory.h definition */
 #include "CustomRobotDevice.h"
+#include "CustomDeviceFactory.h"
 
 /** Include the SDK PortManager if desired for building and maintaining a list of all ports by name */
 #include "PortManager.h"
+
 
 /**
  * Uses arg for identifying virtual serial port in a "minimal" example of setting up a custom serial port
  * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
  * the port is opened, which is in loopback mode in this case, and a simple write/read test is performed.
  */
-int main(int argc, char* argv[])
+int main_explained(const char* portPattern)
 {
-    if (argc > 2)
-    {
-        printf("Usage: No argument allows automatic port discovery based on TBD.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)\r\n");
-        return -1;
-    }
-
-    printf("CustomRobotDevice started ");
-    if (argc == 2)
-        printf(", attempting to use port %s", argv[1]);
-    printf("\r\n");
-
+  
     /** STEP 7: Set the SDK message logger verbosity level, as we use the logger for
      * some custom status and error messages
      */
     IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
 
+
+    std::shared_ptr<CustomRobotDevice> device = nullptr; // this will be our discovered device... but null for now.
     
     /** STEP 8: We need a singleton Port Manager and SerialPortFactory,
      * we'll make local references, and we register the virtual port factory
-     */
+     */    
     PortManager& pm = PortManager::getInstance();
     pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager that we are interested in Serial Ports
 
     DeviceManager& dm = DeviceManager::getInstance();
-    dm.addDeviceFactory(&ImxDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in IMX Devices
-          
+    dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
+
     /** Let the PM find all available ports, then ask for the one specifically indicated on the command line by name */
     int retry = 3;
     while (retry-- >= 0) {              // some port discovery mechanisms (mDNS, etc) may require multiple calls before ports begin to show
@@ -81,8 +74,8 @@ int main(int argc, char* argv[])
                 // From here, we can use a number of options to select all (getDevices) or specific (getDevice) from the list of available
                 // devices.
 
-                // Let's get the first device in our collection of discovered devices
-                device = dm.getDevices().front();
+                // Let's get the first device in our collection of discovered devices                
+                device = dm.getDevices().front()->as<CustomRobotDevice>();
                 break;  // we're done, so we'll break out of our retry loop.
 
             }
@@ -102,28 +95,56 @@ int main(int argc, char* argv[])
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
         exit(1);
     }
-    
 
-
-    // device->validate();                              // NOTE: device validation is already done during DeviceManager::discoverDevice() so no need to do it again
-
-    // Before we can get useful data from the device, we need to tell the SDK where to send the data it received from the device...
-    // Let's use the function created at the stop of this source file
-    device->registerIsbDataHandler(isbDataHandler);
-
+    printf("Found and connected %lu IMX device(s) on port(s): \r\n", dm.DeviceCount());
+    for (const auto& iter: pm.getPorts()) { 
+        printf(" %s\r\n", portName(iter));
+    }
+                    
     // Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours
     device->StopBroadcasts(true);
 
     // Let's stream DID_INS_1
     device->BroadcastBinaryData(DID_INS_1, 25);         // Stream at 1/25th the default DID_INS_1 rate (device dependent, but approx 1x = 7ms)
 
-    while (portIsOpened(device->port)) {                // and then spin as long as the port is open
+    while ( portIsOpened(device->port) ) {                // and then spin as long as the port is open
         device->step();                                 // process incoming data
         SLEEP_MS(10);                                   // we can sleep for spell and keep our CPU happy
     }
-    return 0;
 
-    printf("Program complete, see inertial_sense.log for more results details\r\n");
-    
-    
+    return 0;    
+} //main_explained
+
+
+
+/**
+ * The main entry point for the application - note that this calls one of two examples, both do the same thing with slight differences.
+ * @param argc
+ * @param argv
+ * @return
+ */
+int main(int argc, const char** argv) {
+
+#if PLATFORM_IS_LINUX
+    const char* portPattern = "(.+)";   // NOTE: this is a MATCHING REGEX pattern (this one matches everything)
+#else
+    const char* portPattern = "COMM1";
+#endif
+
+    if (argc > 2)
+    {
+        printf("Usage: No argument allows automatic port discovery based on TBD.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)\r\n");
+        return -1;
+    }
+
+    printf("CustomRobotDevice example application started");
+    if (argc == 2) {
+        printf(", attempting to use port %s", portPattern);
+        portPattern = argv[1];     // take the first argument as the port to connect with
+    }
+    else
+        printf(", attempting port discovery");
+    printf("\r\n");
+
+    return main_explained(portPattern);
 } //main

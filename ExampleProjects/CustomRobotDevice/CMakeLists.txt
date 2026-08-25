@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(CustomRobotDevice)
 
-set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../../..")
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
 
 # Include InertialSenseSDK header files
