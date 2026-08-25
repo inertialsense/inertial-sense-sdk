@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import shlex
 import shutil
 import sys
 import subprocess
@@ -68,6 +69,10 @@ def parse_args(argv: list[str] | None = None):
     # Parse, but also keep unknown args to forward into child build scripts
     args, unknown = parser.parse_known_args(argv)
     args.forward_args = sys.argv[1:]
+    # forward_args carries this script's own flags as well (-t, --no-build, ...), so it cannot be handed
+    # to a child process that rejects options it does not know. unknown_args holds only what this parser
+    # left unclaimed, which is what a caller forwarding a specific flag wants.
+    args.unknown_args = unknown
     return args
 
 
@@ -106,6 +111,7 @@ class BuildTestManager:
 
         # Preserve any unknown flags for downstream scripts (parity with previous self.args)
         self.forward_args = list(getattr(args, "forward_args", []))
+        self.unknown_args = list(getattr(args, "unknown_args", []))
 
         # Resolve project_dir similarly to the original script
         if args.project_dir:
@@ -422,7 +428,38 @@ class BuildTestManager:
                 result = e.returncode
         return result
 
-    def test_exec(self, test_name, test_dir, exec_name=""):
+    def format_cmd_for_log(self, argv):
+        """
+        Renders a command for a human reading a CI log, using the host's display conventions.
+
+        FOR DISPLAY ONLY -- this is not an escaping mechanism and nothing is executed through it.
+        Commands are launched from an argv list with shell=False, so no shell parses them and there is
+        no metacharacter to neutralize.
+
+        @param argv  the argv list being launched
+        @return      a single printable string
+        """
+        argv = [str(a) for a in argv]
+        if self.is_windows:
+            return subprocess.list2cmdline(argv)
+        return shlex.join(argv)
+
+    def test_exec(self, test_name, test_dir, exec_name="", test_args=None):
+        """
+        Runs a built test executable.
+
+        @param test_name  label used in the summary roll-up
+        @param test_dir   project directory; the executable is expected under its build/ subdirectory
+        @param exec_name  executable name without extension; defaults to test_name
+        @param test_args  extra arguments passed through to the executable. Forwarding is deliberate
+                          per call: a test binary is free to reject options it does not know, so this
+                          is never populated automatically from the command line.
+        @return           the executable's exit status, or 0
+
+        The executable is launched from an argv list with shell=False. No shell is involved, so an
+        argument's contents cannot be interpreted as syntax -- which matters on Windows, where a
+        shell=True string is handed to `cmd.exe /c` and `&`, `|` and `%VAR%` would otherwise be live.
+        """
         if not self.run_test:
             return
         test_dir = str(test_dir) + "/build"
@@ -436,10 +473,12 @@ class BuildTestManager:
 
         test_dir = os.path.normpath(test_dir)
         exec_path = os.path.join(test_dir, exec_name)
+        exec_argv = [exec_path] + [str(a) for a in (test_args or [])]
 
         print(f"test_dir: {test_dir}")
         print(f"exec_name: {exec_name}")
         print(f"exec_path: {exec_path}")
+        print(f"exec_cmd: {self.format_cmd_for_log(exec_argv)}")
 
         if not os.path.isdir(test_dir):
             raise FileNotFoundError(f"Directory not found: {test_dir}")
@@ -450,7 +489,7 @@ class BuildTestManager:
         result = 0
         try:
             host_env = os.environ.copy()
-            subprocess.check_call(exec_path, cwd=test_dir, shell=True, env=host_env)
+            subprocess.check_call(exec_argv, cwd=test_dir, shell=False, env=host_env)
         except subprocess.CalledProcessError as e:
             print(f"Error testing {test_name}!")
             result = e.returncode

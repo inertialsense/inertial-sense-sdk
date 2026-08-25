@@ -88,9 +88,13 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
             continue;
         }
 
-        // Open port if needed (once, before any factory sees it)
+        // Open port if needed (once, before any factory sees it), and wait for it rather than only
+        // asking: an asynchronous transport returns PORT_ERROR__NONE with the connect still in flight
+        // and PORT_FLAG__OPENED clear, and validating a port that is not connected yet retires it for
+        // the whole pass. A synchronous port opens on the first call and waits for nothing.
+        const uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
         if (!portIsOpened(port)) {
-            if (portOpen(port) != PORT_ERROR__NONE)
+            if (portOpenRetry(port, effectiveTimeout / 4, 10) != PORT_ERROR__NONE)
                 continue;
         }
 
@@ -99,7 +103,6 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
             continue;
 
         // Create ONE shared ISDevice probe per port — all factories share this instance
-        uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
         auto sharedDevice = std::make_shared<ISDevice>(hdwId, port);
 
         PendingPort pp;
