@@ -306,6 +306,7 @@ void resetFactory() {
     rpf.setOfflineEvictMs(RelayPortFactory::OFFLINE_EVICT_MS);
     rpf.setLostBackoffBaseMs(6000);
     rpf.setPollInterval(std::chrono::seconds(1));
+    rpf.setMdnsDiscoveryEnabled(true);  // the factory is a singleton; a test that turned it off must not leak that
 }
 
 /// Spin-wait with timeout, running tick() periodically to drive the factory.
@@ -358,6 +359,96 @@ TEST(test_RelayPortFactory, unparseableUrlIgnored) {
     rpf.addRelayHost("");
     rpf.addRelayHost("   ");
     EXPECT_EQ(rpf.getRelayHosts().size(), 0u);
+    resetFactory();
+}
+
+// ============================================================
+// mDNS relay-host discovery switch (SN-8509)
+// ============================================================
+
+/**
+ * The switch reports its own state and defaults to on, so cltool and EvalTool are unaffected by its
+ * existence. A consumer that never calls it behaves exactly as before.
+ */
+TEST(test_RelayPortFactory, mdnsDiscovery_defaultsEnabledAndReportsState) {
+    auto& rpf = RelayPortFactory::getInstance();
+    resetFactory();
+
+    EXPECT_TRUE(rpf.isMdnsDiscoveryEnabled());
+
+    rpf.setMdnsDiscoveryEnabled(false);
+    EXPECT_FALSE(rpf.isMdnsDiscoveryEnabled());
+
+    rpf.setMdnsDiscoveryEnabled(true);
+    EXPECT_TRUE(rpf.isMdnsDiscoveryEnabled());
+
+    resetFactory();
+    EXPECT_TRUE(rpf.isMdnsDiscoveryEnabled()) << "a factory reset must not leave discovery disabled";
+}
+
+/**
+ * Turning discovery off must not disturb a host the caller asked for. This is the property ci_hdw
+ * depends on: it wants exactly one known host, the one it named, and no others.
+ */
+TEST(test_RelayPortFactory, mdnsDiscovery_disabledLeavesManualHostsWorking) {
+    auto& rpf = RelayPortFactory::getInstance();
+    resetFactory();
+
+    rpf.setMdnsDiscoveryEnabled(false);
+
+    rpf.addRelayHost("host.local:9099");
+    auto hosts = rpf.getRelayHosts();
+    ASSERT_EQ(hosts.size(), 1u);
+    EXPECT_EQ(hosts[0].url, "http://host.local:9099");
+    EXPECT_FALSE(hosts[0].viaMdns) << "a manually added host is never marked as discovered";
+
+    // Enable/disable still routes through the same path with discovery off.
+    rpf.setRelayHostEnabled("host.local:9099", true);
+    hosts = rpf.getRelayHosts();
+    ASSERT_EQ(hosts.size(), 1u);
+    EXPECT_TRUE(hosts[0].enabled);
+
+    // Ticking with discovery off must neither add hosts nor drop the manual one.
+    for (int i = 0; i < 10; i++) {
+        RelayPortFactory::tick();
+        SLEEP_MS(25);
+    }
+    hosts = rpf.getRelayHosts();
+    ASSERT_EQ(hosts.size(), 1u) << "tick() added a host while mDNS discovery was disabled";
+    EXPECT_FALSE(hosts[0].viaMdns);
+
+    resetFactory();
+}
+
+/**
+ * No viaMdns host may survive the switch being turned off. The reap path lives inside the discovery
+ * pass that gets skipped, so anything left behind would persist for the life of the process --
+ * visible to every caller enumerating hosts, which is exactly what a consumer sharing a network with
+ * manufacturing equipment must not have.
+ */
+TEST(test_RelayPortFactory, mdnsDiscovery_disablingPurgesDiscoveredHosts) {
+    auto& rpf = RelayPortFactory::getInstance();
+    resetFactory();
+
+    // Ticking with discovery ON is the only way a viaMdns host can appear. Whether one does depends
+    // on what is announcing on this machine's network, so this cannot assert that any were found --
+    // only that none REMAIN once discovery is switched off.
+    for (int i = 0; i < 20; i++) {
+        RelayPortFactory::tick();
+        SLEEP_MS(25);
+    }
+
+    rpf.addRelayHost("manual.local:9098");
+    rpf.setMdnsDiscoveryEnabled(false);
+
+    size_t viaMdnsRemaining = 0, manualRemaining = 0;
+    for (const auto& h : rpf.getRelayHosts()) {
+        if (h.viaMdns) viaMdnsRemaining++;
+        else           manualRemaining++;
+    }
+    EXPECT_EQ(viaMdnsRemaining, 0u) << "disabling discovery left an mDNS-discovered host behind";
+    EXPECT_EQ(manualRemaining, 1u) << "disabling discovery must not touch manually added hosts";
+
     resetFactory();
 }
 

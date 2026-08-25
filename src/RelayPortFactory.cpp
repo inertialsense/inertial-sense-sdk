@@ -440,6 +440,35 @@ std::vector<RelayPortFactory::RelayHostStatus> RelayPortFactory::getRelayHosts()
     return result;
 }
 
+void RelayPortFactory::setMdnsDiscoveryEnabled(bool enabled) {
+    if (mdnsDiscoveryEnabled_.exchange(enabled) == enabled)
+        return;
+
+    log_info(IS_LOG_PORT_FACTORY, "RelayPortFactory: mDNS relay-host discovery %s", enabled ? "enabled" : "disabled");
+    if (enabled)
+        return;
+
+    // Drop what discovery found. These cannot be left in place: the only code that reaps a viaMdns
+    // host lives inside the discovery pass just switched off, so they would persist for the life of
+    // the process with no way to age out -- and stay visible to any caller enumerating hosts.
+    // Collect the URLs under the lock and remove them outside it, because removeRelayHost() joins the
+    // host's SSE worker and joining under mutex_ deadlocks (SN-8177).
+    std::vector<std::string> discovered;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        for (const auto& [url, hostPtr] : relayHosts_) {
+            if (hostPtr && hostPtr->viaMdns)
+                discovered.push_back(url);
+        }
+    }
+    for (const auto& url : discovered)
+        removeRelayHost(url);
+}
+
+bool RelayPortFactory::isMdnsDiscoveryEnabled() const {
+    return mdnsDiscoveryEnabled_.load();
+}
+
 // ============================================================
 // PortFactory interface
 // ============================================================
@@ -550,14 +579,21 @@ void RelayPortFactory::tick() {
         std::lock_guard<std::recursive_mutex> lock(self.mutex_);
 
         auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - self.lastMdnsQueryTime_);
-        if (elapsed.count() > MDNS_QUERY_INTERVAL_MS) {
-            mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
-            self.lastMdnsQueryTime_ = now;
-        }
-        mdns::tick();
 
-        self.discoverRelayHostsViaMdns(reaped, abortHooks);
+        // Skipped wholesale when discovery is off -- including the query itself, not just what is done
+        // with the answers. A consumer that must not touch hardware it was not pointed at needs the
+        // multicast never sent, since the query is what solicits a response from every fixture on the
+        // network. See setMdnsDiscoveryEnabled().
+        if (self.mdnsDiscoveryEnabled_.load()) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - self.lastMdnsQueryTime_);
+            if (elapsed.count() > MDNS_QUERY_INTERVAL_MS) {
+                mdns::sendQuery(MDNS_RECORDTYPE_PTR, "_inertialsense-discovery._tcp.local");
+                self.lastMdnsQueryTime_ = now;
+            }
+            mdns::tick();
+
+            self.discoverRelayHostsViaMdns(reaped, abortHooks);
+        }
 
         // SN-8177: evict ports for any enabled host gone silent past the grace window
         // (no SSE bytes incl. keepalive, no successful poll). Clearing devices +
