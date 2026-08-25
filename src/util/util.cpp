@@ -127,20 +127,43 @@ std::vector<std::string> utils::split_string(const std::string& str, const std::
 }
 
 /**
- * @return the current system clock as a string with millisecond precision
+ * @param opts an eTimestampOpts bitmask selecting which parts to render
+ * @return the current system clock as a string, by default "YYYY-MM-DD HH:MM:SS.mmm"
  */
-std::string utils::getCurrentTimestamp() {
-    auto currentTime = std::chrono::system_clock::now();
-    auto transformed = currentTime.time_since_epoch().count() / 1000000;
-    auto millis = transformed % 1000;
+std::string utils::getCurrentTimestamp(uint32_t opts) {
+    const auto currentTime = std::chrono::system_clock::now();
+    const auto usecs = std::chrono::duration_cast<std::chrono::microseconds>(
+                           currentTime.time_since_epoch()).count() % 1000000;
 
-    std::time_t tt;
-    tt = std::chrono::system_clock::to_time_t(currentTime);
-    auto timeinfo = localtime(&tt);
+    // Into a caller-owned tm: localtime() returns a pointer to shared static storage, and this is
+    // called from comms threads. Same guard and argument order as the SDK's other two uses of this
+    // (core/msg_logger.c, message_stats.cpp) -- note Windows takes (dest, src) and POSIX (src, dest).
+    const std::time_t tt = std::chrono::system_clock::to_time_t(currentTime);
+    struct tm tm_buf;
+#ifdef _WIN32
+    localtime_s(&tm_buf, &tt);
+#else
+    localtime_r(&tt, &tm_buf);
+#endif
 
+    // The date needs a separator only when a time follows it, so the parts are assembled rather
+    // than taken from one strftime() format.
     char buffer[80];
-    strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
-    sprintf(buffer + strlen(buffer), ".%03d", (int) millis);
+    size_t len = 0;
+    if (opts & TIMESTAMP_DATE)
+        len += strftime(buffer + len, sizeof(buffer) - len, (opts & TIMESTAMP_TIME) ? "%F " : "%F", &tm_buf);
+    if (opts & TIMESTAMP_TIME)
+        len += strftime(buffer + len, sizeof(buffer) - len, "%H:%M:%S", &tm_buf);
+
+    // Fractional seconds mean nothing without the seconds they are a fraction of.
+    if ((opts & TIMESTAMP_TIME) && (opts & (TIMESTAMP_MICROS | TIMESTAMP_MILLIS))) {
+        if (opts & TIMESTAMP_MICROS)
+            SNPRINTF(buffer + len, sizeof(buffer) - len, ".%06d", (int)usecs);
+        else
+            SNPRINTF(buffer + len, sizeof(buffer) - len, ".%03d", (int)(usecs / 1000));
+    } else {
+        buffer[len] = '\0';
+    }
 
     return std::string(buffer);
 }
@@ -487,6 +510,59 @@ std::string utils::getFirmwareAsString(const dev_info_t& devInfo, const std::str
     }
     if (devInfo.firmwareVer[3] != 0)
         out += utils::string_format(".%u", devInfo.firmwareVer[3]);
+
+    return out;
+}
+
+std::string utils::getFirmwareInfoAsString(const dev_info_t& devInfo, uint16_t flags) {
+    std::string out;
+
+    if (devInfo.hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
+        // Deliberately "unless known to be a peripheral", not "if known to be a main MCU". A device
+        // in ISbl frequently cannot report its type -- queryDeviceInfoISbl() assigns
+        // IS_HARDWARE_TYPE_UNKNOWN outright for a reply it cannot attribute -- and rendering those as
+        // anything other than ISbl would change long-standing output for a real, reachable case.
+        // Only a positively identified peripheral takes the other branch.
+        if (devInfo.hardwareType < IS_HDW_TYPE_PERIPHERAL)
+            return utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
+
+        // A peripheral in this state is in its OWN loader and reports that loader's version. Spell it
+        // the way every other version is spelled, so it stays parsable by devInfoFromString() -- the
+        // ISbl form does not parse (see ISBFirmwareUpdater.cpp, which notes it yields 0).
+        return utils::getFirmwareAsString(devInfo) + " **BOOTLOADER**";
+    }
+
+    // Version, spelled once, in getFirmwareAsString(). The compact form is this renderer's own.
+    if (!(flags & FWI_COMPACT_BUILD_TYPE)) {
+        out += utils::getFirmwareAsString(devInfo);
+    } else {
+        out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
+        out += (char)devInfo.buildType;
+        if (devInfo.firmwareVer[3] != 0)
+            out += utils::string_format(".%u", devInfo.firmwareVer[3]);
+    }
+
+    if (devInfo.buildFlags & BUILD_FLAGS_DEBUG)
+        out += "-debug";
+
+    if (devInfo.repoRevision && !(flags & FWI_OMIT_COMMIT_HASH)) {
+        out += utils::string_format(" %08x", devInfo.repoRevision);
+        if (devInfo.buildType == '^')
+            out += "^";
+    }
+
+    if (devInfo.buildNumber && !(flags & FWI_OMIT_BUILD_KEY))
+        out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
+
+    if (!(flags & FWI_OMIT_BUILD_DATE)) {
+        out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+
+        if (!(flags & FWI_OMIT_BUILD_TIME)) {
+            out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+            if (devInfo.buildMillisecond && !(flags & FWI_OMIT_BUILD_MILLIS))
+                out += utils::string_format(".%03u", devInfo.buildMillisecond);
+        }
+    }
 
     return out;
 }

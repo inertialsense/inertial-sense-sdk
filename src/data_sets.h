@@ -604,7 +604,7 @@ enum eIsHardwareType
     IS_HARDWARE_TYPE_EVB        = 2,   //!< EVB (evaluation board)
     IS_HARDWARE_TYPE_IMX        = 3,   //!< IMX
     IS_HARDWARE_TYPE_GPX        = 4,   //!< GPX
-    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  //!< Ublox F9P GNSS receiver
+    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  //!< u-blox GNSS receiver (model-agnostic: F9P, ZED-X20P, ...)
     IS_HDW_GNSS_SONY            = IS_HDW_TYPE_PERIPHERAL + 2,  //!< Sony CXD5610 GNSS receiver
     IS_HDW_GNSS_SEPTENTRIO      = IS_HDW_TYPE_PERIPHERAL + 3,  //!< Septentrio GNSS receiver
     IS_HDW_GNSS_STM_TESSIO      = IS_HDW_TYPE_PERIPHERAL + 4,  //!< STM Tessio GNSS receiver
@@ -630,6 +630,12 @@ static const is_hardware_t IS_HDW_TESSIO_6       = ENCODE_HDW_ID(IS_HDW_GNSS_STM
 static const is_hardware_t IS_HDW_SEPTENTRIO_G5  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'G' - 'A', 5);
 static const is_hardware_t IS_HDW_SEPTENTRIO_P3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'P' - 'A', 3);
 static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'M' - 'A', 3);
+
+// Raw GPIO level read from the board-identity strap pin (GPX_nIMX_PIN) at early boot, used to tell an
+// IMX from a GPX on shared PCB variants (see board_init() in mcu/startup/init.c). These are boolean
+// pin-level values (0/1), NOT eIsHardwareType wire values (IS_HARDWARE_TYPE_IMX=3 / IS_HARDWARE_TYPE_GPX=4).
+#define BOARD_IS_IMX    0
+#define BOARD_IS_GPX    1
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 /// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
