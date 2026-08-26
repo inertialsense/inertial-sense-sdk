@@ -133,10 +133,12 @@ int DeviceFactory::stepValidation(ValidationContext& ctx) {
     is_comm_port_parse_messages(ctx.port);
     ctx.result = onStepValidation(*ctx.device, ctx.timeoutMs);
     ctx.complete = (ctx.result != 0);
-    if (ctx.result == 1) {
+    if (ctx.result == ISDevice::ASYNC_STATE__SUCCESS) {
         log_debug(IS_LOG_DEVICE_FACTORY, "stepValidation: port '%s' validated successfully.", portName(ctx.port));
-    } else if (ctx.result == -1) {
+    } else if (ctx.result == ISDevice::ASYNC_STATE__TIMEOUT) {
         log_debug(IS_LOG_DEVICE_FACTORY, "stepValidation: port '%s' timed out.", portName(ctx.port));
+    } else if (ctx.result == ISDevice::ASYNC_STATE__FAILURE) {
+        log_debug(IS_LOG_DEVICE_FACTORY, "stepValidation: port '%s' is not connected; nothing was asked.", portName(ctx.port));
     }
     return ctx.result;
 }

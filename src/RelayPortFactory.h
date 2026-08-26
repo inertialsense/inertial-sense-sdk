@@ -139,6 +139,30 @@ public:
      */
     std::vector<RelayHostStatus> getRelayHosts() const;
 
+    /**
+     * Turns automatic mDNS relay-host discovery on or off. Enabled by default.
+     *
+     * Disabling it stops tick() both announcing interest and acting on answers: no
+     * "_inertialsense-discovery._tcp.local" query is sent, and no host is added, enabled or reaped on
+     * the strength of one. Only hosts given to addRelayHost() are ever known.
+     *
+     * This exists for consumers that must not touch hardware they were not pointed at. Leaving
+     * discovery on and declining to enable what it finds is not equivalent: the query still solicits
+     * responses from every fixture on the network, and hosts still appear in getRelayHosts(). A
+     * consumer sharing a network with manufacturing or calibration equipment wants the query never
+     * sent, which is what this switches off.
+     *
+     * Disabling also drops any viaMdns hosts already known. They cannot be left in place: the only
+     * code that reaps them lives inside the discovery pass this switches off, so they would otherwise
+     * persist for the process's lifetime with no way to age out. Manually added hosts are untouched.
+     *
+     * @param enabled false to stop querying, stop acting on announcements, and drop what mDNS found
+     */
+    void setMdnsDiscoveryEnabled(bool enabled);
+
+    /** @return true if automatic mDNS relay-host discovery is active (the default). */
+    bool isMdnsDiscoveryEnabled() const;
+
     // ============================================================
     // PortFactory interface
     // ============================================================
@@ -319,6 +343,7 @@ private:
     int64_t offlineEvictMs_ = OFFLINE_EVICT_MS;    //!< mutable threshold used by tick() and reconnectInterval(); override via setOfflineEvictMs()
     int64_t lostBackoffBaseMs_ = 6000;             //!< per-step multiplier for escalating backoff; override via setLostBackoffBaseMs()
     std::chrono::steady_clock::time_point lastMdnsQueryTime_ = {}; //!< rate-limit mDNS queries
+    std::atomic<bool> mdnsDiscoveryEnabled_{true};  //!< false stops tick() querying and acting on mDNS; see setMdnsDiscoveryEnabled()
 
     /**
      * Rate-limited mDNS host discovery (reads from shared mdns:: cache). Adds newly-seen
