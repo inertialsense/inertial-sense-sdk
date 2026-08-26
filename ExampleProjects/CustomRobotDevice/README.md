@@ -96,6 +96,12 @@ Note file name list entries relative to SDK `src/` folder, with local relative p
 The `DeviceFactory` is designed to provide a base class for building a device discoverer, upon any `ISDevice` type, which populates a `dev_info_t`.  Our example device implementation is called `CustomRobotDevice` and extends the `ISDevice` class.  We communicate with the device via the port's `port_handle_t` bound by the `PortFactory`.  We implement data handling methods unique to our device in the code. 
 
 ```c++
+#include "PortFactory.h"
+#include "ISDevice.h"
+#include "ISDisplay.h"
+```
+
+```c++
 class CustomRobotDevice : public ISDevice {
 ```
 
@@ -103,6 +109,7 @@ class CustomRobotDevice : public ISDevice {
 int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
 ```
 
+An `ISDevice` has a step function
 
 ### Step 1: Create Port Implementation Header
 We must identify and source or build the underlying transport mechanism.  The `PortFactory` is designed to provide a base class for building a port discoverer, upon any lower level port type.  Our port implementation extends the SDK `base_port_t` C object, and `base_port_t` then provides an API for access using a set of function hooks for methods implemented in the code.  The `base_port_t` comes with definitions for all kinds of different port types.  See the SDK [base_port.h](../../../src/core/base_port.h).
@@ -142,7 +149,7 @@ In our example, we will create a custom virtual port `custom_port_t` built upon 
 
 ### Step 2: Extend ISDevice With Custom Device
 
-
+The `step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.
 
 
 ### Step 2: Extend base_port_t With New Structure
@@ -223,7 +230,7 @@ This example creste the `CustomDeviceFactory` derived class specified by the fil
 class CustomDeviceFactory : public DeviceFactory {
    ```
 
-At a minimum, we must implement the allocateDevice function.
+At a minimum, we must implement the allocateDevice function to serve our custom device.
 ```C++
 /**
      * A function to be implemented in the factory responsible for allocating the underlying device type and returning a pointer to it
@@ -234,6 +241,18 @@ At a minimum, we must implement the allocateDevice function.
      */
     virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
 ```
+
+In this example we speak with an IMX-5 unit so we look for that HW idenfication specifically.  If the ident matches, we return a shared pointer to a new `CustomRobotDevice`. 
+```C++
+device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
+
+   /** When we find IMX-5 dev info, we know we want to allocate a new custom device */
+   if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
+      return std::make_shared<CustomRobotDevice>(devInfo, port);
+
+   return nullptr;
+}
+    ```
 
 ### Step 4: Extend PortFactory with New Class
 This example creates the `CustomVirtualPortFactory` derived class specified by the files [CustomVirtualPortFactory.h](./CustomVirtualPortFactory.h) and [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp).  With these files we will derive a new port factory from the SDK `PortFactory` class.

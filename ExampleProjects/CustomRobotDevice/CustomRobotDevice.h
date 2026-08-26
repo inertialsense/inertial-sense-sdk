@@ -27,7 +27,7 @@
 class CustomRobotDevice : public ISDevice {
 
 public:
-    /** Structures to hold the data we are interested in for this device */
+    /** Structures to hold the data we are interested in for this device. from data_sets.h */
     ins_1_t insData = {};
 
     /** instance of a utility class that handles printing/formatting of various data sets received from the device */
@@ -38,8 +38,10 @@ public:
     // add disable data command here?
     ~CustomRobotDevice() override = default;
 
+    /** This is an optional configuration function to set up our device and pick the data we want to see, etc */
     bool configure();
 
+    /** Used by every ISDevice to "run" and process messages */
     bool step() override;
 
     /** Various message handler types */

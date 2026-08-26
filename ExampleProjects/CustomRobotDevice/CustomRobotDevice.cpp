@@ -24,44 +24,60 @@
 #include "core/msg_logger.h"
 #include "ISDisplay.h"
 
-
+/**
+ * Called by our application to set up this device and control the data broadcast
+ * @return true or false for success of broadcast control commands
+ */
 bool CustomRobotDevice::configure() {
     if (!isConnected())
         return false;
 
-    // Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours
-    
-    // Stop all message broadcasts from the device (in case any messaging was persistently enabled previously);
-    // true argument means all ports
+    /** Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours    
+     * Stop all message broadcasts from the device (in case any messaging was persistently enabled previously);
+     * true argument means all ports
+     */
     if (StopBroadcasts(true) < 0) {
         log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Stop Broadcasts\" request." );
-
         return false;
     }
     
-    // Enable message broadcasting
-    // GetData(DID_SYS_PARAMS, 0, 0, 100);         // Request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task")
-    // GetData(DID_GPX_STATUS, 0, 0, 100);         // Request GPX_STATUS every 100 ms (GPX_STATUS is ran on the 1ms "Maintenance Task")
-    // GetData(DID_GNSS1_POS, 0, 0, 1);             // Request GPS1_POS every nvm_flash_cfg_t.startupGnssDtMs * 1 period
-    // GetData(DID_GNSS1_RTK_POS_REL, 0, 0, 1);     // Request GPS1_RTK_POS_REL every nvm_flash_cfg_t.startupGnssDtMs * 1 period
+    /** Let's stream DID_INS_1 at 1/25th the default DID_INS_1 rate (device dependent, but approx 1x = 7ms)
+     * Add any other streams desired here, as shown in the commented-out example
+     * For example, add request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task") 
+     */
+    //bool bcast_success =
+    //BroadcastBinaryData(DID_INS_1, 25)
+        //&& BroadcastBinaryData(DID_SYS_PARAMS, 100)
+    //  ;
 
-    // Let's stream DID_INS_1
-    // Stream at 1/25th the default DID_INS_1 rate (device dependent, but approx 1x = 7ms)
-    bool bcast_success = BroadcastBinaryData(DID_INS_1, 25);
+    std::vector<std::function<bool()>> bcast_calls = {
+        []() { return BroadcastBinaryData(DID_INS_1, 25); } //,
+       //[]() { return BroadcastBinaryData(DID_SYS_PARAMS, 100); }  
+    };
 
-    if (!bcast_success) {
-        log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Broadcast Binary Data\" request." );
-        return false;
+    // iterate and execute, logging failures if any
+    for (const auto& bcast_success : bcast_calls) {
+        if (!bcast_success) {
+            log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Broadcast Binary Data\" request." );
+            return false;
+        }
     }
+
+    
+    // if (!bcast_success) {
+    //     log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Broadcast Binary Data\" request." );
+    //     return false;
+    // }
 
     return true;
 }
 
 /**
  * Steps the communications for this device
+ * @return the results of ISDevice step
  */
 bool CustomRobotDevice::step() {
-    /** Custom step operations here */
+    /** Custom step operations here if desired */
     
     return ISDevice::step();            // call the parent's step() function to do all the usual ISDevice functions
 }
