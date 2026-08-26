@@ -337,10 +337,10 @@ We will shortly demonstrate how it uses `PortManager` and `PortFactory` to bind 
 
 
 ### Step 7: Incorporate Logging
-The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our Port Factory extension in CustomVirtualPortFactory.cpp.  The [msg_logger.h](../../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  Log commands can be added like so, from a line in CustomVirtualPortFactory.cpp:
+The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our `ISDevice` extension in CustomRobotDevice.cpp.  The [msg_logger.h](../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  Log commands can be added like so, from a line in CustomVirtualPortFactory.cpp:
 
 ```C++
-log_msg(IS_LOG_PORT_FACTORY, IS_LOG_LEVEL_INFO, "Bind new comm port '%s'", portName(port));
+log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Stop Broadcasts\" request." );
    ```
 
 In our main appliaction code we can set the log level to determine which messages will be logged and which ignored:
@@ -348,7 +348,7 @@ In our main appliaction code we can set the log level to determine which message
 IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
 ```
 
-Facility definitions like `IS_LOG_PORT` or `IS_LOG_PORT_FACTORY` identify which module is logging.
+Facility definitions like `IS_LOG_DEVICE_MANAGER` or `IS_LOG_PORT_FACTORY` identify which module is logging.
 
 
 ### Step 8: Instantiate the Port Manager and New Custom Port Factory

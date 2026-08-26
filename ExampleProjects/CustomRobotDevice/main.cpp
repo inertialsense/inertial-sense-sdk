@@ -83,7 +83,7 @@ int main_discovery(const char* portPattern)
         SLEEP_MS(500);  // give a brief pause for new ports/devices to become available.
     } //while
 
-    if ((retry < 0) && !device) {
+    if ( (retry < 0) && !device ) {
         // we failed to locate any devices - report and exit gracefully
         std::cout << "No Inertial Sense devices were found after 3 attempts. Exiting." << std::endl;
         exit(0);    // this is NOT an error
@@ -91,9 +91,10 @@ int main_discovery(const char* portPattern)
 
     // from here, the rest of the example is the same as the Minimal_Device::main_minimal() example.
     // connect to the device
-    if (!device->connect()) {
+    if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
-        exit(1);
+        //exit(1);
+        return -2;
     }
 
     printf("Found and connected %lu IMX device(s) on port(s): \r\n", dm.DeviceCount());
@@ -102,12 +103,11 @@ int main_discovery(const char* portPattern)
     }
     printf("\r\n");
 
-                    
-    // Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours
-    device->StopBroadcasts(true);
 
-    // Let's stream DID_INS_1
-    device->BroadcastBinaryData(DID_INS_1, 25);         // Stream at 1/25th the default DID_INS_1 rate (device dependent, but approx 1x = 7ms)
+    if ( !device->configure() ) {
+        printf("Configuration fail\r\n");
+        return -3;
+    }
 
     while ( portIsOpened(device->port) ) {                // and then spin as long as the port is open
         device->step();                                 // process incoming data

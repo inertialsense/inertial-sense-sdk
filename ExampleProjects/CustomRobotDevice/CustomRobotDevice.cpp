@@ -25,24 +25,37 @@
 #include "ISDisplay.h"
 
 
-// bool CustomRobotDevice::configure() {
-//     if (!isConnected())
-//         return false;
+bool CustomRobotDevice::configure() {
+    if (!isConnected())
+        return false;
 
-//     // Stop all message broadcasts from the device (in case any messaging was persistently enabled previously)
-//     if (StopBroadcasts(true)) {
-//         printf("Failed to send \"Stop Broadcasts\" request.\r\n");
-//         return -5;
-//     }
+    // Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours
     
-//     // Enable message broadcasting
-//     GetData(DID_SYS_PARAMS, 0, 0, 100);         // Request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task")
-//     GetData(DID_GPX_STATUS, 0, 0, 100);         // Request GPX_STATUS every 100 ms (GPX_STATUS is ran on the 1ms "Maintenance Task")
-//     GetData(DID_GNSS1_POS, 0, 0, 1);             // Request GPS1_POS every nvm_flash_cfg_t.startupGnssDtMs * 1 period
-//     GetData(DID_GNSS1_RTK_POS_REL, 0, 0, 1);     // Request GPS1_RTK_POS_REL every nvm_flash_cfg_t.startupGnssDtMs * 1 period
+    // Stop all message broadcasts from the device (in case any messaging was persistently enabled previously);
+    // true argument means all ports
+    if (StopBroadcasts(true) < 0) {
+        log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Stop Broadcasts\" request." );
+
+        return false;
+    }
     
-//     return true;
-// }
+    // Enable message broadcasting
+    // GetData(DID_SYS_PARAMS, 0, 0, 100);         // Request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task")
+    // GetData(DID_GPX_STATUS, 0, 0, 100);         // Request GPX_STATUS every 100 ms (GPX_STATUS is ran on the 1ms "Maintenance Task")
+    // GetData(DID_GNSS1_POS, 0, 0, 1);             // Request GPS1_POS every nvm_flash_cfg_t.startupGnssDtMs * 1 period
+    // GetData(DID_GNSS1_RTK_POS_REL, 0, 0, 1);     // Request GPS1_RTK_POS_REL every nvm_flash_cfg_t.startupGnssDtMs * 1 period
+
+    // Let's stream DID_INS_1
+    // Stream at 1/25th the default DID_INS_1 rate (device dependent, but approx 1x = 7ms)
+    bool bcast_success = BroadcastBinaryData(DID_INS_1, 25);
+
+    if (!bcast_success) {
+        log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Broadcast Binary Data\" request." );
+        return false;
+    }
+
+    return true;
+}
 
 /**
  * Steps the communications for this device

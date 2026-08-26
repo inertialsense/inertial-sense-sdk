@@ -27,6 +27,7 @@
 class CustomRobotDevice : public ISDevice {
 
 public:
+    /** Structures to hold the data we are interested in for this device */
     ins_1_t insData = {};
 
     /** instance of a utility class that handles printing/formatting of various data sets received from the device */
