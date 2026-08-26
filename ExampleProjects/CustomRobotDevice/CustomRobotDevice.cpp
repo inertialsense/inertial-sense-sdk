@@ -16,7 +16,6 @@
 
 /** Include the header file for child port factory class derived from parent PortFactory.h
  */
-//#include "CustomVirtualPortFactory.h"
 #include "CustomRobotDevice.h"
 
 /** Include utility functions for use by custom port factory class member functions defined here
@@ -57,8 +56,6 @@ bool CustomRobotDevice::step() {
 
 /**
  * This is a callback handler that we will register with the ISDevice once its created, and which will be called every time data arrives from the device
- * @param ctx this is an opaque context pointer for this message - in this example, it will be the ISDevice* that received it the message - the ISDevice
- *   still need to process the data that it receives, so we dereference this, and call OnIsbDataHandler()
  * @param data a pointer to a p_data_t struct, which represents the buffer of data received from the device, including the data ID, associated flags,
  *   and the actual data payload
  * @param port the port_handle_t that this data was received from
@@ -66,8 +63,17 @@ bool CustomRobotDevice::step() {
  */
 int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
-    if (data->hdr.id == DID_INS_1)
-        std::cout << isDisplay.DataToString((const p_data_t*)data);
+    if ( ISDevice::onIsbDataHandler(data, port) ) {    // let ISDevice do its handling
+    
+        if (data->hdr.id == DID_INS_1) {
+            
+            copyDataPToStructP(&insData, data, sizeof(ins_1_t));
+            //TODO
+            std::cout << isDisplay.DataToString((const p_data_t*)data);
+        }
 
-    return ISDevice::onIsbDataHandler(data, port);    // let ISDevice do additional handling;
+        return 0;  //success
+    }
+
+    return 1;
 }

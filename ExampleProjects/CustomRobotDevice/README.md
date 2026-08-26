@@ -93,6 +93,15 @@ Note file name list entries relative to SDK `src/` folder, with local relative p
 ## Implementation
 
 ### Step 1: Create Device Implementation Header
+The `DeviceFactory` is designed to provide a base class for building a device discoverer, upon any `ISDevice` type, which populates a `dev_info_t`.  Our example device implementation is called `CustomRobotDevice` and extends the `ISDevice` class.  We communicate with the device via the port's `port_handle_t` bound by the `PortFactory`.  We implement data handling methods unique to our device in the code. 
+
+```c++
+class CustomRobotDevice : public ISDevice {
+```
+
+```c++
+int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
+```
 
 
 ### Step 1: Create Port Implementation Header
@@ -133,17 +142,7 @@ In our example, we will create a custom virtual port `custom_port_t` built upon 
 
 ### Step 2: Extend ISDevice With Custom Device
 
-At a minimum, we must implement the allocateDevice function.
-```C++
-/**
-     * A function to be implemented in the factory responsible for allocating the underlying device type and returning a pointer to it
-     * This function should NOT manipulate the underlying port, such as opening, etc.
-     * @param devInfo the device information uniquely identifying the specific device
-     * @param port an associated port (optional) that this device should be bound to.
-     * @return a ISDevice pointer to the newly allocated ISDevice or null of not allocated
-     */
-    virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
-```
+
 
 
 ### Step 2: Extend base_port_t With New Structure
@@ -213,7 +212,28 @@ These and many settings are shared for all our virtual ports, each being the sam
 
 
 ### Step 4: Extend DeviceFactory with New Class
+This example creste the `CustomDeviceFactory` derived class specified by the files [CustomDeviceFactory.h](./CustomDeviceFactory.h) and [CustomDeviceFactory.cpp](./CustomDeviceFactory.cpp).  With these files we will derive a new device factory from the SDK `DeviceFactory` class.
 
+```c++
+#include "DeviceFactory.h"
+#include "CustomRobotDevice.h"
+```
+
+```c++
+class CustomDeviceFactory : public DeviceFactory {
+   ```
+
+At a minimum, we must implement the allocateDevice function.
+```C++
+/**
+     * A function to be implemented in the factory responsible for allocating the underlying device type and returning a pointer to it
+     * This function should NOT manipulate the underlying port, such as opening, etc.
+     * @param devInfo the device information uniquely identifying the specific device
+     * @param port an associated port (optional) that this device should be bound to.
+     * @return a ISDevice pointer to the newly allocated ISDevice or null of not allocated
+     */
+    virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
+```
 
 ### Step 4: Extend PortFactory with New Class
 This example creates the `CustomVirtualPortFactory` derived class specified by the files [CustomVirtualPortFactory.h](./CustomVirtualPortFactory.h) and [CustomVirtualPortFactory.cpp](./CustomVirtualPortFactory.cpp).  With these files we will derive a new port factory from the SDK `PortFactory` class.
@@ -245,7 +265,7 @@ const std::array<const char*, 2> portNames = { "TEST0", "TEST1" };
 
 
 ### Step 5: Complete Custom Device Factory Implementation
-
+TBD worthwhile to even create a .cpp file for this?
 
 ### Step 5: Complete Custom Port Factory Implementation
 

@@ -36,7 +36,7 @@
  * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
  * the port is opened, which is in loopback mode in this case, and a simple write/read test is performed.
  */
-int main_explained(const char* portPattern)
+int main_discovery(const char* portPattern)
 {
   
     /** STEP 7: Set the SDK message logger verbosity level, as we use the logger for
@@ -97,9 +97,11 @@ int main_explained(const char* portPattern)
     }
 
     printf("Found and connected %lu IMX device(s) on port(s): \r\n", dm.DeviceCount());
-    for (const auto& iter: pm.getPorts()) { 
-        printf(" %s\r\n", portName(iter));
+    for (const auto& dev : dm.getDevices()) {
+        printf(" %s\r\n", dev->getPortName().c_str());
     }
+    printf("\r\n");
+
                     
     // Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours
     device->StopBroadcasts(true);
@@ -113,12 +115,12 @@ int main_explained(const char* portPattern)
     }
 
     return 0;    
-} //main_explained
+} //main_discovery
 
 
 
 /**
- * The main entry point for the application - note that this calls one of two examples, both do the same thing with slight differences.
+ * The main entry point for the application - note that this calls the discovery code
  * @param argc
  * @param argv
  * @return
@@ -142,5 +144,5 @@ int main(int argc, const char** argv) {
         printf(", attempting port discovery");
     printf("\r\n");
 
-    return main_explained(portPattern);
+    return main_discovery(portPattern);
 } //main

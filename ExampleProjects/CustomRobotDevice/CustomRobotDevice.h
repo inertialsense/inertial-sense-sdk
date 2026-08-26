@@ -27,23 +27,12 @@
 class CustomRobotDevice : public ISDevice {
 
 public:
-    gnss_pos_t       gps = {};
-    gnss_rtk_rel_t   rel = {};
-    double lastImxUptime = 0;
-    double lastGpxUptime = 0;
+    ins_1_t insData = {};
 
     /** instance of a utility class that handles printing/formatting of various data sets received from the device */
     cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::DMODE_PRETTY);
     
     CustomRobotDevice(const dev_info_t& _devInfo, port_handle_t _port) : ISDevice(_devInfo, _port) { }
-
-    // CustomRobotDevice(const std::string& serPort, const std::string& ntrip_url) : ISDevice(), ntripUrl(ntrip_url) {
-    //     // bind to the physical serial port (hardware) and assign to the device
-    //     assignPort(SerialPortFactory::getInstance().bindPort(serPort, PORT_TYPE__UNKNOWN));
-
-    //     // tell the NtripCorrectionService to forward the received corrections to this device's port
-    //     ntrip.addPort(port);
-    // }
 
     // add disable data command here?
     ~CustomRobotDevice() override = default;
