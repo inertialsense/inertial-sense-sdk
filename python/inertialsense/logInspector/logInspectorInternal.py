@@ -253,13 +253,13 @@ class logInspectorInternal(LogInspectorWindow):
 
         self.showReference = QCheckBox("Reference", self)
         self.showReference.setToolTip("Show reference and Sensor Valid lines on SComp v Temp plots")
-        self.showReference.setChecked(True)
+        self.showReference.setChecked(False)
         self.showReference.stateChanged.connect(self.changeShowReferenceCheckbox)
         self.VLayoutOptions3.addWidget(self.showReference)
 
         self.showUcal = QCheckBox("UCAL", self)
         self.showUcal.setToolTip("Show DID_SENSORS_UCAL data on SComp v Temp plots")
-        self.showUcal.setChecked(True)
+        self.showUcal.setChecked(False)
         self.showUcal.stateChanged.connect(self.changeShowUcalCheckbox)
         self.VLayoutOptions3.addWidget(self.showUcal)
 

@@ -373,8 +373,8 @@ class logPlot:
         self.timestamp = False
         self.xAxisSample = False
         self.showGnss2 = False
-        self.showReference = True
-        self.showUcal = True
+        self.showReference = False
+        self.showUcal = False
         self.gnssVelFilterMode = 0
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
