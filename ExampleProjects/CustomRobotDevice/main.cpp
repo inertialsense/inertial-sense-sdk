@@ -17,24 +17,20 @@
 /** Include user IO capabilities for this demo so when run visual indicators appear */
 #include <stdio.h>
 
-/** Include utility functions for use by your custom port class member functions defined here
- */
-#include "ISUtilities.h"
+/** We need the DeviceManager, and the custom device and device factory */
 #include "DeviceManager.h"
-#include "ISDevice.h"
-
-/** The port factory child class the user creates, inheriting from PortFactory.h definition */
 #include "CustomRobotDevice.h"
 #include "CustomDeviceFactory.h"
 
-/** Include the SDK PortManager if desired for building and maintaining a list of all ports by name */
+/** Include the SDK PortManager for building and maintaining a list of all ports by name */
 #include "PortManager.h"
 
 
 /**
- * Uses arg for identifying virtual serial port in a "minimal" example of setting up a custom serial port
+ * Uses portPattern for discovering a device connected to a port in an example of setting up a custom device
  * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
- * the port is opened, which is in loopback mode in this case, and a simple write/read test is performed.
+ * the port is opened, and DeviceManager and DeviceFactory search for a device of a certain hardware ID.
+ * We then receive data from the found device.
  */
 int main_discovery(const char* portPattern)
 {
@@ -44,10 +40,9 @@ int main_discovery(const char* portPattern)
      */
     IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
 
-
     std::shared_ptr<CustomRobotDevice> device = nullptr; // this will be our discovered device... but null for now.
     
-    /** STEP 8: We need a singleton Port Manager and SerialPortFactory,
+    /** STEP 8: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
      * we'll make local references, and we register the virtual port factory
      */    
     PortManager& pm = PortManager::getInstance();
@@ -89,7 +84,6 @@ int main_discovery(const char* portPattern)
         exit(0);    // this is NOT an error
     }
 
-    // from here, the rest of the example is the same as the Minimal_Device::main_minimal() example.
     // connect to the device
     if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;

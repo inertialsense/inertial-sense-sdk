@@ -12,13 +12,11 @@
 
 #ifdef __cplusplus
 
-/** STEP 4:  Create a custom child class that inherits from PortFactory 
+/** STEP 3:  Create a custom child class that inherits from DeviceFactory
  */
 
 /**Include IS core and other needed SDK header files here; 
- * include any of your own custom application port definition headers, the lower-level
- * code that defines the interface used by this custom port factory; in this case the new
- * virtual test ports
+ * include any of your own custom application device definition headers
  */
 #include "DeviceFactory.h"
 #include "CustomRobotDevice.h"
@@ -28,7 +26,7 @@ class CustomDeviceFactory : public DeviceFactory {
 public:
     /**
      * @brief Gets the singleton instance of this factory.
-     * @return reference to the singleton ImxDeviceFactory, as a DeviceFactory.
+     * @return reference to the singleton CustomDeviceFactory, as a DeviceFactory.
      */
     static DeviceFactory& getInstance() {
         static CustomDeviceFactory instance;
