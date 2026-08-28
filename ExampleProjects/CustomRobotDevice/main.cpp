@@ -93,7 +93,7 @@ int main_discovery(const char* portPattern)
         return -2;
     }
 
-    printf("Found and connected %lu IMX device(s) on port(s): \r\n", dm.DeviceCount());
+    printf("Found and connected %zu IMX device(s) on port(s): \r\n", dm.DeviceCount());
     for (const auto& dev : dm.getDevices()) {
         printf(" %s\r\n", dev->getPortName().c_str());
     }
