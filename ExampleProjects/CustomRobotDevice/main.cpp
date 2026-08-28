@@ -2,10 +2,11 @@
  * @file main.cpp
  * @brief ${BRIEF_DESC}
  * 
- * @remark Based upon the SDK ExampleProjects/ISComm/ISCommExample.cpp
+ * @remark Based upon the SDK ExampleProjects/Simple_Discovery/Example-2_Device-Discovery.cpp
  *
- * @details This demonstrates an example application creating a custom port factory 
- * with a virtual port implemented by a modified version of the test_serial_utils code
+ * @details This demonstrates an example application creating a custom ISDevice extension and
+ * custom device factory, and then streaming and processing data from IMX hardware that is
+ * discovered using DeviceManager and PortManager/PortFactory.
  *
  * @author TylerS
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
@@ -28,13 +29,15 @@
 
 /**
  * Uses portPattern for discovering a device connected to a port in an example of setting up a custom device
- * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
- * the port is opened, and DeviceManager and DeviceFactory search for a device of a certain hardware ID.
- * We then receive data from the found device.
+ * connection. This is similar to previous examples, but leverages Port/Device discovery to locate a dynamic or
+ * unknown device.  This will attempt to discover ports, retrying up to 3 times. Use PortManager and PortFactory
+ * to bind a port_handle_t to the port.  Each time ports are discovered, the port is opened, and DeviceManager
+ * and DeviceFactory search for a device of a certain hardware ID.  It attempts to discover devices on all known
+ * ports.  If an IMX 5.0 device is found, the discovery phase will end, and a connection attempt
+ * is made.  We then receive data from the found device.
  */
 int main_discovery(const char* portPattern)
 {
-  
     /** STEP 5: Set the SDK message logger verbosity level, as we use the logger for
      * some custom status and error messages
      */
@@ -120,7 +123,7 @@ int main_discovery(const char* portPattern)
  * The main entry point for the application - note that this calls the discovery code
  * @param argc
  * @param argv
- * @return
+ * @return main_discovery
  */
 int main(int argc, const char** argv) {
 
