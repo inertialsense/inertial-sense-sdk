@@ -3763,7 +3763,7 @@ class logPlot:
                 ax[2].plot(timeIns, altIns)
             if len(mslBar) > 0:
                 if len(altGnss) > 0:
-                    ax[3].plot(timeBar, mslBar - (mslBar[0] - altGnss[0]), label=("Bar %s" % self.log.serials[d]))
+                    ax[3].plot(timeBar, mslBar, label=("Bar %s" % self.log.serials[d]))
                     ax[3].plot(timeGnss, altGnss, label=("GNSS %s" % self.log.serials[d]))
                 elif len(mslBar) > 0:
                     ax[3].plot(timeBar, mslBar, label=("Bar %s" % self.log.serials[d]))
