@@ -14,11 +14,10 @@
  */
 #include "CustomRobotDevice.h"
 
-/** Include utility functions for use by custom port factory class member functions defined here
+/** Include utility functions for use by custom device class members defined here
  */
 #include "ISUtilities.h"
 #include "core/msg_logger.h"
-#include "ISDisplay.h"
 
 /**
  * Called by our application to set up this device and control the data broadcast
@@ -85,7 +84,8 @@ int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
             
             copyDataPToStructP(&insData, data, sizeof(ins_1_t));
             uint32_t insStatus = insData.insStatus;
-
+            /** optionally do something with this data here */
+            
             std::cout << isDisplay.DataToString((const p_data_t*)data);
         }
 

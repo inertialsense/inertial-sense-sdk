@@ -86,10 +86,7 @@ int main_discovery(const char* portPattern)
     }
 
 
-    /** STEP 7: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
-     * we'll make local references, and we register the virtual port factory
-     */    
-    // connect to the device
+    /** STEP 7: Connect and configure device */
     if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
         //exit(1);
@@ -108,6 +105,7 @@ int main_discovery(const char* portPattern)
         return -3;
     }
 
+    /** STEP 8: Read and process device data in a loop */
     while ( portIsOpened(device->port) ) {                // and then spin as long as the port is open
         device->step();                                 // process incoming data
         SLEEP_MS(10);                                   // we can sleep for spell and keep our CPU happy
