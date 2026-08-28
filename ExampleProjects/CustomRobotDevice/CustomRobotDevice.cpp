@@ -10,10 +10,6 @@
 /** STEP 2: Implement the required functions for a new ISDevice
  */
 
-/** Include C++ libraries for use by your custom port class member functions defined here
- */
-//#include <regex>
-
 /** Include the header file for child port factory class derived from parent PortFactory.h
  */
 #include "CustomRobotDevice.h"
@@ -32,7 +28,7 @@ bool CustomRobotDevice::configure() {
     if (!isConnected())
         return false;
 
-    /** Devices can be configured to stream data by default on powerup - lets stop all other messages before enabling ours    
+    /** Devices can be configured to stream data by default on powerup - let's stop all other messages before enabling ours    
      * Stop all message broadcasts from the device (in case any messaging was persistently enabled previously);
      * true argument means all ports
      */
@@ -50,7 +46,7 @@ bool CustomRobotDevice::configure() {
        //[this]() { return BroadcastBinaryData(DID_SYS_PARAMS, 100); }  
     };
 
-    // iterate and execute, logging failures if any
+    /** Iterate and execute, logging failures if any */
     for (const auto& bcast_success : bcast_calls) {
         if (!bcast_success()) {
             log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Broadcast Binary Data\" request." );
@@ -93,8 +89,8 @@ int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
             std::cout << isDisplay.DataToString((const p_data_t*)data);
         }
 
-        return 0;  //success
+        return 0;  // indicates ISDevice found valid message and we processed here
     }
 
-    return 1;  //fail
+    return 1;
 }

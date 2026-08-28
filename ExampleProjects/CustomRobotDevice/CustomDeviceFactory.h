@@ -21,7 +21,9 @@
 #include "DeviceFactory.h"
 #include "CustomRobotDevice.h"
 
-/** @brief DeviceFactory singleton for IMX-5 devices; allocates an ISDevice only for devices whose hardware Id resolves to IS_HARDWARE_IMX_5_0. */
+/** @brief DeviceFactory singleton for IMX-5 devices; allocates an ISDevice only for devices whose hardware
+ * Id resolves to IS_HARDWARE_IMX_5_0.
+ */
 class CustomDeviceFactory : public DeviceFactory {
 public:
     /**

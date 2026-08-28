@@ -12,7 +12,7 @@
  */
 
 
-/** STEP 6: The example application */
+/** STEP 4: The example application */
 
 /** Include user IO capabilities for this demo so when run visual indicators appear */
 #include <stdio.h>
@@ -35,14 +35,12 @@
 int main_discovery(const char* portPattern)
 {
   
-    /** STEP 7: Set the SDK message logger verbosity level, as we use the logger for
+    /** STEP 5: Set the SDK message logger verbosity level, as we use the logger for
      * some custom status and error messages
      */
     IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
-
-    std::shared_ptr<CustomRobotDevice> device = nullptr; // this will be our discovered device... but null for now.
     
-    /** STEP 8: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
+    /** STEP 6: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
      * we'll make local references, and we register the virtual port factory
      */    
     PortManager& pm = PortManager::getInstance();
@@ -51,6 +49,9 @@ int main_discovery(const char* portPattern)
     DeviceManager& dm = DeviceManager::getInstance();
     dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 
+    /** This will be our discovered device... but null for now. */
+    std::shared_ptr<CustomRobotDevice> device = nullptr; 
+    
     /** Let the PM find all available ports, then ask for the one specifically indicated on the command line by name */
     int retry = 3;
     while (retry-- >= 0) {              // some port discovery mechanisms (mDNS, etc) may require multiple calls before ports begin to show
@@ -84,6 +85,10 @@ int main_discovery(const char* portPattern)
         exit(0);    // this is NOT an error
     }
 
+
+    /** STEP 7: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
+     * we'll make local references, and we register the virtual port factory
+     */    
     // connect to the device
     if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;

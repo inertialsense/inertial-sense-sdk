@@ -31,20 +31,19 @@ public:
     /** structures to hold the data we are interested in for this device. from data_sets.h */
     ins_1_t insData = {};
 
-    /** instance of a utility class that handles printing/formatting of various data sets received from the device */
-    cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::DMODE_PRETTY);
-
     /** an optional configuration function to set up our device and pick the data we want to see, etc */
     bool configure();
 
     /** used by every ISDevice to "run" and process messages */
     bool step() override;
 
-    /** various message handler types */
+    /** message handler callbacks, with extra commented-out prototype examples we are not using in this case */
     int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
     //int onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port) override;
     //int onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) override;
-    
+
+    /** instance of a utility class that handles printing/formatting of various data sets received from the device */
+    cInertialSenseDisplay isDisplay = cInertialSenseDisplay(cInertialSenseDisplay::DMODE_PRETTY);
 };
 
 
