@@ -15,7 +15,6 @@ include_directories(
 add_executable(${PROJECT_NAME}
     main.cpp
     CustomRobotDevice.cpp
-    CustomDeviceFactory.cpp
 )
 
 # Build using C11 and CXX20

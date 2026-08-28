@@ -109,9 +109,12 @@ int main_discovery(const char* portPattern)
     }
 
     /** STEP 8: Read and process device data in a loop */
-    while ( portIsOpened(device->port) ) {                // and then spin as long as the port is open
+    while ( portIsOpened(device->port) ) {              // and then spin as long as the port is open
         device->step();                                 // process incoming data
         SLEEP_MS(10);                                   // we can sleep for spell and keep our CPU happy
+
+        if ( device->isDisplay.ExitProgram() )          // check to see if the display recvd exit cmd
+            break;
     }
 
     return 0;    
