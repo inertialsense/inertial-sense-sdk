@@ -10,7 +10,7 @@
 /** STEP 2: Implement the required functions for a new ISDevice
  */
 
-/** Include the header file for child port factory class derived from parent PortFactory.h
+/** Include the new device header file for class derived from parent ISDevice.h
  */
 #include "CustomRobotDevice.h"
 
