@@ -6,13 +6,13 @@ This [Custom Robot Device Example](https://github.com/inertialsense/inertial-sen
 ## Purpose and Design
 This project is constructed as both a walk-through and a template for users wishing to learn how to make use of three modules of the SDK that would be important pieces for device management.    
 
-One is the `ISDevice` which is a C++ class that represents a single, physical Inertial Sense device (IMX or GPX) bound to a port.  It owns its identity (dev_info_t), synchronized flash/system-parameter state, and the comm-protocol handlers that parse data received from it. DeviceManager owns a collection of these; a caller that only ever talks to one device can use a standalone ISDevice directly without DeviceManager.
+One is the `ISDevice` which is a C++ class that represents a single, physical Inertial Sense device (IMX or GPX) bound to a port.  It owns its identity (dev_info_t), synchronized flash/system-parameter state, and the comm-protocol handlers that parse data received from it. `DeviceManager` owns a collection of these; a caller that only ever talks to one device can use a standalone `ISDevice` directly without `DeviceManager`, but we will demonstrate the manager here.
 
 The second is the `DeviceFactory` which is an abstract C++ class that is responsible for discovery of connected devices of a particular type.  There should be one implementation for each type of discoverable device.  It handles device-type identification and allocation: given a raw port, determines what kind of Inertial Sense device (if any) is attached and constructs the matching `ISDevice` subclass.  The factory allocates a device object, and this operation returns a `device_handle_t`.  As an abstract class, this allows for third-party locators to be implemented for custom device types.
 
 Finally, we demonstrate the `DeviceManager`, which uses the custom device factory to create and keep a known list of available devices, optionally filtered to a limited set, or all.  It will provide access to a factory's devices as requested.
 
-In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX-5 unit.  Conceptually, we are presenting the idea of a robot device we have built with an IMX on board, and we will be reading data from the IMX.  Our custom device we are calling `CustomRobotDevice` and it is discovered via our `CustomDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  
+In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX-5 unit.  Conceptually, we are presenting the idea of a robot device we have built with an IMX on board, and we will be reading data from the IMX.  Our custom device we are calling `CustomRobotDevice` and it is discovered via our `CustomDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  See this dependency (dashed) and process (solid) diagram for an overview:
 
 
 ```mermaid
@@ -162,7 +162,7 @@ Finally, we need at least one function to handle the DID messages we receive.  `
          copyDataPToStructP(&insData, data, sizeof(ins_1_t));
          uint32_t insStatus = insData.insStatus;
          /** optionally do something with this data here */
-         
+
          std::cout << isDisplay.DataToString((const p_data_t*)data);
    //...   
  ```
