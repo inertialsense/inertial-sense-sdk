@@ -280,10 +280,10 @@ pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager 
 DeviceManager& dm = DeviceManager::getInstance();
 dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 ```
-Note that for demonstration purposes we make use of the SDK's `ISDisplay`, for data display formatting to the terminal, and set the callback function to bring all data received by our custom devices to the application, for all devices the factory allocates:
+Note that for demonstration purposes we make use of the SDK's `ISDisplay`, for data display formatting to the terminal, and set the callback function to bring all data received by our custom devices to the application, for all devices the factory allocates. `isDisplay` is declared `static` so its lifetime extends past `main_discovery()`:
 ```c++
-cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
-CustomDeviceFactory::setDataCallback([&isDisplay](const p_data_t* data) {
+static cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
+CustomDeviceFactory::setDataCallback([](const p_data_t* data) {
    std::cout << isDisplay.DataToString(data);
 });
 ```
@@ -300,7 +300,7 @@ if (!pm.empty()) {
    device = dm.getDevices().front()->as<CustomRobotDevice>();
 ```
 
-Once we find that IMX device, we'll use it for the remaining operations we do.  We call the `ISDevice::connect()` method.  We have decoupled the specific configuration operations of the IMX device from the application by creating a new  (optional) `configure()` method in our CustomRobotDevice class, which we call here from the application.  That way, we can manage the data requests and data processing all within our new device class and leave the application code more agnostic to the specific things we do with this device.
+Once we find that IMX device, we'll use it for the remaining operations we do.  We call the `ISDevice::connect()` method.  We have decoupled the specific configuration operations of the IMX device from the application by creating a new (optional) `configure()` method in our CustomRobotDevice class, which we call here from the application.  That way, we can manage the data requests and data processing all within our new device class and leave the application code more agnostic to the specific things we do with this device.
 
 ```C++
 if ( !device->connect() ) {
