@@ -156,16 +156,17 @@ bool CustomRobotDevice::step() {
 }
 ```
 
-Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We could for example copy the data to our `ins_1_t` struct for custom processing one field at a time if desired, though in this example demonstrate using `ISDisplay` to nicely print it to standard out.
+Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We could for example copy the data to our `ins_1_t` struct for custom processing one field at a time if desired, though in this example demonstrate using `ISDisplay` to nicely print it to standard out by sending it back to application via the `onDataReceived()` hook.
 
 ```c++
- int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
+int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
-   if ( ISDevice::onIsbDataHandler(data, port) ) {
-      if (data->hdr.id == DID_INS_1) {                     
-         /** optionally do something with this data here */
-         std::cout << isDisplay.DataToString((const p_data_t*)data);
-   //...   
+   if ( ISDevice::onIsbDataHandler(data, port) ) { 
+    
+      if (data->hdr.id == DID_INS_1) {
+         if (onDataReceived)
+            onDataReceived(data);
+//...   
  ```
 
  Note that we first call the ISDevice's own handler as it does a validation on the data.
@@ -279,7 +280,7 @@ pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager 
 DeviceManager& dm = DeviceManager::getInstance();
 dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 ```
-Note that for demonstration purposes we make use of the SDK's `ISDisplay` member to this class, for data display formatting to the terminal, and set the callback function to enable the display for all devices that our factory allocates:
+Note that for demonstration purposes we make use of the SDK's `ISDisplay`, for data display formatting to the terminal, and set the callback function to bring all data received by our custom devices to the application, for all devices the factory allocates:
 ```c++
 cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
 CustomDeviceFactory::setDataCallback([&isDisplay](const p_data_t* data) {

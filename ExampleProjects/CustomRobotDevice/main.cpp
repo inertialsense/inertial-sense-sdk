@@ -94,15 +94,14 @@ int main_discovery(const char* portPattern)
         SLEEP_MS(500);  // give a brief pause for new ports/devices to become available.
     } //while
 
-    if ( (retry < 0) && !device ) {
+    if ( !device ) {
         // we failed to locate any devices - report and exit gracefully
         std::cout << "No Inertial Sense devices were found after 3 attempts. Exiting." << std::endl;
-        exit(0);    // this is NOT an error
+        return 0;    // this is NOT an error
     }
 
     if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
-        //exit(1);
         return -2;
     }
 

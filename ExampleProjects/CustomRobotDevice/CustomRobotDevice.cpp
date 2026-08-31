@@ -81,11 +81,8 @@ int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
     if ( ISDevice::onIsbDataHandler(data, port) ) { // let ISDevice do its handling; we call it first for the integrity check it does
     
         if (data->hdr.id == DID_INS_1) {
-            copyDataPToStructP(&insData, data, sizeof(ins_1_t));
-
-            /** forward every parsed message on for application level processing */
             if (onDataReceived)
-                onDataReceived(data);
+                onDataReceived(data);  // forward every parsed message on for application level processing
         }
 
         return 0;  // indicates ISDevice found valid message and we processed here
