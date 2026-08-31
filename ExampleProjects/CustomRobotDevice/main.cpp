@@ -26,6 +26,10 @@
 /** Include the SDK PortManager for building and maintaining a list of all ports by name */
 #include "PortManager.h"
 
+/** Include ISDisplay so we can pretty-print data received from device(s); this instance is owned by the
+ * application, not any one device, so every device discovered can share it */
+#include "ISDisplay.h"
+
 
 /**
  * Uses portPattern for discovering a device connected to a port in an example of setting up a custom device
@@ -44,7 +48,7 @@ int main_discovery(const char* portPattern)
     IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
     
     /** STEP 6: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
-     * we'll make local references, and we register the virtual port factory
+     * we'll make local references, and we register the virtual port factory; also provide a way to display data
      */    
     PortManager& pm = PortManager::getInstance();
     pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager that we are interested in Serial Ports
@@ -52,8 +56,16 @@ int main_discovery(const char* portPattern)
     DeviceManager& dm = DeviceManager::getInstance();
     dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 
-    /** This will be our discovered device... but null for now. */
-    std::shared_ptr<CustomRobotDevice> device = nullptr; 
+    /** One display instance, owned by application not any single device, shared by  discovered devices;
+     * data sink for every device the CustomDeviceFactory allocates
+     */
+    cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
+    CustomDeviceFactory::setDataCallback([&isDisplay](const p_data_t* data) {
+        std::cout << isDisplay.DataToString(data);
+    });
+
+    /** STEP 7: Discover ports and devices, connect and configure device */
+    std::shared_ptr<CustomRobotDevice> device = nullptr;      // this will be our discovered device... but null for now
     
     /** Let the PM find all available ports, then ask for the one specifically indicated on the command line by name */
     int retry = 3;
@@ -88,8 +100,6 @@ int main_discovery(const char* portPattern)
         exit(0);    // this is NOT an error
     }
 
-
-    /** STEP 7: Connect and configure device */
     if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
         //exit(1);
@@ -113,7 +123,7 @@ int main_discovery(const char* portPattern)
         device->step();                                 // process incoming data
         SLEEP_MS(10);                                   // we can sleep for spell and keep our CPU happy
 
-        if ( device->isDisplay.ExitProgram() )          // check to see if the display recvd exit cmd
+        if ( isDisplay.ExitProgram() )                  // check to see if the display recvd exit cmd
             break;
     }
 
@@ -138,7 +148,7 @@ int main(int argc, const char** argv) {
         return -1;
     }
 
-    printf("CustomRobotDevice example application started (ctrl+\\ to quit)");
+    printf("CustomRobotDevice example application started (ctrl+C or ctrl+\\ to quit)");
     if (argc == 2) {
         portPattern = argv[1];
         printf(", attempting to use port %s", portPattern);
