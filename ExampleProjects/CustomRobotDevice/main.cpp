@@ -57,9 +57,8 @@ int main_discovery(const char* portPattern)
     dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 
     /** One display instance, owned by application not any single device, shared by discovered devices;
-     * data sink for every device the CustomDeviceFactory allocates, static so its lifetime outlives
-     * main_discovery() - devices retained by the DeviceManager singleton hold a reference to it via
-     * onDataReceived, so it must live at least as long as they might.
+     * data sink for every device the CustomDeviceFactory allocates, devices retained by the DeviceManager
+     * singleton hold a reference to it via onDataReceived, so it must live at least as long as they might.
      */
     static cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
     CustomDeviceFactory::setDataCallback([](const p_data_t* data) {

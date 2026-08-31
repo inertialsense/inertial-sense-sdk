@@ -76,16 +76,15 @@ Note these are local to this folder.
 
 #### SDK Files
 
-* [com_manager.h](../../../src/com_manager.h)
-* [core/base_port.h](../../../src/core/base_port.h)
-* [core/msg_logger.h](../../../src/core/msg_logger.h)
-* [DeviceFactory.h](../../../src/DeviceFactory.h)
-* [DeviceManager.h](../../../src/DeviceManager.h)
-* [ISDevice.h](../../../src/ISDevice.h)
-* [ISDisplay.h](../../../src/ISDisplay.h)
-* [ISUtilities.h](../../../src/ISUtilities.h)
-* [PortFactory.h](../../../src/PortFactory.h)
-* [PortManager.h](../../../src/PortManager.h)
+* [core/base_port.h](../../src/core/base_port.h)
+* [core/msg_logger.h](../../src/core/msg_logger.h)
+* [DeviceFactory.h](../../src/DeviceFactory.h)
+* [DeviceManager.h](../../src/DeviceManager.h)
+* [ISDevice.h](../../src/ISDevice.h)
+* [ISDisplay.h](../../src/ISDisplay.h)
+* [ISUtilities.h](../../src/ISUtilities.h)
+* [PortFactory.h](../../src/PortFactory.h)
+* [PortManager.h](../../src/PortManager.h)
 
 
 Note file name list entries relative to SDK `src/` folder, with local relative path linked.
@@ -116,12 +115,10 @@ bool step() override;
 int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
 ```
 
-For this demonstration, we also add an optional configuration function to set up our device and select the data we want to see, as well as a universal callback to our application for displaying the data to the terminal:
+For this demonstration, we also add an optional configuration function to set up our device and select the data we want to see, as well as a universal callback to our application for displaying the data we get from our devices to the terminal:
 ```c++
- /** an optional configuration function to set up our device and pick the data we want to see, etc */
 bool configure();
     
-/** custom optional hook invoked each data message this device receives, to send data back to app */
 std::function<void(const p_data_t* data)> onDataReceived;
 ```
 
@@ -206,13 +203,25 @@ static const is_hardware_t IS_HARDWARE_GPX_1_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE
 //etc
 ```
 
-If the ident matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing this one function that is a few lines long for this new device factory, so we will leave it here in the header rather than create a separate .cpp file. 
+If the ident matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing these functions, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
+
+We also want every device this factory allocates to share the same data-received sink, without the device itself knowing anything about what that sink is (e.g. a display, a logger, etc). We do this with a `static` callback member, `s_dataCallback`, set once by the application via `setDataCallback()`, and copied into each device's `onDataReceived` as it's allocated:
 ```C++
+static void setDataCallback(std::function<void(const p_data_t* data)> cb) {
+   s_dataCallback = std::move(cb);
+}
+
+private:
+inline static std::function<void(const p_data_t* data)> s_dataCallback;
+
 device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
 
    /** When we find IMX-5 dev info, we know we want to allocate a new custom device */
-   if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
-      return std::make_shared<CustomRobotDevice>(devInfo, port);
+   if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0) {
+      auto device = std::make_shared<CustomRobotDevice>(devInfo, port);
+      device->onDataReceived = s_dataCallback;   // every device shares the same sink the application provides
+      return device;
+   }
 
    return nullptr;
 }
@@ -257,7 +266,7 @@ int main(int argc, const char** argv) {
 
 
 ### Step 5: Incorporate Logging
-The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our `ISDevice` extension in CustomRobotDevice.cpp.  The [msg_logger.h](../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  It writes to the file local to the executable called `inertial_sense.log`.  Log commands can be added like so, from a line in CustomVirtualPortFactory.cpp:
+The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our `ISDevice` extension in CustomRobotDevice.cpp.  The [msg_logger.h](../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  It writes to the file local to the executable called `inertial_sense.log`.  Log commands can be added like so, from a line in CustomRobotDevice.cpp:
 
 ```C++
 log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Stop Broadcasts\" request." );
@@ -280,7 +289,7 @@ pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager 
 DeviceManager& dm = DeviceManager::getInstance();
 dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 ```
-Note that for demonstration purposes we make use of the SDK's `ISDisplay`, for data display formatting to the terminal, and set the callback function to bring all data received by our custom devices to the application, for all devices the factory allocates. `isDisplay` is declared `static` so its lifetime extends past `main_discovery()`:
+Note that for demonstration purposes we make use of the SDK's `ISDisplay`, for data display formatting to the terminal, and set the callback function to bring all data received by our custom devices to the application, for all devices the factory allocates:
 ```c++
 static cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
 CustomDeviceFactory::setDataCallback([](const p_data_t* data) {
@@ -328,7 +337,7 @@ while ( portIsOpened(device->port) ) {
    ```
 2. Create build directory
    ```bash
-   cd inertial-sense-sdk/ExampleProjects/CustomPort/CustomVirtual
+   cd inertial-sense-sdk/ExampleProjects/CustomRobotDevice
    mkdir build
    ```
 3. Run cmake from within build directory
