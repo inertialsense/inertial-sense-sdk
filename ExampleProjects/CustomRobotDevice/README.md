@@ -251,7 +251,7 @@ int main(int argc, const char** argv) {
 
     if (argc > 2)
     {
-        printf("Usage: No argument allows automatic port discovery based on universal pattern.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)\r\n");
+        std::cout << "Usage: No argument allows automatic port discovery based on universal pattern.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)" << std::endl;
 //...
 ```
 

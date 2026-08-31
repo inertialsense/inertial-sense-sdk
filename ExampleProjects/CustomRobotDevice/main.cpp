@@ -105,15 +105,15 @@ int main_discovery(const char* portPattern)
         return -2;
     }
 
-    printf("Found and connected %zu IMX device(s) on port(s): \r\n", dm.DeviceCount());
+    std::cout << "Found and connected " << dm.DeviceCount() << " IMX device(s) on port(s): " << std::endl;
     for (const auto& dev : dm.getDevices()) {
-        printf(" %s\r\n", dev->getPortName().c_str());
+        std::cout << " " << dev->getPortName() << std::endl;
     }
-    printf("\r\n");
+    std::cout << std::endl;
 
 
     if ( !device->configure() ) {
-        printf("Configuration fail\r\n");
+        std::cout << "Configuration fail" << std::endl;
         return -3;
     }
 
@@ -143,18 +143,18 @@ int main(int argc, const char** argv) {
 
     if (argc > 2)
     {
-        printf("Usage: No argument allows automatic port discovery based on universal pattern.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)\r\n");
+        std::cout << "Usage: No argument allows automatic port discovery based on universal pattern.  Or if desired, a single argument selects the port (i.e. /dev/ttyACM0)" << std::endl;
         return -1;
     }
 
-    printf("CustomRobotDevice example application started (ctrl+C or ctrl+\\ to quit)");
+    std::cout << "CustomRobotDevice example application started (ctrl+C or ctrl+\\ to quit)";
     if (argc == 2) {
         portPattern = argv[1];
-        printf(", attempting to use port %s", portPattern);
+        std::cout << ", attempting to use port " << portPattern;
     }
     else
-        printf(", attempting port discovery");
-    printf("\r\n");
+        std::cout << ", attempting port discovery";
+    std::cout << std::endl;
 
     return main_discovery(portPattern);
 } //main
