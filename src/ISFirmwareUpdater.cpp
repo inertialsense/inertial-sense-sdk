@@ -396,7 +396,14 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
         LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote asked to slow down after %u chunks; chunk delay now %ums",
                             (unsigned)sustained, chunkDelay);
 
-        return fwUpdate_sendNextChunk();
+        // Honour the pace that was just derived, rather than sending immediately. Sending here
+        // bypasses the nextChunkSend gate that fwUpdate_step() consults -- and it is the ONLY reader
+        // of that gate -- so a target that refuses again is answered one round trip later, at which
+        // point the delay is raised again and sent through immediately again. Measured: at a 503ms
+        // derived delay the requests arrived 88ms apart, the delay climbing 1ms each time and
+        // throttling nothing. Scheduling instead makes the derived rate the rate.
+        nextChunkSend = current_ms + chunkDelay;
+        return true;
     }
 
     // Any other resend means this target could not take the data at the rate it was offered, but
@@ -738,6 +745,14 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
 
+    // Arm the pace BEFORE the local-device branch below returns. A device updater living in this
+    // process is still being sent to, and it is the one that most needs pacing: it accepts a message
+    // the instant it is handed one, so nothing else throttles the stream. Left after that early
+    // return, chunkDelay was computed, logged and never applied for ISB, DFU or any other in-process
+    // updater -- fwUpdate_step()'s gate stayed permanently open and chunks went out as fast as it was
+    // called. Measured before this: 7 chunks in 71ms against a 226ms derived delay.
+    nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
+
     if (deviceUpdater != nullptr) {
         bool result = deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
         if (!toHost.empty()) // check for any responses
@@ -753,8 +768,6 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
         }
     }
     // TODO: end
-
-    nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
 
     port_handle_t preferredPort = portIsOpened(device->port) ? device->port : (portIsOpened(port) ? port : nullptr);
     int result = comManagerSendData(preferredPort, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
@@ -1313,11 +1326,22 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                 pingTimeoutExpires = 0;
             }
 
-            // Set useAlternateMD5 for legacy firmware compatibility (only needed for GPX 2.0.0)
-            if (target_devInfo && remoteDevInfo.firmwareVer[0] == 2 && remoteDevInfo.firmwareVer[1] == 0 && remoteDevInfo.firmwareVer[2] == 0)
+            // The deprecated alternate MD5 is for legacy GPX-1.0 firmware and nothing else.
+            //
+            // It must be opted into on POSITIVE evidence, never by default: the device side has no
+            // alternate path at all -- fwUpdate_handleChunk() always accumulates with the standard
+            // md5_update() -- so declaring an alternate hash guarantees ERR_CHECKSUM_MISMATCH for
+            // every target that does not implement it. Defaulting to it for an unreadable version was
+            // therefore not "safe"; it turned a failed version probe into a failed update, which is
+            // how a directly-attached Septentrio failed after transferring all 2.95 MB correctly
+            // (SN-8553).
+            const bool isGpx10 = target_devInfo &&
+                                 (remoteDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX) &&
+                                 (remoteDevInfo.hardwareVer[0] == 1) && (remoteDevInfo.hardwareVer[1] == 0);
+            const bool fwAtMost20 = (remoteDevInfo.firmwareVer[0] < 2) ||
+                                    ((remoteDevInfo.firmwareVer[0] == 2) && (remoteDevInfo.firmwareVer[1] == 0));
+            if (isGpx10 && fwAtMost20)
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
-            else if (!target_devInfo)
-                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;  // unknown version, use alternate MD5 for safety
         }
 
         // If the target is a MAIN MCU in bootloader mode, the app firmware version is
