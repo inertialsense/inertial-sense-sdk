@@ -446,6 +446,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                 devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
                 devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
                 memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
+                markDevInfoConfirmed();     // a full version frame is a real answer from the bootloader
                 return true;
             }
         }
@@ -456,6 +457,10 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     return false;
 }
 
+
+void ISDevice::markDevInfoConfirmed() {
+    devInfoConfirmedMs = current_timeMs();
+}
 
 bool ISDevice::validate(uint32_t timeout) {
     // validate() is its own blocking implementation rather than a wrapper around validateAsync(), so
@@ -488,6 +493,7 @@ bool ISDevice::validate(uint32_t timeout) {
     is_hardware_t oldHdwId = hdwId;
     dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
+    clearDevInfoConfirmed();                    // and nothing below may report success on the old value
 
     bool hasDevInfo = hasDeviceInfo();
     queryType nextQueryType = (hint && hint->hdwRunState == HDW_STATE_BOOTLOADER)
@@ -554,6 +560,10 @@ bool ISDevice::validate(uint32_t timeout) {
         hasDevInfo = hasDeviceInfo();
     } while (!hasDevInfo);
 
+    // The loop above only exits when hasDeviceInfo() became true, and inside validate() that can only
+    // have come from a parsed response -- devInfo was zeroed on entry.
+    markDevInfoConfirmed();
+
     fn.mark("Finished validating.");
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Validation finished: %s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout, hasDevInfo ? "SUCCESS" : "FAILURE");
 
@@ -593,7 +603,12 @@ int ISDevice::validateAsync(uint32_t timeout) {
 
     uint32_t now = current_timeMs();
     FnProfiler fn("ISDevice::validateAsync() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    if (hasDeviceInfo()) {
+    // A complete devInfo is not evidence that the device answered: DeviceFactory::beginValidation()
+    // seeds devInfo from a discovery hint, and RelayPortFactory's hint carries hdwRunState and
+    // protocolVer -- every field hasDeviceInfo() inspects. Success therefore also requires a
+    // confirmation from an actual response, so that an unresponsive port cannot validate and a cached
+    // run state cannot stand in for a live one.
+    if (hasDeviceInfo() && (devInfoConfirmedMs != 0)) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         // log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs);
         validationStartMs = 0;
@@ -1608,6 +1623,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
+            markDevInfoConfirmed();
             break;
         case DID_GPX_DEV_INFO:
             gpxDevInfo = *(dev_info_t*)data->ptr;
@@ -1691,6 +1707,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
             {
             case IS_HARDWARE_TYPE_IMX:
                 devInfo = info;
+                markDevInfoConfirmed();
                 break;
 
             case IS_HARDWARE_TYPE_GPX:
@@ -1698,6 +1715,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
                     devInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
                 {   // Populate if device info is not set or GPX
                     devInfo = info;
+                    markDevInfoConfirmed();     // only when devInfo itself was populated, not gpxDevInfo alone
                 }
                 gpxDevInfo = info;
                 break;
@@ -1788,8 +1806,10 @@ bool ISDevice::connect(bool revalidate, uint32_t openTimeoutMs) {
     imxFlashCfgUploadChecksum = 0;
     gpxFlashCfgUploadChecksum = 0;
 
-    if (revalidate)
+    if (revalidate) {
         devInfo.hdwRunState = HDW_STATE_UNKNOWN; // this will further reinforce a validation
+        clearDevInfoConfirmed();                 // a caller asking to revalidate is telling us the old answer is suspect
+    }
 
     bool alreadyOpened = portIsOpened(port);
     if (!alreadyOpened) {

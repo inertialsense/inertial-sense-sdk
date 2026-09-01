@@ -248,7 +248,13 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         }
 
         if (device->isConnected()) {
-            if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
+            // The device's run state is what this phase waits to see change, so a complete devInfo is
+            // not evidence about it. Over a relay, devInfo can be seeded entirely from the
+            // bridgeboard's cached announcement (DeviceFactory::beginValidation()); that announcement
+            // predates the reset -- so it still says APP for a device now sitting in ISbl -- and it is
+            // not refreshed while the port stays bound to the same endpoint. Gate on a confirmation
+            // newer than the reset, so this wait ends only on something the device answered.
+            if ((device->devInfoConfirmedAt() < last_reboot) && (device->validateAsync() != 1))
                 return true;    // we'll keep in our current state until we can validate the device
 
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
@@ -728,14 +734,33 @@ bool ISBFirmwareUpdater::rebootToISB()
         if (device->SendRaw(":020000040500F5", 15) == 15)
             return true;
     } else if (device->devInfo.hdwRunState == HDW_STATE_APP) {
-        // In case we are in program mode, try and send the commands to go into bootloader mode
+        // In case we are in program mode, try and send the commands to go into bootloader mode.
+        //
+        // Mind the two return conventions, neither of which reads the way the call site suggests:
+        // SendNmea() returns a BYTE COUNT (negative on a port error), while SetSysCmd() returns 0 on
+        // success and -1 on failure. Each is tested against what it actually returns; the SYS_CMD is
+        // the fallback for an NMEA write the port would not take.
+        //
+        // A failed write is ambiguous rather than fatal: on USB-CDC the device can drop the port as it
+        // reboots, so a write failing is one of the normal ways for this to have worked. Proceed either
+        // way, but record which command the port accepted.
+        bool nmeaSent = false, sysCmdSent = false;
         for (size_t loop = 0; loop < 3; loop++) {
-            if (device->SendNmea("STPB") && device->SendNmea("BLEN"))
-                break;        // If the write fails, assume the device got our command and rebooted
+            nmeaSent = (device->SendNmea("STPB") > 0) && (device->SendNmea("BLEN") > 0);
+            if (nmeaSent)
+                break;
 
             SLEEP_MS(10);
-            if (device->SetSysCmd(SYS_CMD_ENABLE_BOOTLOADER_AND_RESET))
+            sysCmdSent = (device->SetSysCmd(SYS_CMD_ENABLE_BOOTLOADER_AND_RESET) == 0);
+            if (sysCmdSent)
                 break;
+        }
+
+        if (!nmeaSent && !sysCmdSent) {
+            // Not proof of failure (see above), but the only case in which nothing we sent was
+            // accepted -- worth saying out loud when a device then never appears in ISbl.
+            log_debug(IS_LOG_FWUPDATE, "(ISB) No reset-to-ISbl command was accepted by the port for %s; proceeding anyway, since a port dropped by a rebooting device looks the same.",
+                      device->getIdAsString().c_str());
         }
 
         last_reboot = current_timeMs();
@@ -754,6 +779,7 @@ bool ISBFirmwareUpdater::rebootToISB()
 
     // we never received a valid response.  We are in an unknown state.
     device->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+    device->clearDevInfoConfirmed();    // whatever devInfo held described the device before this reset
     return false;
 }
 
