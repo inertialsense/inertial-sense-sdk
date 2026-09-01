@@ -672,7 +672,7 @@ typedef struct PACKED
 
     uint32_t        serialNumber;                              //!< Serial number
 
-    uint8_t         hardwareVer[4];                            //!< Hardware version
+    uint8_t         hardwareVer[4];                            //!< Hardware version: [0]=major, [1]=minor, [3]=IMU population type on IMX-6 (see eImx6ImuPopulationType)
 
     uint8_t         firmwareVer[4];                            //!< Firmware (software) version
 
