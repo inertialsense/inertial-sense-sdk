@@ -654,23 +654,6 @@ enum eBuildFlags {
     BUILD_FLAGS_DIRTY   = 0x2,  //!< Firmware was built from a working tree with uncommitted local changes
 };
 
-/** @brief IMX-6 IMU population type, stored in dev_info_t.hardwareVer[3]. Identifies which qualified
- *  IMU part occupies each of the 5 physical IMU slots (slot order matches DID_SENSORS_IMU/imu[]).
- */
-enum eImx6ImuPopulationType {
-    IMX6_IMU_POP_TYPE_0       = 0,     //!< All 5 slots LSM6SV16BX
-    IMX6_IMU_POP_TYPE_1       = 1,     //!< All 5 slots ISM6HG256X
-    IMX6_IMU_POP_TYPE_2       = 2,     //!< All 5 slots ISM330DHCX
-    IMX6_IMU_POP_TYPE_3       = 3,     //!< Slots 0,2,4 ISM6HG256X; slots 1,3 ISM330DHCX
-    IMX6_IMU_POP_TYPE_4       = 4,     //!< Slots 0,2,4 ISM6HG256X; slots 1,3 ICM-56686
-    IMX6_IMU_POP_TYPE_5       = 5,     //!< All 5 slots ICM-56686
-    IMX6_IMU_POP_TYPE_6       = 6,     //!< Slots 0,2,4 ISM330DHCX; slots 1,3 ICM-56686
-
-    IMX6_IMU_POP_TYPE_COUNT   = 7,     //!< Count of qualified population types. Keep last
-
-    IMX6_IMU_POP_TYPE_UNKNOWN = 0xFF,  //!< Detected slot combination doesn't match any qualified type
-};
-
 /**
  * @brief (DID_DEV_INFO) Device information: identifies the connected device's hardware, firmware
  * build, and manufacturer. Reported once at connection and after firmware updates; use
