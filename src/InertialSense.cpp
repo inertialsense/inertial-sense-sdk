@@ -995,8 +995,18 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t fi
         // taking the two in that order here and the opposite order elsewhere is how a deadlock starts.
         for (auto port : ports)
         {
-            if (deviceManager.getDevice(port) == nullptr)
-                deviceManager.registerNewDevice(port);
+            if (deviceManager.getDevice(port) != nullptr)
+                continue;
+
+            device_handle_t device = deviceManager.registerNewDevice(port);
+            if (device)
+            {
+                // A caller that disabled validation is saying the far end may not speak ISB at all, so
+                // the device must not keep trying to identify itself: each attempt writes probe traffic
+                // to the link and consumes what comes back, which on a port whose data belongs to
+                // something else takes the bytes that reader was waiting for.
+                device->disableValidation();
+            }
         }
 
         log_info(IS_LOG_FACILITY_NONE, "Device validation disabled; bound %lu unvalidated device(s) to %lu port(s).",
