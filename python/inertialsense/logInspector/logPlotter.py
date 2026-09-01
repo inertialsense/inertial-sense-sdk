@@ -3353,9 +3353,9 @@ class logPlot:
                 for n, pqr in enumerate(initial_sensors):
                     if np.all(pqr) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx]))
+                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
                         for i in range(3):
-                            f.write('%f,' % (sumARW[i][n][idx]))
+                            f.write('%f,' % (sumARW[i][n][idx] if idx < len(sumARW[i][n]) else 0.0))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
@@ -3452,9 +3452,9 @@ class logPlot:
                 for n, acc in enumerate(initial_sensors):
                     if np.all(acc) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx]))
+                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
                         for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][idx]))
+                            f.write('%f,' % (sumRW[i][n][idx] if idx < len(sumRW[i][n]) else 0.0))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
