@@ -243,7 +243,6 @@ private:
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
     uint64_t lastMissingTargetId = 0;       //!< last target unique-id that fwUpdate_step() failed to locate; throttles the (verbose) lookup-failure diagnostic to one report per distinct id
     uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
-    uint32_t nextIsblProbeMs = 0;           //!< throttles the dedicated ISbl probe during the wait for ISbl; see fwUpdate_step()
     uint32_t isblPhaseStartMs = 0;          //!< when the wait for ISbl FIRST began; unlike last_reboot this survives
                                             //!< the phase's own retries, so it can bound the whole phase
     uint32_t nextStepMs = 0;                //!< if this time exceeds the current clock (current_timeMs()) fwUpdate_step() will return immediately until this elapses

@@ -36,19 +36,6 @@
  */
 #define ISB_ISBL_PHASE_BUDGET_MS         60000u
 
-/**
- * Budget handed to the dedicated ISbl probe while waiting for a device to arrive in its bootloader.
- *
- * Must fit a FULL autobaud burst. A bootloader entered from APP is unsynchronized and needs its 'U'
- * burst once; BOOTLOADER_HANDSHAKE_COUNT (50) at BOOTLOADER_HANDSHAKE_DELAY (10 ms) costs ~500 ms
- * before the version query that confirms the sync, and queryIsblVersionFrame() derives its schedule
- * from this budget and truncates the burst to whatever remains.
- */
-#define ISB_ISBL_PROBE_BUDGET_MS          1500u
-
-/** How often the probe above may run. It blocks for up to its budget, so it must not run every step. */
-#define ISB_ISBL_PROBE_INTERVAL_MS        2000u
-
 
 /**
  * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -263,18 +250,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         if (device->isConnected()) {
             if (!device->hasDeviceInfo() && (device->validateAsync() != 1))
                 return true;    // we'll keep in our current state until we can validate the device
-
-            // This phase is waiting for one specific thing -- the device to appear in ISbl -- so probe for
-            // that directly rather than leaving it to the general round-robin. validate()/validateAsync()
-            // hand queryDeviceInfoISbl() only ~250 ms as one step among NMEA and ISB, and
-            // queryIsblVersionFrame() sizes its autobaud burst from that budget, truncating it well below
-            // the ~500 ms a full burst costs. A bootloader entered from APP has not been synchronized yet
-            // and needs that burst once, so a truncated one leaves the device sitting in ISbl, answering
-            // nothing, while this wait runs out.
-            if ((device->devInfo.hdwRunState != HDW_STATE_BOOTLOADER) && (current_timeMs() >= nextIsblProbeMs)) {
-                nextIsblProbeMs = current_timeMs() + ISB_ISBL_PROBE_INTERVAL_MS;
-                device->queryDeviceInfoISbl(ISB_ISBL_PROBE_BUDGET_MS);
-            }
 
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
