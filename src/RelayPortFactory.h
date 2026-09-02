@@ -75,6 +75,8 @@ public:
     struct DeviceRecord {
         std::string  portUrl;       //!< tcp://host:port — the actual port to bind/connect
         dev_info_t   hint = {};     //!< bridgeboard-authoritative device info for seedDeviceHint()
+        bool         hasTcpClient = false;  //!< a client currently holds this device's slot
+        bool         listening = true;      //!< the relay is offering this slot at all
     };
 
     /**
@@ -138,6 +140,31 @@ public:
      * @return a RelayHostStatus snapshot for every known relay host
      */
     std::vector<RelayHostStatus> getRelayHosts() const;
+
+    // -- Per-device status snapshot (returned by getRelayDevices()) --
+    /**
+     * One device as the relay currently reports it, including whether its slot is already taken.
+     *
+     * A device slot takes one client, first-wins, and the bridgeboard accepts a second client before
+     * closing it -- so portOpen() succeeds and the refusal surfaces only later, as ECONNRESET on the
+     * first read. Occupancy therefore cannot be judged by trying to connect, and trying would claim the
+     * slot from whoever holds it. The relay reports it per device with no client attached, which is the
+     * only way to ask the question without answering it destructively.
+     */
+    struct RelayDeviceStatus {
+        std::string relayUrl;               //!< the relay host reporting this device
+        std::string portUrl;                //!< tcp://host:port for this device's slot
+        dev_info_t  hint = {};              //!< announced identity -- a claim, not an answer; see DeviceFactory::beginValidation()
+        bool        hasTcpClient = false;   //!< a client currently holds this slot
+        bool        listening = true;       //!< the relay is offering this slot
+    };
+
+    /**
+     * @return every device reported by every ENABLED relay host, with its current occupancy.
+     *
+     * Serves the cached view maintained by the poll/SSE feed, so it performs no I/O and opens nothing.
+     */
+    std::vector<RelayDeviceStatus> getRelayDevices() const;
 
     /**
      * Turns automatic mDNS relay-host discovery on or off. Enabled by default.
