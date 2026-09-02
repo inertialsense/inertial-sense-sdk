@@ -54,7 +54,6 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                     // forcing full revalidation via Phase 2+3.
                     d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
                     memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
-                    d->clearDevInfoConfirmed();     // a forced revalidation must not be satisfiable by the previous answer
                 } else {
                     if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
                         portClose(port);

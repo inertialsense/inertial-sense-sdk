@@ -111,11 +111,6 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
     if (hint && hint->serialNumber != 0 && hint->hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
         ctx->device->devInfo = *hint;
         ctx->device->hdwId = ENCODE_DEV_INFO_TO_HDW_ID((*hint));
-        // A hint is not a confirmation, so keep it out of that bookkeeping. This matters most when
-        // sharedDevice is an EXISTING device: the copy above replaces a devInfo that a real probe may
-        // have confirmed, so the confirmation must go with it -- otherwise the device keeps vouching
-        // for whatever the hint claims.
-        ctx->device->clearDevInfoConfirmed();
         // DEBUG, not INFO: DeviceManager::discoverDevices() calls beginValidation() once per
         // registered device factory for every port, so this emits (ports x factories) lines on every
         // discovery pass -- e.g. 28 lines per sweep on a 14-device testbed with two factories
