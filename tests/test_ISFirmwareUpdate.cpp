@@ -333,6 +333,12 @@ public:
         if (msg.data.req_resend.session_id != session_id)
             return false; // ignore this message, it's not for us
 
+        // The pause form (see fwUpdate_processMessage()) names no chunk to send -- next_chunk_id is
+        // left untouched by the dispatcher, and sending is held until a later resume names a real
+        // chunk id. Mirrors ISFirmwareUpdater's real handling of the same message.
+        if (msg.data.req_resend.chunk_id == fwUpdate::CHUNK_ID_PAUSE)
+            return true;
+
         next_chunk_id = msg.data.req_resend.chunk_id;
         // the reason doesn't really matter, but we might want to write it to a log or something?
         // TODO: LOG msg.data.req_resend.reason
@@ -770,6 +776,76 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
 
     // finally, we should have a status FINISHED
     EXPECT_EQ(fuSDK.fwUpdate_getSessionStatus(), fwUpdate::FINISHED) << "Actual result was: " << fuSDK.fwUpdate_getSessionStatusName() << std::endl;
+}
+
+TEST(ISFirmwareUpdate, exchange__flow_control_pause_resume)
+{
+    // Covers the device-driven flow-control mechanism (REASON_TOO_FAST / CHUNK_ID_PAUSE): a device
+    // that can't take data this fast asks the host to pause, and later lifts it by naming a real
+    // chunk to resume from (see FirmwareUpdateHost::fwUpdate_processMessage() /
+    // fwUpdate_sendNextChunk() in protocol/FirmwareUpdate.cpp). Injects both messages directly,
+    // the same way exchange__req_resend mucks with the exchange buffer, since there's no device
+    // driver in this repo that emits REASON_TOO_FAST on its own.
+    initialize_md5();
+    static uint8_t buffer[2048];
+
+    eb.flush();
+    ISFirmwareUpdateTestHost fuSDK(eb);
+    ISFirmwareUpdateTestDev fuDev(eb);
+    fuDev.sendProgressUpdates = false;
+
+    int imageSize = fuSDK.MaxChunkSize * 8;
+    fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
+    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, real_md5);
+
+    fuDev.pullAndProcessNextMessage();
+    fuSDK.fwUpdate_step();
+    EXPECT_EQ(fuSDK.fwUpdate_getSessionStatus(), fwUpdate::READY);
+
+    // Send the first two chunks normally (no device on the other end to consume them -- just
+    // drain the exchange buffer directly) to get next_chunk_id to a known, nonzero value.
+    fuSDK.fwUpdate_sendNextChunk();
+    eb.flush();
+    fuSDK.fwUpdate_sendNextChunk();
+    eb.flush();
+    EXPECT_EQ(fuSDK.fwUpdate_getNextChunkID(), 2);
+
+    // Device asks the host to pause: no chunk named, sending is held indefinitely.
+    fwUpdate::payload_t pauseMsg;
+    pauseMsg.hdr.target_device = fwUpdate::TARGET_HOST;
+    pauseMsg.hdr.msg_type = fwUpdate::MSG_REQ_RESEND_CHUNK;
+    pauseMsg.data.req_resend.session_id = fuSDK.fwUpdate_getSessionID();
+    pauseMsg.data.req_resend.chunk_id = fwUpdate::CHUNK_ID_PAUSE;
+    pauseMsg.data.req_resend.reason = fwUpdate::REASON_TOO_FAST;
+
+    int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), pauseMsg);
+    ASSERT_TRUE(eb.writeData(buffer, packed_size));
+    EXPECT_TRUE(fuSDK.fwUpdate_step());
+
+    // Paused: next_chunk_id must be untouched, and an explicit send attempt must not put anything
+    // on the wire -- it reports the remaining chunk count (not 0), so a caller can't mistake a
+    // pause for "nothing left to send".
+    EXPECT_EQ(fuSDK.fwUpdate_getNextChunkID(), 2);
+    int remaining = fuSDK.fwUpdate_sendNextChunk();
+    EXPECT_GT(remaining, 0);
+    EXPECT_EQ(eb.dataAvailable(), 0) << "no chunk should have been sent while paused";
+
+    // Device names a real chunk to resume from (REASON_NONE, the same reason fwUpdate_resumeChunks()
+    // sends) -- this both lifts the pause and rewinds the host back to that chunk.
+    fwUpdate::payload_t resumeMsg;
+    resumeMsg.hdr.target_device = fwUpdate::TARGET_HOST;
+    resumeMsg.hdr.msg_type = fwUpdate::MSG_REQ_RESEND_CHUNK;
+    resumeMsg.data.req_resend.session_id = fuSDK.fwUpdate_getSessionID();
+    resumeMsg.data.req_resend.chunk_id = 2;
+    resumeMsg.data.req_resend.reason = fwUpdate::REASON_NONE;
+
+    packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), resumeMsg);
+    ASSERT_TRUE(eb.writeData(buffer, packed_size));
+    EXPECT_TRUE(fuSDK.fwUpdate_step());
+
+    // Resumed: chunk 2 should now be on the wire, and next_chunk_id has advanced past it.
+    EXPECT_EQ(fuSDK.fwUpdate_getNextChunkID(), 3);
+    EXPECT_GT(eb.dataAvailable(), 0) << "chunk 2 should have been sent once resumed";
 }
 
 TEST(ISFirmwareUpdate, exchange__invalid_checksum)

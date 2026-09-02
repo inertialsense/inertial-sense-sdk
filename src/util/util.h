@@ -333,6 +333,36 @@ namespace utils {
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
 
     /**
+     * Bits controlling getFirmwareInfoAsString(). Canonical here; ISDevice::DevInfoFormatFlags
+     * aliases these so the two cannot drift, and the values are fixed because callers pass them.
+     */
+    enum devFirmwareInfoFlags_e : uint16_t {
+        FWI_COMPACT_BUILD_TYPE = 0x0010,  //!< render the build type as one character instead of a word
+        FWI_OMIT_COMMIT_HASH   = 0x0100,  //!< suppress the commit hash and dirty marker
+        FWI_OMIT_BUILD_KEY     = 0x0200,  //!< suppress the build host key and number
+        FWI_OMIT_BUILD_DATE    = 0x0400,  //!< suppress the build date
+        FWI_OMIT_BUILD_TIME    = 0x0800,  //!< suppress the build time
+        FWI_OMIT_BUILD_MILLIS  = 0x1000,  //!< suppress build milliseconds when non-zero
+    };
+
+    /**
+     * Renders firmware version and build provenance: the long form behind ISDevice::getFirmwareInfo().
+     *
+     * The version portion is getFirmwareAsString(), so the short and long forms cannot disagree about
+     * how a version is spelled.
+     *
+     * A device reported as running its bootloader is rendered by what is actually executing. Only an
+     * Inertial Sense main MCU runs "ISbl"; a peripheral in this state is in its OWN loader -- a u-blox
+     * receiver in safeboot, a CXD in its updater -- and naming that ISbl asserts something untrue,
+     * while the version shown is that loader's own rather than an ISbl version.
+     *
+     * @param devInfo the device info to render
+     * @param flags a devFirmwareInfoFlags_e bitmask
+     * @return the formatted string
+     */
+    std::string getFirmwareInfoAsString(const dev_info_t& devInfo, uint16_t flags = 0);
+
+    /**
      * Renders the requested build-related fields of devInfo (commit hash, build key/number,
      * build date, build time) as a single delimited string, per the DV_BIT_ flags requested.
      * @param devInfo the dev_info_t supplying the build fields
@@ -412,9 +442,27 @@ namespace utils {
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
 
     /**
-     * @return the current system clock as a string with millisecond precision
+     * Which parts of the current time getCurrentTimestamp() should render.
+     *
+     * A caller writing to a persistent file usually wants the date; one writing a live line to a
+     * console usually does not, and one whose output is about to be wrapped by another layer that
+     * timestamps it may want no timestamp at all. MICROS wins over MILLIS if both are given.
      */
-    std::string getCurrentTimestamp();
+    enum eTimestampOpts : uint32_t {
+        TIMESTAMP_DATE      = 0x01,     //!< the "YYYY-MM-DD " portion
+        TIMESTAMP_TIME      = 0x02,     //!< the "HH:MM:SS" portion
+        TIMESTAMP_MILLIS    = 0x04,     //!< fractional seconds to 3 places
+        TIMESTAMP_MICROS    = 0x08,     //!< fractional seconds to 6 places, matching msg_logger
+    };
+
+    /** What getCurrentTimestamp() renders when asked for nothing in particular. */
+    constexpr uint32_t TIMESTAMP_OPTS_DEFAULT = (TIMESTAMP_DATE | TIMESTAMP_TIME | TIMESTAMP_MILLIS);
+
+    /**
+     * @param opts an eTimestampOpts bitmask selecting which parts to render
+     * @return the current system clock as a string, by default "YYYY-MM-DD HH:MM:SS.mmm"
+     */
+    std::string getCurrentTimestamp(uint32_t opts = TIMESTAMP_OPTS_DEFAULT);
 
     /**
      * Formats a string representation of devInfo, in the specific format also understood by

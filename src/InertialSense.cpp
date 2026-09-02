@@ -971,6 +971,47 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t fi
             log_error(IS_LOG_FACILITY_NONE, "Timeout waiting to validate %lu ports: %s.", portsToValidate.size(), names.c_str());
         }
     }
+    else
+    {
+        // Validation disabled: bind a device to each port without probing it.
+        //
+        // An ISDevice wraps a port for ISB comms; it does not require the far end to speak ISB, and a
+        // caller that asked not to validate still needs devices to address -- DeviceCount() is what
+        // most consumers gate on, and this function already reports success on ports alone when
+        // validation is off. Without this, Open() succeeds while every device-based consumer sees
+        // nothing, which is indistinguishable from a dead link.
+        //
+        // registerNewDevice() allocates through the registered factories and binds the device to the
+        // port with an unknown hardware id, which is all an unprobed port can honestly claim. It also
+        // registers directly rather than through registerDevice(), whose de-duplication keys on
+        // hardware id and serial number -- both of which are unset here, so every port after the
+        // first would otherwise be discarded as a duplicate.
+        std::vector<port_handle_t> ports;
+        for (auto port : portManager.locked_range())
+            ports.push_back(port);
+
+        // The ports are collected before registering rather than registered inside the iteration: the
+        // range holds the PortManager mutex and registerNewDevice() takes the DeviceManager's, and
+        // taking the two in that order here and the opposite order elsewhere is how a deadlock starts.
+        for (auto port : ports)
+        {
+            if (deviceManager.getDevice(port) != nullptr)
+                continue;
+
+            device_handle_t device = deviceManager.registerNewDevice(port);
+            if (device)
+            {
+                // A caller that disabled validation is saying the far end may not speak ISB at all, so
+                // the device must not keep trying to identify itself: each attempt writes probe traffic
+                // to the link and consumes what comes back, which on a port whose data belongs to
+                // something else takes the bytes that reader was waiting for.
+                device->disableValidation();
+            }
+        }
+
+        log_info(IS_LOG_FACILITY_NONE, "Device validation disabled; bound %lu unvalidated device(s) to %lu port(s).",
+                 deviceManager.size(), portManager.size());
+    }
 
     // request extended device info for remaining connected devices...
     for (auto device : deviceManager) {
