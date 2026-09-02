@@ -300,6 +300,19 @@ class logInspectorInternal(LogInspectorWindow):
         if 'linux' in sys.platform:
             subprocess.Popen(['gedit', filename])
 
+    def changeShowReferenceCheckbox(self, state):
+        enabled = (state == int(Qt.CheckState.Checked))
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableReference(enabled)
+        self.updatePlot()
+
+    def changeShowUcalCheckbox(self, state):
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableUcal(state)
+                self.updatePlot()
+
     def TestImx(self):
         directory = self.selectedDirectory()
         if self.isLogDirectory(directory):
@@ -358,6 +371,18 @@ class logInspectorInternal(LogInspectorWindow):
         self.addButton('Devices', self.chooseDevs, layout=self.VLayoutOptions2, tooltip="Show/Hide devices")
         self.addButton('IMX Test', self.TestImx, layout=self.LayoutVTests, tooltip="Run IMX Test")
         self.addButton('GPX Test', self.TestGpx, layout=self.LayoutVTests, tooltip="Run GPX Test")
+
+        self.showReference = QCheckBox("Reference", self)
+        self.showReference.setToolTip("Show reference and Sensor Valid lines on SComp v Temp plots")
+        self.showReference.setChecked(False)
+        self.showReference.stateChanged.connect(self.changeShowReferenceCheckbox)
+        self.VLayoutOptions3.addWidget(self.showReference)
+
+        self.showUcal = QCheckBox("UCAL", self)
+        self.showUcal.setToolTip("Show DID_SENSORS_UCAL data on SComp v Temp plots")
+        self.showUcal.setChecked(False)
+        self.showUcal.stateChanged.connect(self.changeShowUcalCheckbox)
+        self.VLayoutOptions3.addWidget(self.showUcal)
 
         self.reprocess = QCheckBox("Reprocess", self)
         self.reprocess.setToolTip("Reprocess data using NPP.  Requires pre-compiled NavProcess.")

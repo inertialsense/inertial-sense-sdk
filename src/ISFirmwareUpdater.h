@@ -640,7 +640,15 @@ private:
     static const uint16_t CHUNK_DELAY_BASE_MS  = 5;          //!< default starting delay and decay floor; see startingChunkDelay()
     static const uint32_t CXD_FRAME_BYTES      = 4086;       //!< a Sony CXD5610 firmware frame; see startingChunkDelay()
     static const uint32_t CXD_FRAME_MS         = 50;         //!< and what one costs it: ~44ms on the 921600-baud update link, plus the acknowledgement
-    static const uint16_t CHUNK_DELAY_MAX_MS   = 50;         //!< ceiling for the backoff
+    /**
+     * Ceiling for the backoff.
+     *
+     * Generous on purpose: this mechanism exists for the target that needs an unusual pace, and a
+     * ceiling set near the common case silently becomes the pace. At 50 ms a 512-byte chunk over a
+     * 115200 link -- which needs 44.4 ms -- reached the cap almost immediately and had nowhere left to
+     * go, so a device still asking to slow down could not be accommodated.
+     */
+    static const uint16_t CHUNK_DELAY_MAX_MS   = 1000;
     static const uint16_t CHUNK_RAISE_PERCENT  = 10;         //!< margin above the measured rate, on REASON_TOO_FAST
     static const uint16_t CHUNK_DECAY_PERCENT  = 5;          //!< taken off the delay at each decay step
     static const uint16_t CHUNK_DECAY_CHUNKS   = 100;        //!< chunks sent without a resend before the delay decays

@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from datetime import date, datetime
 import pandas as pd
-from scipy.signal import detrend, welch
+from scipy.signal import detrend, welch, butter, filtfilt, savgol_filter
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -277,6 +277,64 @@ def robust_lowpass(x, dt,
 
     return y.copy(), xg.copy(), is_outlier.copy()
 
+def lowpass_filter(x, fs, cutoff=1.0, order=2, axis=0):
+    """
+    Zero-phase Butterworth low-pass filter for offline/batch data (e.g. plotting).
+
+    Args:
+        x: array of samples, filtered along `axis`
+        fs: sample rate (Hz) of x along `axis`
+        cutoff: corner frequency (Hz)
+        order: filter order
+        axis: axis along which to filter
+
+    Returns:
+        Filtered array, same shape as x. Returns a copy of x unchanged if fs/cutoff
+        or the data length make filtering ill-defined (e.g. too few samples).
+    """
+    x = np.asarray(x, dtype=float)
+    nyq = 0.5 * fs
+    if not np.isfinite(nyq) or nyq <= cutoff:
+        return x.copy()
+    b, a = butter(order, cutoff / nyq, btype='low')
+    padlen = 3 * max(len(a), len(b))
+    if x.shape[axis] <= padlen:
+        return x.copy()
+    return filtfilt(b, a, x, axis=axis)
+
+def savgol_lowpass_filter(x, fs, cutoff=1.0, polyorder=3, axis=0):
+    """
+    Savitzky-Golay (windowed polynomial fit) low-pass filter for offline/batch data.
+    Non-causal by construction (each point uses samples on both sides), so it is
+    inherently zero-phase without needing a separate forward/backward pass.
+
+    `cutoff` is translated to a window length using the Savitzky-Golay equivalent
+    -3dB bandwidth relation (Schafer, "What Is a Savitzky-Golay Filter?", 2011):
+        cutoff_norm (cycles/sample) ~= (polyorder + 1) / (3.2 * window_length - 4.6)
+
+    Args:
+        x: array of samples, filtered along `axis`
+        fs: sample rate (Hz) of x along `axis`
+        cutoff: approximate corner frequency (Hz)
+        polyorder: polynomial order fit within each window
+        axis: axis along which to filter
+
+    Returns:
+        Filtered array, same shape as x. Returns a copy of x unchanged if fs/cutoff
+        or the data length make filtering ill-defined (e.g. too few samples).
+    """
+    x = np.asarray(x, dtype=float)
+    if not np.isfinite(fs) or fs <= 0 or not np.isfinite(cutoff) or cutoff <= 0:
+        return x.copy()
+    cutoff_norm = cutoff / fs
+    window_length = int(round(((polyorder + 1) / cutoff_norm + 4.6) / 3.2))
+    window_length = max(window_length, polyorder + 2)
+    if window_length % 2 == 0:
+        window_length += 1
+    if x.shape[axis] <= window_length:
+        return x.copy()
+    return savgol_filter(x, window_length, polyorder, axis=axis, mode='interp')
+
 def getValidTimeInd(time, tol=100):
 
     time = np.asarray(time)
@@ -315,6 +373,8 @@ class logPlot:
         self.timestamp = False
         self.xAxisSample = False
         self.showGnss2 = False
+        self.showReference = False
+        self.showUcal = False
         self.gnssVelFilterMode = 0
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
@@ -372,6 +432,12 @@ class logPlot:
 
     def enableGnss2(self, enable):
         self.showGnss2 = enable
+
+    def enableReference(self, enable):
+        self.showReference = enable
+
+    def enableUcal(self, enable):
+        self.showUcal = enable
 
     def setgnssVelFilterMode(self, filterMode):
         self.gnssVelFilterMode = filterMode
@@ -3038,9 +3104,9 @@ class logPlot:
         self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=True)
 
     def imusRawPqr(self, fig=None, axs=None):
-        self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False)
+        self.imuPQR(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False, matchRowYAxis=True)
     def imusRawAcc(self, fig=None, axs=None):
-        self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False)
+        self.imuAcc(did=DID_IMUS_RAW, fig=fig, axs=axs, combineImus=False, matchRowYAxis=True)
     def imusPqr(self, fig=None, axs=None):
         self.imuPQR(did=DID_IMUS, fig=fig, axs=axs, combineImus=False)
     def imusAcc(self, fig=None, axs=None):
@@ -3050,7 +3116,7 @@ class logPlot:
     def imusUncalAcc(self, fig=None, axs=None):
         self.imuAcc(did=DID_IMUS_UNCAL, fig=fig, axs=axs, combineImus=False)
 
-    def imuPQR(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
+    def imuPQR(self, did=DID_IMU, fig=None, axs=None, combineImus=False, matchRowYAxis=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3071,9 +3137,9 @@ class logPlot:
             (name, time, dt, sensors) = self.loadGyros(0, did=did)
         fig.suptitle(name + ' PQR - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (len(sensors)==1 or combineImus) and self.residual 
+        plotResidual = (len(sensors)==1 or combineImus) and self.residual
         if len(sensors):
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, sharey='row' if matchRowYAxis else False, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
@@ -3145,7 +3211,7 @@ class logPlot:
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
 
-    def imuAcc(self, did=DID_IMU, fig=None, axs=None, combineImus=False):
+    def imuAcc(self, did=DID_IMU, fig=None, axs=None, combineImus=False, matchRowYAxis=False):
         if fig is None:
             fig = plt.figure()
 
@@ -3165,9 +3231,9 @@ class logPlot:
             (name, time, dt, sensors) = self.loadAccels(0, did=did)
         fig.suptitle(name + ' Accelerometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
 
-        plotResidual = (len(sensors)==1 or combineImus) and self.residual 
+        plotResidual = (len(sensors)==1 or combineImus) and self.residual
         if len(sensors):
-            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, squeeze=False)
+            ax = fig.subplots(3, (2 if plotResidual else 1 if combineImus else len(sensors)), sharex=True, sharey='row' if matchRowYAxis else False, squeeze=False)
         if plotResidual:
             for d in self.active_devs:
                 if self.log.serials[d] == 'Ref INS' or combineImus:
@@ -3334,9 +3400,9 @@ class logPlot:
                 for n, pqr in enumerate(initial_sensors):
                     if np.all(pqr) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx]))
+                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
                         for i in range(3):
-                            f.write('%f,' % (sumARW[i][n][idx]))
+                            f.write('%f,' % (sumARW[i][n][idx] if idx < len(sumARW[i][n]) else 0.0))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
@@ -3433,9 +3499,9 @@ class logPlot:
                 for n, acc in enumerate(initial_sensors):
                     if np.all(acc) != None and n<len(initial_sensors):
                         for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx]))
+                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
                         for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][idx]))
+                            f.write('%f,' % (sumRW[i][n][idx] if idx < len(sumRW[i][n]) else 0.0))
                 f.write('\n')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
@@ -4189,8 +4255,8 @@ class logPlot:
         ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
 
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'GNSS1 dt', 's')
-        self.configureSubplot(ax[1], 'GNSS2 dt', 's')
+        self.configureSubplot(ax[0], 'GNSS1 dt', 'ms')
+        self.configureSubplot(ax[1], 'GNSS2 dt', 'ms')
         self.configureSubplot(ax[2], 'RTK Compassing dt', 's')
         self.configureSubplot(ax[3], 'GNSS1 TOW Offset', 's')
         self.configureSubplot(ax[4], 'GNSS2 TOW Offset', 's')
@@ -4210,8 +4276,8 @@ class logPlot:
             indr = getValidTimeInd(timeRtk2)
             timeRtk2 = timeRtk2[indr]
 
-            dtGnss1 = np.diff(timeGnss1) / self.d
-            dtGnss2 = np.diff(timeGnss2) / self.d
+            dtGnss1 = np.diff(timeGnss1) / self.d * 1000.0
+            dtGnss2 = np.diff(timeGnss2) / self.d * 1000.0
             dtRtk2 = np.diff(timeRtk2) / self.d
 
             if self.xAxisSample:
@@ -4229,14 +4295,17 @@ class logPlot:
             ax[3].plot(xGnss1, towOffsetGnss1[1:])
             ax[4].plot(xGnss2, towOffsetGnss2[1:])
 
-            self.configureSubplot(ax[0],  f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
-            self.configureSubplot(ax[1],  f'GNSS2 dt: {np.mean(dtGnss2):.3f}s', 's')
+            if dtGnss1.size:
+                self.configureSubplot(ax[0],  f'GNSS1 dt: {np.mean(dtGnss1):.0f}ms (min: {np.min(dtGnss1):.0f}ms, max: {np.max(dtGnss1):.0f}ms)', 'ms')
+            if dtGnss2.size:
+                self.configureSubplot(ax[1],  f'GNSS2 dt: {np.mean(dtGnss2):.0f}ms (min: {np.min(dtGnss2):.0f}ms, max: {np.max(dtGnss2):.0f}ms)', 'ms')
             self.configureSubplot(ax[2],  f'RTK Compassing dt: {np.mean(dtRtk2):.3f}s', 's')
 
 
-        # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
+        # Don't zoom in closer than 5ms (0.005s) so we can easily see that the delta time is clean.
+        # ax[0]/ax[1] (GNSS1/GNSS2 dt) are plotted in ms, the rest in s, so the floor is scaled per axis.
         for i in range(len(ax)):
-            self.setPlotYSpanMin(ax[i], 0.005)
+            self.setPlotYSpanMin(ax[i], 5.0 if i in (0, 1) else 0.005)
 
         self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
@@ -4903,8 +4972,8 @@ class logPlot:
         fig.suptitle('Sensor Comp ' + name + ' - ' + os.path.basename(os.path.normpath(self.log.directory)))
         numSensors = 5
         if name=='mag':
-            numSensors = 2
-        ax = fig.subplots(4, numSensors, sharex=True)
+            numSensors = 1
+        ax = fig.subplots(4, numSensors, sharex=True, squeeze=False)
 
         useSampleNumber = 1
         noData = True
@@ -4936,6 +5005,24 @@ class logPlot:
             time = 0.001 * self.getData(a, DID_SCOMP, 'timeMs')
             if np.any(time):
                 noData = False
+
+                ucalSensor = None
+                ucalSensorLpf = None
+                ucalX = None
+                if self.showUcal and (name == 'acc' or name == 'pqr'):
+                    ucalImus = self.getData(a, DID_SENSORS_UCAL, 'imus')
+                    if len(ucalImus) != 0:
+                        ucalSensor = ucalImus['I'][name]
+                        ucalDt = np.median(np.diff(ucalImus['time']))
+                        if ucalDt > 0 and np.isfinite(ucalDt):
+                            ucalSensorLpf = savgol_lowpass_filter(ucalSensor, fs=1.0/ucalDt, cutoff=0.0002, polyorder=1, axis=0)
+                        if useTemp:
+                            ucalX = self.getData(a, DID_SENSORS_UCAL, 'temp')
+                        elif useSampleNumber:
+                            ucalX = np.arange(ucalSensor.shape[0])
+                        else:
+                            ucalX = ucalImus['time']
+
                 imu = self.getData(a, DID_SCOMP, name)
                 status = self.getData(a, DID_SCOMP, 'status')
 
@@ -4966,6 +5053,12 @@ class logPlot:
                         else:
                             x = time
 
+                    if ucalSensor is not None:
+                        ux = ucalX[:,i] if useTemp else ucalX
+                        ax[0,i].plot(ux, ucalSensor[:,i,0]*scalar, color='0.6', label="UCAL" if i==0 else None)
+                        ax[1,i].plot(ux, ucalSensor[:,i,1]*scalar, color='0.6')
+                        ax[2,i].plot(ux, ucalSensor[:,i,2]*scalar, color='0.6')
+
                     # ax[0,i].plot(x, sensor[:,0], label=self.log.serials[d] if i==0 else None)
                     ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[a])
                     ax[1,i].plot(x, sensor[:,1]*scalar)
@@ -4991,7 +5084,7 @@ class logPlot:
                     xstr += "]"
                     print(xstr)
 
-                    if 1:
+                    if self.showReference:
                         # Show sensor valid status bit
                         if name=='acc':
                             valid = 0.0 + ((status & 0x00000200) != 0) * scalar * 0.25
@@ -5001,9 +5094,14 @@ class logPlot:
                         ax[1,i].plot(x, valid * np.max(sensor[:,1]), color='y')
                         ax[2,i].plot(x, valid * np.max(sensor[:,2]), color='y')
 
-                    if 1:
                         for j in range(3):
                             ax[j, i].plot(x, refVal[:, j] * scalar, color='red', label="reference")
+
+                    if ucalSensorLpf is not None:
+                        ux = ucalX[:,i] if useTemp else ucalX
+                        ax[0,i].plot(ux, ucalSensorLpf[:,i,0]*scalar, color='m', label="UCAL SavGol 0.0002Hz" if i==0 else None)
+                        ax[1,i].plot(ux, ucalSensorLpf[:,i,1]*scalar, color='m')
+                        ax[2,i].plot(ux, ucalSensorLpf[:,i,2]*scalar, color='m')
 
         if noData:
             return
