@@ -1601,6 +1601,53 @@ class logPlot:
         except:
             print(RED + "problem plotting imuStatus: " + str(sys.exc_info()[1]) + RESET)
 
+    def imusStatus(self, fig=None, axs=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('IMUs Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            axisLabels = ['X Gyr OK', 'Y Gyr OK', 'Z Gyr OK', 'X Acc OK', 'Y Acc OK', 'Z Acc OK']
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+
+                time   = self.getData(d, DID_IMUS_RAW, 'time')
+                status = self.getData(d, DID_IMUS_RAW, 'status')
+                if not len(time):
+                    continue
+
+                towOffset = self.getGpsTowOffset(d)
+                if len(towOffset) > 0:
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                imuCount = self.log.c_log.numImuDevices
+
+                for imuIdx in range(imuCount):
+                    shift = imuIdx * 6    # eImusStatus: 6 status bits per IMU device (IMUS_STATUS_IMU_OK_BITSIZE)
+                    for bit, label in enumerate(axisLabels):
+                        ax.plot(time, -cnt * 1.5 + ((status & (1 << (shift + bit))) != 0))
+                        if r: ax.text(labelX, -cnt * 1.5, 'IMU%d %s' % (imuIdx, label), transform=ax.get_yaxis_transform())
+                        cnt += 1
+                    cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x40000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'Gyro Saturation', transform=ax.get_yaxis_transform())
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x80000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'Accel Saturation', transform=ax.get_yaxis_transform())
+                cnt += 1
+
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            return self.saveFigJoinAxes(ax, axs, fig, 'imusStatus')
+        except:
+            print(RED + "problem plotting imusStatus: " + str(sys.exc_info()[1]) + RESET)
+
     def insStatus(self, fig=None, axs=None):
         try:
             if fig is None:
@@ -3116,7 +3163,7 @@ class logPlot:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
-                                alable = 'Gyro'
+                                alable = 'Gyr'
                                 if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
@@ -3132,7 +3179,7 @@ class logPlot:
                                 print('%s, %s%s, %.4g, %.3g' % (label, alable.strip(), axislable, mean*180.0/np.pi, std*180.0/np.pi))
                                 ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
-                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
+                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/s')
                                     intSnr = np.empty_like(refSnr)
                                     intSnr[:,i] = np.interp(refTime, time, snr[:,i], right=np.nan, left=np.nan)
                                     resSnr = intSnr - refSnr
@@ -3208,7 +3255,7 @@ class logPlot:
                             if np.all(sensor) is not None:
                                 mean = np.mean(sensor[:, i])
                                 std = np.std(sensor[:, i])
-                                alable = 'Accel'
+                                alable = 'Acc'
                                 if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
@@ -3420,7 +3467,7 @@ class logPlot:
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
             for n, pqr in enumerate(initial_sensors):
                 if np.all(pqr) != None and n<len(initial_sensors):
-                    alable = 'Accel'
+                    alable = 'Acc'
                     if len(initial_sensors) > 1:
                         alable += '%d ' % n
                     else:
@@ -3490,7 +3537,7 @@ class logPlot:
                 if np.all(acc) != None and n<len(sensors):
                     for i in range(3):
                         axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-                        alable = 'Accel'
+                        alable = 'Acc'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:

@@ -166,45 +166,33 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 }
 
 
+/* Multiple IMU Averaging - optimized for speed
+*/
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
 {
     STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
-
-    // Multiple IMU Averaging - optimized for speed
-    int ndev;
-    float mean, y;
-    uint32_t mask, baseS, base, axisMaskBase;
 
     result->status = imus->status & IMUS_STATUS_SATURATION_MASK;
 
     // Loop over gyros (isens = 0) and accelerometers (isens = 1)
     for (int isens = 0; isens < 2; isens++)
     {
-        float *res = (isens == 0) ? result->I.pqr : result->I.acc;
-
-        if (isens == 0) {
-            baseS = IMUS_STATUS_GYR_X_OK;
-            base  = IMU_STATUS_GYR_X_OK;
-        }
-        else {
-            baseS = IMUS_STATUS_ACC_X_OK;
-            base  = IMU_STATUS_ACC_X_OK;
-        }
+        float *res     = (isens == 0) ? result->I.pqr : result->I.acc;
+        uint32_t baseS = (isens == 0) ? IMUS_STATUS_GYR_X_OK : IMUS_STATUS_ACC_X_OK;
+        uint32_t base  = (isens == 0) ? IMU_STATUS_GYR_X_OK : IMU_STATUS_ACC_X_OK;
 
         for (int iaxis = 0; iaxis < 3; iaxis++)
         {
-            axisMaskBase = baseS << iaxis;
-            mean = 0.0f;
-            ndev = 0;
+            int ndev = 0;
+            float mean = 0.0f;
+
             for (int idev = 0; idev < numDevices; idev++)
             {
-                mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
-
-                if (isens == 0) y = imus->I[idev].pqr[iaxis];
-                else            y = imus->I[idev].acc[iaxis];
+                uint32_t mask = baseS << (iaxis + idev * IMUS_STATUS_IMU_OK_BITSIZE);
 
                 if (imus->status & mask) {
-                    mean += y;
+                    if (isens == 0) mean += imus->I[idev].pqr[iaxis];
+                    else            mean += imus->I[idev].acc[iaxis];
                     ndev++;
                 }
             }
@@ -217,88 +205,6 @@ void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices)
         }
     }
     result->time = imus->time;
-}
-
-
-int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude)
-{
-    STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
-
-    imu_t imu = {};
-    imu.time = di->time;
-    imu.status = di->status;
-
-    int ndev = 0;
-
-    for (int idev = 0; idev < numDevices; idev++)
-    {
-        if (exclude[idev]) continue;
-        add_Vec3_Vec3(imu.I.pqr, imu.I.pqr, di->I[idev].pqr);
-        add_Vec3_Vec3(imu.I.acc, imu.I.acc, di->I[idev].acc);
-        ndev++;
-    }
-
-    if (ndev > 0)
-    {
-        mul_Vec3_X(imu.I.pqr, imu.I.pqr, inv_count_upto10(ndev));
-        mul_Vec3_X(imu.I.acc, imu.I.acc, inv_count_upto10(ndev));
-    }
-
-    *result = imu;
-    return ndev;
-}
-
-
-void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[MAX_IMU_DEVICES], bool exclude_acc[MAX_IMU_DEVICES], int iaxis)
-{
-    STATIC_ASSERT(MAX_IMU_DEVICES <= 10);   // NUM_IMU_DEVICES > 10 will break inv_count_upto10 
-
-    float mean, y;
-    int ndev;
-    const bool *excl;
-    uint32_t mask, baseS, base, axisMaskBase;
-
-    // Loop over gyros (isens = 0) and accelerometers (isens = 1)
-    for (int isens = 0; isens < 2; isens++)
-    {
-        float *res = (isens == 0) ? result->I.pqr : result->I.acc;
-
-        if (isens == 0) {
-            baseS = IMUS_STATUS_GYR_X_OK;
-            base  = IMU_STATUS_GYR_X_OK;
-            excl  = exclude_gyro;
-        }
-        else {
-            baseS = IMUS_STATUS_ACC_X_OK;
-            base  = IMU_STATUS_ACC_X_OK;
-            excl  = exclude_acc;
-        }
-        axisMaskBase = baseS << iaxis;
-        ndev = 0;
-        mean = 0.0f;
-        for (int idev = 0; idev < numDevices; idev++)
-        {
-            mask = axisMaskBase << (idev * IMUS_STATUS_IMU_OK_BITSIZE);
-
-            if (isens == 0) y = di->I[idev].pqr[iaxis];
-            else            y = di->I[idev].acc[iaxis];
-
-            if (!excl[idev] && (di->status & mask)) {
-                mean += y;
-                ndev++;
-            }
-        }
-        if (ndev > 0) { 
-            mean *= inv_count_upto10(ndev);
-            result->status |= (base << iaxis);
-        }
-        else {
-            result->status &= ~(base << iaxis);  // No valid data
-        }
-        res[iaxis] = mean;
-    }
-    result->time = di->time;
-    // result->status = di->status & IMUS_STATUS_SATURATION_MASK;
 }
 
 
