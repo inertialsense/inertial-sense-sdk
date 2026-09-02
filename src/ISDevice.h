@@ -898,6 +898,27 @@ public:
     /** @brief Non-blocking counterpart to validate(): advances one step of the query cycle per call. @return an AsyncState value indicating progress/result. */
     int validateAsync(uint32_t timeout = 1000);
 
+    /**
+     * Stops this device ever attempting to validate.
+     *
+     * For a device that is known not to speak ISB at all -- a port bound without validation, or one
+     * carrying a directly attached third-party receiver -- validation cannot succeed, and every
+     * attempt writes probe traffic to the link and consumes what comes back. On a port whose data
+     * belongs to something else, that is not merely wasted effort: it takes the bytes that other
+     * reader was waiting for.
+     *
+     * Distinct from COMM_PORT_FLAG__EXPLICIT_READ, which says another reader owns the port rather
+     * than that this device should give up on identifying itself. The flag happens to suppress the
+     * validation attempt in step(), but says nothing to validate()/validateAsync() called from
+     * anywhere else, and conflating the two leaves the intent unrecorded.
+     *
+     * @param disable true to never validate; false to restore the default behaviour.
+     */
+    void disableValidation(bool disable = true) { doNotValidate = disable; }
+
+    /** @return true if validation has been disabled for this device; see disableValidation(). */
+    bool validationDisabled() const { return doNotValidate; }
+
     /** @brief ISComm packet-received callback; currently only forwards _PTYPE_INERTIAL_SENSE_ACK packets to onIsbAckHandler(). @return 1 to allow other registered handlers to continue processing this message. */
     virtual int onPacketHandler(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
     /** @brief ISComm ISB "Data" message callback; updates devInfo/sysParams/etc from the parsed DID payload. @return 1 to allow other registered handlers to continue processing this message. */
@@ -925,6 +946,7 @@ private:
     uint32_t                    validationStartMs = 0;               //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
     uint32_t                    nextValidationMs = 0;                //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
+    bool                        doNotValidate = false;               //!< never attempt validation on this device; see disableValidation()
     unsigned int                syncCheckTimeMs = 0;
 
     std::array<std::chrono::high_resolution_clock::time_point, _PTYPE_SIZE> lastRxTs; //!< An array of timestamps of when last data was received of a particular protocol type (ISB, NMEA, RTCM3, etc)

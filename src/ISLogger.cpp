@@ -46,6 +46,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+// The legacy log-reader entry points (ReadData / ReadNextData / CopyLog) carry a
+// [[deprecated]] attribute (SN-7901) to steer new callers onto the ISLogReader /
+// ISRecordView stack. They still delegate to one another inside this file, so bracket
+// those in-family call sites to keep the self-referential deprecation warnings quiet
+// without disabling the warning for genuine external misuse.
+#if defined(__GNUC__) || defined(__clang__)
+#define IS_LEGACY_READER_USE_BEGIN \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#define IS_LEGACY_READER_USE_END _Pragma("GCC diagnostic pop")
+#else
+#define IS_LEGACY_READER_USE_BEGIN
+#define IS_LEGACY_READER_USE_END
+#endif
+
 // #define DONT_CHECK_LOG_DATA_SET_SIZE     // uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ                0
 #define STATS_ALL_FILENAME                  "/stats_all.txt"
@@ -625,19 +640,24 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     return data;
 }
 
-p_data_buf_t *cISLogger::ReadData(size_t devIndex) 
+p_data_buf_t *cISLogger::ReadData(size_t devIndex)
 {
     if (devIndex >= m_devices.size())
         return nullptr;
 
-    return ReadData(DeviceLogs()[devIndex]);
+    IS_LEGACY_READER_USE_BEGIN
+    p_data_buf_t *data = ReadData(DeviceLogs()[devIndex]);
+    IS_LEGACY_READER_USE_END
+    return data;
 }
 
 p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 {
     while (devIndex < m_devices.size())
     {
+        IS_LEGACY_READER_USE_BEGIN
         p_data_buf_t *data = ReadData(devIndex);
+        IS_LEGACY_READER_USE_END
         if (data == NULL)
         {
             ++devIndex;
@@ -824,6 +844,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         dstDev->SetKmlConfig(m_gpsData, m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 
         // Copy data
+        IS_LEGACY_READER_USE_BEGIN
         for (g_copyReadCount = 0; (data = log.ReadData(srcDev)); g_copyReadCount++)
         {
 
@@ -871,6 +892,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
                 LogData(dstDev, &data->hdr, data->buf);
             }
         }
+        IS_LEGACY_READER_USE_END
     }
     CloseAllFiles();
     return true;
