@@ -472,6 +472,7 @@ namespace fwUpdate {
         uint32_t timeout_duration = 20000;                      //!< the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //!< the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
         bool pause_requested = false;                           //!< device side: the next auto-retry should ask the host to pause (see fwUpdate_requestChunkPause())
+        bool slowdown_requested = false;                        //!< device side: the next auto-retry should ask the host to send more slowly (see fwUpdate_requestSlowdown())
 
         /**
          * Device side: the host has been asked to hold and has not been resumed yet.
@@ -808,6 +809,27 @@ namespace fwUpdate {
          * bytes the device never stored, and this is what stops it retrying in a tight loop meanwhile.
          */
         void fwUpdate_requestChunkPause() { pause_requested = true; }
+
+        /**
+         * Asks the host to keep sending, but more slowly, and to work out how much more slowly itself.
+         *
+         * Call this from fwUpdate_writeImageChunk() instead of fwUpdate_requestChunkPause() when the
+         * limit is a RATE rather than an event -- a fixed buffer draining at a fixed speed, as opposed
+         * to a frame the device has to acknowledge before it can take the next. The host measures the
+         * rate it actually achieved and paces every subsequent chunk to it, so one request buys a
+         * sustained rate and the device is not consulted again per chunk. A pause, by contrast, costs a
+         * device-to-host message every cycle and leaves the host's pace untouched.
+         *
+         * Which to use is a property of the device, not a preference: measuring an event-driven wait
+         * would fold the acknowledgement into ms/chunk and ratchet the delay to its ceiling, while
+         * pausing on a rate limit re-pays the round trip forever. A device with a knowable rate wants
+         * this one.
+         *
+         * Still return a retryable status, for the same reason fwUpdate_requestChunkPause() does: the
+         * status is what stops the host advancing its chunk counter and hashing bytes that were never
+         * stored.
+         */
+        void fwUpdate_requestSlowdown() { slowdown_requested = true; }
 
         /**
          * Lifts a pause, resuming from @a chunk_id.

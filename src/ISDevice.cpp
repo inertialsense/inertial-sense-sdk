@@ -458,6 +458,12 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
 
 
 bool ISDevice::validate(uint32_t timeout) {
+    // validate() is its own blocking implementation rather than a wrapper around validateAsync(), so
+    // it needs the guard too -- see disableValidation(). Silent, because a caller that disabled
+    // validation asked for exactly this and does not need telling each time.
+    if (doNotValidate)
+        return false;
+
     if (!isConnected()) {
         // INFO, not debug: validating a closed port is a caller mistake in the same class as querying
         // one, and not a hard failure -- but the caller should hear about it. This return also precedes
@@ -575,6 +581,13 @@ bool ISDevice::validate(uint32_t timeout) {
  *         ASYNC_STATE__SUCCESS if the device successfully validated.
  */
 int ISDevice::validateAsync(uint32_t timeout) {
+    // Guarded here rather than at each caller: step(), DeviceFactory::stepValidation() and the
+    // bootloader updaters all reach validation through this one function, and a device told never to
+    // validate must mean it for all of them. FAILURE rather than TIMEOUT for the same reason a closed
+    // port returns it -- nothing was asked, and retrying will not change that.
+    if (doNotValidate)
+        return ASYNC_STATE__FAILURE;
+
     if (!isConnected())
         return ASYNC_STATE__FAILURE;
 

@@ -492,6 +492,7 @@ namespace fwUpdate {
     bool FirmwareUpdateDevice::fwUpdate_resetEngine() {
         resend_count = 0;
         pause_requested = false;
+        slowdown_requested = false;   // nor does a slowdown request
         chunks_held = false;  // a hold belonging to the previous session does not gate this one
         resend_pending_id = CHUNK_ID_PAUSE;
         resend_stragglers = 0;
@@ -635,7 +636,17 @@ namespace fwUpdate {
             if (pause_requested) {
                 pause_requested = false;
                 fwUpdate_sendRetryFrom(CHUNK_ID_PAUSE, REASON_TOO_FAST);
+            } else if (slowdown_requested) {
+                // Naming a real chunk rather than CHUNK_ID_PAUSE is what makes the host MEASURE the
+                // rate it achieved and pace itself to it from then on, instead of holding and asking
+                // again next chunk. For a device limited by a rate rather than by an event, that is
+                // the difference between one message and one per chunk for the rest of the transfer.
+                slowdown_requested = false;
+                fwUpdate_sendRetryFrom(last_chunk_id + 1, REASON_TOO_FAST);
             } else {
+                // Neither was asked for, so this is a real write failure. Note REASON_WRITE_ERROR
+                // counts toward the host's give-up accounting, which REASON_TOO_FAST deliberately
+                // does not -- a device that means "not yet" must say so with one of the two above.
                 fwUpdate_sendRetry(REASON_WRITE_ERROR);
             }
             return false;
