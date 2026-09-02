@@ -846,7 +846,6 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         // Copy data
         IS_LEGACY_READER_USE_BEGIN
         for (g_copyReadCount = 0; (data = log.ReadData(srcDev)); g_copyReadCount++)
-        IS_LEGACY_READER_USE_END
         {
 
 #if LOG_DEBUG_PRINT_READ
@@ -893,6 +892,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
                 LogData(dstDev, &data->hdr, data->buf);
             }
         }
+        IS_LEGACY_READER_USE_END
     }
     CloseAllFiles();
     return true;
