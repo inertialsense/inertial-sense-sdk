@@ -226,6 +226,11 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out, const
     // routed/VPN client can't resolve. Rebind to the relay's reachable host (SN-8175).
     out.portUrl = rewriteUriHost(uri, relayHost);
     out.hint = hint;
+
+    // Occupancy, reported by the relay without a client attached. `listening` defaults true so an older
+    // bridgeboard that omits the field is treated as offering the slot, matching prior behaviour.
+    out.hasTcpClient = dev.value("has_tcp_client", false);
+    out.listening = dev.value("listening", true);
     return true;
 }
 
@@ -416,6 +421,26 @@ void RelayPortFactory::setRelayHostEnabled(const std::string& url, bool enabled)
 
     if (abortHook) abortHook();
     if (toJoin && toJoin->joinable()) toJoin->join();
+}
+
+std::vector<RelayPortFactory::RelayDeviceStatus> RelayPortFactory::getRelayDevices() const {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::vector<RelayDeviceStatus> result;
+    for (const auto& [url, hostPtr] : relayHosts_) {
+        const RelayHost& host = *hostPtr;
+        if (!host.enabled)
+            continue;       // a disabled host contributes no ports, so it offers no devices either
+        for (const auto& device : host.devices) {
+            RelayDeviceStatus st;
+            st.relayUrl = host.url;
+            st.portUrl = device.portUrl;
+            st.hint = device.hint;
+            st.hasTcpClient = device.hasTcpClient;
+            st.listening = device.listening;
+            result.push_back(st);
+        }
+    }
+    return result;
 }
 
 std::vector<RelayPortFactory::RelayHostStatus> RelayPortFactory::getRelayHosts() const {
