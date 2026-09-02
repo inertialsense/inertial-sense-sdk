@@ -308,10 +308,11 @@ class logInspectorInternal(LogInspectorWindow):
         self.updatePlot()
 
     def changeShowUcalCheckbox(self, state):
+        enabled = (state == int(Qt.CheckState.Checked))
         for mplot in self.mplots:
             if mplot.plotter:
-                mplot.plotter.enableUcal(state)
-                self.updatePlot()
+                mplot.plotter.enableUcal(enabled)
+        self.updatePlot()
 
     def TestImx(self):
         directory = self.selectedDirectory()
