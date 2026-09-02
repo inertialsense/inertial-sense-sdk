@@ -180,12 +180,12 @@ class logInspectorInternal(LogInspectorWindow):
         if 'linux' in sys.platform:
             subprocess.Popen(['gedit', filename])
 
-def changeShowReferenceCheckbox(self, state):
-    enabled = (state == int(Qt.CheckState.Checked))
-    for mplot in self.mplots:
-        if mplot.plotter:
-            mplot.plotter.enableReference(enabled)
-    self.updatePlot()
+    def changeShowReferenceCheckbox(self, state):
+        enabled = (state == int(Qt.CheckState.Checked))
+        for mplot in self.mplots:
+            if mplot.plotter:
+                mplot.plotter.enableReference(enabled)
+        self.updatePlot()
 
     def changeShowUcalCheckbox(self, state):
         for mplot in self.mplots:
