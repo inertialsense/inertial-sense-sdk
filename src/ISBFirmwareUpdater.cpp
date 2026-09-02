@@ -36,6 +36,19 @@
  */
 #define ISB_ISBL_PHASE_BUDGET_MS         60000u
 
+/**
+ * Budget handed to the dedicated ISbl probe while waiting for a device to arrive in its bootloader.
+ *
+ * Must fit a FULL autobaud burst. A bootloader entered from APP is unsynchronized and needs its 'U'
+ * burst once; BOOTLOADER_HANDSHAKE_COUNT (50) at BOOTLOADER_HANDSHAKE_DELAY (10 ms) costs ~500 ms
+ * before the version query that confirms the sync, and queryIsblVersionFrame() derives its schedule
+ * from this budget and truncates the burst to whatever remains.
+ */
+#define ISB_ISBL_PROBE_BUDGET_MS          1500u
+
+/** How often the probe above may run. It blocks for up to its budget, so it must not run every step. */
+#define ISB_ISBL_PROBE_INTERVAL_MS        2000u
+
 
 /**
  * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -256,6 +269,18 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
             // newer than the reset, so this wait ends only on something the device answered.
             if ((device->devInfoConfirmedAt() < last_reboot) && (device->validateAsync() != 1))
                 return true;    // we'll keep in our current state until we can validate the device
+
+            // This phase is waiting for one specific thing -- the device to appear in ISbl -- so probe for
+            // that directly rather than leaving it to the general round-robin. validate()/validateAsync()
+            // hand queryDeviceInfoISbl() only ~250 ms as one step among NMEA and ISB, and
+            // queryIsblVersionFrame() sizes its autobaud burst from that budget, truncating it well below
+            // the ~500 ms a full burst costs. A bootloader entered from APP has not been synchronized yet
+            // and needs that burst once, so a truncated one leaves the device sitting in ISbl, answering
+            // nothing, while this wait runs out.
+            if ((device->devInfo.hdwRunState != HDW_STATE_BOOTLOADER) && (current_timeMs() >= nextIsblProbeMs)) {
+                nextIsblProbeMs = current_timeMs() + ISB_ISBL_PROBE_INTERVAL_MS;
+                device->queryDeviceInfoISbl(ISB_ISBL_PROBE_BUDGET_MS);
+            }
 
             if (device->devInfo.hdwRunState == HDW_STATE_BOOTLOADER) {
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Rediscovered %s running in ISbl (v%1d%c) mode.", device->getIdAsString().c_str(), device->devInfo.firmwareVer[0], device->devInfo.firmwareVer[1]);
@@ -759,7 +784,9 @@ bool ISBFirmwareUpdater::rebootToISB()
         if (!nmeaSent && !sysCmdSent) {
             // Not proof of failure (see above), but the only case in which nothing we sent was
             // accepted -- worth saying out loud when a device then never appears in ISbl.
-            log_debug(IS_LOG_FWUPDATE, "(ISB) No reset-to-ISbl command was accepted by the port for %s; proceeding anyway, since a port dropped by a rebooting device looks the same.",
+            // WARN, not debug: this is the signature of a device that will never appear in ISbl, and the
+            // wait that follows is otherwise indistinguishable from a slow reboot.
+            log_warn(IS_LOG_FWUPDATE, "(ISB) No reset-to-ISbl command was accepted by the port for %s; proceeding anyway, since a port dropped by a rebooting device looks the same.",
                       device->getIdAsString().c_str());
         }
 
