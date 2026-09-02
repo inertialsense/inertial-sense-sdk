@@ -3163,7 +3163,7 @@ class logPlot:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
-                                alable = 'Gyro'
+                                alable = 'Gyr'
                                 if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
@@ -3179,7 +3179,7 @@ class logPlot:
                                 print('%s, %s%s, %.4g, %.3g' % (label, alable.strip(), axislable, mean*180.0/np.pi, std*180.0/np.pi))
                                 ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
-                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
+                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/s')
                                     intSnr = np.empty_like(refSnr)
                                     intSnr[:,i] = np.interp(refTime, time, snr[:,i], right=np.nan, left=np.nan)
                                     resSnr = intSnr - refSnr
@@ -3255,7 +3255,7 @@ class logPlot:
                             if np.all(sensor) is not None:
                                 mean = np.mean(sensor[:, i])
                                 std = np.std(sensor[:, i])
-                                alable = 'Accel'
+                                alable = 'Acc'
                                 if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
@@ -3467,7 +3467,7 @@ class logPlot:
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
             for n, pqr in enumerate(initial_sensors):
                 if np.all(pqr) != None and n<len(initial_sensors):
-                    alable = 'Accel'
+                    alable = 'Acc'
                     if len(initial_sensors) > 1:
                         alable += '%d ' % n
                     else:
@@ -3537,7 +3537,7 @@ class logPlot:
                 if np.all(acc) != None and n<len(sensors):
                     for i in range(3):
                         axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-                        alable = 'Accel'
+                        alable = 'Acc'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
