@@ -57,17 +57,6 @@ bool CustomRobotDevice::configure() {
 }
 
 /**
- * Steps the communications for this device
- * @return the results of ISDevice step
- */
-bool CustomRobotDevice::step() {
-    /** Custom step operations here if desired */
-    
-    return ISDevice::step();            // call the parent's step() function to do all the usual ISDevice functions
-}
-
-
-/**
  * This is a callback handler that is registered with the ISDevice once its created, and which will be called
  * every time data arrives from the device
  * @param data a pointer to a p_data_t struct, which represents the buffer of data received from the device,
@@ -79,10 +68,19 @@ bool CustomRobotDevice::step() {
 int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
     if ( ISDevice::onIsbDataHandler(data, port) ) { // let ISDevice do its handling; we call it first for the integrity check it does
-    
+
         if (data->hdr.id == DID_INS_1) {
-            if (onDataReceived)
-                onDataReceived(data);  // forward every parsed message on for application level processing
+            copyDataPToStructP(&insData, data, sizeof(ins_1_t));
+
+            /** print a few fields interesting for a navigating robot: position, heading, speed, and solution status */
+            double headingDeg = insData.theta[2] * C_RAD2DEG;
+            double speed = sqrt(insData.uvw[0]*insData.uvw[0] + insData.uvw[1]*insData.uvw[1]);
+
+            std::cout << "lat/lon: " << insData.lla[0] << ", " << insData.lla[1]
+                      << "  heading: " << headingDeg << " deg"
+                      << "  speed: " << speed << " m/s"
+                      << "  insStatus: 0x" << std::hex << insData.insStatus << std::dec
+                      << std::endl;
         }
 
         return 0;  // indicates ISDevice found valid message and we processed here

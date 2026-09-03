@@ -23,7 +23,6 @@ graph TD
    A -.-> E(DeviceManager)     
    A -.-> F(SerialPortFactory)
    A -.-> G(PortManager)
-   A -.-> L(ISDisplay)
    C -.-> H(ISDevice)
    D -.-> I(DeviceFactory)
    F -.-> J(PortFactory)
@@ -81,7 +80,6 @@ Note these are local to this folder.
 * [DeviceFactory.h](../../src/DeviceFactory.h)
 * [DeviceManager.h](../../src/DeviceManager.h)
 * [ISDevice.h](../../src/ISDevice.h)
-* [ISDisplay.h](../../src/ISDisplay.h)
 * [ISUtilities.h](../../src/ISUtilities.h)
 * [PortFactory.h](../../src/PortFactory.h)
 * [PortManager.h](../../src/PortManager.h)
@@ -108,18 +106,14 @@ public:
    ins_1_t insData = {};
 ```
 
-Function declarations for our new class include a virtual `step()` function implementation used by every `ISDevice` to "run" and process messages, and at least one message handler callback also implementing a virtual `ISDevice` function.  Implemented in CustomRobotDevice.cpp.
+Function declarations for our new class include at least one message handler callback implementing a virtual `ISDevice` function. Implemented in CustomRobotDevice.cpp. We don't need to override `step()` ourselves - it's called directly on our device from the application's read loop (see Step 8), and the inherited `ISDevice::step()` implementation is all we need for this example.
 ```c++
-bool step() override;
-
 int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
 ```
 
-For this demonstration, we also add an optional configuration function to set up our device and select the data we want to see, as well as a universal callback to our application for displaying the data we get from our devices to the terminal:
+For this demonstration, we also add an optional configuration function to set up our device and select the data we want to see:
 ```c++
 bool configure();
-    
-std::function<void(const p_data_t* data)> onDataReceived;
 ```
 
 
@@ -143,17 +137,9 @@ bool CustomRobotDevice::configure() {
    //...   
 ```
 
-The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We implement the new `step()` function, but do not add any logic to it for our current purposes.
+The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We don't have any custom step logic to add for this example, so `CustomRobotDevice` doesn't override `step()` - the application calls the inherited `ISDevice::step()` directly on our device from its read loop, shown in Step 8.
 
-```c++
-bool CustomRobotDevice::step() {
-   /** Custom step operations here if desired */
-    
-   return ISDevice::step(); // call the parent step() function to do all the usual ISDevice functions
-}
-```
-
-Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We could for example copy the data to our `ins_1_t` struct for custom processing one field at a time if desired, though in this example demonstrate using `ISDisplay` to nicely print it to standard out by sending it back to application via the `onDataReceived()` hook.
+Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We copy the data we're interested in to our `ins_1_t` struct, and print a few fields useful to a navigating robot - position, heading, speed, and solution status - directly to standard out.
 
 ```c++
 int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
@@ -161,8 +147,7 @@ int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
    if ( ISDevice::onIsbDataHandler(data, port) ) { 
     
       if (data->hdr.id == DID_INS_1) {
-         if (onDataReceived)
-            onDataReceived(data);
+         copyDataPToStructP(&insData, data, sizeof(ins_1_t));
 //...   
  ```
 
@@ -203,25 +188,13 @@ static const is_hardware_t IS_HARDWARE_GPX_1_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE
 //etc
 ```
 
-If the ident matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing these functions, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
-
-We also want every device this factory allocates to share the same data-received sink, without the device itself knowing anything about what that sink is (e.g. a display, a logger, etc). We do this with a `static` callback member, `s_dataCallback`, set once by the application via `setDataCallback()`, and copied into each device's `onDataReceived` as it's allocated:
+If the ident matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing this one function, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
 ```C++
-static void setDataCallback(std::function<void(const p_data_t* data)> cb) {
-   s_dataCallback = std::move(cb);
-}
-
-private:
-inline static std::function<void(const p_data_t* data)> s_dataCallback;
-
 device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
 
    /** When we find IMX-5 dev info, we know we want to allocate a new custom device */
-   if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0) {
-      auto device = std::make_shared<CustomRobotDevice>(devInfo, port);
-      device->onDataReceived = s_dataCallback;   // every device shares the same sink the application provides
-      return device;
-   }
+   if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
+      return std::make_shared<CustomRobotDevice>(devInfo, port);
 
    return nullptr;
 }
@@ -236,7 +209,6 @@ Create a new .cpp file for the application, which for us is [main.cpp](./main.cp
 #include "CustomRobotDevice.h"
 #include "CustomDeviceFactory.h"
 #include "PortManager.h"
-#include "ISDisplay.h"
 ```
 
 We create a `main_discovery()` that operates on our devices and managers, followed by a `main()` entry point that processes the command line.  This will be the entry point for the application.  Our `main()` uses the command line arg for identifying a port (if given) to be used to search for a device.  If no port is given, we search all available ports in a discovery process.  
@@ -280,7 +252,7 @@ IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
 Facility definitions like `IS_LOG_DEVICE_MANAGER` or `IS_LOG_PORT_FACTORY` identify which module is logging.
 
 
-### Step 6: Instantiate Managers, Factories, and Display
+### Step 6: Instantiate Managers and Factories
 In `main()`, we started by first doing a nominal check on the command line argument with some usage statement upon invoke error.  Then in `main_discovery()` we create our communications management by instantiating one `PortManager` with a `SerialVirtualPortFactory`, followed by one `DeviceManager` with a `CustomDeviceFactory`, like so:
 ```C++
 PortManager& pm = PortManager::getInstance();
@@ -288,13 +260,6 @@ pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager 
 
 DeviceManager& dm = DeviceManager::getInstance();
 dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
-```
-Note that for demonstration purposes we make use of the SDK's `ISDisplay`, for data display formatting to the terminal, and set the callback function to bring all data received by our custom devices to the application, for all devices the factory allocates:
-```c++
-static cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
-CustomDeviceFactory::setDataCallback([](const p_data_t* data) {
-   std::cout << isDisplay.DataToString(data);
-});
 ```
 
 ### Step 7: Find and Connect Device

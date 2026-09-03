@@ -16,7 +16,6 @@
  */
 
 /** Include IS core and other needed SDK header files here */
-#include <functional>
 #include "PortFactory.h"
 #include "ISDevice.h"
 
@@ -28,11 +27,8 @@ public:
     // add disable data command here?
     ~CustomRobotDevice() override = default;
 
-    /** structures to hold the data we are interested in for this device. from data_sets.h */
+    /** structures to hold the data we are interested in for this device, from data_sets.h */
     ins_1_t insData = {};
-
-    /** used by every ISDevice to "run" and process messages */
-    bool step() override;
 
     /** message handler callbacks, with extra commented-out prototype examples we are not using in this case */
     int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
@@ -41,9 +37,6 @@ public:
 
     /** an optional configuration function to set up our device and pick the data we want to see, etc */
     bool configure();
-    
-    /** custom optional hook invoked each data message this device receives, to send data back to app */
-    std::function<void(const p_data_t* data)> onDataReceived;
 
 };
 

@@ -26,10 +26,6 @@
 /** Include the SDK PortManager for building and maintaining a list of all ports by name */
 #include "PortManager.h"
 
-/** Include ISDisplay so we can pretty-print data received from device(s); this instance is owned by the
- * application, not any one device, so every device discovered can share it */
-#include "ISDisplay.h"
-
 
 /**
  * Uses portPattern for discovering a device connected to a port in an example of setting up a custom device
@@ -48,22 +44,13 @@ int main_discovery(const char* portPattern)
     IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
     
     /** STEP 6: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
-     * we'll make local references, and we register the virtual port factory; also provide a way to display data
+     * we'll make local references, and we register the virtual port factory
      */    
     PortManager& pm = PortManager::getInstance();
     pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager that we are interested in Serial Ports
 
     DeviceManager& dm = DeviceManager::getInstance();
     dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
-
-    /** One display instance, owned by application not any single device, shared by discovered devices;
-     * data sink for every device the CustomDeviceFactory allocates, devices retained by the DeviceManager
-     * singleton hold a reference to it via onDataReceived, so it must live at least as long as they might.
-     */
-    static cInertialSenseDisplay isDisplay(cInertialSenseDisplay::DMODE_PRETTY);
-    CustomDeviceFactory::setDataCallback([](const p_data_t* data) {
-        std::cout << isDisplay.DataToString(data);
-    });
 
     /** STEP 7: Discover ports and devices, connect and configure device */
     std::shared_ptr<CustomRobotDevice> device = nullptr;      // this will be our discovered device... but null for now
@@ -122,9 +109,6 @@ int main_discovery(const char* portPattern)
     while ( portIsOpened(device->port) ) {              // and then spin as long as the port is open
         device->step();                                 // process incoming data
         SLEEP_MS(10);                                   // we can sleep for spell and keep our CPU happy
-
-        if ( isDisplay.ExitProgram() )                  // check to see if the display recvd exit cmd
-            break;
     }
 
     return 0;    
