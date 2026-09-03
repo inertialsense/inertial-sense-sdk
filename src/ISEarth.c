@@ -535,6 +535,31 @@ void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
 
 
 /*
+ *  Find ECEF position given NED (north, east, down) from LLAref (WGS-84 standard)
+ *
+ *  llaRefDeg[0] = latitude (degrees)
+ *  llaRefDeg[1] = longitude (degrees)
+ *  llaRefDeg[2] = msl altitude (m)
+ */
+void ned2ecef_d(const ixVector3 ned, const double llaRefDeg[3], double ecef[3])
+{
+    double lla[3], llaRef[3], deltaLLA[3];
+    
+    llaRef[0] = llaRefDeg[0] * C_DEG2RAD;
+    llaRef[1] = llaRefDeg[1] * C_DEG2RAD;
+    llaRef[2] = llaRefDeg[2];
+
+    ned2DeltaLla_d(ned, llaRef, deltaLLA);
+
+    lla[0] = llaRef[0] + deltaLLA[0];
+    lla[1] = llaRef[1] + deltaLLA[1];
+    lla[2] = llaRef[2] + deltaLLA[2];
+
+    lla2ecef(lla, ecef);
+}
+
+
+/*
  *  Find msl altitude based on barometric pressure
  *  https://en.wikipedia.org/wiki/Atmospheric_pressure
  *
