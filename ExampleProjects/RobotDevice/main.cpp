@@ -50,7 +50,7 @@ int main_discovery(const char* portPattern)
     pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager that we are interested in Serial Ports
 
     DeviceManager& dm = DeviceManager::getInstance();
-    dm.addDeviceFactory(&RobotDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
+    dm.addDeviceFactory(&RobotDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in custom RobotDevices
 
     /** STEP 7: Discover ports and devices, connect and configure device */
     std::shared_ptr<RobotDevice> device = nullptr;      // this will be our discovered device... but null for now
@@ -132,7 +132,7 @@ int main(int argc, const char** argv) {
         return -1;
     }
 
-    std::cout << "RobotDevice example application started (ctrl+C or ctrl+\\ to quit)";
+    std::cout << "RobotDevice example application started (ctrl+C to quit)";
     if (argc == 2) {
         portPattern = argv[1];
         std::cout << ", attempting to use port " << portPattern;

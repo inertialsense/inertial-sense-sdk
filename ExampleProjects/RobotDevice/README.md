@@ -1,7 +1,7 @@
 # SDK: Custom Robot Device Example Project
 
 ## Introduction
-This [Custom Robot Device Example](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/RobotDevice) project demonstrates the creation of custom `ISDevice` and custom `DeviceFactory` child classes, using the Inertial Sense SDK.  It also shows how to use `PortManager` and `DeviceManager` to maintain the set of discovered ports and discovered devices that come out of factory operations.  A simple application can be built from the provided code out of the box.  **This example requires an IMX device to be connected to your workstation.**
+This custom [Robot Device Example](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/RobotDevice) project demonstrates the creation of custom `ISDevice` and custom `DeviceFactory` child classes, using the Inertial Sense SDK.  It also shows how to use `PortManager` and `DeviceManager` to maintain the set of discovered ports and discovered devices that come out of factory operations.  A simple application can be built from the provided code out of the box.  **This example requires an IMX device to be connected to your workstation.**
 
 ## Purpose and Design
 This project is constructed as both a walk-through and a template for users wishing to learn how to make use of three modules of the SDK that would be important pieces for device management.    
@@ -137,21 +137,19 @@ bool RobotDevice::configure() {
    //...   
 ```
 
-The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We don't have any custom step logic to add for this example, so `RobotDevice` doesn't override `step()` - the application calls the inherited `ISDevice::step()` directly on our device from its read loop, shown in Step 8.
+The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We don't have any custom step logic to add for this example.
 
-Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We copy the data we're interested in to our `ins_1_t` struct, and print a few fields useful to a navigating robot - heading, speed, and solution status - directly to standard out. (Position isn't included here since it's always 0 without a GPS fix.)
+Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We copy the data we're interested in to our `ins_1_t` struct, and print a few fields useful to a navigating robot directly to standard out. 
 
 ```c++
 int RobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
-
-   if ( ISDevice::onIsbDataHandler(data, port) ) { 
-    
-      if (data->hdr.id == DID_INS_1) {
-         copyDataPToStructP(&insData, data, sizeof(ins_1_t));
-//...   
+   //...
+   if (ret && data->hdr.id == DID_INS_1) {
+      copyDataPToStructP(&insData, data, sizeof(ins_1_t));
+   //...   
  ```
 
- Note that we first call the ISDevice's own handler as it does a validation on the data.
+ Note in the code that we first call the ISDevice's own handler as it does a validation on the data.
 
 
 ### Step 3: Extend DeviceFactory with New Class
@@ -328,28 +326,14 @@ while ( portIsOpened(device->port) ) {
 
 6. View output from the application
    ```
-   RobotDevice example application started (ctrl+C to quit), attempting to use port /dev/ttyACM0
-   Found and connected 1 IMX device(s) on port(s): 
-   /dev/ttyACM0
+   RobotDevice example application started (ctrl+C to quit), attempting port discovery
+   Found and connected device, port: 
+     SN000525402 (IMX-5.0.6) fw3.1.0-rc.146 4fd1b0d4 bc1cd0.0 2026-07-31 01:22:08.091, /dev/ttyACM0
 
-   (4) DID_INS_1: 12344.856s
-	   Euler	    89.70,    0.95,  138.93
-	   UVW	     0.0,     0.0,     0.0
-	   LLA	    0.0000000,    0.0000000,    0.0 ellipsoid
-	   STATUS
-   		Satellite Rx 0     Aiding: Mag 1, GNSS (Hdg 0, Pos 0)
-		   Mode: AHRS         Solution: VRS
-		   Errors    Rx parse 1, temperature 0, self-test 0
-		   hdwStatus (0x02140002)
-   (4) DID_INS_1: 12345.031s
-   	Euler	    89.70,    0.95,  138.93
-   	UVW	     0.0,     0.0,     0.0
-   	LLA	    0.0000000,    0.0000000,    0.0 ellipsoid
-   	STATUS
-		   Satellite Rx 0     Aiding: Mag 1, GNSS (Hdg 0, Pos 0)
-		   Mode: AHRS         Solution: VRS
-		   Errors    Rx parse 1, temperature 0, self-test 0
-		   hdwStatus (0x02140000)
+   heading: 144.532 deg  speed: 0 m/s  insStatus: 0x470800
+   heading: 144.531 deg  speed: 0 m/s  insStatus: 0x470800
+   heading: 144.533 deg  speed: 0 m/s  insStatus: 0x470800
+   heading: 144.532 deg  speed: 0 m/s  insStatus: 0x470800
    ```
    ... and so on, repeating until commanded to exit using ctrl+C.
 

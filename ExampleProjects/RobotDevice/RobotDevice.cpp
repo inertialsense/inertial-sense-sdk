@@ -67,23 +67,22 @@ bool RobotDevice::configure() {
  */
 int RobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
-    if ( ISDevice::onIsbDataHandler(data, port) ) { // let ISDevice do its handling; we call it first for the integrity check it does
+    int ret = ISDevice::onIsbDataHandler(data, port);  // let ISDevice do its handling; we call it first for the integrity check it does
 
-        if (data->hdr.id == DID_INS_1) {
-            copyDataPToStructP(&insData, data, sizeof(ins_1_t));
-
-            /** print a few fields interesting for a navigating robot: heading, speed, and solution status */
-            double headingDeg = insData.theta[2] * C_RAD2DEG;
-            double speed = sqrt(insData.uvw[0]*insData.uvw[0] + insData.uvw[1]*insData.uvw[1]);
-
-            std::cout << "heading: " << headingDeg << " deg"
-                      << "  speed: " << speed << " m/s"
-                      << "  insStatus: 0x" << std::hex << insData.insStatus << std::dec
-                      << std::endl;
-        }
+    if (ret && data->hdr.id == DID_INS_1) {
+        copyDataPToStructP(&insData, data, sizeof(ins_1_t));
+        
+        /** print a few fields interesting for a navigating robot: heading, speed, and solution status */
+        double headingDeg = insData.theta[2] * C_RAD2DEG;
+        double speed = sqrt(insData.uvw[0]*insData.uvw[0] + insData.uvw[1]*insData.uvw[1]);
+        
+        std::cout << "heading: " << headingDeg << " deg"
+                  << "  speed: " << speed << " m/s"
+                  << "  insStatus: 0x" << std::hex << insData.insStatus << std::dec
+                  << std::endl;
 
         return 0;  // indicates ISDevice found valid message and we processed here
     }
 
-    return 1;
+    return ret;
 }

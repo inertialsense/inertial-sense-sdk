@@ -47,7 +47,7 @@ private:
      */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
 
-        /** When we find IMX dev info (any hardware version), we know we want to allocate a new custom device */
+        /** When we find IMX dev info, we know we want to allocate a new custom device */
         if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
             return std::make_shared<RobotDevice>(devInfo, port);
 
