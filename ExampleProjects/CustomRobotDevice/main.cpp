@@ -88,17 +88,17 @@ int main_discovery(const char* portPattern)
         return 0;    // this is NOT an error
     }
 
+    /** We found at least one device, connect to the first */
     if ( !device->connect() ) {
         std::cerr << "Could not connect to device on port " << device->getPortName() << std::endl;
         return -2;
     }
 
-    std::cout << "Found and connected " << dm.DeviceCount() << " IMX device(s) on port(s): " << std::endl;
+    std::cout << "Found and connected device, port: " << std::endl;
     for (const auto& dev : dm.getDevices()) {
-        std::cout << " " << dev->getPortName() << std::endl;
+        std::cout << " " << dev->getDescription() << std::endl;        
     }
     std::cout << std::endl;
-
 
     if ( !device->configure() ) {
         std::cout << "Configuration fail" << std::endl;

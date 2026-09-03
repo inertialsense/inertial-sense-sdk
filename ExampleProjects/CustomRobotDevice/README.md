@@ -12,7 +12,7 @@ The second is the `DeviceFactory` which is an abstract C++ class that is respons
 
 Finally, we demonstrate the `DeviceManager`, which uses the custom device factory to create and keep a known list of available devices, optionally filtered to a limited set, or all.  It will provide access to a factory's devices as requested.
 
-In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX-5 unit.  Conceptually, we are presenting the idea of a robot device we have built with an IMX on board, and we will be reading data from the IMX.  Our custom device we are calling `CustomRobotDevice` and it is discovered via our `CustomDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  See this dependency (dashed) and process (solid) diagram for an overview:
+In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX unit.  Conceptually, we are presenting the idea of a robot device we have built with an IMX on board, and we will be reading data from the IMX.  Our custom device we are calling `CustomRobotDevice` and it is discovered via our `CustomDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  See this dependency (dashed) and process (solid) diagram for an overview:
 
 
 ```mermaid
@@ -139,7 +139,7 @@ bool CustomRobotDevice::configure() {
 
 The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We don't have any custom step logic to add for this example, so `CustomRobotDevice` doesn't override `step()` - the application calls the inherited `ISDevice::step()` directly on our device from its read loop, shown in Step 8.
 
-Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We copy the data we're interested in to our `ins_1_t` struct, and print a few fields useful to a navigating robot - position, heading, speed, and solution status - directly to standard out.
+Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We copy the data we're interested in to our `ins_1_t` struct, and print a few fields useful to a navigating robot - heading, speed, and solution status - directly to standard out. (Position isn't included here since it's always 0 without a GPS fix.)
 
 ```c++
 int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
@@ -177,23 +177,25 @@ At a minimum to serve our custom device, we must implement the allocateDevice fu
 virtual device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port = nullptr) { return std::make_shared<ISDevice>(devInfo, port); };
 ```
 
-In this example we imagine our custom device was built with an IMX-5 unit so we look for that HW idenfication specifically.  This is identified with `IS_HARDWARE_IMX_5_0`, from data_sets.h.  Here are some other type examples from that file:
+In this example we imagine our custom device was built with an IMX unit so we look for that hardware type specifically, matching any IMX hardware version.  This is identified by comparing `devInfo.hardwareType` against `IS_HARDWARE_TYPE_IMX`, from data_sets.h.  Here are some other type examples from that file:
 
 ```c++
-static const is_hardware_t IS_HARDWARE_EVB_2_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_EVB, 2, 0);
-//...
-static const is_hardware_t IS_HARDWARE_IMX_6_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 6, 0);
-static const is_hardware_t IS_HARDWARE_GPX      = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, -1, -1);
-static const is_hardware_t IS_HARDWARE_GPX_1_0  = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
-//etc
+enum eIsHardwareType
+{
+   //...
+   IS_HARDWARE_TYPE_EVB        = 2,   //!< EVB (evaluation board)
+   IS_HARDWARE_TYPE_IMX        = 3,   //!< IMX
+   IS_HARDWARE_TYPE_GPX        = 4,   //!< GPX
+   //etc
+};
 ```
 
-If the ident matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing this one function, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
+If the type matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing this one function, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
 ```C++
 device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
 
-   /** When we find IMX-5 dev info, we know we want to allocate a new custom device */
-   if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
+   /** When we find IMX dev info (any hardware version), we know we want to allocate a new custom device */
+   if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
       return std::make_shared<CustomRobotDevice>(devInfo, port);
 
    return nullptr;
@@ -274,7 +276,7 @@ if (!pm.empty()) {
    device = dm.getDevices().front()->as<CustomRobotDevice>();
 ```
 
-Once we find that IMX device, we'll use it for the remaining operations we do.  We call the `ISDevice::connect()` method.  We have decoupled the specific configuration operations of the IMX device from the application by creating a new (optional) `configure()` method in our CustomRobotDevice class, which we call here from the application.  That way, we can manage the data requests and data processing all within our new device class and leave the application code more agnostic to the specific things we do with this device.
+Once we find that IMX device, we'll use it for the remaining operations we do.  We call the `ISDevice::connect()` method.  Note the availability of `ISDevice::isConnected()` as well to check a connection.  We have decoupled the specific configuration operations of the IMX device from the application by creating a new (optional) `configure()` method in our CustomRobotDevice class, which we call here from the application.  That way, we can manage the data requests and data processing all within our new device class and leave the application code more agnostic to the specific things we do with this device.
 
 ```C++
 if ( !device->connect() ) {

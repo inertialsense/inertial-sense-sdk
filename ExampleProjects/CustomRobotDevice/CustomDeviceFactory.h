@@ -21,8 +21,8 @@
 #include "DeviceFactory.h"
 #include "CustomRobotDevice.h"
 
-/** @brief DeviceFactory singleton for IMX-5 devices; allocates an ISDevice only for devices whose hardware
- * Id resolves to IS_HARDWARE_IMX_5_0.
+/** @brief DeviceFactory singleton for IMX devices; allocates an ISDevice only for devices whose hardware
+ * type resolves to IS_HARDWARE_TYPE_IMX, matching any IMX hardware version.
  */
 class CustomDeviceFactory : public DeviceFactory {
 public:
@@ -40,15 +40,15 @@ private:
     ~CustomDeviceFactory() override = default;
 
     /**
-     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo resolves to an IMX-5 hardware Id.
+     * @brief Implements DeviceFactory::allocateDevice(); allocates an ISDevice only if devInfo resolves to IMX hardware.
      * @param devInfo the device information uniquely identifying the specific device.
      * @param port an associated port (optional) that this device should be bound to.
-     * @return a new ISDevice if devInfo is an IMX-5, otherwise nullptr.
+     * @return a new ISDevice if devInfo is IMX hardware, otherwise nullptr.
      */
     device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
 
-        /** When we find IMX-5 dev info, we know we want to allocate a new custom device */
-        if (ENCODE_DEV_INFO_TO_HDW_ID(devInfo) == IS_HARDWARE_IMX_5_0)
+        /** When we find IMX dev info (any hardware version), we know we want to allocate a new custom device */
+        if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
             return std::make_shared<CustomRobotDevice>(devInfo, port);
 
         return nullptr;
