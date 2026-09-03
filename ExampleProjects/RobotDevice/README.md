@@ -1,7 +1,7 @@
 # SDK: Custom Robot Device Example Project
 
 ## Introduction
-This [Custom Robot Device Example](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/CustomRobotDevice) project demonstrates the creation of custom `ISDevice` and custom `DeviceFactory` child classes, using the Inertial Sense SDK.  It also shows how to use `PortManager` and `DeviceManager` to maintain the set of discovered ports and discovered devices that come out of factory operations.  A simple application can be built from the provided code out of the box.  **This example requires an IMX device to be connected to your workstation.**
+This [Custom Robot Device Example](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/RobotDevice) project demonstrates the creation of custom `ISDevice` and custom `DeviceFactory` child classes, using the Inertial Sense SDK.  It also shows how to use `PortManager` and `DeviceManager` to maintain the set of discovered ports and discovered devices that come out of factory operations.  A simple application can be built from the provided code out of the box.  **This example requires an IMX device to be connected to your workstation.**
 
 ## Purpose and Design
 This project is constructed as both a walk-through and a template for users wishing to learn how to make use of three modules of the SDK that would be important pieces for device management.    
@@ -12,14 +12,14 @@ The second is the `DeviceFactory` which is an abstract C++ class that is respons
 
 Finally, we demonstrate the `DeviceManager`, which uses the custom device factory to create and keep a known list of available devices, optionally filtered to a limited set, or all.  It will provide access to a factory's devices as requested.
 
-In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX unit.  Conceptually, we are presenting the idea of a robot device we have built with an IMX on board, and we will be reading data from the IMX.  Our custom device we are calling `CustomRobotDevice` and it is discovered via our `CustomDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  See this dependency (dashed) and process (solid) diagram for an overview:
+In this example we use a Linux platform USB serial port for our device connection to an Inertial Sense IMX unit.  Conceptually, we are presenting the idea of a robot device we have built with an IMX on board, and we will be reading data from the IMX.  Our custom device we are calling `RobotDevice` and it is discovered via our `RobotDeviceFactory`.  We make use of the SDK's provided `SerialPortFactory` extension of `PortFactory` to bind to the port, and `PortManager` as well.  See this dependency (dashed) and process (solid) diagram for an overview:
 
 
 ```mermaid
 graph TD
    A[[main]] --> B[[device step loop]]
-   A -.-> C(CustomRobotDevice)
-   A -.-> D(CustomDeviceFactory)
+   A -.-> C(RobotDevice)
+   A -.-> D(RobotDeviceFactory)
    A -.-> E(DeviceManager)     
    A -.-> F(SerialPortFactory)
    A -.-> G(PortManager)
@@ -67,9 +67,9 @@ The following implementation instructions identify some examples of similar code
 #### Project Files
 
 * [main.cpp](./main.cpp)
-* [CustomDeviceFactory.h](./CustomDeviceFactory.h)
-* [CustomRobotDevice.cpp](./CustomRobotDevice.cpp)
-* [CustomRobotDevice.h](./CustomRobotDevice.h)
+* [RobotDeviceFactory.h](./RobotDeviceFactory.h)
+* [RobotDevice.cpp](./RobotDevice.cpp)
+* [RobotDevice.h](./RobotDevice.h)
 
 Note these are local to this folder.
 
@@ -90,7 +90,7 @@ Note file name list entries relative to SDK `src/` folder, with local relative p
 ## Implementation
 
 ### Step 1: Create Custom Device Header
-The `DeviceFactory` is designed to provide a base class for building a device discoverer, upon any `ISDevice` type, which populates a `dev_info_t`.  Our example device implementation is called `CustomRobotDevice` and extends the `ISDevice` class.  We communicate with the device via the port's `port_handle_t` bound by the `PortFactory`.  We implement data handling methods unique to our device in the code. 
+The `DeviceFactory` is designed to provide a base class for building a device discoverer, upon any `ISDevice` type, which populates a `dev_info_t`.  Our example device implementation is called `RobotDevice` and extends the `ISDevice` class.  We communicate with the device via the port's `port_handle_t` bound by the `PortFactory`.  We implement data handling methods unique to our device in the code. 
 
 ```c++
 #include "PortFactory.h"
@@ -99,14 +99,14 @@ The `DeviceFactory` is designed to provide a base class for building a device di
 
 Inherit from ISDevice, and add anything custom to make this device unique.  In this example we show a data_sets.h type for the DID data we ask for in this application by default, `DID_INS_1`: 
 ```c++
-class CustomRobotDevice : public ISDevice {
+class RobotDevice : public ISDevice {
 
 public:
    /** structures to hold the data we are interested in for this device, from data_sets.h */
    ins_1_t insData = {};
 ```
 
-Function declarations for our new class include at least one message handler callback implementing a virtual `ISDevice` function. Implemented in CustomRobotDevice.cpp. We don't need to override `step()` ourselves - it's called directly on our device from the application's read loop (see Step 8), and the inherited `ISDevice::step()` implementation is all we need for this example.
+Function declarations for our new class include at least one message handler callback implementing a virtual `ISDevice` function. Implemented in RobotDevice.cpp. We don't need to override `step()` ourselves - it's called directly on our device from the application's read loop (see Step 8), and the inherited `ISDevice::step()` implementation is all we need for this example.
 ```c++
 int onIsbDataHandler(p_data_t* data, port_handle_t port) override;
 ```
@@ -119,16 +119,16 @@ bool configure();
 
 ### Step 2: Extend ISDevice With Custom Device Implementation
 
-In CustomRobotDevice.cpp, we complete the new device implementation, starting with important headers:
+In RobotDevice.cpp, we complete the new device implementation, starting with important headers:
 ```c++
-#include "CustomRobotDevice.h"
+#include "RobotDevice.h"
 #include "ISUtilities.h"
 #include "core/msg_logger.h"
 ```
 
 We use our custom device class to configure the connected device to send us data and process the data.  After verifying connection and stopping all messages, we identify which messages we would like to receive from the device, starting with `DID_INS_1` type by default.  Any desired DID type can be added one per line:
 ```c++
-bool CustomRobotDevice::configure() {
+bool RobotDevice::configure() {
    //...
    std::vector<std::function<bool()>> bcast_calls = {
       [this]() { return BroadcastBinaryData(DID_INS_1, 25); } //,
@@ -137,12 +137,12 @@ bool CustomRobotDevice::configure() {
    //...   
 ```
 
-The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We don't have any custom step logic to add for this example, so `CustomRobotDevice` doesn't override `step()` - the application calls the inherited `ISDevice::step()` directly on our device from its read loop, shown in Step 8.
+The `ISDevice::step()` function is called to process any pending, received data on the bound port, and call any registered handlers for any valid packets which are parsed from that data. Additionally, this call will manage other comm-related tasks such as data/config synchronization to the device, as well as progressing firmware updates, etc.  This function should be called a regular interval fast enough to prevent received data from overflowing the port's RX buffer (typically a 1ms interval or faster, for a 921600 Serial Baud rate).  Returns false if the port is invalid or closed, otherwise true. Note that 'true' does NOT provide any indication of data parsed, etc. Only that the port was valid, and that the maintenance functions were called.  We don't have any custom step logic to add for this example, so `RobotDevice` doesn't override `step()` - the application calls the inherited `ISDevice::step()` directly on our device from its read loop, shown in Step 8.
 
 Finally, we need at least one function to handle the DID messages we receive.  `onIsbDataHandler()` is a callback data handler for the `ISDevice`, and which will be called every time data arrives from the physical device.   `p_data_t` struct pointer represents the buffer of data received from the device, including the data ID, associated flags, and the actual data payload.  `port_handle_t` represents the port that this data was received from.  We copy the data we're interested in to our `ins_1_t` struct, and print a few fields useful to a navigating robot - heading, speed, and solution status - directly to standard out. (Position isn't included here since it's always 0 without a GPS fix.)
 
 ```c++
-int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
+int RobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
    if ( ISDevice::onIsbDataHandler(data, port) ) { 
     
@@ -155,14 +155,14 @@ int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
 
 ### Step 3: Extend DeviceFactory with New Class
-This example creates the `CustomDeviceFactory` derived class specified by the file CustomDeviceFactory.h.  We will derive it from the SDK `DeviceFactory` class.  The factory acts in concert with the `DeviceManager` to discover a physical device connected via the provided `port_handle_t`.   For only specific types of devices that we indicate, it then allocates our device object, giving  us a `device_handle_t` we then use to allow our custom device object to interface with the physical device.
+This example creates the `RobotDeviceFactory` derived class specified by the file RobotDeviceFactory.h.  We will derive it from the SDK `DeviceFactory` class.  The factory acts in concert with the `DeviceManager` to discover a physical device connected via the provided `port_handle_t`.   For only specific types of devices that we indicate, it then allocates our device object, giving  us a `device_handle_t` we then use to allow our custom device object to interface with the physical device.
 
 We need some headers included, and create a derived class:
 ```c++
 #include "DeviceFactory.h"
-#include "CustomRobotDevice.h"
+#include "RobotDevice.h"
 
-class CustomDeviceFactory : public DeviceFactory {
+class RobotDeviceFactory : public DeviceFactory {
 ```
 
 At a minimum to serve our custom device, we must implement the allocateDevice function.
@@ -190,13 +190,13 @@ enum eIsHardwareType
 };
 ```
 
-If the type matches, we return a shared pointer to a new `CustomRobotDevice`.  We are only implementing this one function, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
+If the type matches, we return a shared pointer to a new `RobotDevice`.  We are only implementing this one function, a few lines long, for this new device factory, so we will leave it here in the header rather than create a separate .cpp file.
 ```C++
 device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) override {
 
    /** When we find IMX dev info (any hardware version), we know we want to allocate a new custom device */
    if (devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)
-      return std::make_shared<CustomRobotDevice>(devInfo, port);
+      return std::make_shared<RobotDevice>(devInfo, port);
 
    return nullptr;
 }
@@ -204,23 +204,24 @@ device_handle_t allocateDevice(const dev_info_t &devInfo, port_handle_t port) ov
 
 
 ### Step 4: Create Example Application
-Create a new .cpp file for the application, which for us is [main.cpp](./main.cpp) in this example.  Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference the new `CustomRobotDevice` and `CustomDeviceFactory` classes, and don't forget the `DeviceManager` and `PortManager`:
+Create a new .cpp file for the application, which for us is [main.cpp](./main.cpp) in this example.  Include headers for any desired Inertial Sense SDK utilities, user IO capabilities, etc.  Reference the new `RobotDevice` and `RobotDeviceFactory` classes, and don't forget the `DeviceManager` and `PortManager`:
 ```C++
 #include <stdio.h>
 #include "DeviceManager.h"
-#include "CustomRobotDevice.h"
-#include "CustomDeviceFactory.h"
+#include "RobotDevice.h"
+#include "RobotDeviceFactory.h"
 #include "PortManager.h"
 ```
 
-We create a `main_discovery()` that operates on our devices and managers, followed by a `main()` entry point that processes the command line.  This will be the entry point for the application.  Our `main()` uses the command line arg for identifying a port (if given) to be used to search for a device.  If no port is given, we search all available ports in a discovery process.  
+We create a `main_discovery()` that operates on our devices and managers, and a `main()` entry point that processes the command line and calls into it.  Our `main()` uses the command line arg for identifying a port (if given) to be used to search for a device.  If no port is given, we search all available ports in a discovery process.
 
 ```C
 /**
  * Uses portPattern for discovering a device connected to a port in an example of setting up a custom device
- * connection.  Use PortManager and PortFactory to bind a port_handle_t to the named port. With the handle,
- * the port is opened, and DeviceManager and DeviceFactory search for a device of a certain hardware ID.
- * We then receive data from the found device.
+ * connection.  This will attempt to discover ports, retrying up to 3 times.  Use PortManager and PortFactory
+ * to bind a port_handle_t to the port.  Each time ports are discovered, the port is opened, and DeviceManager
+ * and DeviceFactory search for a device of a certain hardware ID.  If an IMX device is found, the discovery
+ * phase will end, and a connection attempt is made.  We then receive data from the found device.
  */
 int main_discovery(const char* portPattern)
 {
@@ -240,7 +241,7 @@ int main(int argc, const char** argv) {
 
 
 ### Step 5: Incorporate Logging
-The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our `ISDevice` extension in CustomRobotDevice.cpp.  The [msg_logger.h](../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  It writes to the file local to the executable called `inertial_sense.log`.  Log commands can be added like so, from a line in CustomRobotDevice.cpp:
+The application code in main.cpp uses standard output status messages to inform the user of what is happening at a high level.  However, the SDK provides it's own logging system, and we demonstrate its use in our `ISDevice` extension in RobotDevice.cpp.  The [msg_logger.h](../../src/core/msg_logger.h) API provides multi-platform message logging with level control, and printf-style format strings support.  It writes to the file local to the executable called `inertial_sense.log`.  Log commands can be added like so, from a line in RobotDevice.cpp:
 
 ```C++
 log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Stop Broadcasts\" request." );
@@ -255,28 +256,28 @@ Facility definitions like `IS_LOG_DEVICE_MANAGER` or `IS_LOG_PORT_FACTORY` ident
 
 
 ### Step 6: Instantiate Managers and Factories
-In `main()`, we started by first doing a nominal check on the command line argument with some usage statement upon invoke error.  Then in `main_discovery()` we create our communications management by instantiating one `PortManager` with a `SerialVirtualPortFactory`, followed by one `DeviceManager` with a `CustomDeviceFactory`, like so:
+In `main()`, we started by first doing a nominal check on the command line argument with some usage statement upon invoke error.  Then in `main_discovery()` we create our communications management by instantiating one `PortManager` with a `SerialVirtualPortFactory`, followed by one `DeviceManager` with a `RobotDeviceFactory`, like so:
 ```C++
 PortManager& pm = PortManager::getInstance();
 pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager that we are interested in Serial Ports
 
 DeviceManager& dm = DeviceManager::getInstance();
-dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
+dm.addDeviceFactory(&RobotDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 ```
 
 ### Step 7: Find and Connect Device
 We are interested in the Port Manager finding all available ports per the search parameter, then with viable ports we try to find a device that matches our description on the other end:
 ```C++    
-std::shared_ptr<CustomRobotDevice> device = nullptr;    
+std::shared_ptr<RobotDevice> device = nullptr;    
 
 pm.discoverPorts(portPattern);  // first let's attempt to discover ports 
 
 if (!pm.empty()) {              
    dm.discoverDevices(IS_HARDWARE_IMX, 1500, DeviceManager::DISCOVERY__CLOSE_PORT_ON_FAILURE);
-   device = dm.getDevices().front()->as<CustomRobotDevice>();
+   device = dm.getDevices().front()->as<RobotDevice>();
 ```
 
-Once we find that IMX device, we'll use it for the remaining operations we do.  We call the `ISDevice::connect()` method.  Note the availability of `ISDevice::isConnected()` as well to check a connection.  We have decoupled the specific configuration operations of the IMX device from the application by creating a new (optional) `configure()` method in our CustomRobotDevice class, which we call here from the application.  That way, we can manage the data requests and data processing all within our new device class and leave the application code more agnostic to the specific things we do with this device.
+Once we find that IMX device, we'll use it for the remaining operations we do.  We call the `ISDevice::connect()` method.  Note the availability of `ISDevice::isConnected()` as well to check a connection.  We have decoupled the specific configuration operations of the IMX device from the application by creating a new (optional) `configure()` method in our RobotDevice class, which we call here from the application.  That way, we can manage the data requests and data processing all within our new device class and leave the application code more agnostic to the specific things we do with this device.
 
 ```C++
 if ( !device->connect() ) {
@@ -287,7 +288,7 @@ if ( !device->configure() ) {
 ```
 
 ### Step 8: Read and Process Device Data
-Our read loop then spins as long as the port is open, to process incoming data from the connected IMX device, and we periodically sleep for the CPU cycles to catch up.  The `ISDevice::step())` function causes the passing of messages between our custom device object and the hardware.
+Our read loop then spins as long as the port is open, to process incoming data from the connected IMX device, and we periodically sleep for the CPU cycles to catch up.  The `ISDevice::step()` function causes the passing of messages between our custom device object and the hardware.
 ```c++
 while ( portIsOpened(device->port) ) {                
    device->step();                          
@@ -304,7 +305,7 @@ while ( portIsOpened(device->port) ) {
    ```
 2. Create build directory
    ```bash
-   cd inertial-sense-sdk/ExampleProjects/CustomRobotDevice
+   cd inertial-sense-sdk/ExampleProjects/RobotDevice
    mkdir build
    ```
 3. Run cmake from within build directory
@@ -318,16 +319,16 @@ while ( portIsOpened(device->port) ) {
    ```
 5. Run executable, with optionally one argument identifying which port to use
    ```bash
-   ./CustomRobotDevice
+   ./RobotDevice
    ```
    OR
    ```bash
-   ./CustomRobotDevice /dev/ttyACM0
+   ./RobotDevice /dev/ttyACM0
    ```
 
 6. View output from the application
    ```
-   CustomRobotDevice example application started (ctrl+C or ctrl+\ to quit), attempting to use port /dev/ttyACM0
+   RobotDevice example application started (ctrl+C to quit), attempting to use port /dev/ttyACM0
    Found and connected 1 IMX device(s) on port(s): 
    /dev/ttyACM0
 
@@ -350,7 +351,7 @@ while ( portIsOpened(device->port) ) {
 		   Errors    Rx parse 1, temperature 0, self-test 0
 		   hdwStatus (0x02140000)
    ```
-   ... and so on, repeating until commanded to exit using ctrl+C or ctrl+\\.
+   ... and so on, repeating until commanded to exit using ctrl+C.
 
 6. View logged results in the file called `inertial_sense.log` that is written local to the app executable.  If you attempt port discovery, you should see something like this logging inaccessible ports that are encountered in the search process:
    ```

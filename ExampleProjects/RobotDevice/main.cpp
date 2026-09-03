@@ -20,8 +20,8 @@
 
 /** We need the DeviceManager, and the custom device and device factory */
 #include "DeviceManager.h"
-#include "CustomRobotDevice.h"
-#include "CustomDeviceFactory.h"
+#include "RobotDevice.h"
+#include "RobotDeviceFactory.h"
 
 /** Include the SDK PortManager for building and maintaining a list of all ports by name */
 #include "PortManager.h"
@@ -33,7 +33,7 @@
  * unknown device.  This will attempt to discover ports, retrying up to 3 times. Use PortManager and PortFactory
  * to bind a port_handle_t to the port.  Each time ports are discovered, the port is opened, and DeviceManager
  * and DeviceFactory search for a device of a certain hardware ID.  It attempts to discover devices on all known
- * ports.  If an IMX 5.0 device is found, the discovery phase will end, and a connection attempt
+ * ports.  If an IMX device is found, the discovery phase will end, and a connection attempt
  * is made.  We then receive data from the found device.
  */
 int main_discovery(const char* portPattern)
@@ -43,17 +43,17 @@ int main_discovery(const char* portPattern)
      */
     IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
     
-    /** STEP 6: We need a singleton PortManager and SerialPortFactory, and DeviceManager and CustomDeviceFactory;
+    /** STEP 6: We need a singleton PortManager and SerialPortFactory, and DeviceManager and RobotDeviceFactory;
      * we'll make local references, and we register the virtual port factory
      */    
     PortManager& pm = PortManager::getInstance();
     pm.addPortFactory(&SerialPortFactory::getInstance());   // tell the PortManager that we are interested in Serial Ports
 
     DeviceManager& dm = DeviceManager::getInstance();
-    dm.addDeviceFactory(&CustomDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
+    dm.addDeviceFactory(&RobotDeviceFactory::getInstance());  // tell the DeviceManager that we are interested in Custom Devices
 
     /** STEP 7: Discover ports and devices, connect and configure device */
-    std::shared_ptr<CustomRobotDevice> device = nullptr;      // this will be our discovered device... but null for now
+    std::shared_ptr<RobotDevice> device = nullptr;      // this will be our discovered device... but null for now
     
     /** Let the PM find all available ports, then ask for the one specifically indicated on the command line by name */
     int retry = 3;
@@ -74,7 +74,7 @@ int main_discovery(const char* portPattern)
                 // devices.
 
                 // Let's get the first device in our collection of discovered devices                
-                device = dm.getDevices().front()->as<CustomRobotDevice>();
+                device = dm.getDevices().front()->as<RobotDevice>();
                 break;  // we're done, so we'll break out of our retry loop.
 
             }
@@ -132,7 +132,7 @@ int main(int argc, const char** argv) {
         return -1;
     }
 
-    std::cout << "CustomRobotDevice example application started (ctrl+C or ctrl+\\ to quit)";
+    std::cout << "RobotDevice example application started (ctrl+C or ctrl+\\ to quit)";
     if (argc == 2) {
         portPattern = argv[1];
         std::cout << ", attempting to use port " << portPattern;

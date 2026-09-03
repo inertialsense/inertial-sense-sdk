@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
-project(CustomRobotDevice)
+project(RobotDevice)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
@@ -14,7 +14,7 @@ include_directories(
 # Define the executable
 add_executable(${PROJECT_NAME}
     main.cpp
-    CustomRobotDevice.cpp
+    RobotDevice.cpp
 )
 
 # Build using C11 and CXX20

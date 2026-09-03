@@ -1,7 +1,7 @@
 /**
- * @file CustomRobotDevice.cpp
+ * @file RobotDevice.cpp
  * @brief ${BRIEF_DESC}
- * 
+ *
  * @remark Based upon the Example Projects NTRIP_rover, Simple_Discovery, Minimal_ISDevice
  * @author TylerS
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
@@ -12,7 +12,7 @@
 
 /** Include the new device header file for class derived from parent ISDevice.h
  */
-#include "CustomRobotDevice.h"
+#include "RobotDevice.h"
 
 /** Include utility functions for use by custom device class members defined here
  */
@@ -23,11 +23,11 @@
  * Called by our application to set up this device and control the data broadcast
  * @return true or false for success of broadcast control commands
  */
-bool CustomRobotDevice::configure() {
+bool RobotDevice::configure() {
     if (!isConnected())
         return false;
 
-    /** Devices can be configured to stream data by default on powerup - let's stop all other messages before enabling ours    
+    /** Devices can be configured to stream data by default on powerup - let's stop all other messages before enabling ours
      * Stop all message broadcasts from the device (in case any messaging was persistently enabled previously);
      * true argument means all ports
      */
@@ -35,14 +35,14 @@ bool CustomRobotDevice::configure() {
         log_msg(IS_LOG_ISDEVICE, IS_LOG_LEVEL_ERROR, "Failed to send \"Stop Broadcasts\" request." );
         return false;
     }
-    
+
     /** Let's stream DID_INS_1 at 1/25th the default DID_INS_1 rate (device dependent, but approx 1x = 7ms)
      * Add any other streams desired here, as shown in the commented-out example
-     * For example, add request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task") 
+     * For example, add request SYS_PARAMS every 100 ms (SYS_PARAMS is ran on the 1ms "Maintenance Task")
      */
     std::vector<std::function<bool()>> bcast_calls = {
         [this]() { return BroadcastBinaryData(DID_INS_1, 25); } //,
-       //[this]() { return BroadcastBinaryData(DID_SYS_PARAMS, 100); }  
+       //[this]() { return BroadcastBinaryData(DID_SYS_PARAMS, 100); }
     };
 
     /** Iterate and execute, logging failures if any */
@@ -65,7 +65,7 @@ bool CustomRobotDevice::configure() {
  * @returns 0 if this message was successfully processed by a protocol-specific handler, and should not be further
  * processed, otherwise return !0
  */
-int CustomRobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
+int RobotDevice::onIsbDataHandler(p_data_t* data, port_handle_t port) {
 
     if ( ISDevice::onIsbDataHandler(data, port) ) { // let ISDevice do its handling; we call it first for the integrity check it does
 
