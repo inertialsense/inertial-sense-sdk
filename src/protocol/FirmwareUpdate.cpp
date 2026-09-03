@@ -4,6 +4,8 @@
 
 #include "FirmwareUpdate.h"
 
+#include <string.h>     // strnlen(), bounding a device-supplied progress message
+
 #ifdef __ZEPHYR__
 #include <zephyr/random/random.h>
 #endif
@@ -221,8 +223,13 @@ namespace fwUpdate {
             case MSG_UPDATE_PROGRESS:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]",
                                     payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
-                if (payload->data.progress.msg_len > 0)
-                    cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %s", &payload->data.progress.message);
+                if (payload->data.progress.msg_len > 0) {
+                    // Bounded: a device that predates the terminator sends msg_len bytes with no NUL,
+                    // and %s would read past the message into the rest of the buffer.
+                    const char* m = (const char*)&payload->data.progress.message;
+                    cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %.*s",
+                                        (int)strnlen(m, payload->data.progress.msg_len), m);
+                }
                 break;
             case MSG_UPDATE_DONE:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s']",
@@ -276,7 +283,13 @@ namespace fwUpdate {
             case TARGET_IMX5: return "IMX-5";
             case TARGET_GPX1: return "GPX-1";
             case TARGET_IMX6: return "IMX-6";
-            case TARGET_UBLOX_F9P: return "uBlox F9P";
+            case TARGET_UBLOX:
+                switch (target & 0x0F) {
+                    case 1: return "u-blox.1";
+                    case 2: return "u-blox.2";
+                    default: return "u-blox";
+                }
+                break;
             case TARGET_SONY_CXD5610:
                 switch (target & 0x0F) {
                     case 1: return "CXD5610.1";
@@ -411,13 +424,17 @@ namespace fwUpdate {
         if (message) {
             va_list ap;
             va_start(ap, message);
-            msg_len = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
+            int n = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
             va_end(ap);
+            if ((n < 0) || ((size_t)n >= sizeof(buffer) - 1))
+                return false;           // formatting failed, or the message would be truncated
+
+            // +1 for the terminator. msg_len is the number of bytes placed on the wire, and every
+            // consumer reads those bytes as a C string, so the NUL has to be among them. 0 still
+            // means "no message".
+            msg_len = (size_t)n + 1;
         } else
             memset(buffer, 0, sizeof(buffer));
-
-        if (msg_len >= sizeof(buffer)-1)
-            return false;
 
         payload_t msg;
         msg.hdr.target_device = TARGET_HOST; // progress messages always go back to the host.
@@ -474,6 +491,11 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateDevice::fwUpdate_resetEngine() {
         resend_count = 0;
+        pause_requested = false;
+        slowdown_requested = false;   // nor does a slowdown request
+        chunks_held = false;  // a hold belonging to the previous session does not gate this one
+        resend_pending_id = CHUNK_ID_PAUSE;
+        resend_stragglers = 0;
         session_id = 0;       // the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         last_chunk_id = -1;   // the last received chunk id from a CHUNK message.  -1 == no chunk yet received; the next received chunk must be 0.
         session_status = NOT_STARTED;
@@ -567,6 +589,19 @@ namespace fwUpdate {
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
         if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) {
+            // ...unless this is a straggler: a chunk the host had already sent when it was told to
+            // wait, or one still in flight from before the resume it has since been given. Nothing
+            // was lost, and a request for the chunk actually wanted is already on the wire, so
+            // repeating it says nothing new -- while to an adaptive host each repeat reads as a
+            // fresh fault and slows the whole transfer down. Bounded, so that a wanted chunk which
+            // is itself lost still gets asked for again rather than both ends falling silent.
+            const uint16_t wanted = (uint16_t)(last_chunk_id + 1);
+            if (chunks_held)
+                return false;
+            if ((resend_pending_id == wanted) && (resend_stragglers < MAX_DROPPED_STRAGGLERS)) {
+                resend_stragglers++;
+                return false;
+            }
 #ifdef __ZEPHYR__
             printk("[FwUpdate] handleChunk RETRY out_of_seq: chunk_id=%u expected=%u (last=%u)\n",
                    (unsigned)payload.data.chunk.chunk_id, (unsigned)(last_chunk_id + 1), (unsigned)last_chunk_id);
@@ -594,7 +629,26 @@ namespace fwUpdate {
             printk("[FwUpdate] handleChunk RETRY write_error: chunk_id=%u offset=0x%x len=%u writeImageChunk_status=%d\n",
                    (unsigned)payload.data.chunk.chunk_id, (unsigned)chnk_offset, (unsigned)payload.data.chunk.data_len, (int)write_st);
 #endif
-            fwUpdate_sendRetry(REASON_WRITE_ERROR);
+            // A device with no room is busy, not broken. Asking the host to hold is the difference
+            // between it waiting and it resending as fast as the link allows -- which starves the very
+            // work that would free the room. The retryable status still stands, so the host does not
+            // advance its counter or hash bytes that were never stored.
+            if (pause_requested) {
+                pause_requested = false;
+                fwUpdate_sendRetryFrom(CHUNK_ID_PAUSE, REASON_TOO_FAST);
+            } else if (slowdown_requested) {
+                // Naming a real chunk rather than CHUNK_ID_PAUSE is what makes the host MEASURE the
+                // rate it achieved and pace itself to it from then on, instead of holding and asking
+                // again next chunk. For a device limited by a rate rather than by an event, that is
+                // the difference between one message and one per chunk for the rest of the transfer.
+                slowdown_requested = false;
+                fwUpdate_sendRetryFrom(last_chunk_id + 1, REASON_TOO_FAST);
+            } else {
+                // Neither was asked for, so this is a real write failure. Note REASON_WRITE_ERROR
+                // counts toward the host's give-up accounting, which REASON_TOO_FAST deliberately
+                // does not -- a device that means "not yet" must say so with one of the two above.
+                fwUpdate_sendRetry(REASON_WRITE_ERROR);
+            }
             return false;
         }
 
@@ -698,13 +752,33 @@ namespace fwUpdate {
      * @return return true is a retry was sent, or false if a retry was not sent.  NOTE this is not an error, as a valid message will not send a retry.
      */
     bool FirmwareUpdateDevice::fwUpdate_sendRetry(resend_reason_e reason) {
+        // Same message, with the next wanted chunk filled in; sendRetryFrom() is where the record of
+        // what has been asked for is kept, so both spellings of "resend" go through it.
+        return fwUpdate_sendRetryFrom((uint16_t)(last_chunk_id + 1), reason);
+    }
+
+    /**
+     * Sends a REQ_RESEND_CHUNK naming a specific chunk rather than the next expected one.
+     * @param chunk_id the chunk to resume from, or CHUNK_ID_PAUSE with REASON_TOO_FAST to suspend
+     * @param reason why the request is being made
+     * @return true if the request was sent
+     */
+    bool FirmwareUpdateDevice::fwUpdate_sendRetryFrom(uint16_t chunk_id, resend_reason_e reason) {
+        // A request naming a real chunk is what lifts a hold, whatever its reason; only the pause
+        // form puts one in place. A real chunk id also becomes the outstanding request, so the
+        // stragglers that follow it can be told apart from a chunk that genuinely went missing.
+        chunks_held = (chunk_id == CHUNK_ID_PAUSE);
+        if (!chunks_held) {
+            resend_pending_id = chunk_id;
+            resend_stragglers = 0;
+        }
+
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_REQ_RESEND_CHUNK;
         response.data.req_resend.session_id = session_id;
-        response.data.req_resend.chunk_id = last_chunk_id + 1;
+        response.data.req_resend.chunk_id = chunk_id;
         response.data.req_resend.reason = reason;
-        //resend_count++;
         return fwUpdate_sendPayload(response);
     }
 
@@ -768,8 +842,22 @@ namespace fwUpdate {
                     return false; // this suggests that this message belongs to another session - we should ignore it.
                 return fwUpdate_handleUpdateProgress(payload);
             case MSG_REQ_RESEND_CHUNK:
+                if ((payload.data.req_resend.reason == REASON_TOO_FAST) &&
+                    (payload.data.req_resend.chunk_id == CHUNK_ID_PAUSE)) {
+                    // Hold everything. Not a resend and not an error: the chunk position is untouched,
+                    // and only a later request naming a real chunk lifts this. The handler still runs,
+                    // because that is where a host adapts its pacing.
+                    chunks_paused = true;
+                    return fwUpdate_handleResendChunk(payload);
+                }
+
+                chunks_paused = false;      // any real chunk id resumes, whatever the reason
                 resend_count += next_chunk_id - payload.data.req_resend.chunk_id;
                 next_chunk_id = payload.data.req_resend.chunk_id;
+
+                if (payload.data.req_resend.reason == REASON_TOO_FAST)
+                    chunks_hold_until = current_timeMs() + FLOW_CONTROL_DELAY_MS;
+
                 return fwUpdate_handleResendChunk(payload);
             case MSG_UPDATE_DONE:
                 session_status = payload.data.resp_done.status;
@@ -890,6 +978,15 @@ namespace fwUpdate {
         if (next_chunk_id >= session_total_chunks)
             return 0; // don't keep sending chunks... but also, don't "finish" the update (that's the remote's job).
 
+        // Honour flow control. The remaining count is returned rather than 0, so a caller cannot read
+        // "held for a moment" as "nothing left to send".
+        if (chunks_paused)
+            return (session_total_chunks - next_chunk_id);
+
+        if ((chunks_hold_until != 0) && (current_timeMs() < chunks_hold_until))
+            return (session_total_chunks - next_chunk_id);
+        chunks_hold_until = 0;
+
         // I'm exploiting the pack/unpack + build_buffer to allow building a payload in place, including room for the chunk data.
         msg->hdr.target_device = session_target;
         msg->hdr.msg_type = fwUpdate::MSG_UPDATE_CHUNK;
@@ -941,6 +1038,8 @@ namespace fwUpdate {
         session_image_size = 0;
         session_image_slot = 0;
         next_chunk_id = 0;
+        chunks_paused = false;
+        chunks_hold_until = 0;
         md5_init(md5Context);
         return true;
     }

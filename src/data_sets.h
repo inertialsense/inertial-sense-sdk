@@ -604,7 +604,7 @@ enum eIsHardwareType
     IS_HARDWARE_TYPE_EVB        = 2,   //!< EVB (evaluation board)
     IS_HARDWARE_TYPE_IMX        = 3,   //!< IMX
     IS_HARDWARE_TYPE_GPX        = 4,   //!< GPX
-    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  //!< Ublox F9P GNSS receiver
+    IS_HDW_GNSS_UBLOX           = IS_HDW_TYPE_PERIPHERAL + 1,  //!< u-blox GNSS receiver (model-agnostic: F9P, ZED-X20P, ...)
     IS_HDW_GNSS_SONY            = IS_HDW_TYPE_PERIPHERAL + 2,  //!< Sony CXD5610 GNSS receiver
     IS_HDW_GNSS_SEPTENTRIO      = IS_HDW_TYPE_PERIPHERAL + 3,  //!< Septentrio GNSS receiver
     IS_HDW_GNSS_STM_TESSIO      = IS_HDW_TYPE_PERIPHERAL + 4,  //!< STM Tessio GNSS receiver
@@ -630,6 +630,12 @@ static const is_hardware_t IS_HDW_TESSIO_6       = ENCODE_HDW_ID(IS_HDW_GNSS_STM
 static const is_hardware_t IS_HDW_SEPTENTRIO_G5  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'G' - 'A', 5);
 static const is_hardware_t IS_HDW_SEPTENTRIO_P3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'P' - 'A', 3);
 static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEPTENTRIO, 'M' - 'A', 3);
+
+// Raw GPIO level read from the board-identity strap pin (GPX_nIMX_PIN) at early boot, used to tell an
+// IMX from a GPX on shared PCB variants (see board_init() in mcu/startup/init.c). These are boolean
+// pin-level values (0/1), NOT eIsHardwareType wire values (IS_HARDWARE_TYPE_IMX=3 / IS_HARDWARE_TYPE_GPX=4).
+#define BOARD_IS_IMX    0
+#define BOARD_IS_GPX    1
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 /// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
@@ -666,7 +672,7 @@ typedef struct PACKED
 
     uint32_t        serialNumber;                              //!< Serial number
 
-    uint8_t         hardwareVer[4];                            //!< Hardware version
+    uint8_t         hardwareVer[4];                            //!< Hardware version: [0]=major, [1]=minor, [3]=IMU population type on IMX-6 (see eImx6ImuPopulationType)
 
     uint8_t         firmwareVer[4];                            //!< Firmware (software) version
 
@@ -3202,7 +3208,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG4_X20                                                      = (int)5,   //!< PCB RUG-4-X20:       PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG4_SG5                                                      = (int)6,   //!< PCB RUG-4-SG5:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
     PLATFORM_CFG_TYPE_RUG4_GPX                                                      = (int)7,   //!< PCB RUG-4-GPX:       PPS1 on G15 (pin 20), PPS2 on G11 (pin 16)
-    PLATFORM_CFG_TYPE_RUG_G0                                                        = (int)8,   //!< PCB RUG-3.x.         PPS disabled
+    PLATFORM_CFG_TYPE_RUGn_G0                                                       = (int)8,   //!< PCB RUG-x.x. (i.e. RUG-3, RUG-4) PPS disabled
     PLATFORM_CFG_TYPE_RUG3_G1                                                       = (int)9,   //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_RUG3_G2                                                       = (int)10,  //!< PCB RUG-3.x.         PPS1 on G15 (pin 20)
     PLATFORM_CFG_TYPE_EVB2_G2                                                       = (int)11,  //!< EVB-2 carrier board

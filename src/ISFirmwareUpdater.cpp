@@ -179,6 +179,24 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpload(fwUpdate::target_t
     // std::lock_guard<std::recursive_mutex> lock(mutex);
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
+    // Each upload re-learns its own pace. Carrying a backoff over would make a fast target inherit
+    // the penalty earned by a slow one -- a package that updates several devices would get
+    // progressively slower for reasons that have nothing to do with the device being written.
+    chunkDelayFloor = startingChunkDelay(_target, chunkSize);
+    chunkDelay = chunkDelayFloor;
+    chunksSinceResend = 0;
+    paceWindowStartMs = current_timeMs();
+    paceWindowChunks = 0;
+    holdStartedMs = 0;
+
+    // Same reasoning applies to the give-up-guard counters: they're session-scoped state, so a
+    // package updating several targets in sequence must not let one target's near-miss count
+    // toward the next target's give-up threshold.
+    hasResentChunk = false;
+    last_resent_chunk = 0;
+    resent_chunkid_count = 0;
+    resent_chunkid_time = 0;
+
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
         // check into the current archive for this file
@@ -348,10 +366,63 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
 
     // TODO: LOG msg.data.req_resend.reason
     uint32_t current_ms = current_timeMs();
-    if (msg.data.req_resend.chunk_id == last_resent_chunk) {
+
+    // Flow control is not failure, so TOO_FAST never reaches the give-up accounting below. A target
+    // may ask for room many times in one transfer, and the pause form carries the same chunk id every
+    // time -- either would count a device that is merely busy toward a write-failure verdict.
+    if (msg.data.req_resend.reason == fwUpdate::REASON_TOO_FAST) {
+        // The pause form has no chunk to send: sending is held until a resume names one. It also
+        // carries no rate to learn from, so the pace is left alone. A target that holds and then
+        // resumes is doing its own flow control and is not asking for a different steady-state pace;
+        // deriving one anyway folds the wait into the measured ms/chunk and then adds it back as
+        // delay, which ratchets the pace upward for as long as the target keeps holding. A target
+        // that instead names a real chunk is complaining about the rate, and that is worth measuring.
+        if (msg.data.req_resend.chunk_id == fwUpdate::CHUNK_ID_PAUSE) {
+            // A brief hold is how this protocol paces itself, not news. Reporting each one turns a
+            // transfer that is behaving exactly as designed into a wall of status messages, so it
+            // goes to the log and reaches the progress stream only if it lasts long enough to be
+            // the reason progress has stopped (see noteHoldForProgress()).
+            if (holdStartedMs == 0)
+                holdStartedMs = current_ms;
+            log_more_debug(IS_LOG_FWUPDATE, "Remote asked to hold; chunk delay unchanged at %ums (%u chunks into the pace window)",
+                           chunkDelay, (unsigned)paceWindowChunks);
+            return true;
+        }
+
+        holdStartedMs = 0;      // a real chunk id lifts the hold
+
+        uint32_t sustained = paceWindowChunks;      // for the log line; derive resets the window
+        derivePaceFromWindow(current_ms);
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote asked to slow down after %u chunks; chunk delay now %ums",
+                            (unsigned)sustained, chunkDelay);
+
+        // Honour the pace that was just derived, rather than sending immediately. Sending here
+        // bypasses the nextChunkSend gate that fwUpdate_step() consults -- and it is the ONLY reader
+        // of that gate -- so a target that refuses again is answered one round trip later, at which
+        // point the delay is raised again and sent through immediately again. Measured: at a 503ms
+        // derived delay the requests arrived 88ms apart, the delay climbing 1ms each time and
+        // throttling nothing. Scheduling instead makes the derived rate the rate.
+        nextChunkSend = current_ms + chunkDelay;
+        return true;
+    }
+
+    // Any other resend means this target could not take the data at the rate it was offered, but
+    // says nothing about what rate it could take -- so there is nothing to measure, and the delay
+    // goes up by half again. Progress toward the next decay is forfeited: the run of clean chunks
+    // that was accumulating clearly was not clean.
+    if (msg.data.req_resend.reason != fwUpdate::REASON_NONE) {
+        uint32_t raised = (uint32_t)chunkDelay + (chunkDelay / 2);
+        if (raised <= chunkDelay)
+            raised = (uint32_t)chunkDelay + 1;
+        chunkDelay = (raised < CHUNK_DELAY_MAX_MS) ? (uint16_t)raised : CHUNK_DELAY_MAX_MS;
+        chunksSinceResend = 0;
+    }
+
+    if (hasResentChunk && (msg.data.req_resend.chunk_id == last_resent_chunk)) {
         resent_chunkid_count++;
-        // If we have more than 10 consecutive write errors in more than 5 seconds, fail out
-        if ((resent_chunkid_count > 10) && (current_ms - resent_chunkid_time > 5000)) {
+        // Repeatedly failing the SAME chunk is a target that cannot store it, not one that is busy;
+        // pacing will never fix that, so stop rather than retry forever.
+        if ((resent_chunkid_count > MAX_SAME_CHUNK_RESENDS) && (current_ms - resent_chunkid_time > 5000)) {
             switch (msg.data.req_resend.reason) {
                 case fwUpdate::REASON_WRITE_ERROR:
                     session_status = fwUpdate::ERR_FLASH_WRITE_FAILURE;
@@ -360,6 +431,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                 case fwUpdate::REASON_INVALID_SIZE:
                     session_status = fwUpdate::ERR_INVALID_CHUNK;
                     break;
+                case fwUpdate::REASON_TOO_FAST:     // returned above; listed so the switch stays exhaustive
                 case fwUpdate::REASON_NONE:
                     break;
             }
@@ -367,12 +439,22 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
             return false;
         }
     } else {
+        hasResentChunk = true;
+        last_resent_chunk = msg.data.req_resend.chunk_id;
         resent_chunkid_count = 0;
         resent_chunkid_time = current_ms;
     }
 
-    LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
-    nextChunkSend = current_timeMs() + resendChunkDelay;
+    // REASON_NONE naming a real chunk is a target lifting a hold, not reporting a fault, and it is
+    // the other half of every hold above -- so it belongs in the log for the same reason they do.
+    // A resend with a reason IS worth reporting: something went wrong.
+    if (msg.data.req_resend.reason == fwUpdate::REASON_NONE) {
+        holdStartedMs = 0;
+        log_more_debug(IS_LOG_FWUPDATE, "Remote resumed from chunk %d", msg.data.req_resend.chunk_id);
+    } else {
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+    }
+
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
 
@@ -385,8 +467,23 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     progress_total = msg.data.progress.totl_chunks;
     progress_num = msg.data.progress.num_chunks;
     // percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
-    const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
-    LOG_FWUPDATE_STATUS(static_cast<eLogLevel>(msg.data.progress.msg_level), message);
+    // Bounded, and passed as an argument rather than as the format string: the text comes from the
+    // device, so a '%' in it would otherwise be interpreted, and a device that predates the wire
+    // terminator sends msg_len bytes with no NUL for %s to stop at.
+    const uint8_t msg_len = msg.data.progress.msg_len;
+    const char* message = (msg_len > 0) ? (const char*)&msg.data.progress.message : "";
+    LOG_FWUPDATE_STATUS(static_cast<eLogLevel>(msg.data.progress.msg_level), "%.*s",
+                        (int)strnlen(message, msg_len), message);
+
+    // The per-frame holds are silent by design, but one that has outlasted several progress reports
+    // is the explanation for a chunk count that has stopped moving, and saying nothing there reads
+    // as a hang.
+    if (holdStartedMs != 0) {
+        const uint32_t heldMs = current_timeMs() - holdStartedMs;
+        if (heldMs > (HOLD_REPORT_PROGRESS_PERIODS * (uint32_t)progressRate))
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Waiting on target; sending held for %ums", (unsigned)heldMs);
+    }
+
     return true;
 }
 
@@ -545,7 +642,7 @@ bool ISFirmwareUpdater::step() {
     }
 
     if (lastStatus != session_status) {
-        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
+        LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
         lastStatus = session_status;
         fnStep.mark("Finished progress callbacks.");
     }
@@ -594,8 +691,15 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
     switch(session_status) {
         case fwUpdate::READY:
         case fwUpdate::IN_PROGRESS:
-            if (nextChunkSend < current_timeMs()) // don't send chunks too fast
+            if (nextChunkSend < current_timeMs()) { // don't send chunks too fast
+                // Credit whatever actually reached the wire. next_chunk_id advances only on a
+                // successful write, so this counts chunks the target has been given and has not
+                // complained about -- which is what earns the pace back.
+                uint16_t before = next_chunk_id;
                 fwUpdate_sendNextChunk();
+                if (next_chunk_id > before)
+                    creditChunkProgress((uint16_t)(next_chunk_id - before));
+            }
             break;
         case fwUpdate::FINISHED:
             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
@@ -641,6 +745,14 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
 
+    // Arm the pace BEFORE the local-device branch below returns. A device updater living in this
+    // process is still being sent to, and it is the one that most needs pacing: it accepts a message
+    // the instant it is handed one, so nothing else throttles the stream. Left after that early
+    // return, chunkDelay was computed, logged and never applied for ISB, DFU or any other in-process
+    // updater -- fwUpdate_step()'s gate stayed permanently open and chunks went out as fast as it was
+    // called. Measured before this: 7 chunks in 71ms against a 226ms derived delay.
+    nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
+
     if (deviceUpdater != nullptr) {
         bool result = deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
         if (!toHost.empty()) // check for any responses
@@ -656,8 +768,6 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
         }
     }
     // TODO: end
-
-    nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
 
     port_handle_t preferredPort = portIsOpened(device->port) ? device->port : (portIsOpened(port) ? port : nullptr);
     int result = comManagerSendData(preferredPort, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
@@ -1009,7 +1119,7 @@ void ISFirmwareUpdater::cmd_ExtractPackage(ISFwUpdaterCmd cmd) {
  * @brief processes the manifest command "target" responsible for setting the target device to apply all subsequent command towards.
  * @param args a set of positional arguments
  * This command has the following arguments:
- *     target ID [required] :: One of IMX5, IMX6, GPX1, GNSS1, GNSS2
+ *     target ID [required] :: One of IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2, UBX (bare UBX addresses the first u-blox receiver, same as UBX1)
  *     timeout [optional] :: the number of milliseconds to wait for a response from the requested target (defaults to 0ms, or no wait)
  *     interval [optional] :: the number of milliseconds between re-request attempts, while waiting for a response (0ms (default) mean do not send any additional re-requests)
  *     on_timeout [optional] :: a label to jump to in the event that the timeout occurs waiting for the device
@@ -1027,8 +1137,11 @@ void ISFirmwareUpdater::cmd_SetTarget(ISFwUpdaterCmd& cmd) {
         else if (targetName == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);        // TODO: Remove this 06/30/2027 - obsoleted by CXD1
         else if (targetName == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);        // TODO: Remove this 06/30/2027 - obsoleted by CXD2
         else if (targetName == "SEPT") setTarget(fwUpdate::TARGET_SEPTENTRIO);
+        else if (targetName == "UBX1") setTarget(fwUpdate::TARGET_UBLOX__1);
+        else if (targetName == "UBX2") setTarget(fwUpdate::TARGET_UBLOX__2);
+        else if (targetName == "UBX") setTarget(fwUpdate::TARGET_UBLOX__1);      // bare name addresses the first receiver
         else {
-            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT)", targetName.c_str());
+            handleCommandError(cmd, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, IMX6, GPX1, CXD1, CXD2, SEPT, UBX1, UBX2, UBX)", targetName.c_str());
             cmd.status = ISFwUpdaterCmd::CMD_ERROR;
             return;
         }
@@ -1140,7 +1253,7 @@ void ISFirmwareUpdater::cmd_Delay(ISFwUpdaterCmd& cmd) {
  * This command accepts the following arguments:
  *     filename [required] :: the path/filename of the image to upload to the device
  *     interval [optional] :: the period interval (in milliseconds) which the remote device should send progress/status reports (default = "250")
- *     chunkSize [optional] :: the size of each chunk to send (default = "512")
+ *     chunkSize [optional] :: the size of each chunk to send (default = FWUPDATE__MAX_CHUNK_SIZE; a device that cannot take that much says so and the host halves it)
  *     force [optional] :: if "true" will cause the upload to occur, bypassing version checking (default = "false");
  */
 void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
@@ -1151,7 +1264,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
         if (cmd.hasArg("slot")) slotNum = std::strtol(cmd.getArg("slot", "0").c_str(), nullptr, 10);
         if (cmd.hasArg("interval")) progressRate = std::strtol(cmd.getArg("interval", "250").c_str(), nullptr, 10);
         // chunkSize, NOT progressRate -- these are separate settings and must not be conflated.
-        if (cmd.hasArg("chunkSize")) chunkSize = std::strtol(cmd.getArg("chunkSize", "512").c_str(), nullptr, 10);
+        if (cmd.hasArg("chunkSize")) chunkSize = std::strtol(cmd.getArg("chunkSize", std::to_string(FWUPDATE__MAX_CHUNK_SIZE)).c_str(), nullptr, 10);
         if (cmd.hasArg("force")) forceUpdate = (cmd.getArg("force", "false") == "true");
 
         // Resolve effective update policy for this upload
@@ -1213,11 +1326,22 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                 pingTimeoutExpires = 0;
             }
 
-            // Set useAlternateMD5 for legacy firmware compatibility (only needed for GPX 2.0.0)
-            if (target_devInfo && remoteDevInfo.firmwareVer[0] == 2 && remoteDevInfo.firmwareVer[1] == 0 && remoteDevInfo.firmwareVer[2] == 0)
+            // The deprecated alternate MD5 is for legacy GPX-1.0 firmware and nothing else.
+            //
+            // It must be opted into on POSITIVE evidence, never by default: the device side has no
+            // alternate path at all -- fwUpdate_handleChunk() always accumulates with the standard
+            // md5_update() -- so declaring an alternate hash guarantees ERR_CHECKSUM_MISMATCH for
+            // every target that does not implement it. Defaulting to it for an unreadable version was
+            // therefore not "safe"; it turned a failed version probe into a failed update, which is
+            // how a directly-attached Septentrio failed after transferring all 2.95 MB correctly
+            // (SN-8553).
+            const bool isGpx10 = target_devInfo &&
+                                 (remoteDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX) &&
+                                 (remoteDevInfo.hardwareVer[0] == 1) && (remoteDevInfo.hardwareVer[1] == 0);
+            const bool fwAtMost20 = (remoteDevInfo.firmwareVer[0] < 2) ||
+                                    ((remoteDevInfo.firmwareVer[0] == 2) && (remoteDevInfo.firmwareVer[1] == 0));
+            if (isGpx10 && fwAtMost20)
                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
-            else if (!target_devInfo)
-                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;  // unknown version, use alternate MD5 for safety
         }
 
         // If the target is a MAIN MCU in bootloader mode, the app firmware version is
@@ -1364,9 +1488,20 @@ void ISFirmwareUpdater::cmd_resetDevice(ISFwUpdaterCmd& cmd) {
             return;
         }
 
-        // Skip reset if no upload was actually performed for this target (e.g. IF_NEWER with same version)
-        if (targetUploadPerformed.find(target) == targetUploadPerformed.end()) {
-            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping reset — no upload was performed for this target");
+        // A reset that belongs to an upgrade step is skipped when that step uploaded nothing -- an
+        // IF_NEWER target already at the right version should not be rebooted for no reason.
+        //
+        // Scoped to steps that actually carry an upload. A reset asked for on its own is a request in
+        // its own right, and MSG_REQ_RESET is a session-less protocol action a host may issue at any
+        // time; refusing it because no image happened to be sent first made an explicit reset
+        // silently do nothing.
+        bool stepHasUpload = false;
+        for (auto& c : commands) {
+            if ((c.step == cmd.step) && (c.cmd == "upload")) { stepHasUpload = true; break; }
+        }
+
+        if (stepHasUpload && (targetUploadPerformed.find(target) == targetUploadPerformed.end())) {
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_INFO, "Skipping reset — this step's upload was not performed");
             cmd.status = ISFwUpdaterCmd::CMD_SUCCESS;
             cmd.resultMsg = "Reset skipped (no upload performed).";
             return;
@@ -1421,12 +1556,17 @@ void ISFirmwareUpdater::initialize() {
     maxAttempts = 5;                                        //!< the maximum number of attempts that will be made before we give up.
     attemptInterval = 350;                                  //!< the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
+    hasResentChunk = false;                                 //!< no req_resend seen yet this package
     last_resent_chunk = 0;                                  //!< the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
     resent_chunkid_count = 0;                               //!< the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
     resent_chunkid_time = 0;                                //!< time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
 
-    chunkDelay = 25;                                        //!< provides a throttling mechanism
-    resendChunkDelay = 250;                                   //!< provides a throttling mechanism
+    chunkDelayFloor = CHUNK_DELAY_BASE_MS;                  //!< raised per-target by initializeUpload()
+    chunkDelay = CHUNK_DELAY_BASE_MS;                       //!< per-chunk pacing; adapts to the target
+    chunksSinceResend = 0;                                  //!< progress toward the next decay step
+    holdStartedMs = 0;                                      //!< no hold outstanding
+    paceWindowStartMs = 0;                                  //!< measurement window for the derived pace
+    paceWindowChunks = 0;
     nextChunkSend = 0;                                      //!< don't send the next chunk until this time has expired.
     updateStartTime = 0;                                    //!< the system time when the firmware was started (for performance reporting)
 
@@ -1438,7 +1578,7 @@ void ISFirmwareUpdater::initialize() {
     activeCmd = &nullCmd;                                    //!< the name (without parameters) of the currently executing command
     failLabel.clear();                                      //!< a label to jump to, when an error occurs
     // requestPending = false;                                 //!< true is an update has been requested, but we're still waiting on a response.
-    slotNum = 0, chunkSize = 512, progressRate = 250;
+    slotNum = 0, chunkSize = FWUPDATE__MAX_CHUNK_SIZE, progressRate = 250;
     forceUpdate = false;
     pingInterval = 1000;                                    //!< delay between attempts to communicate with a target device
     pingNextRetry = 0;                                      //!< time for next ping

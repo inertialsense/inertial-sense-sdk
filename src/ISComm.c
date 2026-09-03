@@ -1385,7 +1385,7 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
     protocol_type_t ptype;
 
 #if DEBUG_PARSE_MSG
-    static const char* ptype_names[_PTYPE_SIZE] = { "NONE", "ERROR", "ISB_ACK", "ISB_CMD", "ISB_DATA", "NMEA", "UBLOX", "RTCM3", "SPARTN", "SONY" };
+    static const char* ptype_names[_PTYPE_SIZE] = { "NONE", "ERROR", "ISB_ACK", "ISB_CMD", "ISB_DATA", "NMEA", "UBLOX", "RTCM3", "SPARTN", "SONY", "SEPT_SBF", "SEPT_REPLY" };
     static char log_msg[512];
     int log_msg_pos = sprintf(log_msg, "parse_messages() parsed:");
 #endif

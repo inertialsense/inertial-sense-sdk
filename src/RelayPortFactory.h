@@ -75,6 +75,8 @@ public:
     struct DeviceRecord {
         std::string  portUrl;       //!< tcp://host:port — the actual port to bind/connect
         dev_info_t   hint = {};     //!< bridgeboard-authoritative device info for seedDeviceHint()
+        bool         hasTcpClient = false;  //!< a client currently holds this device's slot
+        bool         listening = true;      //!< the relay is offering this slot at all
     };
 
     /**
@@ -138,6 +140,55 @@ public:
      * @return a RelayHostStatus snapshot for every known relay host
      */
     std::vector<RelayHostStatus> getRelayHosts() const;
+
+    // -- Per-device status snapshot (returned by getRelayDevices()) --
+    /**
+     * One device as the relay currently reports it, including whether its slot is already taken.
+     *
+     * A device slot takes one client, first-wins, and the bridgeboard accepts a second client before
+     * closing it -- so portOpen() succeeds and the refusal surfaces only later, as ECONNRESET on the
+     * first read. Occupancy therefore cannot be judged by trying to connect, and trying would claim the
+     * slot from whoever holds it. The relay reports it per device with no client attached, which is the
+     * only way to ask the question without answering it destructively.
+     */
+    struct RelayDeviceStatus {
+        std::string relayUrl;               //!< the relay host reporting this device
+        std::string portUrl;                //!< tcp://host:port for this device's slot
+        dev_info_t  hint = {};              //!< announced identity -- a claim, not an answer; see DeviceFactory::beginValidation()
+        bool        hasTcpClient = false;   //!< a client currently holds this slot
+        bool        listening = true;       //!< the relay is offering this slot
+    };
+
+    /**
+     * @return every device reported by every ENABLED relay host, with its current occupancy.
+     *
+     * Serves the cached view maintained by the poll/SSE feed, so it performs no I/O and opens nothing.
+     */
+    std::vector<RelayDeviceStatus> getRelayDevices() const;
+
+    /**
+     * Turns automatic mDNS relay-host discovery on or off. Enabled by default.
+     *
+     * Disabling it stops tick() both announcing interest and acting on answers: no
+     * "_inertialsense-discovery._tcp.local" query is sent, and no host is added, enabled or reaped on
+     * the strength of one. Only hosts given to addRelayHost() are ever known.
+     *
+     * This exists for consumers that must not touch hardware they were not pointed at. Leaving
+     * discovery on and declining to enable what it finds is not equivalent: the query still solicits
+     * responses from every fixture on the network, and hosts still appear in getRelayHosts(). A
+     * consumer sharing a network with manufacturing or calibration equipment wants the query never
+     * sent, which is what this switches off.
+     *
+     * Disabling also drops any viaMdns hosts already known. They cannot be left in place: the only
+     * code that reaps them lives inside the discovery pass this switches off, so they would otherwise
+     * persist for the process's lifetime with no way to age out. Manually added hosts are untouched.
+     *
+     * @param enabled false to stop querying, stop acting on announcements, and drop what mDNS found
+     */
+    void setMdnsDiscoveryEnabled(bool enabled);
+
+    /** @return true if automatic mDNS relay-host discovery is active (the default). */
+    bool isMdnsDiscoveryEnabled() const;
 
     // ============================================================
     // PortFactory interface
@@ -319,6 +370,7 @@ private:
     int64_t offlineEvictMs_ = OFFLINE_EVICT_MS;    //!< mutable threshold used by tick() and reconnectInterval(); override via setOfflineEvictMs()
     int64_t lostBackoffBaseMs_ = 6000;             //!< per-step multiplier for escalating backoff; override via setLostBackoffBaseMs()
     std::chrono::steady_clock::time_point lastMdnsQueryTime_ = {}; //!< rate-limit mDNS queries
+    std::atomic<bool> mdnsDiscoveryEnabled_{true};  //!< false stops tick() querying and acting on mDNS; see setMdnsDiscoveryEnabled()
 
     /**
      * Rate-limited mDNS host discovery (reads from shared mdns:: cache). Adds newly-seen

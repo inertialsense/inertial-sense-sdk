@@ -458,6 +458,12 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
 
 
 bool ISDevice::validate(uint32_t timeout) {
+    // validate() is its own blocking implementation rather than a wrapper around validateAsync(), so
+    // it needs the guard too -- see disableValidation(). Silent, because a caller that disabled
+    // validation asked for exactly this and does not need telling each time.
+    if (doNotValidate)
+        return false;
+
     if (!isConnected()) {
         // INFO, not debug: validating a closed port is a caller mistake in the same class as querying
         // one, and not a hard failure -- but the caller should hear about it. This return also precedes
@@ -568,13 +574,22 @@ bool ISDevice::validate(uint32_t timeout) {
 /**
  * Non-blocking, internal(ish) method to validate a device.  Will be called repeatedly from step() as long as "isValidating" is true.
  * @param timeout the maximum number of milliseconds that must pass without a validating response from the device, before giving up.
- * @return ASYNC_STATE__TIMEOUT if the device fails to validate,
+ * @return ASYNC_STATE__FAILURE if there is no connection to validate over -- distinct from a timeout,
+ *              since nothing was asked and retrying is pointless until the port is reopened,
+ *         ASYNC_STATE__TIMEOUT if the device fails to validate,
  *         ASYNC_STATE__PENDING if the device is still validating,
- *         ASYNC_STATE__SUCCESSif the device successfully validated.
+ *         ASYNC_STATE__SUCCESS if the device successfully validated.
  */
 int ISDevice::validateAsync(uint32_t timeout) {
+    // Guarded here rather than at each caller: step(), DeviceFactory::stepValidation() and the
+    // bootloader updaters all reach validation through this one function, and a device told never to
+    // validate must mean it for all of them. FAILURE rather than TIMEOUT for the same reason a closed
+    // port returns it -- nothing was asked, and retrying will not change that.
+    if (doNotValidate)
+        return ASYNC_STATE__FAILURE;
+
     if (!isConnected())
-        return -1;
+        return ASYNC_STATE__FAILURE;
 
     uint32_t now = current_timeMs();
     FnProfiler fn("ISDevice::validateAsync() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
@@ -757,12 +772,23 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
         case IS_HDW_GNSS_STM_TESSIO: typeName = "STM"; break;
         default: typeName = "\?\?\?"; break;
     }
-    out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
-    if (!(flags & COMPACT_HARDWARE_VER)) {
-        if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
-            out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-            if (devInfo.hardwareVer[3] != 0)
-                out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+    if ((devInfo.hardwareType == IS_HDW_GNSS_UBLOX) && (devInfo.hardwareVer[0] != 0)) {
+        // u-blox receivers do not report a meaningful hardware version, so hardwareVer[] carries the
+        // MODEL IDENTITY instead: [0] = product-line letter as ('X' - 'A'), [1] = model number,
+        // [2] = variant letter as ('D' - 'A') or 0. Render the designation an operator recognizes --
+        // "UBX-X20D" / "UBX-F9P" / "UBX-M8" -- rather than a meaningless "UBX-23.20.3".
+        // The encoding is self-describing, so new models need no table here.
+        out += utils::string_format("%s-%c%u", typeName, (char)('A' + devInfo.hardwareVer[0]), devInfo.hardwareVer[1]);
+        if (devInfo.hardwareVer[2] != 0)
+            out += utils::string_format("%c", (char)('A' + devInfo.hardwareVer[2]));
+    } else {
+        out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
+        if (!(flags & COMPACT_HARDWARE_VER)) {
+            if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+                out += utils::string_format(".%u", devInfo.hardwareVer[2]);
+                if (devInfo.hardwareVer[3] != 0)
+                    out += utils::string_format(".%u", devInfo.hardwareVer[3]);
+            }
         }
     }
     out += ")";
@@ -793,58 +819,9 @@ std::string ISDevice::getName(int flags) const {
  * @return A string containing the formatted firmware information.
  */
 std::string ISDevice::getFirmwareInfo(const dev_info_t &devInfo, int flags) {
-    std::string out;
-
-    if (devInfo.hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
-        out += utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
-    } else {
-        // firmware version
-        out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
-        if (!(flags & COMPACT_BUILD_TYPE)) {
-            switch (devInfo.buildType) {
-                case 'a': out += "-alpha";  break;
-                case 'b': out += "-beta";   break;
-                case 'c': out += "-rc";     break;
-                case 'd': out += "-devel";  break;
-                case 's': out += "-snap";   break;
-                case '^': out += "-snap";   break;
-                default : out += "";        break;
-            }
-        } else {
-            out += (char)devInfo.buildType;
-        }
-        if (devInfo.firmwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.firmwareVer[3]);
-        if (devInfo.buildFlags & BUILD_FLAGS_DEBUG) 
-            out += "-debug";
-
-        if (devInfo.repoRevision && !(flags & OMIT_COMMIT_HASH)) {
-            out += utils::string_format(" %08x", devInfo.repoRevision);
-            if (devInfo.buildType == '^') {
-                out += "^";
-            }
-        }
-
-        if (devInfo.buildNumber && !(flags & OMIT_BUILD_KEY)) {
-            // build number/type
-            out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
-        }
-
-        if (!(flags & OMIT_BUILD_DATE)) {
-            // build date
-            out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-
-            if (!(flags & OMIT_BUILD_TIME)) {
-                // build time
-                out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-                if (devInfo.buildMillisecond && !(flags & OMIT_BUILD_MILLIS)) {
-                    out += utils::string_format(".%03u", devInfo.buildMillisecond);
-                }
-            }
-        }
-    }
-
-    return out;
+    // Rendering lives in utils so it is available without an ISDevice, and so there is one
+    // definition of how a firmware version is spelled. This remains the name callers use.
+    return utils::getFirmwareInfoAsString(devInfo, (uint16_t)flags);
 }
 
 std::string ISDevice::getFirmwareInfo(int flags) const {

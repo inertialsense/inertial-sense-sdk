@@ -964,6 +964,21 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
     print_mutex.unlock();
 }
 
+/**
+ * @brief The wall-clock stamp prefixed to a firmware-update line on the CONSOLE only.
+ *
+ * Bracketed and shaped like msg_logger's, so there is one timestamp style to recognise rather than
+ * several -- which matters to anything wrapping this output, since a wrapper that adds its own can
+ * then strip a leading one it knows the shape of. No date: this is a live progress stream, and the
+ * date is the same for every line of it.
+ *
+ * @return "[HH:MM:SS.mmm] "
+ */
+static std::string consoleTimestamp()
+{
+    return "[" + utils::getCurrentTimestamp(utils::TIMESTAMP_TIME | utils::TIMESTAMP_MILLIS) + "] ";
+}
+
 void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
@@ -992,14 +1007,18 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
         }
     }
 
+    // msgOut carries NO timestamp: it goes to two sinks with different needs. The console has
+    // nothing else to date a line by, so it gets one prepended below; log_msg() already writes
+    // its own (msg_logger.c, static_log_timestamp()), and a second one in the message body just
+    // makes every logged line carry the same instant twice.
     if ((isblPtr == NULL) && (fwPtr == NULL) && (level <= g_commandLineOptions.verboseLevel)) {
         msgOut += buffer;
-        cout << msgOut << endl;
+        cout << consoleTimestamp() << msgOut << endl;
         log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
     } else if (fwPtr) {
         if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) ||  // if there is a message, always handle it if its a high log-level priority
             ((g_commandLineOptions.verboseLevel >= IS_LOG_LEVEL_MORE_INFO) && (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS))) {
-            msgOut += utils::string_format("[%5.2f] [%s > %s]", current_timeMs() / 1000.0f, fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
+            msgOut += utils::string_format("[%s > %s]", fwPtr->device->getIdAsString().c_str(), fwPtr->getActiveTargetName());
             if (fwPtr->getUploadStatus() == fwUpdate::IN_PROGRESS) {
                 int tot, num;
                 float percent = fwPtr->getProgress(&num, &tot) * 100.f;
@@ -1010,7 +1029,7 @@ void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char*
             if (buffer[0])
                 msgOut += utils::string_format(" :: %s", buffer);
 
-            cout << msgOut << endl;
+            cout << consoleTimestamp() << msgOut << endl;
             log_msg(IS_LOG_FWUPDATE, level, "%s", msgOut.c_str());
         }
     }
