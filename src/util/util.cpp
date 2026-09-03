@@ -17,6 +17,7 @@
 // #include <acc_prof.h>
 
 #include "ISDataMappings.h"
+#include "imx_defaults.h"
 #include "util/uri.hpp"
 
 
@@ -1199,4 +1200,227 @@ std::string utils::globToRegex(const std::string& globs) {
     }
 
     return pattern.empty() ? "(.+)" : pattern;
+}
+
+/** Bit groups of ioConfig/ioConfig2 that render as a single token, so a changed subfield renders its whole group. */
+#define IOCFG_GNSS1_GROUP  ((uint32_t)((IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS1_TYPE_OFFSET) | (IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS1_SOURCE_OFFSET) | IO_CFG_GNSS1_PPS_SOURCE_BITMASK | IO_CONFIG_GNSS1_NO_INIT))
+#define IOCFG_GNSS2_GROUP  ((uint32_t)((IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS2_TYPE_OFFSET) | (IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS2_SOURCE_OFFSET) | IO_CONFIG_GNSS2_NO_INIT))
+#define IOCFG2_GNSS2_GROUP ((uint8_t)(IO_CFG2_GNSS2_PPS_SOURCE_BITMASK | IO_CFG2_USE_GNSS2_AS_SOURCE))
+
+const char* utils::platformTypeName(uint8_t platformType) {
+    switch (platformType) {
+        case PLATFORM_CFG_TYPE_NONE:                return "none";
+        case PLATFORM_CFG_TYPE_BRK_GPX:             return "BRK-GPX";
+        case PLATFORM_CFG_TYPE_BRK_2_X20:           return "BRK-X20";
+        case PLATFORM_CFG_TYPE_BRK_2_SG5:           return "BRK-SG5";
+        case PLATFORM_CFG_TYPE_RUG4_X20:            return "RUG4-X20";
+        case PLATFORM_CFG_TYPE_RUG4_SG5:            return "RUG4-SG5";
+        case PLATFORM_CFG_TYPE_RUG4_GPX:            return "RUG4-GPX";
+        case PLATFORM_CFG_TYPE_RUGn_G0:             return "RUGn-G0";
+        case PLATFORM_CFG_TYPE_RUG3_G1:             return "RUG3-G1";
+        case PLATFORM_CFG_TYPE_RUG3_G2:             return "RUG3-G2";
+        case PLATFORM_CFG_TYPE_EVB2_G2:             return "EVB2-G2";
+        case PLATFORM_CFG_TYPE_TBED3:               return "TBED3";
+        case PLATFORM_CFG_TYPE_IG1_0_G2:            return "IG1.0-G2";
+        case PLATFORM_CFG_TYPE_IG1_G1:              return "IG1.1-G1";
+        case PLATFORM_CFG_TYPE_IG1_G2:              return "IG1.1-G2";
+        case PLATFORM_CFG_TYPE_IG2:                 return "IG2";
+        case PLATFORM_CFG_TYPE_LAMBDA_G1:           return "LAMBDA-G1";
+        case PLATFORM_CFG_TYPE_LAMBDA_G2:           return "LAMBDA-G2";
+        case PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA:   return "TBED2-G1-LAMBDA";
+        case PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA:   return "TBED2-G2-LAMBDA";
+        case PLATFORM_CFG_TYPE_IG2_1:               return "IG2.1";
+        default:                                    return nullptr;   // includes 4, an unassigned gap
+    }
+}
+
+std::string utils::platformDescription(uint32_t platformConfig, int flags) {
+    uint8_t type = (uint8_t)(platformConfig & PLATFORM_CFG_TYPE_MASK);
+    if (type == PLATFORM_CFG_TYPE_NONE)
+        return std::string();
+
+    const char* name = platformTypeName(type);
+    std::string out = name ? name : string_format("PT-%u", (unsigned)type);
+
+    if (flags & CFGI_VERBOSE) {
+        uint8_t preset = (uint8_t)((platformConfig & PLATFORM_CFG_PRESET_MASK) >> PLATFORM_CFG_PRESET_OFFSET);
+        out += string_format(":%u", (unsigned)preset);
+        if (platformConfig & PLATFORM_CFG_TYPE_FROM_MANF_OTP)
+            out += " (OTP)";
+    }
+    return out;
+}
+
+/** @return the eIoConfig GNSS type name, or "Tn" for a value the enum does not define */
+static std::string gnssTypeName(uint32_t type) {
+    switch (type) {
+        case IO_CONFIG_GNSS_TYPE_NONE:          return "none";
+        case IO_CONFIG_GNSS_TYPE_UBLOX:         return "uBlox";
+        case IO_CONFIG_GNSS_TYPE_NMEA:          return "NMEA";
+        case IO_CONFIG_GNSS_TYPE_GPX:           return "GPX";
+        case IO_CONFIG_GNSS_TYPE_SEPTENTRIO:    return "Septentrio";
+        case IO_CONFIG_GNSS_TYPE_ISB:           return "ISB";
+        default:                                return utils::string_format("T%u", (unsigned)type);
+    }
+}
+
+/** @return the eIoConfig GNSS source name, or "Sn" for a value the enum does not define (1 and 2 are unassigned) */
+static std::string gnssSourceName(uint32_t source) {
+    switch (source) {
+        case IO_CONFIG_GNSS_SOURCE_DISABLE: return "off";
+        case IO_CONFIG_GNSS_SOURCE_SER0:    return "Ser0";
+        case IO_CONFIG_GNSS_SOURCE_SER1:    return "Ser1";
+        case IO_CONFIG_GNSS_SOURCE_SER2:    return "Ser2";
+        default:                            return utils::string_format("S%u", (unsigned)source);
+    }
+}
+
+/** @return the pin name carrying GNSS1's timepulse, or "Pn" for a value the enum does not define */
+static std::string pps1PinName(uint32_t src) {
+    switch (src) {
+        case IO_CFG_GNSS1_PPS_SOURCE_DISABLED:  return "off";
+        case IO_CFG_GNSS1_PPS_SOURCE_G15:       return "G15";
+        case IO_CFG_GNSS1_PPS_SOURCE_G2:        return "G2";
+        case IO_CFG_GNSS1_PPS_SOURCE_G5:        return "G5";
+        case IO_CFG_GNSS1_PPS_SOURCE_G12:       return "G12";
+        case IO_CFG_GNSS1_PPS_SOURCE_G9:        return "G9";
+        default:                                return utils::string_format("P%u", (unsigned)src);
+    }
+}
+
+/** @return the pin name carrying GNSS2's timepulse */
+static std::string pps2PinName(uint32_t src) {
+    switch (src) {
+        case IO_CFG2_GNSS2_PPS_SOURCE_DISABLED: return "off";
+        case IO_CFG2_GNSS2_PPS_SOURCE_G8:       return "G8";
+        case IO_CFG2_GNSS2_PPS_SOURCE_G11:      return "G11";
+        case IO_CFG2_GNSS2_PPS_SOURCE_G13:      return "G13";
+        default:                                return utils::string_format("P%u", (unsigned)src);
+    }
+}
+
+std::string utils::ioConfigDescription(uint32_t ioConfig, uint8_t ioConfig2, uint32_t platformConfig, int flags) {
+    // The baseline the platform implies. IO_CONFIG_DEFAULT first, because the mapper is an overlay
+    // that sets only the platform-derived GNSS fields -- the same order nvm_flash_cfg_defaults()
+    // uses. Without the seed, the pin-function fields of a stock board read as deviations.
+    uint32_t baseIo = IO_CONFIG_DEFAULT;
+    uint8_t baseIo2 = 0;
+    imxPlatformConfigToFlashCfgIoConfig(&baseIo, &baseIo2, platformConfig);
+
+    const bool verbose = (flags & CFGI_VERBOSE) != 0;
+    const uint32_t deltaIo = ioConfig ^ baseIo;
+    const uint8_t deltaIo2 = (uint8_t)(ioConfig2 ^ baseIo2);
+    std::vector<std::string> parts;
+
+    const uint32_t g1type = IO_CONFIG_GNSS1_TYPE(ioConfig);
+    const uint32_t g2type = IO_CONFIG_GNSS2_TYPE(ioConfig);
+
+    if (verbose && (g1type == IO_CONFIG_GNSS_TYPE_NONE) && (g2type == IO_CONFIG_GNSS_TYPE_NONE))
+        parts.push_back("no GNSS");
+
+    if (verbose || (deltaIo & IOCFG_GNSS1_GROUP)) {
+        if (verbose || (g1type != IO_CONFIG_GNSS_TYPE_NONE)) {
+            std::string s = "GNSS1=" + gnssTypeName(g1type) + "@" + gnssSourceName(IO_CONFIG_GNSS1_SOURCE(ioConfig));
+            uint32_t pps = IO_CFG_GNSS1_PPS_SOURCE(ioConfig);
+            if (verbose || (pps != IO_CFG_GNSS1_PPS_SOURCE_DISABLED))
+                s += " PPS1=" + pps1PinName(pps);
+            if (ioConfig & IO_CONFIG_GNSS1_NO_INIT)
+                s += " no-init";
+            parts.push_back(s);
+        }
+    }
+
+    if (verbose || (deltaIo & IOCFG_GNSS2_GROUP) || (deltaIo2 & IOCFG2_GNSS2_GROUP)) {
+        if (verbose || (g2type != IO_CONFIG_GNSS_TYPE_NONE)) {
+            std::string s = "GNSS2=" + gnssTypeName(g2type) + "@" + gnssSourceName(IO_CONFIG_GNSS2_SOURCE(ioConfig));
+            uint32_t pps2 = IO_CFG2_GNSS2_PPS_SOURCE(ioConfig2);
+            if (verbose || (pps2 != IO_CFG2_GNSS2_PPS_SOURCE_DISABLED))
+                s += " PPS2=" + pps2PinName(pps2);
+            if (ioConfig & IO_CONFIG_GNSS2_NO_INIT)
+                s += " no-init";
+            if (ioConfig2 & IO_CFG2_USE_GNSS2_AS_SOURCE)
+                s += " nmea-src";
+            parts.push_back(s);
+        }
+    }
+
+    // SPI is selected by a value of the G5,G8 field and overrides G6,G7, so it renders as its own
+    // token and suppresses the G6,G7 one rather than printing a contradiction.
+    const bool spi = ((ioConfig & IO_CONFIG_G5G8_MASK) == IO_CONFIG_G5G8_G6G7_SPI_ENABLE);
+    const bool spiBase = ((baseIo & IO_CONFIG_G5G8_MASK) == IO_CONFIG_G5G8_G6G7_SPI_ENABLE);
+    if (verbose || (spi != spiBase)) {
+        if (spi)
+            parts.push_back("SPI");
+    }
+
+    if (verbose || (deltaIo & IO_CONFIG_G1G2_MASK)) {
+        const char* fn = "off";
+        switch (ioConfig & IO_CONFIG_G1G2_MASK) {
+            case IO_CONFIG_G1G2_STROBE_INPUT_G2:    fn = "strobe-G2"; break;
+            case IO_CONFIG_G1G2_CAN_BUS:            fn = "CAN";       break;
+            case IO_CONFIG_G1G2_COM2:               fn = "COM2";      break;
+            case IO_CONFIG_G1G2_I2C:                fn = "I2C";       break;
+            default: break;
+        }
+        parts.push_back(std::string("G1G2=") + fn);
+    }
+
+    if (!spi && (verbose || (deltaIo & IO_CONFIG_G6G7_MASK)))
+        parts.push_back(std::string("G6G7=") + (((ioConfig & IO_CONFIG_G6G7_MASK) == IO_CONFIG_G6G7_COM1) ? "COM1" : "off"));
+
+    if (verbose || (deltaIo & IO_CONFIG_G9_MASK)) {
+        const char* fn = "off";
+        switch (ioConfig & IO_CONFIG_G9_MASK) {
+            case IO_CONFIG_G9_STROBE_INPUT:         fn = "strobe-in"; break;
+            case IO_CONFIG_G9_STROBE_OUTPUT_NAV:    fn = "nav-out";   break;
+            case IO_CONFIG_G9_SPI_DRDY:             fn = "SPI-DRDY";  break;
+            default: break;
+        }
+        parts.push_back(std::string("G9=") + fn);
+    }
+
+    // Pin-level detail below is VERBOSE-only: a strobe or encoder difference is rarely what a reader
+    // of a device description is after, and including it crowds out the GNSS routing that usually is.
+    if (verbose) {
+        const char* g5g8 = "off";
+        switch (ioConfig & IO_CONFIG_G5G8_MASK) {
+            case IO_CONFIG_G5G8_STROBE_INPUT_G5:    g5g8 = "strobe-G5";    break;
+            case IO_CONFIG_G5G8_STROBE_INPUT_G8:    g5g8 = "strobe-G8";    break;
+            case IO_CONFIG_G5G8_STROBE_INPUT_G5_G8: g5g8 = "strobe-G5+G8"; break;
+            case IO_CONFIG_G5G8_G6G7_SPI_ENABLE:    g5g8 = "SPI";          break;
+            case IO_CONFIG_G5G8_QDEC_INPUT:         g5g8 = "QDEC";         break;
+            default: break;
+        }
+        parts.push_back(std::string("G5G8=") + g5g8);
+        parts.push_back(std::string("G15=") + ((ioConfig & IO_CONFIG_G15_STROBE_INPUT) ? "strobe-in" : "off"));
+        parts.push_back(std::string("strobe=") + ((ioConfig & IO_CONFIG_STROBE_TRIGGER_HIGH) ? "rising" : "falling"));
+        parts.push_back(std::string("G11=") + (((ioConfig2 >> IO_CFG2_G11_OFFSET) & IO_CFG2_G11_MASK) ? "strobe-in" : "SWDIO"));
+        parts.push_back(string_format("G12=%u", (unsigned)((ioConfig2 >> IO_CFG2_G12_OFFSET) & IO_CFG2_G12_MASK)));
+        parts.push_back(string_format("G13=%u", (unsigned)((ioConfig2 >> IO_CFG2_G13_OFFSET) & IO_CFG2_G13_MASK)));
+        // Marked unresolved: this field is an input only when no preset is selected, and nothing
+        // keeps it in step with an active preset.
+        parts.push_back(string_format("ioexp~0x%02X",
+            (unsigned)((platformConfig & PLATFORM_CFG_RUG_IOEXP_BIT_MASK) >> PLATFORM_CFG_RUG_IOEXP_BIT_OFFSET)));
+    }
+
+    std::string out;
+    for (size_t i = 0; i < parts.size(); i++)
+        out += (i ? ", " : "") + parts[i];
+    return out;
+}
+
+std::string utils::imxConfigDescription(const nvm_flash_cfg_t& cfg, int flags) {
+    // An unsynchronised flash config has not been read from the device, so none of its fields
+    // describe anything yet.
+    if (cfg.checksum == 0xFFFFFFFF)
+        return std::string();
+
+    std::string out = platformDescription(cfg.platformConfig, flags);
+    std::string io = ioConfigDescription(cfg.ioConfig, cfg.ioConfig2, cfg.platformConfig, flags);
+    if (!io.empty()) {
+        if (!out.empty())
+            out += " ";
+        out += "[" + io + "]";
+    }
+    return out;
 }

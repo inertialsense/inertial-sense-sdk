@@ -797,7 +797,17 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
 }
 
 std::string ISDevice::getName(int flags) const {
-    return getName(devInfo, flags);
+    std::string out = getName(devInfo, flags);
+
+    // The carrier board belongs with the hardware it qualifies, so it goes inside the same parens.
+    // Only an instance can render it: the platform is held in flash config, not devInfo, and an
+    // unsynchronized flash config has not been read from the device and so describes nothing.
+    if ((flags & SHOW_PLATFORM) && (imxFlashCfg.checksum != 0xFFFFFFFF)) {
+        std::string platform = utils::platformDescription(imxFlashCfg.platformConfig, flags);
+        if (!platform.empty() && !out.empty() && (out.back() == ')'))
+            out.insert(out.size() - 1, ", " + platform);
+    }
+    return out;
 }
 
 /**
@@ -828,6 +838,15 @@ std::string ISDevice::getFirmwareInfo(int flags) const {
     return getFirmwareInfo(devInfo, flags);
 }
 
+std::string ISDevice::getDescription(const dev_info_t& devInfo, int flags) {
+    // No port, platform or io configuration here: a dev_info_t carries none of them, so this is the
+    // name and firmware only. The instance overload adds the rest.
+    std::string desc = getName(devInfo, flags);
+    if (!(flags & OMIT_FIRMWARE_VERSION))
+        desc += " " + getFirmwareInfo(devInfo, flags);
+    return desc;
+}
+
 std::string ISDevice::getDescription(int flags) const {
     std::string desc = getName(flags);
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
@@ -835,6 +854,16 @@ std::string ISDevice::getDescription(int flags) const {
     }
     if (!(flags & OMIT_PORT_NAME) && portIsValid(port))
         desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
+
+    // After the port, so the port and its connection state stay adjacent. Renders nothing unless
+    // the configuration differs from what this device's platform implies, which keeps it absent on
+    // a device configured as its carrier intends. A GPX has no ioConfig, and its imxFlashCfg is
+    // never synchronized, so the checksum gate covers that too.
+    if ((flags & SHOW_IO_CONFIG) && (imxFlashCfg.checksum != 0xFFFFFFFF)) {
+        std::string io = utils::ioConfigDescription(imxFlashCfg.ioConfig, imxFlashCfg.ioConfig2, imxFlashCfg.platformConfig, flags);
+        if (!io.empty())
+            desc += " [" + io + "]";
+    }
     return desc;
 }
 
