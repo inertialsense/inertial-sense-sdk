@@ -543,19 +543,26 @@ void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
  */
 void ned2ecef_d(const ixVector3 ned, const double llaRefDeg[3], double ecef[3])
 {
-    double lla[3], llaRef[3], deltaLLA[3];
-    
-    llaRef[0] = llaRefDeg[0] * C_DEG2RAD;
-    llaRef[1] = llaRefDeg[1] * C_DEG2RAD;
-    llaRef[2] = llaRefDeg[2];
+    double lat = llaRefDeg[0] * C_DEG2RAD;
+    double lon = llaRefDeg[1] * C_DEG2RAD;
+    double h   = llaRefDeg[2];
 
-    ned2DeltaLla_d(ned, llaRef, deltaLLA);
+    double Smu = sin(lat), Cmu = cos(lat);
+    double Sl  = sin(lon), Cl  = cos(lon);
+    double Rn  = REQ / sqrt(1.0 - E_SQ * Smu * Smu);
 
-    lla[0] = llaRef[0] + deltaLLA[0];
-    lla[1] = llaRef[1] + deltaLLA[1];
-    lla[2] = llaRef[2] + deltaLLA[2];
+    // Reference point in ECEF (identical to lla2ecef, sharing the sin/cos above)
+    double CmuCl = Cmu * Cl;
+    double CmuSl = Cmu * Sl;
+    double x0 = (Rn + h) * CmuCl;
+    double y0 = (Rn + h) * CmuSl;
+    double z0 = (ONE_MINUS_E_SQ * Rn + h) * Smu;
 
-    lla2ecef(lla, ecef);
+    // Rotate NED into ECEF: columns are the north, east and down axes
+    double n = ned[0], e = ned[1], d = ned[2];
+    ecef[0] = x0 - Smu * Cl * n - Sl * e - CmuCl * d;
+    ecef[1] = y0 - Smu * Sl * n + Cl * e - CmuSl * d;
+    ecef[2] = z0 + Cmu * n - Smu * d;
 }
 
 
