@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 #if defined(GTestColor)
     namespace testing
@@ -89,11 +90,40 @@
                                     } while (0);
 #endif
 
+/**
+ * Renders accumulated stream text safely for the printf-based TEST_PRINTF macros above.
+ *
+ * A std::string may legitimately carry an embedded NUL: utils::string_format() preserves one whenever
+ * a "%c" conversion is handed a zero byte, which happens any time a version or name field is unset.
+ * Handing such a string to printf("%s") silently discards everything from the NUL onward -- including
+ * the caller's own line ending -- so the text looks truncated and the next log line continues on the
+ * same row, which is exactly the kind of output that makes a log untrustworthy while diagnosing
+ * something else. Substitute a visible marker instead: nothing is dropped, and the offending field is
+ * obvious rather than invisible.
+ *
+ * @param s the accumulated stream contents
+ * @return s with any embedded NUL replaced by a printable "\0"
+ */
+inline std::string testLogSafeText(const std::string& s) {
+    if (s.find('\0') == std::string::npos)
+        return s;               // overwhelmingly the common case; no copy beyond the return
+
+    std::string out;
+    out.reserve(s.size() + 16);
+    for (char c : s) {
+        if (c == '\0')
+            out += "\\0";
+        else
+            out += c;
+    }
+    return out;
+}
+
 // C++ stream interface
 class TestCout : public std::stringstream
 {
 public:
-    ~TestCout() { TEST_PRINTF("%s", str().c_str()); }
+    ~TestCout() { TEST_PRINTF("%s", testLogSafeText(str()).c_str()); }
 };
 
 #define TEST_COUT  TestCout()
@@ -103,7 +133,7 @@ public:
 class TestCoutTs : public std::stringstream
 {
 public:
-    ~TestCoutTs() { TEST_PRINTF_TS("%s", str().c_str()); }
+    ~TestCoutTs() { TEST_PRINTF_TS("%s", testLogSafeText(str()).c_str()); }
 };
 
 #define TEST_COUT_TS  TestCoutTs()
