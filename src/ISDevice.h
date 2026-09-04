@@ -95,6 +95,11 @@ public:
         COMPACT_HARDWARE_VER     = 0x0004,      //!< forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
         COMPACT_SERIALNO         = 0x0008,      //!< disables zero-padding of the serial number
         COMPACT_BUILD_TYPE       = utils::FWI_COMPACT_BUILD_TYPE, //!< formats the build-type (when the firmware version is show) as a single character
+        SHOW_PLATFORM            = 0x0020,      //!< renders the carrier board, from flash config, inside the hardware parens: "SN60246 (IMX-5.0.4, RUG4-X20)". Instance methods only -- see the note on the static overloads
+        SHOW_IO_CONFIG           = 0x0040,      //!< renders the IMX io configuration after the port, bracketed, showing only what deviates from the platform's own configuration. Instance methods only
+
+        // Config Options -- aliases of the utils bits, so the two definitions cannot drift
+        CONFIG_VERBOSE           = utils::CFGI_VERBOSE,           //!< with SHOW_PLATFORM/SHOW_IO_CONFIG, renders every field rather than only deviations, and includes the pin-level detail
 
         // Version Options -- aliases of the utils bits, so the two definitions cannot drift
         OMIT_COMMIT_HASH         = utils::FWI_OMIT_COMMIT_HASH,   //!< suppresses the output of the commit hash/dirty status
@@ -110,9 +115,17 @@ public:
 
     /** @return the formatted unique-identifier string (see getIdAsString()) for the given devInfo, without requiring an ISDevice instance. */
     static std::string getIdAsString(const dev_info_t& devInfo);
-    /** @brief Formats the device-name string (see getName()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted name string */
+    /**
+     * @brief Formats the device-name string (see getName()) for the given devInfo, without requiring an ISDevice instance.
+     * SHOW_PLATFORM has no effect here: the platform is held in flash config, which a dev_info_t does not carry.
+     * @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted name string
+     */
     static std::string getName(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER));
-    /** @brief Formats the device-description string (see getDescription()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted description string */
+    /**
+     * @brief Formats the device-description string (see getDescription()) for the given devInfo, without requiring an ISDevice instance.
+     * SHOW_PLATFORM and SHOW_IO_CONFIG have no effect here: both are held in flash config, which a dev_info_t does not carry.
+     * @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted description string
+     */
     static std::string getDescription(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER | ESSENTIAL_FIRMWARE_INFO));
     /** @brief Formats the firmware-info string (see getFirmwareInfo()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted firmware-info string */
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
