@@ -52,7 +52,7 @@ class Log:
         self.init_vars()
         self.c_log.init(self, directory, serials)
         self.c_log.load()
-        self.serials = self.c_log.serialNumbers()
+        self.serials = list(self.c_log.serialNumbers())
         # self.sanitize()
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
@@ -62,8 +62,16 @@ class Log:
         if self.numDev == 0:
             print("No devices found in log or no logs found!!!")
             return False
-        if len(self.data[0, DID_DEV_INFO]):
-            self.serials = [self.data[d, DID_DEV_INFO]['serialNumber'][0] for d in range(self.numDev)]
+        # Use each device's DID_DEV_INFO serial number when present; otherwise keep the
+        # serial the log reader recovered from the file name. A device can log data
+        # without ever sending DID_DEV_INFO (partial logs, reference/truth data), and the
+        # old code checked only device 0 before indexing every device.
+        if len(self.serials) < self.numDev:
+            self.serials += [0] * (self.numDev - len(self.serials))
+        for d in range(self.numDev):
+            devInfo = self.data[d, DID_DEV_INFO]
+            if len(devInfo):
+                self.serials[d] = devInfo['serialNumber'][0]
 
         for i in range(self.numDev):
             try:
