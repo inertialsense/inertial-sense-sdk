@@ -1280,16 +1280,18 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
 
         int elaspedMs = (int)(current_timeMs() - startMs);
         if (elaspedMs > (int)timeoutMs)
-        {   // Timeout waiting for IMX flash config. Name the condition that actually failed:
-            // ImxFlashConfigSynced() requires a VALID flash-config checksum as well as a matching
-            // one, and 0xFFFFFFFF is the invalid sentinel this function writes itself when forcing a
-            // re-sync. Reporting those two values as "0x... != 0x..." printed identical numbers either
-            // side of a "!=" whenever nothing had arrived, which reads as a comparison bug and sends
-            // the reader looking for one instead of at the mute device in front of them.
+        {   // Timeout waiting for IMX flash config. Name the condition that actually failed, and
+            // claim only what is known. ImxFlashConfigSynced() requires a VALID flash-config checksum
+            // as well as a matching one, and 0xFFFFFFFF is the invalid sentinel -- one this function
+            // writes itself when forcing a re-sync. Reporting the two values as "0x... != 0x..."
+            // printed identical numbers either side of a "!=" whenever no valid checksum had been
+            // obtained, which reads as a comparison bug and sends the reader looking for one instead
+            // of at the device. Note the sentinel does not establish that a DID never arrived, only
+            // that no valid checksum came from it, so the message says that much and no more.
             const bool haveFlashCfg = ValidFlashCfgCksum(imxFlashCfg.checksum);
             const bool haveSysParams = ValidFlashCfgCksum(sysParams.flashCfgChecksum);
             if (!haveFlashCfg || !haveSysParams) {
-                log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync after %d ms: never received %s%s%s. The device is reachable but is not answering ISB requests.",
+                log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync after %d ms: no valid checksum obtained from %s%s%s.",
                          getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs,
                          haveFlashCfg ? "" : "DID_FLASH_CONFIG",
                          (!haveFlashCfg && !haveSysParams) ? " or " : "",

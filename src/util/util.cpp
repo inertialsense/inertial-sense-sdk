@@ -535,8 +535,8 @@ std::string utils::getFirmwareInfoAsString(const dev_info_t& devInfo, uint16_t f
             // a NUL *inside* the returned string, which string_format() preserves; any consumer that
             // then prints it as a C string drops everything past the NUL, this text and the caller's
             // own line ending included. Emit the suffix only when it is a real character.
-            const unsigned char suffix = (unsigned char)devInfo.firmwareVer[1];
-            if (isprint(suffix))
+            const unsigned char suffix = static_cast<unsigned char>(devInfo.firmwareVer[1]);
+            if (std::isprint(suffix))       // already unsigned char, so always in isprint's valid domain
                 return utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], suffix);
             return utils::string_format("ISbl.v%u **BOOTLOADER**", devInfo.firmwareVer[0]);
         }
