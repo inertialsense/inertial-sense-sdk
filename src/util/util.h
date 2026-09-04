@@ -363,6 +363,76 @@ namespace utils {
     std::string getFirmwareInfoAsString(const dev_info_t& devInfo, uint16_t flags = 0);
 
     /**
+     * Bits controlling the platform/io-config renderers below. Canonical here, in the same 16-bit
+     * space as devFirmwareInfoFlags_e; ISDevice::DevInfoFormatFlags aliases these so the two cannot
+     * drift, and the values are fixed because callers pass them.
+     */
+    enum devConfigInfoFlags_e : uint16_t {
+        CFGI_VERBOSE = 0x0080,  //!< render every field rather than only those deviating from the platform baseline, and include the pin-level detail
+    };
+
+    /**
+     * @param platformType a platform/carrier type, already masked with PLATFORM_CFG_TYPE_MASK
+     * @return the canonical short name for the type (e.g. "RUG4-X20"), or nullptr when the value is
+     *   not a defined ePlatformConfig type -- note that 4 is an unassigned gap in that enum
+     */
+    const char* platformTypeName(uint8_t platformType);
+
+    /**
+     * Renders the carrier board a device is configured as, from nvm_flash_cfg_t::platformConfig.
+     *
+     * Sourced from flash config rather than manufacturing OTP because flash config is what the
+     * firmware runs on, and it can differ from the OTP value. An undefined type renders "PT-nn" so
+     * an unrecognised board is still identifiable rather than silently dropped.
+     *
+     * The carrier-specific preset id is not rendered: it selects an io configuration, and the
+     * resulting ioConfig -- which ioConfigDescription() renders -- is the observable that matters.
+     * Neither is the RUG I/O-expander field, which is only an input when no preset is selected and
+     * which nothing keeps in sync with an active preset.
+     *
+     * @param platformConfig nvm_flash_cfg_t::platformConfig
+     * @param flags a devConfigInfoFlags_e bitmask; CFGI_VERBOSE also renders the preset id and
+     *   whether the type is write-protected from OTP
+     * @return the rendered name, or an empty string for PLATFORM_CFG_TYPE_NONE
+     */
+    std::string platformDescription(uint32_t platformConfig, int flags = 0);
+
+    /**
+     * Renders the IMX io configuration, from nvm_flash_cfg_t::ioConfig and ::ioConfig2.
+     *
+     * By default only fields DEVIATING from what the platform implies are rendered, so a board
+     * configured as its carrier intends renders an empty string and anything present is a
+     * deliberate difference. Granularity is per group: when any field of a group differs, the whole
+     * group is rendered, because "GNSS2=uBlox@Ser0" reads better than a single changed subfield.
+     *
+     * The baseline is IO_CONFIG_DEFAULT overlaid by imxPlatformConfigToFlashCfgIoConfig(), matching
+     * the order nvm_flash_cfg_defaults() uses. That mapper only sets the platform-derived (GNSS)
+     * fields, so without the IO_CONFIG_DEFAULT seed the pin-function fields of every stock board
+     * would read as deviations.
+     *
+     * IMX only: gpx_flash_cfg_t has no ioConfig.
+     *
+     * @param ioConfig  nvm_flash_cfg_t::ioConfig
+     * @param ioConfig2 nvm_flash_cfg_t::ioConfig2, which carries GNSS2's timepulse source and the
+     *   G11-G13 pin functions
+     * @param platformConfig nvm_flash_cfg_t::platformConfig, supplying the comparison baseline
+     * @param flags a devConfigInfoFlags_e bitmask; CFGI_VERBOSE renders every field and the
+     *   pin-level detail
+     * @return the rendered configuration, or an empty string when nothing deviates
+     */
+    std::string ioConfigDescription(uint32_t ioConfig, uint8_t ioConfig2, uint32_t platformConfig, int flags = 0);
+
+    /**
+     * Renders the platform and io configuration of an IMX flash config together, as
+     * "<platform> [<ioConfig>]" with either part omitted when it renders empty.
+     * @param cfg the flash configuration to describe; an unsynchronised cfg (checksum
+     *   0xFFFFFFFF) describes nothing, since its fields have not been read from the device
+     * @param flags a devConfigInfoFlags_e bitmask
+     * @return the rendered string, empty when neither part has anything to say
+     */
+    std::string imxConfigDescription(const nvm_flash_cfg_t& cfg, int flags = 0);
+
+    /**
      * Renders the requested build-related fields of devInfo (commit hash, build key/number,
      * build date, build time) as a single delimited string, per the DV_BIT_ flags requested.
      * @param devInfo the dev_info_t supplying the build fields
