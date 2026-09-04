@@ -71,7 +71,9 @@ class Log:
         for d in range(self.numDev):
             devInfo = self.data[d, DID_DEV_INFO]
             if len(devInfo):
-                self.serials[d] = devInfo['serialNumber'][0]
+                dev_serial = int(devInfo['serialNumber'][0])
+                if dev_serial:
+                    self.serials[d] = dev_serial
 
         for i in range(self.numDev):
             try:
