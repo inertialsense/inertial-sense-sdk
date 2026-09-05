@@ -23,6 +23,7 @@
 
 #include "DeviceLog.h"
 #include "ISComm.h"
+#include "ISDeviceLog.h"
 #include "ISFileManager.h"
 #include "ISLogIndex.h"
 #include "ISLogReader.h"
@@ -370,4 +371,44 @@ TEST(LogReaderDat, MultiSegmentDatReadableAcrossFiles) {
     EXPECT_EQ(totalRecords, decoded.size());
 
     ISFileManager::DeleteDirectory(dir.string());
+}
+
+// ============================================================
+// ISDeviceLog::format() + mixed-format rejection (D-119 AC)
+// ============================================================
+
+TEST(LogReaderDat, DeviceLogFormatIsDat) {
+    auto f = generateDatFixture("device_log_format");
+    ASSERT_FALSE(f.datFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({f.datFile});
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    EXPECT_EQ(log->format(), ISLogReader::SegmentFormat::Dat);
+
+    teardownDatFixture(f);
+}
+
+TEST(LogReaderDat, MixedFormatSegmentsRejected) {
+    std::list<std::vector<uint8_t>*> wireMessages;
+    GenerateRawLogData(wireMessages, kFixtureSizeMB);
+    ASSERT_FALSE(wireMessages.empty());
+    auto decoded = decodeIsbMessages(wireMessages);
+    ASSERT_FALSE(decoded.empty());
+
+    const fs::path rawDir = uniqueTempDir("mixed_raw");
+    const fs::path datDir = uniqueTempDir("mixed_dat");
+    auto rawSegments = writeRawSegments(rawDir, wireMessages);
+    auto datSegments = writeDatSegments(datDir, decoded);
+    for (auto* msg : wireMessages) delete msg;
+    ASSERT_FALSE(rawSegments.empty());
+    ASSERT_FALSE(datSegments.empty());
+
+    // Same device (kFixtureHwId/kFixtureSerial are shared constants) but mixed formats — must be
+    // rejected even though the device-id check alone would pass.
+    auto log = ISDeviceLog::fromSegments({rawSegments.front(), datSegments.front()});
+    ASSERT_FALSE(log.has_value());
+    EXPECT_EQ(log.error().code, ISErrorCode::Unsupported);
+
+    ISFileManager::DeleteDirectory(rawDir.string());
+    ISFileManager::DeleteDirectory(datDir.string());
 }
