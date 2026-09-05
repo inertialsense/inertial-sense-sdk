@@ -145,6 +145,16 @@ public:
     /** Sets the default blocking mode used when a port is bound without an explicit override. */
     SerialPortFactory& setBlocking(bool block) { portOptions.defaultBlocking = block; return *this; }
 
+    /**
+     * Identifies all serial ports known to the host OS. This does NOT do any port_handle allocation,
+     * validation, or other operation necessary to USE the port - it merely identifies them. This is the
+     * single OS-enumeration implementation for serial ports; use this instead of maintaining a second one.
+     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
+     *  the host operating system.
+     * @return the number of port names populated into the vector.
+     */
+    static int getComPorts(std::vector<std::string>& portNames);
+
 private:
     SerialPortFactory() = default;
     ~SerialPortFactory() = default;
@@ -159,17 +169,6 @@ private:
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 
     std::vector<std::string> portNames = {};
-
-    /**
-     * An internal static function which identifies all available serial ports on the host device. It populates a referenced
-     * std::vector<std::string> with their names, as suitable identifiers. This does NOT do any port_handle allocation, validation,
-     * or other operations necessary to USE the port - it merely identifies them.
-     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
-     *  the host operating system.
-     * @return the number of port names populated into the vector.
-     */
-    static int getComPorts(std::vector<std::string>& portNames);
-
 
 #if PLATFORM_IS_LINUX
     static std::string get_driver__linux(const std::string& tty);
