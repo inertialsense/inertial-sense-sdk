@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <cstring>
 #include <memory>
 #include <regex>
@@ -527,8 +528,18 @@ std::string utils::getFirmwareInfoAsString(const dev_info_t& devInfo, uint16_t f
         // IS_HARDWARE_TYPE_UNKNOWN outright for a reply it cannot attribute -- and rendering those as
         // anything other than ISbl would change long-standing output for a real, reachable case.
         // Only a positively identified peripheral takes the other branch.
-        if (devInfo.hardwareType < IS_HDW_TYPE_PERIPHERAL)
-            return utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
+        if (devInfo.hardwareType < IS_HDW_TYPE_PERIPHERAL) {
+            // firmwareVer[1] is a letter suffix ('g', 'j', ...) and is zero whenever the ISbl version
+            // is not known -- a discovery hint carries no parsable one (see ISBFirmwareUpdater.cpp,
+            // which notes that "ISbl.v6j **BOOTLOADER**" yields 0). A zero rendered through "%c" puts
+            // a NUL *inside* the returned string, which string_format() preserves; any consumer that
+            // then prints it as a C string drops everything past the NUL, this text and the caller's
+            // own line ending included. Emit the suffix only when it is a real character.
+            const unsigned char suffix = static_cast<unsigned char>(devInfo.firmwareVer[1]);
+            if (std::isprint(suffix))       // already unsigned char, so always in isprint's valid domain
+                return utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], suffix);
+            return utils::string_format("ISbl.v%u **BOOTLOADER**", devInfo.firmwareVer[0]);
+        }
 
         // A peripheral in this state is in its OWN loader and reports that loader's version. Spell it
         // the way every other version is spelled, so it stays parsable by devInfoFromString() -- the
