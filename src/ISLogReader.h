@@ -1,11 +1,19 @@
 /**
  * @file ISLogReader.h
- * @brief Segment-level reader for SDK 3.0 — reads `.raw` + v2 `.idx`.
+ * @brief Segment-level reader for SDK 3.0 — reads `.raw` or `.dat`, both
+ *        indexed via the same v2 `.idx` sidecar schema.
  *
  * D-02 / SN-7893 / D0019 / D0020 / D0021 / D0022 / D0049 / D0051: the
  * type-erased core of the new SDK reader. Operates on **one segment**
- * (one `.raw` file) at a time; segment-grouping into device logs and
- * sessions sits above this class (D-05).
+ * (one `.raw` or `.dat` file) at a time; segment-grouping into device
+ * logs and sessions sits above this class (D-05).
+ *
+ * D-119 / SN-8626 / D0082: `.dat` (`LOGTYPE_DAT`, `cDeviceLogSerial`'s
+ * chunk-header-framed, already-parsed `p_data_hdr_t`/payload format) is
+ * supported as a second segment format alongside `.raw`, dispatched
+ * internally via `format()` — never as a subclass (see D0082 for why).
+ * `cDeviceLogSerial`/`DataChunk.h` are consulted only for the on-disk
+ * byte layout, never as an interface template.
  *
  * Backing storage is memory-mapped where the host filesystem supports
  * it; falls back to buffered I/O otherwise. Records are exposed as
@@ -68,6 +76,20 @@ class ISTimeResolver;
 class ISLogReader {
 public:
     using did_t = uint32_t;
+
+    /**
+     * @brief On-disk segment format this reader was opened against.
+     *
+     * Recognized by extension at `openSegment()` time (D-119 / SN-8626).
+     * `.raw` and `.dat` share the same `.idx` v2 sidecar schema and the
+     * same public API — this enum only gates a handful of internal byte-
+     * layout decisions (`buildIndexFromScan*`, `recordEndOffset`,
+     * `deriveDeviceId*`). See D0082.
+     */
+    enum class SegmentFormat : uint8_t {
+        Raw,   ///< Undecoded, multi-protocol byte stream (`cDeviceLogRaw`, `.raw`).
+        Dat,   ///< Chunk-header-framed, already-parsed records (`cDeviceLogSerial`, `.dat`).
+    };
 
     // -----------------------------------------------------------------
     // Gap detection (SN-8345) — coverage gaps on the resolved timeline
@@ -147,13 +169,16 @@ public:
     /**
      * @brief Open a single segment.
      *
-     * Sidecar discovery rule: replace the `.raw` suffix with `.idx`
-     * (e.g. `LOG_..._0001.raw` → `LOG_..._0001.idx`) — matches the
-     * writer convention (cf. `cDeviceLog::OpenNewSaveFile`).
+     * The segment format is recognized by extension: `.raw` or `.dat`
+     * (D-119 / SN-8626). Sidecar discovery rule: replace the segment
+     * extension with `.idx` (e.g. `LOG_..._0001.raw` → `LOG_..._0001.idx`,
+     * `LOG_..._0001.dat` → `LOG_..._0001.idx`) — matches the writer
+     * convention (cf. `cDeviceLog::OpenNewSaveFile`).
      *
-     * @param raw  Path to the `.raw` segment file.
+     * @param raw  Path to the segment file (`.raw` or `.dat`).
      * @return     Reader on success; `ISErrorCode` on failure:
-     *             `NotFound`, `PermissionDenied`, `Corrupted`, `Io`.
+     *             `NotFound`, `PermissionDenied`, `Corrupted`, `Io`,
+     *             `Unsupported` (unrecognized extension).
      */
     static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw);
 
@@ -236,7 +261,9 @@ public:
     uint64_t fileSize() const noexcept;
 
     /**
-     * Direct accessor for the segment's underlying byte buffer.
+     * Direct accessor for the segment's underlying byte buffer. Despite
+     * the name, this aliases whatever backing file was opened — `.raw`
+     * or `.dat` (D-119) — the name predates `.dat` support.
      *
      * Most callers should iterate via `records()` / `allRecords()`
      * — this hatch is for code that needs to re-parse the raw stream
@@ -353,6 +380,13 @@ public:
      * which recovers nothing else.
      */
     bool hasDevInfo() const noexcept { return hasDevInfo_; }
+
+    /**
+     * @return  The on-disk format this segment was opened as (D-119 /
+     *          SN-8626). `ISDeviceLog::fromSegments` uses this to reject
+     *          a device log composed of mixed `.raw`/`.dat` segments.
+     */
+    SegmentFormat format() const noexcept { return format_; }
 
     // -----------------------------------------------------------------
     // Iteration
@@ -601,9 +635,25 @@ private:
     /**
      * Lazy fallback when the `.idx` sidecar is missing. D-02 lands
      * an empty stub here; D-04 will populate the index by scanning
-     * the `.raw` and persisting the result.
+     * the `.raw` and persisting the result. `.raw`-specific — see
+     * @ref buildIndexFromScanDat for the `.dat` equivalent (D-119).
      */
     void buildIndexFromScan();
+
+    /**
+     * @brief `.dat` equivalent of @ref buildIndexFromScan (D-119 / SN-8626).
+     *
+     * `.dat`'s on-disk shape (`sChunkHeader`-framed chunks of
+     * `p_data_hdr_t`/payload pairs — see `DeviceLogSerial.h`) is
+     * self-delimiting, so this walks chunk/record headers directly
+     * instead of running `.raw`'s `is_comm_parse_byte` state machine.
+     * Populates `records_`/`byDid_` exactly like the `.raw` scan; a
+     * malformed/truncated chunk or record stops the scan and marks
+     * `isTruncated_`/`truncationOffset_`, mirroring D-04's `.raw`
+     * behavior (including the sibling-segment discrimination via
+     * `hasSiblingSuccessor`).
+     */
+    void buildIndexFromScanDat();
 
     /**
      * @brief Resolves the device id from the segment's `dev_info_t` records, falling back to filename parsing.
@@ -612,11 +662,26 @@ private:
      * attached peripheral and are adopted only when the segment carries no primary record — which is the GPX-only
      * capture case. Records with a zero serial are skipped rather than treated as terminal.
      *
+     * Dispatches to @ref deriveDeviceIdDat for `.dat` segments (D-119); the body below is `.raw`-specific.
+     *
      * @param rawPath  Path the segment was opened from. Used only for the filename-fallback path.
      * @note SN-8445 / SN-8463. The ranking (rather than first-match) is what keeps the segments of one mixed
      *       IMX+GPX log agreeing on a device id, which `ISDeviceLog::fromSegments` requires.
      */
     void deriveDeviceId(const std::filesystem::path& rawPath);
+
+    /**
+     * @brief `.dat` equivalent of the `.raw`-specific body of @ref deriveDeviceId (D-119 / SN-8626).
+     *
+     * Unlike `.raw` (whose `.idx` record `offset` is the packet START, not the payload — recovering the payload
+     * requires re-running the full comm parser), a `.dat` record's `offset` IS its `p_data_hdr_t` start with no wire
+     * framing in between. This walks the already-built `records_` (populated by the time this runs, whether from a
+     * trusted on-disk `.idx` or from @ref buildIndexFromScanDat) rather than re-parsing chunk headers from scratch.
+     * Same DID-ranking / zero-serial-skip rules as the `.raw` path (SN-8445), same filename fallback.
+     *
+     * @param rawPath  Path the segment was opened from. Used only for the filename-fallback path.
+     */
+    void deriveDeviceIdDat(const std::filesystem::path& rawPath);
 
     /**
      * @brief Adopts a `dev_info_t` as this segment's identity.
@@ -631,9 +696,13 @@ private:
 
     /**
      * Computes the end-of-bytes offset for the record at the given
-     * index. Used by `viewAt` to derive `bytes().second`. Records
-     * sharing an offset (chunk-input artifact from the writer)
-     * resolve to the same end offset.
+     * index. Used by `viewAt` to derive `bytes().second`.
+     *
+     * `.raw`: records sharing an offset (chunk-input artifact from the
+     * writer) resolve to the same end offset — see the `.cpp` for the
+     * "next differing offset" scan. `.dat` (D-119): each record is
+     * self-delimiting (`p_data_hdr_t.size`), so the end is computed
+     * directly with no scan.
      *
      * @param recordIdx  Index into `records_`.
      * @return           Byte offset one past the last byte of the
@@ -676,6 +745,7 @@ private:
     std::vector<std::size_t>               allIndices_;        // 0..N-1
     static const std::vector<std::size_t>  kEmptyIndices_;
 
+    SegmentFormat                          format_             = SegmentFormat::Raw;
     bool                                   hadOnDiskIndex_     = false;
     bool                                   isTruncated_        = false;
     uint64_t                               truncationOffset_   = 0;

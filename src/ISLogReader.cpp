@@ -21,6 +21,12 @@
 #include "ISDataMappings.h"
 #include "data_sets.h"
 
+// D-119 / SN-8626 / D0082: `sChunkHeader` + `DATA_CHUNK_MARKER` are the on-disk `.dat` chunk-
+// framing primitives (POD struct + constant) — consulted for byte layout only. Deliberately NOT
+// `cDeviceLogSerial`/`cDeviceLog`/`cISLogger` (still off-limits per this file's D-02 DoD #3 note
+// above): DataChunk.h doesn't pull those in.
+#include "DataChunk.h"
+
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -28,6 +34,7 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <system_error>
 
@@ -81,6 +88,41 @@ bool hasSiblingSuccessor(const fs::path& rawPath) noexcept {
     const fs::path sibling =
         rawPath.parent_path() / (stem.substr(0, und + 1) + nextSeq.str() + rawPath.extension().string());
     return fs::exists(sibling, ec);
+}
+
+/**
+ * @brief Recognizes a segment's on-disk format from its extension (D-119 / SN-8626).
+ * @param path  Segment file path.
+ * @return      `Raw` for `.raw`, `Dat` for `.dat`; `std::nullopt` for anything else.
+ */
+std::optional<ISLogReader::SegmentFormat> formatFromExtension(const fs::path& path) noexcept {
+    const std::string ext = path.extension().string();
+    if (ext == ".raw") return ISLogReader::SegmentFormat::Raw;
+    if (ext == ".dat") return ISLogReader::SegmentFormat::Dat;
+    return std::nullopt;
+}
+
+/**
+ * @brief Extracts a serial number from a cISLogger-convention filename stem (`LOG_SN<n>_...`).
+ *
+ * Shared by `.raw`'s and `.dat`'s `deriveDeviceId*` filename fallback (D-119) — the convention
+ * is format-agnostic.
+ *
+ * @param stem  Filename stem (extension already stripped).
+ * @return      Parsed serial number, or `std::nullopt` if the filename doesn't match.
+ */
+std::optional<uint64_t> parseSerialFromFilenameStem(const std::string& stem) noexcept {
+    const std::size_t snPos = stem.find("SN");
+    if (snPos == std::string::npos) return std::nullopt;
+    std::size_t i = snPos + 2;
+    uint64_t value = 0;
+    bool any = false;
+    while (i < stem.size() && std::isdigit(static_cast<unsigned char>(stem[i]))) {
+        value = value * 10 + static_cast<uint64_t>(stem[i] - '0');
+        ++i;
+        any = true;
+    }
+    return any ? std::optional<uint64_t>(value) : std::nullopt;
 }
 
 } // namespace
@@ -310,16 +352,22 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     r.rawSource_ = std::move(rawSource);
     r.rawPath_   = rawPath;
 
+    // D-119 / SN-8626: recognize the segment's on-disk format up front — everything below
+    // (sidecar naming, scan-rebuild dispatch, device-id derivation) branches on it.
+    auto fmt = formatFromExtension(rawPath);
+    if (!fmt) {
+        return fail(ISErrorCode::Unsupported,
+                    "ISLogReader::construct: unrecognized segment extension: " + rawPath.string());
+    }
+    r.format_ = *fmt;
+
     // -----------------------------------------------------------------
-    // Sidecar discovery: replace ".raw" with ".idx" (matches the writer convention from cDeviceLog::OpenNewSaveFile /
-    // m_fileName + ".idx").
+    // Sidecar discovery: replace the segment extension with ".idx" (matches the writer convention
+    // from cDeviceLog::OpenNewSaveFile / m_fileName + ".idx"). The extension is guaranteed
+    // recognized at this point, so this is an unconditional substitution.
     // -----------------------------------------------------------------
     fs::path idxPath = rawPath;
-    if (idxPath.extension() == ".raw") {
-        idxPath.replace_extension(".idx");
-    } else {
-        idxPath += ".idx";   // defensive — writer always uses .raw today
-    }
+    idxPath.replace_extension(".idx");
     r.idxPath_ = idxPath;
 
     // -----------------------------------------------------------------
@@ -470,9 +518,13 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     }
 
     if (!r.hadOnDiskIndex_) {
-        // Default header; counters get filled in by buildIndexFromScan.
+        // Default header; counters get filled in by buildIndexFromScan[Dat].
         r.header_ = idx::makeDefaultHeader(0, idx::TimestampUnits::HostUptimeMs, idx::HeaderTimeSource::Mixed);
-        r.buildIndexFromScan();
+        if (r.format_ == SegmentFormat::Dat) {
+            r.buildIndexFromScanDat();
+        } else {
+            r.buildIndexFromScan();
+        }
 
         // Document the rebuild for the caller.
         const char* reasonStr = "unknown";
@@ -484,8 +536,9 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
             case RebuildReason::ReadError:  reasonStr = "read-error"; break;
             case RebuildReason::None:       reasonStr = "n/a";        break;
         }
-        r.warnings_.push_back(std::string{"sidecar: rebuilt from .raw scan (reason: "} + reasonStr + ")");
-        log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from .raw scan (reason: %s)", rawPath.filename().c_str(), reasonStr);
+        const char* segKind = (r.format_ == SegmentFormat::Dat) ? ".dat" : ".raw";
+        r.warnings_.push_back(std::string{"sidecar: rebuilt from "} + segKind + " scan (reason: " + reasonStr + ")");
+        log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)", rawPath.filename().c_str(), segKind, reasonStr);
 
         // Persist the rebuilt sidecar. Suppressed when the build flips IS_LOG_READER_NO_PERSIST_INDEX (e.g. tests,
         // customers who don't want surprise writes to log dirs) or when the .raw sits on read-only media.
@@ -619,6 +672,115 @@ void ISLogReader::buildIndexFromScan() {
     }
 }
 
+void ISLogReader::buildIndexFromScanDat() {
+    records_.clear();
+    byDid_.clear();
+    isTruncated_ = false;
+    truncationOffset_ = rawSource_ ? rawSource_->size() : 0;
+
+    if (!rawSource_ || rawSource_->size() == 0) {
+        return;
+    }
+
+    const uint8_t*    base  = rawSource_->data();
+    const std::size_t total = rawSource_->size();
+
+    // Mirrors buildIndexFromScan()'s sibling-discrimination: a trailing partial chunk/record at
+    // the end of a segment is normal mid-rotation truncation if the next segment picks up where
+    // this one left off, and genuine data loss otherwise. See hasSiblingSuccessor's doc (SN-8005)
+    // — it's already extension-agnostic.
+    auto reportTruncation = [&](std::size_t offset, const char* what) {
+        isTruncated_      = true;
+        truncationOffset_ = offset;
+        const std::size_t trailingBytes = total - offset;
+        if (hasSiblingSuccessor(rawPath_)) {
+            warnings_.push_back(std::string{"trailing partial "} + what + " at end of segment ("
+                                + std::to_string(trailingBytes) + " bytes); continues in next segment");
+            log_info(IS_LOG_ISLOG,
+                     "%s: trailing partial %s (%zu bytes) at offset %zu (file size %zu); data continues in successor segment",
+                     rawPath_.filename().c_str(), what, trailingBytes, offset, total);
+        } else {
+            warnings_.push_back(std::string{"truncation ("} + what + "): stopped at offset "
+                                + std::to_string(offset) + " (file size " + std::to_string(total) + ")");
+            log_warn(IS_LOG_ISLOG, "%s: truncated (%s), stopped at offset %zu (file size %zu)",
+                     rawPath_.filename().c_str(), what, offset, total);
+        }
+    };
+
+    std::size_t pos = 0;
+    while (pos < total) {
+        if (total - pos < sizeof(sChunkHeader)) {
+            reportTruncation(pos, "chunk header");
+            break;
+        }
+        sChunkHeader hdr{};
+        std::memcpy(&hdr, base + pos, sizeof(sChunkHeader));
+        if (hdr.marker != DATA_CHUNK_MARKER || hdr.dataSize != ~hdr.invDataSize) {
+            // Same validation cDataChunk::ReadFromFile applies on the real read path.
+            reportTruncation(pos, "chunk header");
+            break;
+        }
+
+        const std::size_t chunkDataStart = pos + sizeof(sChunkHeader);
+        const std::size_t chunkDataSize  = hdr.dataSize;
+        if (chunkDataStart + chunkDataSize > total) {
+            reportTruncation(pos, "chunk body");
+            break;
+        }
+
+        // Walk (p_data_hdr_t + payload) pairs within this chunk's body. cDeviceLogSerial::SaveData
+        // never splits a header/payload pair across a chunk boundary (it flushes first if one
+        // wouldn't fit), so in a well-formed .dat this inner loop always ends exactly at
+        // chunkDataStart + chunkDataSize.
+        std::size_t bodyPos = chunkDataStart;
+        const std::size_t bodyEnd = chunkDataStart + chunkDataSize;
+        bool bodyTruncated = false;
+        while (bodyPos < bodyEnd) {
+            if (bodyEnd - bodyPos < sizeof(p_data_hdr_t)) {
+                reportTruncation(bodyPos, "record header");
+                bodyTruncated = true;
+                break;
+            }
+            p_data_hdr_t recHdr{};
+            std::memcpy(&recHdr, base + bodyPos, sizeof(p_data_hdr_t));
+            const std::size_t payloadStart = bodyPos + sizeof(p_data_hdr_t);
+            if (payloadStart + recHdr.size > bodyEnd) {
+                reportTruncation(bodyPos, "record payload");
+                bodyTruncated = true;
+                break;
+            }
+
+            const uint8_t* payloadPtr = base + payloadStart;
+            const double   tsSec = cISDataMappings::Timestamp(&recHdr, payloadPtr);
+            const uint64_t tsMs  = static_cast<uint64_t>(tsSec * 1000.0);
+
+            idx::is_log_idx_record_v2_t rec{};
+            rec.timestamp = tsMs;
+            rec.offset    = static_cast<uint64_t>(bodyPos);   // the p_data_hdr_t's own start — see recordEndOffset()
+            rec.did       = recHdr.id;
+            rec.flags     = 0;
+            rec.reserved  = 0;
+            records_.push_back(rec);
+
+            bodyPos = payloadStart + recHdr.size;
+        }
+        if (bodyTruncated) break;
+
+        pos = bodyEnd;
+    }
+
+    byDid_.reserve(64);
+    for (std::size_t i = 0; i < records_.size(); ++i) {
+        byDid_[records_[i].did].push_back(i);
+    }
+    if (!records_.empty()) {
+        header_.total_records      = records_.size();
+        header_.first_timestamp_ms = records_.front().timestamp;
+        header_.last_timestamp_ms  = records_.back().timestamp;
+        header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    }
+}
+
 bool ISLogReader::persistIndex() const {
     if (idxPath_.empty() || records_.empty()) return false;
 
@@ -678,6 +840,13 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
     hdwId_      = 0;
     devInfo_    = dev_info_t{};
     hasDevInfo_ = false;
+
+    // D-119 / SN-8626: .dat gets its own equivalent below — its .idx `offset` is directly usable
+    // (no comm-parse needed to recover the payload), unlike .raw's.
+    if (format_ == SegmentFormat::Dat) {
+        deriveDeviceIdDat(rawPath);
+        return;
+    }
 
     // 1) Walk the raw bytes via `is_comm_parse_byte` looking for a `dev_info_t`-bearing packet. We can't shortcut to
     //    the record's `.offset` because that is the ISB packet *start* (framing + header + payload + checksum), not
@@ -749,18 +918,58 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
     // 2) Filename fallback. cltool/cISLogger emits names of the form `LOG_SN<n>_<timestamp>_<seq>.raw`. Extract the
     //    digits between "SN" and the next underscore. The fallback can recover the serial number but not the hardware
     //    id, so `hdwId_` stays 0.
-    const std::string stem = rawPath.stem().string();   // strips ".raw"
-    const std::size_t snPos = stem.find("SN");
-    if (snPos != std::string::npos) {
-        std::size_t i = snPos + 2;
-        uint64_t value = 0;
-        bool any = false;
-        while (i < stem.size() && std::isdigit(static_cast<unsigned char>(stem[i]))) {
-            value = value * 10 + static_cast<uint64_t>(stem[i] - '0');
-            ++i;
-            any = true;
+    if (auto sn = parseSerialFromFilenameStem(rawPath.stem().string())) {
+        deviceId_ = *sn;
+    }
+}
+
+void ISLogReader::deriveDeviceIdDat(const fs::path& rawPath) {
+    // Unlike .raw, a .dat record's .idx `offset` IS its p_data_hdr_t start — no wire framing sits
+    // between it and the payload, so no comm-parser is needed to recover either. By the time this
+    // runs, `records_` is already populated (from a trusted on-disk .idx, or from
+    // buildIndexFromScanDat() moments ago) — walk that instead of re-parsing chunk headers.
+    if (rawSource_ && rawSource_->size() > 0) {
+        const uint8_t*    base  = rawSource_->data();
+        const std::size_t total = rawSource_->size();
+
+        dev_info_t peripheral{};
+        bool       havePeripheral = false;
+
+        // Same DID-ranking / zero-serial-skip rules as the .raw path above (SN-8445).
+        for (const auto& rec : records_) {
+            const bool isPrimary    = (rec.did == DID_DEV_INFO);
+            const bool isPeripheral = (rec.did == DID_GPX_DEV_INFO || rec.did == DID_EVB_DEV_INFO);
+            if (!isPrimary && !isPeripheral) continue;
+
+            const std::size_t off = static_cast<std::size_t>(rec.offset);
+            if (off + sizeof(p_data_hdr_t) > total) continue;
+            p_data_hdr_t hdr{};
+            std::memcpy(&hdr, base + off, sizeof(p_data_hdr_t));
+            const std::size_t payloadStart = off + sizeof(p_data_hdr_t);
+            if (hdr.size != sizeof(dev_info_t) || payloadStart + hdr.size > total) continue;
+
+            dev_info_t info{};
+            std::memcpy(&info, base + payloadStart, sizeof(info));
+            if (info.serialNumber == 0) continue;   // see the .raw path's comment above
+
+            if (isPrimary) {
+                adoptDevInfo(info);
+                return;
+            }
+            if (!havePeripheral) {
+                peripheral     = info;
+                havePeripheral = true;
+            }
         }
-        if (any) deviceId_ = value;
+
+        if (havePeripheral) {
+            adoptDevInfo(peripheral);
+            return;
+        }
+    }
+
+    if (auto sn = parseSerialFromFilenameStem(rawPath.stem().string())) {
+        deviceId_ = *sn;
     }
 }
 
@@ -791,6 +1000,27 @@ std::vector<ISLogReader::did_t> ISLogReader::presentDids() const {
 }
 
 std::size_t ISLogReader::recordEndOffset(std::size_t recordIdx) const noexcept {
+    if (recordIdx >= records_.size()) {
+        return rawSource_ ? rawSource_->size() : 0;
+    }
+
+    if (format_ == SegmentFormat::Dat) {
+        // .dat records are self-delimiting (p_data_hdr_t.size), so the end offset needs no
+        // inference from neighboring records — re-read the 5-byte header at this record's own
+        // offset (the same bytes buildIndexFromScanDat() already validated) rather than growing
+        // is_log_idx_record_v2_t with a .dat-only field.
+        const std::size_t off   = static_cast<std::size_t>(records_[recordIdx].offset);
+        const uint8_t*    base  = rawSource_ ? rawSource_->data() : nullptr;
+        const std::size_t total = rawSource_ ? rawSource_->size() : 0;
+        if (!base || off + sizeof(p_data_hdr_t) > total) {
+            return total;
+        }
+        p_data_hdr_t hdr{};
+        std::memcpy(&hdr, base + off, sizeof(p_data_hdr_t));
+        const std::size_t end = off + sizeof(p_data_hdr_t) + hdr.size;
+        return end <= total ? end : total;
+    }
+
     if (recordIdx + 1 < records_.size()) {
         // Records share an arrival-order array but their .raw offsets are per-arrival-chunk (the writer increments
         // m_lastIndexOffset after each SaveData call). We use a sorted scan to find the smallest offset strictly
