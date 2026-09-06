@@ -28,6 +28,7 @@
 #include "ISLogIndex.h"
 #include "ISLogReader.h"
 #include "ISLogger.h"
+#include "ISTimeResolver.h"
 #include "data_sets.h"
 #include "test_data_utils.h"
 
@@ -411,4 +412,57 @@ TEST(LogReaderDat, MixedFormatSegmentsRejected) {
 
     ISFileManager::DeleteDirectory(rawDir.string());
     ISFileManager::DeleteDirectory(datDir.string());
+}
+
+// ============================================================
+// ISTimeResolver on .dat (D0066 compliance — D-119 / SN-8626)
+// ============================================================
+
+// Regression for a bug caught only by full end-to-end integration testing (Logalyzer's
+// RawSeriesBuilder + LogLoader), not by this file's own reader-level tests: ISTimeResolver's
+// sync-point detection (scanSegmentForSyncs) used to unconditionally re-scan
+// `reader.rawBytes()` via `is_comm_parse_byte` -- which finds nothing in a `.dat` file (no wire
+// protocol to parse, D0082), so EVERY `.dat` record resolved as SessionOnly/Unknown regardless of
+// how many valid ToW-bearing records it had. Without scanSegmentForSyncsDat's fix, `.dat` support
+// would open and index correctly but never produce a usable chart -- every series would be
+// filtered out by the resolver. This test would have caught that at the SDK level.
+TEST(LogReaderDat, TimeResolverFindsSyncPointsInDatLog) {
+    std::list<std::vector<uint8_t>*> wireMessages;
+    GenerateRawLogData(wireMessages, kFixtureSizeMB);
+    ASSERT_FALSE(wireMessages.empty());
+
+    auto decoded = decodeIsbMessages(wireMessages);
+    for (auto* msg : wireMessages) delete msg;
+    ASSERT_FALSE(decoded.empty());
+
+    const fs::path dir = uniqueTempDir("resolver");
+    auto segments = writeDatSegments(dir, decoded);
+    ASSERT_FALSE(segments.empty());
+
+    auto log = ISDeviceLog::fromSegments(segments);
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    ASSERT_EQ(log->format(), ISLogReader::SegmentFormat::Dat);
+
+    auto syncs = ISTimeResolver::detectSyncPoints(*log);
+    ASSERT_FALSE(syncs.empty())
+        << "no sync points found in a .dat log -- scanSegmentForSyncs isn't reaching .dat records";
+
+    auto resolverR = ISTimeResolver::build(*log);
+    ASSERT_TRUE(resolverR.has_value()) << resolverR.error().message;
+    const auto& resolver = *resolverR;
+
+    // At least one ToW-bearing record must resolve as PayloadToW/Exact -- SessionOnly/Unknown
+    // across the board is exactly the symptom the bug above produced.
+    bool foundAnchored = false;
+    for (auto v : log->allRecords()) {
+        if (v.timestamp().value == 0) continue;
+        const auto resolved = resolver.resolve(v.timestamp().value, log->deviceId());
+        if (resolved.source == TimeSource::PayloadToW && resolved.confidence == TimeConfidence::Exact) {
+            foundAnchored = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(foundAnchored) << "no .dat record resolved as PayloadToW/Exact";
+
+    ISFileManager::DeleteDirectory(dir.string());
 }

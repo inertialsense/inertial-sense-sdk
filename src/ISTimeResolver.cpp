@@ -134,6 +134,78 @@ int64_t medianOf(std::vector<int64_t> v) {
     return v[v.size() / 2];
 }
 
+/**
+ * @brief `.dat` equivalent of `scanSegmentForSyncs` (D-119 / SN-8626 / D0082).
+ *
+ * `.dat` has no wire protocol to parse (D0082): each `ISRecordView::bytes()` is already a bare
+ * `p_data_hdr_t` + payload, and `reader.allRecords()` already walks them cleanly (no NMEA/RTCM3/
+ * UBX noise to skip, unlike `.raw`'s byte-by-byte comm scan). Same DID_SYS_PARAMS / ToW-bearing
+ * logic as the `.raw` path below — see its comments for the "why" of each step.
+ */
+void scanSegmentForSyncsDat(const ISLogReader& reader,
+                            uint64_t deviceId,
+                            std::vector<ISSyncPoint>& out,
+                            std::vector<int64_t>& upOffsetsOut,
+                            uint64_t& arrivalIndex,
+                            double& prevUpTimeSec,
+                            std::vector<SessionAccum>& sessAccum) {
+    uint64_t lastNonSyncHostTimeMs = 0;
+
+    for (auto v : reader.allRecords()) {
+        const auto bytes = v.bytes();
+        if (!bytes.first || bytes.second < sizeof(p_data_hdr_t)) continue;
+        p_data_hdr_t hdr{};
+        std::memcpy(&hdr, bytes.first, sizeof(hdr));
+        if (sizeof(p_data_hdr_t) + hdr.size > bytes.second) continue;
+        const uint8_t* payloadPtr = bytes.first + sizeof(p_data_hdr_t);
+
+        const uint64_t thisArrival = arrivalIndex++;
+
+        if (hdr.id == DID_SYS_PARAMS && hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
+            sys_params_t sp2{};
+            std::memcpy(&sp2, payloadPtr, sizeof(sp2));
+            if (sp2.upTime > 0.0) {
+                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+                    sessAccum.push_back(SessionAccum{ thisArrival, {} });
+                }
+                prevUpTimeSec = sp2.upTime;
+            }
+            const bool towValid =
+                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
+                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
+                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+                upOffsetsOut.push_back(off);
+                if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);
+            }
+        }
+
+        const double tsSec = cISDataMappings::Timestamp(&hdr, payloadPtr);
+
+        if (!isToWBearing(hdr.id)) {
+            if (tsSec > 0.0) {
+                lastNonSyncHostTimeMs = static_cast<uint64_t>(tsSec * 1000.0);
+            }
+            continue;
+        }
+        if (tsSec <= 0.0) continue;
+
+        const uint64_t towMs = static_cast<uint64_t>(tsSec * 1000.0);
+        ISSyncPoint sp{};
+        sp.hostTimeMs       = towMs;
+        sp.payloadToWMs     = towMs;
+        sp.deviceId         = deviceId;
+        sp.sourceDid        = hdr.id;
+        sp.actualHostTimeMs = lastNonSyncHostTimeMs;
+        if (hdr.size >= sizeof(uint32_t)) {
+            uint32_t weekRaw = 0;
+            std::memcpy(&weekRaw, payloadPtr, sizeof(weekRaw));
+            sp.gpsWeek = weekRaw;
+        }
+        out.push_back(sp);
+    }
+}
+
 void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t deviceId,
                          std::vector<ISSyncPoint>& out,
@@ -141,6 +213,13 @@ void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t& arrivalIndex,
                          double& prevUpTimeSec,
                          std::vector<SessionAccum>& sessAccum) {
+    // D-119 / SN-8626: .dat has no wire protocol for this function's is_comm_parse_byte scan to
+    // find anything in — route to the .dat-native equivalent instead.
+    if (reader.format() == ISLogReader::SegmentFormat::Dat) {
+        scanSegmentForSyncsDat(reader, deviceId, out, upOffsetsOut, arrivalIndex, prevUpTimeSec, sessAccum);
+        return;
+    }
+
     auto bytes = reader.rawBytes();
     if (!bytes.first || bytes.second == 0) return;
 
