@@ -486,6 +486,13 @@ bool cDeviceLog::finalizeIndex() {
     hdr.total_records       = m_idxTotalRecords;
     hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
     hdr.last_timestamp_ms   = m_idxLastTimestampMs;
+    // SN-8629: ts_units = HostUptimeMs (set above by makeDefaultHeader) would be
+    // a lie if the first/last timestamps landed in different domains -- flag it
+    // Mixed so cross-segment consumers (ISDeviceLog::fromSegments) know these
+    // two values aren't safely comparable against another segment's.
+    if (timestampsLookMixedDomain(hdr.first_timestamp_ms, hdr.last_timestamp_ms)) {
+        hdr.ts_units = static_cast<uint8_t>(TimestampUnits::Mixed);
+    }
     // Preserve the v2.1 flags across the finalize header rewrite (the plain
     // "= FINALIZED" would otherwise drop HAS_LOCAL_DELTA / HAS_CAPTURE_EPOCH).
     hdr.flags               = static_cast<uint8_t>(

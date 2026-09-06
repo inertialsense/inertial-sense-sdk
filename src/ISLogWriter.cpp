@@ -283,6 +283,13 @@ ISExpected<void> ISLogWriter::writeFinalHeader() {
     header_.sync_point_count   = syncPointCount_;
     header_.flags             |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
 
+    // SN-8629: override the caller's ts_units (informational, opts.tsUnits)
+    // when first/last prove it can't be a single domain -- see
+    // timestampsLookMixedDomain().
+    if (idx::timestampsLookMixedDomain(header_.first_timestamp_ms, header_.last_timestamp_ms)) {
+        header_.ts_units = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+    }
+
     idxStream_.flush();
     idxStream_.seekp(0, std::ios::beg);
     if (!idxStream_.good()) {
