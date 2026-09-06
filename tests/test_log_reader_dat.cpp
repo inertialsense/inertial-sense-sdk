@@ -222,6 +222,26 @@ TEST_F(LogReaderDatTest, OpenSegmentSucceeds) {
     EXPECT_FALSE(r->isTruncated());
 }
 
+// Copilot review (PR #1298): formatFromExtension() originally did a strict `==` compare, which
+// regressed ISLog::openDirectory's pre-existing case-insensitive `.raw`/`.RAW` contract
+// (ISLog.cpp's isRawExtension) for BOTH extensions once this function started gating `.dat` too.
+// Exercises uppercase/mixed-case for each extension directly against openSegment, one level below
+// the directory scan that would otherwise mask the regression by never trying an uppercase name.
+TEST_F(LogReaderDatTest, OpenSegmentAcceptsMixedCaseExtension) {
+    std::error_code ec;
+
+    // Same stem as f_.datFile -> replace_extension(".idx") resolves to f_.idxFile, already on
+    // disk from fixture generation, so only the .dat itself needs copying under the new name.
+    const fs::path upperDat = f_.datFile.parent_path() / (f_.datFile.stem().string() + ".DAT");
+    fs::copy_file(f_.datFile, upperDat, ec);
+    ASSERT_FALSE(ec) << ec.message();
+
+    auto r = ISLogReader::openSegment(upperDat);
+    ASSERT_TRUE(r.has_value()) << "openSegment(.DAT) failed: " << r.error().message;
+    EXPECT_EQ(r->format(), ISLogReader::SegmentFormat::Dat);
+    EXPECT_GT(r->recordCount(), 0u);
+}
+
 TEST_F(LogReaderDatTest, HeaderAndCountsMatchFixture) {
     auto r = ISLogReader::openSegment(f_.datFile);
     ASSERT_TRUE(r.has_value());
@@ -412,6 +432,85 @@ TEST(LogReaderDat, MixedFormatSegmentsRejected) {
 
     ISFileManager::DeleteDirectory(rawDir.string());
     ISFileManager::DeleteDirectory(datDir.string());
+}
+
+// ============================================================
+// Device-info extraction from a TRUSTED on-disk index (D-119 AC)
+// ============================================================
+
+// Copilot review (PR #1298): none of the tests above actually exercise
+// deriveDeviceIdDat()'s offset-based dev_info_t read against a writer-produced
+// .idx that's trusted as-is (hadOnDiskIndex() == true, no rebuild) --
+// GenerateDataLogFiles()'s synthetic messages never include DID_DEV_INFO, so
+// every test above that opens its fixture unmodified silently falls through
+// to the filename "SN<n>" fallback (deriveDeviceId()'s step 2), which sets
+// deviceId_ but leaves hdwId_ at 0 -- it can't detect a wrong `.idx` offset
+// because it never reads through one. This test writes a real DID_DEV_INFO
+// record via the production LOGTYPE_DAT path (mirrors Logalyzer's
+// writeDatFixture in test_raw_series_builder.cpp) and opens the segment
+// WITHOUT touching its .idx, so deriveDeviceIdDat() must decode dev_info_t at
+// records_[i].offset to pass -- hdwId() only comes from that path (the
+// filename fallback never sets it), so a wrong offset reads garbage bytes,
+// fails the `hdr.size == sizeof(dev_info_t)` guard, and this test fails.
+TEST(LogReaderDat, DeviceInfoDerivedFromTrustedOnDiskIndex) {
+    const fs::path dir = uniqueTempDir("devinfo_trusted");
+    ISFileManager::DeleteDirectory(dir.string());
+
+    {
+        cISLogger logger;
+        cISLogger::sSaveOptions opts;
+        opts.logType               = cISLogger::LOGTYPE_DAT;
+        opts.useSubFolderTimestamp = false;
+        ASSERT_TRUE(logger.InitSave(dir.string(), opts));
+        auto dev = logger.registerDevice(kFixtureHwId, kFixtureSerial);
+        ASSERT_TRUE(dev != nullptr);
+        logger.EnableLogging(true);
+
+        dev_info_t info{};
+        info.serialNumber   = kFixtureSerial;
+        info.hardwareType   = IS_HARDWARE_TYPE_IMX;
+        info.hardwareVer[0] = 5;
+        p_data_hdr_t hdr{};
+        hdr.id   = DID_DEV_INFO;
+        hdr.size = sizeof(info);
+        logger.LogData(dev, &hdr, reinterpret_cast<const uint8_t*>(&info));
+
+        // A few ordinary records after it so DID_DEV_INFO isn't the only/last
+        // thing in the chunk -- exercises the offset arithmetic for a record
+        // that isn't chunk-start.
+        ins_2_t ins{};
+        ins.week        = 2300;
+        ins.timeOfWeek  = 100.0;
+        p_data_hdr_t insHdr{};
+        insHdr.id   = DID_INS_2;
+        insHdr.size = sizeof(ins);
+        for (int i = 0; i < 5; ++i) {
+            logger.LogData(dev, &insHdr, reinterpret_cast<const uint8_t*>(&ins));
+        }
+
+        logger.CloseAllFiles();
+    }
+
+    std::vector<ISFileManager::file_info_t> datFiles, idxFiles;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.dat$", datFiles);
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.idx$", idxFiles);
+    ASSERT_FALSE(datFiles.empty());
+    ASSERT_FALSE(idxFiles.empty()) << "expected a writer-produced .idx alongside the .dat";
+
+    // Deliberately do NOT delete the .idx -- openSegment must trust it as-is.
+    auto r = ISLogReader::openSegment(datFiles.front().name);
+    ASSERT_TRUE(r.has_value()) << r.error().message;
+    EXPECT_TRUE(r->hadOnDiskIndex())
+        << "this test only proves what it claims to if the on-disk .idx was trusted, not rebuilt";
+
+    EXPECT_TRUE(r->hasDevInfo());
+    EXPECT_EQ(r->hdwId(), kFixtureHwId)
+        << "hdwId() is only ever set by the offset-based dev_info_t decode -- a wrong .idx offset "
+           "leaves it at 0 regardless of the filename-fallback serial";
+    EXPECT_EQ(r->devInfo().serialNumber, kFixtureSerial);
+    EXPECT_EQ(r->deviceId(), kFixtureSerial);
+
+    ISFileManager::DeleteDirectory(dir.string());
 }
 
 // ============================================================

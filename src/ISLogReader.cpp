@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -92,13 +93,26 @@ bool hasSiblingSuccessor(const fs::path& rawPath) noexcept {
 
 /**
  * @brief Recognizes a segment's on-disk format from its extension (D-119 / SN-8626).
+ *
+ * Case-insensitive, matching `ISLog::openDirectory`'s existing `isRawExtension` contract
+ * (ISLog.cpp) — that scan already discovers `.RAW`/`.Raw`/mixed-case files on
+ * case-sensitive filesystems (Linux) and hands them to `openSegment`/`construct`, so this
+ * must accept whatever it accepts or a directory scan silently rejects files its own
+ * discovery pass just found. Copilot review (PR #1298): the original strict `==` compare
+ * regressed that contract for `.dat` too, once this function started gating both extensions.
+ *
  * @param path  Segment file path.
- * @return      `Raw` for `.raw`, `Dat` for `.dat`; `std::nullopt` for anything else.
+ * @return      `Raw` for `.raw`, `Dat` for `.dat` (any case); `std::nullopt` for anything else.
  */
 std::optional<ISLogReader::SegmentFormat> formatFromExtension(const fs::path& path) noexcept {
     const std::string ext = path.extension().string();
-    if (ext == ".raw") return ISLogReader::SegmentFormat::Raw;
-    if (ext == ".dat") return ISLogReader::SegmentFormat::Dat;
+    if (ext.size() != 4 || ext[0] != '.') return std::nullopt;
+    const auto low = [](char c) noexcept {
+        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    };
+    const char a = low(ext[1]), b = low(ext[2]), c = low(ext[3]);
+    if (a == 'r' && b == 'a' && c == 'w') return ISLogReader::SegmentFormat::Raw;
+    if (a == 'd' && b == 'a' && c == 't') return ISLogReader::SegmentFormat::Dat;
     return std::nullopt;
 }
 
