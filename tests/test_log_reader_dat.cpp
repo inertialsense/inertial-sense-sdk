@@ -40,8 +40,6 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-
 using namespace inertial_sense;
 namespace fs = std::filesystem;
 
@@ -51,11 +49,14 @@ constexpr uint16_t kFixtureHwId   = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
 constexpr uint32_t kFixtureSerial = 583201u;
 constexpr float    kFixtureSizeMB = 1.0f;
 
+// Portable unique temp directory (works on POSIX + Windows CI) — mirrors test_log_bounds.cpp's
+// makeTempDir(). Copilot review (PR #1298): the original ::getpid()/hardcoded-"/tmp" version
+// wasn't excluded from the Windows build in tests/CMakeLists.txt like test_log_reader.cpp is, so
+// it would have broken that build; ported to std::filesystem::temp_directory_path() instead of
+// adding this file to that exclusion list, since nothing else here needs POSIX.
 fs::path uniqueTempDir(const std::string& hint) {
-    char buf[256];
-    std::snprintf(buf, sizeof(buf), "/tmp/test_log_reader_dat_%s_%d_%ld",
-                  hint.c_str(), ::getpid(), static_cast<long>(::time(nullptr)));
-    return fs::path{buf};
+    static unsigned counter = 0;
+    return fs::temp_directory_path() / ("test_log_reader_dat_" + hint + "_" + std::to_string(counter++));
 }
 
 // ============================================================
