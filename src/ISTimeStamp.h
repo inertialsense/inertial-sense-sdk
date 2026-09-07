@@ -35,6 +35,14 @@ enum class TimeSource : uint8_t {
     ResolvedViaSync,    ///< Reconstructed by `ISTimeResolver` (D-07) from sync edges.
     HostReceived,       ///< Host clock at the moment the packet arrived.
     SessionOnly,        ///< Sample index converted to ms; carries no real-world anchor.
+    /// Bug report / Kyle 2026-09-07 (Option B): the log carries NO payload-level sync at all (no
+    /// ToW-bearing DID ever fixed) -- `ISTimeResolver` falls back to a single coarse wall-clock
+    /// anchor recovered from the log's own filename/folder timestamp, or the segment file's
+    /// last-write time when the name doesn't parse. Distinct from `SessionOnly` specifically so
+    /// consumers that filter out "carries no real-world anchor" records (RawSeriesBuilder) don't
+    /// also drop these -- an approximate anchor is far more useful than nothing for a
+    /// manufacturing/bench-calibration log that never received an external clock sync.
+    FileTimeAnchored,
 };
 
 /**
@@ -104,6 +112,14 @@ struct TimeStamp {
     /// sample index in time units, not anchored to any wall clock.
     static constexpr TimeStamp fromSessionOnly(uint64_t ms, uint64_t deviceId) noexcept {
         return TimeStamp{ ms, TimeSource::SessionOnly, TimeConfidence::Unknown, deviceId };
+    }
+
+    /// `FileTimeAnchored` source. Confidence is `Unknown` — same rationale as
+    /// `SessionOnly` (no basis for a finer-grained judgement), but a DIFFERENT
+    /// `source` so `RawSeriesBuilder`'s "carries no real-world anchor, drop it"
+    /// filter (keyed on both fields) does not also discard these.
+    static constexpr TimeStamp fromFileTimeAnchored(uint64_t ms, uint64_t deviceId) noexcept {
+        return TimeStamp{ ms, TimeSource::FileTimeAnchored, TimeConfidence::Unknown, deviceId };
     }
 };
 

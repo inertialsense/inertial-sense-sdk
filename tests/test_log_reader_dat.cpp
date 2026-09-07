@@ -515,6 +515,67 @@ TEST(LogReaderDat, DeviceInfoDerivedFromTrustedOnDiskIndex) {
 }
 
 // ============================================================
+// ISTimeResolver Option A on .dat (Kyle 2026-09-07)
+// ============================================================
+
+// The bug report that prompted Option A was against a .dat manufacturing/
+// calibration capture (thermal-chamber run, no INS/GNSS record at all) --
+// scanSegmentForSyncsDat mirrors scanSegmentForSyncs's Option A fix
+// line-for-line, but exercised through the .dat-native decode path rather
+// than the .raw comm-parser, since that's the format this bug actually
+// surfaced against.
+TEST(LogReaderDat, SyncedSysParamsAloneEstablishesSyncPointsInDatLog) {
+    const fs::path dir = uniqueTempDir("sysparams_only_dat");
+    ISFileManager::DeleteDirectory(dir.string());
+
+    {
+        cISLogger logger;
+        cISLogger::sSaveOptions opts;
+        opts.logType               = cISLogger::LOGTYPE_DAT;
+        opts.useSubFolderTimestamp = false;
+        ASSERT_TRUE(logger.InitSave(dir.string(), opts));
+        auto dev = logger.registerDevice(kFixtureHwId, kFixtureSerial);
+        ASSERT_TRUE(dev != nullptr);
+        logger.EnableLogging(true);
+
+        for (uint32_t towMs : { 200'000'000u, 200'010'000u, 200'020'000u }) {
+            sys_params_t sp{};
+            sp.timeOfWeekMs = towMs;
+            sp.upTime       = (towMs - 200'000'000u) / 1000.0 + 5.0;
+            sp.hdwStatus    = HDW_STATUS_GNSS_TIME_OF_WEEK_VALID;
+            p_data_hdr_t hdr{};
+            hdr.id   = DID_SYS_PARAMS;
+            hdr.size = sizeof(sp);
+            logger.LogData(dev, &hdr, reinterpret_cast<const uint8_t*>(&sp));
+        }
+        logger.CloseAllFiles();
+    }
+
+    std::vector<ISFileManager::file_info_t> datFiles;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.dat$", datFiles);
+    ASSERT_FALSE(datFiles.empty());
+
+    auto log = ISDeviceLog::fromSegments({ datFiles.front().name });
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+
+    auto syncs = ISTimeResolver::detectSyncPoints(*log);
+    ASSERT_FALSE(syncs.empty())
+        << "a synced DID_SYS_PARAMS record should establish a sync point on its own, "
+           "even with no INS/GNSS DID present";
+    for (const auto& sp : syncs) {
+        EXPECT_EQ(sp.sourceDid, static_cast<uint32_t>(DID_SYS_PARAMS));
+    }
+
+    auto resolverR = ISTimeResolver::build(*log);
+    ASSERT_TRUE(resolverR.has_value());
+    const TimeStamp t = resolverR->resolve(200'010'000u, log->deviceId());
+    EXPECT_EQ(t.source, TimeSource::PayloadToW);
+    EXPECT_EQ(t.confidence, TimeConfidence::Exact);
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// ============================================================
 // ISTimeResolver on .dat (D0066 compliance — D-119 / SN-8626)
 // ============================================================
 

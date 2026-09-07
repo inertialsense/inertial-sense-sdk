@@ -207,9 +207,14 @@ TEST_F(LogBoundsTest, WholeLogSpanIsFirstToLastResolved) {
     EXPECT_EQ(hi - lo, 20'000u);
 }
 
-TEST_F(LogBoundsTest, NoGpsRecordsSpanIsEmptyNotCrash) {
-    // A log with no ToW-bearing records → resolver has no anchors → every
-    // record resolves SessionOnly/Unknown → resolved span is empty, no crash.
+TEST_F(LogBoundsTest, NoGpsRecordsSpanFallsBackToFileAnchor) {
+    // A log with no ToW-bearing records and no synced SYS_PARAMS -> zero sync
+    // points. Kyle 2026-09-07 (Option B): the resolver now recovers a coarse
+    // wall-clock anchor from the log's own file (filename timestamp, or
+    // last-write time) rather than leaving every record SessionOnly/Unknown --
+    // so this log's resolved span is a real (if approximate) non-empty instant,
+    // not the old "empty span, no crash" sentinel. No crash either way; that
+    // guarantee still holds, it's just no longer the interesting part.
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
     imu_t imu{}; imu.time = 1.0; imu.I.acc[2] = 9.8f;
     recs.emplace_back(DID_IMU, bytesOf(imu));
@@ -220,8 +225,8 @@ TEST_F(LogBoundsTest, NoGpsRecordsSpanIsEmptyNotCrash) {
     auto r = ISTimeResolver::build(log.value());
     ASSERT_TRUE(r.has_value());
     auto [lo, hi] = resolvedSpan(log.value(), *r);
-    EXPECT_EQ(lo, 0u);
-    EXPECT_EQ(hi, 0u);
+    EXPECT_EQ(lo, hi);   // exactly one record
+    EXPECT_GT(lo, 0u);   // anchored (via filename or ctime), not empty
 }
 
 // -------------------- J-2: per-DID bounds, clean --------------------

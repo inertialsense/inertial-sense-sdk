@@ -388,6 +388,15 @@ public:
      */
     SegmentFormat format() const noexcept { return format_; }
 
+    /**
+     * @return  The path this segment was opened from. Kyle 2026-09-07 (Option B):
+     *          `ISTimeResolver`'s file-timestamp-anchor fallback (for a log with no
+     *          payload-level sync at all) parses this path's filename/ancestor
+     *          directory names for a timestamp, falling back to the file's
+     *          last-write time when none parse.
+     */
+    const std::filesystem::path& path() const noexcept { return rawPath_; }
+
     // -----------------------------------------------------------------
     // Iteration
     // -----------------------------------------------------------------
