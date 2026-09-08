@@ -229,13 +229,22 @@ TEST_F(LogReaderDatTest, OpenSegmentSucceeds) {
 // Exercises uppercase/mixed-case for each extension directly against openSegment, one level below
 // the directory scan that would otherwise mask the regression by never trying an uppercase name.
 TEST_F(LogReaderDatTest, OpenSegmentAcceptsMixedCaseExtension) {
-    std::error_code ec;
-
     // Same stem as f_.datFile -> replace_extension(".idx") resolves to f_.idxFile, already on
     // disk from fixture generation, so only the .dat itself needs copying under the new name.
     const fs::path upperDat = f_.datFile.parent_path() / (f_.datFile.stem().string() + ".DAT");
-    fs::copy_file(f_.datFile, upperDat, ec);
-    ASSERT_FALSE(ec) << ec.message();
+
+    // Windows CI failure (2026-09-08): NTFS/APFS are case-insensitive, so upperDat and
+    // f_.datFile already name the SAME file there -- fs::exists(upperDat) is true before any
+    // copy, and copy_file(f_.datFile, upperDat) then fails with "file exists" (source and
+    // destination are equivalent). That IS the case-insensitive-filesystem behavior this test
+    // wants to exercise (a plain path-string case change reaches the same on-disk bytes with no
+    // extra step) -- skip the copy rather than treating it as an error. Linux's ext4 is
+    // case-sensitive, so upperDat doesn't exist yet there and genuinely needs a real copy.
+    if (!fs::exists(upperDat)) {
+        std::error_code ec;
+        fs::copy_file(f_.datFile, upperDat, ec);
+        ASSERT_FALSE(ec) << ec.message();
+    }
 
     auto r = ISLogReader::openSegment(upperDat);
     ASSERT_TRUE(r.has_value()) << "openSegment(.DAT) failed: " << r.error().message;
