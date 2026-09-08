@@ -74,6 +74,27 @@ ISExpected<ISDeviceLog>
         }
     }
 
+    // D-119 / SN-8626: reject a device log composed of mixed .raw/.dat segments. Nothing today
+    // requires mixing formats within one composed log, and the simpler invariant is safer —
+    // same pattern as the deviceId check above.
+    auto formatName = [](ISLogReader::SegmentFormat f) noexcept {
+        return f == ISLogReader::SegmentFormat::Dat ? ".dat" : ".raw";
+    };
+    const ISLogReader::SegmentFormat expectedFormat = readers.front().format();
+    for (std::size_t i = 1; i < readers.size(); ++i) {
+        const ISLogReader::SegmentFormat got = readers[i].format();
+        if (got != expectedFormat) {
+            log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: format mismatch — "
+                      "first segment is %s, segment %zu (%s) is %s",
+                      formatName(expectedFormat), i,
+                      segmentPaths[i].filename().string().c_str(), formatName(got));
+            return fail(ISErrorCode::Unsupported,
+                std::string{"ISDeviceLog::fromSegments: mixed segment formats — first segment is "}
+                + formatName(expectedFormat) + ", segment " + std::to_string(i) + " is "
+                + formatName(got));
+        }
+    }
+
     // Order by segment-start timestamp. Use header.first_timestamp_ms
     // when present (D-01 writer fills this; D-04 scan-rebuild does too)
     // and fall back to the path's lexicographic order otherwise — the

@@ -17,9 +17,15 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstring>
+#include <ctime>
+#include <filesystem>
 #include <map>
+#include <optional>
+#include <regex>
+#include <system_error>
 
 namespace inertial_sense {
 
@@ -134,6 +140,97 @@ int64_t medianOf(std::vector<int64_t> v) {
     return v[v.size() / 2];
 }
 
+/**
+ * @brief `.dat` equivalent of `scanSegmentForSyncs` (D-119 / SN-8626 / D0082).
+ *
+ * `.dat` has no wire protocol to parse (D0082): each `ISRecordView::bytes()` is already a bare
+ * `p_data_hdr_t` + payload, and `reader.allRecords()` already walks them cleanly (no NMEA/RTCM3/
+ * UBX noise to skip, unlike `.raw`'s byte-by-byte comm scan). Same DID_SYS_PARAMS / ToW-bearing
+ * logic as the `.raw` path below — see its comments for the "why" of each step.
+ */
+void scanSegmentForSyncsDat(const ISLogReader& reader,
+                            uint64_t deviceId,
+                            std::vector<ISSyncPoint>& out,
+                            std::vector<int64_t>& upOffsetsOut,
+                            uint64_t& arrivalIndex,
+                            double& prevUpTimeSec,
+                            std::vector<SessionAccum>& sessAccum) {
+    uint64_t lastNonSyncHostTimeMs = 0;
+
+    for (auto v : reader.allRecords()) {
+        const auto bytes = v.bytes();
+        if (!bytes.first || bytes.second < sizeof(p_data_hdr_t)) continue;
+        p_data_hdr_t hdr{};
+        std::memcpy(&hdr, bytes.first, sizeof(hdr));
+        if (sizeof(p_data_hdr_t) + hdr.size > bytes.second) continue;
+        const uint8_t* payloadPtr = bytes.first + sizeof(p_data_hdr_t);
+
+        const uint64_t thisArrival = arrivalIndex++;
+
+        if (hdr.id == DID_SYS_PARAMS && hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
+            sys_params_t sp2{};
+            std::memcpy(&sp2, payloadPtr, sizeof(sp2));
+            if (sp2.upTime > 0.0) {
+                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+                    sessAccum.push_back(SessionAccum{ thisArrival, {} });
+                }
+                prevUpTimeSec = sp2.upTime;
+            }
+            const bool towValid =
+                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
+                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
+                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+                upOffsetsOut.push_back(off);
+                if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);
+            }
+            // Kyle 2026-09-07 (Option A): DID_SYS_PARAMS wasn't in kToWBearingDids, so even a
+            // synced SYS_PARAMS record (towValid) never became a sync point itself -- only used
+            // above to calibrate OTHER DIDs' uptime->ToW bridge. A log with SYS_PARAMS as its
+            // ONLY DID ever carrying a valid GPS time (no INS/GNSS at all) therefore had zero
+            // sync points regardless. Push it as a genuine anchor too, same identity convention
+            // as the generic ToW-bearing path below (hostTimeMs == payloadToWMs -- a "sync"
+            // record's .idx timestamp field IS the ToW, no separate host-time stored). No
+            // gpsWeek: sys_params_t carries no week field, unlike ins_x_t/gnss_pos_t, so this
+            // sync point can bridge host-uptime->ToW but never itself supply the epoch anchor
+            // (chooseAnchorWeek skips week==0 candidates).
+            if (towValid && sp2.timeOfWeekMs > 0) {
+                ISSyncPoint sysSp{};
+                sysSp.hostTimeMs       = sp2.timeOfWeekMs;
+                sysSp.payloadToWMs     = sp2.timeOfWeekMs;
+                sysSp.deviceId         = deviceId;
+                sysSp.sourceDid        = DID_SYS_PARAMS;
+                sysSp.actualHostTimeMs = lastNonSyncHostTimeMs;
+                out.push_back(sysSp);
+            }
+        }
+
+        const double tsSec = cISDataMappings::Timestamp(&hdr, payloadPtr);
+
+        if (!isToWBearing(hdr.id)) {
+            if (tsSec > 0.0) {
+                lastNonSyncHostTimeMs = static_cast<uint64_t>(tsSec * 1000.0);
+            }
+            continue;
+        }
+        if (tsSec <= 0.0) continue;
+
+        const uint64_t towMs = static_cast<uint64_t>(tsSec * 1000.0);
+        ISSyncPoint sp{};
+        sp.hostTimeMs       = towMs;
+        sp.payloadToWMs     = towMs;
+        sp.deviceId         = deviceId;
+        sp.sourceDid        = hdr.id;
+        sp.actualHostTimeMs = lastNonSyncHostTimeMs;
+        if (hdr.size >= sizeof(uint32_t)) {
+            uint32_t weekRaw = 0;
+            std::memcpy(&weekRaw, payloadPtr, sizeof(weekRaw));
+            sp.gpsWeek = weekRaw;
+        }
+        out.push_back(sp);
+    }
+}
+
 void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t deviceId,
                          std::vector<ISSyncPoint>& out,
@@ -141,6 +238,13 @@ void scanSegmentForSyncs(const ISLogReader& reader,
                          uint64_t& arrivalIndex,
                          double& prevUpTimeSec,
                          std::vector<SessionAccum>& sessAccum) {
+    // D-119 / SN-8626: .dat has no wire protocol for this function's is_comm_parse_byte scan to
+    // find anything in — route to the .dat-native equivalent instead.
+    if (reader.format() == ISLogReader::SegmentFormat::Dat) {
+        scanSegmentForSyncsDat(reader, deviceId, out, upOffsetsOut, arrivalIndex, prevUpTimeSec, sessAccum);
+        return;
+    }
+
     auto bytes = reader.rawBytes();
     if (!bytes.first || bytes.second == 0) return;
 
@@ -200,6 +304,18 @@ void scanSegmentForSyncs(const ISLogReader& reader,
                 const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
                 upOffsetsOut.push_back(off);                       // global (SN-8323) offset samples
                 if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);  // per-session (SN-8339)
+            }
+            // Kyle 2026-09-07 (Option A) -- same rationale as scanSegmentForSyncsDat's mirror of
+            // this block: DID_SYS_PARAMS wasn't in kToWBearingDids, so even a synced record never
+            // became a sync point itself, only used to calibrate OTHER DIDs' bridge. Push it too.
+            if (towValid && sp2.timeOfWeekMs > 0) {
+                ISSyncPoint sysSp{};
+                sysSp.hostTimeMs       = sp2.timeOfWeekMs;
+                sysSp.payloadToWMs     = sp2.timeOfWeekMs;
+                sysSp.deviceId         = deviceId;
+                sysSp.sourceDid        = DID_SYS_PARAMS;
+                sysSp.actualHostTimeMs = lastNonSyncHostTimeMs;
+                out.push_back(sysSp);
             }
         }
 
@@ -295,6 +411,138 @@ uint32_t chooseAnchorWeek(const std::vector<ISSyncPoint>& syncs) {
         }
     }
     return bestWeek;
+}
+
+// ============================================================
+// Option B (Kyle 2026-09-07): file-timestamp anchor fallback
+// ============================================================
+//
+// A log that never receives an external clock sync (no INS/GNSS DID, and no
+// DID_SYS_PARAMS record ever reports HDW_STATUS_GNSS_TIME_OF_WEEK_VALID --
+// Option A above still leaves such a log with zero sync points) has no
+// payload-derived basis for a wall-clock anchor at all. Rather than resolve
+// every record to SessionOnly/Unknown (which RawSeriesBuilder then drops
+// entirely -- the log becomes completely unplottable), recover ONE coarse
+// anchor from the log's own file: the segment's filename or an ancestor
+// directory name, if it looks like cISLogger's own `..._YYYYMMDD_HHMMSS_..`
+// convention (the common case -- this IS how cltool/cISLogger names a
+// session), else the segment file's last-write time.
+
+namespace fs = std::filesystem;
+
+//! Days from the Unix epoch (1970-01-01) to (y, m, d), proleptic Gregorian.
+//! Howard Hinnant's civil_from_days algorithm (public domain), needed because
+//! this file is pure C++17 -- no <chrono> calendar support until C++20.
+int64_t daysFromCivil(int64_t y, unsigned m, unsigned d) noexcept {
+    y -= (m <= 2);
+    const int64_t era = (y >= 0 ? y : y - 399) / 400;
+    const unsigned yoe = static_cast<unsigned>(y - era * 400);
+    const unsigned doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + static_cast<int64_t>(doe) - 719468;
+}
+
+//! Matches cISLogger's `..._YYYYMMDD_HHMMSS_...` (or trailing `_YYYYMMDD_HHMMSS`)
+//! naming convention in a filename stem or directory name and converts it to
+//! Unix-epoch ms. Basic range-sanity-checked (year/month/day/hour/min/sec) to
+//! avoid treating an unrelated 8+6-digit run (e.g. a serial number followed by
+//! a counter) as a timestamp. Treated as UTC -- the writer stamps local wall-
+//! clock at capture time with no timezone recorded, and this anchor is already
+//! explicitly a coarse approximation (FileTimeAnchored / TimeConfidence::Unknown),
+//! so a timezone-sized offset doesn't change the plottability outcome.
+std::optional<uint64_t> parseTimestampFromName(const std::string& name) noexcept {
+    static const std::regex re(R"((\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2}))");
+    std::smatch m;
+    if (!std::regex_search(name, m, re)) return std::nullopt;
+
+    const int year  = std::stoi(m[1].str());
+    const int month = std::stoi(m[2].str());
+    const int day   = std::stoi(m[3].str());
+    const int hour  = std::stoi(m[4].str());
+    const int min   = std::stoi(m[5].str());
+    const int sec   = std::stoi(m[6].str());
+    if (year < 2000 || year > 2100)  return std::nullopt;
+    if (month < 1 || month > 12)     return std::nullopt;
+    if (day < 1 || day > 31)         return std::nullopt;
+    if (hour > 23 || min > 59 || sec > 59) return std::nullopt;
+
+    const int64_t days = daysFromCivil(year, static_cast<unsigned>(month),
+                                       static_cast<unsigned>(day));
+    const int64_t secs = days * 86400 + hour * 3600 + min * 60 + sec;
+    if (secs < 0) return std::nullopt;
+    return static_cast<uint64_t>(secs) * 1000ull;
+}
+
+//! Tries `path`'s filename stem, then each ancestor directory name (up to 4
+//! levels, past which a match is unlikely to actually describe this capture),
+//! returning the first that parses as a timestamp.
+std::optional<uint64_t> anchorFromPathNames(const fs::path& path) noexcept {
+    if (auto v = parseTimestampFromName(path.stem().string())) return v;
+    fs::path dir = path.parent_path();
+    for (int depth = 0; depth < 4 && !dir.empty(); ++depth) {
+        if (auto v = parseTimestampFromName(dir.filename().string())) return v;
+        if (dir == dir.parent_path()) break;   // reached root
+        dir = dir.parent_path();
+    }
+    return std::nullopt;
+}
+
+//! `path`'s last-write time as Unix-epoch ms, or nullopt on any filesystem error.
+//! `std::filesystem::file_time_type`'s clock is unspecified pre-C++20, but on
+//! every platform this project targets (libstdc++/libc++) it IS
+//! `std::chrono::system_clock` in practice; this is the standard C++17
+//! workaround (comparing against `system_clock::now()`/`file_time_type::clock::
+//! now()` taken back-to-back) rather than an unavailable `clock_cast` (C++20).
+std::optional<uint64_t> fileLastWriteTimeMs(const fs::path& path) noexcept {
+    std::error_code ec;
+    const auto ftime = fs::last_write_time(path, ec);
+    if (ec) return std::nullopt;
+    const auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+        ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        sctp.time_since_epoch()).count();
+    if (ms < 0) return std::nullopt;
+    return static_cast<uint64_t>(ms);
+}
+
+//! Largest non-zero raw `.idx` timestamp observed across every segment of
+//! `log` -- used only as the ctime fallback's session-length estimate (see
+//! `deriveFileAnchorMs`). A second full pass over the log, but this only runs
+//! when the primary sync scan already found ZERO sync points, which is rare.
+uint64_t maxRawTimestampMs(const ISDeviceLog& log) noexcept {
+    uint64_t best = 0;
+    for (std::size_t s = 0; s < log.segmentCount(); ++s) {
+        for (auto v : log.segment(s).allRecords()) {
+            best = std::max(best, v.timestamp().value);
+        }
+    }
+    return best;
+}
+
+//! Kyle 2026-09-07 (Option B): the wall-clock instant corresponding to
+//! host-uptime == 0 for `log`, recovered from its own file when the log has
+//! no payload-level sync to derive one from. Tries the EARLIEST segment's
+//! filename/ancestor-directory names first (cISLogger stamps the session
+//! start into the name, so this needs no adjustment); falls back to that
+//! segment's last-write time, adjusted backward by the log's observed
+//! session span (last-write time approximates when the file was CLOSED, not
+//! opened) so the anchor still lands near session start rather than session
+//! end.
+//!
+//! @return  Anchor in Unix-epoch ms, or `std::nullopt` if neither the name
+//!          nor the filesystem produced anything usable (caller's existing
+//!          SessionOnly/Unknown fallback still applies in that case).
+std::optional<uint64_t> deriveFileAnchorMs(const ISDeviceLog& log) {
+    if (log.segmentCount() == 0) return std::nullopt;
+    const fs::path& firstSegPath = log.segment(0).path();
+
+    if (auto v = anchorFromPathNames(firstSegPath)) return v;
+
+    if (auto ctimeMs = fileLastWriteTimeMs(firstSegPath)) {
+        const uint64_t spanMs = maxRawTimestampMs(log);
+        return (*ctimeMs > spanMs) ? (*ctimeMs - spanMs) : *ctimeMs;
+    }
+    return std::nullopt;
 }
 
 } // namespace
@@ -440,9 +688,24 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
         }
     }
 
+    // Kyle 2026-09-07 (Option B): a log with zero sync points (no INS/GNSS, and
+    // Option A above found no synced DID_SYS_PARAMS either) has no payload basis
+    // for a wall-clock anchor at all -- recover one from the log's own file
+    // rather than leave every record SessionOnly/Unknown (RawSeriesBuilder drops
+    // those outright).
+    uint64_t fileAnchorMs  = 0;
+    bool     haveFileAnchor = false;
+    if (syncs.empty()) {
+        if (auto anchor = deriveFileAnchorMs(log)) {
+            fileAnchorMs   = *anchor;
+            haveFileAnchor = true;
+        }
+    }
+
     return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek,
                            anchorTowStart, anchorTowEnd,
                            uptimeToTowOffsetMs, haveUptimeOffset,
+                           fileAnchorMs, haveFileAnchor,
                            std::move(sessions) };
 }
 
@@ -477,7 +740,14 @@ TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
     }
 
     if (syncPoints_.empty()) {
-        // No anchors. Best we can do is a SessionOnly tag with the
+        // No payload-derived anchors. Kyle 2026-09-07 (Option B): if build() found
+        // a usable file-timestamp anchor (the log's filename/directory name, or its
+        // last-write time), every input here IS host-uptime domain (there's no
+        // sync point to have classified it otherwise) -- add the anchor directly.
+        if (haveFileAnchor_) {
+            return TimeStamp::fromFileTimeAnchored(fileAnchorMs_ + hostTimeMs, deviceId);
+        }
+        // No anchor of any kind. Best we can do is a SessionOnly tag with the
         // input value passed through.
         return TimeStamp::fromSessionOnly(hostTimeMs, deviceId);
     }
