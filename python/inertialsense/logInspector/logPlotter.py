@@ -37,6 +37,38 @@ DEG2RAD = 3.14159 / 180.0
 RTHR2RTS = 60       # sqrt(hr) to sqrt(sec)
 MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
+# IMU part number per slot (0-4), by hardware variant (DID_DEV_INFO.hardwareVer[3]). A single
+# string applies to all slots; a list gives one part per slot 0-4. Duplicated from
+# IMU_TYPE_BY_HDW_VARIANT in python/src/imuCalibration/temperature_calibration.py (logInspector is
+# a separately-distributed SDK tool, so it doesn't import from that tree) -- keep the two in sync.
+IMU_TYPE_BY_HDW_VARIANT = {
+    0:  'LSM6SV16BX',
+    1:  'ISM6HG256X',
+    2:  'ISM330DHCX',
+    3:  ['ISM6HG256X', 'ISM330DHCX', 'ISM6HG256X', 'ISM330DHCX', 'ISM6HG256X'],
+    4:  ['ISM6HG256X', 'ICM-56686',  'ISM6HG256X', 'ICM-56686',  'ISM6HG256X'],
+    5:  'ICM-56686',
+    6:  ['ISM330DHCX', 'ICM-56686',  'ISM330DHCX', 'ICM-56686',  'ISM330DHCX'],
+    7:  'LSM6DSV',
+    8:  ['ISM6HG256X', 'LSM6DSV16BX','LSM6DSV16BX','ISM6HG256X', 'LSM6DSV16BX'],
+    9:  ['ISM6HG256X', 'ICM-56686',  'ICM-56686',  'ISM6HG256X', 'ICM-56686'],
+    10: ['ISM330DHCX', 'LSM6DSV16BX','LSM6DSV16BX','ISM330DHCX', 'LSM6DSV16BX'],
+    11: ['ISM6HG256X', 'ISM330DHCX', 'ISM330DHCX', 'ISM6HG256X', 'ISM330DHCX'],
+    12: ['ICM-56686',  'ISM330DHCX', 'ISM330DHCX', 'ICM-56686',  'ISM330DHCX'],
+    13: 'ISM6HGK256X',
+}
+
+
+def imuTypesForHdwVariant(variant, n_imu):
+    """List of n_imu IMU part-number strings (one per slot 0..n_imu-1) for a hardwareVer[3] value,
+    per IMU_TYPE_BY_HDW_VARIANT, or 'unknown' entries if the variant isn't recognized."""
+    types = IMU_TYPE_BY_HDW_VARIANT.get(int(variant))
+    if types is None:
+        return ['unknown'] * n_imu
+    if isinstance(types, str):
+        return [types] * n_imu
+    return types[:n_imu]
+
 SHOW_GNSS_W_INS = 1
 SHOW_HEADING_ARROW = 0
 REMOVE_IMU_SLOPE = 0    # remove slope and bias from IMU data
@@ -470,6 +502,98 @@ class logPlot:
         if include_std:
             return np.mean(values) + np.std(values)
         return np.mean(values)
+
+    def saveAllanDeviationYaml(self, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units):
+        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, RW
+        for accel) values shown in each allanDeviationPqr()/allanDeviationAcc() subplot title into
+        allan_deviation.yaml, adjacent to the log files. Keyed by device serial number at the top
+        level, with 'gyroscope'/'accelerometer' as siblings underneath, so a gyro pass and an accel
+        pass on the same log merge into one entry per device rather than overwriting each other --
+        reads the existing file first and only replaces this call's own (device, sensor, metric)
+        leaf, leaving everything else (other devices, the sensor's other metric, the other sensor)
+        as-is. Includes hdw_version/hdw_variant/imu_type, matching the convention in
+        temperature_calibration.py's savePerformanceData() (see IMU_TYPE_BY_HDW_VARIANT above).
+
+        metric is 'combined' (allanDeviationPqr()/allanDeviationAcc() called on DID_IMU, the
+        device's already sensor-fused single stream) or 'individual' (called on DID_IMUS, the raw
+        per-IMU-slot stream, via allanDeviationImusPqr()/allanDeviationImusAcc()) -- the two are
+        genuinely different data sources, not a value and its derived average, so each call writes
+        only its own metric key.
+
+        Per sensor: 'units': {'bi': ..., 'arw' or 'rw': ...}, plus whichever of
+        'combined'/'individual' this call populates:
+          - 'combined': bi/arw (or rw) are each a 3-element list, one value per axis.
+          - 'individual': bi/arw (or rw) are each a list of 3 axis entries, each itself a list of
+            one value per IMU slot -- i.e. individual['bi'][axis_idx][slot].
+
+        sum_bi/sum_rw are indexed [axis_idx][slot] -> list of one value per device, in
+        included_devs order (same shape previously used for this function's now-removed CSV
+        export); for metric='combined', slots beyond the first (there is normally only one, DID_IMU
+        being a single stream) are averaged together defensively.
+        """
+        yaml_fname = os.path.join(self.directory, 'allan_deviation.yaml')
+        data = {}
+        if os.path.exists(yaml_fname):
+            with open(yaml_fname, 'r') as f:
+                data = yaml.safe_load(f) or {}
+
+        for idx, d in enumerate(included_devs):
+            hdw_data = self.getData(d, DID_DEV_INFO, 'hardwareVer')
+            if len(hdw_data) <= d:
+                continue
+            hdw_version = [int(x) for x in hdw_data[d]]
+            hdw_variant = hdw_version[3]
+            imu_type = imuTypesForHdwVariant(hdw_variant, n_slots)
+
+            device_node = data.setdefault(str(int(self.log.serials[d])), {})
+            device_node['hdw_version'] = hdw_version
+            device_node['hdw_variant'] = hdw_variant
+            # 'combined' (DID_IMU) is always a single already-fused stream (n_slots=1), while
+            # 'individual' (DID_IMUS) reflects the device's true physical slot count -- keep
+            # whichever call has produced the longer (more informative) imu_type list so a later
+            # 'combined' pass doesn't downgrade it back to 1 entry.
+            if len(imu_type) >= len(device_node.get('imu_type', [])):
+                device_node['imu_type'] = imu_type
+
+            has_data = False
+            if metric == 'individual':
+                metric_bi, metric_rw = [], []
+                for axis_idx in range(len(axis_labels)):
+                    axis_bi, axis_rw = [], []
+                    for slot in range(n_slots):
+                        bi_list = sum_bi[axis_idx][slot]
+                        rw_list = sum_rw[axis_idx][slot]
+                        if idx < len(bi_list) and idx < len(rw_list):
+                            axis_bi.append(float(bi_list[idx]))
+                            axis_rw.append(float(rw_list[idx]))
+                    metric_bi.append(axis_bi)
+                    metric_rw.append(axis_rw)
+                    has_data = has_data or bool(axis_bi)
+            else:  # 'combined'
+                metric_bi, metric_rw = [], []
+                for axis_idx in range(len(axis_labels)):
+                    axis_bi, axis_rw = [], []
+                    for slot in range(n_slots):
+                        bi_list = sum_bi[axis_idx][slot]
+                        rw_list = sum_rw[axis_idx][slot]
+                        if idx < len(bi_list) and idx < len(rw_list):
+                            axis_bi.append(float(bi_list[idx]))
+                            axis_rw.append(float(rw_list[idx]))
+                    if axis_bi:
+                        has_data = True
+                        metric_bi.append(float(np.mean(axis_bi)))
+                        metric_rw.append(float(np.mean(axis_rw)))
+                    else:
+                        metric_bi.append(None)
+                        metric_rw.append(None)
+
+            if has_data:
+                sensor_node = device_node.setdefault(sensor, {})
+                sensor_node['units'] = {'bi': bi_units, rw_field: rw_units}
+                sensor_node[metric] = {'bi': metric_bi, rw_field: metric_rw}
+
+        with open(yaml_fname, 'w') as f:
+            yaml.dump(data, f, sort_keys=False, default_flow_style=False)
 
     def saveFigJoinAxes(self, ax, axs, fig, name, sizeInches=[]):
         self.saveFig(fig, name, sizeInches)
@@ -3341,22 +3465,7 @@ class logPlot:
 
         self.setup_and_wire_legend()
 
-        with open(self.log.directory + '/allan_deviation_pqr.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-P,BI-Q,BI-R,ARW-P,ARW-Q,ARW-R\n')
-            f.write(',,,(deg/hr),(deg/hr),(deg/hr),(deg / rt hr),(deg / rt hr),(deg / rt hr)\n')
-            today = date.today()
-            for idx, d in enumerate(included_devs_pqr):
-                if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
-                    continue 
-                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
-                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, pqr in enumerate(initial_sensors):
-                    if np.all(pqr) != None and n<len(initial_sensors):
-                        for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
-                        for i in range(3):
-                            f.write('%f,' % (sumARW[i][n][idx] if idx < len(sumARW[i][n]) else 0.0))
-                f.write('\n')
+        self.saveAllanDeviationYaml('gyroscope', 'individual' if did == DID_IMUS else 'combined', included_devs_pqr, len(initial_sensors), ['P', 'Q', 'R'], sumBI, 'deg/hr', sumARW, 'arw', 'deg/sqrt(hr)')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'pqrIMU')
     
@@ -3456,6 +3565,8 @@ class logPlot:
                         for i in range(3):
                             f.write('%f,' % (sumRW[i][n][idx] if idx < len(sumRW[i][n]) else 0.0))
                 f.write('\n')
+
+        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'rw', 'm/s/sqrt(hr)')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
