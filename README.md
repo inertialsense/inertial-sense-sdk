@@ -27,6 +27,19 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
  * [Software Releases](https://github.com/inertialsense/inertial-sense-sdk/releases) - uINS, uAHRS, uIMU, and EVB-2 firmware and application installers.
  * [SDK & CLTool Source Code](https://github.com/inertialsense/inertial-sense-sdk) - Open source SDK repository with command line tool and example C/C++ source code.
 
+### Building on Air-Gapped or USB-less Systems
+
+The default SDK build depends on `libusb` and `libudev`, and generates a version-info header (`repositoryInfo.h`) via a Python step that installs a couple of packages from PyPI. Both of these require network access and can block a build on an air-gapped machine or a SYSROOT with no USB support (e.g. a UART/serial-only embedded target).
+
+To avoid both, build using the lightweight pattern demonstrated in [`ExampleProjects/Minimal_ISDevice`](ExampleProjects/Minimal_ISDevice), which builds the SDK directly from source without `libusb`/`libudev` and skips the PyPI-dependent version-file generation step entirely:
+
+```cmake
+set(IS_SDK_BUILD_FROM_SOURCE ON CACHE BOOL "" FORCE)
+include(${IS_SDK_DIR}/include_is_sdk_find_library.cmake)
+```
+
+Communication is serial/UART only in this mode (no USB/DFU firmware-update support); see the example's `README.md` for a complete working build. (SN-8286)
+
 ### Hardware Design Files
 
  * [IS-hdw repository](https://github.com/inertialsense/IS-hdw) - CAD models of our products and PCB design assets for integration.
