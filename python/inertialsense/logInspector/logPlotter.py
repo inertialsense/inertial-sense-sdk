@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
-from datetime import date, datetime
+from datetime import datetime
 import pandas as pd
 from scipy.signal import detrend, welch, butter, filtfilt, savgol_filter
 
@@ -592,8 +592,72 @@ class logPlot:
                 sensor_node['units'] = {'bi': bi_units, rw_field: rw_units}
                 sensor_node[metric] = {'bi': metric_bi, rw_field: metric_rw}
 
+        self._updateHardwareVariantAverages(data)
+
         with open(yaml_fname, 'w') as f:
             yaml.dump(data, f, sort_keys=False, default_flow_style=False)
+
+    def _updateHardwareVariantAverages(self, data):
+        """Recompute data['hardware_variant_summary'] from every per-serial device entry currently
+        in the allan_deviation.yaml data (not just the devices this particular
+        saveAllanDeviationYaml() call just touched), grouped by hdw_variant. Devices of the same
+        hardware variant carry the same physical IMU part(s) (see IMU_TYPE_BY_HDW_VARIANT), so
+        averaging within a variant is meaningful; devices of different variants are never mixed.
+
+        For each variant, sensor ('gyroscope'/'accelerometer'), and axis:
+          - 'combined': mean of each device's own 'combined' BI/ARW(or VRW) value -- one sample per
+            device (its already sensor-fused reading).
+          - 'individual': mean across every (device, IMU slot) 'individual' BI/ARW(or VRW) value --
+            one sample per physical gyroscope/accelerometer of that variant.
+        Accelerometer's random-walk figure is reported here as 'vrw' (velocity random walk, the
+        term this file's aggregate accel statistic used before this per-variant summary existed --
+        see the fig.suptitle computation in allanDeviationAcc()), though the per-device data it's
+        computed from is stored under 'rw'; gyroscope's is 'arw' throughout, unchanged.
+        """
+        summary = {}
+        for serial_key, device in data.items():
+            if serial_key == 'hardware_variant_summary' or not isinstance(device, dict):
+                continue
+            variant = device.get('hdw_variant')
+            if variant is None:
+                continue
+            variant_node = summary.setdefault(str(variant), {})
+
+            for sensor, src_rw_field, dst_rw_field in (('gyroscope', 'arw', 'arw'), ('accelerometer', 'rw', 'vrw')):
+                sensor_data = device.get(sensor)
+                if not sensor_data:
+                    continue
+                sensor_summary = variant_node.setdefault(sensor, {
+                    'combined':   {'bi': [[], [], []], dst_rw_field: [[], [], []]},
+                    'individual': {'bi': [[], [], []], dst_rw_field: [[], [], []]},
+                })
+
+                combined = sensor_data.get('combined')
+                if combined:
+                    for axis_idx in range(3):
+                        if axis_idx < len(combined.get('bi', [])) and combined['bi'][axis_idx] is not None:
+                            sensor_summary['combined']['bi'][axis_idx].append(combined['bi'][axis_idx])
+                        rw_axis = combined.get(src_rw_field, [])
+                        if axis_idx < len(rw_axis) and rw_axis[axis_idx] is not None:
+                            sensor_summary['combined'][dst_rw_field][axis_idx].append(rw_axis[axis_idx])
+
+                individual = sensor_data.get('individual')
+                if individual:
+                    for axis_idx in range(3):
+                        if axis_idx < len(individual.get('bi', [])):
+                            sensor_summary['individual']['bi'][axis_idx].extend(individual['bi'][axis_idx])
+                        if axis_idx < len(individual.get(src_rw_field, [])):
+                            sensor_summary['individual'][dst_rw_field][axis_idx].extend(individual[src_rw_field][axis_idx])
+
+        # Collapse the collected per-axis sample lists into means (None where a variant/sensor/axis
+        # has no samples at all, rather than crashing or reporting a misleading 0).
+        for variant_node in summary.values():
+            for sensor_summary in variant_node.values():
+                for metric_data in sensor_summary.values():
+                    for field, per_axis in metric_data.items():
+                        metric_data[field] = [float(np.mean(v)) if v else None for v in per_axis]
+
+        data['hardware_variant_summary'] = summary
 
     def saveFigJoinAxes(self, ax, axs, fig, name, sizeInches=[]):
         self.saveFig(fig, name, sizeInches)
@@ -3548,23 +3612,6 @@ class logPlot:
                 self.legends_add(ax[d][i].legend(ncol=2))
 
         self.setup_and_wire_legend()
-
-        with open(self.log.directory + '/allan_deviation_acc.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,VRW-X,VRW-Y,VRW-Z\n')
-            f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
-            today = date.today()
-            for idx, d in enumerate(included_devs_acc):
-                if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
-                    continue 
-                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
-                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, acc in enumerate(initial_sensors):
-                    if np.all(acc) != None and n<len(initial_sensors):
-                        for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
-                        for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][idx] if idx < len(sumRW[i][n]) else 0.0))
-                f.write('\n')
 
         self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'rw', 'm/s/sqrt(hr)')
 
