@@ -683,6 +683,11 @@ void ISLogReader::buildIndexFromScan() {
         header_.first_timestamp_ms  = records_.front().timestamp;
         header_.last_timestamp_ms   = records_.back().timestamp;
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+        // SN-8629: see timestampsLookMixedDomain() -- the default HostUptimeMs
+        // (set when this reader's header was seeded) would be a lie here.
+        if (idx::timestampsLookMixedDomain(header_.first_timestamp_ms, header_.last_timestamp_ms)) {
+            header_.ts_units = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+        }
     }
 }
 

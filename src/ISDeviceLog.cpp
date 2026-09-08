@@ -9,6 +9,7 @@
 
 #include "ISDeviceLog.h"
 
+#include "ISLogIndex.h"       // SN-8629 timestampsLookMixedDomain()
 #include "ISTimeResolver.h"   // SN-8105 anchored-span accessors
 #include "core/msg_logger.h"
 
@@ -98,14 +99,33 @@ ISExpected<ISDeviceLog>
     // when present (D-01 writer fills this; D-04 scan-rebuild does too)
     // and fall back to the path's lexicographic order otherwise — the
     // writer's filename pattern is timestamp-sortable per D0051.
-    std::sort(readers.begin(), readers.end(),
-        [](const ISLogReader& a, const ISLogReader& b) {
-            const uint64_t aT = a.segmentStartTimestamp();
-            const uint64_t bT = b.segmentStartTimestamp();
-            if (aT && bT && aT != bT) return aT < bT;
-            // Rely on filename-lex ordering as the tiebreaker.
-            return false;  // stable; preserve input order on ties
+    //
+    // SN-8629: a numeric comparison across TWO segments is only meaningful
+    // when both segments' own timestamps are internally self-consistent
+    // (start <= end) — a segment whose first/last landed on different
+    // domains (e.g. one host-uptime, one GPS time-of-week; D0066) fails
+    // that check, and its header value is not safely comparable against
+    // another segment's. Rather than pick and choose per-pair (which is not
+    // provably transitive — sorting requires a strict weak ordering), any
+    // one bad segment disables header-based ordering for the WHOLE
+    // composition; std::stable_sort then leaves everything in the
+    // filename-lexicographic order already established above, which is
+    // always safe (D0051) and correct for the common/comparable case too
+    // (that's the whole premise of the filename pattern being sortable).
+    const bool allSegmentsSelfConsistent = std::all_of(readers.begin(), readers.end(),
+        [](const ISLogReader& r) {
+            return !idx::timestampsLookMixedDomain(r.segmentStartTimestamp(), r.segmentEndTimestamp());
         });
+    if (allSegmentsSelfConsistent) {
+        std::stable_sort(readers.begin(), readers.end(),
+            [](const ISLogReader& a, const ISLogReader& b) {
+                const uint64_t aT = a.segmentStartTimestamp();
+                const uint64_t bT = b.segmentStartTimestamp();
+                if (aT && bT && aT != bT) return aT < bT;
+                // Rely on filename-lex ordering as the tiebreaker.
+                return false;  // stable; preserve input order on ties
+            });
+    }
 
     ISDeviceLog out;
     out.segments_ = std::move(readers);

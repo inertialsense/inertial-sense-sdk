@@ -64,6 +64,10 @@ public:
 
     cDataChunk m_chunk;     //!< staging buffer for not-yet-flushed header/payload pairs; written/read with a full chunk header (see the file-level documentation)
 
+protected:
+    /** @brief The `.dat` chunk framing is internal to this format, but the `.dvi` sidecar is its own self-contained raw-ISB-encoded file (like `.idx`), so it's meaningful here too. */
+    bool WantsDeviceInfoSidecar() const OVERRIDE { return true; }
+
 private:
     /**
      * @brief Pop the next header/payload pair off the front of `m_chunk`.
