@@ -108,10 +108,10 @@ std::string SerialPortFactory::resolvePortName(const std::string& pName) {
 
     // realpath() rather than readlink(): udev writes a RELATIVE target (a SYMLINK+="imx5" rule
     // produces /dev/imx5 -> ttyACM0, not -> /dev/ttyACM0), so readlink() alone yields a bare name
-    // that needs a "/dev/" prefix guessed back onto it -- which is how the equivalent block in
-    // InertialSense::BootloadFile() ends up producing "/dev//dev/ttyACM0" for an absolute target.
-    // realpath() also collapses multi-hop chains and always returns an absolute path, which is the
-    // form /sys/class/tty enumeration produces and therefore the form we need to match against.
+    // needing a "/dev/" prefix guessed back onto it -- which then breaks on any alias that IS
+    // absolute, producing "/dev//dev/ttyACM0". realpath() also collapses multi-hop chains and
+    // always returns an absolute path, which is the form /sys/class/tty enumeration produces and
+    // therefore the form we need to match against.
     char resolved[PATH_MAX] = {};
     if (realpath(pName.c_str(), resolved) == nullptr)
         return pName;   // dangling link; leave it for the caller's own existence checks to reject
