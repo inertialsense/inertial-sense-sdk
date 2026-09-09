@@ -1365,6 +1365,7 @@ typedef struct PACKED
     int             accel_motion;   //!< Non-zero when accelerometer-sensed motion is detected
     int             rot_motion;     //!< Non-zero when rotational motion is detected
     int             zero_vel;       //!< Non-zero when zero-velocity condition is detected
+    int             reserved;
     float           hdg_err;        //!< Estimated heading error, in radians
     int             hdg_coarse;     //!< Flag whether a coarse (uncertain) initial heading has been established
     int             hdg_aligned;    //!< Flag whether initial attitude error has converged (heading alignment complete)
