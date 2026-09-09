@@ -86,6 +86,17 @@ public:
     uint64_t deviceId() const noexcept { return deviceId_; }
 
     /**
+     * @return  Shared on-disk format of every segment in this composition
+     *          (D-119 / SN-8626). `fromSegments` rejects a mix of `.raw`
+     *          and `.dat` segments, so any segment's `format()` — here,
+     *          the first — is representative of the whole log. Consumers
+     *          that branch on record-byte layout (`ISRecordView::bytes()`
+     *          means something different per format) check this once per
+     *          log rather than per record.
+     */
+    ISLogReader::SegmentFormat format() const noexcept { return segments_.front().format(); }
+
+    /**
      * Returns the full `dev_info_t` from the first segment that carries one.
      *
      * Not simply `segments_.front()` as `hdwId()` does: a composition is
