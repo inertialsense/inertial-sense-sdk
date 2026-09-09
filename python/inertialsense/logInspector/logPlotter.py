@@ -504,7 +504,7 @@ class logPlot:
         return np.mean(values)
 
     def saveAllanDeviationYaml(self, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units):
-        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, RW
+        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, VRW
         for accel) values shown in each allanDeviationPqr()/allanDeviationAcc() subplot title into
         allan_deviation.yaml, adjacent to the log files. Keyed by device serial number at the top
         level, with 'gyroscope'/'accelerometer' as siblings underneath, so a gyro pass and an accel
@@ -520,10 +520,10 @@ class logPlot:
         genuinely different data sources, not a value and its derived average, so each call writes
         only its own metric key.
 
-        Per sensor: 'units': {'bi': ..., 'arw' or 'rw': ...}, plus whichever of
+        Per sensor: 'units': {'bi': ..., 'arw' or 'vrw': ...}, plus whichever of
         'combined'/'individual' this call populates:
-          - 'combined': bi/arw (or rw) are each a 3-element list, one value per axis.
-          - 'individual': bi/arw (or rw) are each a list of 3 axis entries, each itself a list of
+          - 'combined': bi/arw (or vrw) are each a 3-element list, one value per axis.
+          - 'individual': bi/arw (or vrw) are each a list of 3 axis entries, each itself a list of
             one value per IMU slot -- i.e. individual['bi'][axis_idx][slot].
 
         sum_bi/sum_rw are indexed [axis_idx][slot] -> list of one value per device, in
@@ -609,10 +609,8 @@ class logPlot:
             device (its already sensor-fused reading).
           - 'individual': mean across every (device, IMU slot) 'individual' BI/ARW(or VRW) value --
             one sample per physical gyroscope/accelerometer of that variant.
-        Accelerometer's random-walk figure is reported here as 'vrw' (velocity random walk, the
-        term this file's aggregate accel statistic used before this per-variant summary existed --
-        see the fig.suptitle computation in allanDeviationAcc()), though the per-device data it's
-        computed from is stored under 'rw'; gyroscope's is 'arw' throughout, unchanged.
+        Accelerometer's random-walk figure is 'vrw' (velocity random walk) throughout, at both the
+        per-device and this per-variant level; gyroscope's is 'arw' throughout.
         """
         summary = {}
         for serial_key, device in data.items():
@@ -623,7 +621,7 @@ class logPlot:
                 continue
             variant_node = summary.setdefault(str(variant), {})
 
-            for sensor, src_rw_field, dst_rw_field in (('gyroscope', 'arw', 'arw'), ('accelerometer', 'rw', 'vrw')):
+            for sensor, src_rw_field, dst_rw_field in (('gyroscope', 'arw', 'arw'), ('accelerometer', 'vrw', 'vrw')):
                 sensor_data = device.get(sensor)
                 if not sensor_data:
                     continue
@@ -3613,7 +3611,7 @@ class logPlot:
 
         self.setup_and_wire_legend()
 
-        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'rw', 'm/s/sqrt(hr)')
+        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'vrw', 'm/s/sqrt(hr)')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
