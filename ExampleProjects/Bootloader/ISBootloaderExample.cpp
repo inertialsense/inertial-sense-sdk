@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISBootloaderThread.h"
 #include "../../src/ISBootloaderBase.h"
-#include "../../src/ISSerialPort.h"
+#include "../../src/PortFactory.h"
 
 using namespace ISBootloader;
 using namespace std;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 
     // For now, we will use all present devices.
     std::vector<std::string> portStrings;
-    cISSerialPort::GetComPorts(portStrings);
+    SerialPortFactory::getComPorts(portStrings);
 
     // Set all files the same, the bootloader logic will identify the file and only put it onto the appropriate devices.
     firmwares_t files;
@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     vector<string> all_ports;                   // List of ports connected
 
     // For now, we will use all present devices.
-    cISSerialPort::GetComPorts(all_ports);
+    SerialPortFactory::getComPorts(all_ports);
 
     // Update the firmware on any port that was open
     std::vector<cISBootloaderThread::confirm_bootload_t> confirm_device_list;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 			&confirm_device_list))
 		return -1;   // Error or no devices found
 
-    cISSerialPort::GetComPorts(all_ports);
+    SerialPortFactory::getComPorts(all_ports);
 
     // Update the firmware on any port that wasn't initially deselected
     // update the firmware on any port that was open
