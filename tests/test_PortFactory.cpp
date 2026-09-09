@@ -153,3 +153,15 @@ TEST(test_PortFactory, tcpServerPortFactory) {
     portClose(serverPort);
     serverFactory.releasePort(serverPort);
 }
+
+// SN-8473: SerialPortFactory::getComPorts() is now the single OS-enumeration implementation for
+// serial ports (previously duplicated in the now-deprecated cISSerialPort::GetComPorts()). This is
+// a basic coverage test -- it can't assert on which ports exist (that's host-hardware-dependent,
+// and CI runners typically have none), only that enumeration runs cleanly and the returned count
+// is consistent with the populated vector.
+TEST(test_PortFactory, serialPortFactory_getComPorts) {
+    std::vector<std::string> portNames;
+    int count = SerialPortFactory::getComPorts(portNames);
+    EXPECT_EQ(count, (int)portNames.size());
+    EXPECT_GE(count, 0);
+}

@@ -775,7 +775,7 @@ static int cltool_updateFirmware()
     // partial failure, which it must, since batching removes any per-target accounting here.
     std::vector<std::string> targets;
     if (g_commandLineOptions.comPort == "*")
-        cISSerialPort::GetComPorts(targets);
+        SerialPortFactory::getComPorts(targets);
     else
         splitString(g_commandLineOptions.comPort, ',', targets);
 
