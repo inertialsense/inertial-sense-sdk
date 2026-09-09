@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
@@ -22,6 +23,14 @@
 #include "TcpServerPortFactory.h"
 #include "PortManager.h"
 #include "Rtcm3CorrectionServer.h"
+
+// NOTE: must follow the SDK headers -- PLATFORM_IS_LINUX comes from ISConstants.h via those.
+#if PLATFORM_IS_LINUX
+#   include <unistd.h>
+#   include <stdlib.h>
+#   include <limits.h>
+#   include <sys/stat.h>
+#endif
 
 
 // SN-8478: Rtcm3CorrectionServer/cltool silently succeeded when the RTCM3 listener failed to
@@ -165,3 +174,219 @@ TEST(test_PortFactory, serialPortFactory_getComPorts) {
     EXPECT_EQ(count, (int)portNames.size());
     EXPECT_GE(count, 0);
 }
+
+// ---------------------------------------------------------------------------------------------
+// SN-8575: InertialSense::Open() failed for symlinked serial ports on Linux.
+//
+// A udev rule carrying SYMLINK+="imx5" yields /dev/imx5 -> ttyACM0, but port discovery enumerates
+// canonical kernel names from /sys/class/tty and validation keys its sysfs lookup on that same
+// canonical name. Given an alias, both rejected a device that open(2) handles without complaint.
+// SerialPortFactory::resolvePortName() resolves the alias; these tests cover it in three tiers:
+//
+//   1. the resolution logic itself, hermetically -- no device and no root needed
+//   2. non-regression on pattern semantics, which is where the risk in the change actually sits
+//   3. end-to-end against a real tty, skipped when the host has none
+// ---------------------------------------------------------------------------------------------
+
+#if PLATFORM_IS_LINUX
+
+namespace {
+
+/** Private temp directory for one test; removes its recorded entries and itself on destruction. */
+class TempDir {
+public:
+    TempDir() {
+        char tmpl[] = "/tmp/sn8575_portfactory_XXXXXX";
+        const char* d = mkdtemp(tmpl);
+        if (d != nullptr)
+            path_ = d;
+    }
+
+    ~TempDir() {
+        // Reverse order so a chain's intermediate links go before what they point at.
+        for (auto it = entries_.rbegin(); it != entries_.rend(); ++it)
+            unlink(it->c_str());
+        if (!path_.empty())
+            rmdir(path_.c_str());
+    }
+
+    TempDir(const TempDir&) = delete;
+    TempDir& operator=(const TempDir&) = delete;
+
+    bool valid() const { return !path_.empty(); }
+    const std::string& path() const { return path_; }
+
+    /** symlink(target, <dir>/name). @return the link's path, or "" on failure. */
+    std::string link(const std::string& name, const std::string& target) {
+        std::string p = path_ + "/" + name;
+        if (symlink(target.c_str(), p.c_str()) != 0)
+            return "";
+        entries_.push_back(p);
+        return p;
+    }
+
+    /** Creates a small regular file. @return its path. */
+    std::string file(const std::string& name) {
+        std::string p = path_ + "/" + name;
+        std::ofstream(p) << "not-a-device";
+        entries_.push_back(p);
+        return p;
+    }
+
+private:
+    std::string path_;
+    std::vector<std::string> entries_;
+};
+
+/**
+ * realpath() of @p p. Used for expectations rather than comparing against the path we constructed,
+ * because /tmp is itself a symlink on some distributions -- in which case resolvePortName() would
+ * (correctly) return a path that differs from the one the test built.
+ */
+std::string realOf(const std::string& p) {
+    char buf[PATH_MAX] = {};
+    return (realpath(p.c_str(), buf) != nullptr) ? std::string(buf) : std::string();
+}
+
+/** Every port name SerialPortFactory emits for @p pattern. */
+std::vector<std::string> located(const std::string& pattern) {
+    std::vector<std::string> names;
+    SerialPortFactory::getInstance().locatePorts(
+        [&names](PortFactory*, uint16_t, std::string name) { names.push_back(name); },
+        pattern, PORT_TYPE__UART);
+    return names;
+}
+
+} // namespace
+
+
+// --- Tier 1: resolution logic, hermetic -------------------------------------------------------
+
+// udev writes a RELATIVE target: a SYMLINK+="imx5" rule produces /dev/imx5 -> ttyACM0, NOT
+// -> /dev/ttyACM0. This is the form observed on hardware for SN-8575, and the reason
+// resolvePortName() uses realpath() rather than readlink() -- the latter yields a bare name that
+// would need a "/dev/" prefix guessed back onto it.
+TEST(test_PortFactory, resolvePortName_resolvesRelativeSymlink) {
+    TempDir tmp;
+    ASSERT_TRUE(tmp.valid());
+
+    const std::string target = tmp.file("ttyFAKE0");
+    const std::string link = tmp.link("imx5", "ttyFAKE0");     // relative, as udev writes it
+    ASSERT_FALSE(link.empty());
+
+    EXPECT_EQ(SerialPortFactory::resolvePortName(link), realOf(target));
+}
+
+TEST(test_PortFactory, resolvePortName_resolvesAbsoluteSymlink) {
+    TempDir tmp;
+    ASSERT_TRUE(tmp.valid());
+
+    const std::string target = tmp.file("ttyFAKE0");
+    const std::string link = tmp.link("imx5", target);         // absolute target
+    ASSERT_FALSE(link.empty());
+
+    EXPECT_EQ(SerialPortFactory::resolvePortName(link), realOf(target));
+}
+
+// A multi-hop chain must collapse to the final device, not to the next link.
+TEST(test_PortFactory, resolvePortName_resolvesChainedSymlinks) {
+    TempDir tmp;
+    ASSERT_TRUE(tmp.valid());
+
+    const std::string target = tmp.file("ttyFAKE0");
+    ASSERT_FALSE(tmp.link("middle", "ttyFAKE0").empty());
+    const std::string link = tmp.link("imx5", "middle");
+    ASSERT_FALSE(link.empty());
+
+    EXPECT_EQ(SerialPortFactory::resolvePortName(link), realOf(target));
+}
+
+// Anything that is not a symlink comes back byte-identical, so existing callers see no change.
+TEST(test_PortFactory, resolvePortName_leavesNonSymlinkUnchanged) {
+    TempDir tmp;
+    ASSERT_TRUE(tmp.valid());
+
+    const std::string regular = tmp.file("ttyFAKE0");
+    EXPECT_EQ(SerialPortFactory::resolvePortName(regular), regular);
+}
+
+// A dangling link is left alone deliberately: the caller's own existence checks should reject it,
+// rather than resolvePortName() inventing a path for a device that isn't there.
+TEST(test_PortFactory, resolvePortName_leavesDanglingSymlinkUnchanged) {
+    TempDir tmp;
+    ASSERT_TRUE(tmp.valid());
+
+    const std::string link = tmp.link("imx5", "no_such_target");
+    ASSERT_FALSE(link.empty());
+
+    EXPECT_EQ(SerialPortFactory::resolvePortName(link), link);
+}
+
+TEST(test_PortFactory, resolvePortName_leavesNonexistentPathUnchanged) {
+    const std::string missing = "/dev/sn8575_definitely_does_not_exist";
+    EXPECT_EQ(SerialPortFactory::resolvePortName(missing), missing);
+}
+
+// The property that keeps pattern-based discovery working: callers pass regexes through the same
+// argument as literal paths, and a regex never names a file, so the lstat() gate declines it.
+TEST(test_PortFactory, resolvePortName_leavesRegexPatternsUnchanged) {
+    const std::vector<std::string> patterns = {
+        "*",                            // cltool's all-ports token
+        "(.+)",                         // PortManager::discoverPorts()'s own default
+        ".*",                           // what globToRegex() turns "*" into
+        "/dev/tty(ACM|USB)[0-9]+",      // a genuine regex over device names
+        "/dev/ttyACM0,/dev/ttyUSB0",    // a comma-separated list
+        "",                             // empty
+    };
+    for (const auto& p : patterns)
+        EXPECT_EQ(SerialPortFactory::resolvePortName(p), p) << "pattern was mangled: " << p;
+}
+
+
+// --- Tier 2: non-regression on pattern semantics ----------------------------------------------
+
+// The wildcard reaches locatePorts() by two different routes and must behave the same as before on
+// both: verbatim from OpenPorts() as "*", which is an INVALID regex handled by locatePorts()'s
+// regex_error fallback, and as ".*" from cltool via utils::globToRegex(). Both must agree with the
+// explicit match-everything pattern. Correct (if weak) on a host with no serial ports at all.
+TEST(test_PortFactory, locatePorts_wildcardsStillMatchAllPorts) {
+    const std::vector<std::string> all = located("(.+)");
+    TEST_COUT << "host enumerates " << all.size() << " serial port(s)" << std::endl;
+
+    EXPECT_EQ(located("*"), all);      // invalid regex -> fallback path
+    EXPECT_EQ(located(".*"), all);     // globToRegex("*")
+}
+
+TEST(test_PortFactory, locatePorts_nonMatchingPatternYieldsNothing) {
+    EXPECT_TRUE(located("/dev/sn8575_no_such_port_[0-9]+").empty());
+}
+
+
+// --- Tier 3: end-to-end against a real tty, skipped when the host has none --------------------
+
+// The whole bug, start to finish: alias a real port, then assert both gates that used to reject it
+// now accept it. validatePort() covers the bindPort() entry point (which never goes through
+// locatePorts()), and locatePorts() covers Open() and CorrectionService.
+TEST(test_PortFactory, symlinkedPort_isValidatedAndLocated) {
+    const std::vector<std::string> all = located("(.+)");
+    if (all.empty())
+        GTEST_SKIP() << "no serial ports on this host; nothing to alias";
+
+    const std::string canonical = all.front();
+    TEST_COUT << "aliasing " << canonical << std::endl;
+
+    TempDir tmp;
+    ASSERT_TRUE(tmp.valid());
+    const std::string link = tmp.link("imx5", canonical);
+    ASSERT_FALSE(link.empty());
+
+    // Pre-fix both of these failed: validatePort() built /sys/class/tty/imx5/... (missing), and
+    // locatePorts() regex-matched the alias against canonical names it could never equal.
+    EXPECT_TRUE(SerialPortFactory::getInstance().validatePort(link, PORT_TYPE__UART));
+
+    const std::vector<std::string> viaAlias = located(link);
+    ASSERT_EQ(viaAlias.size(), 1u);
+    EXPECT_EQ(viaAlias.front(), canonical);   // reported under its canonical name, not the alias
+}
+
+#endif // PLATFORM_IS_LINUX
