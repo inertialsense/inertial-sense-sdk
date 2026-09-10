@@ -1575,6 +1575,7 @@ enum eSystemCommand
     SYS_CMD_GNSS_RCVR_QUIET_MODE                                    = 60,  //!< Put GNSS receiver into quiet mode (uint32 inv: 4294967235)
     SYS_CMD_GNSS_RCVR_SOFT_RESET                                    = 61,  //!< Soft reset GNSS receiver (uint32 inv: 4294967234)
     SYS_CMD_GNSS_RCVR_HARD_RESET                                    = 62,  //!< Hard reset GNSS receiver (uint32 inv: 4294967233)
+    SYS_CMD_GNSS_RCVR_PWR_CYCLE                                     = 63,  //!< Power cycle GNSS receiver (uint32 inv: 4294967232)
 
     SYS_CMD_RESET_EKF_STATES                                        = 70,  //!< Resets the Extended Kalman Filter (EKF) states in the INS solution. Use to reinitialize navigation filter without a full system reset. (uint32 inv: 4294967226)
     SYS_CMD_CLEAR_ERROR_STATUS                                      = 71,  //!< Resets debug information such as CPU reset cause and fault states. (uint32 inv: 4294967225)
