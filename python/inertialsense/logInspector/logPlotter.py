@@ -47,6 +47,20 @@ try:
 except ValueError:
     _ALLAN_FORK_CTX = None
 
+# Whether _computeAllanDeviationParallel() below may actually fork a worker Pool. False by default:
+# fork() duplicates the entire calling process, including every thread's state at that instant --
+# any lock held by a thread other than the one calling fork() is copied into the child already
+# locked, with no thread left alive in the child to ever release it. This module is also used
+# directly by the interactive PyQt6/QtAgg GUI (LogInspector) -- see allanDeviationPqr()/
+# allanDeviationAcc() below, wired up as clickable plot items in logInspectorInternal.py -- which is
+# multi-threaded and holds its own Qt/GUI locks. Forking that live process is not a safe process
+# boundary and can hang or crash the GUI (or the forked worker) even though the worker itself only
+# reads log.data. Only a caller that knows it is running headless, with no GUI event loop, should
+# set this True -- see calc_allan_deviation.py, which does so immediately after importing this
+# module (before any forking of its own happens, so child processes it forks inherit the setting
+# via the same copy-on-write mechanism _allan_worker_self below relies on).
+ALLOW_FORK_POOL = False
+
 _allan_worker_self = None  # set just before forking a pool; see _computeAllanDeviationParallel()
 
 def _allanDeviationWorker(job):
@@ -95,14 +109,15 @@ def _allanDeviationWorker(job):
 
 def _computeAllanDeviationParallel(self, active_devs, did, kind, rw_tau):
     """Runs _allanDeviationWorker() for every device in active_devs, one device per forked worker
-    process when forking is available and there's more than one device to justify the pool
+    process when forking is available, ALLOW_FORK_POOL has been opted into by a known-headless
+    caller (see its definition above), and there's more than one device to justify the pool
     overhead; falls back to running in-process (identical results, just serial) otherwise -- e.g.
-    on Windows, or when there's only one device."""
+    on Windows, when called from the GUI, or when there's only one device."""
     global _allan_worker_self
     jobs = [(d, did, kind, rw_tau) for d in active_devs]
     _allan_worker_self = self
     try:
-        if _ALLAN_FORK_CTX is None or len(jobs) < 2:
+        if _ALLAN_FORK_CTX is None or not ALLOW_FORK_POOL or len(jobs) < 2:
             return [_allanDeviationWorker(job) for job in jobs]
         with _ALLAN_FORK_CTX.Pool(processes=min(len(jobs), multiprocessing.cpu_count())) as pool:
             return pool.map(_allanDeviationWorker, jobs)
@@ -118,21 +133,33 @@ def _fileLock(path):
     created if missing, without truncating it if it isn't) rather than a separate sibling lock
     file, so no extra file is left behind; the lock is held only for as long as this fd stays
     open; other opens of the same path made meanwhile (by this same process, to actually read/
-    write the content) are unaffected by it. No-op where fcntl isn't available (Windows); harmless
-    there since nothing on that platform writes allan_deviation.yaml concurrently in the first
-    place (see _ALLAN_FORK_CTX above -- process-based parallelism there is fork-only).
+    write the content) are unaffected by it. Uses fcntl.flock() on POSIX (Linux/Mac) and
+    msvcrt.locking() on Windows -- a real lock on every platform, not just where this process
+    itself happens to use fork(): independent OS processes (two separate invocations of
+    calc_allan_deviation.py, or the GUI running alongside it) can race on any platform regardless
+    of that.
     """
-    try:
-        import fcntl
-    except ImportError:
-        yield
-        return
     with open(path, 'a') as lock_f:
-        fcntl.flock(lock_f, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(lock_f, fcntl.LOCK_UN)
+        if sys.platform == 'win32':
+            import msvcrt
+            fd = lock_f.fileno()
+            while True:
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+                    break
+                except OSError:
+                    continue  # msvcrt.locking() gives up after ~10s; keep retrying to block indefinitely
+            try:
+                yield
+            finally:
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_f, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_f, fcntl.LOCK_UN)
 
 # IMU part number per slot (0-4), by hardware variant (DID_DEV_INFO.hardwareVer[3]). A single
 # string applies to all slots; a list gives one part per slot 0-4. Duplicated from
@@ -713,7 +740,10 @@ class logPlot:
           - 'individual': mean across every (device, IMU slot) 'individual' BI/ARW(or VRW) value --
             one sample per physical gyroscope/accelerometer of that variant.
         Accelerometer's random-walk figure is 'vrw' (velocity random walk) throughout, at both the
-        per-device and this per-variant level; gyroscope's is 'arw' throughout.
+        per-device and this per-variant level; gyroscope's is 'arw' throughout. Accelerometer also
+        falls back to the legacy 'rw' key (saveAllanDeviationYaml()'s field name before it was
+        renamed to 'vrw') when reading a device entry that predates the rename and hasn't been
+        rewritten since, so recomputing this summary doesn't silently drop those devices' figures.
         """
         summary = {}
         for serial_key, device in data.items():
@@ -724,7 +754,7 @@ class logPlot:
                 continue
             variant_node = summary.setdefault(str(variant), {})
 
-            for sensor, src_rw_field, dst_rw_field in (('gyroscope', 'arw', 'arw'), ('accelerometer', 'vrw', 'vrw')):
+            for sensor, rw_field_candidates, dst_rw_field in (('gyroscope', ('arw',), 'arw'), ('accelerometer', ('vrw', 'rw'), 'vrw')):
                 sensor_data = device.get(sensor)
                 if not sensor_data:
                     continue
@@ -735,6 +765,7 @@ class logPlot:
 
                 combined = sensor_data.get('combined')
                 if combined:
+                    src_rw_field = next((f for f in rw_field_candidates if f in combined), rw_field_candidates[0])
                     for axis_idx in range(3):
                         if axis_idx < len(combined.get('bi', [])) and combined['bi'][axis_idx] is not None:
                             sensor_summary['combined']['bi'][axis_idx].append(combined['bi'][axis_idx])
@@ -744,6 +775,7 @@ class logPlot:
 
                 individual = sensor_data.get('individual')
                 if individual:
+                    src_rw_field = next((f for f in rw_field_candidates if f in individual), rw_field_candidates[0])
                     for axis_idx in range(3):
                         if axis_idx < len(individual.get('bi', [])):
                             sensor_summary['individual']['bi'][axis_idx].extend(individual['bi'][axis_idx])
@@ -3561,7 +3593,9 @@ class logPlot:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
-        # Preserve the initial sensors list for later use in subplot configuration and CSV writing
+        # Preserve the initial sensors list for later use in subplot configuration. (This used to
+        # also feed a per-log CSV export; that was replaced by the richer, cross-device
+        # allan_deviation.yaml written by saveAllanDeviationYaml() below -- see its docstring.)
         initial_sensors = sensors
 
         sumARW = []
@@ -3628,7 +3662,9 @@ class logPlot:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
-        # Preserve initial sensors for subplot configuration and CSV writing.
+        # Preserve initial sensors for subplot configuration. (This used to also feed a per-log
+        # allan_deviation_acc.csv export; that was replaced by the richer, cross-device
+        # allan_deviation.yaml written by saveAllanDeviationYaml() below -- see its docstring.)
         initial_sensors = sensors
 
         sumRW = []
@@ -3668,7 +3704,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, RW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, VRW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
                     totalVRW.append(sumRW[i][n])
                     totalBI.append(sumBI[i][n])
 
