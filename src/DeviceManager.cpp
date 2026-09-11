@@ -16,10 +16,29 @@
  * Total discovery time is bounded by max(factory timeout) rather than (num_ports * num_factories * timeout).
  */
 bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t options) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // mutex is taken only around the state it guards, never across port I/O, a factory callback, or a
+    // reach-in to a device (SN-8663).
+    //
+    // Holding it function-scoped, as this did, is what made the deadlock reachable: a device takes its
+    // own portMutex and then calls back into DeviceManager (ISDevice::step() fires notifyListeners()
+    // under portMutex; the validateAsync() it calls reads getDeviceHint() under the same lock), so a
+    // discovery pass holding the manager mutex while it waits on portMutex closes the cycle. Narrowing
+    // deviceHandler alone does not help -- the mutex is recursive, so the callee's release is a no-op
+    // while this caller's guard still holds it. Same reasoning as SN-8057, which narrowed the singular
+    // discoverDevice(); this overload was missed.
+    //
+    // PortManager's lock below is deliberately left function-scoped. It is not part of the cycle --
+    // nothing a device does under portMutex takes it -- and replacing locked_range() with a snapshot
+    // would let a port be released mid-pass, since port_handle_t is a raw pointer.
     bool result = false;
-    options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
-    options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
+
+    std::vector<DeviceFactory*> factoriesSnapshot;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+        options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
+        factoriesSnapshot.assign(factories.begin(), factories.end());
+    }
 
     // Per-factory validation slot for a single port
     struct FactorySlot {
@@ -47,24 +66,28 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
 
         // Check if port is already associated with a known device
         bool alreadyHandled = false;
-        for (auto d : *this) {
-            if (d && d->hasDeviceInfo() && (d->port == port)) {
-                if (options & DISCOVERY__FORCE_REVALIDATION) {
-                    // Clear device info so hasDeviceInfo() returns false,
-                    // forcing full revalidation via Phase 2+3.
-                    d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
-                    memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
-                } else {
-                    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
-                        portClose(port);
-                    result = true;
-                    alreadyHandled = true;
-                    break;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            for (auto d : *this) {
+                if (d && d->hasDeviceInfo() && (d->port == port)) {
+                    if (options & DISCOVERY__FORCE_REVALIDATION) {
+                        // Clear device info so hasDeviceInfo() returns false,
+                        // forcing full revalidation via Phase 2+3.
+                        d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                        memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                    } else {
+                        result = true;
+                        alreadyHandled = true;
+                        break;
+                    }
                 }
             }
         }
-        if (alreadyHandled)
+        if (alreadyHandled) {
+            if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                portClose(port);
             continue;
+        }
 
         // Open port if needed
         if ((!portIsOpened(port) && (options & DISCOVERY__IGNORE_CLOSED_PORTS)) ||
@@ -107,7 +130,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
 
         PendingPort pp;
         pp.port = port;
-        for (auto f : factories) {
+        for (auto f : factoriesSnapshot) {
             auto ctx = f->beginValidation(port, hdwId, effectiveTimeout, sharedDevice);
             if (ctx) {
                 pp.slots.push_back({f, std::move(ctx), false});
@@ -121,7 +144,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
     // Phase 2+3: Concurrent validation loop with round-robin across factories per port
     if (!pending.empty()) {
         log_debug(IS_LOG_DEVICE_MANAGER, "Concurrently validating %zu port(s) across %zu factory(ies)",
-            pending.size(), factories.size());
+            pending.size(), factoriesSnapshot.size());
 
         uint32_t loopDeadline = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
         uint32_t loopStartMs = current_timeMs();
@@ -187,7 +210,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                         } else {
                             // The winning factory's deviceHandler rejected — try remaining factories
                             bool handled = false;
-                            for (auto f : factories) {
+                            for (auto f : factoriesSnapshot) {
                                 if (f == pp.winner)
                                     continue;
                                 if (cb(f, pp.devInfo, pp.port)) {
