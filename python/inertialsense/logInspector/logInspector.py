@@ -123,7 +123,7 @@ class DeviceInfoDialog(QDialog):
         super(DeviceInfoDialog, self).__init__(parent)
         self.setWindowTitle("Device Info")
 
-        if np.shape(log.data[0,DID_DEV_INFO])[0] == 0:
+        if not any(len(dev[DID_DEV_INFO]) for dev in log.data):
             self.label = QLabel('No DID_DEV_INFO data available.')
             self.mainlayout = QVBoxLayout()
             self.mainlayout.addWidget(self.label)
@@ -132,25 +132,28 @@ class DeviceInfoDialog(QDialog):
             return
 
         self.table = QTableWidget()
-        nfields = len(log.data[0, DID_DEV_INFO].dtype.names)
-        field_names = []
-        vals = []
 
         self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels(['Serial#','Hardware','Firmware','Build','Protocol','Repo','Build Date','Manufacturer','AddInfo'])
 
-        for d, dev in enumerate(log.data):
+        row = 0
+        for dev in log.data:
+            # Not every device in a log necessarily reported DID_DEV_INFO (e.g. a device
+            # from a different family logged alongside these, or a partial log).
+            if len(dev[DID_DEV_INFO]) == 0:
+                continue
             devInfo = dev[DID_DEV_INFO][0]
-            self.table.setRowCount(d+1)
-            self.table.setItem(d, 0, QTableWidgetItem(str(devInfo['serialNumber'])))
-            self.table.setItem(d, 1, QTableWidgetItem(verArrayToString(devInfo['hardwareVer'])))
-            self.table.setItem(d, 2, QTableWidgetItem(verArrayToString(devInfo['firmwareVer'])))
-            self.table.setItem(d, 3, QTableWidgetItem(str(devInfo['buildNumber']))) 
-            self.table.setItem(d, 4, QTableWidgetItem(verArrayToString(devInfo['protocolVer'])))
-            self.table.setItem(d, 5, QTableWidgetItem(str(devInfo['repoRevision'])))   # Repo
-            self.table.setItem(d, 6, QTableWidgetItem(dateTimeArrayToString(devInfo))) # Build Date & Time
-            self.table.setItem(d, 7, QTableWidgetItem(devInfo['manufacturer'].decode('UTF-8')))         # Manufacturer
-            self.table.setItem(d, 8, QTableWidgetItem(devInfo['addInfo'].decode('UTF-8')))        # Additional Info
+            self.table.setRowCount(row+1)
+            self.table.setItem(row, 0, QTableWidgetItem(str(devInfo['serialNumber'])))
+            self.table.setItem(row, 1, QTableWidgetItem(verArrayToString(devInfo['hardwareVer'])))
+            self.table.setItem(row, 2, QTableWidgetItem(verArrayToString(devInfo['firmwareVer'])))
+            self.table.setItem(row, 3, QTableWidgetItem(str(devInfo['buildNumber'])))
+            self.table.setItem(row, 4, QTableWidgetItem(verArrayToString(devInfo['protocolVer'])))
+            self.table.setItem(row, 5, QTableWidgetItem(str(devInfo['repoRevision'])))   # Repo
+            self.table.setItem(row, 6, QTableWidgetItem(dateTimeArrayToString(devInfo))) # Build Date & Time
+            self.table.setItem(row, 7, QTableWidgetItem(devInfo['manufacturer'].decode('UTF-8')))         # Manufacturer
+            self.table.setItem(row, 8, QTableWidgetItem(devInfo['addInfo'].decode('UTF-8')))        # Additional Info
+            row += 1
 
         self.mainlayout = QVBoxLayout()
         self.mainlayout.addWidget(self.table)
@@ -162,7 +165,7 @@ class FlashConfigDialog(QDialog):
         super(FlashConfigDialog, self).__init__(parent)
         self.setWindowTitle("Flash Config")
 
-        if np.shape(log.data[0, DID_FLASH_CONFIG])[0] == 0:
+        if not any(len(dev[DID_FLASH_CONFIG]) for dev in log.data):
             self.label = QLabel('No DID_FLASH_CONFIG data available.')
             self.mainlayout = QVBoxLayout()
             self.mainlayout.addWidget(self.label)
@@ -174,6 +177,10 @@ class FlashConfigDialog(QDialog):
         field_value_map = {}  # {field_name: [val_dev0, val_dev1, ...]}
 
         for d, dev in enumerate(log.data):
+            # Not every device in a log necessarily reported DID_FLASH_CONFIG (e.g. a device
+            # from a different family logged alongside these, or a partial log).
+            if len(dev[DID_FLASH_CONFIG]) == 0:
+                continue
             for field in dev[DID_FLASH_CONFIG].dtype.names:
                 val = dev[DID_FLASH_CONFIG][field][0]
                 if isinstance(val, np.ndarray):

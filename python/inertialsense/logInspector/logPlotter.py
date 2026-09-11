@@ -1,10 +1,12 @@
 import math, allantools, sys, yaml, os
+import multiprocessing
+import contextlib
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
-from datetime import date, datetime
+from datetime import datetime
 import pandas as pd
 from scipy.signal import detrend, welch, butter, filtfilt, savgol_filter
 
@@ -37,22 +39,144 @@ DEG2RAD = 3.14159 / 180.0
 RTHR2RTS = 60       # sqrt(hr) to sqrt(sec)
 MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
+try:
+    # 'fork' (Linux/Mac): a worker process inherits the parent's already-loaded memory -- including
+    # a fully-loaded Log -- via copy-on-write at the moment it's forked, so _allanDeviationWorker()
+    # below can read self.log directly with no serialization cost. Not available on Windows.
+    _ALLAN_FORK_CTX = multiprocessing.get_context('fork')
+except ValueError:
+    _ALLAN_FORK_CTX = None
+
+# Whether _computeAllanDeviationParallel() below may actually fork a worker Pool. False by default:
+# fork() duplicates the entire calling process, including every thread's state at that instant --
+# any lock held by a thread other than the one calling fork() is copied into the child already
+# locked, with no thread left alive in the child to ever release it. This module is also used
+# directly by the interactive PyQt6/QtAgg GUI (LogInspector) -- see allanDeviationPqr()/
+# allanDeviationAcc() below, wired up as clickable plot items in logInspectorInternal.py -- which is
+# multi-threaded and holds its own Qt/GUI locks. Forking that live process is not a safe process
+# boundary and can hang or crash the GUI (or the forked worker) even though the worker itself only
+# reads log.data. Only a caller that knows it is running headless, with no GUI event loop, should
+# set this True -- see calc_allan_deviation.py, which does so immediately after importing this
+# module (before any forking of its own happens, so child processes it forks inherit the setting
+# via the same copy-on-write mechanism _allan_worker_self below relies on).
+ALLOW_FORK_POOL = False
+
+_allan_worker_self = None  # set just before forking a pool; see _computeAllanDeviationParallel()
+
+def _allanDeviationWorker(job):
+    """Loads and computes every Allan-deviation curve for ONE device, entirely inside a forked
+    worker process. allanDeviationPqr()/allanDeviationAcc() call loadGyros()/loadAccels() (the
+    expensive part -- decoding the device's raw samples out of the log) once per device, then run
+    oadev() once per axis/IMU-slot; both are independent across devices, so a whole device's worth
+    of that work runs here in one process. Only the small resulting curves are shipped back through
+    the pool -- the (potentially huge) per-device sample arrays never cross a process boundary,
+    since this worker reads them out of the log itself instead of being handed them as arguments.
+
+    job: (d, did, kind, rw_tau) -- kind is 'gyro' or 'accel', selecting loadGyros() vs loadAccels().
+    Returns: (d, included, [(i, n, t2, ad, bi, rw), ...]) -- included is whether this device
+    contributed any data (mirrors the original included_devs_pqr/included_devs_acc gating).
+    """
+    d, did, kind, rw_tau = job
+    self = _allan_worker_self
+    if kind == 'gyro':
+        (name, time, dt, sensors) = self.loadGyros(d, did=did)
+    else:
+        (name, time, dt, sensors) = self.loadAccels(d, did=did)
+    if not len(sensors):
+        return d, False, []
+
+    dtMean = np.mean(dt)
+    sumDt = np.sum(dt)
+    rate = 1/(dtMean/self.d)
+    t_bi_max = 1000
+
+    included = False
+    out = []
+    for i in range(3):
+        for n, s in enumerate(sensors):
+            if np.all(s) != None and n < len(sensors):
+                if kind == 'accel' and not s.any(None):
+                    continue
+                included = True
+                t = np.logspace(np.log10(dtMean), np.log10(0.1 * sumDt), 200)
+                (t2, ad, ade, adn) = allantools.oadev(s[:,i], rate=rate, data_type="freq", taus=t)
+                idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                bi = np.amin(ad[:idx_max + 1]) / 0.664
+                rw_idx = (np.abs(t2 - rw_tau)).argmin()
+                rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                out.append((i, n, t2, ad, bi, rw))
+    return d, included, out
+
+def _computeAllanDeviationParallel(self, active_devs, did, kind, rw_tau):
+    """Runs _allanDeviationWorker() for every device in active_devs, one device per forked worker
+    process when forking is available, ALLOW_FORK_POOL has been opted into by a known-headless
+    caller (see its definition above), and there's more than one device to justify the pool
+    overhead; falls back to running in-process (identical results, just serial) otherwise -- e.g.
+    on Windows, when called from the GUI, or when there's only one device."""
+    global _allan_worker_self
+    jobs = [(d, did, kind, rw_tau) for d in active_devs]
+    _allan_worker_self = self
+    try:
+        if _ALLAN_FORK_CTX is None or not ALLOW_FORK_POOL or len(jobs) < 2:
+            return [_allanDeviationWorker(job) for job in jobs]
+        with _ALLAN_FORK_CTX.Pool(processes=min(len(jobs), multiprocessing.cpu_count())) as pool:
+            return pool.map(_allanDeviationWorker, jobs)
+    finally:
+        _allan_worker_self = None
+
+@contextlib.contextmanager
+def _fileLock(path):
+    """Advisory, cross-process file lock (best-effort) so concurrent writers to the same file --
+    e.g. calc_allan_deviation.py running its independent Allan-deviation passes as separate
+    processes, each merging into allan_deviation.yaml -- serialize their read-merge-write instead
+    of racing and silently losing one another's update. Locks `path` itself (opened 'a' so it's
+    created if missing, without truncating it if it isn't) rather than a separate sibling lock
+    file, so no extra file is left behind; the lock is held only for as long as this fd stays
+    open; other opens of the same path made meanwhile (by this same process, to actually read/
+    write the content) are unaffected by it. Uses fcntl.flock() on POSIX (Linux/Mac) and
+    msvcrt.locking() on Windows -- a real lock on every platform, not just where this process
+    itself happens to use fork(): independent OS processes (two separate invocations of
+    calc_allan_deviation.py, or the GUI running alongside it) can race on any platform regardless
+    of that.
+    """
+    with open(path, 'a') as lock_f:
+        if sys.platform == 'win32':
+            import msvcrt
+            fd = lock_f.fileno()
+            while True:
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+                    break
+                except OSError:
+                    continue  # msvcrt.locking() gives up after ~10s; keep retrying to block indefinitely
+            try:
+                yield
+            finally:
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_f, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_f, fcntl.LOCK_UN)
+
 # IMU part number per slot (0-4), by hardware variant (DID_DEV_INFO.hardwareVer[3]). A single
 # string applies to all slots; a list gives one part per slot 0-4. Duplicated from
 # IMU_TYPE_BY_HDW_VARIANT in python/src/imuCalibration/temperature_calibration.py (logInspector is
 # a separately-distributed SDK tool, so it doesn't import from that tree) -- keep the two in sync.
 IMU_TYPE_BY_HDW_VARIANT = {
-    0:  'LSM6SV16BX',
+    0:  'LSM6DSV16BX',
     1:  'ISM6HG256X',
     2:  'ISM330DHCX',
     3:  ['ISM6HG256X', 'ISM330DHCX', 'ISM6HG256X', 'ISM330DHCX', 'ISM6HG256X'],
     4:  ['ISM6HG256X', 'ICM-56686',  'ISM6HG256X', 'ICM-56686',  'ISM6HG256X'],
     5:  'ICM-56686',
     6:  ['ISM330DHCX', 'ICM-56686',  'ISM330DHCX', 'ICM-56686',  'ISM330DHCX'],
-    7:  'LSM6DSV',
-    8:  ['ISM6HG256X', 'LSM6DSV16BX','LSM6DSV16BX','ISM6HG256X', 'LSM6DSV16BX'],
+    7:  'LSM6DSVTR',
+    8:  ['ISM6HG256X', 'LSM6DSVTR','LSM6DSVTR','ISM6HG256X', 'LSM6DSVTR'],
     9:  ['ISM6HG256X', 'ICM-56686',  'ICM-56686',  'ISM6HG256X', 'ICM-56686'],
-    10: ['ISM330DHCX', 'LSM6DSV16BX','LSM6DSV16BX','ISM330DHCX', 'LSM6DSV16BX'],
+    10: ['ISM330DHCX', 'LSM6DSVTR','LSM6DSVTR','ISM330DHCX', 'LSM6DSVTR'],
     11: ['ISM6HG256X', 'ISM330DHCX', 'ISM330DHCX', 'ISM6HG256X', 'ISM330DHCX'],
     12: ['ICM-56686',  'ISM330DHCX', 'ISM330DHCX', 'ICM-56686',  'ISM330DHCX'],
     13: 'ISM6HGK256X',
@@ -504,7 +628,7 @@ class logPlot:
         return np.mean(values)
 
     def saveAllanDeviationYaml(self, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units):
-        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, RW
+        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, VRW
         for accel) values shown in each allanDeviationPqr()/allanDeviationAcc() subplot title into
         allan_deviation.yaml, adjacent to the log files. Keyed by device serial number at the top
         level, with 'gyroscope'/'accelerometer' as siblings underneath, so a gyro pass and an accel
@@ -520,10 +644,10 @@ class logPlot:
         genuinely different data sources, not a value and its derived average, so each call writes
         only its own metric key.
 
-        Per sensor: 'units': {'bi': ..., 'arw' or 'rw': ...}, plus whichever of
+        Per sensor: 'units': {'bi': ..., 'arw' or 'vrw': ...}, plus whichever of
         'combined'/'individual' this call populates:
-          - 'combined': bi/arw (or rw) are each a 3-element list, one value per axis.
-          - 'individual': bi/arw (or rw) are each a list of 3 axis entries, each itself a list of
+          - 'combined': bi/arw (or vrw) are each a 3-element list, one value per axis.
+          - 'individual': bi/arw (or vrw) are each a list of 3 axis entries, each itself a list of
             one value per IMU slot -- i.e. individual['bi'][axis_idx][slot].
 
         sum_bi/sum_rw are indexed [axis_idx][slot] -> list of one value per device, in
@@ -532,6 +656,12 @@ class logPlot:
         being a single stream) are averaged together defensively.
         """
         yaml_fname = os.path.join(self.directory, 'allan_deviation.yaml')
+        with _fileLock(yaml_fname):
+            self._mergeAllanDeviationYaml(yaml_fname, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units)
+
+    def _mergeAllanDeviationYaml(self, yaml_fname, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units):
+        """The actual read-merge-write for saveAllanDeviationYaml(), run while its file lock is
+        held."""
         data = {}
         if os.path.exists(yaml_fname):
             with open(yaml_fname, 'r') as f:
@@ -592,8 +722,75 @@ class logPlot:
                 sensor_node['units'] = {'bi': bi_units, rw_field: rw_units}
                 sensor_node[metric] = {'bi': metric_bi, rw_field: metric_rw}
 
+        self._updateHardwareVariantAverages(data)
+
         with open(yaml_fname, 'w') as f:
             yaml.dump(data, f, sort_keys=False, default_flow_style=False)
+
+    def _updateHardwareVariantAverages(self, data):
+        """Recompute data['hardware_variant_summary'] from every per-serial device entry currently
+        in the allan_deviation.yaml data (not just the devices this particular
+        saveAllanDeviationYaml() call just touched), grouped by hdw_variant. Devices of the same
+        hardware variant carry the same physical IMU part(s) (see IMU_TYPE_BY_HDW_VARIANT), so
+        averaging within a variant is meaningful; devices of different variants are never mixed.
+
+        For each variant, sensor ('gyroscope'/'accelerometer'), and axis:
+          - 'combined': mean of each device's own 'combined' BI/ARW(or VRW) value -- one sample per
+            device (its already sensor-fused reading).
+          - 'individual': mean across every (device, IMU slot) 'individual' BI/ARW(or VRW) value --
+            one sample per physical gyroscope/accelerometer of that variant.
+        Accelerometer's random-walk figure is 'vrw' (velocity random walk) throughout, at both the
+        per-device and this per-variant level; gyroscope's is 'arw' throughout. Accelerometer also
+        falls back to the legacy 'rw' key (saveAllanDeviationYaml()'s field name before it was
+        renamed to 'vrw') when reading a device entry that predates the rename and hasn't been
+        rewritten since, so recomputing this summary doesn't silently drop those devices' figures.
+        """
+        summary = {}
+        for serial_key, device in data.items():
+            if serial_key == 'hardware_variant_summary' or not isinstance(device, dict):
+                continue
+            variant = device.get('hdw_variant')
+            if variant is None:
+                continue
+            variant_node = summary.setdefault(str(variant), {})
+
+            for sensor, rw_field_candidates, dst_rw_field in (('gyroscope', ('arw',), 'arw'), ('accelerometer', ('vrw', 'rw'), 'vrw')):
+                sensor_data = device.get(sensor)
+                if not sensor_data:
+                    continue
+                sensor_summary = variant_node.setdefault(sensor, {
+                    'combined':   {'bi': [[], [], []], dst_rw_field: [[], [], []]},
+                    'individual': {'bi': [[], [], []], dst_rw_field: [[], [], []]},
+                })
+
+                combined = sensor_data.get('combined')
+                if combined:
+                    src_rw_field = next((f for f in rw_field_candidates if f in combined), rw_field_candidates[0])
+                    for axis_idx in range(3):
+                        if axis_idx < len(combined.get('bi', [])) and combined['bi'][axis_idx] is not None:
+                            sensor_summary['combined']['bi'][axis_idx].append(combined['bi'][axis_idx])
+                        rw_axis = combined.get(src_rw_field, [])
+                        if axis_idx < len(rw_axis) and rw_axis[axis_idx] is not None:
+                            sensor_summary['combined'][dst_rw_field][axis_idx].append(rw_axis[axis_idx])
+
+                individual = sensor_data.get('individual')
+                if individual:
+                    src_rw_field = next((f for f in rw_field_candidates if f in individual), rw_field_candidates[0])
+                    for axis_idx in range(3):
+                        if axis_idx < len(individual.get('bi', [])):
+                            sensor_summary['individual']['bi'][axis_idx].extend(individual['bi'][axis_idx])
+                        if axis_idx < len(individual.get(src_rw_field, [])):
+                            sensor_summary['individual'][dst_rw_field][axis_idx].extend(individual[src_rw_field][axis_idx])
+
+        # Collapse the collected per-axis sample lists into means (None where a variant/sensor/axis
+        # has no samples at all, rather than crashing or reporting a misleading 0).
+        for variant_node in summary.values():
+            for sensor_summary in variant_node.values():
+                for metric_data in sensor_summary.values():
+                    for field, per_axis in metric_data.items():
+                        metric_data[field] = [float(np.mean(v)) if v else None for v in per_axis]
+
+        data['hardware_variant_summary'] = summary
 
     def saveFigJoinAxes(self, ax, axs, fig, name, sizeInches=[]):
         self.saveFig(fig, name, sizeInches)
@@ -3405,7 +3602,9 @@ class logPlot:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
-        # Preserve the initial sensors list for later use in subplot configuration and CSV writing
+        # Preserve the initial sensors list for later use in subplot configuration. (This used to
+        # also feed a per-log CSV export; that was replaced by the richer, cross-device
+        # allan_deviation.yaml written by saveAllanDeviationYaml() below -- see its docstring.)
         initial_sensors = sensors
 
         sumARW = []
@@ -3419,32 +3618,17 @@ class logPlot:
                 sumARW[i].append([])
                 sumBI[i].append([])
 
+        # Each device's load-and-compute is independent of every other device's -- run them in
+        # parallel, one device per forked worker process.
         included_devs_pqr = []
-        for d in self.active_devs:
-            (name, time, dt, sensors) = self.loadGyros(d, did=did)
-
-            if len(sensors):
+        for d, included, curves in _computeAllanDeviationParallel(self, self.active_devs, did, 'gyro', 1.0):
+            if included:
                 included_devs_pqr.append(d)
-                dtMean = np.mean(dt)
-                for i in range(3):
-                    for n, pqr in enumerate(sensors):
-                        if np.all(pqr) != None and n<len(sensors):
-                            # Averaging window tau values from dt to dt*Nsamples/10
-                            t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
+            for i, n, t2, ad, bi, rw in curves:
+                ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * RAD2DEG * 3600, rw * RAD2DEG * 3600/RTHR2RTS))
 
-                            # Compute the overlapping ADEV
-                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
-                            # Compute random walk and bias instability
-                            t_bi_max = 1000
-                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            bi = np.amin(ad[:idx_max + 1]) / 0.664
-                            rw_idx = (np.abs(t2 - 1.0)).argmin()
-                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
-                            
-                            ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * RAD2DEG * 3600, rw * RAD2DEG * 3600/RTHR2RTS))
-
-                            sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
-                            sumBI[i][n].append(bi * RAD2DEG * 3600)
+                sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
+                sumBI[i][n].append(bi * RAD2DEG * 3600)
 
         totalARW = []
         totalBI = []
@@ -3487,7 +3671,9 @@ class logPlot:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
-        # Preserve initial sensors for subplot configuration and CSV writing.
+        # Preserve initial sensors for subplot configuration. (This used to also feed a per-log
+        # allan_deviation_acc.csv export; that was replaced by the richer, cross-device
+        # allan_deviation.yaml written by saveAllanDeviationYaml() below -- see its docstring.)
         initial_sensors = sensors
 
         sumRW = []
@@ -3502,33 +3688,17 @@ class logPlot:
                 sumBI[i].append([])
 
 
+        # Each device's load-and-compute is independent of every other device's -- run them in
+        # parallel, one device per forked worker process.
         included_devs_acc = []
-        for d in self.active_devs:
-            (name, time, dt, sensors) = self.loadAccels(d, did=did)
-            dtMean = np.mean(dt)
-            dev_included = False
-            for i in range(3):
-                for n, acc in enumerate(sensors):
-                    if np.all(acc) != None and n<len(sensors):
-                        if acc.any(None):
-                            if not dev_included:
-                                included_devs_acc.append(d)
-                                dev_included = True
-                            # Averaging window tau values from dt to dt*Nsamples/10
-                            t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
-                            # Compute the overlapping ADEV
-                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
-                            # Compute random walk and bias instability
-                            t_bi_max = 1000
-                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            bi = np.amin(ad[:idx_max + 1]) / 0.664
-                            rw_idx = (np.abs(t2 - 0.1)).argmin()
-                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+        for d, included, curves in _computeAllanDeviationParallel(self, self.active_devs, did, 'accel', 0.1):
+            if included:
+                included_devs_acc.append(d)
+            for i, n, t2, ad, bi, rw in curves:
+                ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * MPS2UG, rw * RTHR2RTS))
 
-                            ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * MPS2UG, rw * RTHR2RTS))
-
-                            sumRW[i][n].append(rw * RTHR2RTS) 
-                            sumBI[i][n].append(bi * MPS2UG)
+                sumRW[i][n].append(rw * RTHR2RTS)
+                sumBI[i][n].append(bi * MPS2UG)
 
         totalVRW = []
         totalBI = []
@@ -3543,7 +3713,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, RW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, VRW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
                     totalVRW.append(sumRW[i][n])
                     totalBI.append(sumBI[i][n])
 
@@ -3558,24 +3728,7 @@ class logPlot:
 
         self.setup_and_wire_legend()
 
-        with open(self.log.directory + '/allan_deviation_acc.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,VRW-X,VRW-Y,VRW-Z\n')
-            f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
-            today = date.today()
-            for idx, d in enumerate(included_devs_acc):
-                if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
-                    continue 
-                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
-                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, acc in enumerate(initial_sensors):
-                    if np.all(acc) != None and n<len(initial_sensors):
-                        for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
-                        for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][idx] if idx < len(sumRW[i][n]) else 0.0))
-                f.write('\n')
-
-        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'rw', 'm/s/sqrt(hr)')
+        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'vrw', 'm/s/sqrt(hr)')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
