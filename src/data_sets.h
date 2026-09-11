@@ -1571,6 +1571,7 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK              = 39,  //!< GPX: enable serial bridge on IMX to GPX and loopback on GPX (uint32 inv: 4294967256)
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE     = 40,  //!< GPX: enable serial bridge on IMX to GPX and loopback on GPX, driver test mode (uint32 inv: 4294967255)
     SYS_CMD_GPX_ENABLE_RTOS_STATS                                   = 41,  //!< GPX: enable RTOS task stats collection (uint32 inv: 4294967254)
+    SYS_CMD_GPX_SAVE_PERSISTENT_MESSAGES                            = 42,  //!< GPX: save current persistent messages (uint32 inv: 4294967253)
 
     SYS_CMD_GNSS_RCVR_QUIET_MODE                                    = 60,  //!< Put GNSS receiver into quiet mode (uint32 inv: 4294967235)
     SYS_CMD_GNSS_RCVR_SOFT_RESET                                    = 61,  //!< Soft reset GNSS receiver (uint32 inv: 4294967234)
