@@ -528,15 +528,14 @@ public:
      */
     bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
 
-    /**
-     * TEST-ONLY (SN-8579): directly pokes the privately-inherited session_id/session_status so
-     * fwUpdate_isDone()'s formula can be exercised across its state space without a real port,
-     * device, or firmware image. Not used by any production code path.
-     */
-    void test_setSessionState(uint16_t sessionId, fwUpdate::update_status_e status) {
-        session_id = sessionId;
-        session_status = status;
-    }
+#ifdef SDK_UNIT_TEST
+    // White-box access for the host unit tests (tests/test_ISFirmwareUpdater_isDone.cpp), so
+    // fwUpdate_isDone()'s formula can be exercised across its session_id/session_status state space
+    // without a real port, device, or firmware image. Compiled only in the unit-test build
+    // (SDK_UNIT_TEST); absent from the shipped SDK -- adds no member, so it does not affect the
+    // class layout the prebuilt library was compiled against.
+    friend class FwUpdateIsDoneTest;
+#endif
 
 private:
 
