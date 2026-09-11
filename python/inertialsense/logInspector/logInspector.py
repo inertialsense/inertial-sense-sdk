@@ -363,6 +363,7 @@ class LogInspectorWindow(QMainWindow):
         # Clean up the C++ LogReader's Python parent reference to avoid GIL issues
         self.log.c_log.cleanup()
         if not loaded:
+            self.log = None
             self.setStatus("Failed to load log")
             return
         print("done loading")
