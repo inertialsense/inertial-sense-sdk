@@ -1474,6 +1474,8 @@ class logPlot:
     def angle_unwrap(self, angle):
         unwrap = 0.0
         result = np.empty_like(angle)
+        if np.shape(angle)[0] == 0:
+            return result
         anglePrev = angle[0]
         for i in range(np.shape(angle)[0]):
             result[i] = angle[i] + unwrap
@@ -1625,7 +1627,8 @@ class logPlot:
                         delta = self.vec3_wrap(intEuler - refEuler)
                         sumDelta += delta
                         sumCount += 1
-                refEuler += sumDelta / sumCount
+                if sumDelta is not None:
+                    refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
@@ -1705,8 +1708,10 @@ class logPlot:
         self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
 
         refRtkTime = None
+        refRtkHdg = None
         refInsTime = None
-        
+        refEuler = None
+
         if self.residual:
             self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
             self.configureSubplot(ax[1,1], 'Heading Residual: RTK - Mean', 'deg')
@@ -1720,6 +1725,8 @@ class logPlot:
                 for d in self.active_devs:
                     gnssTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_RTK_CMP_REL, 'timeOfWeekMs'))
                     gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'baseToRoverHeading')
+                    if len(gnssTime) == 0 or len(gnssHdg) == 0:
+                        continue    # No RTK compassing data for this device
                     if refRtkTime is None:
                         refRtkTime = gnssTime
                         refRtkHdg = np.copy(gnssHdg)
@@ -1730,7 +1737,8 @@ class logPlot:
                         delta = self.angle_wrap(intRtkHdg - refRtkHdg)
                         sumDelta += delta
                         sumCount += 1
-                refRtkHdg += sumDelta / sumCount
+                if sumDelta is not None:
+                    refRtkHdg += sumDelta / sumCount
 
             # Reference INS does not exist.  Compute reference from average INS.
             if refInsTime is None:
@@ -1739,7 +1747,7 @@ class logPlot:
                 for d in self.active_devs:
                     time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
                     qn2b = self.getData(d, DID_INS_2, 'qn2b')
-                    if len(qn2b) == 0:
+                    if len(time) == 0 or len(qn2b) == 0:
                         continue
                     # Adjust data for attitude bias
                     quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], qn2b)
@@ -1756,7 +1764,8 @@ class logPlot:
                         delta = self.vec3_wrap(intEuler - refEuler)
                         sumDelta += delta
                         sumCount += 1
-                refEuler += sumDelta / sumCount
+                if sumDelta is not None:
+                    refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
             magTime = getTimeFromGpsTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'), True)
@@ -1782,7 +1791,7 @@ class logPlot:
                     intMagHdg = np.interp(insTime, magTime, unwrapMagHdg, right=np.nan, left=np.nan)
                     resMagHdg = self.angle_wrap(intMagHdg - insHdg)
                     ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
-                if gnssTime.any():
+                if gnssTime.any() and refRtkHdg is not None:
                     unwrapGnssHdg = self.angle_unwrap(gnssHdg)
                     intInsHdg = np.interp(refRtkTime, gnssTime, unwrapGnssHdg, right=np.nan, left=np.nan)
                     resInsHdg = self.angle_wrap(intInsHdg - refRtkHdg)
