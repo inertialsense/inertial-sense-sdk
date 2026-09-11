@@ -75,6 +75,12 @@ class Log:
                 if dev_serial:
                     self.serials[d] = dev_serial
 
+        # Recover DID_INS_2 from DID_INS_1 before filtering, so a device that only logged
+        # DID_INS_1 isn't mistaken for one with no INS solution at all.
+        for d in range(self.numDev):
+            if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
+                self.ins1ToIns2(d)
+
         # The performance report indexes DID_INS_2 for every device, so a device that never
         # produced an INS solution (e.g. a raw GNSS receiver logged alongside the INS units)
         # has to be dropped here rather than crashing downstream on an empty array.
@@ -115,8 +121,6 @@ class Log:
                 if len(self.data[i, DID_DEV_INFO]):
                     self.refSerials.clear()
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
-            if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
-                self.ins1ToIns2(i)
             #If you want to view data of log with only refIns:
             if len(self.serials) == 1 and self.refINS == True:
                 return True

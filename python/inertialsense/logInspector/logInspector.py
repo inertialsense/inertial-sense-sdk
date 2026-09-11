@@ -359,9 +359,12 @@ class LogInspectorWindow(QMainWindow):
         print("\nLoading files from " + directory)
         self.setStatus("Loading...")
         self.log = Log()
-        self.log.load(directory)
+        loaded = self.log.load(directory)
         # Clean up the C++ LogReader's Python parent reference to avoid GIL issues
         self.log.c_log.cleanup()
+        if not loaded:
+            self.setStatus("Failed to load log")
+            return
         print("done loading")
         for mplot in self.mplots:
             mplot.plotter.setLog(self.log)
