@@ -78,7 +78,7 @@ class Log:
         # Recover DID_INS_2 from DID_INS_1 before filtering, so a device that only logged
         # DID_INS_1 isn't mistaken for one with no INS solution at all.
         for d in range(self.numDev):
-            if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
+            if len(self.data[d, DID_INS_2]) == 0 and len(self.data[d, DID_INS_1]) != 0:
                 self.ins1ToIns2(d)
 
         # The performance report indexes DID_INS_2 for every device, so a device that never
