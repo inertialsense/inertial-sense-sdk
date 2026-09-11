@@ -75,6 +75,20 @@ class Log:
                 if dev_serial:
                     self.serials[d] = dev_serial
 
+        # The performance report indexes DID_INS_2 for every device, so a device that never
+        # produced an INS solution (e.g. a raw GNSS receiver logged alongside the INS units)
+        # has to be dropped here rather than crashing downstream on an empty array.
+        keep = [d for d in range(self.numDev) if len(self.data[d, DID_INS_2])]
+        if len(keep) < self.numDev:
+            dropped = [self.serials[d] for d in range(self.numDev) if d not in keep]
+            print("\033[93m" + "missing DID_INS_2 data: removing device(s) " + str(dropped) + "\033[0m")
+            self.data = self.data[keep]
+            self.serials = [self.serials[d] for d in keep]
+            self.numDev = len(keep)
+            if self.numDev == 0:
+                print("No devices with DID_INS_2 data found in log!!!")
+                return False
+
         for i in range(self.numDev):
             try:
                 self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
