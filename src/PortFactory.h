@@ -126,6 +126,25 @@ public:
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
     /**
+     * Resolves a caller-supplied port name to the canonical device path the OS enumerates it under.
+     *
+     * On Linux a serial port is commonly reached through a udev alias -- a rule carrying
+     * SYMLINK+="imx5" yields /dev/imx5 -> ttyACM0 -- but port discovery enumerates canonical kernel
+     * names from /sys/class/tty, and validation keys its sysfs lookup on that same canonical name.
+     * Either one, given an alias, rejects a device that is otherwise perfectly usable (SN-8575).
+     *
+     * Only an existing symlink is resolved. Everything else is returned unchanged: a canonical path,
+     * a name that does not exist, a dangling link, and -- importantly -- a regex pattern such as
+     * "*", "(.+)" or "/dev/tty(ACM|USB)[0-9]+", none of which name a file on disk. Pattern-based
+     * discovery is therefore unaffected. No-op on Windows, where COM-port aliasing is handled by
+     * QueryDosDevice rather than the filesystem.
+     *
+     * @param pName the port name, path, or pattern as supplied by the caller
+     * @return the canonical absolute device path if @p pName is a resolvable symlink, else @p pName
+     */
+    static std::string resolvePortName(const std::string& pName);
+
+    /**
      * Allocates and initializes a serial_port_t for the given port name. Does NOT open the device.
      * @param pName the serial device name/path to bind
      * @param pType additional port-type flags OR'd with PORT_TYPE__UART | PORT_TYPE__COMM
