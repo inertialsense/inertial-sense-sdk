@@ -16,10 +16,29 @@
  * Total discovery time is bounded by max(factory timeout) rather than (num_ports * num_factories * timeout).
  */
 bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t options) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // mutex is taken only around the state it guards, never across port I/O, a factory callback, or a
+    // reach-in to a device (SN-8663).
+    //
+    // Holding it function-scoped, as this did, is what made the deadlock reachable: a device takes its
+    // own portMutex and then calls back into DeviceManager (ISDevice::step() fires notifyListeners()
+    // under portMutex; the validateAsync() it calls reads getDeviceHint() under the same lock), so a
+    // discovery pass holding the manager mutex while it waits on portMutex closes the cycle. Narrowing
+    // deviceHandler alone does not help -- the mutex is recursive, so the callee's release is a no-op
+    // while this caller's guard still holds it. Same reasoning as SN-8057, which narrowed the singular
+    // discoverDevice(); this overload was missed.
+    //
+    // PortManager's lock below is deliberately left function-scoped. It is not part of the cycle --
+    // nothing a device does under portMutex takes it -- and replacing locked_range() with a snapshot
+    // would let a port be released mid-pass, since port_handle_t is a raw pointer.
     bool result = false;
-    options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
-    options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
+
+    std::vector<DeviceFactory*> factoriesSnapshot;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
+        options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
+        factoriesSnapshot.assign(factories.begin(), factories.end());
+    }
     const uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
 
     // Per-factory validation slot for a single port
@@ -48,24 +67,28 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
 
         // Check if port is already associated with a known device
         bool alreadyHandled = false;
-        for (auto d : *this) {
-            if (d && d->hasDeviceInfo() && (d->port == port)) {
-                if (options & DISCOVERY__FORCE_REVALIDATION) {
-                    // Clear device info so hasDeviceInfo() returns false,
-                    // forcing full revalidation via Phase 2+3.
-                    d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
-                    memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
-                } else {
-                    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
-                        portClose(port);
-                    result = true;
-                    alreadyHandled = true;
-                    break;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            for (auto d : *this) {
+                if (d && d->hasDeviceInfo() && (d->port == port)) {
+                    if (options & DISCOVERY__FORCE_REVALIDATION) {
+                        // Clear device info so hasDeviceInfo() returns false,
+                        // forcing full revalidation via Phase 2+3.
+                        d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
+                        memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                    } else {
+                        result = true;
+                        alreadyHandled = true;
+                        break;
+                    }
                 }
             }
         }
-        if (alreadyHandled)
+        if (alreadyHandled) {
+            if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+                portClose(port);
             continue;
+        }
 
         // Open port if needed. portOpenRetry(), not a bare portOpen(): an asynchronous transport
         // returns PORT_ERROR__NONE with the connect still in flight and PORT_FLAG__OPENED clear. A
@@ -111,7 +134,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
 
         PendingPort pp;
         pp.port = port;
-        for (auto f : factories) {
+        for (auto f : factoriesSnapshot) {
             auto ctx = f->beginValidation(port, hdwId, effectiveTimeout, sharedDevice);
             if (ctx) {
                 pp.slots.push_back({f, std::move(ctx), false});
@@ -125,7 +148,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
     // Phase 2+3: Concurrent validation loop with round-robin across factories per port
     if (!pending.empty()) {
         log_debug(IS_LOG_DEVICE_MANAGER, "Concurrently validating %zu port(s) across %zu factory(ies)",
-            pending.size(), factories.size());
+            pending.size(), factoriesSnapshot.size());
 
         uint32_t loopDeadline = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
         uint32_t loopStartMs = current_timeMs();
@@ -191,7 +214,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                         } else {
                             // The winning factory's deviceHandler rejected — try remaining factories
                             bool handled = false;
-                            for (auto f : factories) {
+                            for (auto f : factoriesSnapshot) {
                                 if (f == pp.winner)
                                     continue;
                                 if (cb(f, pp.devInfo, pp.port)) {
@@ -412,7 +435,21 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
  * @param port - the port the device was discovered on, if any
  */
 bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devInfo, port_handle_t port, int options) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    // Split in two phases, because mutex must NOT be held while reaching into a device (SN-8663).
+    //
+    // A device takes its own portMutex and then reaches back into DeviceManager: ISDevice::step()
+    // fires notifyListeners() while holding portMutex, and the validateAsync() it calls reads
+    // getDeviceHint() under that same function-scoped lock. Holding mutex here across
+    // assignPort()/connect()/notifyListeners() establishes the opposite order, which deadlocks any
+    // consumer that steps devices on worker threads while discovery runs. See the note on
+    // notifyListeners(), and SN-8057, which narrowed discoverDevice() for the same reason.
+    //
+    // Phase 1 holds the lock and does only container work -- classify the device, and allocate and
+    // register it when it is new. Phase 2 runs with no lock held and performs every reach-in.
+    // Allocation deliberately stays inside phase 1: it is what makes "look up, then insert" atomic,
+    // so two discoveries of the same device racing here still allocate it once. The cost is that
+    // allocateDevice() is consumer code called under the lock, so it must not call back into
+    // DeviceManager from another thread.
     options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
     if (!devId) {
@@ -423,56 +460,87 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
 
     device_entry_t deviceEntry(factory, devId, nullptr);
 
-    // check if Device is previously known
-    for (auto& kd : knownDevices) {
-        if ((kd.factory == deviceEntry.factory) && (kd.hdwId == deviceEntry.hdwId)) {
-            // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
-            log_debug(IS_LOG_DEVICE_MANAGER, "Rediscovered previously known device [%s] on serial port '%s'.", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
-            device_handle_t device = getDevice(port);
-            if (!device) {
-                // If we weren't able to locate the Device by its port (perhaps because its not valid anymore, check by its device info instead)
-                device = getDevice(devInfo.serialNumber, ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
-            }
+    device_handle_t device = nullptr;   //!< the device phase 2 acts on
+    bool rebindPort    = false;         //!< known device, still-valid port: re-assign and re-bind it
+    bool portLost      = false;         //!< known device whose port went invalid: drop it and re-allocate
+    bool added         = false;         //!< a new device was allocated and registered
+    bool knownNoDevice = false;         //!< entry matched, but no device resolved: handled, nothing to do
 
-            if (device) {
-                if (!portIsValid(port)) {
-                    // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
-                    //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
-                    //  Don't forget to remove the old device entry from the primary device set!!
-                    log_debug(IS_LOG_DEVICE_MANAGER, "Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.", portName(port));
-                    notifyListeners(deviceEntry.device, DEVICE_PORT_LOST);
-                    remove(deviceEntry.device);
-                    //delete deviceEntry.device;
-                    //deviceEntry.device = nullptr;
-                    if (options & DISCOVERY__CLOSE_PORT_ON_FAILURE)
-                        portClose(port);
-                    break;  // we'll drop out of the 'for' loop, and still update known_devices and call the listeners, etc.
-                } else {
-                    device->assignPort(port);
-                    if (device->port) {
-                        portToDeviceMap[device->port] = device;
-                    }
-                    notifyListeners(device, DEVICE_PORT_BOUND);    // notify that this device's port has been updated
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+
+        bool known = false;
+        for (auto& kd : knownDevices) {
+            if ((kd.factory == deviceEntry.factory) && (kd.hdwId == deviceEntry.hdwId)) {
+                // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
+                log_debug(IS_LOG_DEVICE_MANAGER, "Rediscovered previously known device [%s] on serial port '%s'.", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
+                device = getDevice(port);
+                if (!device) {
+                    // If we weren't able to locate the Device by its port (perhaps because its not valid anymore, check by its device info instead)
+                    device = getDevice(devInfo.serialNumber, ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
                 }
+                known = true;
+                break;
+            }
+        }
 
-                if (utils::compareDevInfo(device->devInfo, devInfo)) {
-                    device->devInfo = devInfo;
-                    notifyListeners(device, DEVICE_INFO_CHANGED);    // notify that this device's information changed (version, etc)
+        if (known && device && !portIsValid(port)) {
+            // FIXME: if we're here, it means we had a deviceEntry that matched the discovered device, but its associated device is invalid.
+            //  we don't want to reallocate the device, since there is already one there, but just need to reassign the devInfo, etc.
+            //  Don't forget to remove the old device entry from the primary device set!!
+            log_debug(IS_LOG_DEVICE_MANAGER, "Device or port is invalid. Dropping device, and attempting a rebind on port '%s'.", portName(port));
+            // NOTE: deviceEntry.device is still null here, so this removes nothing and the
+            // DEVICE_PORT_LOST that phase 2 reports carries a null device. Preserved exactly as it
+            // was -- that is a separate defect, not a consequence of the lock change. Because the
+            // call is a no-op, running it before the notification rather than after (as the
+            // single-phase version did) is not observable.
+            remove(deviceEntry.device);
+            portLost = true;
+            known = false;      // fall through to allocation, as the original `break` did
+            device = nullptr;
+        } else if (known && device) {
+            rebindPort = true;
+        } else if (known) {
+            knownNoDevice = true;
+        }
+
+        if (!known) {
+            // if not, then we need to allocate it
+            deviceEntry.device = factory->allocateDevice(devInfo, port);
+            if (deviceEntry.device) {
+                // log_debug(IS_LOG_DEVICE_MANAGER, "Allocated new device: %s.", device->getDescription().c_str());
+                knownDevices.push_back(deviceEntry);
+                push_back(deviceEntry.device);
+                if (deviceEntry.device->port) {
+                    portToDeviceMap[deviceEntry.device->port] = deviceEntry.device;
                 }
+                device = deviceEntry.device;
+                added = true;
             }
-
-            if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION) {
-                // notifyListeners(deviceEntry.device, DEVICE_DISCONNECTED);  technically we should send this, but conceptually, we never connected...
-                portClose(port);
-            }
-
-            return true;    // successfully handled
         }
     }
 
-    // if not, then we need to allocate it
-    deviceEntry.device = factory->allocateDevice(devInfo, port);
-    if (!deviceEntry.device) {
+    // ---- phase 2: the manager lock is released for everything below ----
+
+    if (portLost)
+        notifyListeners(deviceEntry.device, DEVICE_PORT_LOST);
+
+    if (knownNoDevice) {
+        // A known deviceEntry whose device could not be resolved: nothing to bind or report.
+        if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+            portClose(port);
+        return true;    // successfully handled
+    }
+
+    if (!added && portLost) {
+        // The old device was dropped and allocation did not replace it. The original closed here for
+        // ON_FAILURE (dropping the device) and again for ON_FAILURE|ON_COMPLETION (failed allocation).
+        if (options & (DISCOVERY__CLOSE_PORT_ON_FAILURE | DISCOVERY__CLOSE_PORT_ON_COMPLETION))
+            portClose(port);
+        return false;
+    }
+
+    if (!added && !rebindPort) {
         // As above: ON_COMPLETION closes "regardless of failure", and a factory declining to allocate
         // is a completion for this port as far as the caller is concerned. Without this, a declined
         // port is left open indefinitely.
@@ -481,24 +549,40 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
         return false;   // allocated returned null, so no device created
     }
 
-    // log_debug(IS_LOG_DEVICE_MANAGER, "Allocated new device: %s.", device->getDescription().c_str());
-    knownDevices.push_back(deviceEntry);
-    push_back(deviceEntry.device);
-    if (deviceEntry.device->port) {
-        portToDeviceMap[deviceEntry.device->port] = deviceEntry.device;
+    if (rebindPort) {
+        device->assignPort(port);
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (device->port) {
+                portToDeviceMap[device->port] = device;
+            }
+        }
+        notifyListeners(device, DEVICE_PORT_BOUND);    // notify that this device's port has been updated
+
+        if (utils::compareDevInfo(device->devInfo, devInfo)) {
+            device->devInfo = devInfo;
+            notifyListeners(device, DEVICE_INFO_CHANGED);    // notify that this device's information changed (version, etc)
+        }
     }
 
-    notifyListeners(deviceEntry.device, DEVICE_ADDED);  // notify
+    if (added) {
+        if (portLost && (options & DISCOVERY__CLOSE_PORT_ON_FAILURE))
+            portClose(port);    // the dropped device's port, closed before the new device uses it
 
-    if (portIsValid(deviceEntry.device->port))
-        notifyListeners(deviceEntry.device, DEVICE_PORT_BOUND);  // notify that we're bound, even if we close the port below (because the port is still valid)
+        notifyListeners(device, DEVICE_ADDED);  // notify
 
-    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
+        if (portIsValid(device->port))
+            notifyListeners(device, DEVICE_PORT_BOUND);  // notify that we're bound, even if we close the port below (because the port is still valid)
+    }
+
+    if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION) {
+        // notifyListeners(deviceEntry.device, DEVICE_DISCONNECTED);  technically we should send this, but conceptually, we never connected...
         portClose(port);
+    }
 
-    if (portIsOpened(deviceEntry.device->port)) {
-        if (deviceEntry.device->connect())  // even though the port is opened, we want the device to manage connection initialization
-            notifyListeners(deviceEntry.device, DEVICE_CONNECTED);  // connect() above wont notify, because the port is already opened.
+    if (added && portIsOpened(device->port)) {
+        if (device->connect())  // even though the port is opened, we want the device to manage connection initialization
+            notifyListeners(device, DEVICE_CONNECTED);  // connect() above wont notify, because the port is already opened.
     }
 
     return true;    // successfully handled
