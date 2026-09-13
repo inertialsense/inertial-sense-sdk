@@ -986,7 +986,16 @@ static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_
 static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(data_set, did);
-    mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: " + std::to_string(BIT_CMD_FULL_STATIONARY) + "=start full, " + std::to_string(BIT_CMD_BASIC_MOVING) + "=start basic, " + std::to_string(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) + "=start full HA, " + std::to_string(BIT_CMD_OFF) + "=off]");
+    mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: "
+        + std::to_string(BIT_CMD_NONE) + "=none, "
+        + std::to_string(BIT_CMD_OFF) + "=off, "
+        + std::to_string(BIT_CMD_FULL_STATIONARY) + "=start full, "
+        + std::to_string(BIT_CMD_BASIC_MOVING) + "=start basic, "
+        + std::to_string(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) + "=start full HA, "
+        + std::to_string(BIT_CMD_IMU_REJECT) + "=IMU fault rej., "
+        + std::to_string(BIT_CMD_IMU_REJECT_CONTINUOUS) + "=IMU fault rej. cont., "
+        + std::to_string(BIT_CMD_IMU_INVALID_DATA) + "=IMU invalid, "
+        + std::to_string(BIT_CMD_IMU_SATURATED_SENSOR) + "=IMU saturated]");
     mapper.AddMember("lastCommand", &bit_t::lastCommand, DATA_TYPE_UINT8, "", "Last input command", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("state", &bit_t::state, DATA_TYPE_UINT8, "", "[state: " + std::to_string(BIT_STATE_RUNNING) + "=running " + std::to_string(BIT_STATE_DONE) + "=done]", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &bit_t::reserved, DATA_TYPE_UINT8);
@@ -1002,7 +1011,13 @@ static void PopulateMapBit(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("acc", &bit_t::acc, DATA_TYPE_F32, SYM_M_PER_S_2, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("pqrSigma", &bit_t::pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("accSigma", &bit_t::accSigma, DATA_TYPE_F32, SYM_M_PER_S_2, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: " + std::to_string(BIT_TEST_MODE_SIM_GNSS_NOISE) + "=GNSS noise, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, " + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow");
+    mapper.AddMember("testMode", &bit_t::testMode, DATA_TYPE_UINT8, "", "Test Mode: "
+        + std::to_string(BIT_TEST_MODE_SIM_GNSS_NOISE) + "=GNSS noise, "
+        + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) + "=Rx overflow, "
+        + std::to_string(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) + "=Tx overflow, "
+        + std::to_string(BIT_TEST_MODE_IMU_FAULT_REJECTION) + "=IMU fault rej., "
+        + std::to_string(BIT_TEST_MODE_IMU_INVALID_DATA) + "=IMU invalid, "
+        + std::to_string(BIT_TEST_MODE_IMU_SATURATION_DATA) + "=IMU saturation");
     mapper.AddMember("testVar", &bit_t::testVar, DATA_TYPE_UINT8, "", "Test Mode variable (port number)");
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
