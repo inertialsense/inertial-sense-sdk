@@ -388,7 +388,7 @@ std::string renderGpxGrmcBits(const data_info_t& info, std::any value, int array
             { GRMC_BITS_GPX_PORT_MON,    "GPX port monitor" },
             { GRMC_BITS_GNSS_BASE_RAW,   "GNSS base raw" },
             { GRMC_BITS_GPX_SYS_FAULT,   "GPX system fault" },
-            { GRMC_BITS_GPX_TIMEPULSE,   "GPX timepulse" },
+            { GRMC_BITS_TIME,            "Inertial Sense GNSS timepulse" },
             { GRMC_BITS_GNSS1_RCVR_POS,  "GNSS1 receiver position" },
             { GRMC_BITS_EXT_AIDING_POS,  "External aiding position" },
             { GRMC_BITS_EXT_AIDING_VEL,  "External aiding velocity" },
@@ -510,7 +510,7 @@ std::string renderRmcBits(const data_info_t& info, std::any value, int arrayIdx,
             { RMC_BITS_GPX_BIT,             "GPX BIT" },
             { RMC_BITS_GPX_PORT_MON,        "GPX port monitor" },
             { RMC_BITS_GPX_RTK_DBG,         "GPX RTK debug" },
-            { RMC_BITS_GPX_TIMEPULSE,       "GPX timepulse" },
+            { RMC_BITS_TIME,       "GPX timepulse" },
             { RMC_BITS_EXT_AIDING_POS,      "External aiding position" },
             { RMC_BITS_EXT_AIDING_VEL,      "External aiding velocity" },
             { RMC_BITS_EXT_AIDING_SPEED,    "External aiding speed" },
@@ -1065,12 +1065,12 @@ static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t d
 
 static void PopulateMapGpxTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gpx_timepulse_t> mapper(data_set, did);
-    mapper.AddMember("week", &gpx_timepulse_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
-    mapper.AddMember("timeOfWeekMs", &gpx_timepulse_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
-    mapper.AddMember("status", &gpx_timepulse_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("syncCnt", &gpx_timepulse_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
-    mapper.AddArray("reserved", &gpx_timepulse_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
+    DataMapper<is_time_t> mapper(data_set, did);
+    mapper.AddMember("week", &is_time_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
+    mapper.AddMember("timeOfWeekMs", &is_time_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
+    mapper.AddMember("status", &is_time_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("syncCnt", &is_time_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
+    mapper.AddArray("reserved", &is_time_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
 }
 
 // PopulateMapPortMonitor is defined below, after the SN-8068 array-of-struct helper block
@@ -2743,7 +2743,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_MCAL",                 // 40
     "DID_GNSS1_TIMEPULSE",               // 41
     "DID_CAL_SC",                       // 42
-    "DID_UNUSED_43",                    // 43
+    "DID_TIME",                         // 43
     "DID_CANFD_CONFIG",                 // 44
     "DID_GNSS1_SIG",                     // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
@@ -2829,7 +2829,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
     "DID_GPX_SYS_FAULT",                // 128
-    "DID_GPX_TIME",                // 129
+    "",                                 // 129
     "",                                 // 130
     ""                                  // 131
 };
@@ -2945,7 +2945,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
-    PopulateMapGpxTimepulse(        m_data_set, DID_GPX_TIME);
+    PopulateMapGpxTimepulse(        m_data_set, DID_TIME);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
