@@ -5128,6 +5128,8 @@ typedef struct
 
     uint32_t    syncCnt;        //!< Count of timepulse sync events since power-on
 
+    uint32_t    reserved[4];    //!< Reserved for future use
+
 } gpx_timepulse_t;
 
 /** @brief RTOS task IDs for the IMX target, indexing rtos_info_t.task[] (DID_RTOS_INFO). Order must match the task creation order in IMX firmware; IMX_RTOS_NUM_TASKS (kept last) sizes the task[] array and is not itself a task ID. */

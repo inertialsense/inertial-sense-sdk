@@ -1063,6 +1063,16 @@ static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 }
 
+static void PopulateMapGpxTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<gpx_timepulse_t> mapper(data_set, did);
+    mapper.AddMember("week", &gpx_timepulse_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
+    mapper.AddMember("timeOfWeekMs", &gpx_timepulse_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
+    mapper.AddMember("status", &gpx_timepulse_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("syncCnt", &gpx_timepulse_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
+    mapper.AddArray("reserved", &gpx_timepulse_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
+}
+
 // PopulateMapPortMonitor is defined below, after the SN-8068 array-of-struct helper block
 // (it calls registerArrayStruct / makePortIdentityFn which are defined there).
 
@@ -2935,6 +2945,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
+    PopulateMapGpxTimepulse(        m_data_set, DID_GPX_TIMEPULSE);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
