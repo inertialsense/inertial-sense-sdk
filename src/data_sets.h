@@ -196,7 +196,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_RMC                     (eDataIDs)126   /**< (rmc_t) GPX rmc  */
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127   /**< (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_SYS_FAULT               (eDataIDs)128   /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_GPX_LAST                    128             /**< Last of GPX DIDs */
+#define DID_GPX_TIMEPULSE               (eDataIDs)129   /**< (gpx_timepulse_t) GPX 1PPS/timepulse status */
+#define DID_GPX_LAST                    129             /**< Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -1826,7 +1827,7 @@ typedef struct PACKED
 #define RMC_BITS_BAROMETER              0x0000000000000040  // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080  // ~10ms
 #define RMC_BITS_IMUS                   0x0000000000000100  // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-// #define RMC_BITS_UNUSED                 0x0000000000000200
+#define RMC_BITS_GPX_TIMEPULSE          0x0000000000000200  // GPX 1PPS/timepulse status, forwarded from DID_GPX_TIMEPULSE
 #define RMC_BITS_GNSS1_POS          0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
 #define RMC_BITS_GNSS2_POS          0x0000000000000800  // "
 #define RMC_BITS_GNSS1_RAW          0x0000000000001000  // "
@@ -1917,7 +1918,8 @@ typedef struct PACKED
                                             | RMC_BITS_EXT_AIDING_DIR_SPEED \
                                             | RMC_BITS_EXT_AIDING_HEADING \
                                             | RMC_BITS_EXT_AIDING_ATTITUDE \
-                                            | RMC_BITS_GPX_SYS_FAULT)
+                                            | RMC_BITS_GPX_SYS_FAULT \
+                                            | RMC_BITS_GPX_TIMEPULSE)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
@@ -1958,7 +1960,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_PORT_MON \
                                             | RMC_BITS_EVENT \
                                             | RMC_BITS_GPX_STATUS\
-                                            | RMC_BITS_GPX_SYS_FAULT)
+                                            | RMC_BITS_GPX_SYS_FAULT \
+                                            | RMC_BITS_GPX_TIMEPULSE)
 #define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
                                             | RMC_PRESET_GNSS \
                                             | RMC_BITS_GNSS1_RAW \
@@ -2240,6 +2243,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
     GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
+    GRMC_BIT_POS_DID_GPX_TIMEPULSE  = 30,  //!< DID_GPX_TIMEPULSE - GPX 1PPS/timepulse status
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -2273,6 +2277,7 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
 #define GRMC_BITS_EXT_AIDING_POS        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_POS)
 #define GRMC_BITS_EXT_AIDING_VEL        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_VEL)
+#define GRMC_BITS_GPX_TIMEPULSE         (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_TIMEPULSE)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2284,13 +2289,15 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS   500
 #define GRMC_PRESET_GPX_PORT_MON_PERIOD_MS      500
 #define GRMC_PRESET_GPX_SYS_FAULT_PERIOD_MS     30000
+#define GRMC_PRESET_GPX_TIMEPULSE_PERIOD_MS     1000
 
 #define GRMC_PRESET_GPX_BASE            (GRMC_BITS_PRESET \
                                         /*| GRMC_BITS_DEV_INFO*/ \
                                         /*| GRMC_BITS_RTOS_INFO*/ \
                                         | GRMC_BITS_STATUS \
                                         /*| GRMC_BITS_DEBUG_ARRAY*/ \
-                                        | GRMC_BITS_GPX_SYS_FAULT)
+                                        | GRMC_BITS_GPX_SYS_FAULT \
+                                        | GRMC_BITS_GPX_TIMEPULSE)
 
 #define GRMC_PRESET_GPX_GNSS1   (GRMC_BITS_GNSS1_POS \
                                         | GRMC_BITS_GNSS1_VEL \
@@ -5111,6 +5118,19 @@ typedef struct
 
 } system_fault_t;
 
+/** @brief (DID_GPX_TIMEPULSE) GPX 1PPS/timepulse status. Reports the GPS time of week corresponding to the most recent 1PPS timepulse event, along with its status and a running count of timepulse sync events. */
+typedef struct
+{
+    uint32_t    week;           //!< GPS number of weeks since January 6th, 1980
+
+    uint32_t    timeOfWeekMs;   //!< (ms) GPS time of week (since Sunday morning) of the timepulse event
+
+    uint32_t    status;         //!< Timepulse status flags
+
+    uint32_t    syncCnt;        //!< Count of timepulse sync events since power-on
+
+} gpx_timepulse_t;
+
 /** @brief RTOS task IDs for the IMX target, indexing rtos_info_t.task[] (DID_RTOS_INFO). Order must match the task creation order in IMX firmware; IMX_RTOS_NUM_TASKS (kept last) sizes the task[] array and is not itself a task ID. */
 enum eImxRtosTask
 {
@@ -5391,6 +5411,7 @@ typedef union PACKED
     debug_array_t                   imxDebugArray;  //!< DID_DEBUG_ARRAY / DID_EVB_DEBUG_ARRAY
     debug_array_t                   gpxDebugArray;  //!< DID_GPX_DEBUG_ARRAY
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
+    gpx_timepulse_t                 gpxTimepulse;   //!< DID_GPX_TIMEPULSE
     did_event_t                     event;          //!< DID_EVENT
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT

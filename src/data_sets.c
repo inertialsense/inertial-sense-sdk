@@ -402,7 +402,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 126:
         0,                      // 127:
         0,                      // 128:
-        0,                      // 129:
+        0,                      // 129: DID_GPX_TIMEPULSE
         0,                      // 130:
         0                       // 131:
     };
@@ -592,7 +592,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 126:
         0,                      // 127:
         0,                      // 128:
-        0,                      // 129:
+        0,                      // 129: DID_GPX_TIMEPULSE
         0,                      // 130:
         0                       // 131:
     };
@@ -703,6 +703,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
     [DID_GPX_PORT_MONITOR]      = RMC_BITS_GPX_PORT_MON,
     [DID_RTK_DEBUG]             = RMC_BITS_GPX_RTK_DBG,
     [DID_GPX_SYS_FAULT]         = RMC_BITS_GPX_SYS_FAULT,
+    [DID_GPX_TIMEPULSE]         = RMC_BITS_GPX_TIMEPULSE,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -781,6 +782,7 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GNSS1_RCVR_POS]         = GRMC_BITS_GNSS1_RCVR_POS,
     [DID_EXT_AIDING_POS]         = GRMC_BITS_EXT_AIDING_POS,
     [DID_EXT_AIDING_VEL]         = GRMC_BITS_EXT_AIDING_VEL,
+    [DID_GPX_TIMEPULSE]         = GRMC_BITS_GPX_TIMEPULSE,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -815,6 +817,7 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_GNSS1_RCVR_POS]        = 1,
     [GRMC_BIT_POS_EXT_AIDING_POS]        = 1,
     [GRMC_BIT_POS_EXT_AIDING_VEL]        = 1,
+    [GRMC_BIT_POS_DID_GPX_TIMEPULSE]    = GRMC_PRESET_GPX_TIMEPULSE_PERIOD_MS,
 };
 
 #ifndef GPX_1

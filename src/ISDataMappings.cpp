@@ -388,6 +388,7 @@ std::string renderGpxGrmcBits(const data_info_t& info, std::any value, int array
             { GRMC_BITS_GPX_PORT_MON,    "GPX port monitor" },
             { GRMC_BITS_GNSS_BASE_RAW,   "GNSS base raw" },
             { GRMC_BITS_GPX_SYS_FAULT,   "GPX system fault" },
+            { GRMC_BITS_GPX_TIMEPULSE,   "GPX timepulse" },
             { GRMC_BITS_GNSS1_RCVR_POS,  "GNSS1 receiver position" },
             { GRMC_BITS_EXT_AIDING_POS,  "External aiding position" },
             { GRMC_BITS_EXT_AIDING_VEL,  "External aiding velocity" },
@@ -509,6 +510,7 @@ std::string renderRmcBits(const data_info_t& info, std::any value, int arrayIdx,
             { RMC_BITS_GPX_BIT,             "GPX BIT" },
             { RMC_BITS_GPX_PORT_MON,        "GPX port monitor" },
             { RMC_BITS_GPX_RTK_DBG,         "GPX RTK debug" },
+            { RMC_BITS_GPX_TIMEPULSE,       "GPX timepulse" },
             { RMC_BITS_EXT_AIDING_POS,      "External aiding position" },
             { RMC_BITS_EXT_AIDING_VEL,      "External aiding velocity" },
             { RMC_BITS_EXT_AIDING_SPEED,    "External aiding speed" },
@@ -2817,7 +2819,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
     "DID_GPX_SYS_FAULT",                // 128
-    "",                                 // 129
+    "DID_GPX_TIMEPULSE",                // 129
     "",                                 // 130
     ""                                  // 131
 };
