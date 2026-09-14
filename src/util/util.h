@@ -256,17 +256,49 @@ namespace utils {
     enum dev_info_fmt_e : uint16_t {
         DV_BIT_SERIALNO         = 0x0001,        //!< serial number
         DV_BIT_FIRMWARE_VER     = 0x0002,        //!< firmware version w/ optional release type
-        DV_BIT_HARDWARE_INFO    = 0x0004,        //!< hdw type & version
+        DV_BIT_HARDWARE_INFO    = 0x0004,        //!< hdw type & version (0.0) -- used DV_BIT_VERSION_* to show 3rd/4th digits
         DV_BIT_BUILD_KEY        = 0x0008,        //!< build key and build number
         DV_BIT_BUILD_DATE       = 0x0010,        //!< build date
         DV_BIT_BUILD_TIME       = 0x0020,        //!< build time
         DV_BIT_BUILD_COMMIT     = 0x0040,        //!< repo hash & build status (dirty)
         DV_BIT_ADDITIONAL_INFO  = 0x0100,        //!< additional info
         DV_BIT_PROTOCOL_VER     = 0x0200,        //!< protocol version
+        DV_BIT_HARDWARE_REV     = 0x0400,        //!< include 3rd digit hardware revision (0.0.0)
+        DV_BIT_HARDWARE_VARIANT = 0x0800,        //!< include hardware variant
         DV_BIT_COMPACT_DATE     = 0x1000,        //!< compact date formatting
         DV_BIT_COMPACT_TIME     = 0x2000,        //!< compact time formatting
         DV_BIT_EXACT_MATCH      = 0x4000,        //!< when matching/comparing, match exactly (version & time)
     };
+
+    /**
+     * Bits controlling getFirmwareInfoAsString(). Canonical here; ISDevice::DevInfoFormatFlags
+     * aliases these so the two cannot drift, and the values are fixed because callers pass them.
+     */
+    enum devFirmwareInfoFlags_e : uint16_t {
+        FWI_COMPACT_BUILD_TYPE = 0x0010,  //!< render the build type as one character instead of a word
+        FWI_OMIT_COMMIT_HASH   = 0x0100,  //!< suppress the commit hash and dirty marker
+        FWI_OMIT_BUILD_KEY     = 0x0200,  //!< suppress the build host key and number
+        FWI_OMIT_BUILD_DATE    = 0x0400,  //!< suppress the build date
+        FWI_OMIT_BUILD_TIME    = 0x0800,  //!< suppress the build time
+        FWI_OMIT_BUILD_MILLIS  = 0x1000,  //!< suppress build milliseconds when non-zero
+    };
+
+    /**
+     * Which parts of the current time getCurrentTimestamp() should render.
+     *
+     * A caller writing to a persistent file usually wants the date; one writing a live line to a
+     * console usually does not, and one whose output is about to be wrapped by another layer that
+     * timestamps it may want no timestamp at all. MICROS wins over MILLIS if both are given.
+     */
+    enum eTimestampOpts : uint32_t {
+        TIMESTAMP_DATE      = 0x01,     //!< the "YYYY-MM-DD " portion
+        TIMESTAMP_TIME      = 0x02,     //!< the "HH:MM:SS" portion
+        TIMESTAMP_MILLIS    = 0x04,     //!< fractional seconds to 3 places
+        TIMESTAMP_MICROS    = 0x08,     //!< fractional seconds to 6 places, matching msg_logger
+    };
+
+    /** What getCurrentTimestamp() renders when asked for nothing in particular. */
+    constexpr uint32_t TIMESTAMP_OPTS_DEFAULT = (TIMESTAMP_DATE | TIMESTAMP_TIME | TIMESTAMP_MILLIS);
 
     /**
      * Renders the type-major-minor portion of a packed hardware id as
@@ -309,10 +341,10 @@ namespace utils {
      * appended with the sub-rev components (hardwareVer[2..3]) when showRev is true and they are
      * non-zero.
      * @param devInfo the dev_info_t supplying the hardware type and version bytes
-     * @param showRev if true, append the sub-rev components when present
+     * @param flags a bitmask of rendering options
      * @return the rendered hardware-id string
      */
-    std::string getHardwareAsString(const dev_info_t& devInfo, bool showRev = true);
+    std::string getHardwareAsString(const dev_info_t& devInfo, uint16_t flags = 0);
 
     /**
      * Renders the type-major-minor portion of a packed hardware id, e.g. "IMX-5.0". This is a
@@ -331,19 +363,6 @@ namespace utils {
      * @return the rendered firmware-version string
      */
     std::string getFirmwareAsString(const dev_info_t& devInfo, const std::string& prefix = "fw");
-
-    /**
-     * Bits controlling getFirmwareInfoAsString(). Canonical here; ISDevice::DevInfoFormatFlags
-     * aliases these so the two cannot drift, and the values are fixed because callers pass them.
-     */
-    enum devFirmwareInfoFlags_e : uint16_t {
-        FWI_COMPACT_BUILD_TYPE = 0x0010,  //!< render the build type as one character instead of a word
-        FWI_OMIT_COMMIT_HASH   = 0x0100,  //!< suppress the commit hash and dirty marker
-        FWI_OMIT_BUILD_KEY     = 0x0200,  //!< suppress the build host key and number
-        FWI_OMIT_BUILD_DATE    = 0x0400,  //!< suppress the build date
-        FWI_OMIT_BUILD_TIME    = 0x0800,  //!< suppress the build time
-        FWI_OMIT_BUILD_MILLIS  = 0x1000,  //!< suppress build milliseconds when non-zero
-    };
 
     /**
      * Renders firmware version and build provenance: the long form behind ISDevice::getFirmwareInfo().
@@ -440,23 +459,6 @@ namespace utils {
      */
     bool parseFirmwareFromString(const std::string& s, dev_info_t& devInfo);
     // semver::version<uint8_t, uint8_t, uint8_t> getSemanticVersion(const dev_info_t& devInfo, uint16_t flags = -1);
-
-    /**
-     * Which parts of the current time getCurrentTimestamp() should render.
-     *
-     * A caller writing to a persistent file usually wants the date; one writing a live line to a
-     * console usually does not, and one whose output is about to be wrapped by another layer that
-     * timestamps it may want no timestamp at all. MICROS wins over MILLIS if both are given.
-     */
-    enum eTimestampOpts : uint32_t {
-        TIMESTAMP_DATE      = 0x01,     //!< the "YYYY-MM-DD " portion
-        TIMESTAMP_TIME      = 0x02,     //!< the "HH:MM:SS" portion
-        TIMESTAMP_MILLIS    = 0x04,     //!< fractional seconds to 3 places
-        TIMESTAMP_MICROS    = 0x08,     //!< fractional seconds to 6 places, matching msg_logger
-    };
-
-    /** What getCurrentTimestamp() renders when asked for nothing in particular. */
-    constexpr uint32_t TIMESTAMP_OPTS_DEFAULT = (TIMESTAMP_DATE | TIMESTAMP_TIME | TIMESTAMP_MILLIS);
 
     /**
      * @param opts an eTimestampOpts bitmask selecting which parts to render

@@ -378,6 +378,7 @@ class Log:
     def deviceInfo(self, n, dev, did):
         devInfo = self.data[dev, did][0]
         hver    = devInfo['hardwareVer']
+        hvar    = devInfo['hardwareVariant']
         cver    = devInfo['protocolVer']
         fver    = devInfo['firmwareVer']
         buld    = devInfo['buildNumber']
@@ -393,7 +394,7 @@ class Log:
         return (
             '%2d SN%d  H: %d.%d.%d.%d  F: %d.%d.%d.%d build %d repo %d  P: %d.%d.%d.%d  %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
                 n, devInfo['serialNumber'],
-                hver[0], hver[1], hver[2], hver[3],
+                hver[0], hver[1], hver[2], hvar,
                 fver[0], fver[1], fver[2], fver[3], buld, repo,
                 cver[0], cver[1], cver[2], cver[3],
                 year, month, day,

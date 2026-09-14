@@ -272,19 +272,16 @@ std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
     return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, uint16_t flags) {
     // Type-major-minor portion comes from the canonical packed-id renderer.
     // The dev_info_t carries two extra sub-rev bytes (hardwareVer[2..3]) that
     // the uint16 hdwId form can't represent — append them here when present.
     std::string out = utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
-    if (!showRev)
-        return out;
-
-    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+    if ((devInfo.hardwareVer[2] != 0) && (flags & DV_BIT_HARDWARE_REV))
         out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-        if (devInfo.hardwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
-    }
+    if ((devInfo.hardwareVariant != 0) && (flags & DV_BIT_HARDWARE_VARIANT))
+        out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
+
     return out;
 }
 
@@ -334,7 +331,8 @@ bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
     }
 
     devInfo.hardwareType = type;
-    for (int i = 0; i < 4; ++i) devInfo.hardwareVer[i] = ver[i];
+    for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = ver[i];
+    devInfo.hardwareVariant = ver[3];   // TODO: confirm that all "to-string" rendering of hardware version+variant is z.y.x.w
     return true;
 }
 
@@ -644,7 +642,7 @@ std::string utils::devInfoToString(const dev_info_t& devInfo, uint16_t flags) {
     if (flags & DV_BIT_SERIALNO)
         out += utils::string_format("SN%06d:", devInfo.serialNumber);
     if (flags & DV_BIT_HARDWARE_INFO)
-        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo);
+        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo, flags);
     if (flags & DV_BIT_FIRMWARE_VER)
         out += (out.empty() ? "" : " ") + utils::getFirmwareAsString(devInfo);
     if (flags & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME | DV_BIT_BUILD_KEY | DV_BIT_BUILD_COMMIT))
@@ -757,6 +755,8 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         // hardware version
                         for (auto& e : devInfo.hardwareVer) e = 0;
                         split_from_string<uint8_t, 4>(match[3].str(), devInfo.hardwareVer);
+                        if (devInfo.hardwareVer[2]) componentsParsed |= DV_BIT_HARDWARE_REV;
+                        if (devInfo.hardwareVariant) componentsParsed |= DV_BIT_HARDWARE_VARIANT;
                         componentsParsed |= DV_BIT_HARDWARE_INFO;
                         break;
                     case 5: // build key and build number
@@ -1010,7 +1010,7 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
     match |= (((info1.hardwareVer[0]    == info2.hardwareVer[0])    & 1) << 4);
     match |= (((info1.hardwareVer[1]    == info2.hardwareVer[1])    & 1) << 5);
     match |= (((info1.hardwareVer[2]    == info2.hardwareVer[2])    & 1) << 6);
-    match |= (((info1.hardwareVer[3]    == info2.hardwareVer[3])    & 1) << 7);
+    match |= (((info1.hardwareVariant   == info2.hardwareVariant)   & 1) << 7);
 
     match |= (((info1.firmwareVer[0]    == info2.firmwareVer[0])    & 1) << 8);
     match |= (((info1.firmwareVer[1]    == info2.firmwareVer[1])    & 1) << 9);

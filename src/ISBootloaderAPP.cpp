@@ -155,7 +155,8 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     {   // IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
-                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
+                        memcpy(m_app.uins_version, devInfo.hardwareVer, 3);
+                        m_app.uins_version[3] = devInfo.hardwareVariant;
                         m_sn = devInfo.serialNumber;
                         valid_signatures = devInfoToValidSignatures(&devInfo);
                         return (eImageSignature)valid_signatures;
@@ -271,13 +272,16 @@ uint32_t cISBootloaderAPP::get_device_info()
                 case DID_DEV_INFO:
                     dev_info_t* dev_info;
                     dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
-                    memcpy(m_app.uins_version, dev_info->hardwareVer, 4);
+                    memcpy(m_app.uins_version, dev_info->hardwareVer, 3);
+                    m_app.uins_version[3] = dev_info->hardwareVariant;
                     m_sn = dev_info->serialNumber;
                     break;
                 case DID_EVB_DEV_INFO:
                     dev_info_t* evb_dev_info;
                     evb_dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
-                    memcpy(evb_version, evb_dev_info->hardwareVer, 4);
+                    memcpy(evb_version, evb_dev_info->hardwareVer, 3);
+                    evb_version[3] = evb_dev_info->hardwareVariant;
+
                     break;
                 case DID_EVB_STATUS:
                     evb_status_t* evb_status;
@@ -295,7 +299,8 @@ uint32_t cISBootloaderAPP::get_device_info()
                     {   // IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
-                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
+                        memcpy(m_app.uins_version, devInfo.hardwareVer, 3);
+                        m_app.uins_version[3] = devInfo.hardwareVariant;
                         m_sn = devInfo.serialNumber;
                     }
                     break;

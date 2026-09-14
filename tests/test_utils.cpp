@@ -88,7 +88,7 @@ TEST(test_utils, FormatAndParse_devInfo) {
     EXPECT_EQ(devInfoStr, "SN505192: IMX-5.1 fw0.1.12.8 b123 2025-07-31 13:38:22");
 
     origStr = "SN98712178: GPX-1.0.4 fw2.18.5.3 b123c 2025-08-22 18:56:03";
-    EXPECT_EQ(dvBits = utils::devInfoFromString(origStr, devInfo), 63) << "Unable to parse '" << origStr << "'" << std::endl;
+    EXPECT_EQ(dvBits = utils::devInfoFromString(origStr, devInfo), 1087) << "Unable to parse '" << origStr << "'" << std::endl;
     devInfoStr = utils::devInfoToString(devInfo, dvBits);
     EXPECT_EQ(devInfoStr, "SN98712178: GPX-1.0.4 fw2.18.5-rc.3 b123 2025-08-22 18:56:03");
 
@@ -188,13 +188,13 @@ TEST(test_utils, getHardwareAsString_still_renders_subrev_when_present) {
     info.hardwareVer[0] = 5;
     info.hardwareVer[1] = 0;
     info.hardwareVer[2] = 1;
-    info.hardwareVer[3] = 0;
-    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/true), "IMX-5.0.1");
+    info.hardwareVariant = 0;
+    EXPECT_EQ(utils::getHardwareAsString(info, utils::DV_BIT_HARDWARE_REV), "IMX-5.0.1");
 
-    info.hardwareVer[3] = 7;
-    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/true), "IMX-5.0.1.7");
+    info.hardwareVariant = 7;
+    EXPECT_EQ(utils::getHardwareAsString(info, utils::DV_BIT_HARDWARE_REV|utils::DV_BIT_HARDWARE_VARIANT), "IMX-5.0.1 (v7)");
 
-    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/false), "IMX-5.0");
+    EXPECT_EQ(utils::getHardwareAsString(info), "IMX-5.0");
 }
 
 // ============================================================
