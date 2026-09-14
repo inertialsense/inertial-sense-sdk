@@ -2829,7 +2829,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
     "DID_GPX_SYS_FAULT",                // 128
-    "DID_GPX_TIMEPULSE",                // 129
+    "DID_GPX_TIME",                // 129
     "",                                 // 130
     ""                                  // 131
 };
@@ -2945,7 +2945,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
-    PopulateMapGpxTimepulse(        m_data_set, DID_GPX_TIMEPULSE);
+    PopulateMapGpxTimepulse(        m_data_set, DID_GPX_TIME);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
