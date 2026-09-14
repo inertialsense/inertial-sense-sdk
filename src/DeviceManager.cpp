@@ -20,6 +20,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
     bool result = false;
     options = (options != OPTIONS_USE_DEFAULTS) ? options : managementOptions;
     options = (options == OPTIONS_USE_DEFAULTS) ? DISCOVERY__DEFAULTS : options;
+    const uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
 
     // Per-factory validation slot for a single port
     struct FactorySlot {
@@ -66,9 +67,13 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
         if (alreadyHandled)
             continue;
 
-        // Open port if needed
+        // Open port if needed. portOpenRetry(), not a bare portOpen(): an asynchronous transport
+        // returns PORT_ERROR__NONE with the connect still in flight and PORT_FLAG__OPENED clear. A
+        // bare call here either (a) skips the port outright on a merely-transient error, or (b) for
+        // a port with an already-known device (below), hands existingDev->validate() a port that
+        // isn't actually connected yet, since validate() itself does not poll (SN-8571).
         if ((!portIsOpened(port) && (options & DISCOVERY__IGNORE_CLOSED_PORTS)) ||
-            (portOpen(port) != PORT_ERROR__NONE))
+            (portOpenRetry(port, effectiveTimeout / 4, 10) != PORT_ERROR__NONE))
             continue;
 
         // Only COMM ports can be validated via ISComm protocol
@@ -92,7 +97,6 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
         // asking: an asynchronous transport returns PORT_ERROR__NONE with the connect still in flight
         // and PORT_FLAG__OPENED clear, and validating a port that is not connected yet retires it for
         // the whole pass. A synchronous port opens on the first call and waits for nothing.
-        const uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
         if (!portIsOpened(port)) {
             if (portOpenRetry(port, effectiveTimeout / 4, 10) != PORT_ERROR__NONE)
                 continue;

@@ -271,7 +271,7 @@ private:
     /**
      * Starts workers for every requested target that is a URL rather than a local serial port.
      *
-     * The enumeration-driven loops can only ever see what cISSerialPort::GetComPorts() reports, so a
+     * The enumeration-driven loops can only ever see what SerialPortFactory::getComPorts() reports, so a
      * requested `tcp://host:port` target was in the target set but never in the enumerated list, and
      * therefore never got a worker at all -- the work set came back empty and the update reported
      * "No devices were updated". This resolves such targets through TcpPortFactory and adopts them.

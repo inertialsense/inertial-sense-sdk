@@ -32,8 +32,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /**
  * cISStream implementation that reads and writes a native serial/COM port using the
  * C serialPort/serialPortPlatform API declared in serialPort.h.
+ *
+ * @deprecated Use SerialPortFactory (PortFactory.h) + port_handle_t instead -- it provides the same
+ * enumeration (SerialPortFactory::getComPorts()) and live I/O (bindPort()/portOpen()/portRead()/
+ * portWrite()/portClose()/releasePort()) without a second, independently-maintained OS-enumeration
+ * implementation. See SN-8473.
  */
-class cISSerialPort : serial_port_t, public cISStream
+class [[deprecated("Use SerialPortFactory (PortFactory.h) + port_handle_t instead; see SN-8473.")]] cISSerialPort : serial_port_t, public cISStream
 {
 private:
     cISSerialPort(const cISSerialPort& copy) = delete; // disable copy constructor

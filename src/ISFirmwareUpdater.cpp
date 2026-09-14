@@ -500,7 +500,15 @@ bool ISFirmwareUpdater::fwUpdate_isDone() {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     bool cmdsPending = hasPendingCommands();
-    bool in_progress = ((session_id == 0) && (fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
+    // SN-8579: session_id != 0 means "a session is active" everywhere else in this class --
+    // fwUpdate_requestUpdate() assigns a fresh non-zero id when a session starts, and
+    // fwUpdate_handleDone() clears it to 0 when one ends. This used to check == 0, which is
+    // backwards, and was masked in the common case by cmdsPending staying true for nearly the
+    // whole duration of a single-target update; it only bit multi-target/back-to-back updates,
+    // where a stale non-zero session_id (never cleared, because the device never sent
+    // MSG_UPDATE_DONE) combined with a leftover mid-flight status could report "in progress" when
+    // it shouldn't, or vice versa once corrected.
+    bool in_progress = ((session_id != 0) && (fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
     bool is_done = !(cmdsPending || in_progress);
     return is_done;
 }

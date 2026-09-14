@@ -140,6 +140,27 @@ TEST(ISLog, IgnoresNonRawFiles) {
     teardown(f);
 }
 
+// D-119 / SN-8626/SN-8627: openDirectory's file-discovery scan was `.raw`-only until this test was
+// added -- a directory holding ONLY `.dat`+`.idx` segments (no `.raw` at all, e.g. a real
+// manufacturing/calibration capture) failed outright with "no .raw files", before any of the
+// per-segment `.dat` support landed by those stories ever got a chance to run. Caught against a
+// real capture, not a synthetic fixture (Logalyzer bug report, 2026-09-07): LogLoader::
+// loadDirectory routes through this exact function.
+TEST(ISLog, OpenDirectoryDiscoversDatFiles) {
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_log_datdir_%d_%ld",
+                  ::getpid(), static_cast<long>(::time(nullptr)));
+    ISFileManager::DeleteDirectory(dirBuf);
+    GenerateDataLogFiles(1, dirBuf, cISLogger::LOGTYPE_DAT, 1.0f);
+
+    auto log = ISLog::openDirectory(dirBuf);
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    EXPECT_EQ(log->deviceIds().size(), 1u);
+    EXPECT_GT(log->recordCount(), 0u);
+
+    ISFileManager::DeleteDirectory(dirBuf);
+}
+
 TEST(ISLog, SpanStartEndStraddleAllDevices) {
     auto f = buildMultiDeviceFixture("span", 1.0f);
     ASSERT_FALSE(f.messages.empty());
