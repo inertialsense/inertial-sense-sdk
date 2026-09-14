@@ -1195,13 +1195,63 @@ class logPlot:
     def gnssPosNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(4,1, sharex=True)
-        self.configureSubplot(ax[0], 'GNSS North', 'm')
-        self.configureSubplot(ax[1], 'GNSS East', 'm')
-        self.configureSubplot(ax[2], 'GNSS Down', 'm')
-        self.configureSubplot(ax[3], 'GNSS NED Magnitude', 'm')
+        ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
+        self.configureSubplot(ax[0,0], 'GNSS North', 'm')
+        self.configureSubplot(ax[1,0], 'GNSS East', 'm')
+        self.configureSubplot(ax[2,0], 'GNSS Down', 'm')
+        self.configureSubplot(ax[3,0], 'GNSS NED Magnitude', 'm')
         fig.suptitle('GNSS NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
+        refTime = None
+        refNed = None
+        sumDelta = None
+        sumCount = 1
+
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'North Residual (GNSS - Mean)', 'm')
+            self.configureSubplot(ax[1,1], 'East Residual (GNSS - Mean)',  'm')
+            self.configureSubplot(ax[2,1], 'Down Residual (GNSS - Mean)',  'm')
+            self.configureSubplot(ax[3,1], 'Distance Residual (GNSS - Mean)',  'm')
+            # Use 'Ref INS' if available
+            for d in self.active_devs:
+               if self.log.serials[d] == 'Ref INS':
+                    refLlaIns = self.getData(d, DID_INS_2, 'lla', True)
+                    if len(refLlaIns):
+                        refLla = refLlaIns[0]
+                        refTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
+                        refNed = lla2ned(refLla, refLlaIns)
+                    continue
+            # 'Ref INS' is not available. Compute reference from average GNSS.
+            if refTime is None:
+                for d in self.active_devs:
+                    lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
+                    lla2 = self.getData(d, DID_GNSS2_POS, 'lla')
+                    if len(lla1):
+                        ind = lla1[:,0] != 0
+                        lla1 = lla1[ind,:]
+                        refLla = lla1[-1]
+                    elif len(lla2):
+                        ind = lla2[:,0] != 0
+                        lla2 = lla2[ind,:]
+                        refLla = lla2[-1]
+
+                for d in self.active_devs:
+                    [gnss1Time, gnss1Ned] = self.getGnssPosNED(d, DID_GNSS1_POS, refLla)
+                    if refTime is None:
+                        if len(gnss1Time):
+                            refTime = gnss1Time
+                            refNed = np.copy(gnss1Ned)
+                            sumDelta = np.zeros_like(gnss1Ned)
+                    else:
+                        intNed = np.empty_like(refNed)
+                        for i in range(3):
+                            intNed[:,i] = np.interp(refTime, gnss1Time, gnss1Ned[:,i])
+                        delta = intNed - refNed
+                        sumDelta += delta
+                        sumCount += 1
+                if refNed is not None:
+                    refNed += sumDelta / sumCount
+
         for d in self.active_devs:
             if refLla is None:
                 lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
@@ -1213,22 +1263,38 @@ class logPlot:
 
             [gnssTime, gnssNed] = self.getGnssPosNED(d, DID_GNSS1_POS, refLla)
             gnssNedNorm = np.linalg.norm(gnssNed, axis=1)
-            ax[0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
-            ax[1].plot(gnssTime, gnssNed[:, 1])
-            ax[2].plot(gnssTime, gnssNed[:, 2])
-            ax[3].plot(gnssTime, gnssNedNorm)
+            ax[0,0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
+            ax[1,0].plot(gnssTime, gnssNed[:, 1])
+            ax[2,0].plot(gnssTime, gnssNed[:, 2])
+            ax[3,0].plot(gnssTime, gnssNedNorm)
 
             if (np.shape(self.active_devs)[0]==1) or self.showGnss2:
                 [gnss2Time, gnss2Ned] = self.getGnssPosNED(d, DID_GNSS2_POS, refLla)
                 gnss2NedNorm = np.linalg.norm(gnss2Ned, axis=1)
-                ax[0].plot(gnss2Time, gnss2Ned[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
-                ax[1].plot(gnss2Time, gnss2Ned[:, 1])
-                ax[2].plot(gnss2Time, gnss2Ned[:, 2])
-                ax[3].plot(gnss2Time, gnss2NedNorm)
+                ax[0,0].plot(gnss2Time, gnss2Ned[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
+                ax[1,0].plot(gnss2Time, gnss2Ned[:, 1])
+                ax[2,0].plot(gnss2Time, gnss2Ned[:, 2])
+                ax[3,0].plot(gnss2Time, gnss2NedNorm)
 
-        self.legends_add(ax[0].legend(ncol=2))
+            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+                intNed = np.empty_like(refNed)
+                for i in range(3):
+                    intNed[:,i] = np.interp(refTime, gnssTime, gnssNed[:,i], right=np.nan, left=np.nan)
+                resNed = intNed - refNed
+                resDist = np.linalg.norm(resNed, axis=1)
+                ax[0,1].plot(refTime, resNed[:,0], label=self.log.serials[d])
+                ax[1,1].plot(refTime, resNed[:,1])
+                ax[2,1].plot(refTime, resNed[:,2])
+                ax[3,1].plot(refTime, resDist)
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        if self.residual:
+            self.legends_add(ax[0,1].legend(ncol=2))
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'gnssPosNED')
