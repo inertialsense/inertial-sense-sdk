@@ -691,6 +691,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
     std::string local_str = str;    // make a copy that we can destroy
     bool making_progress = true;      // we'll keep trying, as long as we keep making progress..
     devInfo = {};                   // reinitialize dev_info_t
+    uint8_t parsedHardwareVer[4] = {};
 
     while (!local_str.empty() && making_progress) {
         making_progress = false;
@@ -740,23 +741,24 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         componentsParsed |= DV_BIT_BUILD_TIME;
                         break;
                     case 4: // parse HDW type & version
-                        // hardware type
-                        for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
-                            if (match[2].str() == g_isHardwareTypeNames[ii]) {
-                                devInfo.hardwareType = ii;
-                                break;
+                        {
+                            // hardware type
+                            for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
+                                if (match[2].str() == g_isHardwareTypeNames[ii]) {
+                                    devInfo.hardwareType = ii;
+                                    break;
+                                }
+                                if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
+                                    devInfo.hdwRunState = 1;    // Bootloader firmware?
+                                } else {
+                                    devInfo.hdwRunState = 2;    // APP firmware??
+                                }
                             }
-                            if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
-                                devInfo.hdwRunState = 1;    // Bootloader firmware?
-                            } else {
-                                devInfo.hdwRunState = 2;    // APP firmware??
-                            }
+                            // hardware version
+                            split_from_string<uint8_t, 4>(match[3].str(), parsedHardwareVer);
+                            for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = parsedHardwareVer[i];
+                            devInfo.hardwareVariant = parsedHardwareVer[3];
                         }
-                        // hardware version
-                        uint8_t parsedHardwareVer[4] = {};
-                        split_from_string<uint8_t, 4>(match[3].str(), parsedHardwareVer);
-                        for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = parsedHardwareVer[i];
-                        devInfo.hardwareVariant = parsedHardwareVer[3];
                         if (devInfo.hardwareVer[2]) componentsParsed |= DV_BIT_HARDWARE_REV;
                         if (devInfo.hardwareVariant) componentsParsed |= DV_BIT_HARDWARE_VARIANT;
                         componentsParsed |= DV_BIT_HARDWARE_INFO;
