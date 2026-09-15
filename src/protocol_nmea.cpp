@@ -799,7 +799,7 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
         ",%d"                   // 14
 
         , (int)info.serialNumber                                                                // 1
-        , info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3]    // 2
+        , info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVariant   // 2
         , info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3]    // 3
         , (int)info.buildNumber                                                                 // 4
         , info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3]    // 5
@@ -2758,7 +2758,7 @@ int nmea_gsv(char a[], const int aSize, gnss_sat_t &gsat, gnss_sig_t &gsig)
  *
  * @note parsed message fields (see nmea_dev_info() for full field list):
  *  1   Serial number -> info.serialNumber
- *  2   Hardware version -> info.hardwareVer[4]
+ *  2   Hardware version -> info.hardwareVer[3] + info.hardwareVariant
  *  3   Firmware version -> info.firmwareVer[4]
  *  4   Build number -> info.buildNumber
  *  5   Protocol version -> info.protocolVer[4]

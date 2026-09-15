@@ -672,7 +672,7 @@ static int generate_ISBPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int b
     dev.hardwareVer[0] = 1;
     dev.hardwareVer[1] = 0;
     dev.hardwareVer[2] = 0;
-    dev.hardwareVer[3] = 0;
+    dev.hardwareVariant = 0;
     dev.firmwareVer[1] = 2;
     dev.firmwareVer[2] = 4;
     dev.firmwareVer[3] = 2;
@@ -708,7 +708,7 @@ static int generate_NMEAPkt_DevInfo(is_comm_instance_t* comm, uint8_t* buf, int 
     dev.hardwareVer[0] = 1;
     dev.hardwareVer[1] = 0;
     dev.hardwareVer[2] = 0;
-    dev.hardwareVer[3] = 0;
+    dev.hardwareVariant = 0;
     dev.firmwareVer[1] = 2;
     dev.firmwareVer[2] = 4;
     dev.firmwareVer[3] = 2;
