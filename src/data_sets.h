@@ -5411,7 +5411,7 @@ typedef union PACKED
     debug_array_t                   imxDebugArray;  //!< DID_DEBUG_ARRAY / DID_EVB_DEBUG_ARRAY
     debug_array_t                   gpxDebugArray;  //!< DID_GPX_DEBUG_ARRAY
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
-    is_time_t                       gpxTimepulse;   //!< DID_TIME
+    is_time_t                       ISBTimepulse;   //!< DID_TIME
     did_event_t                     event;          //!< DID_EVENT
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT

@@ -1063,7 +1063,7 @@ static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 }
 
-static void PopulateMapGpxTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapISBTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<is_time_t> mapper(data_set, did);
     mapper.AddMember("week", &is_time_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
@@ -2945,7 +2945,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
-    PopulateMapGpxTimepulse(        m_data_set, DID_TIME);
+    PopulateMapISBTimepulse(        m_data_set, DID_TIME);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
