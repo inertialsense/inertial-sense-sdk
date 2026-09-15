@@ -1,10 +1,12 @@
 import math, allantools, sys, yaml, os
+import multiprocessing
+import contextlib
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
-from datetime import date, datetime
+from datetime import datetime
 import pandas as pd
 from scipy.signal import detrend, welch, butter, filtfilt, savgol_filter
 
@@ -37,22 +39,144 @@ DEG2RAD = 3.14159 / 180.0
 RTHR2RTS = 60       # sqrt(hr) to sqrt(sec)
 MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
+try:
+    # 'fork' (Linux/Mac): a worker process inherits the parent's already-loaded memory -- including
+    # a fully-loaded Log -- via copy-on-write at the moment it's forked, so _allanDeviationWorker()
+    # below can read self.log directly with no serialization cost. Not available on Windows.
+    _ALLAN_FORK_CTX = multiprocessing.get_context('fork')
+except ValueError:
+    _ALLAN_FORK_CTX = None
+
+# Whether _computeAllanDeviationParallel() below may actually fork a worker Pool. False by default:
+# fork() duplicates the entire calling process, including every thread's state at that instant --
+# any lock held by a thread other than the one calling fork() is copied into the child already
+# locked, with no thread left alive in the child to ever release it. This module is also used
+# directly by the interactive PyQt6/QtAgg GUI (LogInspector) -- see allanDeviationPqr()/
+# allanDeviationAcc() below, wired up as clickable plot items in logInspectorInternal.py -- which is
+# multi-threaded and holds its own Qt/GUI locks. Forking that live process is not a safe process
+# boundary and can hang or crash the GUI (or the forked worker) even though the worker itself only
+# reads log.data. Only a caller that knows it is running headless, with no GUI event loop, should
+# set this True -- see calc_allan_deviation.py, which does so immediately after importing this
+# module (before any forking of its own happens, so child processes it forks inherit the setting
+# via the same copy-on-write mechanism _allan_worker_self below relies on).
+ALLOW_FORK_POOL = False
+
+_allan_worker_self = None  # set just before forking a pool; see _computeAllanDeviationParallel()
+
+def _allanDeviationWorker(job):
+    """Loads and computes every Allan-deviation curve for ONE device, entirely inside a forked
+    worker process. allanDeviationPqr()/allanDeviationAcc() call loadGyros()/loadAccels() (the
+    expensive part -- decoding the device's raw samples out of the log) once per device, then run
+    oadev() once per axis/IMU-slot; both are independent across devices, so a whole device's worth
+    of that work runs here in one process. Only the small resulting curves are shipped back through
+    the pool -- the (potentially huge) per-device sample arrays never cross a process boundary,
+    since this worker reads them out of the log itself instead of being handed them as arguments.
+
+    job: (d, did, kind, rw_tau) -- kind is 'gyro' or 'accel', selecting loadGyros() vs loadAccels().
+    Returns: (d, included, [(i, n, t2, ad, bi, rw), ...]) -- included is whether this device
+    contributed any data (mirrors the original included_devs_pqr/included_devs_acc gating).
+    """
+    d, did, kind, rw_tau = job
+    self = _allan_worker_self
+    if kind == 'gyro':
+        (name, time, dt, sensors) = self.loadGyros(d, did=did)
+    else:
+        (name, time, dt, sensors) = self.loadAccels(d, did=did)
+    if not len(sensors):
+        return d, False, []
+
+    dtMean = np.mean(dt)
+    sumDt = np.sum(dt)
+    rate = 1/(dtMean/self.d)
+    t_bi_max = 1000
+
+    included = False
+    out = []
+    for i in range(3):
+        for n, s in enumerate(sensors):
+            if np.all(s) != None and n < len(sensors):
+                if kind == 'accel' and not s.any(None):
+                    continue
+                included = True
+                t = np.logspace(np.log10(dtMean), np.log10(0.1 * sumDt), 200)
+                (t2, ad, ade, adn) = allantools.oadev(s[:,i], rate=rate, data_type="freq", taus=t)
+                idx_max = (np.abs(t2 - t_bi_max)).argmin()
+                bi = np.amin(ad[:idx_max + 1]) / 0.664
+                rw_idx = (np.abs(t2 - rw_tau)).argmin()
+                rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+                out.append((i, n, t2, ad, bi, rw))
+    return d, included, out
+
+def _computeAllanDeviationParallel(self, active_devs, did, kind, rw_tau):
+    """Runs _allanDeviationWorker() for every device in active_devs, one device per forked worker
+    process when forking is available, ALLOW_FORK_POOL has been opted into by a known-headless
+    caller (see its definition above), and there's more than one device to justify the pool
+    overhead; falls back to running in-process (identical results, just serial) otherwise -- e.g.
+    on Windows, when called from the GUI, or when there's only one device."""
+    global _allan_worker_self
+    jobs = [(d, did, kind, rw_tau) for d in active_devs]
+    _allan_worker_self = self
+    try:
+        if _ALLAN_FORK_CTX is None or not ALLOW_FORK_POOL or len(jobs) < 2:
+            return [_allanDeviationWorker(job) for job in jobs]
+        with _ALLAN_FORK_CTX.Pool(processes=min(len(jobs), multiprocessing.cpu_count())) as pool:
+            return pool.map(_allanDeviationWorker, jobs)
+    finally:
+        _allan_worker_self = None
+
+@contextlib.contextmanager
+def _fileLock(path):
+    """Advisory, cross-process file lock (best-effort) so concurrent writers to the same file --
+    e.g. calc_allan_deviation.py running its independent Allan-deviation passes as separate
+    processes, each merging into allan_deviation.yaml -- serialize their read-merge-write instead
+    of racing and silently losing one another's update. Locks `path` itself (opened 'a' so it's
+    created if missing, without truncating it if it isn't) rather than a separate sibling lock
+    file, so no extra file is left behind; the lock is held only for as long as this fd stays
+    open; other opens of the same path made meanwhile (by this same process, to actually read/
+    write the content) are unaffected by it. Uses fcntl.flock() on POSIX (Linux/Mac) and
+    msvcrt.locking() on Windows -- a real lock on every platform, not just where this process
+    itself happens to use fork(): independent OS processes (two separate invocations of
+    calc_allan_deviation.py, or the GUI running alongside it) can race on any platform regardless
+    of that.
+    """
+    with open(path, 'a') as lock_f:
+        if sys.platform == 'win32':
+            import msvcrt
+            fd = lock_f.fileno()
+            while True:
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+                    break
+                except OSError:
+                    continue  # msvcrt.locking() gives up after ~10s; keep retrying to block indefinitely
+            try:
+                yield
+            finally:
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_f, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_f, fcntl.LOCK_UN)
+
 # IMU part number per slot (0-4), by hardware variant (DID_DEV_INFO.hardwareVer[3]). A single
 # string applies to all slots; a list gives one part per slot 0-4. Duplicated from
 # IMU_TYPE_BY_HDW_VARIANT in python/src/imuCalibration/temperature_calibration.py (logInspector is
 # a separately-distributed SDK tool, so it doesn't import from that tree) -- keep the two in sync.
 IMU_TYPE_BY_HDW_VARIANT = {
-    0:  'LSM6SV16BX',
+    0:  'LSM6DSV16BX',
     1:  'ISM6HG256X',
     2:  'ISM330DHCX',
     3:  ['ISM6HG256X', 'ISM330DHCX', 'ISM6HG256X', 'ISM330DHCX', 'ISM6HG256X'],
     4:  ['ISM6HG256X', 'ICM-56686',  'ISM6HG256X', 'ICM-56686',  'ISM6HG256X'],
     5:  'ICM-56686',
     6:  ['ISM330DHCX', 'ICM-56686',  'ISM330DHCX', 'ICM-56686',  'ISM330DHCX'],
-    7:  'LSM6DSV',
-    8:  ['ISM6HG256X', 'LSM6DSV16BX','LSM6DSV16BX','ISM6HG256X', 'LSM6DSV16BX'],
+    7:  'LSM6DSVTR',
+    8:  ['ISM6HG256X', 'LSM6DSVTR','LSM6DSVTR','ISM6HG256X', 'LSM6DSVTR'],
     9:  ['ISM6HG256X', 'ICM-56686',  'ICM-56686',  'ISM6HG256X', 'ICM-56686'],
-    10: ['ISM330DHCX', 'LSM6DSV16BX','LSM6DSV16BX','ISM330DHCX', 'LSM6DSV16BX'],
+    10: ['ISM330DHCX', 'LSM6DSVTR','LSM6DSVTR','ISM330DHCX', 'LSM6DSVTR'],
     11: ['ISM6HG256X', 'ISM330DHCX', 'ISM330DHCX', 'ISM6HG256X', 'ISM330DHCX'],
     12: ['ICM-56686',  'ISM330DHCX', 'ISM330DHCX', 'ICM-56686',  'ISM330DHCX'],
     13: 'ISM6HGK256X',
@@ -504,7 +628,7 @@ class logPlot:
         return np.mean(values)
 
     def saveAllanDeviationYaml(self, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units):
-        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, RW
+        """Merge the per-device, per-axis bias instability (BI) and random walk (ARW for gyro, VRW
         for accel) values shown in each allanDeviationPqr()/allanDeviationAcc() subplot title into
         allan_deviation.yaml, adjacent to the log files. Keyed by device serial number at the top
         level, with 'gyroscope'/'accelerometer' as siblings underneath, so a gyro pass and an accel
@@ -520,10 +644,10 @@ class logPlot:
         genuinely different data sources, not a value and its derived average, so each call writes
         only its own metric key.
 
-        Per sensor: 'units': {'bi': ..., 'arw' or 'rw': ...}, plus whichever of
+        Per sensor: 'units': {'bi': ..., 'arw' or 'vrw': ...}, plus whichever of
         'combined'/'individual' this call populates:
-          - 'combined': bi/arw (or rw) are each a 3-element list, one value per axis.
-          - 'individual': bi/arw (or rw) are each a list of 3 axis entries, each itself a list of
+          - 'combined': bi/arw (or vrw) are each a 3-element list, one value per axis.
+          - 'individual': bi/arw (or vrw) are each a list of 3 axis entries, each itself a list of
             one value per IMU slot -- i.e. individual['bi'][axis_idx][slot].
 
         sum_bi/sum_rw are indexed [axis_idx][slot] -> list of one value per device, in
@@ -532,6 +656,12 @@ class logPlot:
         being a single stream) are averaged together defensively.
         """
         yaml_fname = os.path.join(self.directory, 'allan_deviation.yaml')
+        with _fileLock(yaml_fname):
+            self._mergeAllanDeviationYaml(yaml_fname, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units)
+
+    def _mergeAllanDeviationYaml(self, yaml_fname, sensor, metric, included_devs, n_slots, axis_labels, sum_bi, bi_units, sum_rw, rw_field, rw_units):
+        """The actual read-merge-write for saveAllanDeviationYaml(), run while its file lock is
+        held."""
         data = {}
         if os.path.exists(yaml_fname):
             with open(yaml_fname, 'r') as f:
@@ -592,8 +722,75 @@ class logPlot:
                 sensor_node['units'] = {'bi': bi_units, rw_field: rw_units}
                 sensor_node[metric] = {'bi': metric_bi, rw_field: metric_rw}
 
+        self._updateHardwareVariantAverages(data)
+
         with open(yaml_fname, 'w') as f:
             yaml.dump(data, f, sort_keys=False, default_flow_style=False)
+
+    def _updateHardwareVariantAverages(self, data):
+        """Recompute data['hardware_variant_summary'] from every per-serial device entry currently
+        in the allan_deviation.yaml data (not just the devices this particular
+        saveAllanDeviationYaml() call just touched), grouped by hdw_variant. Devices of the same
+        hardware variant carry the same physical IMU part(s) (see IMU_TYPE_BY_HDW_VARIANT), so
+        averaging within a variant is meaningful; devices of different variants are never mixed.
+
+        For each variant, sensor ('gyroscope'/'accelerometer'), and axis:
+          - 'combined': mean of each device's own 'combined' BI/ARW(or VRW) value -- one sample per
+            device (its already sensor-fused reading).
+          - 'individual': mean across every (device, IMU slot) 'individual' BI/ARW(or VRW) value --
+            one sample per physical gyroscope/accelerometer of that variant.
+        Accelerometer's random-walk figure is 'vrw' (velocity random walk) throughout, at both the
+        per-device and this per-variant level; gyroscope's is 'arw' throughout. Accelerometer also
+        falls back to the legacy 'rw' key (saveAllanDeviationYaml()'s field name before it was
+        renamed to 'vrw') when reading a device entry that predates the rename and hasn't been
+        rewritten since, so recomputing this summary doesn't silently drop those devices' figures.
+        """
+        summary = {}
+        for serial_key, device in data.items():
+            if serial_key == 'hardware_variant_summary' or not isinstance(device, dict):
+                continue
+            variant = device.get('hdw_variant')
+            if variant is None:
+                continue
+            variant_node = summary.setdefault(str(variant), {})
+
+            for sensor, rw_field_candidates, dst_rw_field in (('gyroscope', ('arw',), 'arw'), ('accelerometer', ('vrw', 'rw'), 'vrw')):
+                sensor_data = device.get(sensor)
+                if not sensor_data:
+                    continue
+                sensor_summary = variant_node.setdefault(sensor, {
+                    'combined':   {'bi': [[], [], []], dst_rw_field: [[], [], []]},
+                    'individual': {'bi': [[], [], []], dst_rw_field: [[], [], []]},
+                })
+
+                combined = sensor_data.get('combined')
+                if combined:
+                    src_rw_field = next((f for f in rw_field_candidates if f in combined), rw_field_candidates[0])
+                    for axis_idx in range(3):
+                        if axis_idx < len(combined.get('bi', [])) and combined['bi'][axis_idx] is not None:
+                            sensor_summary['combined']['bi'][axis_idx].append(combined['bi'][axis_idx])
+                        rw_axis = combined.get(src_rw_field, [])
+                        if axis_idx < len(rw_axis) and rw_axis[axis_idx] is not None:
+                            sensor_summary['combined'][dst_rw_field][axis_idx].append(rw_axis[axis_idx])
+
+                individual = sensor_data.get('individual')
+                if individual:
+                    src_rw_field = next((f for f in rw_field_candidates if f in individual), rw_field_candidates[0])
+                    for axis_idx in range(3):
+                        if axis_idx < len(individual.get('bi', [])):
+                            sensor_summary['individual']['bi'][axis_idx].extend(individual['bi'][axis_idx])
+                        if axis_idx < len(individual.get(src_rw_field, [])):
+                            sensor_summary['individual'][dst_rw_field][axis_idx].extend(individual[src_rw_field][axis_idx])
+
+        # Collapse the collected per-axis sample lists into means (None where a variant/sensor/axis
+        # has no samples at all, rather than crashing or reporting a misleading 0).
+        for variant_node in summary.values():
+            for sensor_summary in variant_node.values():
+                for metric_data in sensor_summary.values():
+                    for field, per_axis in metric_data.items():
+                        metric_data[field] = [float(np.mean(v)) if v else None for v in per_axis]
+
+        data['hardware_variant_summary'] = summary
 
     def saveFigJoinAxes(self, ax, axs, fig, name, sizeInches=[]):
         self.saveFig(fig, name, sizeInches)
@@ -998,13 +1195,63 @@ class logPlot:
     def gnssPosNED(self, fig=None, axs=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(4,1, sharex=True)
-        self.configureSubplot(ax[0], 'GNSS North', 'm')
-        self.configureSubplot(ax[1], 'GNSS East', 'm')
-        self.configureSubplot(ax[2], 'GNSS Down', 'm')
-        self.configureSubplot(ax[3], 'GNSS NED Magnitude', 'm')
+        ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
+        self.configureSubplot(ax[0,0], 'GNSS North', 'm')
+        self.configureSubplot(ax[1,0], 'GNSS East', 'm')
+        self.configureSubplot(ax[2,0], 'GNSS Down', 'm')
+        self.configureSubplot(ax[3,0], 'GNSS NED Magnitude', 'm')
         fig.suptitle('GNSS NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
+        refTime = None
+        refNed = None
+        sumDelta = None
+        sumCount = 1
+
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'North Residual (GNSS - Mean)', 'm')
+            self.configureSubplot(ax[1,1], 'East Residual (GNSS - Mean)',  'm')
+            self.configureSubplot(ax[2,1], 'Down Residual (GNSS - Mean)',  'm')
+            self.configureSubplot(ax[3,1], 'Distance Residual (GNSS - Mean)',  'm')
+            # Use 'Ref INS' if available
+            for d in self.active_devs:
+               if self.log.serials[d] == 'Ref INS':
+                    refLlaIns = self.getData(d, DID_INS_2, 'lla', True)
+                    if len(refLlaIns):
+                        refLla = refLlaIns[0]
+                        refTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
+                        refNed = lla2ned(refLla, refLlaIns)
+                    continue
+            # 'Ref INS' is not available. Compute reference from average GNSS.
+            if refTime is None:
+                for d in self.active_devs:
+                    lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
+                    lla2 = self.getData(d, DID_GNSS2_POS, 'lla')
+                    if len(lla1):
+                        ind = lla1[:,0] != 0
+                        lla1 = lla1[ind,:]
+                        refLla = lla1[-1]
+                    elif len(lla2):
+                        ind = lla2[:,0] != 0
+                        lla2 = lla2[ind,:]
+                        refLla = lla2[-1]
+
+                for d in self.active_devs:
+                    [gnss1Time, gnss1Ned] = self.getGnssPosNED(d, DID_GNSS1_POS, refLla)
+                    if refTime is None:
+                        if len(gnss1Time):
+                            refTime = gnss1Time
+                            refNed = np.copy(gnss1Ned)
+                            sumDelta = np.zeros_like(gnss1Ned)
+                    else:
+                        intNed = np.empty_like(refNed)
+                        for i in range(3):
+                            intNed[:,i] = np.interp(refTime, gnss1Time, gnss1Ned[:,i])
+                        delta = intNed - refNed
+                        sumDelta += delta
+                        sumCount += 1
+                if refNed is not None:
+                    refNed += sumDelta / sumCount
+
         for d in self.active_devs:
             if refLla is None:
                 lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
@@ -1016,22 +1263,38 @@ class logPlot:
 
             [gnssTime, gnssNed] = self.getGnssPosNED(d, DID_GNSS1_POS, refLla)
             gnssNedNorm = np.linalg.norm(gnssNed, axis=1)
-            ax[0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
-            ax[1].plot(gnssTime, gnssNed[:, 1])
-            ax[2].plot(gnssTime, gnssNed[:, 2])
-            ax[3].plot(gnssTime, gnssNedNorm)
+            ax[0,0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
+            ax[1,0].plot(gnssTime, gnssNed[:, 1])
+            ax[2,0].plot(gnssTime, gnssNed[:, 2])
+            ax[3,0].plot(gnssTime, gnssNedNorm)
 
             if (np.shape(self.active_devs)[0]==1) or self.showGnss2:
                 [gnss2Time, gnss2Ned] = self.getGnssPosNED(d, DID_GNSS2_POS, refLla)
                 gnss2NedNorm = np.linalg.norm(gnss2Ned, axis=1)
-                ax[0].plot(gnss2Time, gnss2Ned[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
-                ax[1].plot(gnss2Time, gnss2Ned[:, 1])
-                ax[2].plot(gnss2Time, gnss2Ned[:, 2])
-                ax[3].plot(gnss2Time, gnss2NedNorm)
+                ax[0,0].plot(gnss2Time, gnss2Ned[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
+                ax[1,0].plot(gnss2Time, gnss2Ned[:, 1])
+                ax[2,0].plot(gnss2Time, gnss2Ned[:, 2])
+                ax[3,0].plot(gnss2Time, gnss2NedNorm)
 
-        self.legends_add(ax[0].legend(ncol=2))
+            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+                intNed = np.empty_like(refNed)
+                for i in range(3):
+                    intNed[:,i] = np.interp(refTime, gnssTime, gnssNed[:,i], right=np.nan, left=np.nan)
+                resNed = intNed - refNed
+                resDist = np.linalg.norm(resNed, axis=1)
+                ax[0,1].plot(refTime, resNed[:,0], label=self.log.serials[d])
+                ax[1,1].plot(refTime, resNed[:,1])
+                ax[2,1].plot(refTime, resNed[:,2])
+                ax[3,1].plot(refTime, resDist)
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        if self.residual:
+            self.legends_add(ax[0,1].legend(ncol=2))
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'gnssPosNED')
@@ -1277,6 +1540,8 @@ class logPlot:
     def angle_unwrap(self, angle):
         unwrap = 0.0
         result = np.empty_like(angle)
+        if np.shape(angle)[0] == 0:
+            return result
         anglePrev = angle[0]
         for i in range(np.shape(angle)[0]):
             result[i] = angle[i] + unwrap
@@ -1428,7 +1693,8 @@ class logPlot:
                         delta = self.vec3_wrap(intEuler - refEuler)
                         sumDelta += delta
                         sumCount += 1
-                refEuler += sumDelta / sumCount
+                if sumDelta is not None:
+                    refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
@@ -1508,8 +1774,10 @@ class logPlot:
         self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
 
         refRtkTime = None
+        refRtkHdg = None
         refInsTime = None
-        
+        refEuler = None
+
         if self.residual:
             self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
             self.configureSubplot(ax[1,1], 'Heading Residual: RTK - Mean', 'deg')
@@ -1523,6 +1791,8 @@ class logPlot:
                 for d in self.active_devs:
                     gnssTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_RTK_CMP_REL, 'timeOfWeekMs'))
                     gnssHdg = self.getData(d, DID_GNSS2_RTK_CMP_REL, 'baseToRoverHeading')
+                    if len(gnssTime) == 0 or len(gnssHdg) == 0:
+                        continue    # No RTK compassing data for this device
                     if refRtkTime is None:
                         refRtkTime = gnssTime
                         refRtkHdg = np.copy(gnssHdg)
@@ -1533,7 +1803,8 @@ class logPlot:
                         delta = self.angle_wrap(intRtkHdg - refRtkHdg)
                         sumDelta += delta
                         sumCount += 1
-                refRtkHdg += sumDelta / sumCount
+                if sumDelta is not None:
+                    refRtkHdg += sumDelta / sumCount
 
             # Reference INS does not exist.  Compute reference from average INS.
             if refInsTime is None:
@@ -1542,7 +1813,7 @@ class logPlot:
                 for d in self.active_devs:
                     time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
                     qn2b = self.getData(d, DID_INS_2, 'qn2b')
-                    if len(qn2b) == 0:
+                    if len(time) == 0 or len(qn2b) == 0:
                         continue
                     # Adjust data for attitude bias
                     quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], qn2b)
@@ -1559,7 +1830,8 @@ class logPlot:
                         delta = self.vec3_wrap(intEuler - refEuler)
                         sumDelta += delta
                         sumCount += 1
-                refEuler += sumDelta / sumCount
+                if sumDelta is not None:
+                    refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
             magTime = getTimeFromGpsTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'), True)
@@ -1585,7 +1857,7 @@ class logPlot:
                     intMagHdg = np.interp(insTime, magTime, unwrapMagHdg, right=np.nan, left=np.nan)
                     resMagHdg = self.angle_wrap(intMagHdg - insHdg)
                     ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
-                if gnssTime.any():
+                if gnssTime.any() and refRtkHdg is not None:
                     unwrapGnssHdg = self.angle_unwrap(gnssHdg)
                     intInsHdg = np.interp(refRtkTime, gnssTime, unwrapGnssHdg, right=np.nan, left=np.nan)
                     resInsHdg = self.angle_wrap(intInsHdg - refRtkHdg)
@@ -3396,7 +3668,9 @@ class logPlot:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
-        # Preserve the initial sensors list for later use in subplot configuration and CSV writing
+        # Preserve the initial sensors list for later use in subplot configuration. (This used to
+        # also feed a per-log CSV export; that was replaced by the richer, cross-device
+        # allan_deviation.yaml written by saveAllanDeviationYaml() below -- see its docstring.)
         initial_sensors = sensors
 
         sumARW = []
@@ -3410,32 +3684,17 @@ class logPlot:
                 sumARW[i].append([])
                 sumBI[i].append([])
 
+        # Each device's load-and-compute is independent of every other device's -- run them in
+        # parallel, one device per forked worker process.
         included_devs_pqr = []
-        for d in self.active_devs:
-            (name, time, dt, sensors) = self.loadGyros(d, did=did)
-
-            if len(sensors):
+        for d, included, curves in _computeAllanDeviationParallel(self, self.active_devs, did, 'gyro', 1.0):
+            if included:
                 included_devs_pqr.append(d)
-                dtMean = np.mean(dt)
-                for i in range(3):
-                    for n, pqr in enumerate(sensors):
-                        if np.all(pqr) != None and n<len(sensors):
-                            # Averaging window tau values from dt to dt*Nsamples/10
-                            t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
+            for i, n, t2, ad, bi, rw in curves:
+                ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * RAD2DEG * 3600, rw * RAD2DEG * 3600/RTHR2RTS))
 
-                            # Compute the overlapping ADEV
-                            (t2, ad, ade, adn) = allantools.oadev(pqr[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
-                            # Compute random walk and bias instability
-                            t_bi_max = 1000
-                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            bi = np.amin(ad[:idx_max + 1]) / 0.664
-                            rw_idx = (np.abs(t2 - 1.0)).argmin()
-                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
-                            
-                            ax[i, n].loglog(t2, ad * RAD2DEG * 3600, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * RAD2DEG * 3600, rw * RAD2DEG * 3600/RTHR2RTS))
-
-                            sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
-                            sumBI[i][n].append(bi * RAD2DEG * 3600)
+                sumARW[i][n].append(rw * RAD2DEG * 3600/RTHR2RTS)
+                sumBI[i][n].append(bi * RAD2DEG * 3600)
 
         totalARW = []
         totalBI = []
@@ -3478,7 +3737,9 @@ class logPlot:
             return
         ax = fig.subplots(3, len(sensors), sharex=True, sharey='row', squeeze=False)
 
-        # Preserve initial sensors for subplot configuration and CSV writing.
+        # Preserve initial sensors for subplot configuration. (This used to also feed a per-log
+        # allan_deviation_acc.csv export; that was replaced by the richer, cross-device
+        # allan_deviation.yaml written by saveAllanDeviationYaml() below -- see its docstring.)
         initial_sensors = sensors
 
         sumRW = []
@@ -3493,33 +3754,17 @@ class logPlot:
                 sumBI[i].append([])
 
 
+        # Each device's load-and-compute is independent of every other device's -- run them in
+        # parallel, one device per forked worker process.
         included_devs_acc = []
-        for d in self.active_devs:
-            (name, time, dt, sensors) = self.loadAccels(d, did=did)
-            dtMean = np.mean(dt)
-            dev_included = False
-            for i in range(3):
-                for n, acc in enumerate(sensors):
-                    if np.all(acc) != None and n<len(sensors):
-                        if acc.any(None):
-                            if not dev_included:
-                                included_devs_acc.append(d)
-                                dev_included = True
-                            # Averaging window tau values from dt to dt*Nsamples/10
-                            t = np.logspace(np.log10(dtMean), np.log10(0.1*np.sum(dt)), 200)
-                            # Compute the overlapping ADEV
-                            (t2, ad, ade, adn) = allantools.oadev(acc[:,i], rate=1/(dtMean/self.d), data_type="freq", taus=t)
-                            # Compute random walk and bias instability
-                            t_bi_max = 1000
-                            idx_max = (np.abs(t2 - t_bi_max)).argmin()
-                            bi = np.amin(ad[:idx_max + 1]) / 0.664
-                            rw_idx = (np.abs(t2 - 0.1)).argmin()
-                            rw = ad[rw_idx] * np.sqrt(t2[rw_idx])
+        for d, included, curves in _computeAllanDeviationParallel(self, self.active_devs, did, 'accel', 0.1):
+            if included:
+                included_devs_acc.append(d)
+            for i, n, t2, ad, bi, rw in curves:
+                ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * MPS2UG, rw * RTHR2RTS))
 
-                            ax[i, n].loglog(t2, ad * MPS2UG, label='%s: %.2g, %.2g' % (self.log.serials[d], bi * MPS2UG, rw * RTHR2RTS))
-
-                            sumRW[i][n].append(rw * RTHR2RTS) 
-                            sumBI[i][n].append(bi * MPS2UG)
+                sumRW[i][n].append(rw * RTHR2RTS)
+                sumBI[i][n].append(bi * MPS2UG)
 
         totalVRW = []
         totalBI = []
@@ -3534,7 +3779,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, RW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
+                    self.configureSubplot(ax[i, n], alable + axislable + r', BI: %.3g $µg$, VRW: %.3g $m/s/\sqrt{hr}$' % (np.mean(sumBI[i][n]), np.mean(sumRW[i][n]) + np.std(sumRW[i][n])), 'µG')
                     totalVRW.append(sumRW[i][n])
                     totalBI.append(sumBI[i][n])
 
@@ -3549,24 +3794,7 @@ class logPlot:
 
         self.setup_and_wire_legend()
 
-        with open(self.log.directory + '/allan_deviation_acc.csv', 'w') as f:
-            f.write('Hardware,Date,SN,BI-X,BI-Y,BI-Z,VRW-X,VRW-Y,VRW-Z\n')
-            f.write(',,,(m/s^2 / hr),(m/s^2 / hr),(m/s^2 / hr),(m/s / rt hr),(m/s / rt hr),(m/s / rt hr)\n')
-            today = date.today()
-            for idx, d in enumerate(included_devs_acc):
-                if len(self.getData(d, DID_DEV_INFO, 'hardwareVer')) <= d:
-                    continue 
-                hdwVer = self.getData(d, DID_DEV_INFO, 'hardwareVer')[d]
-                f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
-                for n, acc in enumerate(initial_sensors):
-                    if np.all(acc) != None and n<len(initial_sensors):
-                        for i in range(3):
-                            f.write('%f,' % (sumBI[i][n][idx] if idx < len(sumBI[i][n]) else 0.0))
-                        for i in range(3):
-                            f.write('%f,' % (sumRW[i][n][idx] if idx < len(sumRW[i][n]) else 0.0))
-                f.write('\n')
-
-        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'rw', 'm/s/sqrt(hr)')
+        self.saveAllanDeviationYaml('accelerometer', 'individual' if did == DID_IMUS else 'combined', included_devs_acc, len(initial_sensors), ['X', 'Y', 'Z'], sumBI, 'ug', sumRW, 'vrw', 'm/s/sqrt(hr)')
 
         return self.saveFigJoinAxes(ax, axs, fig, 'accIMU')
 
