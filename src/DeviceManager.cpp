@@ -550,6 +550,22 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
     }
 
     if (rebindPort) {
+        // The lock was released after phase 1 captured `device`. Another thread's releaseDevice() or
+        // clear() can run in that window and drop this exact device from the managed set -- phase 1
+        // has no way to see that, since it ran first. Re-validate registration before committing the
+        // rebind, or a release racing this call is silently undone: the just-released device would be
+        // reassigned a port and republished into portToDeviceMap as if nothing happened (SN-8663).
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (std::find(begin(), end(), device) == end()) {
+                log_debug(IS_LOG_DEVICE_MANAGER, "Device [%s] was released by another thread before its rebind on port '%s' could commit; abandoning.",
+                          device->getIdAsString().c_str(), portName(port));
+                if (options & (DISCOVERY__CLOSE_PORT_ON_FAILURE | DISCOVERY__CLOSE_PORT_ON_COMPLETION))
+                    portClose(port);
+                return false;   // lost the race to a release; the next discovery pass re-allocates
+            }
+        }
+
         device->assignPort(port);
         {
             std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -652,6 +668,11 @@ device_handle_t DeviceManager::getDevice(uint64_t uid) {
  * @returns an device_handle_t instance associated with the specified port, or NULL if not found
  */
 device_handle_t DeviceManager::getDevice(port_handle_t port) {
+    // mutex guards portToDeviceMap (see the member comment in DeviceManager.h) against concurrent
+    // mutation by releaseDevice()/deviceHandler()/clear() -- this overload is called from callers that
+    // no longer hold the lock for their whole function (SN-8663's discoverDevices()), so it must take
+    // it itself, like every other getDevice() overload already does.
+    std::lock_guard<std::recursive_mutex> lock(mutex);
     auto it = portToDeviceMap.find(port);
     if (it != portToDeviceMap.end()) {
         return it->second;
@@ -821,30 +842,43 @@ std::vector<std::pair<device_handle_t, std::string>> DeviceManager::getUpgradabl
 // ============================================================
 
 void DeviceManager::seedDeviceHint(port_handle_t port, const dev_info_t& hint) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    deviceHints_[port] = hint;
-    log_debug(IS_LOG_DEVICE_MANAGER, "Seeded device hint for port '%s' (SN=%u, hwType=%d)",
-              portName(port), hint.serialNumber, hint.hardwareType);
+    // deviceHandler() must be called with mutex NOT held (SN-8663): it splits into a locked phase 1
+    // and an unlocked phase 2 internally, but mutex is recursive, so calling it from inside a
+    // lock_guard here means that inner unlock is a no-op -- this frame is still holding the lock the
+    // whole time, reopening exactly the AB-BA deadlock deviceHandler's split exists to close. Snapshot
+    // what's needed under the lock, matching discoverDevices()' factoriesSnapshot pattern, then call
+    // deviceHandler() after releasing it.
+    bool shouldRegister = false;
+    std::vector<DeviceFactory*> factoriesSnapshot;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        deviceHints_[port] = hint;
+        log_debug(IS_LOG_DEVICE_MANAGER, "Seeded device hint for port '%s' (SN=%u, hwType=%d)",
+                  portName(port), hint.serialNumber, hint.hardwareType);
 
-    // Hint-driven device registration. When a port surfaces a complete device
-    // identity via a relay snapshot (or other authoritative metadata source),
-    // register the device immediately so consumers can render it without first
-    // running an active probe. This is intentionally a "discovery-without-open"
-    // path: deviceHandler() only fires DEVICE_CONNECTED when portIsOpened(), and
-    // relay ports come back from bindPort() in a closed state — so a hint-only
-    // registration produces DEVICE_ADDED + DEVICE_PORT_BOUND only. Real
-    // validation, port-open, and DEVICE_CONNECTED happen later when the user
-    // explicitly opens the port (e.g. Find / Open in the UI).
-    if (port && hint.serialNumber != 0 && hint.hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
-        if (!getDevice(port)) {
-            // Iterate registered factories until one accepts the hint. Pass
-            // options=0 so a non-matching factory doesn't close the port on
-            // its way out — we want the next factory to get a clean shot.
-            for (auto factory : factories) {
-                if (deviceHandler(factory, hint, port, /*options=*/0)) {
-                    log_debug(IS_LOG_DEVICE_MANAGER, "Hint-registered device for port '%s' (no port open, no connect)", portName(port));
-                    break;
-                }
+        // Hint-driven device registration. When a port surfaces a complete device
+        // identity via a relay snapshot (or other authoritative metadata source),
+        // register the device immediately so consumers can render it without first
+        // running an active probe. This is intentionally a "discovery-without-open"
+        // path: deviceHandler() only fires DEVICE_CONNECTED when portIsOpened(), and
+        // relay ports come back from bindPort() in a closed state — so a hint-only
+        // registration produces DEVICE_ADDED + DEVICE_PORT_BOUND only. Real
+        // validation, port-open, and DEVICE_CONNECTED happen later when the user
+        // explicitly opens the port (e.g. Find / Open in the UI).
+        if (port && hint.serialNumber != 0 && hint.hardwareType != IS_HARDWARE_TYPE_UNKNOWN && !getDevice(port)) {
+            shouldRegister = true;
+            factoriesSnapshot.assign(factories.begin(), factories.end());
+        }
+    }
+
+    if (shouldRegister) {
+        // Iterate registered factories until one accepts the hint. Pass
+        // options=0 so a non-matching factory doesn't close the port on
+        // its way out — we want the next factory to get a clean shot.
+        for (auto factory : factoriesSnapshot) {
+            if (deviceHandler(factory, hint, port, /*options=*/0)) {
+                log_debug(IS_LOG_DEVICE_MANAGER, "Hint-registered device for port '%s' (no port open, no connect)", portName(port));
+                break;
             }
         }
     }
