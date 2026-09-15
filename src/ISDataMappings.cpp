@@ -2727,7 +2727,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
     "DID_SENSORS_TC_BIAS",              // 26
-    "DID_GNSS2_TIMEPULSE",               // 27
+    "DID_GNSS2_TIMESYNC",               // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
     "DID_GNSS1_VEL",                     // 30
@@ -2741,9 +2741,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_RTOS_INFO",                    // 38
     "DID_DEBUG_ARRAY",                  // 39
     "DID_SENSORS_MCAL",                 // 40
-    "DID_GNSS1_TIMEPULSE",               // 41
+    "DID_GNSS1_TIMESYNC",               // 41
     "DID_CAL_SC",                       // 42
-    "DID_TIME",                         // 43
+    "DID_TIME_PULSE",                         // 43
     "DID_CANFD_CONFIG",                 // 44
     "DID_GNSS1_SIG",                     // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
@@ -2912,8 +2912,8 @@ cISDataMappings::cISDataMappings()
 
     PopulateMapGnssVersion(m_data_set, DID_GNSS1_VERSION);
     PopulateMapGnssVersion(m_data_set, DID_GNSS2_VERSION);
-    PopulateMapGnssTimepulse(m_data_set, DID_GNSS1_TIMEPULSE);
-    PopulateMapGnssTimepulse(m_data_set, DID_GNSS2_TIMEPULSE);
+    PopulateMapGnssTimepulse(m_data_set, DID_GNSS1_TIMESYNC);
+    PopulateMapGnssTimepulse(m_data_set, DID_GNSS2_TIMESYNC);
 
     PopulateMapGnssRaw(m_data_set, DID_GNSS1_RAW);
     PopulateMapGnssRaw(m_data_set, DID_GNSS2_RAW);
@@ -2945,7 +2945,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
-    PopulateMapISBTimepulse(        m_data_set, DID_TIME);
+    PopulateMapISBTimepulse(        m_data_set, DID_TIME_PULSE);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
@@ -3103,8 +3103,8 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
     case DID_DEV_INFO:
     case DID_GNSS1_VERSION:
     case DID_GNSS2_VERSION:
-    case DID_GNSS1_TIMEPULSE:
-    case DID_GNSS2_TIMEPULSE:
+    case DID_GNSS1_TIMESYNC:
+    case DID_GNSS2_TIMESYNC:
     case DID_SYS_SENSORS:
     case DID_SENSORS_ADC:
     case DID_SENSORS_ADC_SIGMA:
