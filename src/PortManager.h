@@ -197,7 +197,7 @@ protected:
     void portHandlerLocked(PortFactory* factory, uint16_t portType, const std::string& portName);
 
     /**
-     * @brief A PORT_ADDED notification held back until the manager mutex is released.
+     * @brief A PORT_ADDED or PORT_REMOVED notification held back until the manager mutex is released.
      *
      * Listeners reach arbitrary consumer code -- ISFirmwareUpdater's listener calls
      * DeviceManager::discoverDevice(), which validates the port and so takes that
@@ -208,8 +208,16 @@ protected:
      * which deadlocks; a flashed module resetting and re-enumerating is exactly when
      * both happen at once. DeviceManager::notifyListeners() and
      * RelayPortFactory::locatePorts() already snapshot-and-dispatch for this reason.
+     *
+     * PORT_REMOVED goes through the same deferred queue as PORT_ADDED, not just a moved
+     * notification: DeviceManager::portHandler()'s PORT_REMOVED case calls
+     * device->assignPort(nullptr), which takes that device's portMutex -- the same lock a
+     * PORT_ADDED listener reaches, and the same cycle. A PORT_REMOVED listener is not
+     * I/O-free the way it looks; "does it touch a lock in the cycle" is the right test, not
+     * "does it do I/O".
      */
     struct pending_port_event_t {
+        port_event_e    event;      //!< PORT_ADDED or PORT_REMOVED
         uint16_t        type;
         std::string     name;
         port_handle_t   port;
@@ -227,11 +235,25 @@ protected:
 
     /** @brief Queues a PORT_ADDED for dispatch by flushPortEvents(). Call under the mutex. */
     void queuePortAdded(uint16_t type, const std::string& name, port_handle_t port, PortFactory* factory) {
-        pendingEvents.push_back({type, name, port, factory});
+        pendingEvents.push_back({PORT_ADDED, type, name, port, factory});
     }
 
-    /** @brief Dispatches queued PORT_ADDED notifications with the manager mutex NOT held.
-     *  A no-op while a locked frame is still on the stack (eventDepth > 0). */
+    /**
+     * @brief Queues a PORT_REMOVED for dispatch by flushPortEvents(). Call under the mutex.
+     *
+     * factory->releasePort() is deferred too, run by flushPortEvents() immediately after this
+     * event is dispatched -- not here, and not by the caller. The port must stay valid for any
+     * listener to inspect until the notification actually reaches it, and queuing the
+     * notification while releasing the port immediately (as the pre-deferral code did in the same
+     * breath) would hand a later-dispatched listener a freed handle.
+     */
+    void queuePortRemoved(uint16_t type, const std::string& name, port_handle_t port, PortFactory* factory) {
+        pendingEvents.push_back({PORT_REMOVED, type, name, port, factory});
+    }
+
+    /** @brief Dispatches queued PORT_ADDED/PORT_REMOVED notifications with the manager mutex NOT
+     *  held, in the order they were queued, releasing each PORT_REMOVED's port only after its
+     *  listeners have seen it. A no-op while a locked frame is still on the stack (eventDepth > 0). */
     void flushPortEvents() {
         std::vector<pending_port_event_t> batch;
         std::unordered_set<port_listener_handle_t> snapshot;
@@ -246,7 +268,9 @@ protected:
             if (!e.factory)
                 continue;
             for (auto& l : snapshot)
-                if (l) (*l)(PORT_ADDED, e.type, e.name, e.port, *e.factory);
+                if (l) (*l)(e.event, e.type, e.name, e.port, *e.factory);
+            if (e.event == PORT_REMOVED)
+                e.factory->releasePort(e.port);
         }
     }
 

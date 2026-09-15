@@ -34,10 +34,11 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
 
             if (!portIsValid(port) || !entry.factory->validatePort(entry.name, entry.type)) {
                 erase(port);
-                for (auto& listener : listeners) {
-                    (*listener)(PORT_REMOVED, portType(port), entry.name, port, *entry.factory);
-                }
-                entry.factory->releasePort(port);
+                // Queued, not dispatched here: this runs inside this same locked body, and a
+                // PORT_REMOVED listener takes locks that another thread holds while waiting on
+                // ours (see pending_port_event_t). releasePort() moves with it, run by
+                // flushPortEvents() only after the notification is delivered.
+                queuePortRemoved(portType(port), entry.name, port, entry.factory);
                 it = knownPorts.erase(it);
                 portsChanged = true;
             } else {
@@ -103,11 +104,10 @@ void PortManager::portHandlerLocked(PortFactory* factory, uint16_t portType, con
             else {
                 // the port was previously identified, but the port handle is invalid.
                 // we probably should release to port and reallocate a new one
-                // finally, call our handler
-                for (auto& listener : listeners) {
-                    (*listener)(PORT_REMOVED, entry.type, entry.name, port, *entry.factory);
-                }
-                entry.factory->releasePort(port);
+                // Queued, not dispatched here -- same reason as discoverPorts()' removal loop:
+                // this runs inside a locked body, and a PORT_REMOVED listener takes locks that
+                // another thread holds while waiting on ours. releasePort() moves with it.
+                queuePortRemoved(entry.type, entry.name, port, entry.factory);
                 port = nullptr;
                 break;
             }
