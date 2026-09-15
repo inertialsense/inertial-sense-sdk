@@ -845,12 +845,17 @@ bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
         return false;
     }
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
         if (info1.hardwareVer[i] != info2.hardwareVer[i])
         {
             return false;
         }
+    }
+
+    if (info1.hardwareVariant != info2.hardwareVariant)
+    {
+        return false;
     }
 
     return true;

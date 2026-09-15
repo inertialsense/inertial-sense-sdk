@@ -177,7 +177,7 @@ TEST(test_utils, hdwIdToString_matches_getHardwareAsString_when_no_subrev) {
     info.hardwareVer[1] = 0;
     info.hardwareVer[2] = 0;
     info.hardwareVer[3] = 0;
-    EXPECT_EQ(utils::getHardwareAsString(info, /*showRev=*/true),
+    EXPECT_EQ(utils::getHardwareAsString(info, utils::DV_BIT_HARDWARE_REV),
               utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(info)));
 }
 
