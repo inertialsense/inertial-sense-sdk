@@ -161,7 +161,7 @@ def _fileLock(path):
             finally:
                 fcntl.flock(lock_f, fcntl.LOCK_UN)
 
-# IMU part number per slot (0-4), by hardware variant (DID_DEV_INFO.hardwareVer[3]). A single
+# IMU part number per slot (0-4), by hardware variant (DID_DEV_INFO.hardwareVariant). A single
 # string applies to all slots; a list gives one part per slot 0-4. Duplicated from
 # IMU_TYPE_BY_HDW_VARIANT in python/src/imuCalibration/temperature_calibration.py (logInspector is
 # a separately-distributed SDK tool, so it doesn't import from that tree) -- keep the two in sync.
@@ -184,7 +184,7 @@ IMU_TYPE_BY_HDW_VARIANT = {
 
 
 def imuTypesForHdwVariant(variant, n_imu):
-    """List of n_imu IMU part-number strings (one per slot 0..n_imu-1) for a hardwareVer[3] value,
+    """List of n_imu IMU part-number strings (one per slot 0..n_imu-1) for a hardwareVariant value,
     per IMU_TYPE_BY_HDW_VARIANT, or 'unknown' entries if the variant isn't recognized."""
     types = IMU_TYPE_BY_HDW_VARIANT.get(int(variant))
     if types is None:

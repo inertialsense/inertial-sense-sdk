@@ -102,6 +102,7 @@ public:
         OMIT_BUILD_DATE          = utils::FWI_OMIT_BUILD_DATE,    //!< suppresses the output of the build date
         OMIT_BUILD_TIME          = utils::FWI_OMIT_BUILD_TIME,    //!< suppresses the output of the build time
         OMIT_BUILD_MILLIS        = utils::FWI_OMIT_BUILD_MILLIS,  //!< suppresses the output of the build milliseconds when not zero
+        SHOW_HARDWARE_VARIANT    = 0x2000,                        //!< explicitly force showing the hardware variant
 
         ESSENTIAL_FIRMWARE_INFO  = (ISDevice::OMIT_COMMIT_HASH | ISDevice::OMIT_BUILD_KEY | ISDevice::OMIT_BUILD_MILLIS | ISDevice::OMIT_BUILD_DATE | ISDevice::OMIT_BUILD_TIME),
     };
