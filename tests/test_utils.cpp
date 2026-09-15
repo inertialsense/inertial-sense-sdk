@@ -176,7 +176,7 @@ TEST(test_utils, hdwIdToString_matches_getHardwareAsString_when_no_subrev) {
     info.hardwareVer[0] = 5;
     info.hardwareVer[1] = 0;
     info.hardwareVer[2] = 0;
-    info.hardwareVer[3] = 0;
+    info.hardwareVariant = 0;
     EXPECT_EQ(utils::getHardwareAsString(info, utils::DV_BIT_HARDWARE_REV),
               utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(info)));
 }
@@ -284,7 +284,7 @@ TEST(test_utils, parseHardwareFromString_roundtrip) {
     EXPECT_EQ(devInfo.hardwareVer[0], 5);
     EXPECT_EQ(devInfo.hardwareVer[1], 0);
     EXPECT_EQ(devInfo.hardwareVer[2], 0);
-    EXPECT_EQ(devInfo.hardwareVer[3], 0);
+    EXPECT_EQ(devInfo.hardwareVariant, 0);
 
     ASSERT_TRUE(utils::parseHardwareFromString("GPX-1.0.2", devInfo));
     EXPECT_EQ(devInfo.hardwareType, IS_HARDWARE_TYPE_GPX);
@@ -297,7 +297,7 @@ TEST(test_utils, parseHardwareFromString_roundtrip) {
     EXPECT_EQ(devInfo.hardwareVer[0], 3);
     EXPECT_EQ(devInfo.hardwareVer[1], 2);
     EXPECT_EQ(devInfo.hardwareVer[2], 1);
-    EXPECT_EQ(devInfo.hardwareVer[3], 4);
+    EXPECT_EQ(devInfo.hardwareVariant, 4);
 
     // Round-trip: emit then parse.
     devInfo = {};
