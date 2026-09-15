@@ -109,7 +109,7 @@ typedef uint32_t eDataIDs;
 #define DID_SENSORS_MCAL                (eDataIDs)40    /**< INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
 #define DID_GNSS1_TIMEPULSE             (eDataIDs)41    /**< (gnss_timepulse_t) GNSS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42    /**< INTERNAL USE ONLY (sensor_cal_t) */
-#define DID_TIME                        (eDataIDs)43    /**< (is_time_t) Inertial Sense 1PPS/time GNSS time data */
+#define DID_TIME                        (eDataIDs)43    /**< (is_time_t) Inertial Sense 1PPS/time GNSS time data. NOTE: This is not the current time, but rather the time of the NEXT/UPCOMING time pulse*/
 #define DID_CANFD_CONFIG                (eDataIDs)44    /**< (can_config_t) CAN FD configuration: FD message broadcast rates, transmit addresses, and baud rate. Shares the same data structure as DID_CAN_CONFIG. */
 #define DID_GNSS1_SIG                   (eDataIDs)45    /**< (gnss_sig_t) GNSS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46    /**< INTERNAL USE ONLY (sys_sensors_adc_t) */
