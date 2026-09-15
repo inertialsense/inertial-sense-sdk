@@ -778,11 +778,10 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     } else {
         out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
         if (!(flags & COMPACT_HARDWARE_VER)) {
-            if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVariant != 0)) {
+            if (devInfo.hardwareVer[2] != 0)
                 out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-                if ((devInfo.hardwareVariant != 0) && (flags & SHOW_HARDWARE_VARIANT))
-                    out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
-            }
+            if ((devInfo.hardwareVariant != 0) && (flags & SHOW_HARDWARE_VARIANT))
+                out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
         }
     }
     out += ")";
