@@ -753,8 +753,10 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                             }
                         }
                         // hardware version
-                        for (auto& e : devInfo.hardwareVer) e = 0;
-                        split_from_string<uint8_t, 4>(match[3].str(), devInfo.hardwareVer);
+                        uint8_t parsedHardwareVer[4] = {};
+                        split_from_string<uint8_t, 4>(match[3].str(), parsedHardwareVer);
+                        for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = parsedHardwareVer[i];
+                        devInfo.hardwareVariant = parsedHardwareVer[3];
                         if (devInfo.hardwareVer[2]) componentsParsed |= DV_BIT_HARDWARE_REV;
                         if (devInfo.hardwareVariant) componentsParsed |= DV_BIT_HARDWARE_VARIANT;
                         componentsParsed |= DV_BIT_HARDWARE_INFO;
