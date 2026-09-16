@@ -193,6 +193,87 @@ protected:
      */
     void portHandler(PortFactory* factory, uint16_t portType, const std::string& portName);
 
+    /** @brief portHandler()'s body, run with the manager mutex held. */
+    void portHandlerLocked(PortFactory* factory, uint16_t portType, const std::string& portName);
+
+    /**
+     * @brief A PORT_ADDED or PORT_REMOVED notification held back until the manager mutex is released.
+     *
+     * Listeners reach arbitrary consumer code -- ISFirmwareUpdater's listener calls
+     * DeviceManager::discoverDevice(), which validates the port and so takes that
+     * device's ISDevice::portMutex. A thread stepping that same device holds portMutex
+     * for the whole of ISDevice::step() and reaches PortManager::mutex from inside it
+     * (ISBFirmwareUpdater::fwUpdate_step() calls discoverPorts()). Dispatching under
+     * the manager mutex puts those two locks in opposite orders on the same device,
+     * which deadlocks; a flashed module resetting and re-enumerating is exactly when
+     * both happen at once. DeviceManager::notifyListeners() and
+     * RelayPortFactory::locatePorts() already snapshot-and-dispatch for this reason.
+     *
+     * PORT_REMOVED goes through the same deferred queue as PORT_ADDED, not just a moved
+     * notification: DeviceManager::portHandler()'s PORT_REMOVED case calls
+     * device->assignPort(nullptr), which takes that device's portMutex -- the same lock a
+     * PORT_ADDED listener reaches, and the same cycle. A PORT_REMOVED listener is not
+     * I/O-free the way it looks; "does it touch a lock in the cycle" is the right test, not
+     * "does it do I/O".
+     */
+    struct pending_port_event_t {
+        port_event_e    event;      //!< PORT_ADDED or PORT_REMOVED
+        uint16_t        type;
+        std::string     name;
+        port_handle_t   port;
+        PortFactory*    factory;
+    };
+
+    /** @brief RAII depth counter. flushPortEvents() defers while any instance is alive, so a
+     *  portHandler() invoked from discoverPorts()' locked body does not dispatch under the
+     *  recursive lock -- only the outermost frame flushes. Construct while holding the mutex. */
+    struct EventScope {
+        PortManager& pm;
+        explicit EventScope(PortManager& p) : pm(p) { pm.eventDepth++; }
+        ~EventScope() { pm.eventDepth--; }
+    };
+
+    /** @brief Queues a PORT_ADDED for dispatch by flushPortEvents(). Call under the mutex. */
+    void queuePortAdded(uint16_t type, const std::string& name, port_handle_t port, PortFactory* factory) {
+        pendingEvents.push_back({PORT_ADDED, type, name, port, factory});
+    }
+
+    /**
+     * @brief Queues a PORT_REMOVED for dispatch by flushPortEvents(). Call under the mutex.
+     *
+     * factory->releasePort() is deferred too, run by flushPortEvents() immediately after this
+     * event is dispatched -- not here, and not by the caller. The port must stay valid for any
+     * listener to inspect until the notification actually reaches it, and queuing the
+     * notification while releasing the port immediately (as the pre-deferral code did in the same
+     * breath) would hand a later-dispatched listener a freed handle.
+     */
+    void queuePortRemoved(uint16_t type, const std::string& name, port_handle_t port, PortFactory* factory) {
+        pendingEvents.push_back({PORT_REMOVED, type, name, port, factory});
+    }
+
+    /** @brief Dispatches queued PORT_ADDED/PORT_REMOVED notifications with the manager mutex NOT
+     *  held, in the order they were queued, releasing each PORT_REMOVED's port only after its
+     *  listeners have seen it. A no-op while a locked frame is still on the stack (eventDepth > 0). */
+    void flushPortEvents() {
+        std::vector<pending_port_event_t> batch;
+        std::unordered_set<port_listener_handle_t> snapshot;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (eventDepth > 0 || pendingEvents.empty())
+                return;
+            batch.swap(pendingEvents);
+            snapshot = listeners;
+        }
+        for (auto& e : batch) {
+            if (!e.factory)
+                continue;
+            for (auto& l : snapshot)
+                if (l) (*l)(e.event, e.type, e.name, e.port, *e.factory);
+            if (e.event == PORT_REMOVED)
+                e.factory->releasePort(e.port);
+        }
+    }
+
 private:
     PortManager(PortManager const &) = delete;
     PortManager& operator=(PortManager const&) = delete;
@@ -213,6 +294,8 @@ private:
     std::vector<PortFactory*> factories;                             //!< list of port factories responsible for detecting, allocating and freeing ports of different types.
     std::unordered_set<port_listener_handle_t > listeners;           //!< list of listeners who should be notified when ports are discovered, lost, opened, closed, etc
     std::map<port_entry_t, port_handle_t> knownPorts;                //!< a map previously discovered ports keyed on factory + name (some string identifier)
+    std::vector<pending_port_event_t> pendingEvents;                 //!< PORT_ADDED notifications awaiting dispatch outside the mutex
+    int eventDepth = 0;                                              //!< >0 while a mutex-holding frame is on the stack; see EventScope
     bool portsChanged = false;                                       //!< a flag indicating (true) that list of managed ports has changed, either ports added or removed during the last call to discoverPorts()
 
     mutable std::recursive_mutex mutex;                                        // Mutex must be mutable if the range needs to support const containers
