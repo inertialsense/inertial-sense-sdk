@@ -93,6 +93,36 @@ def run_setup_command(command, cwd: os.PathLike | None = None) -> int:
             print(e.stderr)
         return e.returncode
 
+def _extension_stale(python_dir: pathlib.Path, sdk_src_dir: pathlib.Path) -> bool:
+    """Whether the compiled log_reader extension is stale relative to any header it can see.
+
+    distutils' own staleness check only compares log_reader.cpp's mtime against the built
+    .so/.pyd, so it silently misses header-only changes (data_sets.h, pybindMacros.h, ...) --
+    that's what caused SN-8374 and a stale extension to miss a new dev_info_t field
+    (hardwareVariant), crashing the log inspector. Rather than tracking the real #include graph,
+    conservatively treat *any* header/source under SDK/src or the extension's own include/src as
+    newer than the built extension as reason enough to force a recompile -- a directory stat scan
+    is effectively free next to a C++ recompile+relink, so over-triggering here costs nothing,
+    while under-triggering reproduces the original bug. Returns False when nothing has been built
+    yet, so the first build after a clean goes through the normal (unforced) build_ext path
+    rather than tacking on a needless --force.
+    """
+    logs_dir = python_dir / "inertialsense" / "logs"
+    so_candidates = list(logs_dir.glob("log_reader.cpython*.so")) + list(logs_dir.glob("log_reader*.pyd"))
+    if not so_candidates:
+        return False   # nothing built yet -- plain build_ext will build it; forcing adds nothing
+    so_mtime = max(p.stat().st_mtime for p in so_candidates)
+
+    watch_dirs = [sdk_src_dir, logs_dir / "include", logs_dir / "src"]
+    for d in watch_dirs:
+        if not d.is_dir():
+            continue
+        for pat in ("*.h", "*.hpp", "*.cpp"):
+            for f in d.rglob(pat):
+                if f.stat().st_mtime > so_mtime:
+                    return True
+    return False
+
 def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
     """Clean build artifacts under python_dir."""
     if not python_dir:  # default to PYTHON_DIR if python_dir is None or falsy
@@ -103,14 +133,28 @@ def run_clean(python_dir: os.PathLike = PYTHON_DIR) -> int:
         return rc
 
     pdir = pathlib.Path(python_dir)
-    patterns = [
-        "tmp", "build", "dist", "*.egg-info",
-        "log_reader.cpython*",
-        "*.so", "*.pyd", "*.pyc",
-    ]
+    # Top-level scratch/output dirs -- non-recursive is intentional and sufficient.
+    top_level_patterns = ["tmp", "build", "dist", "*.egg-info"]
+    # The compiled extension is a build_ext --inplace target, so it lands nested inside the
+    # package (inertialsense/logs/log_reader.cpython*.so), not at python_dir's top level. A
+    # plain pdir.glob() here would never find it, leaving the stale extension in place after
+    # "clean" -- and since distutils' staleness check compares the source .cpp's mtime against
+    # that surviving .so (not against the temp .o these top-level patterns do remove), a
+    # subsequent build without --force would skip recompiling entirely. rglob so clean actually
+    # removes it wherever it was built.
+    recursive_patterns = ["log_reader.cpython*", "*.so", "*.pyd", "*.pyc"]
     try:
-        for pat in patterns:
+        for pat in top_level_patterns:
             for p in pdir.glob(pat):
+                if p.is_dir():
+                    shutil.rmtree(p, ignore_errors=True)
+                elif p.is_file():
+                    try:
+                        p.unlink()
+                    except FileNotFoundError:
+                        pass
+        for pat in recursive_patterns:
+            for p in pdir.rglob(pat):
                 if p.is_dir():
                     shutil.rmtree(p, ignore_errors=True)
                 elif p.is_file():
@@ -156,13 +200,15 @@ def run_build(args: list[str] = []) -> int:
     print("CMD:", " ".join(pip_install_cmd))
     build_process = subprocess.run(pip_install_cmd, cwd=SDK_DIR, check=True)
 
-    # --force recompiles even if distutils thinks the .cpp is unchanged vs. its cached .o.
-    # Needed when only a header changed (e.g. data_sets.h), since distutils won't notice --
-    # this bit CI on the persistent self-hosted runner (SN-8374), and locally caused a stale
-    # log_reader extension to silently miss a new dev_info_t field (hardwareVariant), crashing
-    # the log inspector. The extension has exactly one source file (log_reader.cpp), so forcing
-    # a recompile is always cheap -- always force rather than relying on -f/--force being passed.
-    build_ext_cmd = "build_ext --inplace --force"
+    # --force recompiles even if distutils thinks the .cpp is unchanged vs. its cached .o --
+    # needed when only a header changed (e.g. data_sets.h), since distutils won't notice (this
+    # bit CI on the persistent self-hosted runner, SN-8374, and locally caused a stale log_reader
+    # extension to silently miss a new dev_info_t field, hardwareVariant, crashing the log
+    # inspector). But forcing unconditionally recompiles+relinks on every single startup even
+    # when nothing changed, which is the dominant cost of launching the log inspector. Only force
+    # when a header/source this extension depends on is actually newer than what's built.
+    force = _extension_stale(PYTHON_DIR, SDK_DIR / "src")
+    build_ext_cmd = "build_ext --inplace" + (" --force" if force else "")
     return run_setup_command(build_ext_cmd, cwd=PYTHON_DIR)
 
 @contextmanager
