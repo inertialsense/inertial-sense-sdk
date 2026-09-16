@@ -117,11 +117,25 @@ TEST_F(TruncatedLogTest, MidPacketTruncation_StopsAtLastValidRecord) {
     ASSERT_TRUE(fullR.has_value());
     const std::size_t fullCount = fullR->recordCount();
     ASSERT_GT(fullCount, 100u) << "fixture too small to test truncation meaningfully";
+
+    // Pick the record ~90% of the way through and cut partway into ITS byte range, rather
+    // than guessing a percentage of the file size. GenerateMessage() draws packet type/size
+    // from a std::random_device-seeded RNG (test_data_utils.cpp), so the fixture's byte
+    // layout differs on every run — a fixed "90% of file size" offset has no guarantee of
+    // landing inside a record instead of exactly on a boundary, which flaked in CI when the
+    // random layout happened to put a boundary there (isTruncated() legitimately reads false
+    // for a file that ends cleanly). Cutting at the midpoint of a specific record's own bytes
+    // is deterministic-by-construction regardless of what the RNG generated.
+    const std::size_t idx = (fullCount * 9) / 10;
+    const auto view = fullR->recordAt(idx);
+    const std::size_t recordStart = static_cast<std::size_t>(view.bytes().first - fullR->rawBytes().first);
+    const std::size_t recordLen   = view.bytes().second;
+    ASSERT_GT(recordLen, 1u) << "picked record has no interior byte to cut at";
+    const std::size_t truncatedSize = recordStart + recordLen / 2;
+
     // Drop the reader to release its mmap before mutating the file.
     fullR = tl::unexpected<ISError>{ ISError{ ISErrorCode::Internal, "drop" } };
 
-    // Truncate the .raw at 90% of its size to land somewhere mid-packet.
-    const std::size_t truncatedSize = (f_.rawBytes * 9) / 10;
     fs::resize_file(f_.rawFile, truncatedSize);
     // Delete the .idx so the reader rebuilds and exercises the
     // truncation-detection path (the existing .idx still claims the
