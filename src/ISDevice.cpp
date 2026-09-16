@@ -512,6 +512,7 @@ bool ISDevice::validate(uint32_t timeout) {
                 devInfo.serialNumber = oldDevInfo.serialNumber;
                 devInfo.hardwareType = oldDevInfo.hardwareType;
                 memcpy(devInfo.hardwareVer, oldDevInfo.hardwareVer, sizeof(devInfo.hardwareVer));
+                devInfo.hardwareVariant = oldDevInfo.hardwareVariant;
                 devInfo.hdwRunState = HDW_STATE_UNKNOWN;
                 hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             }
@@ -676,14 +677,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
  * @return
  */
 std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
-    const char *typeName = "\?\?\?";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
-        default: typeName = "\?\?\?"; break;
-    }
-    return utils::string_format("%s-%d.%d::SN%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
+    return utils::deviceIdString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber);
 }
 
 std::string ISDevice::getIdAsString() const {
@@ -784,11 +778,10 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     } else {
         out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
         if (!(flags & COMPACT_HARDWARE_VER)) {
-            if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+            if (devInfo.hardwareVer[2] != 0)
                 out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-                if (devInfo.hardwareVer[3] != 0)
-                    out += utils::string_format(".%u", devInfo.hardwareVer[3]);
-            }
+            if ((devInfo.hardwareVariant != 0) && (flags & SHOW_HARDWARE_VARIANT))
+                out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
         }
     }
     out += ")";

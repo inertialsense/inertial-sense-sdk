@@ -277,19 +277,16 @@ std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
     return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, uint16_t flags) {
     // Type-major-minor portion comes from the canonical packed-id renderer.
     // The dev_info_t carries two extra sub-rev bytes (hardwareVer[2..3]) that
     // the uint16 hdwId form can't represent — append them here when present.
     std::string out = utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
-    if (!showRev)
-        return out;
-
-    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+    if ((devInfo.hardwareVer[2] != 0) && (flags & DV_BIT_HARDWARE_REV))
         out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-        if (devInfo.hardwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
-    }
+    if ((devInfo.hardwareVariant != 0) && (flags & DV_BIT_HARDWARE_VARIANT))
+        out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
+
     return out;
 }
 
@@ -339,7 +336,8 @@ bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
     }
 
     devInfo.hardwareType = type;
-    for (int i = 0; i < 4; ++i) devInfo.hardwareVer[i] = ver[i];
+    for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = ver[i];
+    devInfo.hardwareVariant = ver[3];   // TODO: confirm that all "to-string" rendering of hardware version+variant is z.y.x.w
     return true;
 }
 
@@ -659,7 +657,7 @@ std::string utils::devInfoToString(const dev_info_t& devInfo, uint16_t flags) {
     if (flags & DV_BIT_SERIALNO)
         out += utils::string_format("SN%06d:", devInfo.serialNumber);
     if (flags & DV_BIT_HARDWARE_INFO)
-        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo);
+        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo, flags);
     if (flags & DV_BIT_FIRMWARE_VER)
         out += (out.empty() ? "" : " ") + utils::getFirmwareAsString(devInfo);
     if (flags & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME | DV_BIT_BUILD_KEY | DV_BIT_BUILD_COMMIT))
@@ -708,6 +706,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
     std::string local_str = str;    // make a copy that we can destroy
     bool making_progress = true;      // we'll keep trying, as long as we keep making progress..
     devInfo = {};                   // reinitialize dev_info_t
+    uint8_t parsedHardwareVer[4] = {};
 
     while (!local_str.empty() && making_progress) {
         making_progress = false;
@@ -757,21 +756,26 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         componentsParsed |= DV_BIT_BUILD_TIME;
                         break;
                     case 4: // parse HDW type & version
-                        // hardware type
-                        for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
-                            if (match[2].str() == g_isHardwareTypeNames[ii]) {
-                                devInfo.hardwareType = ii;
-                                break;
+                        {
+                            // hardware type
+                            for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
+                                if (match[2].str() == g_isHardwareTypeNames[ii]) {
+                                    devInfo.hardwareType = ii;
+                                    break;
+                                }
+                                if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
+                                    devInfo.hdwRunState = 1;    // Bootloader firmware?
+                                } else {
+                                    devInfo.hdwRunState = 2;    // APP firmware??
+                                }
                             }
-                            if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
-                                devInfo.hdwRunState = 1;    // Bootloader firmware?
-                            } else {
-                                devInfo.hdwRunState = 2;    // APP firmware??
-                            }
+                            // hardware version
+                            split_from_string<uint8_t, 4>(match[3].str(), parsedHardwareVer);
+                            for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = parsedHardwareVer[i];
+                            devInfo.hardwareVariant = parsedHardwareVer[3];
                         }
-                        // hardware version
-                        for (auto& e : devInfo.hardwareVer) e = 0;
-                        split_from_string<uint8_t, 4>(match[3].str(), devInfo.hardwareVer);
+                        if (devInfo.hardwareVer[2]) componentsParsed |= DV_BIT_HARDWARE_REV;
+                        if (devInfo.hardwareVariant) componentsParsed |= DV_BIT_HARDWARE_VARIANT;
                         componentsParsed |= DV_BIT_HARDWARE_INFO;
                         break;
                     case 5: // build key and build number
@@ -860,12 +864,17 @@ bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
         return false;
     }
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
         if (info1.hardwareVer[i] != info2.hardwareVer[i])
         {
             return false;
         }
+    }
+
+    if (info1.hardwareVariant != info2.hardwareVariant)
+    {
+        return false;
     }
 
     return true;
@@ -1025,7 +1034,7 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
     match |= (((info1.hardwareVer[0]    == info2.hardwareVer[0])    & 1) << 4);
     match |= (((info1.hardwareVer[1]    == info2.hardwareVer[1])    & 1) << 5);
     match |= (((info1.hardwareVer[2]    == info2.hardwareVer[2])    & 1) << 6);
-    match |= (((info1.hardwareVer[3]    == info2.hardwareVer[3])    & 1) << 7);
+    match |= (((info1.hardwareVariant   == info2.hardwareVariant)   & 1) << 7);
 
     match |= (((info1.firmwareVer[0]    == info2.firmwareVer[0])    & 1) << 8);
     match |= (((info1.firmwareVer[1]    == info2.firmwareVer[1])    & 1) << 9);

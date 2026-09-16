@@ -289,7 +289,8 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     remoteDevInfo.serialNumber = msg.data.version_resp.serialNumber;
     remoteDevInfo.hardwareType = msg.data.version_resp.hardwareType;
     remoteDevInfo.hdwRunState = msg.data.version_resp.hdwRunState;
-    memcpy(remoteDevInfo.hardwareVer, msg.data.version_resp.hardwareVer, 4);
+    memcpy(remoteDevInfo.hardwareVer, msg.data.version_resp.hardwareVer, 3);
+    remoteDevInfo.hardwareVariant = msg.data.version_resp.hardwareVariant;
     memcpy(remoteDevInfo.firmwareVer, msg.data.version_resp.firmwareVer, 4);
     remoteDevInfo.buildType = (msg.data.version_resp.buildType == 'r') ? 0 : msg.data.version_resp.buildType;
     remoteDevInfo.buildFlags = msg.data.version_resp.buildFlags;
