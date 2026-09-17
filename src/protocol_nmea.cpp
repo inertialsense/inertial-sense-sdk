@@ -822,11 +822,15 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
  *
  * @param a[] - output buffer
  * @param aSize - size of output buffer
+ * @param portIdx - port index this response describes, emitted in field 1. Pass the index of the
+ *                  port whose nRMC is being encoded -- NOT the port the reply is written to. For a
+ *                  reply about the receiving port those are the same; for a cross-port query
+ *                  (SN-8450) they differ, and field 1 is how the host tells which port it got.
  * @param nRMC - per-port NMEA broadcast configuration (nmeaBits enable bitmask + nmeaPeriod[] array) to encode
  *
  * @note output message format: $ASCE,port,{msgID,msgPeriod}...*cs
  *  0    Message ID $ASCE
- *  1    Port index this response applies to (always 0; the currently-configured port)
+ *  1    Port index this response applies to (see portIdx)
  *  2n   msgID  - NMEA message ID of an enabled message (index into eNmeaMsgIdInx, see nRMC->nmeaBits bit position)
  *  2n+1 msgPeriod - broadcast period multiple for that message (see nRMC->nmeaPeriod[msgID])
  *      (the msgID,msgPeriod pair repeats once for every message with its enable bit set in nmeaBits and a non-zero period, up to MAX_nmeaBroadcastMsgPairs)
@@ -834,7 +838,21 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
  *
  * @return length of the generated NMEA sentence, including the checksum trailer
  */
-int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
+/**
+ * @brief Reports whether NMEA speed filtering is currently enabled.
+ *
+ * The flag lives in a file-static (s_dataSpeed) and is set only as a side effect of parsing the
+ * $ASCE options field. Exposed so the "a query must not change device state" guarantee (SN-8450)
+ * is testable rather than merely asserted in a comment.
+ *
+ * @return true if small GNSS-noise velocity is being filtered from $GLL/$RMC/$VTG
+ */
+bool nmea_getSpeedFilterEnabled(void)
+{
+    return s_dataSpeed.enableSpeedFilter;
+}
+
+int nmea_ASCE(char a[], const int aSize, int portIdx, rmcNmea_t* nRMC)
 {
     nmeaBroadcastMsgPair_t pairs[MAX_nmeaBroadcastMsgPairs];
     int activeRMC = 0;
@@ -849,8 +867,8 @@ int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
         }
     }
 
-    // Base msg with current port set
-    int n = ssnprintf(a, aSize, "$ASCE,0");
+    // Base msg naming the port this response describes
+    int n = ssnprintf(a, aSize, "$ASCE,%d", portIdx);
 
     // finish populating msg
     for (int i = 0; (i < activeRMC) && (i < MAX_nmeaBroadcastMsgPairs); i++)
@@ -3129,9 +3147,14 @@ int parseASCE_GSV(int inId, int period)
  *  2n+1 msgPeriod - broadcast period multiple for that message (0 disables/single-shot, matching nmea_enable_stream())
  *      (the msgID,msgPeriod pair repeats for each requested message, up to 20 pairs, terminated by '*')
  *
+ * @param pairCount - [out, optional] number of ID/period pairs applied. **Zero means the sentence
+ *                    was an options-only QUERY** ("$ASCE,<mask>*cs"), which applies nothing and
+ *                    asks the caller to report the named port(s) configuration instead. Pass NULL
+ *                    if the distinction is not needed.
+ *
  * @return the parsed options bitmask (0 if port is NULL)
  */
-uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci)
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci, int *pairCount)
 {
     (void)aSize;
 
@@ -3139,6 +3162,10 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
     uint32_t id;
     uint32_t ports;
     uint8_t period;
+    int pairs = 0;
+
+    if (pairCount)
+        *pairCount = 0;
 
     if (!port)
         return 0;
@@ -3162,6 +3189,18 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
             s_dataSpeed.enableSpeedFilter = false;
             break;
     }
+
+    // SN-8450: an options-only sentence -- "$ASCE,<mask>*cs" with no ID/period pairs -- is a
+    // cross-port QUERY. Return here with *pairCount still 0 so the caller replies.
+    //
+    // Note this sits BELOW the speed-filter block deliberately. Such a sentence was previously
+    // undocumented (the published grammar requires 1..20 ID/period pairs) but it did apply the
+    // options-field side effects, and a customer's proprietary command sequence could depend on
+    // that. Keeping them makes the query purely additive: nothing that worked before stops
+    // working. A plain port query ("$ASCE,2") still has no side effects, because the side
+    // effects only occur for bits the sender explicitly set.
+    if (*ptr == '*')
+        return options;
     
     for (int i=0; i<20; i++)
     {
@@ -3189,6 +3228,8 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
         // set period multiple and increament ptr to next field
         period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));    
         ptr = ASCII_find_next_field(ptr);
+
+        pairs++;
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GNGSV)
@@ -3220,7 +3261,10 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
             break;
         }
     }
-        
+
+    if (pairCount)
+        *pairCount = pairs;
+
     return options;
 }
 
@@ -3264,7 +3308,7 @@ inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint
  * @return 0 on NULL port error
  * @return options if any (can be 0 if no options exist)
  */
-uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci)
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci, int *pairCount)
 {
     (void)aSize;
 
@@ -3272,6 +3316,10 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
     uint32_t id;
     uint32_t ports;
     uint8_t period;
+    int pairs = 0;
+
+    if (pairCount)
+        *pairCount = 0;
 
     if (!port)
         return 0;
@@ -3288,6 +3336,13 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
 
     // extract port from options
     ports = options & RMC_OPTIONS_PORT_MASK;
+
+    // SN-8450: options-only sentence ("$ASCE,<mask>*cs", no ID/period pairs) is a cross-port
+    // QUERY. Return with *pairCount 0 so the caller replies. The caller still honours
+    // RMC_OPTIONS_PERSISTENT regardless, so the query is additive rather than a behaviour
+    // change. Mirrors nmea_parse_asce() on the IMX side.
+    if (*ptr == '*')
+        return options;
     
     for (int i = 0; i < 20; i++)
     {
@@ -3317,6 +3372,8 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
         ptr = ASCII_find_next_field(ptr);
 
         // handle GSV cases
+        pairs++;
+
         if (id == NMEA_MSG_ID_GNGSV)
             parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
         else if (id >= NMEA_MSG_ID_SPECIAL_CASE_START)
@@ -3350,7 +3407,10 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
             break;
         }
     }
-        
+
+    if (pairCount)
+        *pairCount = pairs;
+
     return options;
 }
 
