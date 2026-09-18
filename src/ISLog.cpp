@@ -28,14 +28,19 @@ ISLog& ISLog::operator=(ISLog&&) noexcept    = default;
 
 namespace {
 
-bool isRawExtension(const fs::path& p) {
+// D-119 / SN-8626/SN-8627: a directory scan must discover `.dat` segments too, not just `.raw` --
+// LogLoader::loadDirectory routes through this function, and before this fix a directory holding
+// only `.dat`+`.idx` files (a real manufacturing/calibration capture, not a synthetic test fixture)
+// failed outright with "no .raw files", well before any `.dat`-aware code got a chance to run.
+bool isSupportedSegmentExtension(const fs::path& p) {
     // Linux is case-sensitive; Windows / default macOS are not.
-    // Accept ".raw" and ".RAW" (and any case in between).
+    // Accept ".raw"/".RAW" and ".dat"/".DAT" (and any case in between).
     auto ext = p.extension().string();
     if (ext.size() != 4) return false;
     if (ext[0] != '.') return false;
     auto low = [](char c){ return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); };
-    return low(ext[1]) == 'r' && low(ext[2]) == 'a' && low(ext[3]) == 'w';
+    const char a = low(ext[1]), b = low(ext[2]), c = low(ext[3]);
+    return (a == 'r' && b == 'a' && c == 'w') || (a == 'd' && b == 'a' && c == 't');
 }
 
 } // namespace
@@ -56,18 +61,18 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
                     "ISLog::openDirectory: not a directory: " + logDir.string());
     }
 
-    // Walk non-recursively for `.raw` files. Drive the iterator explicitly with
+    // Walk non-recursively for `.raw`/`.dat` files. Drive the iterator explicitly with
     // the error_code-taking increment: the ec-form constructor only makes
     // construction non-throwing; a range-for's implicit operator++ can still
     // throw filesystem_error (e.g. the directory mutates mid-scan).
-    std::vector<fs::path> rawFiles;
+    std::vector<fs::path> segmentFiles;
     fs::directory_iterator it(logDir, ec);
     const fs::directory_iterator end;
     for (; !ec && it != end; it.increment(ec)) {
         const auto& entry = *it;
         if (!entry.is_regular_file()) continue;
-        if (isRawExtension(entry.path())) {
-            rawFiles.push_back(entry.path());
+        if (isSupportedSegmentExtension(entry.path())) {
+            segmentFiles.push_back(entry.path());
         }
     }
     if (ec) {
@@ -77,19 +82,19 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
                     "ISLog::openDirectory: directory iteration failed: "
                     + ec.message());
     }
-    if (rawFiles.empty()) {
-        log_warn(IS_LOG_ISLOG, "no .raw files in %s", logDir.string().c_str());
+    if (segmentFiles.empty()) {
+        log_warn(IS_LOG_ISLOG, "no .raw/.dat files in %s", logDir.string().c_str());
         return fail(ISErrorCode::NotFound,
-                    "ISLog::openDirectory: no .raw files in " + logDir.string());
+                    "ISLog::openDirectory: no .raw/.dat files in " + logDir.string());
     }
-    log_more_info(IS_LOG_ISLOG, "discovered %zu .raw segment(s)", rawFiles.size());
+    log_more_info(IS_LOG_ISLOG, "discovered %zu segment(s)", segmentFiles.size());
 
     // Sort lexicographically so per-device segment order is stable.
-    std::sort(rawFiles.begin(), rawFiles.end());
+    std::sort(segmentFiles.begin(), segmentFiles.end());
 
     // Open each segment, group by device-id.
     std::map<uint64_t, std::vector<fs::path>> byDevice;
-    for (const auto& path : rawFiles) {
+    for (const auto& path : segmentFiles) {
         auto r = ISLogReader::openSegment(path);
         if (!r) {
             log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
@@ -106,7 +111,7 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
 
     ISLog out;
     out.directory_   = logDir;
-    out.allSegments_ = std::move(rawFiles);
+    out.allSegments_ = std::move(segmentFiles);
 
     out.orderedIds_.reserve(byDevice.size());
     for (auto& [devId, paths] : byDevice) {

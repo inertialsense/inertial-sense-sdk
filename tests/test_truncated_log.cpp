@@ -117,11 +117,30 @@ TEST_F(TruncatedLogTest, MidPacketTruncation_StopsAtLastValidRecord) {
     ASSERT_TRUE(fullR.has_value());
     const std::size_t fullCount = fullR->recordCount();
     ASSERT_GT(fullCount, 100u) << "fixture too small to test truncation meaningfully";
+
+    // Pick a record strictly in the back half of the file whose byte range
+    // spans more than one byte, and cut partway through IT specifically --
+    // not an arbitrary "90% of file size" offset. GenerateRawLogData's
+    // message sizes come from an unseeded std::random_device (test_data_utils.cpp),
+    // so a fixed percentage occasionally landed exactly on a packet boundary
+    // instead of mid-packet, and isTruncated() correctly reported false in
+    // that case -- the test's own premise failed, intermittently, on CI.
+    std::size_t cutOffset = 0;
+    for (std::size_t idx = fullCount / 2; idx < fullCount; ++idx) {
+        const ISRecordView view = fullR->recordAt(idx);
+        const uint64_t start = view.offsetInFile();
+        const uint64_t size  = view.bytes().second;   // == recordEndOffset(idx) - start, per ISLogReader.h
+        if (size > 1) {
+            cutOffset = static_cast<std::size_t>(start + size / 2);
+            break;
+        }
+    }
+    ASSERT_GT(cutOffset, 0u) << "could not find a multi-byte record in the back half to truncate mid-packet";
+
     // Drop the reader to release its mmap before mutating the file.
     fullR = tl::unexpected<ISError>{ ISError{ ISErrorCode::Internal, "drop" } };
 
-    // Truncate the .raw at 90% of its size to land somewhere mid-packet.
-    const std::size_t truncatedSize = (f_.rawBytes * 9) / 10;
+    const std::size_t truncatedSize = cutOffset;
     fs::resize_file(f_.rawFile, truncatedSize);
     // Delete the .idx so the reader rebuilds and exercises the
     // truncation-detection path (the existing .idx still claims the

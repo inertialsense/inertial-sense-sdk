@@ -58,8 +58,8 @@ public:
     /** @brief Selects which `cDeviceLog` subclass (and on-disk format) new devices are logged with. */
     enum eLogType
     {
-        LOGTYPE_DAT = 0,    //!< raw serial byte stream, unparsed (cDeviceLogSerial, `.dat`)
-        LOGTYPE_RAW,        //!< packetized serial stream; supports multiple packet types (cDeviceLogRaw, `.raw`)
+        LOGTYPE_DAT = 0,    //!< already-parsed data sets (p_data_hdr_t + payload), chunk-header-framed (cDeviceLogSerial, `.dat`)
+        LOGTYPE_RAW,        //!< undecoded, multi-protocol serial byte stream (cDeviceLogRaw, `.raw`)
         LOGTYPE_CSV,        //!< one CSV file per data set (cDeviceLogCSV, `.csv`)
         LOGTYPE_KML,        //!< KML flight-path visualization, write-only (cDeviceLogKML, `.kml`)
         LOGTYPE_JSON,       //!< one JSON-lines file per data set (cDeviceLogJSON, `.json`)
@@ -451,7 +451,10 @@ public:
      *
      * Recognizes two forms: `IS_LOG_FILE_PREFIX` followed by `<serial>_<date>_<time>_<index>`
      * (e.g. "LOG_SN30013_20170103_151023_001.raw"), or a bare `<index>` with no prefix. Any other
-     * form fails to parse.
+     * form fails to parse. In the first form, `<index>` is taken to be whichever underscore-
+     * delimited token (starting with a digit) comes last before the extension, so extra
+     * descriptive tokens some tools insert between `<time>` and `<index>` (e.g.
+     * "LOG_SN30013_20170103_151023_no_f9p_001.dat") don't prevent the file from being recognized.
      *
      * @param filename filename to parse (extension is stripped internally; path should already be removed).
      * @param[out] serialNum parsed serial number; 0 if the bare-index form was used.

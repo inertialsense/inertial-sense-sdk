@@ -25,9 +25,12 @@
 #include "ISTimeResolver.h"
 #include "data_sets.h"
 
+#include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <filesystem>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -163,6 +166,29 @@ std::vector<uint8_t> bytesOf(const T& t) {
     return out;
 }
 
+// Kyle 2026-09-07 (Option B tests): renames `f.rawFile` (and its `.idx` sidecar,
+// if the writer produced one) to `<newStem>.raw`/`.idx` in the same directory,
+// so a test can deliberately control the exact name `ISTimeResolver`'s
+// file-timestamp-anchor fallback sees, rather than relying on cISLogger's own
+// real-time-stamped filename (which the OTHER file-anchor tests exercise
+// incidentally).
+fs::path renameFixtureTo(FixturePaths& f, const std::string& newStem) {
+    const fs::path newRaw = f.directory / (newStem + ".raw");
+    std::error_code ec;
+    fs::rename(f.rawFile, newRaw, ec);
+    if (ec) return {};
+    const fs::path oldIdx = f.rawFile; // same object, extension replaced below
+    fs::path oldIdxPath = oldIdx;
+    oldIdxPath.replace_extension(".idx");
+    if (fs::exists(oldIdxPath)) {
+        fs::path newIdx = newRaw;
+        newIdx.replace_extension(".idx");
+        fs::rename(oldIdxPath, newIdx, ec);
+    }
+    f.rawFile = newRaw;
+    return newRaw;
+}
+
 void teardown(FixturePaths& f) {
     if (!f.directory.empty() && fs::exists(f.directory)) {
         ISFileManager::DeleteDirectory(f.directory.string());
@@ -176,11 +202,18 @@ protected:
 };
 
 // ---------------------------------------------------------------------------
-// Empty log → no sync points → SessionOnly/Unknown for any query.
+// Empty log → no sync points → falls back to a file-timestamp anchor.
 // ---------------------------------------------------------------------------
-TEST_F(TimeResolverTest, EmptyLogResolvesAsSessionOnly) {
+TEST_F(TimeResolverTest, EmptyLogFallsBackToFileTimeAnchor) {
     // Fixture with only ToW-LESS records (DID_IMU, which the resolver's
-    // allowlist excludes). detectSyncPoints should find zero anchors.
+    // allowlist excludes) and no DID_SYS_PARAMS at all. detectSyncPoints
+    // should find zero anchors -- Kyle 2026-09-07 (Option B): rather than
+    // SessionOnly/Unknown for every query (which RawSeriesBuilder then drops
+    // outright), the resolver now recovers a coarse wall-clock anchor from
+    // the log's own file (filename timestamp, or last-write time) and
+    // reports it as FileTimeAnchored -- still Unknown confidence (no basis
+    // for anything finer), but a DIFFERENT source than SessionOnly so
+    // consumers that filter "carries no real-world anchor" don't drop it.
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
     recs.emplace_back(DID_IMU, bytesOf(makeImu(1.0)));
     recs.emplace_back(DID_IMU, bytesOf(makeImu(2.0)));
@@ -195,11 +228,75 @@ TEST_F(TimeResolverTest, EmptyLogResolvesAsSessionOnly) {
 
     EXPECT_TRUE(resolverR->syncPoints().empty());
 
-    TimeStamp t = resolverR->resolve(50000, kFixtureSerial);
-    EXPECT_EQ(t.source, TimeSource::SessionOnly);
+    TimeStamp t1 = resolverR->resolve(50000, kFixtureSerial);
+    EXPECT_EQ(t1.source, TimeSource::FileTimeAnchored);
+    EXPECT_EQ(t1.confidence, TimeConfidence::Unknown);
+    EXPECT_EQ(t1.deviceId, kFixtureSerial);
+    EXPECT_GT(t1.value, 50000u);   // anchored, not a raw passthrough of the input
+
+    // The anchor is additive: two queries a known delta apart resolve that
+    // same delta apart.
+    TimeStamp t2 = resolverR->resolve(60000, kFixtureSerial);
+    EXPECT_EQ(t2.value - t1.value, 10000u);
+}
+
+// Kyle 2026-09-07 (Option B), filename tier: a segment renamed to look like
+// cISLogger's own `..._YYYYMMDD_HHMMSS_..` convention resolves via that name.
+// A deliberately old, fixed date (nothing "now" could coincidentally produce)
+// proves which tier fired, rather than the other file-anchor tests' incidental
+// use of cISLogger's own real-time-stamped auto-generated filename.
+TEST_F(TimeResolverTest, FileAnchorParsesTimestampFromFilename) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(1.0)));
+    f = buildFixture("filename_anchor", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    ASSERT_FALSE(renameFixtureTo(f, "LOG_SN12345_20200615_101530_0001").empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    ASSERT_TRUE(resolver->syncPoints().empty());
+
+    std::tm tm{};
+    tm.tm_year = 2020 - 1900; tm.tm_mon = 6 - 1; tm.tm_mday = 15;
+    tm.tm_hour = 10;          tm.tm_min = 15;    tm.tm_sec  = 30;
+    const int64_t expectedMs = static_cast<int64_t>(timegm(&tm)) * 1000;
+
+    const TimeStamp t = resolver->resolve(0, kFixtureSerial);
+    EXPECT_EQ(t.source, TimeSource::FileTimeAnchored);
     EXPECT_EQ(t.confidence, TimeConfidence::Unknown);
-    EXPECT_EQ(t.value, 50000u);
-    EXPECT_EQ(t.deviceId, kFixtureSerial);
+    EXPECT_EQ(static_cast<int64_t>(t.value), expectedMs);
+}
+
+// Kyle 2026-09-07 (Option B), ctime tier: a name with no digits at all falls
+// back to the segment file's last-write time.
+TEST_F(TimeResolverTest, FileAnchorFallsBackToLastWriteTimeWhenNameDoesNotParse) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    recs.emplace_back(DID_IMU, bytesOf(makeImu(1.0)));
+    f = buildFixture("ctime_anchor", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    ASSERT_FALSE(renameFixtureTo(f, "nogpslog").empty());
+
+    const auto beforeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value()) << log.error().message;
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+    ASSERT_TRUE(resolver->syncPoints().empty());
+
+    const auto afterMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+
+    const TimeStamp t = resolver->resolve(0, kFixtureSerial);
+    EXPECT_EQ(t.source, TimeSource::FileTimeAnchored);
+    // Anchored near "now" (the file's last-write time), within generous slack
+    // for test execution time -- proves the ctime tier fired, not a stale or
+    // zero value.
+    EXPECT_GE(static_cast<int64_t>(t.value), beforeMs - 5000);
+    EXPECT_LE(static_cast<int64_t>(t.value), afterMs + 5000);
 }
 
 // ---------------------------------------------------------------------------
@@ -317,6 +414,41 @@ TEST_F(TimeResolverTest, UnsyncedSysParamsDoesNotEstablishOffset) {
     // mag does NOT land at that value.
     auto t = resolver->resolve(50'000, kFixtureSerial);
     EXPECT_NE(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
+}
+
+// Kyle 2026-09-07 (Option A): a log with a SYNCED DID_SYS_PARAMS but NO INS/GNSS
+// record at all (a manufacturing/bench-calibration capture -- the bug report
+// this fix responds to) used to have zero sync points regardless, because
+// DID_SYS_PARAMS wasn't in kToWBearingDids -- its synced ToW was only ever used
+// to calibrate OTHER DIDs' uptime bridge, never pushed as an anchor itself.
+TEST_F(TimeResolverTest, SyncedSysParamsAloneEstablishesSyncPoints) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (uint32_t towMs : { 200'000'000u, 200'010'000u, 200'020'000u }) {
+        recs.emplace_back(DID_SYS_PARAMS,
+                          bytesOf(makeSysParams((towMs - 200'000'000u) / 1000.0 + 5.0, towMs)));
+    }
+    f = buildFixture("sysparams_only_synced", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+
+    auto syncs = ISTimeResolver::detectSyncPoints(log.value());
+    ASSERT_FALSE(syncs.empty())
+        << "a synced DID_SYS_PARAMS record should establish a sync point on its own";
+    for (const auto& sp : syncs) {
+        EXPECT_EQ(sp.sourceDid, static_cast<uint32_t>(DID_SYS_PARAMS));
+    }
+
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Exact match against one of the sync points' own raw .idx timestamp
+    // (== its timeOfWeekMs, the sync-record identity convention) resolves
+    // PayloadToW/Exact -- not FileTimeAnchored/Unknown.
+    const TimeStamp t = resolver->resolve(200'010'000u, kFixtureSerial);
+    EXPECT_EQ(t.source, TimeSource::PayloadToW);
+    EXPECT_EQ(t.confidence, TimeConfidence::Exact);
 }
 
 // ---------------------------------------------------------------------------

@@ -317,6 +317,9 @@ class logInspectorInternal(LogInspectorWindow):
     def TestImx(self):
         directory = self.selectedDirectory()
         if self.isLogDirectory(directory):
+            if self.log is None:
+                self.setStatus("IMX Test: no log loaded -- this directory failed to load as a log")
+                return
             self.RunTest("IMX", self.log.runImxPerformanceReport)
         else:
             self.runSuperNppTest(directory, "imx")
@@ -324,6 +327,9 @@ class logInspectorInternal(LogInspectorWindow):
     def TestGpx(self):
         directory = self.selectedDirectory()
         if self.isLogDirectory(directory):
+            if self.log is None:
+                self.setStatus("GPX Test: no log loaded -- this directory failed to load as a log")
+                return
             self.RunTest("GPX", self.log.runGpxPerformanceReport)
         else:
             self.runSuperNppTest(directory, "gpx")

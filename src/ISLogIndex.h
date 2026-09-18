@@ -78,6 +78,31 @@ enum class HeaderTimeSource : uint8_t {
     Mixed            = 4,
 };
 
+/**
+ * @brief SN-8629: cheap, metadata-free signal that a segment's own
+ * `first_timestamp_ms` / `last_timestamp_ms` are NOT safely comparable
+ * against another segment's.
+ *
+ * `first_timestamp_ms` and `last_timestamp_ms` are whatever the first/last
+ * record's payload-derived timestamp happened to be — which DID landed on
+ * that edge decides the domain (e.g. host-uptime vs GPS time-of-week), and
+ * that can differ between two segments of the very same log (D0066: `.idx`
+ * is mixed-domain by design). `firstMs > lastMs` is direct, in-band proof
+ * that a domain mismatch landed on one of this segment's edges — a
+ * healthy, single-domain-at-the-edges segment is always chronologically
+ * non-decreasing. It does not catch every possible cross-segment mismatch
+ * (two segments can each look internally consistent yet still disagree
+ * with each other), but it catches the failure mode this system actually
+ * produces, without requiring any new per-DID domain classification.
+ *
+ * @param firstMs  Segment's `first_timestamp_ms` (0 = unset/unknown).
+ * @param lastMs   Segment's `last_timestamp_ms` (0 = unset/unknown).
+ * @return  `true` if both are set and `firstMs > lastMs`.
+ */
+inline constexpr bool timestampsLookMixedDomain(uint64_t firstMs, uint64_t lastMs) noexcept {
+    return firstMs != 0 && lastMs != 0 && firstMs > lastMs;
+}
+
 // ----- Record flag bits ----------------------------------------------------
 
 /// Bit 0: this record's payload carried a real GPS time-of-week field

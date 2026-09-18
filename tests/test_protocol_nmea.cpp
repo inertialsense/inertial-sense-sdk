@@ -256,9 +256,13 @@ TEST(protocol_nmea, INFO)
 {
     dev_info_t info = {};
     info.serialNumber = 1234;
-    for (int i=0; i<4; i++)
+    for (int i=0; i<3; i++)
     {
         info.hardwareVer[i] = 10+i;
+    }
+    info.hardwareVariant = 123;
+    for (int i=0; i<4; i++)
+    {
         info.firmwareVer[i] = 20+i;
     }
     info.buildNumber = 5678;
