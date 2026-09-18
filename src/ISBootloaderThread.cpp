@@ -12,11 +12,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderThread.h"
 #include "TcpPortFactory.h"
+#include "PortFactory.h"
 #include "ISBootloaderDFU.h"
 #include "ISBootloaderAPP.h"
 #include "ISBootloaderISB.h"
 #include "ISBootloaderSAMBA.h"
-#include "ISSerialPort.h"
 #include "protocol/FirmwareUpdate.h"
 #include "intel_hex_utils.h"
 
@@ -209,7 +209,7 @@ void cISBootloaderThread::start_threads_for_url_targets(const std::set<std::stri
 {
     for (const std::string& target : targetPorts) {
         // A URL target is one the serial enumeration can never report. Keyed off the scheme separator
-        // rather than "absent from GetComPorts()", so that a serial tty which is momentarily missing
+        // rather than "absent from getComPorts()", so that a serial tty which is momentarily missing
         // from enumeration (mid-reboot) is never mistaken for a URL and bound as a TCP port.
         if (target.find("://") == std::string::npos)
             continue;
@@ -620,11 +620,11 @@ bool cISBootloaderThread::set_mode_and_check_devices(
         if (m_waitAction) m_waitAction();
         SLEEP_MS(100);
 
-        cISSerialPort::GetComPorts(portNames);
+        SerialPortFactory::getComPorts(portNames);
 
         m_port_thread_mutex.lock();
 
-            // GetComPorts() can only report local serial ports, so a requested tcp:// target
+            // getComPorts() can only report local serial ports, so a requested tcp:// target
             // would never appear in portNames and never get a worker. Resolve and adopt those here.
             start_threads_for_url_targets(targetPorts, mode_thread_port_app);
 
@@ -735,11 +735,11 @@ bool cISBootloaderThread::set_mode_and_check_devices(
         if (m_waitAction) m_waitAction();
         SLEEP_MS(10);
 
-        cISSerialPort::GetComPorts(portNames);
+        SerialPortFactory::getComPorts(portNames);
 
         m_port_thread_mutex.lock();
 
-            // GetComPorts() can only report local serial ports, so a requested tcp:// target
+            // getComPorts() can only report local serial ports, so a requested tcp:// target
             // would never appear in portNames and never get a worker. Resolve and adopt those here.
             start_threads_for_url_targets(targetPorts, get_device_isb_version_thread);
 
@@ -923,11 +923,11 @@ is_operation_result cISBootloaderThread::update(
         if (m_waitAction) m_waitAction();
         SLEEP_MS(1000);
 
-        cISSerialPort::GetComPorts(portNames);
+        SerialPortFactory::getComPorts(portNames);
 
         m_port_thread_mutex.lock();
 
-            // GetComPorts() can only report local serial ports, so a requested tcp:// target
+            // getComPorts() can only report local serial ports, so a requested tcp:// target
             // would never appear in portNames and never get a worker. Resolve and adopt those here.
             start_threads_for_url_targets(targetPorts, mode_thread_port_isb, force_isb_update);
 
@@ -1035,11 +1035,11 @@ is_operation_result cISBootloaderThread::update(
 
         m_port_devicesActive = 0;
 
-        cISSerialPort::GetComPorts(portNames);
+        SerialPortFactory::getComPorts(portNames);
 
         m_port_thread_mutex.lock();
 
-            // GetComPorts() can only report local serial ports, so a requested tcp:// target
+            // getComPorts() can only report local serial ports, so a requested tcp:// target
             // would never appear in portNames and never get a worker. Resolve and adopt those here.
             start_threads_for_url_targets(targetPorts, update_thread_port, force_isb_update);
 

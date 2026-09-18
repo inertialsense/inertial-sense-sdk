@@ -63,13 +63,33 @@ void cDeviceLogSerial::InitDeviceForReading()
 }
 
 bool cDeviceLogSerial::CloseAllFiles() {
-    cDeviceLog::CloseAllFiles();
-
-    // Write remaining data to file
+    // D-119/SN-8626 (mirrors cDeviceLogRaw's SN-8328 fix): flush the buffered
+    // chunk to disk BEFORE the base class writes/finalizes the .idx.
+    // WriteChunkToFile() lazily creates the real segment file via
+    // OpenNewSaveFile(), which is the only place m_fileName is assigned. If the
+    // base's CloseAllFiles() ran first (as this did before), a log small enough
+    // that no chunk was ever flushed during logging would still have an empty
+    // m_fileName at finalize time -- writeIndexChunk()/finalizeIndex() would
+    // land on an orphan "./.idx", and the subsequent lazy OpenNewSaveFile()
+    // would reset the index state and re-emit an empty, non-finalized
+    // <segment>.idx (0 records).
     FlushToFile();
+
+    // Flush any remaining buffered index records and finalize the .idx header
+    // against the now-existing segment file.
+    cDeviceLog::CloseAllFiles();
 
     // Close file
     CloseISLogFile(m_pFile);
+
+    // D-119/SN-8626: this segment is finalized. Reset the physical-offset
+    // accounting so the NEXT segment's records index from 0 -- otherwise
+    // SaveData()'s m_lastIndexOffset computation (below) would use this
+    // now-closed file's stale size for the first record(s) of the next
+    // segment. (The base's lazy OpenNewSaveFile() also zeroes m_fileSize, but
+    // that fires only at the next chunk flush -- too late for records indexed
+    // in between.)
+    m_fileSize = 0;
 
     return true;
 }
@@ -88,6 +108,33 @@ bool cDeviceLogSerial::FlushToFile() {
 
 
 bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype) {
+    // D-119/SN-8626: ensure this record's chunk fits BEFORE indexing it (moved up
+    // from below cDeviceLog::SaveData()'s call, which stamps the .idx offset from
+    // m_lastIndexOffset). Indexing must see the post-flush/post-rotation chunk
+    // state, or a record that triggers a flush gets stamped with the PRE-flush
+    // offset -- wrong by a full chunk. Mirrors cDeviceLogRaw's SN-8328 ordering.
+    int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
+    int32_t buffFree = m_chunk.GetBuffFree();
+    if (dataBytes > buffFree) {
+        // Save chunk to file and clear
+        if (!WriteChunkToFile()) {
+            return false;
+        } else if (m_fileSize >= m_maxFileSize) {
+            // Close existing file
+            CloseAllFiles();
+        }
+    }
+
+    // D-119/SN-8626: stamp this record's TRUE physical .dat file offset before
+    // indexing. Unlike .raw (whose on-disk chunks carry no header), .dat's
+    // chunks ARE header-prefixed on disk (WriteChunkToFile's default
+    // writeHeader=true) -- the still-buffered m_chunk will itself be preceded by
+    // a not-yet-written sChunkHeader once flushed, so that header's size counts
+    // toward this record's eventual on-disk position even though it hasn't been
+    // written yet.
+    m_lastIndexOffset = static_cast<uint64_t>(m_fileSize) + sizeof(sChunkHeader)
+                       + static_cast<uint64_t>(m_chunk.GetDataSize());
+
     cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
     dev_info_t tmpInfo = {};
@@ -123,19 +170,6 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, p
         }
     } else
         m_chunk.m_hdr.devSerialNum = m_devSerialNo;
-
-    // Ensure data will fit in chunk.  If not, create new chunk
-    int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
-    int32_t buffFree = m_chunk.GetBuffFree();
-    if (dataBytes > buffFree) {
-        // Save chunk to file and clear
-        if (!WriteChunkToFile()) {
-            return false;
-        } else if (m_fileSize >= m_maxFileSize) {
-            // Close existing file
-            CloseAllFiles();
-        }
-    }
 
     // Add data header and data buffer to chunk
     m_logSize += dataHdr->size;

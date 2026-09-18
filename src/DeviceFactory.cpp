@@ -68,9 +68,16 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
         return nullptr;
     }
 
-    // Open port if needed (only when no shared device provided, i.e. standalone/blocking path)
+    if (timeoutMs <= 0)
+        timeoutMs = deviceTimeout;
+
+    // Open port if needed (only when no shared device provided, i.e. standalone/blocking path).
+    // portOpenRetry(), not a bare portOpen(): on an asynchronous transport (TCP) a single portOpen()
+    // call returns PORT_ERROR__NONE while the connect is still in flight, without setting
+    // PORT_FLAG__OPENED -- treating that as "open" would hand stepValidation() a port that isn't
+    // actually connected yet (SN-8571).
     if (!sharedDevice && !portIsOpened(port)) {
-        if (!portValidate(port) || (portOpen(port) != PORT_ERROR__NONE)) {
+        if (!portValidate(port) || (portOpenRetry(port, timeoutMs, 10) != PORT_ERROR__NONE)) {
             portClose(port);
             portInvalidate(port);
             return nullptr;
@@ -82,9 +89,6 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
         log_more_debug(IS_LOG_DEVICE_FACTORY, "beginValidation: port '%s' is not a COMM port (type=0x%04X), skipping.", portName(port), portType(port));
         return nullptr;
     }
-
-    if (timeoutMs <= 0)
-        timeoutMs = deviceTimeout;
 
     // Let the factory decline this port
     if (!onBeginValidation(port, hdwId)) {

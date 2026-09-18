@@ -48,6 +48,26 @@ class Log:
         self.refINS = False
         self.using_mounting_bias = False
 
+    def _deviceRecordCount(self, dev_row):
+        # Total number of ISB (Inertial Sense Binary) records logged for a device,
+        # across all DIDs. Used to detect and drop devices with no ISB data at all,
+        # which would otherwise crash downstream reports (e.g. empty DID_INS_2
+        # causes getRMSArray's np.min/np.max to raise on a zero-size array).
+        count = 0
+        for entry in dev_row:
+            if isinstance(entry, list):
+                for sub in entry:
+                    try:
+                        count += len(sub)
+                    except TypeError:
+                        pass
+            else:
+                try:
+                    count += len(entry)
+                except TypeError:
+                    pass
+        return count
+
     def load(self, directory, serials=['ALL']):
         self.init_vars()
         self.c_log.init(self, directory, serials)
@@ -75,6 +95,28 @@ class Log:
                 if dev_serial:
                     self.serials[d] = dev_serial
 
+        # Drop devices with zero ISB data. A device entry can exist (e.g. discovered from
+        # the log's device list) without ever having logged a single ISB record, which
+        # crashes downstream reports that assume every device has data (e.g. IMX RMS
+        # performance report indexing an empty DID_INS_2 array).
+        keepIdx = [d for d in range(self.numDev) if self._deviceRecordCount(self.data[d]) > 0]
+        if len(keepIdx) < self.numDev:
+            droppedSerials = [self.serials[d] for d in range(self.numDev) if d not in keepIdx]
+            print("Excluding device(s) with zero ISB data: %s" % droppedSerials)
+            self.data = self.data[keepIdx]
+            self.serials = [self.serials[d] for d in keepIdx]
+            self.numDev = self.data.shape[0]
+
+        if self.numDev == 0:
+            print("No devices with ISB data found in log!!!")
+            return False
+
+        # Recover DID_INS_2 from DID_INS_1 before filtering, so a device that only logged
+        # DID_INS_1 isn't mistaken for one with no INS solution at all.
+        for d in range(self.numDev):
+            if len(self.data[d, DID_INS_2]) == 0 and len(self.data[d, DID_INS_1]) != 0:
+                self.ins1ToIns2(d)
+
         for i in range(self.numDev):
             try:
                 self.hardware.append(self.data[i, DID_DEV_INFO]['hardwareVer'][0][0])
@@ -101,8 +143,6 @@ class Log:
                 if len(self.data[i, DID_DEV_INFO]):
                     self.refSerials.clear()
                     self.refSerials.append(self.data[i, DID_DEV_INFO]['serialNumber'][0])
-            if len(self.data[0, DID_INS_2]) == 0 and len(self.data[0, DID_INS_1]) != 0:
-                self.ins1ToIns2(i)
             #If you want to view data of log with only refIns:
             if len(self.serials) == 1 and self.refINS == True:
                 return True
@@ -360,6 +400,7 @@ class Log:
     def deviceInfo(self, n, dev, did):
         devInfo = self.data[dev, did][0]
         hver    = devInfo['hardwareVer']
+        hvar    = devInfo['hardwareVariant']
         cver    = devInfo['protocolVer']
         fver    = devInfo['firmwareVer']
         buld    = devInfo['buildNumber']
@@ -375,7 +416,7 @@ class Log:
         return (
             '%2d SN%d  H: %d.%d.%d.%d  F: %d.%d.%d.%d build %d repo %d  P: %d.%d.%d.%d  %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
                 n, devInfo['serialNumber'],
-                hver[0], hver[1], hver[2], hver[3],
+                hver[0], hver[1], hver[2], hvar,
                 fver[0], fver[1], fver[2], fver[3], buld, repo,
                 cver[0], cver[1], cver[2], cver[3],
                 year, month, day,

@@ -249,6 +249,10 @@ bool cDeviceLog::OpenNewSaveFile()
 #if LOG_DEBUG_FILE_WRITE
         printf("cDeviceLog::OpenNewSaveFile %s\n", fileName.c_str());
 #endif
+        if (WantsDeviceInfoSidecar())
+        {
+            WriteDeviceInfoSidecar();
+        }
         return true;
     }
     else
@@ -258,6 +262,58 @@ bool cDeviceLog::OpenNewSaveFile()
 #endif
         return false;
     }
+}
+
+bool cDeviceLog::WriteDeviceInfoSidecar()
+{
+    if (m_fileName.empty() || device == nullptr)
+    {
+        return false;
+    }
+
+    const dev_info_t devInfo = device->devInfo;
+
+    is_comm_instance_t comm = {};
+    uint8_t commBuf[PKT_BUF_SIZE];
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULLPTR);
+
+    uint8_t pktBuf[PKT_BUF_SIZE];
+    std::vector<uint8_t> out;
+
+    int n = is_comm_data_to_buf(pktBuf, sizeof(pktBuf), &comm, DID_DEV_INFO, sizeof(dev_info_t), 0,
+                                 const_cast<dev_info_t*>(&devInfo));
+    if (n > 0)
+    {
+        out.insert(out.end(), pktBuf, pktBuf + n);
+    }
+
+    if (devInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
+    {
+        gpx_flash_cfg_t flashCfg = device->gpxFlashCfg;
+        n = is_comm_data_to_buf(pktBuf, sizeof(pktBuf), &comm, DID_GPX_FLASH_CFG, sizeof(gpx_flash_cfg_t), 0, &flashCfg);
+    }
+    else
+    {
+        nvm_flash_cfg_t flashCfg = device->imxFlashCfg;
+        n = is_comm_data_to_buf(pktBuf, sizeof(pktBuf), &comm, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0, &flashCfg);
+    }
+    if (n > 0)
+    {
+        out.insert(out.end(), pktBuf, pktBuf + n);
+    }
+
+    if (out.empty())
+    {
+        return false;
+    }
+
+    cISLogFile dviFile(m_fileName + ".dvi", "wb");
+    if (!dviFile.isOpened())
+    {
+        return false;
+    }
+
+    return dviFile.write(out.data(), out.size()) == out.size();
 }
 
 
@@ -486,6 +542,13 @@ bool cDeviceLog::finalizeIndex() {
     hdr.total_records       = m_idxTotalRecords;
     hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
     hdr.last_timestamp_ms   = m_idxLastTimestampMs;
+    // SN-8629: ts_units = HostUptimeMs (set above by makeDefaultHeader) would be
+    // a lie if the first/last timestamps landed in different domains -- flag it
+    // Mixed so cross-segment consumers (ISDeviceLog::fromSegments) know these
+    // two values aren't safely comparable against another segment's.
+    if (timestampsLookMixedDomain(hdr.first_timestamp_ms, hdr.last_timestamp_ms)) {
+        hdr.ts_units = static_cast<uint8_t>(TimestampUnits::Mixed);
+    }
     // Preserve the v2.1 flags across the finalize header rewrite (the plain
     // "= FINALIZED" would otherwise drop HAS_LOCAL_DELTA / HAS_CAPTURE_EPOCH).
     hdr.flags               = static_cast<uint8_t>(

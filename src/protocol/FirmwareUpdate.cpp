@@ -730,7 +730,8 @@ namespace fwUpdate {
         response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareType = devInfo.hardwareType;
         response.data.version_resp.hdwRunState = devInfo.hdwRunState;
-        memcpy(response.data.version_resp.hardwareVer, devInfo.hardwareVer, 4);
+        memcpy(response.data.version_resp.hardwareVer, devInfo.hardwareVer, 3);
+        response.data.version_resp.hardwareVariant = devInfo.hardwareVariant;
         memcpy(response.data.version_resp.firmwareVer, devInfo.firmwareVer, 4);
         response.data.version_resp.buildYear = devInfo.buildYear;
         response.data.version_resp.buildMonth = devInfo.buildMonth;

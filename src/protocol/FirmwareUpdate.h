@@ -338,7 +338,8 @@ namespace fwUpdate {
             uint32_t serialNumber;  //!< the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
             uint8_t hdwRunState;    //!< the devices run-state; Application, Bootloader, etc
             uint8_t hardwareType;   //!< hardware identifier
-            uint8_t hardwareVer[4]; //!< Hardware version
+            uint8_t hardwareVer[3]; //!< Hardware version
+            uint8_t hardwareVariant;//!< Hardware variant
             uint8_t firmwareVer[4]; //!< Firmware (software) version
 
             uint8_t buildHash[4];   //!< Git hash

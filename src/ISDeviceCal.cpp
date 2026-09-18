@@ -1085,7 +1085,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
     //     default: break;
     // }
     // std::string hwType = std::string(typeName) + "-" + std::to_string(devInfo.hardwareVer[0]) + "." + std::to_string(devInfo.hardwareVer[1]);
-    std::string hwType = utils::getHardwareAsString(devInfo, false);
+    std::string hwType = utils::getHardwareAsString(devInfo);
 
     log_info(IS_LOG_CALIBRATION, "[%s] Fetching calibration from DB for %s SN%ld", ISDevice::getIdAsString(devInfo).c_str(), hwType.c_str(), devInfo.serialNumber);
 

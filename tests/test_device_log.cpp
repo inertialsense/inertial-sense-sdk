@@ -8,6 +8,7 @@
 #include "com_manager.h"  // first — see test_log_reader.cpp comment
 
 #include "DeviceLog.h"
+#include "ISDevice.h"
 #include "ISDeviceLog.h"
 #include "ISFileManager.h"
 #include "ISLogFile.h"      // cISLogFile (SN-8383/8340 .idx inspection)
@@ -17,7 +18,9 @@
 
 #include <atomic>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <list>
 #include <string>
 #include <vector>
@@ -288,4 +291,204 @@ TEST(ISDeviceLog, WriterStampsV21LocalDeltaAndCaptureEpoch) {
     }
 
     teardown(f);
+}
+
+// ---------------------------------------------------------------------------
+// No Jira card (rolled into SN-8629 at Kyle's request): a log segment that
+// never itself streams a DID_DEV_INFO/FLASH_CONFIG record (a mid-session
+// rollover, or a device that was already configured before logging started)
+// has no way for a reader that opens ONLY that segment to identify the
+// device. Fix: cDeviceLog::OpenNewSaveFile() now writes a one-time ".dvi"
+// sidecar (same base name as the segment) containing a single DID_DEV_INFO
+// record and a single DID_FLASH_CONFIG/DID_GPX_FLASH_CFG record, in raw ISB
+// wire format, snapshotting whatever the bound ISDevice has cached at that
+// instant. Only cDeviceLogRaw/cDeviceLogSerial (the raw-ISB-wire formats)
+// opt in; CSV/JSON/KML don't.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Parses a .dvi (or any raw-ISB-wire byte stream) and returns each
+// DID_DEV_INFO/DID_FLASH_CONFIG/DID_GPX_FLASH_CFG record found, in order.
+struct DviRecord {
+    uint32_t did;
+    std::vector<uint8_t> payload;
+};
+
+std::vector<DviRecord> parseDviFile(const fs::path& path) {
+    std::vector<DviRecord> out;
+    std::ifstream in(path, std::ios::binary);
+    if (!in.is_open()) return out;
+    std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+
+    is_comm_instance_t comm{};
+    uint8_t commBuf[PKT_BUF_SIZE];
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULLPTR);
+
+    for (uint8_t b : bytes) {
+        protocol_type_t p = is_comm_parse_byte(&comm, b);
+        if (p != _PTYPE_INERTIAL_SENSE_DATA && p != _PTYPE_INERTIAL_SENSE_CMD) continue;
+        DviRecord rec;
+        rec.did = comm.rxPkt.dataHdr.id;
+        rec.payload.assign(comm.rxPkt.data.ptr, comm.rxPkt.data.ptr + comm.rxPkt.dataHdr.size);
+        out.push_back(std::move(rec));
+    }
+    return out;
+}
+
+// Builds a device with fully-controlled devInfo/flash-config content and logs
+// one small buffer through a fresh cISLogger (LOGTYPE_RAW or LOGTYPE_DAT) so
+// exactly one segment opens, then closes. Returns the segment's base path
+// (without extension) and the fixture directory (caller deletes it).
+struct DviFixture {
+    fs::path directory;
+    fs::path segmentBase;  // directory / basename, no extension
+};
+
+DviFixture buildDviFixture(const char* tag, cISLogger::eLogType logType,
+                           uint8_t hardwareType, uint32_t serial) {
+    DviFixture f;
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_device_log_dvi_%s_%d_%ld",
+                  tag, ::getpid(), static_cast<long>(::time(nullptr)));
+    f.directory = dirBuf;
+    ISFileManager::DeleteDirectory(f.directory.string());
+
+    dev_info_t devInfo{};
+    devInfo.hardwareType = hardwareType;
+    devInfo.serialNumber = serial;
+    devInfo.hardwareVer[0] = 1;
+    devInfo.hardwareVer[1] = 2;
+
+    auto device = std::make_shared<ISDevice>(devInfo);
+    if (hardwareType == IS_HARDWARE_TYPE_GPX) {
+        device->gpxFlashCfg.checksum = 0xABCD1234u;
+    } else {
+        device->imxFlashCfg.checksum = 0xABCD1234u;
+    }
+
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType = logType;
+    opts.useSubFolderTimestamp = false;
+    if (!logger.InitSave(f.directory.string(), opts)) return f;
+    auto devLogger = logger.registerDevice(device);
+    if (!devLogger) return f;
+    logger.EnableLogging(true);
+
+    const uint8_t payload[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    if (logType == cISLogger::LOGTYPE_RAW) {
+        logger.LogData(devLogger, sizeof(payload), payload);
+    } else {
+        // LogData(devLogger, int, const uint8_t*) is RAW-only; every other
+        // format (including DAT) takes an already-parsed p_data_hdr_t.
+        p_data_hdr_t hdr{};
+        hdr.id = DID_DIAGNOSTIC_MESSAGE;
+        hdr.size = sizeof(payload);
+        hdr.offset = 0;
+        logger.LogData(devLogger, &hdr, payload);
+    }
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> files;
+    const char* ext = (logType == cISLogger::LOGTYPE_RAW) ? "\\.raw$" : "\\.dat$";
+    ISFileManager::GetAllFilesInDirectory(f.directory.string(), true, ext, files);
+    if (!files.empty()) {
+        fs::path p(files.front().name);
+        f.segmentBase = p.parent_path() / p.stem();
+    }
+    return f;
+}
+
+} // namespace
+
+TEST(DeviceInfoSidecar, RawWriterEmitsDviWithDevInfoAndImxFlashConfig) {
+    auto f = buildDviFixture("raw_imx", cISLogger::LOGTYPE_RAW, IS_HARDWARE_TYPE_IMX, 71501u);
+    ASSERT_FALSE(f.segmentBase.empty()) << "fixture failed to produce a segment";
+
+    const fs::path dviPath = fs::path(f.segmentBase.string() + ".dvi");
+    ASSERT_TRUE(fs::exists(dviPath)) << dviPath;
+
+    auto recs = parseDviFile(dviPath);
+    ASSERT_EQ(recs.size(), 2u) << "expected exactly DID_DEV_INFO + DID_FLASH_CONFIG";
+
+    EXPECT_EQ(recs[0].did, static_cast<uint32_t>(DID_DEV_INFO));
+    ASSERT_EQ(recs[0].payload.size(), sizeof(dev_info_t));
+    dev_info_t devInfo{};
+    std::memcpy(&devInfo, recs[0].payload.data(), sizeof(devInfo));
+    EXPECT_EQ(devInfo.serialNumber, 71501u);
+    EXPECT_EQ(devInfo.hardwareType, static_cast<uint8_t>(IS_HARDWARE_TYPE_IMX));
+
+    EXPECT_EQ(recs[1].did, static_cast<uint32_t>(DID_FLASH_CONFIG));
+    ASSERT_EQ(recs[1].payload.size(), sizeof(nvm_flash_cfg_t));
+    nvm_flash_cfg_t flashCfg{};
+    std::memcpy(&flashCfg, recs[1].payload.data(), sizeof(flashCfg));
+    EXPECT_EQ(flashCfg.checksum, 0xABCD1234u);
+
+    ISFileManager::DeleteDirectory(f.directory.string());
+}
+
+TEST(DeviceInfoSidecar, RawWriterEmitsGpxFlashConfigForGpxHardware) {
+    auto f = buildDviFixture("raw_gpx", cISLogger::LOGTYPE_RAW, IS_HARDWARE_TYPE_GPX, 71502u);
+    ASSERT_FALSE(f.segmentBase.empty()) << "fixture failed to produce a segment";
+
+    auto recs = parseDviFile(fs::path(f.segmentBase.string() + ".dvi"));
+    ASSERT_EQ(recs.size(), 2u);
+
+    // DID_DEV_INFO stays DID_DEV_INFO regardless of hardware type -- only the
+    // flash-config DID is conditional (per spec).
+    EXPECT_EQ(recs[0].did, static_cast<uint32_t>(DID_DEV_INFO));
+
+    EXPECT_EQ(recs[1].did, static_cast<uint32_t>(DID_GPX_FLASH_CFG));
+    ASSERT_EQ(recs[1].payload.size(), sizeof(gpx_flash_cfg_t));
+    gpx_flash_cfg_t flashCfg{};
+    std::memcpy(&flashCfg, recs[1].payload.data(), sizeof(flashCfg));
+    EXPECT_EQ(flashCfg.checksum, 0xABCD1234u);
+
+    ISFileManager::DeleteDirectory(f.directory.string());
+}
+
+TEST(DeviceInfoSidecar, DatWriterAlsoEmitsDvi) {
+    auto f = buildDviFixture("dat_imx", cISLogger::LOGTYPE_DAT, IS_HARDWARE_TYPE_IMX, 71503u);
+    ASSERT_FALSE(f.segmentBase.empty()) << "fixture failed to produce a segment";
+
+    const fs::path dviPath = fs::path(f.segmentBase.string() + ".dvi");
+    EXPECT_TRUE(fs::exists(dviPath)) << dviPath << " -- .dat (cDeviceLogSerial) must also opt in";
+
+    auto recs = parseDviFile(dviPath);
+    ASSERT_EQ(recs.size(), 2u);
+    EXPECT_EQ(recs[0].did, static_cast<uint32_t>(DID_DEV_INFO));
+    EXPECT_EQ(recs[1].did, static_cast<uint32_t>(DID_FLASH_CONFIG));
+
+    ISFileManager::DeleteDirectory(f.directory.string());
+}
+
+TEST(DeviceInfoSidecar, NoDviWhenNoDeviceBound) {
+    // A cDeviceLog constructed from bare hdwId/serialNo (no live ISDevice) has
+    // nothing to snapshot -- must silently skip the sidecar, not crash or emit
+    // an empty one.
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_device_log_dvi_nodev_%d_%ld",
+                  ::getpid(), static_cast<long>(::time(nullptr)));
+    const std::string dir = dirBuf;
+    ISFileManager::DeleteDirectory(dir);
+
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType = cISLogger::LOGTYPE_RAW;
+    opts.useSubFolderTimestamp = false;
+    ASSERT_TRUE(logger.InitSave(dir, opts));
+    auto devLogger = logger.registerDevice(kIMX5HwId, 71504u);
+    ASSERT_TRUE(devLogger != nullptr);
+    logger.EnableLogging(true);
+
+    const uint8_t payload[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    logger.LogData(devLogger, sizeof(payload), payload);
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> dviFiles;
+    ISFileManager::GetAllFilesInDirectory(dir, true, "\\.dvi$", dviFiles);
+    EXPECT_TRUE(dviFiles.empty()) << "no bound ISDevice -- must not create a .dvi";
+
+    ISFileManager::DeleteDirectory(dir);
 }

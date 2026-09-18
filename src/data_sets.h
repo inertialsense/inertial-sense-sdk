@@ -93,7 +93,7 @@ typedef uint32_t eDataIDs;
 #define DID_SENSORS_UCAL                (eDataIDs)24    /**< INTERNAL USE ONLY (sensors_w_temp_t) Uncalibrated IMU output. */
 #define DID_SENSORS_TCAL                (eDataIDs)25    /**< INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated IMU output. */
 #define DID_SENSORS_TC_BIAS             (eDataIDs)26    /**< INTERNAL USE ONLY (sensors_t) */
-#define DID_GNSS2_TIMEPULSE             (eDataIDs)27    /**< (gnss_timepulse_t) GNSS2 PPS time synchronization. */
+#define DID_GNSS2_TIMESYNC             (eDataIDs)27    /**< (gnss_timepulse_t) GNSS2 PPS time synchronization. */
 #define DID_SENSORS_ADC                 (eDataIDs)28    /**< INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_SCOMP                       (eDataIDs)29    /**< INTERNAL USE ONLY (sensor_compensation_t) */
 #define DID_GNSS1_VEL                   (eDataIDs)30    /**< (gnss_vel_t) GNSS 1 velocity data */
@@ -107,9 +107,9 @@ typedef uint32_t eDataIDs;
 #define DID_RTOS_INFO                   (eDataIDs)38    /**< (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39    /**< INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40    /**< INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_GNSS1_TIMEPULSE             (eDataIDs)41    /**< (gnss_timepulse_t) GNSS1 PPS time synchronization. */
+#define DID_GNSS1_TIMESYNC              (eDataIDs)41    /**< (gnss_timepulse_t) GNSS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42    /**< INTERNAL USE ONLY (sensor_cal_t) */
-#define DID_UNUSED_43                   (eDataIDs)43    /**< unused */
+#define DID_TIME_PULSE                  (eDataIDs)43    /**< (is_time_t) Inertial Sense 1PPS/time GNSS time data. NOTE: This is not the current time, but rather the time of the NEXT/UPCOMING time pulse*/
 #define DID_CANFD_CONFIG                (eDataIDs)44    /**< (can_config_t) CAN FD configuration: FD message broadcast rates, transmit addresses, and baud rate. Shares the same data structure as DID_CAN_CONFIG. */
 #define DID_GNSS1_SIG                   (eDataIDs)45    /**< (gnss_sig_t) GNSS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46    /**< INTERNAL USE ONLY (sys_sensors_adc_t) */
@@ -672,7 +672,9 @@ typedef struct PACKED
 
     uint32_t        serialNumber;                              //!< Serial number
 
-    uint8_t         hardwareVer[4];                            //!< Hardware version: [0]=major, [1]=minor, [3]=IMU population type on IMX-6 (see eImx6ImuPopulationType)
+    uint8_t         hardwareVer[3];                            //!< Hardware version: [0]=major, [1]=minor, [2]=pcb/a revision
+
+    uint8_t         hardwareVariant;                           //!< Hardware variant; an arbitrary number independent of version that identifies some variation of the hardware; most commonly, IMU population type on IMX-6 (see eImx6ImuPopulationType)
 
     uint8_t         firmwareVer[4];                            //!< Firmware (software) version
 
@@ -1571,6 +1573,7 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK              = 39,  //!< GPX: enable serial bridge on IMX to GPX and loopback on GPX (uint32 inv: 4294967256)
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE     = 40,  //!< GPX: enable serial bridge on IMX to GPX and loopback on GPX, driver test mode (uint32 inv: 4294967255)
     SYS_CMD_GPX_ENABLE_RTOS_STATS                                   = 41,  //!< GPX: enable RTOS task stats collection (uint32 inv: 4294967254)
+    SYS_CMD_GPX_SAVE_PERSISTENT_MESSAGES                            = 42,  //!< GPX: save current persistent messages (uint32 inv: 4294967253)
 
     SYS_CMD_GNSS_RCVR_QUIET_MODE                                    = 60,  //!< Put GNSS receiver into quiet mode (uint32 inv: 4294967235)
     SYS_CMD_GNSS_RCVR_SOFT_RESET                                    = 61,  //!< Soft reset GNSS receiver (uint32 inv: 4294967234)
@@ -1825,7 +1828,7 @@ typedef struct PACKED
 #define RMC_BITS_BAROMETER              0x0000000000000040  // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080  // ~10ms
 #define RMC_BITS_IMUS                   0x0000000000000100  // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-// #define RMC_BITS_UNUSED                 0x0000000000000200
+#define RMC_BITS_TIME                    0x0000000000000200  // GPX 1PPS/timepulse status, forwarded from DID_TIME_PULSE
 #define RMC_BITS_GNSS1_POS          0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
 #define RMC_BITS_GNSS2_POS          0x0000000000000800  // "
 #define RMC_BITS_GNSS1_RAW          0x0000000000001000  // "
@@ -1916,7 +1919,8 @@ typedef struct PACKED
                                             | RMC_BITS_EXT_AIDING_DIR_SPEED \
                                             | RMC_BITS_EXT_AIDING_HEADING \
                                             | RMC_BITS_EXT_AIDING_ATTITUDE \
-                                            | RMC_BITS_GPX_SYS_FAULT)
+                                            | RMC_BITS_GPX_SYS_FAULT \
+                                            | RMC_BITS_TIME)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
@@ -1957,7 +1961,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_PORT_MON \
                                             | RMC_BITS_EVENT \
                                             | RMC_BITS_GPX_STATUS\
-                                            | RMC_BITS_GPX_SYS_FAULT)
+                                            | RMC_BITS_GPX_SYS_FAULT \
+                                            | RMC_BITS_TIME)
 #define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
                                             | RMC_PRESET_GNSS \
                                             | RMC_BITS_GNSS1_RAW \
@@ -2239,6 +2244,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
     GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
+    GRMC_BIT_POS_TIME           = 30,  //!< DID_TIME_PULSE - GPX 1PPS/timepulse status
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -2272,6 +2278,7 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GNSS1_RCVR_POS        (0x0000000000000001 << GRMC_BIT_POS_GNSS1_RCVR_POS)
 #define GRMC_BITS_EXT_AIDING_POS        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_POS)
 #define GRMC_BITS_EXT_AIDING_VEL        (0x0000000000000001 << GRMC_BIT_POS_EXT_AIDING_VEL)
+#define GRMC_BITS_TIME              (0x0000000000000001 << GRMC_BIT_POS_TIME)
 #define GRMC_BITS_PRESET                (0x8000000000000000)                                        // Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2289,7 +2296,8 @@ enum GRMC_BIT_POS{
                                         /*| GRMC_BITS_RTOS_INFO*/ \
                                         | GRMC_BITS_STATUS \
                                         /*| GRMC_BITS_DEBUG_ARRAY*/ \
-                                        | GRMC_BITS_GPX_SYS_FAULT)
+                                        | GRMC_BITS_GPX_SYS_FAULT \
+                                        | GRMC_BITS_TIME)
 
 #define GRMC_PRESET_GPX_GNSS1   (GRMC_BITS_GNSS1_POS \
                                         | GRMC_BITS_GNSS1_VEL \
@@ -3390,7 +3398,7 @@ enum eExtAidingFrame
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED (see eExtAidingFrame)
+    uint32_t   status;       //!< Frame/status of measurement; use 1=ECEF (see eExtAidingFrame). Position is currently processed as ECEF even if another frame is specified.
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
@@ -4286,7 +4294,7 @@ typedef struct PACKED
 } gnss_raw_t;
 
 /**
- * @brief (DID_GNSS1_TIMEPULSE, DID_GNSS2_TIMEPULSE) GNSS PPS (pulse-per-second) time
+ * @brief (DID_GNSS1_TIMESYNC, DID_GNSS2_TIMESYNC) GNSS PPS (pulse-per-second) time
  * synchronization status, correlating the local MCU clock to GPS time of week via the receiver's
  * timepulse (PPS) output.
  */
@@ -5110,6 +5118,21 @@ typedef struct
 
 } system_fault_t;
 
+/** @brief (DID_TIME_PULSE) GPX 1PPS/timepulse status. Reports the GPS time of week corresponding to the most recent 1PPS timepulse event, along with its status and a running count of timepulse sync events. */
+typedef struct
+{
+    uint32_t    week;           //!< GPS number of weeks since January 6th, 1980
+
+    uint32_t    timeOfWeekMs;   //!< (ms) GPS time of week (since Sunday morning) of the timepulse event
+
+    uint32_t    status;         //!< Timepulse status flags
+
+    uint32_t    syncCnt;        //!< Count of timepulse sync events since power-on
+
+    uint32_t    reserved[4];    //!< Reserved for future use
+
+} is_time_t;
+
 /** @brief RTOS task IDs for the IMX target, indexing rtos_info_t.task[] (DID_RTOS_INFO). Order must match the task creation order in IMX firmware; IMX_RTOS_NUM_TASKS (kept last) sizes the task[] array and is not itself a task ID. */
 enum eImxRtosTask
 {
@@ -5390,6 +5413,7 @@ typedef union PACKED
     debug_array_t                   imxDebugArray;  //!< DID_DEBUG_ARRAY / DID_EVB_DEBUG_ARRAY
     debug_array_t                   gpxDebugArray;  //!< DID_GPX_DEBUG_ARRAY
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
+    is_time_t                       ISBTimepulse;   //!< DID_TIME_PULSE
     did_event_t                     event;          //!< DID_EVENT
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT

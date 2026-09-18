@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <cstring>
 #include <memory>
 #include <regex>
@@ -17,6 +18,7 @@
 // #include <acc_prof.h>
 
 #include "ISDataMappings.h"
+#include "imx_defaults.h"
 #include "util/uri.hpp"
 
 
@@ -275,19 +277,16 @@ std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
     return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
 }
 
-std::string utils::getHardwareAsString(const dev_info_t& devInfo, bool showRev) {
+std::string utils::getHardwareAsString(const dev_info_t& devInfo, uint16_t flags) {
     // Type-major-minor portion comes from the canonical packed-id renderer.
     // The dev_info_t carries two extra sub-rev bytes (hardwareVer[2..3]) that
     // the uint16 hdwId form can't represent — append them here when present.
     std::string out = utils::hdwIdToString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
-    if (!showRev)
-        return out;
-
-    if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+    if ((devInfo.hardwareVer[2] != 0) && (flags & DV_BIT_HARDWARE_REV))
         out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-        if (devInfo.hardwareVer[3] != 0)
-            out += utils::string_format(".%u", devInfo.hardwareVer[3]);
-    }
+    if ((devInfo.hardwareVariant != 0) && (flags & DV_BIT_HARDWARE_VARIANT))
+        out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
+
     return out;
 }
 
@@ -337,7 +336,8 @@ bool utils::parseHardwareFromString(const std::string& s, dev_info_t& devInfo) {
     }
 
     devInfo.hardwareType = type;
-    for (int i = 0; i < 4; ++i) devInfo.hardwareVer[i] = ver[i];
+    for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = ver[i];
+    devInfo.hardwareVariant = ver[3];   // TODO: confirm that all "to-string" rendering of hardware version+variant is z.y.x.w
     return true;
 }
 
@@ -526,8 +526,18 @@ std::string utils::getFirmwareInfoAsString(const dev_info_t& devInfo, uint16_t f
         // IS_HARDWARE_TYPE_UNKNOWN outright for a reply it cannot attribute -- and rendering those as
         // anything other than ISbl would change long-standing output for a real, reachable case.
         // Only a positively identified peripheral takes the other branch.
-        if (devInfo.hardwareType < IS_HDW_TYPE_PERIPHERAL)
-            return utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
+        if (devInfo.hardwareType < IS_HDW_TYPE_PERIPHERAL) {
+            // firmwareVer[1] is a letter suffix ('g', 'j', ...) and is zero whenever the ISbl version
+            // is not known -- a discovery hint carries no parsable one (see ISBFirmwareUpdater.cpp,
+            // which notes that "ISbl.v6j **BOOTLOADER**" yields 0). A zero rendered through "%c" puts
+            // a NUL *inside* the returned string, which string_format() preserves; any consumer that
+            // then prints it as a C string drops everything past the NUL, this text and the caller's
+            // own line ending included. Emit the suffix only when it is a real character.
+            const unsigned char suffix = static_cast<unsigned char>(devInfo.firmwareVer[1]);
+            if (std::isprint(suffix))       // already unsigned char, so always in isprint's valid domain
+                return utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], suffix);
+            return utils::string_format("ISbl.v%u **BOOTLOADER**", devInfo.firmwareVer[0]);
+        }
 
         // A peripheral in this state is in its OWN loader and reports that loader's version. Spell it
         // the way every other version is spelled, so it stays parsable by devInfoFromString() -- the
@@ -647,7 +657,7 @@ std::string utils::devInfoToString(const dev_info_t& devInfo, uint16_t flags) {
     if (flags & DV_BIT_SERIALNO)
         out += utils::string_format("SN%06d:", devInfo.serialNumber);
     if (flags & DV_BIT_HARDWARE_INFO)
-        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo);
+        out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo, flags);
     if (flags & DV_BIT_FIRMWARE_VER)
         out += (out.empty() ? "" : " ") + utils::getFirmwareAsString(devInfo);
     if (flags & (DV_BIT_BUILD_DATE | DV_BIT_BUILD_TIME | DV_BIT_BUILD_KEY | DV_BIT_BUILD_COMMIT))
@@ -696,6 +706,7 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
     std::string local_str = str;    // make a copy that we can destroy
     bool making_progress = true;      // we'll keep trying, as long as we keep making progress..
     devInfo = {};                   // reinitialize dev_info_t
+    uint8_t parsedHardwareVer[4] = {};
 
     while (!local_str.empty() && making_progress) {
         making_progress = false;
@@ -745,21 +756,26 @@ uint16_t utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
                         componentsParsed |= DV_BIT_BUILD_TIME;
                         break;
                     case 4: // parse HDW type & version
-                        // hardware type
-                        for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
-                            if (match[2].str() == g_isHardwareTypeNames[ii]) {
-                                devInfo.hardwareType = ii;
-                                break;
+                        {
+                            // hardware type
+                            for (ii = 0; ii < IS_HARDWARE_TYPE_COUNT; ii++) {
+                                if (match[2].str() == g_isHardwareTypeNames[ii]) {
+                                    devInfo.hardwareType = ii;
+                                    break;
+                                }
+                                if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
+                                    devInfo.hdwRunState = 1;    // Bootloader firmware?
+                                } else {
+                                    devInfo.hdwRunState = 2;    // APP firmware??
+                                }
                             }
-                            if ((str.find("bootloader") != std::string::npos) || (str.find("mcuboot") != std::string::npos)) {
-                                devInfo.hdwRunState = 1;    // Bootloader firmware?
-                            } else {
-                                devInfo.hdwRunState = 2;    // APP firmware??
-                            }
+                            // hardware version
+                            split_from_string<uint8_t, 4>(match[3].str(), parsedHardwareVer);
+                            for (int i = 0; i < 3; ++i) devInfo.hardwareVer[i] = parsedHardwareVer[i];
+                            devInfo.hardwareVariant = parsedHardwareVer[3];
                         }
-                        // hardware version
-                        for (auto& e : devInfo.hardwareVer) e = 0;
-                        split_from_string<uint8_t, 4>(match[3].str(), devInfo.hardwareVer);
+                        if (devInfo.hardwareVer[2]) componentsParsed |= DV_BIT_HARDWARE_REV;
+                        if (devInfo.hardwareVariant) componentsParsed |= DV_BIT_HARDWARE_VARIANT;
                         componentsParsed |= DV_BIT_HARDWARE_INFO;
                         break;
                     case 5: // build key and build number
@@ -848,12 +864,17 @@ bool utils::devInfoHdwMatch(const dev_info_t &info1, const dev_info_t &info2)
         return false;
     }
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
         if (info1.hardwareVer[i] != info2.hardwareVer[i])
         {
             return false;
         }
+    }
+
+    if (info1.hardwareVariant != info2.hardwareVariant)
+    {
+        return false;
     }
 
     return true;
@@ -1013,7 +1034,7 @@ uint32_t utils::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2)
     match |= (((info1.hardwareVer[0]    == info2.hardwareVer[0])    & 1) << 4);
     match |= (((info1.hardwareVer[1]    == info2.hardwareVer[1])    & 1) << 5);
     match |= (((info1.hardwareVer[2]    == info2.hardwareVer[2])    & 1) << 6);
-    match |= (((info1.hardwareVer[3]    == info2.hardwareVer[3])    & 1) << 7);
+    match |= (((info1.hardwareVariant   == info2.hardwareVariant)   & 1) << 7);
 
     match |= (((info1.firmwareVer[0]    == info2.firmwareVer[0])    & 1) << 8);
     match |= (((info1.firmwareVer[1]    == info2.firmwareVer[1])    & 1) << 9);
@@ -1202,4 +1223,227 @@ std::string utils::globToRegex(const std::string& globs) {
     }
 
     return pattern.empty() ? "(.+)" : pattern;
+}
+
+/** Bit groups of ioConfig/ioConfig2 that render as a single token, so a changed subfield renders its whole group. */
+#define IOCFG_GNSS1_GROUP  ((uint32_t)((IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS1_TYPE_OFFSET) | (IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS1_SOURCE_OFFSET) | IO_CFG_GNSS1_PPS_SOURCE_BITMASK | IO_CONFIG_GNSS1_NO_INIT))
+#define IOCFG_GNSS2_GROUP  ((uint32_t)((IO_CONFIG_GNSS_TYPE_MASK << IO_CONFIG_GNSS2_TYPE_OFFSET) | (IO_CONFIG_GNSS_SOURCE_MASK << IO_CONFIG_GNSS2_SOURCE_OFFSET) | IO_CONFIG_GNSS2_NO_INIT))
+#define IOCFG2_GNSS2_GROUP ((uint8_t)(IO_CFG2_GNSS2_PPS_SOURCE_BITMASK | IO_CFG2_USE_GNSS2_AS_SOURCE))
+
+const char* utils::platformTypeName(uint8_t platformType) {
+    switch (platformType) {
+        case PLATFORM_CFG_TYPE_NONE:                return "none";
+        case PLATFORM_CFG_TYPE_BRK_GPX:             return "BRK-GPX";
+        case PLATFORM_CFG_TYPE_BRK_2_X20:           return "BRK-X20";
+        case PLATFORM_CFG_TYPE_BRK_2_SG5:           return "BRK-SG5";
+        case PLATFORM_CFG_TYPE_RUG4_X20:            return "RUG4-X20";
+        case PLATFORM_CFG_TYPE_RUG4_SG5:            return "RUG4-SG5";
+        case PLATFORM_CFG_TYPE_RUG4_GPX:            return "RUG4-GPX";
+        case PLATFORM_CFG_TYPE_RUGn_G0:             return "RUGn-G0";
+        case PLATFORM_CFG_TYPE_RUG3_G1:             return "RUG3-G1";
+        case PLATFORM_CFG_TYPE_RUG3_G2:             return "RUG3-G2";
+        case PLATFORM_CFG_TYPE_EVB2_G2:             return "EVB2-G2";
+        case PLATFORM_CFG_TYPE_TBED3:               return "TBED3";
+        case PLATFORM_CFG_TYPE_IG1_0_G2:            return "IG1.0-G2";
+        case PLATFORM_CFG_TYPE_IG1_G1:              return "IG1.1-G1";
+        case PLATFORM_CFG_TYPE_IG1_G2:              return "IG1.1-G2";
+        case PLATFORM_CFG_TYPE_IG2:                 return "IG2";
+        case PLATFORM_CFG_TYPE_LAMBDA_G1:           return "LAMBDA-G1";
+        case PLATFORM_CFG_TYPE_LAMBDA_G2:           return "LAMBDA-G2";
+        case PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA:   return "TBED2-G1-LAMBDA";
+        case PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA:   return "TBED2-G2-LAMBDA";
+        case PLATFORM_CFG_TYPE_IG2_1:               return "IG2.1";
+        default:                                    return nullptr;   // includes 4, an unassigned gap
+    }
+}
+
+std::string utils::platformDescription(uint32_t platformConfig, int flags) {
+    uint8_t type = (uint8_t)(platformConfig & PLATFORM_CFG_TYPE_MASK);
+    if (type == PLATFORM_CFG_TYPE_NONE)
+        return std::string();
+
+    const char* name = platformTypeName(type);
+    std::string out = name ? name : string_format("PT-%u", (unsigned)type);
+
+    if (flags & CFGI_VERBOSE) {
+        uint8_t preset = (uint8_t)((platformConfig & PLATFORM_CFG_PRESET_MASK) >> PLATFORM_CFG_PRESET_OFFSET);
+        out += string_format(":%u", (unsigned)preset);
+        if (platformConfig & PLATFORM_CFG_TYPE_FROM_MANF_OTP)
+            out += " (OTP)";
+    }
+    return out;
+}
+
+/** @return the eIoConfig GNSS type name, or "Tn" for a value the enum does not define */
+static std::string gnssTypeName(uint32_t type) {
+    switch (type) {
+        case IO_CONFIG_GNSS_TYPE_NONE:          return "none";
+        case IO_CONFIG_GNSS_TYPE_UBLOX:         return "uBlox";
+        case IO_CONFIG_GNSS_TYPE_NMEA:          return "NMEA";
+        case IO_CONFIG_GNSS_TYPE_GPX:           return "GPX";
+        case IO_CONFIG_GNSS_TYPE_SEPTENTRIO:    return "Septentrio";
+        case IO_CONFIG_GNSS_TYPE_ISB:           return "ISB";
+        default:                                return utils::string_format("T%u", (unsigned)type);
+    }
+}
+
+/** @return the eIoConfig GNSS source name, or "Sn" for a value the enum does not define (1 and 2 are unassigned) */
+static std::string gnssSourceName(uint32_t source) {
+    switch (source) {
+        case IO_CONFIG_GNSS_SOURCE_DISABLE: return "off";
+        case IO_CONFIG_GNSS_SOURCE_SER0:    return "Ser0";
+        case IO_CONFIG_GNSS_SOURCE_SER1:    return "Ser1";
+        case IO_CONFIG_GNSS_SOURCE_SER2:    return "Ser2";
+        default:                            return utils::string_format("S%u", (unsigned)source);
+    }
+}
+
+/** @return the pin name carrying GNSS1's timepulse, or "Pn" for a value the enum does not define */
+static std::string pps1PinName(uint32_t src) {
+    switch (src) {
+        case IO_CFG_GNSS1_PPS_SOURCE_DISABLED:  return "off";
+        case IO_CFG_GNSS1_PPS_SOURCE_G15:       return "G15";
+        case IO_CFG_GNSS1_PPS_SOURCE_G2:        return "G2";
+        case IO_CFG_GNSS1_PPS_SOURCE_G5:        return "G5";
+        case IO_CFG_GNSS1_PPS_SOURCE_G12:       return "G12";
+        case IO_CFG_GNSS1_PPS_SOURCE_G9:        return "G9";
+        default:                                return utils::string_format("P%u", (unsigned)src);
+    }
+}
+
+/** @return the pin name carrying GNSS2's timepulse */
+static std::string pps2PinName(uint32_t src) {
+    switch (src) {
+        case IO_CFG2_GNSS2_PPS_SOURCE_DISABLED: return "off";
+        case IO_CFG2_GNSS2_PPS_SOURCE_G8:       return "G8";
+        case IO_CFG2_GNSS2_PPS_SOURCE_G11:      return "G11";
+        case IO_CFG2_GNSS2_PPS_SOURCE_G13:      return "G13";
+        default:                                return utils::string_format("P%u", (unsigned)src);
+    }
+}
+
+std::string utils::ioConfigDescription(uint32_t ioConfig, uint8_t ioConfig2, uint32_t platformConfig, int flags) {
+    // The baseline the platform implies. IO_CONFIG_DEFAULT first, because the mapper is an overlay
+    // that sets only the platform-derived GNSS fields -- the same order nvm_flash_cfg_defaults()
+    // uses. Without the seed, the pin-function fields of a stock board read as deviations.
+    uint32_t baseIo = IO_CONFIG_DEFAULT;
+    uint8_t baseIo2 = 0;
+    imxPlatformConfigToFlashCfgIoConfig(&baseIo, &baseIo2, platformConfig);
+
+    const bool verbose = (flags & CFGI_VERBOSE) != 0;
+    const uint32_t deltaIo = ioConfig ^ baseIo;
+    const uint8_t deltaIo2 = (uint8_t)(ioConfig2 ^ baseIo2);
+    std::vector<std::string> parts;
+
+    const uint32_t g1type = IO_CONFIG_GNSS1_TYPE(ioConfig);
+    const uint32_t g2type = IO_CONFIG_GNSS2_TYPE(ioConfig);
+
+    if (verbose && (g1type == IO_CONFIG_GNSS_TYPE_NONE) && (g2type == IO_CONFIG_GNSS_TYPE_NONE))
+        parts.push_back("no GNSS");
+
+    if (verbose || (deltaIo & IOCFG_GNSS1_GROUP)) {
+        if (verbose || (g1type != IO_CONFIG_GNSS_TYPE_NONE)) {
+            std::string s = "GNSS1=" + gnssTypeName(g1type) + "@" + gnssSourceName(IO_CONFIG_GNSS1_SOURCE(ioConfig));
+            uint32_t pps = IO_CFG_GNSS1_PPS_SOURCE(ioConfig);
+            if (verbose || (pps != IO_CFG_GNSS1_PPS_SOURCE_DISABLED))
+                s += " PPS1=" + pps1PinName(pps);
+            if (ioConfig & IO_CONFIG_GNSS1_NO_INIT)
+                s += " no-init";
+            parts.push_back(s);
+        }
+    }
+
+    if (verbose || (deltaIo & IOCFG_GNSS2_GROUP) || (deltaIo2 & IOCFG2_GNSS2_GROUP)) {
+        if (verbose || (g2type != IO_CONFIG_GNSS_TYPE_NONE)) {
+            std::string s = "GNSS2=" + gnssTypeName(g2type) + "@" + gnssSourceName(IO_CONFIG_GNSS2_SOURCE(ioConfig));
+            uint32_t pps2 = IO_CFG2_GNSS2_PPS_SOURCE(ioConfig2);
+            if (verbose || (pps2 != IO_CFG2_GNSS2_PPS_SOURCE_DISABLED))
+                s += " PPS2=" + pps2PinName(pps2);
+            if (ioConfig & IO_CONFIG_GNSS2_NO_INIT)
+                s += " no-init";
+            if (ioConfig2 & IO_CFG2_USE_GNSS2_AS_SOURCE)
+                s += " nmea-src";
+            parts.push_back(s);
+        }
+    }
+
+    // SPI is selected by a value of the G5,G8 field and overrides G6,G7, so it renders as its own
+    // token and suppresses the G6,G7 one rather than printing a contradiction.
+    const bool spi = ((ioConfig & IO_CONFIG_G5G8_MASK) == IO_CONFIG_G5G8_G6G7_SPI_ENABLE);
+    const bool spiBase = ((baseIo & IO_CONFIG_G5G8_MASK) == IO_CONFIG_G5G8_G6G7_SPI_ENABLE);
+    if (verbose || (spi != spiBase)) {
+        if (spi)
+            parts.push_back("SPI");
+    }
+
+    if (verbose || (deltaIo & IO_CONFIG_G1G2_MASK)) {
+        const char* fn = "off";
+        switch (ioConfig & IO_CONFIG_G1G2_MASK) {
+            case IO_CONFIG_G1G2_STROBE_INPUT_G2:    fn = "strobe-G2"; break;
+            case IO_CONFIG_G1G2_CAN_BUS:            fn = "CAN";       break;
+            case IO_CONFIG_G1G2_COM2:               fn = "COM2";      break;
+            case IO_CONFIG_G1G2_I2C:                fn = "I2C";       break;
+            default: break;
+        }
+        parts.push_back(std::string("G1G2=") + fn);
+    }
+
+    if (!spi && (verbose || (deltaIo & IO_CONFIG_G6G7_MASK)))
+        parts.push_back(std::string("G6G7=") + (((ioConfig & IO_CONFIG_G6G7_MASK) == IO_CONFIG_G6G7_COM1) ? "COM1" : "off"));
+
+    if (verbose || (deltaIo & IO_CONFIG_G9_MASK)) {
+        const char* fn = "off";
+        switch (ioConfig & IO_CONFIG_G9_MASK) {
+            case IO_CONFIG_G9_STROBE_INPUT:         fn = "strobe-in"; break;
+            case IO_CONFIG_G9_STROBE_OUTPUT_NAV:    fn = "nav-out";   break;
+            case IO_CONFIG_G9_SPI_DRDY:             fn = "SPI-DRDY";  break;
+            default: break;
+        }
+        parts.push_back(std::string("G9=") + fn);
+    }
+
+    // Pin-level detail below is VERBOSE-only: a strobe or encoder difference is rarely what a reader
+    // of a device description is after, and including it crowds out the GNSS routing that usually is.
+    if (verbose) {
+        const char* g5g8 = "off";
+        switch (ioConfig & IO_CONFIG_G5G8_MASK) {
+            case IO_CONFIG_G5G8_STROBE_INPUT_G5:    g5g8 = "strobe-G5";    break;
+            case IO_CONFIG_G5G8_STROBE_INPUT_G8:    g5g8 = "strobe-G8";    break;
+            case IO_CONFIG_G5G8_STROBE_INPUT_G5_G8: g5g8 = "strobe-G5+G8"; break;
+            case IO_CONFIG_G5G8_G6G7_SPI_ENABLE:    g5g8 = "SPI";          break;
+            case IO_CONFIG_G5G8_QDEC_INPUT:         g5g8 = "QDEC";         break;
+            default: break;
+        }
+        parts.push_back(std::string("G5G8=") + g5g8);
+        parts.push_back(std::string("G15=") + ((ioConfig & IO_CONFIG_G15_STROBE_INPUT) ? "strobe-in" : "off"));
+        parts.push_back(std::string("strobe=") + ((ioConfig & IO_CONFIG_STROBE_TRIGGER_HIGH) ? "rising" : "falling"));
+        parts.push_back(std::string("G11=") + (((ioConfig2 >> IO_CFG2_G11_OFFSET) & IO_CFG2_G11_MASK) ? "strobe-in" : "SWDIO"));
+        parts.push_back(string_format("G12=%u", (unsigned)((ioConfig2 >> IO_CFG2_G12_OFFSET) & IO_CFG2_G12_MASK)));
+        parts.push_back(string_format("G13=%u", (unsigned)((ioConfig2 >> IO_CFG2_G13_OFFSET) & IO_CFG2_G13_MASK)));
+        // Marked unresolved: this field is an input only when no preset is selected, and nothing
+        // keeps it in step with an active preset.
+        parts.push_back(string_format("ioexp~0x%02X",
+            (unsigned)((platformConfig & PLATFORM_CFG_RUG_IOEXP_BIT_MASK) >> PLATFORM_CFG_RUG_IOEXP_BIT_OFFSET)));
+    }
+
+    std::string out;
+    for (size_t i = 0; i < parts.size(); i++)
+        out += (i ? ", " : "") + parts[i];
+    return out;
+}
+
+std::string utils::imxConfigDescription(const nvm_flash_cfg_t& cfg, int flags) {
+    // An unsynchronised flash config has not been read from the device, so none of its fields
+    // describe anything yet.
+    if (cfg.checksum == 0xFFFFFFFF)
+        return std::string();
+
+    std::string out = platformDescription(cfg.platformConfig, flags);
+    std::string io = ioConfigDescription(cfg.ioConfig, cfg.ioConfig2, cfg.platformConfig, flags);
+    if (!io.empty()) {
+        if (!out.empty())
+            out += " ";
+        out += "[" + io + "]";
+    }
+    return out;
 }

@@ -428,15 +428,29 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
         content = content.substr(n + sizeof(IS_LOG_FILE_PREFIX) - 1);
         stringstream ss(content);
 
-        // Read serial number, date, time, index
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
+        // Read serial number, date, time
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
         serialNum = stoi(str);
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
         date = str;
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
         time = str;
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }     
-        index = stoi(str);
+
+        // Index is the LAST underscore-delimited token, which must start with a digit. Anything
+        // between time and index is skipped rather than failing the parse, so an extra descriptive
+        // tag some tools embed in the filename (e.g. "..._225101_no_f9p_0001.dat") doesn't prevent
+        // the file from being recognized.
+        string token;
+        bool foundIndex = false;
+        while (getline(ss, token, '_'))
+        {
+            if (token.size() && isdigit(token[0]))
+            {
+                index = stoi(token);
+                foundIndex = true;
+            }
+        }
+        if (!foundIndex) { return false; }
     }
     else
     {   // No prefix - only index number

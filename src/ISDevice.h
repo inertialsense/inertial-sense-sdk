@@ -95,6 +95,11 @@ public:
         COMPACT_HARDWARE_VER     = 0x0004,      //!< forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
         COMPACT_SERIALNO         = 0x0008,      //!< disables zero-padding of the serial number
         COMPACT_BUILD_TYPE       = utils::FWI_COMPACT_BUILD_TYPE, //!< formats the build-type (when the firmware version is show) as a single character
+        SHOW_PLATFORM            = 0x0020,      //!< renders the carrier board, from flash config, inside the hardware parens: "SN60246 (IMX-5.0.4, RUG4-X20)". Instance methods only -- see the note on the static overloads
+        SHOW_IO_CONFIG           = 0x0040,      //!< renders the IMX io configuration after the port, bracketed, showing only what deviates from the platform's own configuration. Instance methods only
+
+        // Config Options -- aliases of the utils bits, so the two definitions cannot drift
+        CONFIG_VERBOSE           = utils::CFGI_VERBOSE,           //!< with SHOW_PLATFORM/SHOW_IO_CONFIG, renders every field rather than only deviations, and includes the pin-level detail
 
         // Version Options -- aliases of the utils bits, so the two definitions cannot drift
         OMIT_COMMIT_HASH         = utils::FWI_OMIT_COMMIT_HASH,   //!< suppresses the output of the commit hash/dirty status
@@ -102,6 +107,7 @@ public:
         OMIT_BUILD_DATE          = utils::FWI_OMIT_BUILD_DATE,    //!< suppresses the output of the build date
         OMIT_BUILD_TIME          = utils::FWI_OMIT_BUILD_TIME,    //!< suppresses the output of the build time
         OMIT_BUILD_MILLIS        = utils::FWI_OMIT_BUILD_MILLIS,  //!< suppresses the output of the build milliseconds when not zero
+        SHOW_HARDWARE_VARIANT    = 0x2000,                        //!< explicitly force showing the hardware variant
 
         ESSENTIAL_FIRMWARE_INFO  = (ISDevice::OMIT_COMMIT_HASH | ISDevice::OMIT_BUILD_KEY | ISDevice::OMIT_BUILD_MILLIS | ISDevice::OMIT_BUILD_DATE | ISDevice::OMIT_BUILD_TIME),
     };
@@ -110,9 +116,17 @@ public:
 
     /** @return the formatted unique-identifier string (see getIdAsString()) for the given devInfo, without requiring an ISDevice instance. */
     static std::string getIdAsString(const dev_info_t& devInfo);
-    /** @brief Formats the device-name string (see getName()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted name string */
+    /**
+     * @brief Formats the device-name string (see getName()) for the given devInfo, without requiring an ISDevice instance.
+     * SHOW_PLATFORM has no effect here: the platform is held in flash config, which a dev_info_t does not carry.
+     * @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted name string
+     */
     static std::string getName(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER));
-    /** @brief Formats the device-description string (see getDescription()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted description string */
+    /**
+     * @brief Formats the device-description string (see getDescription()) for the given devInfo, without requiring an ISDevice instance.
+     * SHOW_PLATFORM and SHOW_IO_CONFIG have no effect here: both are held in flash config, which a dev_info_t does not carry.
+     * @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted description string
+     */
     static std::string getDescription(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER | ESSENTIAL_FIRMWARE_INFO));
     /** @brief Formats the firmware-info string (see getFirmwareInfo()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted firmware-info string */
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
@@ -481,8 +495,17 @@ public:
     int SendRaw(const void* data, uint32_t length) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendRaw(port, data, length) : -1; }
     /** @brief Sends a DID_* data set to the device (a "set data" request). @return bytes sent, or -1 if not connected or the device is in the bootloader. */
     int SendData(eDataIDs dataId, const void* data, uint32_t length, uint32_t offset = 0) { std::lock_guard<std::recursive_mutex> lock(portMutex); return (isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER) ? comManagerSendData(port, data, dataId, length, offset) : -1; }
-    /** @brief Requests the device broadcast (or fetch once, if period is 0) the given DID. No-op if not connected or the device is in the bootloader. */
-    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetData(port, dataId, length, offset, period); }
+    /**
+     * @brief Requests the device broadcast (or fetch once, if period is 0) the given DID. No-op if not connected or the device is in the bootloader.
+     * @param flags p_data_get_t request flags (see eGetDataFlags in ISComm.h). Most callers want
+     *              the default of 0; pass GET_DATA_FLAGS_PRESERVE_STREAM when polling with
+     *              period=0 to ask a device that supports it not to stop an existing broadcast
+     *              for this DID on this port (SN-8471) -- see GetDataPreserveStream().
+     */
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0, uint16_t flags=0) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataFlags(port, dataId, length, offset, period, flags); }
+
+    /** @brief Convenience for GetData(dataId, 0, 0, 0, GET_DATA_FLAGS_PRESERVE_STREAM) -- a one-shot poll that won't stop an existing broadcast for this DID on this port, on a device that supports the flag (SN-8471). */
+    void GetDataPreserveStream(eDataIDs dataId) { GetData(dataId, 0, 0, 0, GET_DATA_FLAGS_PRESERVE_STREAM); }
 
     /** @brief Requests the device broadcast a preset RMC (real-time message controller) bundle of messages. No-op if not connected or the device is in the bootloader. */
     void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { std::lock_guard<std::recursive_mutex> lock(portMutex); if ((isConnected() && devInfo.hdwRunState != HDW_STATE_BOOTLOADER)) comManagerGetDataRmc(port, rmcPreset, rmcOptions); }

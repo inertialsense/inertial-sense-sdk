@@ -74,6 +74,10 @@ public:
 
     cDataChunk m_chunk;     //!< staging buffer for not-yet-flushed raw bytes; written/read with no chunk header (see the file-level documentation)
 
+protected:
+    /** @brief The `.raw` on-disk stream IS raw ISB wire bytes, so a `.dvi` sidecar in that same encoding is meaningful here. */
+    bool WantsDeviceInfoSidecar() const OVERRIDE { return true; }
+
 private:
     /** @brief Initialize `m_comm` and enable the recognized protocols (IS binary data, NMEA, RTCM3, u-blox). */
     void initCommInstance();

@@ -245,6 +245,8 @@ private:
                             uint64_t anchorTowEnd,
                             int64_t  uptimeToTowOffsetMs,
                             bool     haveUptimeOffset,
+                            uint64_t fileAnchorMs,
+                            bool     haveFileAnchor,
                             std::vector<Session> sessions = {}) noexcept
         : syncPoints_(std::move(syncs)),
           discontinuities_(std::move(discs)),
@@ -253,6 +255,8 @@ private:
           anchorTowEnd_(anchorTowEnd),
           uptimeToTowOffsetMs_(uptimeToTowOffsetMs),
           haveUptimeOffset_(haveUptimeOffset),
+          fileAnchorMs_(fileAnchorMs),
+          haveFileAnchor_(haveFileAnchor),
           sessions_(std::move(sessions)) {}
 
     //! Core detection: scans all segments for sync points AND (SN-8323 uptime
@@ -294,6 +298,15 @@ private:
     int64_t                     uptimeToTowOffsetMs_ = 0;
     //! True when a synced DID_SYS_PARAMS gave a usable uptime->ToW offset.
     bool                        haveUptimeOffset_ = false;
+    //! Kyle 2026-09-07 (Option B): wall-clock instant (Unix-epoch ms) corresponding
+    //! to host-uptime == 0, recovered from the log's own file (filename/directory
+    //! name, or last-write time) when the log has zero sync points of any kind.
+    //! Only meaningful when `haveFileAnchor_` is true; see `deriveFileAnchorMs`.
+    uint64_t                    fileAnchorMs_ = 0;
+    //! True when `build()` found a usable file-timestamp anchor (Option B). Only
+    //! ever set when `syncPoints_` is empty -- a log with any real sync point
+    //! never needs this fallback.
+    bool                        haveFileAnchor_ = false;
     //! SN-8339: per-power-on sessions (reboot = SYS_PARAMS.upTime drop in
     //! arrival order). Size 1 for a single-boot log; the arrival-keyed resolve()
     //! overload uses per-session offsets when size > 1.

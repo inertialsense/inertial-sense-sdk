@@ -36,7 +36,7 @@ PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_t, timeMs, dt, current_mode, stat
 PYBIND11_NUMPY_DTYPE(nmeaBroadcastMsgPair_t, msgID, msgPeriod);
 
 // Public Types
-PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, buildFlags, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildType, buildYear, buildMonth, buildDay, buildHour, buildMinute, buildSecond, buildMillisecond, addInfo);
+PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, buildFlags, serialNumber, hardwareVer, hardwareVariant, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildType, buildYear, buildMonth, buildDay, buildHour, buildMinute, buildSecond, buildMillisecond, addInfo);
 PYBIND11_NUMPY_DTYPE(system_fault_t, upTime, status, fileNum, lineNum, haltReason, lr, pc, psr, taskALastFeed, taskBLastFeed, wdtLastFeed, var0, var1, var2, var3);
 PYBIND11_NUMPY_DTYPE(pimu_t, time, dt, status, theta, vel);
 PYBIND11_NUMPY_DTYPE(ins_1_t, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned);
@@ -66,6 +66,7 @@ PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, imus, temp, mag);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, imu, mag, bar, barTemp, humidity, ana);
 PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
+PYBIND11_NUMPY_DTYPE(is_time_t, week, timeOfWeekMs, status, syncCnt, reserved);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
 PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, hdg_err, hdg_coarse, hdg_aligned, hdg_aligning, ekf_init_done, mag_cal_good, mag_cal_done, stat_magfield);
 PYBIND11_NUMPY_DTYPE(magnetometer_t, time, mag);
@@ -82,6 +83,12 @@ PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
 PYBIND11_NUMPY_DTYPE(port_monitor_set_t, portInfo, status, txBytesPerSec, rxBytesPerSec, txBytes, rxBytes, txDataDrops, rxOverflows, txBytesDropped, rxChecksumErrors);
 PYBIND11_NUMPY_DTYPE(port_monitor_t, port, activePorts);
+PYBIND11_NUMPY_DTYPE(ext_aiding_pos_t, timeOfWeekMs, status, pos, offset, var);
+PYBIND11_NUMPY_DTYPE(ext_aiding_vel_t, timeOfWeekMs, status, vel, offset, var);
+PYBIND11_NUMPY_DTYPE(ext_aiding_speed_t, timeOfWeekMs, status, speed, var, offset);
+PYBIND11_NUMPY_DTYPE(ext_aiding_dir_speed_t, timeOfWeekMs, status, speed, var, offset, direction);
+PYBIND11_NUMPY_DTYPE(ext_aiding_heading_t, timeOfWeekMs, status, heading, var);
+PYBIND11_NUMPY_DTYPE(ext_aiding_attitude_t, timeOfWeekMs, status, att, var);
 
 // PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
 // PYBIND11_NUMPY_DTYPE(evb_status_t, week, timeOfWeekMs, firmwareVer, evbStatus, loggerMode, loggerElapsedTimeMs, wifiIpAddr, sysCommand);

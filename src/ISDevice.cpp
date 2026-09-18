@@ -512,6 +512,7 @@ bool ISDevice::validate(uint32_t timeout) {
                 devInfo.serialNumber = oldDevInfo.serialNumber;
                 devInfo.hardwareType = oldDevInfo.hardwareType;
                 memcpy(devInfo.hardwareVer, oldDevInfo.hardwareVer, sizeof(devInfo.hardwareVer));
+                devInfo.hardwareVariant = oldDevInfo.hardwareVariant;
                 devInfo.hdwRunState = HDW_STATE_UNKNOWN;
                 hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             }
@@ -676,14 +677,7 @@ int ISDevice::validateAsync(uint32_t timeout) {
  * @return
  */
 std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
-    const char *typeName = "\?\?\?";
-    switch (devInfo.hardwareType) {
-        case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-        case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
-        case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
-        default: typeName = "\?\?\?"; break;
-    }
-    return utils::string_format("%s-%d.%d::SN%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
+    return utils::deviceIdString(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber);
 }
 
 std::string ISDevice::getIdAsString() const {
@@ -784,11 +778,10 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     } else {
         out += utils::string_format("%s-%u.%u", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1]);
         if (!(flags & COMPACT_HARDWARE_VER)) {
-            if ((devInfo.hardwareVer[2] != 0) || (devInfo.hardwareVer[3] != 0)) {
+            if (devInfo.hardwareVer[2] != 0)
                 out += utils::string_format(".%u", devInfo.hardwareVer[2]);
-                if (devInfo.hardwareVer[3] != 0)
-                    out += utils::string_format(".%u", devInfo.hardwareVer[3]);
-            }
+            if ((devInfo.hardwareVariant != 0) && (flags & SHOW_HARDWARE_VARIANT))
+                out += utils::string_format(" (v%u)", devInfo.hardwareVariant);
         }
     }
     out += ")";
@@ -797,7 +790,17 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
 }
 
 std::string ISDevice::getName(int flags) const {
-    return getName(devInfo, flags);
+    std::string out = getName(devInfo, flags);
+
+    // The carrier board belongs with the hardware it qualifies, so it goes inside the same parens.
+    // Only an instance can render it: the platform is held in flash config, not devInfo, and an
+    // unsynchronized flash config has not been read from the device and so describes nothing.
+    if ((flags & SHOW_PLATFORM) && (imxFlashCfg.checksum != 0xFFFFFFFF)) {
+        std::string platform = utils::platformDescription(imxFlashCfg.platformConfig, flags);
+        if (!platform.empty() && !out.empty() && (out.back() == ')'))
+            out.insert(out.size() - 1, ", " + platform);
+    }
+    return out;
 }
 
 /**
@@ -828,6 +831,15 @@ std::string ISDevice::getFirmwareInfo(int flags) const {
     return getFirmwareInfo(devInfo, flags);
 }
 
+std::string ISDevice::getDescription(const dev_info_t& devInfo, int flags) {
+    // No port, platform or io configuration here: a dev_info_t carries none of them, so this is the
+    // name and firmware only. The instance overload adds the rest.
+    std::string desc = getName(devInfo, flags);
+    if (!(flags & OMIT_FIRMWARE_VERSION))
+        desc += " " + getFirmwareInfo(devInfo, flags);
+    return desc;
+}
+
 std::string ISDevice::getDescription(int flags) const {
     std::string desc = getName(flags);
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
@@ -835,6 +847,16 @@ std::string ISDevice::getDescription(int flags) const {
     }
     if (!(flags & OMIT_PORT_NAME) && portIsValid(port))
         desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
+
+    // After the port, so the port and its connection state stay adjacent. Renders nothing unless
+    // the configuration differs from what this device's platform implies, which keeps it absent on
+    // a device configured as its carrier intends. A GPX has no ioConfig, and its imxFlashCfg is
+    // never synchronized, so the checksum gate covers that too.
+    if ((flags & SHOW_IO_CONFIG) && (imxFlashCfg.checksum != 0xFFFFFFFF)) {
+        std::string io = utils::ioConfigDescription(imxFlashCfg.ioConfig, imxFlashCfg.ioConfig2, imxFlashCfg.platformConfig, flags);
+        if (!io.empty())
+            desc += " [" + io + "]";
+    }
     return desc;
 }
 
@@ -1243,6 +1265,7 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
 
     // If there are no upload pending, then just go ahead and check...
     unsigned int startMs = current_timeMs();
+    uint32_t lastSeenChecksum = sysParams.flashCfgChecksum;
     while(!ImxFlashConfigSynced())
     {   // Request and wait for IMX flash config
         step();
@@ -1250,13 +1273,41 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
 
         int elaspedMs = (int)(current_timeMs() - startMs);
         if (elaspedMs > (int)timeoutMs)
-        {   // Timeout waiting for IMX flash config
-            log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed, 0x%08x (FlashCfg) != 0x%08x (SysParams)", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum);
+        {   // Timeout waiting for IMX flash config. Name the condition that actually failed, and
+            // claim only what is known. ImxFlashConfigSynced() requires a VALID flash-config checksum
+            // as well as a matching one, and 0xFFFFFFFF is the invalid sentinel -- one this function
+            // writes itself when forcing a re-sync. Reporting the two values as "0x... != 0x..."
+            // printed identical numbers either side of a "!=" whenever no valid checksum had been
+            // obtained, which reads as a comparison bug and sends the reader looking for one instead
+            // of at the device. Note the sentinel does not establish that a DID never arrived, only
+            // that no valid checksum came from it, so the message says that much and no more.
+            const bool haveFlashCfg = ValidFlashCfgCksum(imxFlashCfg.checksum);
+            const bool haveSysParams = ValidFlashCfgCksum(sysParams.flashCfgChecksum);
+            if (!haveFlashCfg || !haveSysParams) {
+                log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync after %d ms: no valid checksum obtained from %s%s%s.",
+                         getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs,
+                         haveFlashCfg ? "" : "DID_FLASH_CONFIG",
+                         (!haveFlashCfg && !haveSysParams) ? " or " : "",
+                         haveSysParams ? "" : "DID_SYS_PARAMS");
+            } else {
+                log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync after %d ms: checksum mismatch, 0x%08x (FlashCfg) != 0x%08x (SysParams).",
+                         getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs,
+                         imxFlashCfg.checksum, sysParams.flashCfgChecksum);
+            }
             return false;
         }
+        else if (sysParams.flashCfgChecksum != lastSeenChecksum)
+        {   // SN-8471: DID_SYS_PARAMS arrived on its own since our last check -- something is
+            // already streaming it (this session or a persisted config), so don't poll here.
+            // A plain period=0 poll would otherwise silently stop that existing stream.
+            lastSeenChecksum = sysParams.flashCfgChecksum;
+            log_bombastic(IS_LOG_ISDEVICE, "[%s] DID_SYS_PARAMS arrived passively, still waiting for a matching checksum...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        }
         else
-        {   // Query DID_SYS_PARAMS
-            GetData(DID_SYS_PARAMS);
+        {   // Nothing arrived passively -- explicitly request one value. Set the preserve-stream
+            // flag so a device that supports it won't stop some OTHER stream for this DID that we
+            // simply haven't observed yet (e.g. a persisted config, or another client's stream).
+            GetDataPreserveStream(DID_SYS_PARAMS);
             log_bombastic(IS_LOG_ISDEVICE, "[%s] Waiting for IMX flash sync...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         }
     }
@@ -1279,6 +1330,7 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
 
     // If there are no upload pending, then just go ahead and check...
     unsigned int startMs = current_timeMs();
+    uint32_t lastSeenChecksum = gpxStatus.flashCfgChecksum;
     while(!GpxFlashConfigSynced())
     {   // Request and wait for GPX flash config
         step();
@@ -1289,9 +1341,18 @@ bool ISDevice::WaitForGpxFlashCfgSynced(bool forceSync, uint32_t timeout)
             log_info(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_GPX_FLASH_CONFIG to sync!", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             return false;
         }
+        else if (gpxStatus.flashCfgChecksum != lastSeenChecksum)
+        {   // SN-8471: DID_GPX_STATUS arrived on its own since our last check -- something is
+            // already streaming it (this session or a persisted GRMC config), so don't poll here.
+            // A plain period=0 poll would otherwise silently stop that existing stream.
+            lastSeenChecksum = gpxStatus.flashCfgChecksum;
+            log_bombastic(IS_LOG_ISDEVICE, "[%s] DID_GPX_STATUS arrived passively, still waiting for a matching checksum...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
+        }
         else
-        {   // Query DID_GPX_STATUS
-            GetData(DID_GPX_STATUS);
+        {   // Nothing arrived passively -- explicitly request one value. Set the preserve-stream
+            // flag so a device that supports it won't stop some OTHER stream for this DID that we
+            // simply haven't observed yet (e.g. a persisted GRMC config, or another client's stream).
+            GetDataPreserveStream(DID_GPX_STATUS);
             log_bombastic(IS_LOG_ISDEVICE, "[%s] Waiting for GPX flash sync...", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
         }
     }

@@ -220,7 +220,7 @@ static void printStatus()
         printf("[DEV_INFO] SN=%-10u   HW=%u.%u.%u.%u   FW=%u.%u.%u.%u\n",
             g_lastDevInfo.serialNumber,
             g_lastDevInfo.hardwareVer[0], g_lastDevInfo.hardwareVer[1],
-            g_lastDevInfo.hardwareVer[2], g_lastDevInfo.hardwareVer[3],
+            g_lastDevInfo.hardwareVer[2], g_lastDevInfo.hardwareVariant,
             g_lastDevInfo.firmwareVer[0], g_lastDevInfo.firmwareVer[1],
             g_lastDevInfo.firmwareVer[2], g_lastDevInfo.firmwareVer[3]);
     else

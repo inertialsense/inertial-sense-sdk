@@ -19,47 +19,58 @@
  */
 bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     FnProfiler fn("PortManager::discoverPorts", 10000); // this can take a long time, but it generally should be fast
+    bool changed = false;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        EventScope eventScope(*this);
 
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    fn.mark("Got mutex.");
-    portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
+        fn.mark("Got mutex.");
+        portsChanged = false;   // always clear this flag every time we call discoverPorts - the process will set it back, if needed.
 
-    // Use the erase-remove idiom to clean up lost ports
-    for (auto it = knownPorts.begin(); it != knownPorts.end(); ) {
-        auto& entry = it->first;
-        auto& port = it->second;
+        // Use the erase-remove idiom to clean up lost ports
+        for (auto it = knownPorts.begin(); it != knownPorts.end(); ) {
+            auto& entry = it->first;
+            auto& port = it->second;
 
-        if (!portIsValid(port) || !entry.factory->validatePort(entry.name, entry.type)) {
-            erase(port);
-            for (auto& listener : listeners) {
-                (*listener)(PORT_REMOVED, portType(port), entry.name, port, *entry.factory);
+            if (!portIsValid(port) || !entry.factory->validatePort(entry.name, entry.type)) {
+                erase(port);
+                // Queued, not dispatched here: this runs inside this same locked body, and a
+                // PORT_REMOVED listener takes locks that another thread holds while waiting on
+                // ours (see pending_port_event_t). releasePort() moves with it, run by
+                // flushPortEvents() only after the notification is delivered.
+                queuePortRemoved(portType(port), entry.name, port, entry.factory);
+                it = knownPorts.erase(it);
+                portsChanged = true;
+            } else {
+                ++it;
             }
-            entry.factory->releasePort(port);
-            it = knownPorts.erase(it);
-            portsChanged = true;
-        } else {
-            ++it;
         }
-    }
-    fn.mark("Removed stale ports.");
+        fn.mark("Removed stale ports.");
 
-    // now look for new ports
-    for (auto factory : factories) {
-        auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-        factory->locatePorts(cb, pattern, pType);
-    }
-    fn.mark("Added new ports.");
-
-/*
-    // check to make sure all knownPorts are also representing in the top-level PortManager's set
-    for (auto& [entry, port] : knownPorts ) {
-        if (std::find_if(begin(), end(), [&](port_handle_t p){ return p == port; }) == end()) { // C++17 compliant, since we can't used set::contains()
-            insert(port);
-            portsChanged = true;   // note that we added/updated the list of ports
+        // now look for new ports
+        for (auto factory : factories) {
+            auto cb = std::bind(&PortManager::portHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+            factory->locatePorts(cb, pattern, pType);
         }
+        fn.mark("Added new ports.");
+
+    /*
+        // check to make sure all knownPorts are also representing in the top-level PortManager's set
+        for (auto& [entry, port] : knownPorts ) {
+            if (std::find_if(begin(), end(), [&](port_handle_t p){ return p == port; }) == end()) { // C++17 compliant, since we can't used set::contains()
+                insert(port);
+                portsChanged = true;   // note that we added/updated the list of ports
+            }
+        }
+    */
+        changed = portsChanged;
     }
-*/
-    return portsChanged;
+
+    // Dispatched with the mutex released: a PORT_ADDED listener reaches consumer code that
+    // takes a device's ISDevice::portMutex, while a thread stepping that device holds
+    // portMutex and waits on ours. See pending_port_event_t.
+    flushPortEvents();
+    return changed;
 }
 
 /**
@@ -73,7 +84,16 @@ bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
  * @param portName
  */
 void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std::string& portName) {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        EventScope eventScope(*this);
+        portHandlerLocked(factory, portType, portName);
+    }
+    // No-op when discoverPorts() is still on the stack; it flushes at its own exit.
+    flushPortEvents();
+}
+
+void PortManager::portHandlerLocked(PortFactory* factory, uint16_t portType, const std::string& portName) {
     port_entry_t portEntry(factory, portType, portName);
 
     // check if port is previously known
@@ -84,11 +104,10 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
             else {
                 // the port was previously identified, but the port handle is invalid.
                 // we probably should release to port and reallocate a new one
-                // finally, call our handler
-                for (auto& listener : listeners) {
-                    (*listener)(PORT_REMOVED, entry.type, entry.name, port, *entry.factory);
-                }
-                entry.factory->releasePort(port);
+                // Queued, not dispatched here -- same reason as discoverPorts()' removal loop:
+                // this runs inside a locked body, and a PORT_REMOVED listener takes locks that
+                // another thread holds while waiting on ours. releasePort() moves with it.
+                queuePortRemoved(entry.type, entry.name, port, entry.factory);
                 port = nullptr;
                 break;
             }
@@ -116,10 +135,9 @@ void PortManager::portHandler(PortFactory* factory, uint16_t portType, const std
         knownPorts[portEntry] = port;
         insert(port);
 
-        // finally, call our handler
-        for (auto& listener : listeners) {
-            (*listener)(PORT_ADDED, portType, portName, port, *factory);
-        }
+        // Queued, not dispatched here: this runs inside discoverPorts()' locked body, and a
+        // PORT_ADDED listener takes locks that another thread holds while waiting on ours.
+        queuePortAdded(portType, portName, port, factory);
 
         portsChanged = true;
     }

@@ -476,8 +476,28 @@ static inline uint16_t portStatsReset(port_handle_t port) {
 
 /**
  * Opens or establishes a connection to port. This function may not be supported on all port implementations.
+ *
+ * @warning SN-8571 -- asynchronous transports (e.g. tcpPort) do NOT finish connecting within one
+ * call. A non-blocking connect() reports "in progress" (EINPROGRESS), and that in-progress state is
+ * exactly what this function returns as PORT_ERROR__NONE -- deliberately WITHOUT setting
+ * PORT_FLAG__OPENED (see tcpPortOpen() in core/tcpPort.c). A caller that treats a single
+ * PORT_ERROR__NONE result as "the port is open" will silently operate on a port that isn't actually
+ * connected yet; this exact mistake has caused multiple bench-only failures (SN-8508, SN-8561) that
+ * never showed up over serial, because a synchronous (serial) port DOES set PORT_FLAG__OPENED on
+ * the first call and is unaffected.
+ *
+ * The contract: this call may need to be repeated, checking portIsOpened() after each one, until it
+ * returns true or a deadline elapses -- a sleep between attempts is not enough on its own; only a
+ * fresh portOpen() call advances a pending handshake.
+ *
+ * @b Prefer @b portOpenRetry() -- it implements exactly that polling loop and is the safe default
+ * for nearly every caller. Call this bare function directly only when you need to interleave other
+ * work between polls (see ISDevice::connect() for a worked example), and even then, always gate on
+ * portIsOpened() yourself -- never trust this function's return value alone to mean "open".
+ *
  * @param port the port to open
- * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error
+ * @return a PORT_ERROR__* number, or PORT_ERROR__NONE (0) if no error. NOTE: PORT_ERROR__NONE does
+ *         NOT mean the port is open on an asynchronous transport -- see above. Check portIsOpened().
  */
 static inline int portOpen(port_handle_t port) {
     if (!portIsValid(port)) return PORT_ERROR__INVALID;
@@ -491,11 +511,16 @@ static inline int portOpen(port_handle_t port) {
 }
 
 /**
- * Attempts to open the specified port, until a timeout occurs.
+ * Attempts to open the specified port, until a timeout occurs. This is the safe default for
+ * opening a port -- see the @warning on portOpen() above for why a single bare portOpen() call is
+ * not sufficient on an asynchronous transport (SN-8571).
  * @param port the port to open
  * @param timeoutMs the maximum time to wait for the port to open/connect
  * @param retryDelayMs the number of milliseconds to wait between failed open attempts
- * @return PORT_ERROR__NONE if successful, else of PORT_ERROR__* indicating the reason for failure.
+ * @return PORT_ERROR__NONE if the port actually reports open (portIsOpened()) before timeoutMs
+ *         elapses; otherwise a PORT_ERROR__* indicating why -- PORT_ERROR__TIMEOUT specifically
+ *         when every poll returned PORT_ERROR__NONE (still pending) but the port never opened in
+ *         time, so a perpetually-pending async connect cannot be mistaken for success (SN-8571).
  */
 int portOpenRetry(port_handle_t port, unsigned int timeoutMs, unsigned int retryDelayMs);
 

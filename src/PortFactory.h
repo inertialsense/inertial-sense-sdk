@@ -126,6 +126,25 @@ public:
     bool validatePort(const std::string& pName, uint16_t pType = 0) override;
 
     /**
+     * Resolves a caller-supplied port name to the canonical device path the OS enumerates it under.
+     *
+     * On Linux a serial port is commonly reached through a udev alias -- a rule carrying
+     * SYMLINK+="imx5" yields /dev/imx5 -> ttyACM0 -- but port discovery enumerates canonical kernel
+     * names from /sys/class/tty, and validation keys its sysfs lookup on that same canonical name.
+     * Either one, given an alias, rejects a device that is otherwise perfectly usable (SN-8575).
+     *
+     * Only an existing symlink is resolved. Everything else is returned unchanged: a canonical path,
+     * a name that does not exist, a dangling link, and -- importantly -- a regex pattern such as
+     * "*", "(.+)" or "/dev/tty(ACM|USB)[0-9]+", none of which name a file on disk. Pattern-based
+     * discovery is therefore unaffected. No-op on Windows, where COM-port aliasing is handled by
+     * QueryDosDevice rather than the filesystem.
+     *
+     * @param pName the port name, path, or pattern as supplied by the caller
+     * @return the canonical absolute device path if @p pName is a resolvable symlink, else @p pName
+     */
+    static std::string resolvePortName(const std::string& pName);
+
+    /**
      * Allocates and initializes a serial_port_t for the given port name. Does NOT open the device.
      * @param pName the serial device name/path to bind
      * @param pType additional port-type flags OR'd with PORT_TYPE__UART | PORT_TYPE__COMM
@@ -145,6 +164,16 @@ public:
     /** Sets the default blocking mode used when a port is bound without an explicit override. */
     SerialPortFactory& setBlocking(bool block) { portOptions.defaultBlocking = block; return *this; }
 
+    /**
+     * Identifies all serial ports known to the host OS. This does NOT do any port_handle allocation,
+     * validation, or other operation necessary to USE the port - it merely identifies them. This is the
+     * single OS-enumeration implementation for serial ports; use this instead of maintaining a second one.
+     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
+     *  the host operating system.
+     * @return the number of port names populated into the vector.
+     */
+    static int getComPorts(std::vector<std::string>& portNames);
+
 private:
     SerialPortFactory() = default;
     ~SerialPortFactory() = default;
@@ -159,17 +188,6 @@ private:
     static int onPortError(port_handle_t port, int errCode, const char *errMsg);
 
     std::vector<std::string> portNames = {};
-
-    /**
-     * An internal static function which identifies all available serial ports on the host device. It populates a referenced
-     * std::vector<std::string> with their names, as suitable identifiers. This does NOT do any port_handle allocation, validation,
-     * or other operations necessary to USE the port - it merely identifies them.
-     * @param portNames a reference to a vector of strings which will be cleared, and populated with UART/Serial ports known to
-     *  the host operating system.
-     * @return the number of port names populated into the vector.
-     */
-    static int getComPorts(std::vector<std::string>& portNames);
-
 
 #if PLATFORM_IS_LINUX
     static std::string get_driver__linux(const std::string& tty);
