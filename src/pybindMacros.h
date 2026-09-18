@@ -66,7 +66,7 @@ PYBIND11_NUMPY_DTYPE(sensors_w_temp_t, imus, temp, mag);
 
 PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, imu, mag, bar, barTemp, humidity, ana);
 PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
-PYBIND11_NUMPY_DTYPE(is_time_t, week, timeOfWeekMs, status, syncCnt, reserved);
+PYBIND11_NUMPY_DTYPE(is_timePulse_t, week, timeOfWeekMs, status, syncCnt, reserved);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
 PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, ahrs_gnss_cnt, hdg_err, hdg_coarse, hdg_aligned, hdg_aligning, ekf_init_done, mag_cal_good, mag_cal_done, stat_magfield);
 PYBIND11_NUMPY_DTYPE(magnetometer_t, time, mag);
