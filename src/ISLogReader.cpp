@@ -521,6 +521,13 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                                 r.header_         = *hdr;
                                 r.hadOnDiskIndex_ = true;
                                 r.buildIndexFromIdx(recs);
+                                // SN-8629: a trusted sidecar means no scan ran, so nothing
+                                // collected the anchor. Derive it from the records instead --
+                                // ISDeviceLog::fromSegments needs EVERY segment to carry an
+                                // orderable anchor, and a captured log normally arrives with
+                                // valid sidecars, so skipping this left the ordering fix
+                                // dormant on the common case.
+                                r.analyzeFromRecords(/*prev=*/nullptr);
                                 // Trusted index → assume the .raw is intact end-to-end. A future story can optionally
                                 // tail-verify, but here we honor the FINALIZED flag.
                                 r.isTruncated_      = false;
@@ -539,6 +546,9 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
         r.header_ = idx::makeDefaultHeader(0, idx::TimestampUnits::HostUptimeMs, idx::HeaderTimeSource::Mixed);
         if (r.format_ == SegmentFormat::Dat) {
             r.buildIndexFromScanDat();
+            // SN-8629: the .dat scan does not carry the collector (it walks chunk headers, not
+            // the ISB byte stream), so analyze from the records it just produced.
+            r.analyzeFromRecords(/*prev=*/nullptr);
         } else {
             r.buildIndexFromScan();
         }
@@ -622,18 +632,121 @@ uint64_t ISLogReader::filenameAnchorMs(const std::filesystem::path& p) {
     return 0;
 }
 
+ISExpected<ISLogReader> ISLogReader::openForAnalysis(const std::filesystem::path& raw) {
+    auto src = ISFileSource::open(raw);
+    if (!src) {
+        log_error(IS_LOG_ISLOG, "openForAnalysis: ISFileSource::open failed for %s: %s",
+                  raw.c_str(), src.error().message.c_str());
+        return tl::unexpected<ISError>{ src.error() };
+    }
+
+    auto fmt = formatFromExtension(raw);
+    if (!fmt) {
+        return fail(ISErrorCode::Unsupported,
+                    "ISLogReader::openForAnalysis: unrecognized segment extension: "
+                    + raw.string());
+    }
+
+    ISLogReader r;
+    r.rawSource_ = std::move(*src);
+    r.rawPath_   = raw;
+    r.format_    = *fmt;
+    // Recorded for diagnostics only. openForAnalysis never touches this path -- that is the
+    // whole point of not going through construct().
+    r.idxPath_   = std::filesystem::path{ raw }.replace_extension(".idx");
+    r.header_    = idx::makeDefaultHeader(0, idx::TimestampUnits::HostUptimeMs,
+                                          idx::HeaderTimeSource::Mixed);
+    return r;
+}
+
 ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::path& raw,
                                                        const AnchorAnalysis* prev) {
-    // Open and scan with the collector only. buildIndexFromScan populates records_ as a side
-    // effect of the same pass; the reader is a local and dies on return, so nothing is written
-    // and no index escapes -- which is what makes the cascade queryable without a rebuild.
-    auto r = openSegment(raw);
+    // openForAnalysis, NOT openSegment: openSegment reads the sidecar and persists a rebuilt one
+    // when it is missing, so routing through it made this function write .idx files into the
+    // caller's log directory (proven on a golden log whose sidecar had been removed: zero .idx
+    // before the call, one after). It also has to be the bytes, not the sidecar -- the sidecar
+    // may have been written by a pre-SN-8629 writer whose header timestamps are positional.
+    auto r = openForAnalysis(raw);
     if (!r) return tl::unexpected<ISError>{ r.error() };
-    if (r->anchorAnalysis().anchored()) return r->anchorAnalysis();
 
-    // Index came off disk, so no scan ran and there is no analysis. Force one.
-    r->buildIndexFromScan(prev, /*collectAnchor=*/true);
+    if (r->format_ == SegmentFormat::Dat) {
+        // The .dat index build does not carry the collector; analyze from the records it leaves.
+        r->buildIndexFromScanDat();
+        r->analyzeFromRecords(prev);
+    } else {
+        r->buildIndexFromScan(prev, /*collectAnchor=*/true);
+    }
     return r->anchorAnalysis();
+}
+
+void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
+    AnchorCollector collector;
+    collector.setFilenameAnchorMs(filenameAnchorMs(rawPath_));
+
+    // A `.dat` record's bytes ARE its payload (D-119); a `.raw` record's bytes are the whole ISB
+    // packet, framing included, so the payload has to be re-framed out of them.
+    const bool needsReframe = (format_ != SegmentFormat::Dat);
+
+    is_comm_instance_t comm{};
+    uint8_t           commBuf[PKT_BUF_SIZE];
+    if (needsReframe) {
+        is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
+        is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    }
+
+    for (std::size_t i = 0; i < records_.size(); ++i) {
+        const auto& rec = records_[i];
+
+        if (!AnchorCollector::needsPayload(rec.did)) {
+            // Timestamp-only: still contributes to the extrema, the stall detector and the
+            // running uptime a ToW-only anchor correlates against.
+            collector.consume(rec.did, /*structOffset=*/0, nullptr, 0, rec.timestamp);
+            continue;
+        }
+
+        const ISRecordView v      = viewAt(i);
+        const auto [bytes, nBytes] = v.bytes();
+        if (bytes == nullptr || nBytes == 0) {
+            collector.consume(rec.did, 0, nullptr, 0, rec.timestamp);
+            continue;
+        }
+
+        if (!needsReframe) {
+            collector.consume(rec.did, 0, bytes, static_cast<uint32_t>(nBytes), rec.timestamp);
+            continue;
+        }
+
+        // Re-frame this one record. Parsing its byte range through the canonical ISB parser
+        // yields the payload pointer AND the struct offset, rather than hand-computing header
+        // sizes here -- a second place that knows the wire layout is a second place to get it
+        // wrong. Reset per record so a malformed neighbour cannot bleed into the next.
+        is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
+        is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+
+        bool framed = false;
+        for (std::size_t b = 0; b < nBytes; ++b) {
+            const protocol_type_t ptype = is_comm_parse_byte(&comm, bytes[b]);
+            if (ptype != _PTYPE_INERTIAL_SENSE_DATA && ptype != _PTYPE_INERTIAL_SENSE_CMD) {
+                continue;
+            }
+            const auto& dataHdr = comm.rxPkt.dataHdr;
+            if (dataHdr.id != rec.did) break;   // index and bytes disagree; leave it to the scan path
+            collector.consume(dataHdr.id, static_cast<uint16_t>(dataHdr.offset),
+                              static_cast<const uint8_t*>(comm.rxPkt.data.ptr),
+                              dataHdr.size, rec.timestamp);
+            framed = true;
+            break;
+        }
+        if (!framed) {
+            collector.consume(rec.did, 0, nullptr, 0, rec.timestamp);
+        }
+    }
+
+    anchor_ = collector.finish(prev);
+    log_debug(IS_LOG_ISLOG, "%s: anchor from index: tier=%s anchored=[%llu..%llu]",
+              rawPath_.filename().c_str(), anchorTierName(anchor_.tier),
+              (unsigned long long)anchor_.anchoredStartMs,
+              (unsigned long long)anchor_.anchoredEndMs);
 }
 
 void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnchor) {

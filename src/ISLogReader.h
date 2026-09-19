@@ -187,11 +187,17 @@ public:
      * @brief Determine a segment's absolute start/end time and how trustworthy that is, WITHOUT
      *        building or writing an index.
      *
-     * Opens @p raw, runs one byte scan with only the anchor collector attached, and returns the
-     * result. No `.idx` is read or written, no record index is allocated, and the reader is
-     * discarded on return — so this is safe to call repeatedly on a segment purely to ask
-     * "where does this sit on the timeline?", which is what makes the cascade testable without
-     * a rebuild.
+     * Opens @p raw directly — bypassing sidecar discovery entirely — runs one byte scan with the
+     * anchor collector attached, and returns the result. The segment's own `.idx` is neither
+     * read nor written: not read, so the answer always comes from the bytes on disk rather than
+     * from whatever an older writer recorded; not written, so calling this never mutates the log
+     * directory. The reader is discarded on return. That combination is what makes the cascade
+     * testable and queryable without a rebuild.
+     *
+     * @warning Do NOT implement this by delegating to @ref openSegment. That path persists a
+     *          rebuilt sidecar when one is missing (see `persistIndex()`), which silently
+     *          created `.idx` files in the caller's log directory — the exact side effect this
+     *          entry point exists to avoid.
      *
      * @param raw   Path to the segment file (`.raw` or `.dat`).
      * @param prev  Analysis of the preceding segment, or `nullptr`. Supplies the chained-hint
@@ -207,10 +213,18 @@ public:
                                                      const AnchorAnalysis* prev = nullptr);
 
     /**
-     * @brief This segment's anchor analysis, produced by the scan that built its index.
+     * @brief This segment's anchor analysis — its domain-normalized position on the timeline.
      *
-     * Empty (`AnchorTier::None`) for a reader whose index came off disk rather than from a
-     * scan, since no scan ran to collect it.
+     * Populated for every successfully-opened segment, by whichever route produced the record
+     * index: the scan itself when the index was rebuilt, or @ref analyzeFromRecords when a
+     * trusted sidecar made a scan unnecessary. Both routes run the same cascade and are
+     * expected to agree; `test_anchor_analysis` asserts they do.
+     *
+     * This must hold for the sidecar path too, not just the rebuild path. `ISDeviceLog::
+     * fromSegments` orders segments by `anchoredStartMs` and requires EVERY segment to carry an
+     * orderable anchor before it will re-sort — so leaving the analysis empty whenever a valid
+     * `.idx` was present (which is the common case for a captured log) left the ordering fix
+     * dormant exactly where it was needed, silently falling back to filename order.
      */
     const AnchorAnalysis& anchorAnalysis() const noexcept { return anchor_; }
 
@@ -686,6 +700,34 @@ private:
 
     //! SN-8629: parse `YYYYMMDD_HHMMSS` from a segment filename into Unix ms; 0 when absent.
     static uint64_t filenameAnchorMs(const std::filesystem::path& p);
+
+    /**
+     * @brief Run the anchor cascade over an already-populated `records_`, without a byte scan.
+     *
+     * The route used when a trusted `.idx` sidecar made a scan unnecessary, and for `.dat`
+     * segments (whose index build does not carry the collector). Every record contributes its
+     * DID and timestamp — that is what the per-domain extrema and the stall detector are built
+     * from — while only the few DIDs that can actually anchor
+     * (`AnchorCollector::needsPayload`) have their payload materialized. The source is mmap'd
+     * or fully buffered, so materializing one is pointer arithmetic plus a re-frame, not I/O.
+     *
+     * @param prev  Previous segment's analysis, or `nullptr`. Same role as in
+     *              @ref buildIndexFromScan.
+     */
+    void analyzeFromRecords(const AnchorAnalysis* prev = nullptr);
+
+    /**
+     * @brief Open a segment for analysis only — no sidecar read, no sidecar write.
+     *
+     * Deliberately NOT @ref construct: that performs sidecar discovery and, on a miss, persists
+     * the rebuilt index. @ref analyzeSegment promises neither, so it needs a source-only open.
+     *
+     * @param raw  Path to the segment file.
+     * @return     A reader with its source, path, format and a default header set, and an empty
+     *             record index; or an `ISError` if the file cannot be opened or its extension
+     *             is unrecognized.
+     */
+    static ISExpected<ISLogReader> openForAnalysis(const std::filesystem::path& raw);
 
     /**
      * @brief `.dat` equivalent of @ref buildIndexFromScan (D-119 / SN-8626).

@@ -74,11 +74,20 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
         out_.uptimeMaxMs = std::max(out_.uptimeMaxMs, recordTsMs);
     }
 
-    // Anchor candidates must be whole records read from struct offset 0 — a partial record
-    // (dataHdr.offset != 0) does not contain the fields we need at the expected positions.
-    if (structOffset != 0 || payload == nullptr) return;
+    // A partial record (dataHdr.offset != 0) is one chunk of a larger struct. It carries a real
+    // timestamp, so it counted toward the extrema above, but it is excluded from everything
+    // below: its bytes do not hold the anchor fields at the expected positions, and several
+    // chunks of one logical record share a timestamp, which would read as a stalled clock.
+    if (structOffset != 0) return;
 
     trackStall(did, recordTsMs);
+
+    // Timestamp-only observation. The index-driven path (`ISLogReader::analyzeFromRecords`) has a
+    // DID and a timestamp for every record but only pays to re-frame the payload of the few DIDs
+    // that can actually anchor, so it passes nullptr for the rest. Everything above this point —
+    // per-domain extrema, stall detection, and the running uptime that a ToW-only anchor
+    // correlates against — needs the whole record stream to be correct.
+    if (payload == nullptr) return;
 
     // ---- Tier 5: dual-domain bridge records. ToW and uptime in ONE payload, so the offset
     // needs no correlation against a neighbour. DID_SYS_PARAMS is the IMX bridge and
@@ -251,6 +260,13 @@ AnchorAnalysis AnchorCollector::finish(const AnchorAnalysis* prev) {
               out_.uptimeRecords, out_.towRecords, out_.untimedRecords, out_.anomalies.size());
 
     return out_;
+}
+
+bool AnchorCollector::needsPayload(uint32_t did) noexcept {
+    // Only the dual-domain bridge records are read out of their payload. Tier-4 ToW-only
+    // candidates are recognized from the record's index timestamp alone, so a caller working
+    // from an index never has to re-frame them.
+    return did == DID_SYS_PARAMS || did == DID_GPX_STATUS;
 }
 
 bool AnchorCollector::isTowOnlyCandidate(uint32_t did) noexcept {

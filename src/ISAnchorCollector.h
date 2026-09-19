@@ -47,7 +47,11 @@ public:
      * @param structOffset  `dataHdr.offset` — the payload's offset within its struct. Anchor
      *                      candidates are only read from whole records (offset 0); a partial
      *                      record does not carry the needed fields at the expected positions.
-     * @param payload       Pointer to the record payload, or `nullptr` if unavailable.
+     * @param payload       Pointer to the record payload, or `nullptr` when the caller has not
+     *                      materialized it. A null payload still contributes the record to the
+     *                      per-domain extrema, the stall detector and the running uptime a
+     *                      ToW-only anchor correlates against — only the payload-reading tiers
+     *                      are skipped. See `needsPayload()`.
      * @param payloadSize   Bytes available at @p payload.
      * @param recordTsMs    The record's index timestamp in ms, in whichever domain the DID
      *                      stamps (0 when the record carries no internal time).
@@ -77,6 +81,16 @@ public:
 
     /** @return  Number of records offered so far. */
     std::size_t recordsSeen() const noexcept { return seen_; }
+
+    /**
+     * @brief Whether @p did's payload has to be materialized for the cascade to use it.
+     *
+     * Lets a caller working from an existing index re-frame only the records that can actually
+     * anchor, instead of every record in the segment. Records for which this is false still must
+     * be offered to `consume()` (with a null payload) — they carry the extrema and stall
+     * evidence.
+     */
+    static bool needsPayload(uint32_t did) noexcept;
 
 private:
     //! Consecutive identical-timestamp records from one DID before it is reported as stalled.
