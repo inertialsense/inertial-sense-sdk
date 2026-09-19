@@ -248,6 +248,19 @@ public:
         analyzeFromRecords(prev);
     }
 
+    /**
+     * @brief Parse the `YYYYMMDD_HHMMSS` field of a segment filename into Unix ms (UTC).
+     *
+     * The lowest rung of the anchor cascade: a log with no absolute time anywhere in its records
+     * can still be placed on the timeline by the writer's filename pattern
+     * (`LOG_SN<serial>_<YYYYMMDD>_<HHMMSS>_<NNNN>`). Returns 0 when the filename carries no
+     * parseable date, which the cascade reads as "no filename anchor available".
+     *
+     * Public so the parse can be tested directly — it has a history of failing on serial-number
+     * lengths that create a false date-shaped window earlier in the name.
+     */
+    static uint64_t filenameAnchorMs(const std::filesystem::path& p);
+
     /** Destroys the reader and releases the mmap (or buffer) and file handle. */
     ~ISLogReader();
 
@@ -718,8 +731,6 @@ private:
     //! analysis to enable the chained-hint tiers.
     void buildIndexFromScan(const AnchorAnalysis* prev = nullptr, bool collectAnchor = true);
 
-    //! SN-8629: parse `YYYYMMDD_HHMMSS` from a segment filename into Unix ms; 0 when absent.
-    static uint64_t filenameAnchorMs(const std::filesystem::path& p);
 
     /**
      * @brief Run the anchor cascade over an already-populated `records_`, without a byte scan.

@@ -163,15 +163,35 @@ ISExpected<ISDeviceLog>
                    a.anchoredStartMs != 0;
         });
 
+    // Fallback key when no absolute anchor is available. A segment with no absolute time is still
+    // orderable AGAINST ITS SIBLINGS if they all carry host-uptime records: uptime runs
+    // continuously across the segments of one recording session, so its extrema order them
+    // correctly even though they say nothing about where the session sits in wall-clock time.
+    // Only ever compared against other uptime extrema, never against an anchored start -- mixing
+    // an absolute key with a relative one is the incomparability this whole change is about.
+    const bool allSegmentsHaveUptime = std::all_of(readers.begin(), readers.end(),
+        [](const ISLogReader& r) {
+            const AnchorAnalysis& a = r.anchorAnalysis();
+            return a.uptimeRecords > 0 && a.uptimeMinMs != 0;
+        });
+
     if (allSegmentsOrderable) {
         std::stable_sort(readers.begin(), readers.end(),
             [](const ISLogReader& a, const ISLogReader& b) {
                 return a.anchorAnalysis().anchoredStartMs < b.anchorAnalysis().anchoredStartMs;
             });
+    } else if (allSegmentsHaveUptime) {
+        log_info(IS_LOG_ISLOG,
+                 "ISDeviceLog::fromSegments: no absolute anchor on every segment -- ordering by "
+                 "host-uptime extrema (session-relative)");
+        std::stable_sort(readers.begin(), readers.end(),
+            [](const ISLogReader& a, const ISLogReader& b) {
+                return a.anchorAnalysis().uptimeMinMs < b.anchorAnalysis().uptimeMinMs;
+            });
     } else {
         log_info(IS_LOG_ISLOG,
-                 "ISDeviceLog::fromSegments: keeping filename order -- not every segment has an "
-                 "orderable time anchor\n");
+                 "ISDeviceLog::fromSegments: keeping filename order -- segments carry neither a "
+                 "common time anchor nor comparable uptime extrema");
     }
 
     ISDeviceLog out;

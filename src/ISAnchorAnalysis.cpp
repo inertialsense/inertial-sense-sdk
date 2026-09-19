@@ -82,11 +82,32 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
 
     trackStall(did, recordTsMs);
 
-    // Timestamp-only observation. The index-driven path (`ISLogReader::analyzeFromRecords`) has a
-    // DID and a timestamp for every record but only pays to re-frame the payload of the few DIDs
-    // that can actually anchor, so it passes nullptr for the rest. Everything above this point —
-    // per-domain extrema, stall detection, and the running uptime that a ToW-only anchor
-    // correlates against — needs the whole record stream to be correct.
+    // ---- Tier 4: ToW-only records. These give an absolute time but no uptime to pair it with,
+    // so the offset can only be recovered by correlating against a neighbouring uptime-domain
+    // record. Remember the earliest one; pairing happens in finish().
+    //
+    // Evaluated BEFORE the payload guard below, because it reads nothing out of the payload —
+    // the record's own index timestamp IS the time-of-week. Sitting after the guard made this
+    // tier unreachable from the index-driven path, which supplies a payload only for the DIDs
+    // `needsPayload()` names, so a log with GNSS records but no bridge record would have
+    // resolved a full tier lower there than it does from a byte scan. No log in the golden
+    // corpus exercises tier 4, so nothing caught it; `TowOnlyAnchorNeedsNoPayload` does.
+    if (isTowOnlyCandidate(did) && recordTsMs >= kDomainSplitMs && plausibleTow(recordTsMs)) {
+        if (towOnlyDid_ == 0) {
+            towOnlyDid_  = did;
+            towOnlyTowMs = recordTsMs;
+            // The nearest uptime-domain record seen so far is the correlation partner. Records
+            // are written in arrival order, so the immediately-preceding uptime record is within
+            // one output period of this one.
+            towOnlyUpMs = lastUptimeMs_;
+        }
+        return;
+    }
+
+    // Past this point a payload is required. The index-driven path has a DID and a timestamp for
+    // every record but only pays to re-frame the payload of the DIDs that can actually anchor,
+    // so it passes nullptr for the rest. Everything above — per-domain extrema, stall detection,
+    // the running uptime, and tier 4 — must work without one.
     if (payload == nullptr) return;
 
     // ---- Tier 5: dual-domain bridge records. ToW and uptime in ONE payload, so the offset
@@ -113,20 +134,6 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
             offerBridge(DID_GPX_STATUS, gs.timeOfWeekMs, upMs);
         }
         return;
-    }
-
-    // ---- Tier 4: ToW-only records. These give an absolute time but no uptime to pair it with,
-    // so the offset can only be recovered by correlating against a neighbouring uptime-domain
-    // record. Remember the earliest one; pairing happens in finish().
-    if (isTowOnlyCandidate(did) && recordTsMs >= kDomainSplitMs && plausibleTow(recordTsMs)) {
-        if (towOnlyDid_ == 0) {
-            towOnlyDid_  = did;
-            towOnlyTowMs = recordTsMs;
-            // The nearest uptime-domain record seen so far is the correlation partner. Records
-            // are written in arrival order, so the immediately-preceding uptime record is within
-            // one output period of this one.
-            towOnlyUpMs = lastUptimeMs_;
-        }
     }
 }
 
