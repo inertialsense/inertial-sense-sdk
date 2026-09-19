@@ -228,6 +228,26 @@ public:
      */
     const AnchorAnalysis& anchorAnalysis() const noexcept { return anchor_; }
 
+    /**
+     * @brief Re-resolve this segment's anchor with its predecessor's analysis as a hint.
+     *
+     * A reader is constructed from one segment and knows nothing about its siblings, so its
+     * initial analysis can only reach the tiers a segment can establish alone. The chained tiers
+     * — `BridgedToW` (reuse the predecessor's offset because uptime is continuous) and
+     * `PrevSegmentChained` — are by definition unavailable to it, as is the
+     * durability-regression check. Whoever composes segments into a device log must supply that
+     * context; `ISDeviceLog::fromSegments` does, walking the segments in filename order.
+     *
+     * Costs no I/O — it re-resolves from the existing record index. A segment already at the top
+     * tier is left alone: a hint cannot improve it and it cannot have regressed.
+     *
+     * @param prev  Predecessor's analysis, or `nullptr` for the first segment.
+     */
+    void reanalyzeWithPrevious(const AnchorAnalysis* prev) {
+        if (anchor_.tier == AnchorTier::PayloadToWBridge) return;
+        analyzeFromRecords(prev);
+    }
+
     /** Destroys the reader and releases the mmap (or buffer) and file handle. */
     ~ISLogReader();
 

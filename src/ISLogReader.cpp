@@ -604,30 +604,50 @@ void ISLogReader::buildIndexFromIdx(const std::vector<idx::is_log_idx_record_v2_
  * The writer's filename pattern is `LOG_SN<serial>_<YYYYMMDD>_<HHMMSS>_<NNNN>.raw`. Returns 0
  * when no such field is present, which the cascade treats as "no filename anchor available".
  *
+ * The scan must keep going past a window that parses as an implausible date, rather than giving
+ * up at the first one. A long serial number produces a false candidate that straddles the serial
+ * and the date: in `LOG_SN942742854_20260521_113715_0001` the window at index 7 is
+ * `42742854_202605`, which reads as year 4274 month 28. Abandoning the search there meant every
+ * IMX-6 log (9-digit serials) silently lost its filename anchor and fell to `AnchorTier::None`,
+ * while 5-digit IMX-5 serials in the same corpus resolved fine. Proven by renaming one segment's
+ * serial: identical bytes, tier flipped None -> FilenameAnchor.
+ *
  * @note SN-8629.
  */
 uint64_t ISLogReader::filenameAnchorMs(const std::filesystem::path& p) {
     const std::string stem = p.stem().string();
-    // Scan for the first 8-digit run followed by '_' and a 6-digit run.
+    // Scan for an 8-digit run followed by '_' and a 6-digit run that parses as a real date.
     for (std::size_t i = 0; i + 15 <= stem.size(); ++i) {
         bool ok = stem[i + 8] == '_';
         for (std::size_t k = 0; ok && k < 8; ++k)  ok = std::isdigit(static_cast<unsigned char>(stem[i + k]));
         for (std::size_t k = 0; ok && k < 6; ++k)  ok = std::isdigit(static_cast<unsigned char>(stem[i + 9 + k]));
         if (!ok) continue;
+        const int year = std::stoi(stem.substr(i, 4));
+        const int mon  = std::stoi(stem.substr(i + 4, 2));
+        const int mday = std::stoi(stem.substr(i + 6, 2));
+        const int hour = std::stoi(stem.substr(i + 9, 2));
+        const int min  = std::stoi(stem.substr(i + 11, 2));
+        const int sec  = std::stoi(stem.substr(i + 13, 2));
+        // Reject and KEEP SCANNING -- the real field may sit a few characters further along.
+        // The year bound also stops a garbage window from yielding a plausible-looking anchor.
+        if (year < 2000 || year > 2200 || mon < 1 || mon > 12 || mday < 1 || mday > 31 ||
+            hour > 23 || min > 59 || sec > 60) {
+            continue;
+        }
         std::tm tm{};
-        tm.tm_year = std::stoi(stem.substr(i, 4)) - 1900;
-        tm.tm_mon  = std::stoi(stem.substr(i + 4, 2)) - 1;
-        tm.tm_mday = std::stoi(stem.substr(i + 6, 2));
-        tm.tm_hour = std::stoi(stem.substr(i + 9, 2));
-        tm.tm_min  = std::stoi(stem.substr(i + 11, 2));
-        tm.tm_sec  = std::stoi(stem.substr(i + 13, 2));
-        if (tm.tm_mon < 0 || tm.tm_mon > 11 || tm.tm_mday < 1 || tm.tm_mday > 31) return 0;
+        tm.tm_year = year - 1900;
+        tm.tm_mon  = mon - 1;
+        tm.tm_mday = mday;
+        tm.tm_hour = hour;
+        tm.tm_min  = min;
+        tm.tm_sec  = sec;
 #if defined(_WIN32)
         const std::time_t t = _mkgmtime(&tm);
 #else
         const std::time_t t = timegm(&tm);
 #endif
-        return t <= 0 ? 0 : static_cast<uint64_t>(t) * 1000ULL;
+        if (t <= 0) continue;   // same reasoning as above: keep scanning, don't abandon
+        return static_cast<uint64_t>(t) * 1000ULL;
     }
     return 0;
 }
@@ -736,6 +756,13 @@ void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
                               dataHdr.size, rec.timestamp);
             framed = true;
             break;
+            // Note: the search is deliberately confined to THIS record's byte range. Widening it
+            // to hunt for the next preamble would mis-attribute a neighbour's payload to this
+            // record: a segment was observed whose sidecar gave its first DID_SYS_PARAMS record a
+            // 1-byte range starting mid-packet (first byte 0x0b, not the 0xEF 0x49 preamble), and
+            // the next preamble in the file belongs to the FOLLOWING record — same DID, so a DID
+            // check alone would not catch the swap. Such a record is simply unanchorable from the
+            // index; the anchor falls to the next candidate, one output period later.
         }
         if (!framed) {
             collector.consume(rec.did, 0, nullptr, 0, rec.timestamp);

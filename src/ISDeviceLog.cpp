@@ -133,6 +133,29 @@ ISExpected<ISDeviceLog>
     //
     // When either fails, filename-lexicographic order stands -- always safe per D0051, and
     // correct for the comparable case too, which is the whole premise of a sortable pattern.
+    // SN-8629: chain each segment's anchor analysis to its predecessor's BEFORE testing
+    // orderability. A reader is built from one segment in isolation, so on its own it can only
+    // reach the tiers a segment establishes alone -- the chained tiers (`BridgedToW`,
+    // `PrevSegmentChained`) and the durability-regression check need a predecessor, and this is
+    // the only place that has one. Without this, a segment carrying no absolute time of its own
+    // fell all the way to `FilenameAnchor` (or `None`) even when its uptime ran continuously on
+    // from a well-anchored predecessor, which is strictly worse information than was available.
+    //
+    // The walk is in FILENAME order, which is the order established above and is timestamp-
+    // sortable by construction (D0051). That resolves the apparent circularity of "ordering needs
+    // anchors, chaining needs an order": filename order is the presumed-correct sequence, the
+    // anchors either confirm it or correct it below. Costs no I/O -- each re-resolve works off
+    // the record index already in memory.
+    {
+        AnchorAnalysis prevAnalysis{};
+        const AnchorAnalysis* prev = nullptr;
+        for (auto& r : readers) {
+            r.reanalyzeWithPrevious(prev);
+            prevAnalysis = r.anchorAnalysis();
+            prev         = &prevAnalysis;
+        }
+    }
+
     const bool allSegmentsOrderable = std::all_of(readers.begin(), readers.end(),
         [](const ISLogReader& r) {
             const AnchorAnalysis& a = r.anchorAnalysis();
