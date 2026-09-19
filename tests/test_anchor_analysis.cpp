@@ -332,6 +332,52 @@ TEST(AnchorCascade, RecordsAreBucketedByTimeDomain) {
     EXPECT_EQ(c.recordsSeen(), 4u);
 }
 
+TEST(AnchorCascade, DomainComesFromTheFieldNotTheMagnitude) {
+    // Regression for the defect this cascade shipped with: the domain was decided by a
+    // magnitude test (>= 1e8 meant "GPS time-of-week"). A ToW inside the first ~27.8 hours of
+    // the week is BELOW that boundary, so it was filed as host uptime — mixing two bases in one
+    // bucket. `uptimeMaxMs` then held a ToW value, and projecting it through the offset
+    // double-counted it: a real segment reported a 7,149,064 ms span for ~218 s of data.
+    //
+    // These are the actual values from
+    // goldenlogs/imx_gpx/imx5_gpx1/Compassing_Drive_GPX/20250405_200614 — every timestamp here
+    // is below the old boundary, so under the magnitude test ALL of them landed in the uptime
+    // bucket. 451,040 records across the golden corpus were misfiled this way.
+    AnchorCollector c;
+    feedTimeOnly(c, DID_PIMU,          661'365);     // field `time`         -> uptime
+    feedTimeOnly(c, DID_MAGNETOMETER,  661'369);     // field `time`         -> uptime
+    feedTimeOnly(c, DID_PIMU,          879'681);     // field `time`         -> uptime
+    feedTimeOnly(c, DID_INS_1,       7'592'210);     // field `timeOfWeek`   -> ToW
+    feedTimeOnly(c, DID_GNSS1_POS,   7'592'200);     // field `timeOfWeekMs` -> ToW
+    feedTimeOnly(c, DID_INS_1,       7'810'429);     // field `timeOfWeek`   -> ToW
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    EXPECT_EQ(a.uptimeRecords, 3u);
+    EXPECT_EQ(a.towRecords, 3u);
+    EXPECT_EQ(a.uptimeMinMs, 661'365u) << "a ToW value must not pollute the uptime extrema";
+    EXPECT_EQ(a.uptimeMaxMs, 879'681u) << "this is the value the old magnitude test corrupted";
+    EXPECT_EQ(a.towMinMs, 7'592'200u);
+    EXPECT_EQ(a.towMaxMs, 7'810'429u);
+}
+
+TEST(AnchorCascade, SmallTimeOfWeekStillBridgesCorrectly) {
+    // The end-to-end consequence of the fix: with a sub-boundary ToW, the anchored span must
+    // reflect the UPTIME extrema projected once — not the ToW extrema projected a second time.
+    AnchorCollector c;
+    feedTimeOnly(c, DID_PIMU, 661'365);
+    feed(c, DID_SYS_PARAMS, makeSysParams(7'592'736u, 661.960, /*towValid=*/true), 7'592'736);
+    feedTimeOnly(c, DID_INS_1, 7'810'429);   // ToW-domain: must NOT become uptimeMax
+    feedTimeOnly(c, DID_PIMU, 879'681);
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    ASSERT_EQ(a.tier, AnchorTier::PayloadToWBridge);
+    const int64_t off = a.offsetMs;
+    EXPECT_EQ(a.anchoredStartMs, static_cast<uint64_t>(661'365 + off));
+    EXPECT_EQ(a.anchoredEndMs,   static_cast<uint64_t>(879'681 + off));
+    EXPECT_EQ(a.anchoredEndMs - a.anchoredStartMs, 218'316u)
+        << "span must match the real data extent, not the inter-domain gap";
+}
+
 TEST(AnchorCascade, AnchoredSpanProjectsTheUptimeExtrema) {
     // The header must come from the per-domain extrema, NOT from whichever record happened to be
     // physically first and last — that positional key is the defect this whole cascade replaces.
