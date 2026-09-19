@@ -8,6 +8,7 @@
  */
 
 #include "ISDeviceLog.h"
+#include "ISAnchorAnalysis.h"
 
 #include "ISLogIndex.h"       // SN-8629 timestampsLookMixedDomain()
 #include "ISTimeResolver.h"   // SN-8105 anchored-span accessors
@@ -112,19 +113,42 @@ ISExpected<ISDeviceLog>
     // filename-lexicographic order already established above, which is
     // always safe (D0051) and correct for the common/comparable case too
     // (that's the whole premise of the filename pattern being sortable).
-    const bool allSegmentsSelfConsistent = std::all_of(readers.begin(), readers.end(),
+    // SN-8629: order by the segment's DOMAIN-NORMALIZED anchored start, not by a raw header
+    // timestamp. The old key was `records_.front().timestamp` -- positional, so it took whatever
+    // domain the physically-first record happened to stamp. On a log whose segments interleave
+    // GPS-ToW and host-uptime DIDs that is a coin flip per segment, and sorting by it placed
+    // segments out of order, manufacturing forward jumps and rewinds that are not in the data.
+    //
+    // Two conditions must BOTH hold before the re-sort is allowed to touch the
+    // filename-lexicographic order already established above:
+    //
+    //  1. Every segment must carry an anchor of at least `minimumOrderableTier`. A single
+    //     unanchored segment disables the re-sort for the whole composition, because a missing
+    //     key cannot be compared -- and the previous comparator's attempt to tolerate one
+    //     (`if (aT && bT && ...) ... return false`) made a zero key tie with every segment while
+    //     non-zero keys still ordered among themselves. That is not a strict weak ordering, so
+    //     `std::stable_sort`'s result was formally undefined.
+    //  2. The keys must be mutually comparable, which the anchor analysis guarantees by
+    //     construction: every `anchoredStartMs` is expressed in the same absolute frame.
+    //
+    // When either fails, filename-lexicographic order stands -- always safe per D0051, and
+    // correct for the comparable case too, which is the whole premise of a sortable pattern.
+    const bool allSegmentsOrderable = std::all_of(readers.begin(), readers.end(),
         [](const ISLogReader& r) {
-            return !idx::timestampsLookMixedDomain(r.segmentStartTimestamp(), r.segmentEndTimestamp());
+            const AnchorAnalysis& a = r.anchorAnalysis();
+            return a.anchored() && a.tier >= AnchorAnalysis::minimumOrderableTier &&
+                   a.anchoredStartMs != 0;
         });
-    if (allSegmentsSelfConsistent) {
+
+    if (allSegmentsOrderable) {
         std::stable_sort(readers.begin(), readers.end(),
             [](const ISLogReader& a, const ISLogReader& b) {
-                const uint64_t aT = a.segmentStartTimestamp();
-                const uint64_t bT = b.segmentStartTimestamp();
-                if (aT && bT && aT != bT) return aT < bT;
-                // Rely on filename-lex ordering as the tiebreaker.
-                return false;  // stable; preserve input order on ties
+                return a.anchorAnalysis().anchoredStartMs < b.anchorAnalysis().anchoredStartMs;
             });
+    } else {
+        log_info(IS_LOG_ISLOG,
+                 "ISDeviceLog::fromSegments: keeping filename order -- not every segment has an "
+                 "orderable time anchor\n");
     }
 
     ISDeviceLog out;

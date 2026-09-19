@@ -47,6 +47,7 @@
 #include "data_sets.h"      // dev_info_t, returned by devInfo()
 #include "ISLogSource.h"
 #include "ISRecordView.h"
+#include "ISAnchorAnalysis.h"
 #include "ISTimeStamp.h"
 
 #include <cstddef>
@@ -181,6 +182,37 @@ public:
      *             `Unsupported` (unrecognized extension).
      */
     static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw);
+
+    /**
+     * @brief Determine a segment's absolute start/end time and how trustworthy that is, WITHOUT
+     *        building or writing an index.
+     *
+     * Opens @p raw, runs one byte scan with only the anchor collector attached, and returns the
+     * result. No `.idx` is read or written, no record index is allocated, and the reader is
+     * discarded on return — so this is safe to call repeatedly on a segment purely to ask
+     * "where does this sit on the timeline?", which is what makes the cascade testable without
+     * a rebuild.
+     *
+     * @param raw   Path to the segment file (`.raw` or `.dat`).
+     * @param prev  Analysis of the preceding segment, or `nullptr`. Supplies the chained-hint
+     *              fallbacks (`BridgedToW`, `PrevSegmentChained`) for a segment that carries no
+     *              absolute time of its own, and enables the durability-regression check.
+     * @return      The analysis on success; `ISErrorCode` if the segment cannot be opened.
+     *
+     * @note SN-8629. Prefer the analysis carried on an already-open reader
+     *       (`anchorAnalysis()`) when you have one — it was produced by the same scan that
+     *       built the index, so asking for it costs nothing.
+     */
+    static ISExpected<AnchorAnalysis> analyzeSegment(const std::filesystem::path& raw,
+                                                     const AnchorAnalysis* prev = nullptr);
+
+    /**
+     * @brief This segment's anchor analysis, produced by the scan that built its index.
+     *
+     * Empty (`AnchorTier::None`) for a reader whose index came off disk rather than from a
+     * scan, since no scan ran to collect it.
+     */
+    const AnchorAnalysis& anchorAnalysis() const noexcept { return anchor_; }
 
     /** Destroys the reader and releases the mmap (or buffer) and file handle. */
     ~ISLogReader();
@@ -647,7 +679,13 @@ private:
      * the `.raw` and persisting the result. `.raw`-specific — see
      * @ref buildIndexFromScanDat for the `.dat` equivalent (D-119).
      */
-    void buildIndexFromScan();
+    //! SN-8629: when non-null, the collector is attached to the scan and the resulting
+    //! analysis stamped into `anchor_` and the index header. Pass the previous segment's
+    //! analysis to enable the chained-hint tiers.
+    void buildIndexFromScan(const AnchorAnalysis* prev = nullptr, bool collectAnchor = true);
+
+    //! SN-8629: parse `YYYYMMDD_HHMMSS` from a segment filename into Unix ms; 0 when absent.
+    static uint64_t filenameAnchorMs(const std::filesystem::path& p);
 
     /**
      * @brief `.dat` equivalent of @ref buildIndexFromScan (D-119 / SN-8626).
@@ -756,6 +794,10 @@ private:
 
     SegmentFormat                          format_             = SegmentFormat::Raw;
     bool                                   hadOnDiskIndex_     = false;
+
+    //! SN-8629: anchor analysis from the scan that built this index; `None` tier when the
+    //! index came off disk instead.
+    AnchorAnalysis anchor_{};
     bool                                   isTruncated_        = false;
     uint64_t                               truncationOffset_   = 0;
     uint64_t                               deviceId_           = 0;

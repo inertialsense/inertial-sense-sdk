@@ -8,6 +8,9 @@
  */
 
 #include "ISLogReader.h"
+#include "ISAnchorCollector.h"
+#include <ctime>
+#include <cctype>
 
 #include "ISDeviceLog.h"      // detectGaps: iterate composed segments
 #include "ISTimeResolver.h"   // detectGaps: resolve per-segment record times
@@ -585,7 +588,60 @@ void ISLogReader::buildIndexFromIdx(const std::vector<idx::is_log_idx_record_v2_
     }
 }
 
-void ISLogReader::buildIndexFromScan() {
+/**
+ * @brief Parse the `YYYYMMDD_HHMMSS` field of a segment filename into Unix ms (UTC).
+ *
+ * The writer's filename pattern is `LOG_SN<serial>_<YYYYMMDD>_<HHMMSS>_<NNNN>.raw`. Returns 0
+ * when no such field is present, which the cascade treats as "no filename anchor available".
+ *
+ * @note SN-8629.
+ */
+uint64_t ISLogReader::filenameAnchorMs(const std::filesystem::path& p) {
+    const std::string stem = p.stem().string();
+    // Scan for the first 8-digit run followed by '_' and a 6-digit run.
+    for (std::size_t i = 0; i + 15 <= stem.size(); ++i) {
+        bool ok = stem[i + 8] == '_';
+        for (std::size_t k = 0; ok && k < 8; ++k)  ok = std::isdigit(static_cast<unsigned char>(stem[i + k]));
+        for (std::size_t k = 0; ok && k < 6; ++k)  ok = std::isdigit(static_cast<unsigned char>(stem[i + 9 + k]));
+        if (!ok) continue;
+        std::tm tm{};
+        tm.tm_year = std::stoi(stem.substr(i, 4)) - 1900;
+        tm.tm_mon  = std::stoi(stem.substr(i + 4, 2)) - 1;
+        tm.tm_mday = std::stoi(stem.substr(i + 6, 2));
+        tm.tm_hour = std::stoi(stem.substr(i + 9, 2));
+        tm.tm_min  = std::stoi(stem.substr(i + 11, 2));
+        tm.tm_sec  = std::stoi(stem.substr(i + 13, 2));
+        if (tm.tm_mon < 0 || tm.tm_mon > 11 || tm.tm_mday < 1 || tm.tm_mday > 31) return 0;
+#if defined(_WIN32)
+        const std::time_t t = _mkgmtime(&tm);
+#else
+        const std::time_t t = timegm(&tm);
+#endif
+        return t <= 0 ? 0 : static_cast<uint64_t>(t) * 1000ULL;
+    }
+    return 0;
+}
+
+ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::path& raw,
+                                                       const AnchorAnalysis* prev) {
+    // Open and scan with the collector only. buildIndexFromScan populates records_ as a side
+    // effect of the same pass; the reader is a local and dies on return, so nothing is written
+    // and no index escapes -- which is what makes the cascade queryable without a rebuild.
+    auto r = openSegment(raw);
+    if (!r) return tl::unexpected<ISError>{ r.error() };
+    if (r->anchorAnalysis().anchored()) return r->anchorAnalysis();
+
+    // Index came off disk, so no scan ran and there is no analysis. Force one.
+    r->buildIndexFromScan(prev, /*collectAnchor=*/true);
+    return r->anchorAnalysis();
+}
+
+void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnchor) {
+    // SN-8629: the collector rides the SAME byte pass as the index build, so asking for
+    // the anchor analysis costs no extra I/O.
+    AnchorCollector collector;
+    if (collectAnchor) collector.setFilenameAnchorMs(filenameAnchorMs(rawPath_));
+
     records_.clear();
     byDid_.clear();
     isTruncated_ = false;
@@ -637,6 +693,12 @@ void ISLogReader::buildIndexFromScan() {
             rec.flags     = 0;
             rec.reserved  = 0;
             records_.push_back(rec);
+
+            if (collectAnchor) {
+                collector.consume(dataHdr.id, static_cast<uint16_t>(dataHdr.offset),
+                                  static_cast<const uint8_t*>(comm.rxPkt.data.ptr),
+                                  dataHdr.size, tsMs);
+            }
         }
         // Whether or not we recorded this packet (NMEA/RTCM/UBX skipped), its bytes are consumed; advance the post-emit
         // cursor.
@@ -678,10 +740,21 @@ void ISLogReader::buildIndexFromScan() {
     for (std::size_t i = 0; i < records_.size(); ++i) {
         byDid_[records_[i].did].push_back(i);
     }
+    if (collectAnchor) anchor_ = collector.finish(prev);
+
     if (!records_.empty()) {
-        header_.total_records       = records_.size();
-        header_.first_timestamp_ms  = records_.front().timestamp;
-        header_.last_timestamp_ms   = records_.back().timestamp;
+        header_.total_records = records_.size();
+        // SN-8629: prefer the domain-normalized span from the anchor analysis. The old
+        // records_.front()/back().timestamp is POSITIONAL -- it takes whichever record happened
+        // to be written first/last, in whatever time domain that DID stamps, so the value was a
+        // coin flip on DID write order and sorting segments by it could place them out of order.
+        if (anchor_.anchored() && anchor_.anchoredStartMs != 0) {
+            header_.first_timestamp_ms = anchor_.anchoredStartMs;
+            header_.last_timestamp_ms  = anchor_.anchoredEndMs;
+        } else {
+            header_.first_timestamp_ms = records_.front().timestamp;
+            header_.last_timestamp_ms  = records_.back().timestamp;
+        }
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
         // SN-8629: see timestampsLookMixedDomain() -- the default HostUptimeMs
         // (set when this reader's header was seeded) would be a lie here.
