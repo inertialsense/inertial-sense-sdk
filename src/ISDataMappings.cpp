@@ -1066,12 +1066,12 @@ static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t d
 
 static void PopulateMapISBTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<is_timePulse_t> mapper(data_set, did);
-    mapper.AddMember("week", &is_timePulse_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
-    mapper.AddMember("timeOfWeekMs", &is_timePulse_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
-    mapper.AddMember("status", &is_timePulse_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("syncCnt", &is_timePulse_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
-    mapper.AddArray("reserved", &is_timePulse_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
+    DataMapper<is_time_pulse_t> mapper(data_set, did);
+    mapper.AddMember("week", &is_time_pulse_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
+    mapper.AddMember("timeOfWeekMs", &is_time_pulse_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
+    mapper.AddMember("status", &is_time_pulse_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("syncCnt", &is_time_pulse_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
+    mapper.AddArray("reserved", &is_time_pulse_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
 }
 
 // PopulateMapPortMonitor is defined below, after the SN-8068 array-of-struct helper block
@@ -1536,18 +1536,18 @@ static void PopulateMapGnssVersion(data_set_t data_set[DID_COUNT], uint32_t did)
 
 static void PopulateMapGnssTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gnss_timesync_t> mapper(data_set, did);
-    mapper.AddMember("towOffset", &gnss_timesync_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("towGps", &gnss_timesync_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("timeMcu", &gnss_timesync_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("msgTimeMs", &gnss_timesync_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
-    mapper.AddMember("plsTimeMs", &gnss_timesync_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
-    mapper.AddMember("syncCount", &gnss_timesync_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
-    mapper.AddMember("badPulseAgeCount", &gnss_timesync_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
-    mapper.AddMember("ppsInterruptReinitCount", &gnss_timesync_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GNSS PPS interrupt re-initalization.");
-    mapper.AddMember("plsCount", &gnss_timesync_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GNSS PPS via GPIO, not interrupt.");
-    mapper.AddMember("lastSyncTimeMs", &gnss_timesync_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
-    mapper.AddMember("sinceLastSyncTimeMs", &gnss_timesync_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
+    DataMapper<gnss_time_sync_t> mapper(data_set, did);
+    mapper.AddMember("towOffset", &gnss_time_sync_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towGps", &gnss_time_sync_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("timeMcu", &gnss_time_sync_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("msgTimeMs", &gnss_time_sync_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
+    mapper.AddMember("plsTimeMs", &gnss_time_sync_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
+    mapper.AddMember("syncCount", &gnss_time_sync_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
+    mapper.AddMember("badPulseAgeCount", &gnss_time_sync_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
+    mapper.AddMember("ppsInterruptReinitCount", &gnss_time_sync_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GNSS PPS interrupt re-initalization.");
+    mapper.AddMember("plsCount", &gnss_time_sync_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GNSS PPS via GPIO, not interrupt.");
+    mapper.AddMember("lastSyncTimeMs", &gnss_time_sync_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
+    mapper.AddMember("sinceLastSyncTimeMs", &gnss_time_sync_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
 }
 
 static void PopulateMapMagnetometer(data_set_t data_set[DID_COUNT], uint32_t did)
