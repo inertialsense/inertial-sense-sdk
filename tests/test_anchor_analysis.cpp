@@ -27,13 +27,13 @@
 #include "data_sets.h"
 #include "test_data_utils.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <list>
 #include <string>
 #include <vector>
-
-#include <unistd.h>
 
 using namespace inertial_sense;
 namespace fs = std::filesystem;
@@ -463,15 +463,31 @@ struct Fixture {
     std::list<std::vector<uint8_t>*> messages;
 };
 
+/**
+ * @brief Portable, process-unique temp directory.
+ *
+ * Deliberately avoids `<unistd.h>`, `getpid()` and a hardcoded `/tmp`, following the convention
+ * noted in tests/CMakeLists.txt: a new test file is written portable and kept OFF the WIN32
+ * exclusion list rather than excluded. That matters here — 27 of this file's 32 tests are pure
+ * cascade tests that touch no filesystem at all, and excluding the file to satisfy the five that
+ * do would drop the whole anchor cascade from Windows CI coverage.
+ *
+ * The per-process token is what the plain counter used by the sibling helpers lacks: two test
+ * binaries running concurrently on one runner would otherwise resolve the same directory.
+ */
+fs::path makeTempDir(const std::string& prefix) {
+    static const std::string token = std::to_string(
+        std::chrono::system_clock::now().time_since_epoch().count());
+    static unsigned counter = 0;
+    return fs::temp_directory_path() /
+           ("test_anchor_" + prefix + "_" + token + "_" + std::to_string(counter++));
+}
+
 //! Generate a small single-segment log. Same approach as test_log_reader.cpp: commit the
-//! generator, not a binary, and keep the temp dir process-unique so parallel ctest runs
-//! cannot collide.
+//! generator, not a binary.
 Fixture generateFixture(const std::string& hint) {
     Fixture f;
-    char dirBuf[256];
-    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_anchor_%s_%d_%ld", hint.c_str(),
-                  ::getpid(), static_cast<long>(::time(nullptr)));
-    f.directory = dirBuf;
+    f.directory = makeTempDir(hint);
     ISFileManager::DeleteDirectory(f.directory.string());
 
     GenerateRawLogData(f.messages, 1.0f);
