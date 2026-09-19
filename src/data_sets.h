@@ -2244,7 +2244,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_GNSS1_RCVR_POS     = 27,  //!< DID_GNSS1_RCVR_POS - GNSS 1 receiver-reported position
     GRMC_BIT_POS_EXT_AIDING_POS     = 28,  //!< DID_EXT_AIDING_POS - GNSS position restated as an external aiding observation, for feeding an INS
     GRMC_BIT_POS_EXT_AIDING_VEL     = 29,  //!< DID_EXT_AIDING_VEL - GNSS velocity restated as an external aiding observation, for feeding an INS
-    GRMC_BIT_POS_TIME           = 30,  //!< DID_TIMEPULSE - GPX 1PPS/timepulse status
+    GRMC_BIT_POS_TIME               = 30,  //!< DID_TIMEPULSE - GPX 1PPS/timepulse status
     GRMC_BIT_POS_COUNT,                    //!< Number of GRMC bit positions; sizes grmci_t.periodMultiple
 };
 
@@ -5413,7 +5413,7 @@ typedef union PACKED
     debug_array_t                   imxDebugArray;  //!< DID_DEBUG_ARRAY / DID_EVB_DEBUG_ARRAY
     debug_array_t                   gpxDebugArray;  //!< DID_GPX_DEBUG_ARRAY
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
-    is_timepulse_t                       ISBTimepulse;   //!< DID_TIMEPULSE
+    is_timepulse_t                  ISBTimepulse;   //!< DID_TIMEPULSE
     did_event_t                     event;          //!< DID_EVENT
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT

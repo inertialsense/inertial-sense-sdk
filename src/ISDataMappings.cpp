@@ -2707,23 +2707,23 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_PIMU",                         // 3
     "DID_INS_1",                        // 4
     "DID_INS_2",                        // 5
-    "DID_GNSS1_RCVR_POS",                // 6
+    "DID_GNSS1_RCVR_POS",               // 6
     "DID_SYS_CMD",                      // 7
     "DID_NMEA_BCAST_PERIOD",            // 8
     "DID_RMC",                          // 9
     "DID_SYS_PARAMS",                   // 10
     "DID_SYS_SENSORS",                  // 11
     "DID_FLASH_CONFIG",                 // 12
-    "DID_GNSS1_POS",                     // 13
-    "DID_GNSS2_POS",                     // 14
-    "DID_GNSS1_SAT",                     // 15
-    "DID_GNSS2_SAT",                     // 16
-    "DID_GNSS1_VERSION",                 // 17
-    "DID_GNSS2_VERSION",                 // 18
+    "DID_GNSS1_POS",                    // 13
+    "DID_GNSS2_POS",                    // 14
+    "DID_GNSS1_SAT",                    // 15
+    "DID_GNSS2_SAT",                    // 16
+    "DID_GNSS1_VERSION",                // 17
+    "DID_GNSS2_VERSION",                // 18
     "DID_MAG_CAL",                      // 19
     "DID_IMUS",                         // 20
-    "DID_GNSS1_RTK_POS_REL",             // 21
-    "DID_GNSS1_RTK_POS_MISC",            // 22
+    "DID_GNSS1_RTK_POS_REL",            // 21
+    "DID_GNSS1_RTK_POS_MISC",           // 22
     "DID_FEATURE_BITS",                 // 23
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
@@ -2731,8 +2731,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GNSS2_TIMESYNC",               // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
-    "DID_GNSS1_VEL",                     // 30
-    "DID_GNSS2_VEL",                     // 31
+    "DID_GNSS1_VEL",                    // 30
+    "DID_GNSS2_VEL",                    // 31
     "DID_HDW_PARAMS",                   // 32
     "DID_NVR_MANAGE_USERPAGE",          // 33
     "DID_NVR_USERPAGE_SN",              // 34
@@ -2744,9 +2744,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_MCAL",                 // 40
     "DID_GNSS1_TIMESYNC",               // 41
     "DID_CAL_SC",                       // 42
-    "DID_TIMEPULSE",                         // 43
+    "DID_TIMEPULSE",                    // 43
     "DID_CANFD_CONFIG",                 // 44
-    "DID_GNSS1_SIG",                     // 45
+    "DID_GNSS1_SIG",                    // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
     "DID_REFERENCE_MAGNETOMETER",       // 47
     "DID_INL2_STATES",                  // 48
@@ -2755,14 +2755,14 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_INL2_MISC",                    // 51
     "DID_MAGNETOMETER",                 // 52
     "DID_BAROMETER",                    // 53
-    "DID_GNSS1_RTK_POS",                 // 54
+    "DID_GNSS1_RTK_POS",                // 54
     "DID_ROS_COVARIANCE_POSE_TWIST",    // 55
     "DID_COMMUNICATIONS_LOOPBACK",      // 56
     "DID_IMUS_UNCAL",                   // 57
     "DID_IMU",                          // 58
     "DID_INL2_MAG_OBS_INFO",            // 59
-    "DID_GNSS_BASE_RAW",                 // 60
-    "DID_GNSS_RTK_OPT",                  // 61
+    "DID_GNSS_BASE_RAW",                // 60
+    "DID_GNSS_RTK_OPT",                 // 61
     "DID_REFERENCE_PIMU",               // 62
     "DID_MANUFACTURING_INFO",           // 63
     "DID_BIT",                          // 64
@@ -2770,12 +2770,12 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_INS_4",                        // 66
     "DID_INL2_NED_SIGMA",               // 67
     "DID_STROBE_IN_TIME",               // 68
-    "DID_GNSS1_RAW",                     // 69
-    "DID_GNSS2_RAW",                     // 70
+    "DID_GNSS1_RAW",                    // 69
+    "DID_GNSS2_RAW",                    // 70
     "DID_WHEEL_ENCODER",                // 71
     "DID_DIAGNOSTIC_MESSAGE",           // 72
     "DID_SURVEY_IN",                    // 73
-    "DID_UNUSED_74",                  // 74
+    "DID_UNUSED_74",                    // 74
     "DID_PORT_MONITOR",                 // 75
     "DID_RTK_STATE",                    // 76
     "DID_RTK_PHASE_RESIDUAL",           // 77
@@ -2785,15 +2785,15 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_FLASH_CFG",                // 81
     "DID_EVB_DEBUG_ARRAY",              // 82
     "DID_EVB_RTOS_INFO",                // 83
-    "DID_GNSS2_SIG",                     // 84
+    "DID_GNSS2_SIG",                    // 84
     "DID_IMU_MAG",                      // 85
     "DID_PIMU_MAG",                     // 86
     "DID_GROUND_VEHICLE",               // 87
     "DID_POSITION_MEASUREMENT",         // 88
     "DID_RTK_DEBUG_2",                  // 89
     "DID_CAN_CONFIG",                   // 90
-    "DID_GNSS2_RTK_CMP_REL",             // 91
-    "DID_GNSS2_RTK_CMP_MISC",            // 92
+    "DID_GNSS2_RTK_CMP_REL",            // 91
+    "DID_GNSS2_RTK_CMP_MISC",           // 92
     "DID_EVB_DEV_INFO",                 // 93
     "DID_INFIELD_CAL",                  // 94 
     "DID_REFERENCE_IMU",                // 95 
