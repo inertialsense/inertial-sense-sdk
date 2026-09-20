@@ -41,6 +41,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 namespace inertial_sense {
@@ -90,6 +91,34 @@ public:
         uint64_t arrivalEnd          = 0;      //!< last record's global arrival index (inclusive)
         int64_t  uptimeToTowOffsetMs = 0;      //!< this session's median uptime->ToW offset
         bool     haveOffset          = false;  //!< a synced SYS_PARAMS gave this session an offset
+    };
+
+    /**
+     * @brief SN-8704: a run of records whose DID's stamped clock STOPPED while the rest of the
+     *        log kept advancing.
+     *
+     * A device that loses its time source can keep running and keep emitting — reporting the
+     * last time-of-week it knew, forever. Because a record's index timestamp IS that field, every
+     * such record lands on one instant, and the whole tail of the device's data collapses onto a
+     * single point on the timeline. Observed on a customer capture: a GPX lost GNSS and 2,107
+     * `DID_GPX_STATUS` records across four segments all carry ToW 342,615,500 while the IMX
+     * clock advanced 16 real minutes beside them.
+     *
+     * The records are not wrong about anything except *when* — they are retained, ordered, and
+     * their payloads are intact. So rather than plotting them on top of each other, the resolver
+     * distrusts the stalled field and re-times them against the collective timeline of the
+     * witnesses that were still working. See `interpolateArrivalTime`.
+     *
+     * @note The detectable signature is "stamped time static while the log advances". NOT "the
+     *       payload's time leaps" — in the observed case the device's own `upTime` advances a
+     *       tidy 0.501 s per record throughout, so a leap test never fires.
+     */
+    struct StalledRun {
+        uint32_t    did           = 0;      //!< DID whose stamped clock stopped.
+        uint64_t    stalledTsMs   = 0;      //!< The frozen value every record in the run carries.
+        uint64_t    arrivalStart  = 0;      //!< First affected record's arrival index (inclusive).
+        uint64_t    arrivalEnd    = 0;      //!< Last affected record's arrival index (inclusive).
+        std::size_t recordCount   = 0;      //!< Records in the run.
     };
 
     /**
@@ -205,6 +234,15 @@ public:
      * @param deviceId     Source device id.
      * @param arrivalIndex Record's global arrival index (see `ISRecordView`).
      */
+    /**
+     * @warning `arrivalIndex` is **0-BASED** — the first record of the first segment is index 0,
+     *          matching the resolver's own build scan (`thisArrival = arrivalIndex++`) and
+     *          `ISLogReader::detectGaps`. An off-by-one is silent for the session-selection path
+     *          (session windows are thousands of records wide) but NOT for the stalled-run path
+     *          added in SN-8704: a caller counting from 1 mis-resolves the record at each run
+     *          boundary, which looks like a lone ~16-minute backward jump. Count with a
+     *          post-increment over `allRecords()` in composition order.
+     */
     TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId,
                       uint64_t arrivalIndex) const;
 
@@ -226,6 +264,34 @@ public:
      * @return  Clock-correction events detected during build, in
      *          chronological order. Empty for clean logs.
      */
+    /**
+     * @return  Stalled-clock runs found during build (SN-8704), in arrival order. Empty for a
+     *          healthy log. Surfaced so the application can CALL THIS OUT rather than quietly
+     *          presenting reconstructed times as measured ones.
+     */
+    const std::vector<StalledRun>& stalledRuns() const noexcept { return stalledRuns_; }
+
+    /**
+     * @brief Interpolate an absolute time for a record from its position in the arrival order.
+     *
+     * Used when a record's own stamped time cannot be trusted: its neighbours in the arrival
+     * stream can be, so the record is bracketed between them. Lifted from Logalyzer's
+     * `RawSeriesBuilder` (SN-8131), where it placed *timeless* records — a record whose clock
+     * stalled is the same problem, a record whose own claim is worthless, so it gets the same
+     * treatment rather than a second mechanism. Kyle 2026-09-20 approved the move SDK-side.
+     *
+     * @param anchors       `(arrivalIndex, absoluteMs)` pairs, ascending by arrival index and
+     *                      non-empty. Clamps to the first/last anchor outside their range.
+     * @param arrivalIndex  Record to place.
+     * @return              Interpolated absolute ms.
+     *
+     * @note Interpolating against the GLOBAL arrival order assumes the log's overall record rate
+     *       is locally steady, which is what makes it safe here: the stalled DID is by definition
+     *       the misbehaving one, while the anchors come from sources that were still healthy.
+     */
+    static uint64_t interpolateArrivalTime(
+        const std::vector<std::pair<uint64_t, uint64_t>>& anchors, uint64_t arrivalIndex);
+
     const std::vector<Discontinuity>& discontinuities() const noexcept {
         return discontinuities_;
     }
@@ -262,9 +328,14 @@ private:
     //! Core detection: scans all segments for sync points AND (SN-8323 uptime
     //! unification) authoritative uptime->ToW offset samples from DID_SYS_PARAMS.
     //! `detectSyncPoints` and `build` both delegate here.
+    //! @param stalledOut   SN-8704: receives the stalled-clock runs found during the scan.
+    //! @param timelineOut   SN-8704: receives `(arrivalIndex, payloadToWMs)` samples from
+    //!                      ToW sources that were still advancing. Both optional.
     static std::vector<ISSyncPoint> detectSyncPointsImpl(
         const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut,
-        std::vector<Session>& sessionsOut);
+        std::vector<Session>& sessionsOut,
+        std::vector<StalledRun>* stalledOut = nullptr,
+        std::vector<std::pair<uint64_t, uint64_t>>* timelineOut = nullptr);
 
     //! SN-8339: shared resolve body, parameterized on the uptime->ToW offset so
     //! both the global (no-key) path and the per-session (arrival-keyed) path
@@ -311,6 +382,15 @@ private:
     //! arrival order). Size 1 for a single-boot log; the arrival-keyed resolve()
     //! overload uses per-session offsets when size > 1.
     std::vector<Session>        sessions_;
+
+    //! SN-8704: runs where one DID's stamped clock stopped while the log advanced.
+    std::vector<StalledRun>     stalledRuns_;
+
+    //! SN-8704: `(arrivalIndex, payloadToWMs)` samples from ToW sources that were still
+    //! ADVANCING — the collective timeline a stalled record is bracketed against. Only
+    //! strictly-increasing ToW values are admitted, so a stalled source excludes itself by
+    //! construction: it can never advance past the last admitted sample.
+    std::vector<std::pair<uint64_t, uint64_t>> towTimeline_;
 };
 
 } // namespace inertial_sense

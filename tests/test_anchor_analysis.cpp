@@ -25,6 +25,7 @@
 #include "ISLogIndex.h"
 #include "ISFileManager.h"
 #include "ISLogReader.h"
+#include "ISTimeResolver.h"
 #include "ISLogger.h"
 #include "data_sets.h"
 #include "test_data_utils.h"
@@ -985,4 +986,48 @@ TEST_F(AnchorSegmentTest, ComposedDeviceLogOrdersByAnchoredStart) {
     EXPECT_TRUE(a.anchored());
     EXPECT_GE(a.tier, AnchorAnalysis::minimumOrderableTier);
     EXPECT_LE(a.anchoredStartMs, a.anchoredEndMs);
+}
+
+// =====================================================================================
+// SN-8704 — arrival-order interpolation (lifted from RawSeriesBuilder, SN-8131)
+// =====================================================================================
+
+TEST(ArrivalInterpolation, BracketsBetweenNeighbouringAnchors) {
+    // (arrivalIndex, absoluteMs)
+    const std::vector<std::pair<uint64_t, uint64_t>> anchors = {
+        {100, 1'000}, {200, 2'000}, {400, 4'000},
+    };
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(anchors, 150), 1'500u);
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(anchors, 200), 2'000u);
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(anchors, 300), 3'000u);
+}
+
+TEST(ArrivalInterpolation, ClampsOutsideTheAnchorRange) {
+    const std::vector<std::pair<uint64_t, uint64_t>> anchors = { {100, 1'000}, {200, 2'000} };
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(anchors, 50),   1'000u) << "before first";
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(anchors, 5'000), 2'000u) << "after last";
+}
+
+TEST(ArrivalInterpolation, IsMonotonicInArrivalIndex) {
+    // Load-bearing: re-timed records must not step backwards relative to each other, or the
+    // fix would trade one artefact for another.
+    const std::vector<std::pair<uint64_t, uint64_t>> anchors = {
+        {0, 500}, {37, 1'200}, {900, 9'999}, {1'000, 10'000},
+    };
+    uint64_t prev = 0;
+    for (uint64_t k = 0; k <= 1'100; ++k) {
+        const uint64_t t = ISTimeResolver::interpolateArrivalTime(anchors, k);
+        EXPECT_GE(t, prev) << "backward step at arrival " << k;
+        prev = t;
+    }
+}
+
+TEST(ArrivalInterpolation, DegenerateInputsAreSafe) {
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime({}, 42), 0u) << "empty anchors";
+    const std::vector<std::pair<uint64_t, uint64_t>> one = { {10, 777} };
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(one, 5),  777u);
+    EXPECT_EQ(ISTimeResolver::interpolateArrivalTime(one, 99), 777u);
+    // Duplicate arrival indices must not divide by zero.
+    const std::vector<std::pair<uint64_t, uint64_t>> dup = { {10, 100}, {10, 200}, {20, 300} };
+    EXPECT_NO_FATAL_FAILURE(ISTimeResolver::interpolateArrivalTime(dup, 10));
 }
