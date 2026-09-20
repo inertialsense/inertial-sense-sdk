@@ -1131,3 +1131,127 @@ TEST(ArrivalInterpolation, DegenerateInputsAreSafe) {
     const std::vector<std::pair<uint64_t, uint64_t>> dup = { {10, 100}, {10, 200}, {20, 300} };
     EXPECT_NO_FATAL_FAILURE(ISTimeResolver::interpolateArrivalTime(dup, 10));
 }
+
+// =====================================================================================
+// SN-8704 — stalled-run ruler selection (planStallRetiming), pure, no files
+// =====================================================================================
+
+TEST(StallRetiming, CadenceCoversDidsWithNoCompanionUptime) {
+    // 25 of the 27 ToW-bearing record structs have NO companion upTime (only sys_params_t and
+    // gpx_status_t do), so most stalls MUST be repairable without one. The DID's own median
+    // inter-record interval is the evidence: it assumes the DID's output rate is steady, which
+    // is far weaker than assuming the global record rate is steady -- and a stall routinely
+    // breaks the latter, because other DIDs stop emitting at the same instant.
+    ISTimeResolver::StallEvidence ev;
+    ev.stalledTsMs   = 500'000;
+    ev.runArrivals   = { 100, 140, 181, 219, 260 };      // 5 records, irregular ARRIVAL spacing
+    ev.advanceDeltas = { 98, 100, 102, 100, 101 };        // ~100 ms cadence, median 100
+    // no ownSamples, no lastHealthyOwnMs -- the 25-of-27 case
+
+    ISTimeResolver::StalledRun::Ruler kind{};
+    const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+
+    EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::Cadence);
+    ASSERT_EQ(out.size(), 5u);
+    EXPECT_EQ(out[0].second, 500'000u) << "the run's first record keeps its genuine time";
+    EXPECT_EQ(out[1].second, 500'100u);
+    EXPECT_EQ(out[4].second, 500'400u) << "uniform at the DID's own cadence";
+    for (std::size_t i = 0; i < out.size(); ++i)
+        EXPECT_EQ(out[i].first, ev.runArrivals[i]) << "arrival keys preserved in order";
+}
+
+TEST(StallRetiming, OwnClockIsPreferredOverCadenceWhenBothExist) {
+    // sys_params_t / gpx_status_t give a per-record answer, which beats an assumed-uniform one.
+    ISTimeResolver::StallEvidence ev;
+    ev.stalledTsMs      = 500'000;
+    ev.runArrivals      = { 10, 20, 30 };
+    ev.lastHealthyOwnMs = 1'000;
+    ev.ownSamples       = { {10, 1'000}, {20, 1'503}, {30, 2'009} };  // real, slightly irregular
+    ev.advanceDeltas    = { 500, 500, 500 };                          // cadence also available
+
+    ISTimeResolver::StalledRun::Ruler kind{};
+    const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+
+    EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::OwnClock);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[0].second, 500'000u) << "seam is exact by construction";
+    EXPECT_EQ(out[1].second, 500'503u) << "reproduces the device's OWN irregular spacing";
+    EXPECT_EQ(out[2].second, 501'009u) << "not the uniform 500 ms a cadence ruler would assume";
+}
+
+TEST(StallRetiming, NoEvidenceMeansNoRuler) {
+    ISTimeResolver::StalledRun::Ruler kind{};
+    {   // nothing at all -> caller must bracket against the collective timeline
+        ISTimeResolver::StallEvidence ev;
+        ev.stalledTsMs = 500'000;
+        ev.runArrivals = { 10, 20, 30 };
+        EXPECT_TRUE(ISTimeResolver::planStallRetiming(ev, kind).empty());
+        EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::None);
+    }
+    {   // a degenerate cadence of zero must not produce a run of identical times
+        ISTimeResolver::StallEvidence ev;
+        ev.stalledTsMs   = 500'000;
+        ev.runArrivals   = { 10, 20 };
+        ev.advanceDeltas = { 0, 0, 0 };
+        EXPECT_TRUE(ISTimeResolver::planStallRetiming(ev, kind).empty());
+        EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::None);
+    }
+    {   // a one-record "run" is not a run
+        ISTimeResolver::StallEvidence ev;
+        ev.stalledTsMs   = 500'000;
+        ev.runArrivals   = { 10 };
+        ev.advanceDeltas = { 100 };
+        EXPECT_TRUE(ISTimeResolver::planStallRetiming(ev, kind).empty());
+    }
+    {   // own-clock samples present but no healthy pairing to anchor them -> cadence instead
+        ISTimeResolver::StallEvidence ev;
+        ev.stalledTsMs   = 500'000;
+        ev.runArrivals   = { 10, 20 };
+        ev.ownSamples    = { {10, 1'000}, {20, 1'500} };
+        ev.lastHealthyOwnMs = 0;
+        ev.advanceDeltas = { 250 };
+        const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+        EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::Cadence);
+        ASSERT_EQ(out.size(), 2u);
+        EXPECT_EQ(out[1].second, 500'250u);
+    }
+}
+
+TEST(StallRetiming, CadenceUsesTheMedianSoOneOutlierCannotSkewIt) {
+    // A single long gap (a dropped record, a mode change) must not stretch the whole run.
+    ISTimeResolver::StallEvidence ev;
+    ev.stalledTsMs   = 0;
+    ev.runArrivals   = { 1, 2, 3, 4 };
+    ev.advanceDeltas = { 100, 100, 9'000, 100, 100 };   // median 100, mean would be ~1880
+    ISTimeResolver::StalledRun::Ruler kind{};
+    const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+    ASSERT_EQ(out.size(), 4u);
+    EXPECT_EQ(out[3].second, 300u) << "median cadence, not mean";
+}
+
+TEST(StallRetiming, RetimedTimesAreStrictlyAscendingUnderBothRulers) {
+    // Load-bearing: re-timed records must not step backwards among themselves.
+    ISTimeResolver::StalledRun::Ruler kind{};
+    {
+        ISTimeResolver::StallEvidence ev;
+        ev.stalledTsMs   = 1'000;
+        ev.advanceDeltas = { 7 };
+        for (uint64_t i = 0; i < 500; ++i) ev.runArrivals.push_back(i * 3);
+        const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+        ASSERT_EQ(out.size(), 500u);
+        for (std::size_t i = 1; i < out.size(); ++i)
+            EXPECT_GT(out[i].second, out[i-1].second) << "cadence, at i=" << i;
+    }
+    {
+        ISTimeResolver::StallEvidence ev;
+        ev.stalledTsMs      = 1'000;
+        ev.lastHealthyOwnMs = 100;
+        for (uint64_t i = 0; i < 500; ++i) ev.ownSamples.emplace_back(i, 100 + i * 11);
+        ev.runArrivals.assign(500, 0);
+        for (uint64_t i = 0; i < 500; ++i) ev.runArrivals[i] = i;
+        const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+        ASSERT_EQ(out.size(), 500u);
+        for (std::size_t i = 1; i < out.size(); ++i)
+            EXPECT_GT(out[i].second, out[i-1].second) << "own clock, at i=" << i;
+    }
+}

@@ -119,6 +119,54 @@ public:
         uint64_t    arrivalStart  = 0;      //!< First affected record's arrival index (inclusive).
         uint64_t    arrivalEnd    = 0;      //!< Last affected record's arrival index (inclusive).
         std::size_t recordCount   = 0;      //!< Records in the run.
+
+        //! Which evidence supplied the replacement times in `retimed`.
+        enum class Ruler : uint8_t {
+            None,       //!< Nothing usable; the resolver brackets against the collective timeline.
+            OwnClock,   //!< The DID's own companion uptime, per record. Most faithful.
+            Cadence,    //!< The DID's own pre-stall inter-record interval, applied uniformly.
+        };
+
+        /**
+         * @brief Per-record replacement times, `(arrivalIndex, towMs)`, ascending. Empty when no
+         *        ruler could be established or corroborated — the resolver then brackets against
+         *        the collective timeline.
+         *
+         * Why a ruler at all, rather than always bracketing: bracketing against the GLOBAL
+         * arrival order assumes the log's record RATE is locally steady, and at a stall it
+         * usually is not. In the motivating capture the GNSS position/velocity DIDs stop emitting
+         * at the same instant the clock freezes, so records-per-second drops exactly where the
+         * run begins. Measured, arrival-order bracketing produced 3 ms..611 ms spacing (mean
+         * 454.7 against an expected 500) and left the run ~1.7 s short.
+         *
+         * Two rulers, in preference order:
+         *
+         * - `OwnClock` — a companion `upTime` in the same payload, giving a per-record answer.
+         *   Only `sys_params_t` and `gpx_status_t` have one: **2 of the 27 ToW-bearing record
+         *   types**. It is emphatically NOT the case that the DIDs which can stall are the ones
+         *   with a companion uptime — ANY DID can stall, and 25 of 27 have no such field.
+         * - `Cadence` — the DID's own median inter-record interval measured while its clock was
+         *   still advancing, applied uniformly across the run. Needs no payload field, so it
+         *   covers the other 25. Assumes the DID's output rate is steady, which is a far weaker
+         *   assumption than the global record rate being steady.
+         *
+         * Either way the run's FIRST record keeps its genuine timestamp, so the repair is
+         * continuous at the seam by construction (measured: 0 ms).
+         *
+         * The eventual exact answer is `local_uptime_ms` — a per-record receipt delta the format
+         * already defines for EVERY record regardless of DID. It is zero in every log to hand
+         * because only the live capture writer stamps it.
+         */
+        std::vector<std::pair<uint64_t, uint64_t>> retimed;
+
+        Ruler ruler = Ruler::None;          //!< Which evidence `retimed` came from.
+
+        //! `rulerDelta / collectiveTimelineDelta` over the run. 1.0 is perfect agreement.
+        double rulerRatio = 0.0;
+
+                //! True when `retimed` is populated, i.e. the device's own clock agreed with the
+        //! collective timeline closely enough to be trusted as the ruler.
+        bool rulerCorroborated = false;
     };
 
     /**
@@ -282,6 +330,48 @@ public:
      *       is locally steady, which is what makes it safe here: the stalled DID is by definition
      *       the misbehaving one, while the anchors come from sources that were still healthy.
      */
+    /**
+     * @brief Evidence for re-timing one stalled run — PURE, no I/O, no log.
+     *
+     * Extracted so the ruler selection is testable without synthesising a log with a stalled
+     * clock, for the same reason `findGaps` and `planSessionAdoptions` are pure: the interesting
+     * cases (cadence covering the 25 record types with no companion uptime, own-clock preference,
+     * degenerate inputs) are otherwise unreachable from a test.
+     */
+    struct StallEvidence {
+        //! Arrival indices of every record in the run, ascending. The run's FIRST record is the
+        //! one whose timestamp legitimately advanced to the value that then froze, so it keeps
+        //! its own time and the repair is continuous at the seam.
+        std::vector<uint64_t> runArrivals;
+
+        //! The frozen timestamp — also the run's first record's genuine time.
+        uint64_t stalledTsMs = 0;
+
+        //! `(arrivalIndex, ownClockMs)` where the DID carries a companion uptime. Empty for the
+        //! 25 of 27 ToW-bearing record types that do not.
+        std::vector<std::pair<uint64_t, uint64_t>> ownSamples;
+
+        //! The companion uptime at the run's first (still-healthy) record. 0 when absent.
+        uint64_t lastHealthyOwnMs = 0;
+
+        //! Inter-record intervals seen while this DID's clock was still advancing. The median is
+        //! the cadence ruler.
+        std::vector<uint64_t> advanceDeltas;
+    };
+
+    /**
+     * @brief Choose a ruler and produce per-record replacement times. PURE.
+     *
+     * Preference: `OwnClock` (per-record, most faithful) then `Cadence` (the DID's own output
+     * rate, applied uniformly) then `None` (caller brackets against the collective timeline).
+     *
+     * @param ev       Evidence gathered during the scan.
+     * @param outKind  Receives which ruler was chosen.
+     * @return         `(arrivalIndex, towMs)` pairs, ascending; empty when no ruler applies.
+     */
+    static std::vector<std::pair<uint64_t, uint64_t>>
+        planStallRetiming(const StallEvidence& ev, StalledRun::Ruler& outKind);
+
     static uint64_t interpolateArrivalTime(
         const std::vector<std::pair<uint64_t, uint64_t>>& anchors, uint64_t arrivalIndex);
 
