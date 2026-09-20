@@ -543,7 +543,7 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
 
     if (!r.hadOnDiskIndex_) {
         // Default header; counters get filled in by buildIndexFromScan[Dat].
-        r.header_ = idx::makeDefaultHeader(0, idx::TimestampUnits::HostUptimeMs, idx::HeaderTimeSource::Mixed);
+        r.header_ = idx::makeDefaultHeader(0, idx::TimestampUnits::UptimeMs, idx::HeaderTimeSource::Mixed);
         if (r.format_ == SegmentFormat::Dat) {
             r.buildIndexFromScanDat();
             // SN-8629: the .dat scan does not carry the collector (it walks chunk headers, not
@@ -674,7 +674,7 @@ ISExpected<ISLogReader> ISLogReader::openForAnalysis(const std::filesystem::path
     // Recorded for diagnostics only. openForAnalysis never touches this path -- that is the
     // whole point of not going through construct().
     r.idxPath_   = std::filesystem::path{ raw }.replace_extension(".idx");
-    r.header_    = idx::makeDefaultHeader(0, idx::TimestampUnits::HostUptimeMs,
+    r.header_    = idx::makeDefaultHeader(0, idx::TimestampUnits::UptimeMs,
                                           idx::HeaderTimeSource::Mixed);
     return r;
 }
@@ -873,10 +873,19 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
                 cISDataMappings::TimestampDomain(dataHdr.id)
                     == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW;
             rec.flags     = (tsMs != 0 && towDomain) ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
+            // D0096: say explicitly whether `timestamp` is a value or a null. The DID's
+            // declared domain is the authority -- a DID with no timestamp field can never
+            // have one, and a DID that has one can legitimately read 0 (ToW 0 is Sunday
+            // midnight; uptime 0 is the first ms after boot). Testing `tsMs != 0` instead
+            // would mislabel those as absent, which is the ambiguity this bit removes.
+            if (cISDataMappings::TimestampDomain(dataHdr.id)
+                    != cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE) {
+                rec.flags |= idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
+            }
             rec.reserved  = 0;
-            // local_uptime_ms stays 0: receipt time exists ONLY in the .idx (the .raw chunk
+            // log_time_offset_ms stays 0: receipt time exists ONLY in the .idx (the .raw chunk
             // header carries no time field), so a rebuild genuinely cannot recover it. The
-            // header's HAS_LOCAL_DELTA flag is left clear to say so honestly -- see
+            // header's HAS_LOG_TIME_OFFSET flag is left clear to say so honestly -- see
             // finalizeScanHeader().
             records_.push_back(rec);
 
@@ -942,6 +951,10 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
             header_.last_timestamp_ms  = records_.back().timestamp;
         }
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+        // D0096: this scan stamps HAS_TIMESTAMP per record, so a clear bit here means a
+        // genuine null rather than "producer predates the bit". Declaring it is what makes
+        // the per-record bit readable at all.
+        header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;
 
         // SN-8629: describe the index's own provenance, rather than leaving the seeded
         // defaults in place and letting consumers guess.
@@ -969,11 +982,11 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
             header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::GpsTowMs);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::PayloadToW);
         } else {
-            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::HostUptimeMs);
+            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::UptimeMs);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::SessionOnly);
         }
 
-        // HAS_LOCAL_DELTA is deliberately NOT set. Receipt time ("WHEN the device said it")
+        // HAS_LOG_TIME_OFFSET is deliberately NOT set. Receipt time ("WHEN the device said it")
         // lives only in the .idx -- the .raw chunk header carries no time field -- so a rebuild
         // cannot recover it and must not claim to have it. Leaving the flag clear is what lets
         // a downstream resolver know it is working without an independent witness, instead of
@@ -1073,6 +1086,13 @@ void ISLogReader::buildIndexFromScanDat() {
                              cISDataMappings::TimestampDomain(recHdr.id)
                                  == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW)
                                 ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
+            // D0096: and the same timestamp-validity marking — a `.dat` segment has exactly
+            // the same 0-is-ambiguous problem as a `.raw` one, so both scans must declare it
+            // or the header's DECLARES_TS_VALIDITY would be a lie on one of the two formats.
+            if (cISDataMappings::TimestampDomain(recHdr.id)
+                    != cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE) {
+                rec.flags |= idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
+            }
             rec.reserved  = 0;
             records_.push_back(rec);
 
@@ -1092,6 +1112,10 @@ void ISLogReader::buildIndexFromScanDat() {
         header_.first_timestamp_ms = records_.front().timestamp;
         header_.last_timestamp_ms  = records_.back().timestamp;
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+        // D0096: the `.dat` scan stamps HAS_TIMESTAMP too, so it must declare it here as
+        // well. Declaring it on only one of the two scan paths would make the header's
+        // meaning depend on the segment's on-disk format.
+        header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;
     }
 }
 
@@ -1380,7 +1404,7 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen,
         rec.flags,
     };
-    v.setLocalUptimeMs(rec.local_uptime_ms);   // SN-8383: carry the per-record delta onto the view
+    v.setLogTimeOffsetMs(rec.log_time_offset_ms);   // SN-8383: carry the per-record delta onto the view
     return v;
 }
 

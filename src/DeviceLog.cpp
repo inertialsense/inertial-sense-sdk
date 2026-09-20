@@ -70,7 +70,7 @@ void cDeviceLog::InitDeviceForWriting(const std::string& timestamp, const std::s
     m_logStartUpTime = current_uptimeMs();
     // SN-8340: capture the absolute host wall-clock once, at log-open, so the
     // v2.1 .idx header carries a durable epoch anchor even for logs that never
-    // acquire GPS. Per-record times stay relative (m_logStartUpTime delta).
+    // acquire GPS. Per-record times stay relative (offset from m_logStartUpTime).
     m_captureEpochMs = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count());
@@ -425,29 +425,32 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
     // independent of `timestamp` below (which still prefers the payload ToW),
     // so a downstream resolver can bracket a timeless record between the local
     // deltas of its timed neighbours instead of guessing by arrival index.
-    const uint32_t localDelta = static_cast<uint32_t>(current_uptimeMs() - m_logStartUpTime);
-    rec.local_uptime_ms = localDelta;
+    const uint32_t logTimeOffset = static_cast<uint32_t>(current_uptimeMs() - m_logStartUpTime);
+    rec.log_time_offset_ms = logTimeOffset;
     rec.reserved2       = 0;
 
     if (dataHdr != nullptr) {
         rec.did = dataHdr->id;
         // cISDataMappings::Timestamp returns 0.0 if the DID doesn't
         // carry one — that's the signal to fall back to the host
-        // uptime delta and clear the ToW flag.
+        // host-clock offset from log start, and clear the ToW flag.
         const double tsSeconds = cISDataMappings::Timestamp(dataHdr, dataBuf);
         if (tsSeconds > 0.0) {
             rec.timestamp = static_cast<uint64_t>(tsSeconds * 1000.0);
-            rec.flags = IS_LOG_IDX_REC_FLAG_HAS_TOW;
+            // D0096: HAS_TIMESTAMP says the value is real; HAS_TOW additionally says which
+            // domain it is in. They are different questions, and a record can answer yes to
+            // the first and no to the second (any uptime-domain DID, e.g. DID_PIMU).
+            rec.flags = IS_LOG_IDX_REC_FLAG_HAS_TOW | IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
         } else {
-            rec.timestamp = localDelta;
-            rec.flags = 0;
+            rec.timestamp = logTimeOffset;
+            rec.flags = 0;   // no payload time: `timestamp` is NOT a timestamp here
         }
     } else {
         // Streaming-only path: no DID, no payload timestamp. Fall back
-        // to host uptime delta so the record still anchors a position
+        // to the host-clock offset from log start so the record still anchors a position
         // in the .raw segment by approximate time.
         rec.did = 0;
-        rec.timestamp = localDelta;
+        rec.timestamp = logTimeOffset;
         rec.flags = 0;
     }
 
@@ -484,16 +487,17 @@ bool cDeviceLog::writeIndexChunk() {
 
     // First chunk write: emit the v2 header. total_records /
     // first/last timestamps stay zero here — finalizeIndex() seeks(0)
-    // and rewrites the header on close. ts_units = HostUptimeMs is
+    // and rewrites the header on close. ts_units = UptimeMs is
     // the conservative default; per-record `flags` bit 0 still tells
     // readers when a specific record actually carried a real ToW.
     if (!m_idxHeaderWritten) {
         is_log_idx_header_t hdr = makeDefaultHeader(
             encode_sdk_producer_version(),
-            TimestampUnits::HostUptimeMs,
+            TimestampUnits::UptimeMs,
             HeaderTimeSource::Mixed,
             m_captureEpochMs);
-        hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA;   // SN-8383: every record carries local_uptime_ms
+        hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;   // SN-8383: every record carries log_time_offset_ms
+        hdr.flags |= IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;  // D0096: records stamp HAS_TIMESTAMP
         auto r = writeHeader(indexFile, hdr);
         if (!r) {
             return false;
@@ -536,13 +540,13 @@ bool cDeviceLog::finalizeIndex() {
 
     is_log_idx_header_t hdr = makeDefaultHeader(
         encode_sdk_producer_version(),
-        TimestampUnits::HostUptimeMs,
+        TimestampUnits::UptimeMs,
         HeaderTimeSource::Mixed,
         m_captureEpochMs);
     hdr.total_records       = m_idxTotalRecords;
     hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
     hdr.last_timestamp_ms   = m_idxLastTimestampMs;
-    // SN-8629: ts_units = HostUptimeMs (set above by makeDefaultHeader) would be
+    // SN-8629: ts_units = UptimeMs (set above by makeDefaultHeader) would be
     // a lie if the first/last timestamps landed in different domains -- flag it
     // Mixed so cross-segment consumers (ISDeviceLog::fromSegments) know these
     // two values aren't safely comparable against another segment's.
@@ -550,10 +554,11 @@ bool cDeviceLog::finalizeIndex() {
         hdr.ts_units = static_cast<uint8_t>(TimestampUnits::Mixed);
     }
     // Preserve the v2.1 flags across the finalize header rewrite (the plain
-    // "= FINALIZED" would otherwise drop HAS_LOCAL_DELTA / HAS_CAPTURE_EPOCH).
+    // "= FINALIZED" would otherwise drop HAS_LOG_TIME_OFFSET / HAS_CAPTURE_EPOCH).
     hdr.flags               = static_cast<uint8_t>(
                                   IS_LOG_IDX_HDR_FLAG_FINALIZED
-                                | IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA
+                                | IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET
+                                | IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY
                                 | (m_captureEpochMs ? IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH : 0));
 
     auto r = writeHeader(indexFile, hdr);

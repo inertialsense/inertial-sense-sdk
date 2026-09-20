@@ -66,7 +66,7 @@ public:
      * @brief Current (v2) `.idx` record type. Both spellings alias `is_log_idx_record_v2_t`.
      *
      * New code uses the v2 fields: `timestamp` is payload-derived milliseconds (falling back to
-     * host-uptime delta when the payload carries none), `did` is the data ID (0 for the
+     * host-clock offset from log start when the payload carries none), `did` is the data ID (0 for the
      * streaming-only path), `flags` bit 0 signals a real ToW, and `offset` is a 64-bit byte offset.
      */
     using index_record_s = inertial_sense::idx::is_log_idx_record_v2_t;

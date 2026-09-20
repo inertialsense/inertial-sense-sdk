@@ -25,6 +25,7 @@
 #include "ISLogIndex.h"
 #include "ISFileManager.h"
 #include "ISLogReader.h"
+#include "ISLogWriter.h"
 #include "ISTimeResolver.h"
 #include "ISLogger.h"
 #include "data_sets.h"
@@ -1033,7 +1034,7 @@ TEST_F(AnchorSegmentTest, RebuiltIndexRecordsItsOwnProvenance) {
     const auto& h = r->header();
     EXPECT_EQ(h.sync_point_count, towRecords) << "counter must agree with the per-record bits";
     EXPECT_NE(h.flags & idx::IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u);
-    EXPECT_EQ(h.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA, 0u)
+    EXPECT_EQ(h.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET, 0u)
         << "a rebuild cannot recover receipt time -- it must not claim to have it";
 }
 
@@ -1054,7 +1055,7 @@ TEST_F(AnchorSegmentTest, RebuiltHeaderUnitsMatchTheRecordsPresent) {
     } else if (anyTow) {
         EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::GpsTowMs));
     } else {
-        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::HostUptimeMs));
+        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::UptimeMs));
     }
 }
 
@@ -1256,14 +1257,14 @@ TEST(StallRetiming, RetimedTimesAreStrictlyAscendingUnderBothRulers) {
     }
 }
 
-TEST(StallRetiming, LocalDeltaOutranksBothOtherRulers) {
+TEST(StallRetiming, LogTimeOffsetOutranksBothOtherRulers) {
     // The .idx per-record receipt delta is the WHEN, stamped for every record regardless of DID
     // (SN-8383). It needs no payload field and no assumption about output rate, so it wins over
     // the companion-uptime and cadence rulers whenever the index declares it.
     ISTimeResolver::StallEvidence ev;
     ev.stalledTsMs      = 500'000;
     ev.runArrivals      = { 10, 20, 30 };
-    ev.localDeltas      = { {10, 9'000}, {20, 9'700}, {30, 10'450} };  // receipt: +700, +750
+    ev.logTimeOffsets      = { {10, 9'000}, {20, 9'700}, {30, 10'450} };  // receipt: +700, +750
     ev.lastHealthyOwnMs = 1'000;
     ev.ownSamples       = { {10, 1'000}, {20, 1'500}, {30, 2'000} };   // would say +500, +500
     ev.advanceDeltas    = { 250, 250 };                                // would say +250, +250
@@ -1271,14 +1272,14 @@ TEST(StallRetiming, LocalDeltaOutranksBothOtherRulers) {
     ISTimeResolver::StalledRun::Ruler kind{};
     const auto out = ISTimeResolver::planStallRetiming(ev, kind);
 
-    EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::LocalDelta);
+    EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::LogTimeOffset);
     ASSERT_EQ(out.size(), 3u);
     EXPECT_EQ(out[0].second, 500'000u) << "the run's first record is still healthy: zero point";
     EXPECT_EQ(out[1].second, 500'700u) << "receipt delta, not the own clock's 500";
     EXPECT_EQ(out[2].second, 501'450u);
 }
 
-TEST(StallRetiming, LocalDeltaIsIgnoredWhenTheIndexDoesNotDeclareIt) {
+TEST(StallRetiming, LogTimeOffsetIsIgnoredWhenTheIndexDoesNotDeclareIt) {
     // A reader-rebuilt index leaves HAS_LOCAL_DELTA clear and the field zero -- receipt time
     // exists nowhere in the .raw, so a rebuild genuinely cannot recover it. Reading those zeros
     // as receipt times would be worse than having no ruler at all, so the scan passes nothing
@@ -1286,7 +1287,7 @@ TEST(StallRetiming, LocalDeltaIsIgnoredWhenTheIndexDoesNotDeclareIt) {
     ISTimeResolver::StallEvidence ev;
     ev.stalledTsMs      = 500'000;
     ev.runArrivals      = { 10, 20, 30 };
-    ev.localDeltas      = {};                 // what the scan supplies when the flag is clear
+    ev.logTimeOffsets      = {};                 // what the scan supplies when the flag is clear
     ev.lastHealthyOwnMs = 1'000;
     ev.ownSamples       = { {10, 1'000}, {20, 1'500}, {30, 2'000} };
 
@@ -1297,17 +1298,281 @@ TEST(StallRetiming, LocalDeltaIsIgnoredWhenTheIndexDoesNotDeclareIt) {
     EXPECT_EQ(out[1].second, 500'500u);
 }
 
-TEST(StallRetiming, LocalDeltaNeverGoesBackwards) {
+TEST(StallRetiming, LogTimeOffsetNeverGoesBackwards) {
     // Receipt deltas should rise monotonically, but a corrupt index must not produce a
     // backwards-stepping timeline out of this function.
     ISTimeResolver::StallEvidence ev;
     ev.stalledTsMs = 1'000;
     ev.runArrivals = { 1, 2, 3 };
-    ev.localDeltas = { {1, 500}, {2, 400}, {3, 900} };   // middle sample regresses
+    ev.logTimeOffsets = { {1, 500}, {2, 400}, {3, 900} };   // middle sample regresses
     ISTimeResolver::StalledRun::Ruler kind{};
     const auto out = ISTimeResolver::planStallRetiming(ev, kind);
     ASSERT_EQ(out.size(), 3u);
     EXPECT_EQ(out[0].second, 1'000u);
     EXPECT_GE(out[1].second, 1'000u) << "clamped, not wrapped below the anchor";
     EXPECT_EQ(out[2].second, 1'400u);
+}
+
+// =====================================================================================
+// A2 (log-reader API audit, 2026-09-19) -- a span's TimeSource must be DERIVED from the
+// segment's anchor provenance, never asserted.
+//
+// ISDeviceLog::spanStart/spanEnd tagged every value TimeStamp::fromPayloadToW(),
+// regardless of where it came from. On a log with no time-of-week anywhere, that labels a
+// host-uptime value as a GPS time-of-week -- a D0024/D0066 violation, since the tag is the
+// only thing that makes a TimeStamp interpretable. These tests pin the derivation.
+// =====================================================================================
+
+namespace {
+
+//! Write a segment whose only timestamped records are UPTIME-domain: `pimu_t::time` is
+//! seconds since boot, and no DID in the log carries a time-of-week field at all.
+//!
+//! LOGTYPE_DAT, not LOGTYPE_RAW: the `LogData(dev, hdr, payload)` overload writes a
+//! `p_data_hdr_t` + payload with no wire framing, which is exactly the `.dat` layout.
+//! LOGTYPE_RAW expects already-framed ISB bytes through the `LogData(dev, size, bytes)`
+//! overload -- feeding it a DID header silently produces no segment file at all. Span
+//! tagging is format-agnostic, so `.dat` proves the point either way.
+fs::path writeUptimeOnlySegment(const fs::path& dir, uint32_t serial, int count) {
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_DAT;
+    opts.useSubFolderTimestamp = false;
+    if (!logger.InitSave(dir.string(), opts)) return {};
+    auto dev = logger.registerDevice(kFixtureHwId, serial);
+    if (!dev) return {};
+    logger.EnableLogging(true);
+
+    dev_info_t info{};
+    info.serialNumber   = serial;
+    info.hardwareType   = IS_HARDWARE_TYPE_IMX;
+    info.hardwareVer[0] = 5;
+    p_data_hdr_t ih{};
+    ih.id   = DID_DEV_INFO;
+    ih.size = sizeof(info);
+    logger.LogData(dev, &ih, reinterpret_cast<const uint8_t*>(&info));
+
+    for (int i = 0; i < count; ++i) {
+        pimu_t p{};
+        p.time = 10.0 + 0.1 * i;      // seconds since boot -- uptime, not ToW
+        p.dt   = 0.1f;
+        p_data_hdr_t h{};
+        h.id   = DID_PIMU;
+        h.size = sizeof(p);
+        logger.LogData(dev, &h, reinterpret_cast<const uint8_t*>(&p));
+    }
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> segs;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.dat$", segs);
+    return segs.empty() ? fs::path{} : fs::path(segs.front().name);
+}
+
+} // namespace
+
+TEST(SpanProvenance, AnUptimeOnlyLogDoesNotClaimAPayloadToWSpan) {
+    const fs::path dir = makeTempDir("uptime_only");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+    const fs::path raw = writeUptimeOnlySegment(dir, 424242u, 40);
+    ASSERT_FALSE(raw.empty()) << "fixture produced no segment";
+
+    auto log = ISDeviceLog::fromSegments({ raw });
+    ASSERT_TRUE(log.has_value()) << "fromSegments failed";
+
+    // Establish the premise from the data, not from the fixture's intent: the cascade must
+    // agree that this log carries no first-hand payload time-of-week.
+    const AnchorAnalysis a = log->segment(0).anchorAnalysis();
+    EXPECT_FALSE(a.firstHand())
+        << "fixture is not uptime-only after all -- tier " << static_cast<int>(a.tier);
+
+    const TimeStamp s = log->spanStart();
+    const TimeStamp e = log->spanEnd();
+    std::printf("[probe] tier=%d spanStart{v=%llu src=%d} spanEnd{v=%llu src=%d}\n",
+                static_cast<int>(a.tier),
+                (unsigned long long)s.value, static_cast<int>(s.source),
+                (unsigned long long)e.value, static_cast<int>(e.source));
+
+    EXPECT_NE(s.source, TimeSource::PayloadToW)
+        << "span start tagged PayloadToW on a log with no time-of-week anywhere";
+    EXPECT_NE(e.source, TimeSource::PayloadToW)
+        << "span end tagged PayloadToW on a log with no time-of-week anywhere";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// =====================================================================================
+// HAS_LOCAL_DELTA semantic collision (found while closing out the 2026-09-19 audit).
+//
+// The flag has two incompatible readings in the SDK today:
+//   ISLogWriter.cpp:97   "output is v2.1, so the log_time_offset_ms FIELD EXISTS"  (capability)
+//   ISTimeResolver.cpp:330 "these records carry REAL deltas, trust them"        (content)
+//
+// The writer's reading is deliberate and pinned by test_log_writer.cpp ("never a
+// downgrade"), so this is not a stray bug -- it is a contract disagreement. It matters
+// because `LogTimeOffset` is the TOP-priority stall ruler: baking a log whose source index was
+// reader-rebuilt yields an output that DECLARES the flag over all-zero deltas, and the
+// resolver's own guard -- which exists precisely to refuse zeros -- is satisfied by the
+// header and hands the re-timer a flat ruler.
+//
+// This test documents the collision on real bytes so the decision is made against
+// measurements rather than against either comment.
+// =====================================================================================
+
+TEST_F(AnchorSegmentTest, ReaderRebuiltIndexDoesNotDeclareLogTimeOffset) {
+    // Premise, established not assumed: a reader-rebuilt index leaves the flag clear and
+    // the field zero. Everything below depends on this being the real starting state.
+    ASSERT_TRUE(fs::exists(f_.idxFile));
+    fs::remove(f_.idxFile);
+
+    auto reopened = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(reopened.has_value()) << "rebuild-on-open failed";
+    EXPECT_FALSE(reopened->hadOnDiskIndex()) << "expected a rebuild, not a trusted sidecar";
+
+    const bool declares =
+        (reopened->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET) != 0;
+    EXPECT_FALSE(declares) << "a rebuilt index must not claim per-record receipt deltas";
+
+    std::size_t nonZero = 0, total = 0;
+    for (auto v : reopened->allRecords()) {
+        ++total;
+        if (v.logTimeOffsetMs() != 0) ++nonZero;
+    }
+    EXPECT_GT(total, 0u);
+    EXPECT_EQ(nonZero, 0u) << "rebuilt index unexpectedly carries non-zero deltas";
+    std::printf("[measured] rebuilt index: declares=%d records=%zu nonZeroDeltas=%zu\n",
+                (int)declares, total, nonZero);
+}
+
+TEST_F(AnchorSegmentTest, BakingARebuiltIndexDeclaresOffsetsItDoesNotHave) {
+    // Continue from the premise above: rebuild the index so it honestly has no deltas...
+    ASSERT_TRUE(fs::exists(f_.idxFile));
+    fs::remove(f_.idxFile);
+    auto src = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(src.has_value());
+    ASSERT_EQ(0, src->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET);
+
+    // ...then bake it through ISLogWriter, exactly as a trim/bake does.
+    const fs::path outRaw = f_.directory / "baked.raw";
+    ISLogWriter::Options opts;
+    opts.rawOutPath     = outRaw;
+    opts.sourceDeviceId = src->deviceId();
+    opts.overwrite      = true;
+    auto wR = ISLogWriter::create(opts);
+    ASSERT_TRUE(wR.has_value()) << wR.error().message;
+    {
+        ISLogWriter w = std::move(wR.value());
+        for (auto v : src->allRecords()) {
+            ASSERT_TRUE(w.append(v).has_value());
+        }
+        ASSERT_TRUE(w.finalize().has_value());
+    }
+
+    fs::path outIdx = outRaw;
+    outIdx.replace_extension(".idx");
+    std::ifstream in(outIdx, std::ios::binary);
+    ASSERT_TRUE(in.good());
+    const std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)),
+                                     std::istreambuf_iterator<char>());
+    auto hdr = idx::parseHeader(bytes.data());
+    ASSERT_TRUE(hdr.has_value()) << hdr.error().message;
+
+    std::size_t nonZero = 0;
+    for (uint64_t i = 0; i < hdr->total_records; ++i) {
+        const auto rec = idx::parseRecord(
+            bytes.data() + idx::IS_LOG_IDX_HEADER_SIZE + i * idx::IS_LOG_IDX_RECORD_V2_1_SIZE,
+            idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
+        if (rec.log_time_offset_ms != 0) ++nonZero;
+    }
+    const bool declares = (hdr->flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET) != 0;
+    std::printf("[measured] baked index: declares=%d records=%llu nonZeroDeltas=%zu\n",
+                (int)declares, (unsigned long long)hdr->total_records, nonZero);
+
+    // THE COLLISION: the output asserts the flag over deltas that are entirely absent, and
+    // the resolver's zero-refusing guard reads exactly this flag.
+    EXPECT_EQ(nonZero, 0u) << "baked deltas appeared out of nowhere";
+    EXPECT_FALSE(declares && nonZero == 0)
+        << "baked index DECLARES per-record receipt deltas while carrying none -- "
+           "ISTimeResolver will trust zeros as receipt times (top-priority stall ruler)";
+}
+
+// =====================================================================================
+// D0096: a null timestamp must be distinguishable from a timestamp that happens to be 0.
+// =====================================================================================
+
+TEST_F(AnchorSegmentTest, RebuildMarksWhichRecordsActuallyHaveATimestamp) {
+    // Rebuild so the scan path (not a trusted sidecar) stamps the flags.
+    ASSERT_TRUE(fs::exists(f_.idxFile));
+    fs::remove(f_.idxFile);
+    auto r = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(r.has_value());
+    ASSERT_FALSE(r->hadOnDiskIndex());
+
+    // The header must DECLARE that it stamps validity, or the per-record bit is unreadable:
+    // every pre-existing file has it clear on all records for want of a producer, not for
+    // want of a timestamp.
+    EXPECT_NE(0, r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY)
+        << "rebuild stamps HAS_TIMESTAMP, so it must declare that it does";
+
+    std::size_t timed = 0, untimed = 0, disagreed = 0, zeroButValid = 0;
+    for (auto v : r->allRecords()) {
+        // Use the index's own DID rather than re-parsing the .raw bytes: for a `.raw` segment
+        // those bytes are the ISB-framed packet, so a p_data_hdr_t read off the front lands on
+        // the preamble. (That mistake made an earlier version of this test silently iterate
+        // zero records and "pass" its disagreement check.)
+        const bool claimsTs =
+            (v.flags() & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0;
+        // The DID's declared domain is ground truth: a DID with no timestamp FIELD can never
+        // have a timestamp VALUE, whatever the bytes happen to say.
+        const bool canHaveTs =
+            cISDataMappings::TimestampDomain(v.did())
+                != cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE;
+
+        if (claimsTs != canHaveTs) ++disagreed;
+        if (canHaveTs) ++timed; else ++untimed;
+        // The case the bit exists for: a real timestamp whose value is 0 must still be
+        // flagged valid, and must NOT be mistaken for an absent one.
+        if (claimsTs && v.timestamp().value == 0) ++zeroButValid;
+    }
+    std::printf("[measured] timed=%zu untimed=%zu disagreed=%zu zeroButFlaggedValid=%zu\n",
+                timed, untimed, disagreed, zeroButValid);
+
+    EXPECT_EQ(disagreed, 0u)
+        << "HAS_TIMESTAMP disagrees with the DID's declared timestamp domain";
+    EXPECT_GT(timed, 0u) << "fixture carries no timed DIDs -- test proves nothing";
+    // This .raw fixture happens to carry only timed DIDs, so the null case is covered by
+    // RebuildFlagsANullTimestampDistinctlyFromZero below (a .dat with DID_DEV_INFO).
+}
+
+TEST(TimestampValidity, RebuildFlagsANullTimestampDistinctlyFromZero) {
+    // The case the bit exists for, both halves in one segment: DID_DEV_INFO has NO timestamp
+    // field (null), DID_PIMU has one (`time`). Before the bit, both landed as flags == 0 and
+    // nothing could tell "no timestamp" from "timestamp that reads 0".
+    const fs::path dir = makeTempDir("ts_validity");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+    const fs::path seg = writeUptimeOnlySegment(dir, 515151u, 12);
+    ASSERT_FALSE(seg.empty()) << "fixture produced no segment";
+
+    auto r = ISLogReader::openSegment(seg);
+    ASSERT_TRUE(r.has_value());
+    EXPECT_NE(0, r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY)
+        << "the .dat scan stamps HAS_TIMESTAMP, so it must declare it too";
+
+    std::size_t devInfoNull = 0, pimuValid = 0, wrong = 0;
+    for (auto v : r->allRecords()) {
+        const bool claims = (v.flags() & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0;
+        if (v.did() == DID_DEV_INFO) {
+            if (claims) ++wrong; else ++devInfoNull;
+        } else if (v.did() == DID_PIMU) {
+            if (claims) ++pimuValid; else ++wrong;
+        }
+    }
+    std::printf("[measured] DID_DEV_INFO null=%zu  DID_PIMU valid=%zu  mislabelled=%zu\n",
+                devInfoNull, pimuValid, wrong);
+    EXPECT_GT(devInfoNull, 0u) << "no DID_DEV_INFO record seen -- null case untested";
+    EXPECT_GT(pimuValid, 0u)   << "no DID_PIMU record seen -- valid case untested";
+    EXPECT_EQ(wrong, 0u)       << "a record's HAS_TIMESTAMP contradicts its DID";
+
+    ISFileManager::DeleteDirectory(dir.string());
 }

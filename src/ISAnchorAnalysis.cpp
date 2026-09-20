@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>    // UINT32_MAX -- the time-offset field is 32-bit
 #include <cstring>
 #include <string>
 #include <vector>

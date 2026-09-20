@@ -82,7 +82,7 @@ public:
 
         /// Header `ts_units` (informational; doesn't transform the
         /// record timestamps written to the `.idx`).
-        idx::TimestampUnits tsUnits = idx::TimestampUnits::HostUptimeMs;
+        idx::TimestampUnits tsUnits = idx::TimestampUnits::UptimeMs;
 
         /// Header `ts_source` (informational).
         idx::HeaderTimeSource tsSource = idx::HeaderTimeSource::PayloadToW;

@@ -15,7 +15,7 @@
  *   - **Sync records** (HAS_TOW=1): stored timestamp = payload ToW
  *     (ms). These are the anchor points.
  *   - **Non-sync records** (HAS_TOW=0): stored timestamp = host
- *     uptime delta (ms since logger session start).
+ *     uptime-domain time-offset (ms since logger session start).
  * These two clusters typically don't overlap on the same numeric
  * axis (host uptime is a few seconds; ToW is ~hundreds of millions
  * of ms into the GPS week). The host-side timestamp at sync time is
@@ -125,7 +125,7 @@ public:
             None,        //!< Nothing usable; the resolver brackets against the collective timeline.
             Cadence,     //!< The DID's own pre-stall inter-record interval, applied uniformly.
             OwnClock,    //!< The DID's own companion uptime, per record.
-            LocalDelta,  //!< The `.idx` per-record RECEIPT delta. Exact, and works for any DID.
+            LogTimeOffset,  //!< The `.idx` per-record RECEIPT delta. Exact, and works for any DID.
         };
 
         /**
@@ -154,7 +154,7 @@ public:
          * Either way the run's FIRST record keeps its genuine timestamp, so the repair is
          * continuous at the seam by construction (measured: 0 ms).
          *
-         * The eventual exact answer is `local_uptime_ms` — a per-record receipt delta the format
+         * The eventual exact answer is `log_time_offset_ms` — a per-record receipt delta the format
          * already defines for EVERY record regardless of DID. It is zero in every log to hand
          * because only the live capture writer stamps it.
          */
@@ -249,7 +249,7 @@ public:
      * @brief Resolve a record's stored timestamp to a tagged `TimeStamp`.
      *
      * @param hostTimeMs    The record's `.idx` `timestamp` field. For HAS_TOW records this is
-     *                      already the ToW; for non-HAS_TOW records it is a host-uptime delta.
+     *                      already the ToW; for non-HAS_TOW records it is an uptime-domain value.
      * @param deviceId      Source device id; baked into the returned `TimeStamp`.
      * @param arrivalIndex  The record's position in the device's global record-arrival order.
      *                      Use `ISRecordView::arrivalIndex()`, which `ISDeviceLog` populates.
@@ -360,10 +360,10 @@ public:
         std::vector<uint64_t> advanceDeltas;
 
         /**
-         * @brief `(arrivalIndex, local_uptime_ms)` for the run, when the segment's `.idx`
-         *        declares `IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA`.
+         * @brief `(arrivalIndex, log_time_offset_ms)` for the run, when the segment's `.idx`
+         *        declares `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET`.
          *
-         * This is the WHEN — a host-uptime delta the live capture writer stamps for EVERY record
+         * This is the WHEN — a log-start time-offset the live capture writer stamps for EVERY record
          * independent of any payload (SN-8383). It is the exact ruler and the only one that works
          * for any DID, so it is preferred over both the companion-uptime and cadence rulers.
          *
@@ -371,7 +371,7 @@ public:
          * cannot recover it (receipt time exists nowhere in the `.raw`). A rebuilt index leaves
          * `HAS_LOCAL_DELTA` clear, which is what makes this check meaningful rather than a trap.
          */
-        std::vector<std::pair<uint64_t, uint64_t>> localDeltas;
+        std::vector<std::pair<uint64_t, uint64_t>> logTimeOffsets;
     };
 
     /**
