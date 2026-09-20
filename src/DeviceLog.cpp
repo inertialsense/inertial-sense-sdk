@@ -427,7 +427,9 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
     // deltas of its timed neighbours instead of guessing by arrival index.
     const uint32_t logTimeOffset = static_cast<uint32_t>(current_uptimeMs() - m_logStartUpTime);
     rec.log_time_offset_ms = logTimeOffset;
-    rec.reserved2       = 0;
+    // No reconstructed offset on the live path: the observed one above is the real thing,
+    // and HAS_RECON_TIME_OFFSET is left clear so nothing reads this as an estimate (D0096).
+    rec.recon_time_offset_ms = 0;
 
     if (dataHdr != nullptr) {
         rec.did = dataHdr->id;

@@ -699,6 +699,76 @@ ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::pa
     return r->anchorAnalysis();
 }
 
+void ISLogReader::populateReconTimeOffsets() {
+    if (records_.empty()) return;
+
+    // Pick the dominant domain and use ONLY that as bookends. A run interpolated between an
+    // uptime-domain and a ToW-domain neighbour is a duration in neither frame.
+    std::size_t towCount = 0, upCount = 0;
+    for (const auto& r : records_) {
+        switch (cISDataMappings::TimestampDomain(r.did)) {
+            case cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW: ++towCount; break;
+            case cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_UPTIME:  ++upCount;  break;
+            default: break;
+        }
+    }
+    if (towCount == 0 && upCount == 0) return;   // nothing to reconstruct from
+    const auto domain = (towCount >= upCount)
+        ? cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW
+        : cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_UPTIME;
+
+    // Bookends as (recordIndex, timestamp), ascending in BOTH coordinates --
+    // interpolateArrivalTime documents ascending anchors as its precondition, and a stalled or
+    // rewound device clock would otherwise violate it. A regressing bookend is dropped rather
+    // than clamped: it is not evidence of when anything happened.
+    std::vector<std::pair<uint64_t, uint64_t>> anchors;
+    anchors.reserve(records_.size());
+    uint64_t lastTs = 0;
+    bool first = true;
+    for (std::size_t i = 0; i < records_.size(); ++i) {
+        const auto& r = records_[i];
+        if (cISDataMappings::TimestampDomain(r.did) != domain) continue;
+        if ((r.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) == 0) continue;
+        if (!first && r.timestamp < lastTs) continue;     // non-monotonic: not a bookend
+        anchors.emplace_back(static_cast<uint64_t>(i), r.timestamp);
+        lastTs = r.timestamp;
+        first  = false;
+    }
+    if (anchors.empty()) return;
+
+    const uint64_t base = anchors.front().second;
+    std::size_t wrote = 0, estimated = 0;
+    for (std::size_t i = 0; i < records_.size(); ++i) {
+        auto& r = records_[i];
+        const bool ownBookend =
+            cISDataMappings::TimestampDomain(r.did) == domain &&
+            (r.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0 &&
+            r.timestamp >= base;
+
+        const uint64_t ms = ownBookend
+            ? r.timestamp
+            : ISTimeResolver::interpolateArrivalTime(anchors, static_cast<uint64_t>(i));
+        const uint64_t off = (ms > base) ? (ms - base) : 0;
+        r.recon_time_offset_ms = (off > UINT32_MAX) ? UINT32_MAX
+                                                    : static_cast<uint32_t>(off);
+        if (!ownBookend) {
+            r.flags |= idx::IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET;
+            ++estimated;
+        }
+        ++wrote;
+    }
+
+    // Declare it only because values were genuinely written (D0096 / audit A5).
+    header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET;
+    log_debug(IS_LOG_ISLOG,
+              "populateReconTimeOffsets: %zu record(s), %zu bookend(s) in the %s domain, "
+              "%zu estimated",
+              wrote, anchors.size(),
+              domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW
+                  ? "GPS-ToW" : "uptime",
+              estimated);
+}
+
 void ISLogReader::adoptSessionOffset(int64_t offsetMs, uint32_t donorDid,
                                      bool donorIsEarlier) {
     // First-hand evidence always wins over an inherited constant.
@@ -936,6 +1006,18 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
         byDid_[records_[i].did].push_back(i);
     }
     if (collectAnchor) anchor_ = collector.finish(prev);
+
+    // D0096 path 2: receipt time is unrecoverable from a file, so reconstruct a chronology
+    // from the payload timestamps that DO exist and persist it in `recon_time_offset_ms` --
+    // a separate field from the observed `log_time_offset_ms`, so an estimate can never be
+    // mistaken for an observation. Computing this and throwing it away meant re-deriving it
+    // on every single reload.
+    //
+    // Reuses ISTimeResolver::interpolateArrivalTime rather than reimplementing the
+    // distribution: it already places an arbitrary index between ascending (index, time)
+    // bookends and clamps outside them, which is exactly the "spread the un-clocked records
+    // between their clocked neighbours" rule.
+    populateReconTimeOffsets();
 
     if (!records_.empty()) {
         header_.total_records = records_.size();
@@ -1404,7 +1486,8 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen,
         rec.flags,
     };
-    v.setLogTimeOffsetMs(rec.log_time_offset_ms);   // SN-8383: carry the per-record delta onto the view
+    v.setLogTimeOffsetMs(rec.log_time_offset_ms);       // SN-8383: OBSERVED receipt offset
+    v.setReconTimeOffsetMs(rec.recon_time_offset_ms);   // D0096: RECONSTRUCTED offset
     return v;
 }
 

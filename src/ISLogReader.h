@@ -270,6 +270,22 @@ public:
      *       - we can go back and re-anchor the entire log". Replaces a forward-only pairwise
      *       chain, which could only ever push information later in the log, never earlier.
      */
+    /**
+     * @brief D0096 path 2: fill `recon_time_offset_ms` for every record from the payload
+     *        timestamps that exist, distributing un-clocked records between their bookends.
+     *
+     * Only the ONE dominant domain is used as bookends: interpolating between an
+     * uptime-domain and a GPS-ToW-domain neighbour would yield a number that is a duration in
+     * neither frame. Sets `IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET` on records whose
+     * value was estimated (not on those derived from their own timestamp), and
+     * `IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET` only if anything was actually written --
+     * declaring an all-zero field is the A5 defect this exists to avoid.
+     *
+     * No-op when no record carries a usable timestamp: there is nothing to reconstruct from,
+     * and zeros must not be declared as a chronology.
+     */
+    void populateReconTimeOffsets();
+
     void adoptSessionOffset(int64_t offsetMs, uint32_t donorDid, bool donorIsEarlier);
 
     /**

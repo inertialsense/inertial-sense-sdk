@@ -162,6 +162,17 @@ public:
      */
     constexpr uint32_t logTimeOffsetMs() const noexcept { return logTimeOffsetMs_; }
 
+    /**
+     * @return  D0096 RECONSTRUCTED time-offset from log start, in ms (0 if the source had
+     *          none). Distinct from `logTimeOffsetMs()`, which is OBSERVED: prefer that one
+     *          and fall back here knowingly. A reconstructed value is derived from payload
+     *          timestamps, so it cannot corroborate a payload clock that has stalled.
+     */
+    constexpr uint32_t reconTimeOffsetMs() const noexcept { return reconTimeOffsetMs_; }
+
+    //! Stamp the reconstructed log-start time-offset onto this view. Called by `ISLogReader`.
+    constexpr void setReconTimeOffsetMs(uint32_t ms) noexcept { reconTimeOffsetMs_ = ms; }
+
     //! Stamp the per-record log-start time-offset onto this view. Called by `ISLogReader`.
     constexpr void setLogTimeOffsetMs(uint32_t ms) noexcept { logTimeOffsetMs_ = ms; }
 
@@ -215,6 +226,7 @@ private:
     uint16_t       flags_        = 0;
     uint64_t       arrivalIndex_ = kNoArrivalIndex;
     uint32_t       logTimeOffsetMs_ = 0;   //!< SN-8383: per-record log-start time-offset from the source v2.1 .idx.
+    uint32_t       reconTimeOffsetMs_ = 0; //!< D0096: per-record RECONSTRUCTED log-start time-offset.
 };
 
 /**
@@ -295,6 +307,8 @@ public:
     /** @return  SN-8383 per-record log-start time-offset (ms) preserved from the
      *           source view; 0 if the source `.idx` was v2.0. */
     uint32_t logTimeOffsetMs() const noexcept { return logTimeOffsetMs_; }
+    //! @return  D0096 reconstructed log-start time-offset (ms); see `ISRecordView`.
+    uint32_t reconTimeOffsetMs() const noexcept { return reconTimeOffsetMs_; }
 
     /**
      * @return  `{ data, size }` over the owning buffer; `data` may
@@ -327,6 +341,7 @@ private:
     uint16_t             flags_        = 0;
     uint64_t             arrivalIndex_ = ISRecordView::kNoArrivalIndex;
     uint32_t             logTimeOffsetMs_ = 0;   //!< SN-8383: per-record log-start time-offset.
+    uint32_t             reconTimeOffsetMs_ = 0; //!< D0096: per-record reconstructed offset.
 };
 
 inline OwnedRecord ISRecordView::owned() const {

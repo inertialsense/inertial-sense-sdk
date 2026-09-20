@@ -1576,3 +1576,39 @@ TEST(TimestampValidity, RebuildFlagsANullTimestampDistinctlyFromZero) {
 
     ISFileManager::DeleteDirectory(dir.string());
 }
+
+// =====================================================================================
+// D0096 path 2: the reconstructed chronology is PERSISTED, in its own field, and never
+// confused with the observed one.
+// =====================================================================================
+
+TEST_F(AnchorSegmentTest, RebuildPersistsAReconstructedChronology) {
+    ASSERT_TRUE(fs::exists(f_.idxFile));
+    fs::remove(f_.idxFile);
+    auto r = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(r.has_value());
+    ASSERT_FALSE(r->hadOnDiskIndex());
+
+    const auto flags = r->header().flags;
+    EXPECT_NE(0, flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET)
+        << "a rebuild reconstructs a chronology, so it must declare one";
+    // The OBSERVED field must stay undeclared: receipt time is not recoverable from a file,
+    // and this separation is what keeps the resolver's top-priority stall ruler honest.
+    EXPECT_EQ(0, flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET)
+        << "a rebuild must NOT claim observed receipt times";
+
+    std::size_t nonZero = 0, estimated = 0, regressions = 0;
+    uint32_t prev = 0;
+    bool firstRec = true;
+    for (auto v : r->allRecords()) {
+        const uint32_t off = v.reconTimeOffsetMs();
+        if (off != 0) ++nonZero;
+        if ((v.flags() & idx::IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET) != 0) ++estimated;
+        if (!firstRec && off < prev) ++regressions;
+        prev = off; firstRec = false;
+    }
+    std::printf("[measured] recon offsets: nonZero=%zu estimated=%zu regressions=%zu\n",
+                nonZero, estimated, regressions);
+    EXPECT_GT(nonZero, 0u) << "declared a chronology but wrote all zeros -- the A5 defect";
+    EXPECT_EQ(regressions, 0u) << "a reconstructed chronology must not step backwards";
+}

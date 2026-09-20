@@ -147,7 +147,7 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
     put_u16(out + 20, rec.flags);
     put_u16(out + 22, rec.reserved);
     put_u32(out + 24, rec.log_time_offset_ms);   // v2.1 trailing field (SN-8383)
-    put_u32(out + 28, rec.reserved2);
+    put_u32(out + 28, rec.recon_time_offset_ms);
 }
 
 is_log_idx_record_v2_t parseRecord(
@@ -161,7 +161,7 @@ is_log_idx_record_v2_t parseRecord(
     // v2.1 trailing field present only when the on-disk record is >= 32 bytes.
     if (record_size >= IS_LOG_IDX_RECORD_V2_1_SIZE) {
         rec.log_time_offset_ms = get_u32(in + 24);
-        rec.reserved2       = get_u32(in + 28);
+        rec.recon_time_offset_ms = get_u32(in + 28);
     }
     return rec;
 }
