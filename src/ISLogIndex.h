@@ -212,6 +212,32 @@ inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH = 1u << 2;
  */
 inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY = 1u << 3;
 
+/**
+ * Bit 4 (D0069 / D0096, audit A2): `anchor_offset_ms` in the header is set — the constant that
+ * maps this segment's **uptime-domain** record timestamps onto the absolute frame
+ * (`absolute = uptime + anchor_offset_ms`), as established by the `AnchorAnalysis` cascade.
+ *
+ * This is the additive home D0069 specified for a persisted anchor, and it exists so an
+ * anchored value never has to be smuggled into `first_timestamp_ms` / `last_timestamp_ms` —
+ * those are a faithful transcription on every path (D0096), and writing a derived absolute
+ * into them was audit finding A2.
+ *
+ * **It is an offset, not a span.** Do NOT reconstruct the anchored span as
+ * `first_timestamp_ms + anchor_offset_ms`. The offset is defined against the **uptime** domain,
+ * so it composes with the uptime extrema: `anchoredStart/End = uptimeMin/Max + offset`, and
+ * those extrema come from the records. The two formulas agree on a single-domain log — where
+ * the transcription and the uptime minimum are the same record — and diverge as soon as a
+ * ToW-bearing record sits at the boundary. Measured on such a segment: the transcription was
+ * `342227671` (a GPS time-of-week) against an uptime minimum of `10000`, so the naive sum
+ * overshot by 342,217,671 ms — about four days.
+ * `test_anchor_analysis.cpp` keeps both cases as standing guards.
+ *
+ * Signed: a segment whose device clock leads the absolute frame yields a negative offset.
+ * Zero is a legal value (a ToW-only segment is already absolute), which is why presence needs
+ * this bit rather than a `!= 0` test.
+ */
+inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET = 1u << 4;
+
 
 // ----- Structs (logical, not on-disk) --------------------------------------
 //
@@ -234,8 +260,8 @@ struct is_log_idx_header_t {
     uint16_t header_size;           ///<  6..7 : on-disk header size in bytes (= 64 for v2)
     uint32_t producer_version;      ///<  8..11: ENCODE_VERSION-style value of the writing SDK
     uint64_t total_records;         ///< 12..19: count of records following the header (0 if not finalized)
-    uint64_t first_timestamp_ms;    ///< 20..27: first record's `timestamp` (0 if unset)
-    uint64_t last_timestamp_ms;     ///< 28..35: last record's `timestamp`  (0 if unset)
+    uint64_t first_timestamp_ms;    ///< 20..27: faithful transcription of the first timestamped record's `timestamp` (0 if none). Never a derived/anchored value — D0096.
+    uint64_t last_timestamp_ms;     ///< 28..35: faithful transcription of the last timestamped record's `timestamp` (0 if none). Never a derived/anchored value — D0096.
     uint32_t sync_point_count;      ///< 36..39: D-07 sync-event count tracked by writer (0 default)
     uint8_t  ts_anchor;              ///< 40    : `TimestampAnchor`
     uint8_t  ts_source;             ///< 41    : `HeaderTimeSource`
@@ -244,7 +270,7 @@ struct is_log_idx_header_t {
     uint16_t record_size;           ///< 44..45: on-disk per-record size in bytes (24=v2.0, 32=v2.1). 0 (pre-v2.1 header) ⇒ reader treats as 24. SN-8383.
     uint16_t reserved16;            ///< 46..47: pad
     uint64_t capture_epoch_ms;      ///< 48..55: absolute host wall-clock ms at log-open (0 = unset; valid only when HAS_CAPTURE_EPOCH). SN-8340.
-    uint8_t  reserved[8];           ///< 56..63: explicit pad to 64 bytes
+    int64_t  anchor_offset_ms;      ///< 56..63: uptime→absolute mapping constant from the anchor cascade (valid only when HAS_ANCHOR_OFFSET). D0069/D0096, audit A2.
 };
 
 /**

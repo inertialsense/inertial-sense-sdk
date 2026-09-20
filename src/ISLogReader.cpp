@@ -871,6 +871,11 @@ void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
     }
 
     anchor_ = collector.finish(prev);
+    // Keep the header's persisted anchor in step with the analysis on every path that produces
+    // one -- the `.dat` scan and the trusted-sidecar open both land here. On the rebuild paths
+    // this is what reaches disk; on the trusted path it only reconciles the in-memory header,
+    // since a trusted sidecar is not rewritten.
+    stampPersistedAnchor();
     log_debug(IS_LOG_ISLOG, "%s: anchor from index: tier=%s anchored=[%llu..%llu]",
               rawPath_.filename().c_str(), anchorTierName(anchor_.tier),
               (unsigned long long)anchor_.anchoredStartMs,
@@ -1027,17 +1032,14 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
 
     if (!records_.empty()) {
         header_.total_records = records_.size();
-        // SN-8629: prefer the domain-normalized span from the anchor analysis. The old
-        // records_.front()/back().timestamp is POSITIONAL -- it takes whichever record happened
-        // to be written first/last, in whatever time domain that DID stamps, so the value was a
-        // coin flip on DID write order and sorting segments by it could place them out of order.
-        if (anchor_.anchored() && anchor_.anchoredStartMs != 0) {
-            header_.first_timestamp_ms = anchor_.anchoredStartMs;
-            header_.last_timestamp_ms  = anchor_.anchoredEndMs;
-        } else {
-            header_.first_timestamp_ms = records_.front().timestamp;
-            header_.last_timestamp_ms  = records_.back().timestamp;
-        }
+        // D0096 / audit A2: a transcription, never a derived absolute. SN-8629 previously wrote
+        // `anchor_.anchoredStartMs` here when anchoring succeeded and a transcription when it
+        // did not -- two different quantities in one field with nothing on disk saying which,
+        // and the only writer of the three to do so. The anchor is persisted additively in
+        // `anchor_offset_ms` instead (stampPersistedAnchor below), which is where D0069 said it
+        // belonged, and consumers that want the anchored span read the cascade.
+        stampTranscribedSpan();
+        stampPersistedAnchor();
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
         // D0096: this scan stamps HAS_TIMESTAMP per record, so a clear bit here means a
         // genuine null rather than "producer predates the bit". Declaring it is what makes
@@ -1197,14 +1199,67 @@ void ISLogReader::buildIndexFromScanDat() {
     }
     if (!records_.empty()) {
         header_.total_records      = records_.size();
-        header_.first_timestamp_ms = records_.front().timestamp;
-        header_.last_timestamp_ms  = records_.back().timestamp;
+        stampTranscribedSpan();
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
         // D0096: the `.dat` scan stamps HAS_TIMESTAMP too, so it must declare it here as
         // well. Declaring it on only one of the two scan paths would make the header's
         // meaning depend on the segment's on-disk format.
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;
+        // The `.dat` scan does not run the collector; `analyzeFromRecords` does, immediately
+        // after, and re-stamps the anchor then. See construct().
     }
+}
+
+void ISLogReader::stampTranscribedSpan() {
+    // D0096: "a faithful transcription of the first and last record timestamps". A record whose
+    // HAS_TIMESTAMP bit is clear HAS no timestamp -- the live writer parks the record's
+    // `log_time_offset_ms` in the `timestamp` field for timeless DIDs (DeviceLog.cpp, reviewed
+    // and deliberately kept because the resolver and RawSeriesBuilder read it there), so
+    // transcribing the boundary record unconditionally copies a quantity that is not a
+    // timestamp at all into a field named for one. Measured on the uptime-only fixture: the
+    // leading DID_DEV_INFO record carries `timestamp = 5` with flags = 0x0000 while the first
+    // real record sits at 10000 ms, and `spanStart()` reported the 5.
+    //
+    // So: skip records that declare no timestamp, and fall back to the positional read only on
+    // a file whose producer never declared validity at all (DECLARES_TS_VALIDITY clear), where
+    // the historical `timestamp != 0` heuristic is all that is available.
+    header_.first_timestamp_ms = 0;
+    header_.last_timestamp_ms  = 0;
+    if (records_.empty()) return;
+
+    const auto hasTimestamp = [](const idx::is_log_idx_record_v2_t& r) {
+        return (r.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0;
+    };
+
+    const auto firstIt = std::find_if(records_.begin(), records_.end(), hasTimestamp);
+    if (firstIt != records_.end()) {
+        header_.first_timestamp_ms = firstIt->timestamp;
+        const auto lastIt = std::find_if(records_.rbegin(), records_.rend(), hasTimestamp);
+        header_.last_timestamp_ms = lastIt->timestamp;
+        return;
+    }
+
+    // Nothing declared a timestamp. On this path that is the truth (both scans stamp the bit),
+    // so leaving both at 0 is correct and DECLARES_TS_VALIDITY says the zeros are meaningful.
+    log_debug(IS_LOG_ISLOG, "%s: no record declares a timestamp; header span left at 0",
+              rawPath_.filename().c_str());
+}
+
+void ISLogReader::stampPersistedAnchor() {
+    // D0069's additive anchor, finally persisted. Only the cascade's own mapping constant goes
+    // here -- NOT the anchored span, and not a span minus a transcription. An unanchored
+    // segment leaves the flag clear rather than writing a 0 that reads as "anchored, offset 0"
+    // (a legal state for a ToW-only segment, which is exactly why presence needs its own bit).
+    if (!anchor_.anchored()) {
+        header_.anchor_offset_ms = 0;
+        header_.flags &= static_cast<uint8_t>(~idx::IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET);
+        return;
+    }
+    header_.anchor_offset_ms = anchor_.offsetMs;
+    header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET;
+    log_debug(IS_LOG_ISLOG, "%s: persisted anchor offset %lld ms (tier=%s)",
+              rawPath_.filename().c_str(), (long long)anchor_.offsetMs,
+              anchorTierName(anchor_.tier));
 }
 
 bool ISLogReader::persistIndex() const {
@@ -1413,6 +1468,24 @@ uint64_t ISLogReader::segmentEndTimestamp() const noexcept {
         return header_.last_timestamp_ms;
     }
     return records_.back().timestamp;
+}
+
+TimeStamp ISLogReader::segmentSpanStart() const noexcept {
+    if (records_.empty()) return TimeStamp::fromSessionOnly(0, deviceId_);
+    if (anchor_.anchored() && anchor_.anchoredStartMs != 0) {
+        return anchoredTimeStamp(anchor_.anchoredStartMs, anchor_.tier, deviceId_);
+    }
+    // Unanchored: the only value available is the raw transcription, and `SessionOnly` is the
+    // honest description of it -- it carries no real-world anchor.
+    return TimeStamp::fromSessionOnly(segmentStartTimestamp(), deviceId_);
+}
+
+TimeStamp ISLogReader::segmentSpanEnd() const noexcept {
+    if (records_.empty()) return TimeStamp::fromSessionOnly(0, deviceId_);
+    if (anchor_.anchored() && anchor_.anchoredEndMs != 0) {
+        return anchoredTimeStamp(anchor_.anchoredEndMs, anchor_.tier, deviceId_);
+    }
+    return TimeStamp::fromSessionOnly(segmentEndTimestamp(), deviceId_);
 }
 
 std::vector<ISLogReader::did_t> ISLogReader::presentDids() const {

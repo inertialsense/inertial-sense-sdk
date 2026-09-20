@@ -159,26 +159,35 @@ const ISDeviceLog& ISLog::device(uint64_t deviceId) const {
     return it->second;
 }
 
+// Audit A2, third layer. These folded the per-device spans by reading `.value`, discarding the
+// source, and then re-asserting `fromPayloadToW` on the winner -- so fixing ISDeviceLog and
+// ISLogReader alone would have had this layer throw the derived provenance away again.
+//
+// The fold now carries the whole `TimeStamp`: the winning device's own provenance survives,
+// with its `deviceId` cleared to 0 because a cross-device extremum belongs to no single device
+// (the documented meaning of `deviceId == 0`).
 TimeStamp ISLog::spanStart() const noexcept {
-    uint64_t best = 0;
+    TimeStamp best = TimeStamp::fromSessionOnly(0, /*deviceId*/ 0);
     bool any = false;
     for (const auto& [_, dl] : devicesById_) {
-        const uint64_t v = dl.spanStart().value;
-        if (v == 0) continue;
-        if (!any || v < best) { best = v; any = true; }
+        const TimeStamp t = dl.spanStart();
+        if (t.value == 0) continue;
+        if (!any || t.value < best.value) { best = t; any = true; }
     }
-    return TimeStamp::fromPayloadToW(best, /*deviceId*/ 0);
+    best.deviceId = 0;
+    return best;
 }
 
 TimeStamp ISLog::spanEnd() const noexcept {
-    uint64_t best = 0;
+    TimeStamp best = TimeStamp::fromSessionOnly(0, /*deviceId*/ 0);
     bool any = false;
     for (const auto& [_, dl] : devicesById_) {
-        const uint64_t v = dl.spanEnd().value;
-        if (v == 0) continue;
-        if (!any || v > best) { best = v; any = true; }
+        const TimeStamp t = dl.spanEnd();
+        if (t.value == 0) continue;
+        if (!any || t.value > best.value) { best = t; any = true; }
     }
-    return TimeStamp::fromPayloadToW(best, /*deviceId*/ 0);
+    best.deviceId = 0;
+    return best;
 }
 
 std::vector<fs::path> ISLog::segmentPaths() const {

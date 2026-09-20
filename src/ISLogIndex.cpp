@@ -91,7 +91,9 @@ void serializeHeader(uint8_t out[IS_LOG_IDX_HEADER_SIZE],
     put_u16(out + 44, hdr.record_size);        // SN-8383: on-disk record stride
     put_u16(out + 46, hdr.reserved16);
     put_u64(out + 48, hdr.capture_epoch_ms);   // SN-8340: absolute host wall-clock at log-open
-    // out[56..63] left zero from memset.
+    // D0069/D0096 (audit A2): the persisted anchor, additive. Signed, so it round-trips through
+    // u64 two's-complement rather than a magnitude+sign encoding.
+    put_u64(out + 56, static_cast<uint64_t>(hdr.anchor_offset_ms));
 }
 
 ISExpected<is_log_idx_header_t> parseHeader(
@@ -124,7 +126,7 @@ ISExpected<is_log_idx_header_t> parseHeader(
     hdr.record_size         = get_u16(in + 44);   // 0 on legacy pre-v2.1 headers
     hdr.reserved16          = get_u16(in + 46);
     hdr.capture_epoch_ms    = get_u64(in + 48);
-    std::memcpy(hdr.reserved, in + 56, sizeof(hdr.reserved));
+    hdr.anchor_offset_ms    = static_cast<int64_t>(get_u64(in + 56));
 
     if (hdr.version != IS_LOG_IDX_VERSION_V2) {
         return fail(ISErrorCode::Unsupported,
@@ -251,7 +253,9 @@ is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
     hdr.reserved16          = 0;
     hdr.capture_epoch_ms    = capture_epoch_ms;
     if (capture_epoch_ms != 0) hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH;
-    std::memset(hdr.reserved, 0, sizeof(hdr.reserved));
+    // No anchor is known at header-creation time; the flag stays clear until a producer that
+    // ran the cascade sets both together.
+    hdr.anchor_offset_ms    = 0;
     return hdr;
 }
 

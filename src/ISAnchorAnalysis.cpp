@@ -33,6 +33,35 @@ const char* anchorTierName(AnchorTier t) noexcept {
     return "?";
 }
 
+TimeSource timeSourceForTier(AnchorTier t) noexcept {
+    switch (t) {
+        case AnchorTier::PayloadToWBridge:
+        case AnchorTier::PayloadToWSingle:   return TimeSource::PayloadToW;
+        case AnchorTier::BridgedToW:
+        case AnchorTier::PrevSegmentChained: return TimeSource::ResolvedViaSync;
+        case AnchorTier::FilenameAnchor:     return TimeSource::FileTimeAnchored;
+        case AnchorTier::None:               return TimeSource::SessionOnly;
+    }
+    return TimeSource::SessionOnly;
+}
+
+TimeStamp anchoredTimeStamp(uint64_t ms, AnchorTier t, uint64_t deviceId) noexcept {
+    switch (timeSourceForTier(t)) {
+        case TimeSource::PayloadToW:
+            return TimeStamp::fromPayloadToW(ms, deviceId);
+        case TimeSource::ResolvedViaSync:
+            // A chained/bridged anchor is an inference from a sibling segment, not a witnessed
+            // value here -- `Interpolated` is what that is.
+            return TimeStamp::fromResolvedViaSync(ms, deviceId, TimeConfidence::Interpolated);
+        case TimeSource::FileTimeAnchored:
+            return TimeStamp::fromFileTimeAnchored(ms, deviceId);
+        case TimeSource::HostReceived:
+        case TimeSource::SessionOnly:
+            break;
+    }
+    return TimeStamp::fromSessionOnly(ms, deviceId);
+}
+
 const char* anchorConsensusName(AnchorConsensus c) noexcept {
     switch (c) {
         case AnchorConsensus::NotApplicable:                return "NotApplicable";

@@ -287,6 +287,24 @@ public:
      */
     void populateReconTimeOffsets();
 
+    /**
+     * @brief Stamp `first_timestamp_ms` / `last_timestamp_ms` as a faithful transcription.
+     *
+     * D0096: these are the first and last *record timestamps*, never a derived absolute.
+     * Records that declare no timestamp (`HAS_TIMESTAMP` clear) are skipped — the live writer
+     * parks a record's `log_time_offset_ms` in that field for timeless DIDs, so transcribing
+     * the boundary record blindly copies a non-timestamp into a field named for one.
+     */
+    void stampTranscribedSpan();
+
+    /**
+     * @brief Stamp the cascade's mapping constant into `anchor_offset_ms` + its header flag.
+     *
+     * D0069's additive anchor. The flag is cleared when the segment is unanchored, so a 0
+     * never reads as "anchored, offset 0" — a legal state for a ToW-only segment.
+     */
+    void stampPersistedAnchor();
+
     void adoptSessionOffset(int64_t offsetMs, uint32_t donorDid, bool donorIsEarlier);
 
     /**
@@ -420,6 +438,12 @@ public:
      * @return  Earliest record timestamp in this segment, in the
      *          units indicated by `header().ts_anchor`. Returns 0
      *          if the segment contains no records.
+     *
+     * @warning RAW and MIXED-DOMAIN. This is the `.idx`'s transcription, not a placed time —
+     *          it is whatever domain the earliest timestamped record's DID stamps. Do not
+     *          compare it against another segment's, and do not show it to a user. For a value
+     *          on the unified absolute frame, with an honest provenance tag, use
+     *          @ref segmentSpanStart (audit A2 / D0066).
      */
     uint64_t segmentStartTimestamp() const noexcept;
 
@@ -427,8 +451,35 @@ public:
      * @return  Latest record timestamp in this segment, in the units
      *          indicated by `header().ts_anchor`. Returns 0 if the
      *          segment contains no records.
+     *
+     * @warning RAW and MIXED-DOMAIN — see @ref segmentStartTimestamp. Prefer
+     *          @ref segmentSpanEnd.
      */
     uint64_t segmentEndTimestamp() const noexcept;
+
+    /**
+     * @brief This segment's start on the unified absolute frame, tagged with how it was placed.
+     *
+     * The value is the anchor cascade's `anchoredStartMs` — derived from the extrema of the
+     * segment's timestamped records in one domain, not from whichever record happens to sit
+     * first in arrival order — and the `TimeSource` is derived from the cascade's tier via
+     * @ref timeSourceForTier.
+     *
+     * This is the accessor audit A2 exists for. The old route (`segmentStartTimestamp()`
+     * wrapped in `TimeStamp::fromPayloadToW` by the caller) was wrong twice over on a measured
+     * fixture: it returned 5 ms — the `log_time_offset_ms` the live writer parks in the
+     * `timestamp` field of a timeless `DID_DEV_INFO` — where the first real record was at
+     * 10000 ms and the true anchored start was 1789938572000, and it tagged that `PayloadToW`
+     * on a log containing no time-of-week at all.
+     *
+     * @return  `{anchoredStartMs, timeSourceForTier(tier)}` when the segment is anchored;
+     *          otherwise the raw transcription tagged `SessionOnly`, which is the honest
+     *          description of an unanchored segment. Value 0 when there are no records.
+     */
+    TimeStamp segmentSpanStart() const noexcept;
+
+    /** @brief This segment's end on the unified absolute frame. See @ref segmentSpanStart. */
+    TimeStamp segmentSpanEnd() const noexcept;
 
     /**
      * @return  Total record count across all DIDs in this segment.

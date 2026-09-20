@@ -270,20 +270,31 @@ std::vector<ISDeviceLog::did_t> ISDeviceLog::presentDids() const {
     return out;
 }
 
+// Audit A2. Both of these used to read `seg.segmentStartTimestamp()` -- the `.idx`'s RAW,
+// mixed-domain transcription -- and wrap it in `fromPayloadToW` unconditionally. That is wrong
+// twice on any log without a time-of-week, as measured on the uptime-only fixture: the value
+// was 5 ms (the `log_time_offset_ms` the live writer parks in the `timestamp` field of a
+// timeless DID_DEV_INFO) where the earliest real record was at 10000 ms and the true anchored
+// start was 1789938572000, and the tag claimed `PayloadToW` on a log containing no ToW at all.
+//
+// `segmentSpanStart/End` produce the value and its provenance together from the anchor cascade,
+// so neither can be right while the other is wrong. Segments are stored in anchored order by
+// `fromSegments`, but a segment can still be unanchored (tier `None`), so keep scanning for the
+// first/last one that yields a real value rather than trusting position alone.
 TimeStamp ISDeviceLog::spanStart() const noexcept {
     for (const auto& seg : segments_) {
-        const uint64_t v = seg.segmentStartTimestamp();
-        if (v != 0) return TimeStamp::fromPayloadToW(v, deviceId_);
+        const TimeStamp t = seg.segmentSpanStart();
+        if (t.value != 0) return t;
     }
-    return TimeStamp::fromPayloadToW(0, deviceId_);
+    return TimeStamp::fromSessionOnly(0, deviceId_);
 }
 
 TimeStamp ISDeviceLog::spanEnd() const noexcept {
     for (auto it = segments_.rbegin(); it != segments_.rend(); ++it) {
-        const uint64_t v = it->segmentEndTimestamp();
-        if (v != 0) return TimeStamp::fromPayloadToW(v, deviceId_);
+        const TimeStamp t = it->segmentSpanEnd();
+        if (t.value != 0) return t;
     }
-    return TimeStamp::fromPayloadToW(0, deviceId_);
+    return TimeStamp::fromSessionOnly(0, deviceId_);
 }
 
 namespace {

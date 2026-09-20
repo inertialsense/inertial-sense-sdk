@@ -52,7 +52,12 @@ is_log_idx_header_t makeRoundTripHeader() {
     h.first_timestamp_ms  = 100ULL;
     h.last_timestamp_ms   = 99'999'999ULL;
     h.sync_point_count    = 7;
-    h.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    h.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED
+                          | IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET;
+    // D0069/D0096 (audit A2): NEGATIVE on purpose. The persisted anchor is signed -- a device
+    // whose clock leads the absolute frame yields one -- and it round-trips through the u64
+    // byte writers as two's complement, which a positive-only fixture would never exercise.
+    h.anchor_offset_ms    = -1'234'567'890'123LL;
     return h;
 }
 
@@ -94,6 +99,9 @@ TEST(IdxRoundTrip, HeaderSerializeAndParse) {
     EXPECT_EQ(parsed->ts_anchor,            src.ts_anchor);
     EXPECT_EQ(parsed->ts_source,           src.ts_source);
     EXPECT_EQ(parsed->flags,               src.flags);
+    EXPECT_EQ(parsed->capture_epoch_ms,    src.capture_epoch_ms);
+    EXPECT_EQ(parsed->anchor_offset_ms,    src.anchor_offset_ms);
+    EXPECT_LT(parsed->anchor_offset_ms,    0) << "sign must survive the round trip";
 }
 
 TEST(IdxRoundTrip, RecordSerializeAndParse) {

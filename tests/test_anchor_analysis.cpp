@@ -1375,21 +1375,68 @@ fs::path writeUptimeOnlySegment(const fs::path& dir, uint32_t serial, int count)
     return segs.empty() ? fs::path{} : fs::path(segs.front().name);
 }
 
+//! A segment whose FIRST timestamped record is ToW-domain and whose bulk is uptime-domain.
+//!
+//! This is the shape that discriminates `uptimeMin + anchor_offset_ms` (correct) from
+//! `first_timestamp_ms + anchor_offset_ms` (the naive sum): on a single-domain log the two
+//! coincide, because the transcription and the uptime minimum are the same record. Here the
+//! transcription is a GPS time-of-week in the hundreds of millions while the uptime minimum is
+//! 10,000, so a formula that confuses them is off by the difference.
+fs::path writeToWFirstMixedSegment(const fs::path& dir, uint32_t serial, int count) {
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_DAT;
+    opts.useSubFolderTimestamp = false;
+    if (!logger.InitSave(dir.string(), opts)) return {};
+    auto dev = logger.registerDevice(kFixtureHwId, serial);
+    if (!dev) return {};
+    logger.EnableLogging(true);
+
+    dev_info_t info{};
+    info.serialNumber   = serial;
+    info.hardwareType   = IS_HARDWARE_TYPE_IMX;
+    info.hardwareVer[0] = 5;
+    p_data_hdr_t ih{};
+    ih.id   = DID_DEV_INFO;
+    ih.size = sizeof(info);
+    logger.LogData(dev, &ih, reinterpret_cast<const uint8_t*>(&info));
+
+    // The bridge record: carries ToW and uptime in one payload, so the cascade reaches
+    // PayloadToWBridge and the offset is exact. Its uptime (10.0 s) matches the first PIMU so
+    // the segment is internally consistent.
+    const sys_params_t sp = makeSysParams(static_cast<uint32_t>(kTowMs), 10.0, /*towValid=*/true);
+    p_data_hdr_t sh{};
+    sh.id   = DID_SYS_PARAMS;
+    sh.size = sizeof(sp);
+    logger.LogData(dev, &sh, reinterpret_cast<const uint8_t*>(&sp));
+
+    for (int i = 0; i < count; ++i) {
+        pimu_t p{};
+        p.time = 10.0 + 0.1 * i;      // seconds since boot -- uptime, not ToW
+        p.dt   = 0.1f;
+        p_data_hdr_t h{};
+        h.id   = DID_PIMU;
+        h.size = sizeof(p);
+        logger.LogData(dev, &h, reinterpret_cast<const uint8_t*>(&p));
+    }
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> segs;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.dat$", segs);
+    return segs.empty() ? fs::path{} : fs::path(segs.front().name);
+}
+
 } // namespace
 
-// DISABLED until the audit A2 fix lands (next session's first order of work). This test is a
-// PROVEN defect, not a flaky or aspirational one: on an uptime-only log the cascade reports
-// tier=1 FilenameAnchor / firstHand()=false, and spanStart() still returns { value=6,
-// source=PayloadToW } while the earliest real record sits at 10000 ms. Both the tag and the
-// value are wrong.
+// Audit A2's acceptance test. Two independent faults on one measured fixture -- an uptime-only
+// log reaches tier 1 (FilenameAnchor, firstHand() == false), and before the fix `spanStart()`
+// returned { value = 5, source = PayloadToW }: a `log_time_offset_ms` read out of a timeless
+// DID_DEV_INFO record's `timestamp` field, tagged with a provenance the log cannot possess,
+// where the earliest real record was at 10000 ms.
 //
-// It is disabled rather than deleted so the reproduction survives, and rather than left
-// failing so CI stays honest about regressions. Re-enable it as the first step of the fix --
-// it is the acceptance test for that work. See
-// docs/discovery/2026-09-20-handoff-a2-and-idx-upgrade.md (Logalyzer repo) for the full fix
-// shape: first/last_timestamp_ms become a transcription only, and the anchor moves additively
-// into the header's reserved bytes.
-TEST(SpanProvenance, DISABLED_AnUptimeOnlyLogDoesNotClaimAPayloadToWSpan) {
+// Asserts the VALUE as well as the tag. A tag-only assertion would pass on a fix that merely
+// relabelled the same wrong number.
+TEST(SpanProvenance, AnUptimeOnlyLogDoesNotClaimAPayloadToWSpan) {
     const fs::path dir = makeTempDir("uptime_only");
     ISFileManager::DeleteDirectory(dir.string());
     fs::create_directories(dir);
@@ -1404,18 +1451,207 @@ TEST(SpanProvenance, DISABLED_AnUptimeOnlyLogDoesNotClaimAPayloadToWSpan) {
     const AnchorAnalysis a = log->segment(0).anchorAnalysis();
     EXPECT_FALSE(a.firstHand())
         << "fixture is not uptime-only after all -- tier " << static_cast<int>(a.tier);
+    ASSERT_EQ(a.towRecords, 0u) << "fixture carries a ToW record; premise broken";
+    ASSERT_GT(a.uptimeRecords, 0u);
 
     const TimeStamp s = log->spanStart();
     const TimeStamp e = log->spanEnd();
-    std::printf("[probe] tier=%d spanStart{v=%llu src=%d} spanEnd{v=%llu src=%d}\n",
+    std::printf("[probe] tier=%d spanStart{v=%llu src=%d} spanEnd{v=%llu src=%d} "
+                "anchored=[%llu..%llu] uptime=[%llu..%llu]\n",
                 static_cast<int>(a.tier),
                 (unsigned long long)s.value, static_cast<int>(s.source),
-                (unsigned long long)e.value, static_cast<int>(e.source));
+                (unsigned long long)e.value, static_cast<int>(e.source),
+                (unsigned long long)a.anchoredStartMs, (unsigned long long)a.anchoredEndMs,
+                (unsigned long long)a.uptimeMinMs, (unsigned long long)a.uptimeMaxMs);
 
+    // ---- The tag: derived from the cascade tier, never asserted.
     EXPECT_NE(s.source, TimeSource::PayloadToW)
         << "span start tagged PayloadToW on a log with no time-of-week anywhere";
     EXPECT_NE(e.source, TimeSource::PayloadToW)
         << "span end tagged PayloadToW on a log with no time-of-week anywhere";
+    EXPECT_EQ(s.source, TimeSource::FileTimeAnchored) << "tier 1 is a filename anchor";
+    EXPECT_EQ(e.source, TimeSource::FileTimeAnchored);
+
+    // ---- The value: the cascade's anchored span, not a positional record read.
+    EXPECT_EQ(s.value, a.anchoredStartMs);
+    EXPECT_EQ(e.value, a.anchoredEndMs);
+
+    // ---- And specifically not the old wrong answer. The DEV_INFO record's parked
+    // log_time_offset_ms was single-digit ms; an anchored start is a Unix-epoch absolute.
+    EXPECT_GT(s.value, 1000000000000ULL)
+        << "span start is not on the absolute frame -- looks like a raw session value";
+    EXPECT_EQ(e.value - s.value, a.uptimeMaxMs - a.uptimeMinMs)
+        << "span duration must match the uptime extrema it was projected from";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// The live-writer half of A2, proven by trace on this same fixture: all 41 records were
+// appended (tracking reached first=5 last=13900), then a LAZY OpenNewSaveFile() zeroed the
+// tracking while those records were still buffered, and finalizeIndex() stamped first=0 /
+// last=0 into an otherwise-correct FINALIZED 41-record header. Consumers then fell through to
+// a positional record read, which is where the bogus 5 entered.
+//
+// Same lazy-open mechanism as the SN-8328 byte-offset defect, one field pair over.
+TEST(SpanProvenance, LiveWriterHeaderTranscribesTheFirstAndLastTimestampedRecord) {
+    const fs::path dir = makeTempDir("live_transcription");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+    const fs::path raw = writeUptimeOnlySegment(dir, 515151u, 40);
+    ASSERT_FALSE(raw.empty());
+
+    auto seg = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(seg.has_value());
+    ASSERT_TRUE(seg->hadOnDiskIndex())
+        << "needs the LIVE writer's sidecar; a rebuild would be testing the reader instead";
+
+    const auto& h = seg->header();
+    std::printf("[measured] live hdr: total=%llu first=%llu last=%llu flags=0x%02x\n",
+                (unsigned long long)h.total_records,
+                (unsigned long long)h.first_timestamp_ms,
+                (unsigned long long)h.last_timestamp_ms, h.flags);
+
+    // pimu.time runs 10.0 s .. 13.9 s in 0.1 s steps (40 records), so the transcription is
+    // exactly that range -- NOT 0 (the zeroing defect), and NOT the leading DID_DEV_INFO
+    // record's parked log-time offset (the positional-read defect).
+    EXPECT_EQ(h.first_timestamp_ms, 10000u);
+    EXPECT_EQ(h.last_timestamp_ms,  13900u);
+    EXPECT_EQ(seg->segmentStartTimestamp(), 10000u)
+        << "accessor must report the header transcription, not records_.front()";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// The persisted anchor -- D0069's additive home, now real. Guards the arithmetic trap in
+// particular: the anchored span is NOT first_timestamp_ms + anchor_offset_ms.
+TEST(SpanProvenance, RebuiltIndexPersistsTheAnchorOffsetAdditively) {
+    const fs::path dir = makeTempDir("anchor_offset");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+    const fs::path raw = writeUptimeOnlySegment(dir, 626262u, 40);
+    ASSERT_FALSE(raw.empty());
+
+    // Drop the live sidecar so the READER produces the header under test.
+    fs::path idxPath = raw;
+    idxPath.replace_extension(".idx");
+    fs::remove(idxPath);
+
+    auto seg = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(seg.has_value());
+    ASSERT_FALSE(seg->hadOnDiskIndex()) << "expected a rebuild";
+
+    const auto& h = seg->header();
+    const AnchorAnalysis a = seg->anchorAnalysis();
+    std::printf("[measured] rebuilt hdr: first=%llu last=%llu anchor_offset=%lld flags=0x%02x "
+                "| cascade offset=%lld anchored=[%llu..%llu] uptime=[%llu..%llu]\n",
+                (unsigned long long)h.first_timestamp_ms,
+                (unsigned long long)h.last_timestamp_ms,
+                (long long)h.anchor_offset_ms, h.flags,
+                (long long)a.offsetMs,
+                (unsigned long long)a.anchoredStartMs, (unsigned long long)a.anchoredEndMs,
+                (unsigned long long)a.uptimeMinMs, (unsigned long long)a.uptimeMaxMs);
+
+    ASSERT_TRUE(a.anchored());
+    EXPECT_NE(0, h.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET)
+        << "an anchored segment must declare its persisted offset";
+    EXPECT_EQ(h.anchor_offset_ms, a.offsetMs);
+
+    // The transcription stayed a transcription -- no derived absolute smuggled in.
+    EXPECT_EQ(h.first_timestamp_ms, 10000u);
+    EXPECT_EQ(h.last_timestamp_ms,  13900u);
+    EXPECT_LT(h.first_timestamp_ms, 1000000000000ULL) << "that is an anchored absolute";
+
+    // On a SINGLE-domain log the transcription and the uptime minimum are the same record, so
+    // both formulas agree here and this fixture cannot tell them apart. The discriminating case
+    // is ToWFirstMixed, below.
+    EXPECT_EQ(static_cast<uint64_t>(static_cast<int64_t>(a.uptimeMinMs) + h.anchor_offset_ms),
+              a.anchoredStartMs);
+    EXPECT_EQ(h.first_timestamp_ms, a.uptimeMinMs)
+        << "premise for the note above: single-domain, so transcription == uptime minimum";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// The discriminating case for the persisted anchor's arithmetic.
+//
+// The handoff doc proposed reconstructing the anchored span as `first_timestamp_ms + offset`,
+// on the reasoning that one int64 then covers both ends. That is wrong whenever the boundary
+// record is not the uptime extremum -- and a ToW-bearing record ahead of the uptime bulk is the
+// ordinary way that happens, since the cascade's offset is defined against the UPTIME domain.
+// Measured here: transcription 411440800 (a GPS ToW) vs uptime minimum 10000, so the naive sum
+// overshoots by 411,430,800 ms -- about 4.8 days.
+//
+// Kept as a standing guard: if someone later "simplifies" the span derivation back to the sum,
+// this fails with the two numbers side by side.
+TEST(SpanProvenance, TheAnchorOffsetComposesWithUptimeExtremaNotTheTranscription) {
+    const fs::path dir = makeTempDir("tow_first_mixed");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+    const fs::path raw = writeToWFirstMixedSegment(dir, 737373u, 40);
+    ASSERT_FALSE(raw.empty());
+
+    fs::path idxPath = raw;
+    idxPath.replace_extension(".idx");
+    fs::remove(idxPath);
+
+    auto seg = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(seg.has_value());
+    ASSERT_FALSE(seg->hadOnDiskIndex()) << "expected a rebuild";
+
+    const auto& h = seg->header();
+    const AnchorAnalysis a = seg->anchorAnalysis();
+    const TimeStamp s = seg->segmentSpanStart();
+    std::printf("[measured] tow-first: hdr.first=%llu anchor_offset=%lld | tier=%d "
+                "uptime=[%llu..%llu] tow=[%llu..%llu] anchored=[%llu..%llu] span{v=%llu src=%d}\n",
+                (unsigned long long)h.first_timestamp_ms, (long long)h.anchor_offset_ms,
+                static_cast<int>(a.tier),
+                (unsigned long long)a.uptimeMinMs, (unsigned long long)a.uptimeMaxMs,
+                (unsigned long long)a.towMinMs, (unsigned long long)a.towMaxMs,
+                (unsigned long long)a.anchoredStartMs, (unsigned long long)a.anchoredEndMs,
+                (unsigned long long)s.value, static_cast<int>(s.source));
+
+    std::printf("[measured] candidates=%zu anomalies=%zu\n", a.candidates.size(),
+                a.anomalies.size());
+    for (const auto& c : a.candidates) {
+        std::printf("[measured]   cand did=%u tier=%d tow=%llu up=%llu off=%lld accepted=%d\n",
+                    c.did, static_cast<int>(c.tier), (unsigned long long)c.towMs,
+                    (unsigned long long)c.uptimeMs, (long long)c.offsetMs,
+                    static_cast<int>(c.accepted));
+    }
+    for (const auto& an : a.anomalies) std::printf("[measured]   anomaly: %s\n", an.c_str());
+
+    // Premise: the fixture really is mixed-domain, with the ToW record first.
+    ASSERT_GT(a.towRecords, 0u)   << "no ToW record -- fixture broken";
+    ASSERT_GT(a.uptimeRecords, 0u) << "no uptime record -- fixture broken";
+    ASSERT_TRUE(a.anchored());
+    ASSERT_NE(h.first_timestamp_ms, a.uptimeMinMs)
+        << "transcription coincides with the uptime minimum; fixture cannot discriminate";
+
+    // Correct formula holds.
+    EXPECT_EQ(static_cast<uint64_t>(static_cast<int64_t>(a.uptimeMinMs) + h.anchor_offset_ms),
+              a.anchoredStartMs);
+    EXPECT_EQ(s.value, a.anchoredStartMs);
+
+    // Naive formula is wrong, by a margin no rounding could explain.
+    const uint64_t naive =
+        static_cast<uint64_t>(static_cast<int64_t>(h.first_timestamp_ms) + h.anchor_offset_ms);
+    EXPECT_NE(naive, a.anchoredStartMs);
+    EXPECT_GT(naive - a.anchoredStartMs, 1000u * 60u * 60u)
+        << "expected the two formulas to differ by hours, not milliseconds";
+
+    // The tag follows whatever tier the cascade actually reached, which is the derived-tag rule
+    // working -- not a fixed expectation of this fixture.
+    EXPECT_EQ(s.source, timeSourceForTier(a.tier));
+
+    // NOTE, unresolved: this fixture's DID_SYS_PARAMS record is in the index with a ToW-domain
+    // timestamp (towRecords > 0), yet the cascade reports `candidates = 0` and falls to
+    // FilenameAnchor -- the collector's bridge gate is reached only when a payload arrives, and
+    // it did not. Whether that is a property of how cISLogger writes a `.dat` payload or a real
+    // gap in the index-driven analysis path is NOT established, so nothing here asserts a tier.
+    // Every existing bridge-tier test drives `AnchorCollector` directly, so none of them covers
+    // this route. Raised with Kyle; do not "fix" by asserting a tier until the mechanism is
+    // proven. The arithmetic under test is unaffected -- it only needs the transcription to
+    // differ from the uptime minimum, which it does by 342 million ms.
 
     ISFileManager::DeleteDirectory(dir.string());
 }

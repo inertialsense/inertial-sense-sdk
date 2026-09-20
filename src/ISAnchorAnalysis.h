@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+#include "ISTimeStamp.h"
+
 namespace inertial_sense {
 
 /**
@@ -72,6 +74,39 @@ enum class AnchorTier : uint8_t {
 
 /** @return  Human-readable name for @p t, for logging and UI. */
 const char* anchorTierName(AnchorTier t) noexcept;
+
+/**
+ * @brief The `TimeSource` an anchored value established at tier @p t may honestly claim.
+ *
+ * Audit A2: the span accessors used to assert `TimeSource::PayloadToW` unconditionally, which
+ * is a D0024/D0066 contract violation on any log that never carried a time-of-week — measured
+ * on an uptime-only log that reached `FilenameAnchor` and still reported `PayloadToW`. The tag
+ * is DERIVED from the cascade's own verdict here rather than asserted at each call site, so
+ * the three layers that fold spans cannot disagree about it.
+ *
+ * - `PayloadToWSingle` / `PayloadToWBridge` — a real payload time-of-week ⇒ `PayloadToW`.
+ * - `BridgedToW` / `PrevSegmentChained` — the anchor was reconstructed from a sibling
+ *   segment's evidence rather than witnessed here ⇒ `ResolvedViaSync`.
+ * - `FilenameAnchor` — a coarse wall-clock off the filename ⇒ `FileTimeAnchored`, which exists
+ *   precisely so consumers keep such records instead of discarding them as unanchored.
+ * - `None` — no anchor at all ⇒ `SessionOnly`.
+ */
+TimeSource timeSourceForTier(AnchorTier t) noexcept;
+
+/**
+ * @brief Compose an anchored value and its tier into a `TimeStamp`, via the right factory.
+ *
+ * Goes through `TimeStamp::from*` rather than brace-initializing, because each factory also
+ * fixes the `TimeConfidence` that belongs to its source — notably `Unknown` for
+ * `FileTimeAnchored` and `SessionOnly`, which `RawSeriesBuilder`'s "carries no real-world
+ * anchor" filter keys on together with the source. Hand-composing the struct is how those two
+ * fields drift apart.
+ *
+ * @param ms        Value on the absolute frame (or the raw session value at tier `None`).
+ * @param t         Tier the anchor was established at.
+ * @param deviceId  Owning device, or 0 for a fold across devices.
+ */
+TimeStamp anchoredTimeStamp(uint64_t ms, AnchorTier t, uint64_t deviceId) noexcept;
 
 /**
  * @brief Everything known about one segment's placement on an absolute timeline.

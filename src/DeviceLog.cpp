@@ -235,6 +235,7 @@ bool cDeviceLog::OpenNewSaveFile()
     m_idxTotalRecords       = 0;
     m_idxFirstTimestampMs   = 0;
     m_idxLastTimestampMs    = 0;
+    m_idxFirstTimestampSet  = false;
     m_fileCount++;
     uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
     if (!serNum)
@@ -454,11 +455,9 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
         rec.flags = 0;
     }
 
-    // Track first/last for the header rewrite at finalize time.
-    if (m_idxTotalRecords == 0 && m_indexChunks.empty()) {
-        m_idxFirstTimestampMs = rec.timestamp;
-    }
-    m_idxLastTimestampMs = rec.timestamp;
+    // first/last for the header are tracked in writeIndexChunk(), against the records actually
+    // written to this segment's .idx -- see the note there. Tracking them at append time was the
+    // A2 live-path defect: a lazy OpenNewSaveFile() zeroed them after the records were buffered.
 
     m_indexChunks.push_back(rec);
     m_lastIndexTime = current_uptimeMs();
@@ -511,6 +510,33 @@ bool cDeviceLog::writeIndexChunk() {
             // writing error; whole file should be considered bad.
             return false;
         }
+        // D0096 / audit A2 (proven 2026-09-20): track the header's transcription HERE, against
+        // the records actually written into THIS segment's .idx, not at append time.
+        //
+        // `OpenNewSaveFile()` resets these counters so segment N+1 cannot inherit segment N's
+        // -- correct in itself -- but it is invoked LAZILY, and on a short log it runs AFTER the
+        // records have been buffered. Traced on the uptime-only fixture: all 41 records were
+        // appended (tracking reached first=5 last=13900), then
+        //   [OpenNewSaveFile] RESET (was first=5 last=13900 total=0 chunks=41)
+        // zeroed both while those 41 records were still pending, and finalizeIndex() stamped
+        // first=0 last=0 into an otherwise-correct 41-record FINALIZED header. Consumers then
+        // fell through to a positional record read. Same lazy-open mechanism as the SN-8328
+        // byte-offset defect, one field pair over.
+        //
+        // Skipping records that declare no timestamp is the other half: the branch above parks
+        // `logTimeOffset` in `rec.timestamp` for timeless DIDs (deliberate -- the resolver and
+        // RawSeriesBuilder read it there), so a blind transcription publishes an elapsed-time
+        // offset as this segment's first timestamp. That is where the bogus 5 came from.
+        if ((rec.flags & IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0) {
+            // Explicit "set" flag rather than a `== 0` sentinel: 0 is a legal timestamp (ToW 0
+            // is Sunday midnight, uptime 0 the first ms after boot), and removing that
+            // ambiguity is what HAS_TIMESTAMP exists for -- reintroducing it here would undo it.
+            if (!m_idxFirstTimestampSet) {
+                m_idxFirstTimestampMs  = rec.timestamp;
+                m_idxFirstTimestampSet = true;
+            }
+            m_idxLastTimestampMs = rec.timestamp;
+        }
         ++m_idxTotalRecords;
     }
     m_indexChunks.clear();
@@ -546,6 +572,10 @@ bool cDeviceLog::finalizeIndex() {
     hdr.total_records       = m_idxTotalRecords;
     hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
     hdr.last_timestamp_ms   = m_idxLastTimestampMs;
+    log_debug(IS_LOG_ISLOG, "%s: finalize idx header: %llu record(s), transcribed span [%llu..%llu]",
+              fileName.c_str(), (unsigned long long)m_idxTotalRecords,
+              (unsigned long long)m_idxFirstTimestampMs,
+              (unsigned long long)m_idxLastTimestampMs);
     // SN-8629: ts_anchor = UptimeMs (set above by makeDefaultHeader) would be
     // a lie if the first/last timestamps landed in different domains -- flag it
     // Mixed so cross-segment consumers (ISDeviceLog::fromSegments) know these

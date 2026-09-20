@@ -385,8 +385,9 @@ protected:
     // and rewrites the header on close.
     bool     m_idxHeaderWritten = false;            //!< true once the v2 header has been emitted (first writeIndexChunk call)
     uint64_t m_idxTotalRecords  = 0;                //!< running count of records written to the .idx file
-    uint64_t m_idxFirstTimestampMs = 0;             //!< timestamp of the first record (set on first record)
-    uint64_t m_idxLastTimestampMs  = 0;             //!< timestamp of the most recent record
+    uint64_t m_idxFirstTimestampMs = 0;             //!< transcription of the first WRITTEN record that declares a timestamp
+    uint64_t m_idxLastTimestampMs  = 0;             //!< transcription of the last WRITTEN record that declares a timestamp
+    bool     m_idxFirstTimestampSet = false;        //!< whether m_idxFirstTimestampMs has been taken (0 is a legal timestamp, so this cannot be a `== 0` test)
 
 };
 
