@@ -1255,3 +1255,59 @@ TEST(StallRetiming, RetimedTimesAreStrictlyAscendingUnderBothRulers) {
             EXPECT_GT(out[i].second, out[i-1].second) << "own clock, at i=" << i;
     }
 }
+
+TEST(StallRetiming, LocalDeltaOutranksBothOtherRulers) {
+    // The .idx per-record receipt delta is the WHEN, stamped for every record regardless of DID
+    // (SN-8383). It needs no payload field and no assumption about output rate, so it wins over
+    // the companion-uptime and cadence rulers whenever the index declares it.
+    ISTimeResolver::StallEvidence ev;
+    ev.stalledTsMs      = 500'000;
+    ev.runArrivals      = { 10, 20, 30 };
+    ev.localDeltas      = { {10, 9'000}, {20, 9'700}, {30, 10'450} };  // receipt: +700, +750
+    ev.lastHealthyOwnMs = 1'000;
+    ev.ownSamples       = { {10, 1'000}, {20, 1'500}, {30, 2'000} };   // would say +500, +500
+    ev.advanceDeltas    = { 250, 250 };                                // would say +250, +250
+
+    ISTimeResolver::StalledRun::Ruler kind{};
+    const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+
+    EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::LocalDelta);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[0].second, 500'000u) << "the run's first record is still healthy: zero point";
+    EXPECT_EQ(out[1].second, 500'700u) << "receipt delta, not the own clock's 500";
+    EXPECT_EQ(out[2].second, 501'450u);
+}
+
+TEST(StallRetiming, LocalDeltaIsIgnoredWhenTheIndexDoesNotDeclareIt) {
+    // A reader-rebuilt index leaves HAS_LOCAL_DELTA clear and the field zero -- receipt time
+    // exists nowhere in the .raw, so a rebuild genuinely cannot recover it. Reading those zeros
+    // as receipt times would be worse than having no ruler at all, so the scan passes nothing
+    // and the next ruler down takes over.
+    ISTimeResolver::StallEvidence ev;
+    ev.stalledTsMs      = 500'000;
+    ev.runArrivals      = { 10, 20, 30 };
+    ev.localDeltas      = {};                 // what the scan supplies when the flag is clear
+    ev.lastHealthyOwnMs = 1'000;
+    ev.ownSamples       = { {10, 1'000}, {20, 1'500}, {30, 2'000} };
+
+    ISTimeResolver::StalledRun::Ruler kind{};
+    const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+    EXPECT_EQ(kind, ISTimeResolver::StalledRun::Ruler::OwnClock);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[1].second, 500'500u);
+}
+
+TEST(StallRetiming, LocalDeltaNeverGoesBackwards) {
+    // Receipt deltas should rise monotonically, but a corrupt index must not produce a
+    // backwards-stepping timeline out of this function.
+    ISTimeResolver::StallEvidence ev;
+    ev.stalledTsMs = 1'000;
+    ev.runArrivals = { 1, 2, 3 };
+    ev.localDeltas = { {1, 500}, {2, 400}, {3, 900} };   // middle sample regresses
+    ISTimeResolver::StalledRun::Ruler kind{};
+    const auto out = ISTimeResolver::planStallRetiming(ev, kind);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[0].second, 1'000u);
+    EXPECT_GE(out[1].second, 1'000u) << "clamped, not wrapped below the anchor";
+    EXPECT_EQ(out[2].second, 1'400u);
+}

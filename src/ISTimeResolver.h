@@ -122,9 +122,10 @@ public:
 
         //! Which evidence supplied the replacement times in `retimed`.
         enum class Ruler : uint8_t {
-            None,       //!< Nothing usable; the resolver brackets against the collective timeline.
-            OwnClock,   //!< The DID's own companion uptime, per record. Most faithful.
-            Cadence,    //!< The DID's own pre-stall inter-record interval, applied uniformly.
+            None,        //!< Nothing usable; the resolver brackets against the collective timeline.
+            Cadence,     //!< The DID's own pre-stall inter-record interval, applied uniformly.
+            OwnClock,    //!< The DID's own companion uptime, per record.
+            LocalDelta,  //!< The `.idx` per-record RECEIPT delta. Exact, and works for any DID.
         };
 
         /**
@@ -357,6 +358,20 @@ public:
         //! Inter-record intervals seen while this DID's clock was still advancing. The median is
         //! the cadence ruler.
         std::vector<uint64_t> advanceDeltas;
+
+        /**
+         * @brief `(arrivalIndex, local_uptime_ms)` for the run, when the segment's `.idx`
+         *        declares `IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA`.
+         *
+         * This is the WHEN — a host-uptime delta the live capture writer stamps for EVERY record
+         * independent of any payload (SN-8383). It is the exact ruler and the only one that works
+         * for any DID, so it is preferred over both the companion-uptime and cadence rulers.
+         *
+         * Empty for every log to hand: only `DeviceLog.cpp` stamps it, and a reader-rebuilt index
+         * cannot recover it (receipt time exists nowhere in the `.raw`). A rebuilt index leaves
+         * `HAS_LOCAL_DELTA` clear, which is what makes this check meaningful rather than a trap.
+         */
+        std::vector<std::pair<uint64_t, uint64_t>> localDeltas;
     };
 
     /**

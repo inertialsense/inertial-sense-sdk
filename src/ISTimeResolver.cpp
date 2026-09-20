@@ -195,7 +195,8 @@ public:
     static constexpr std::size_t kMaxCadenceSamples = 256;
 
     void observe(uint32_t did, uint64_t arrivalIndex, uint64_t recordTsMs,
-                 const uint8_t* payload = nullptr, uint32_t payloadSize = 0) {
+                 const uint8_t* payload = nullptr, uint32_t payloadSize = 0,
+                 uint32_t localUptimeMs = 0) {
         if (recordTsMs == 0) return;
         const auto domain = cISDataMappings::TimestampDomain(did);
 
@@ -233,7 +234,9 @@ public:
             st.count         = 1;
             st.ownSamples.clear();
             st.runArrivals.clear();
+            st.localSamples.clear();
             if (own) st.ownSamples.emplace_back(arrivalIndex, *own);
+            if (localUptimeMs != 0) st.localSamples.emplace_back(arrivalIndex, localUptimeMs);
             st.runArrivals.push_back(arrivalIndex);
             return;
         }
@@ -244,6 +247,9 @@ public:
             st.ownSamples.emplace_back(arrivalIndex, *own);
         }
         if (st.runArrivals.size() < kMaxRetimedPerRun) st.runArrivals.push_back(arrivalIndex);
+        if (localUptimeMs != 0 && st.localSamples.size() < kMaxRetimedPerRun) {
+            st.localSamples.emplace_back(arrivalIndex, localUptimeMs);
+        }
     }
 
     //! Close any run still open at end-of-log. A stall that runs to the last record -- the
@@ -273,6 +279,8 @@ private:
         //! The last pairing seen while this DID's clock was still ADVANCING -- the repair anchor.
         uint64_t    lastHealthyTow = 0;
         uint64_t    lastHealthyOwn = 0;
+        //! `(arrivalIndex, local_uptime_ms)` for the run in progress, when the index has them.
+        std::vector<std::pair<uint64_t, uint64_t>> localSamples;
     };
 
     void closeRun(uint32_t did, DidState& st) {
@@ -289,12 +297,14 @@ private:
             ev.ownSamples        = st.ownSamples;
             ev.lastHealthyOwnMs  = st.lastHealthyOwn;
             ev.advanceDeltas     = st.advanceDeltas;
+            ev.localDeltas       = st.localSamples;
             r.retimed = ISTimeResolver::planStallRetiming(ev, r.ruler);
             runs_.push_back(r);
         }
         st.runLen = 0;
         st.ownSamples.clear();
         st.runArrivals.clear();
+        st.localSamples.clear();
     }
 
     std::map<uint32_t, DidState>                perDid_;
@@ -313,6 +323,11 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
                             std::vector<SessionAccum>& sessAccum,
                             StallWatcher& stalls) {
     uint64_t lastNonSyncHostTimeMs = 0;
+    // SN-8704: only trust local_uptime_ms when the index DECLARES it. A reader-rebuilt index
+    // leaves the flag clear and the field zero, and reading zeros as receipt times would be
+    // worse than having none.
+    const bool haveLocalDelta =
+        (reader.header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA) != 0;
 
     for (auto v : reader.allRecords()) {
         const auto bytes = v.bytes();
@@ -323,7 +338,8 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
         const uint8_t* payloadPtr = bytes.first + sizeof(p_data_hdr_t);
 
         const uint64_t thisArrival = arrivalIndex++;
-        stalls.observe(hdr.id, thisArrival, v.timestamp().value, payloadPtr, hdr.size);
+        stalls.observe(hdr.id, thisArrival, v.timestamp().value, payloadPtr, hdr.size,
+                       haveLocalDelta ? v.localUptimeMs() : 0u);
 
         if (hdr.id == DID_SYS_PARAMS && hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
             sys_params_t sp2{};
@@ -419,6 +435,15 @@ void scanSegmentForSyncs(const ISLogReader& reader,
     // a newer non-sync time arrives.
     uint64_t lastNonSyncHostTimeMs = 0;
 
+    // SN-8704: only trust local_uptime_ms when the index DECLARES it (see the .dat note).
+    const bool haveLocalDelta =
+        (reader.header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA) != 0;
+    // The byte walk has no ISRecordView, so step the segment's index records in lockstep. Both
+    // this walk and buildIndexFromScan emit ISB packets in file order, which is the same
+    // invariant the arrival index itself rests on -- verified equal across 125 corpus segments
+    // (ISB-only parse == all-protocol parse == recordCount()).
+    std::size_t segOrdinal = 0;
+
     for (std::size_t i = 0; i < bytes.second; ++i) {
         protocol_type_t p = is_comm_parse_byte(&comm, bytes.first[i]);
         if (p != _PTYPE_INERTIAL_SENSE_DATA && p != _PTYPE_INERTIAL_SENSE_CMD) {
@@ -432,8 +457,13 @@ void scanSegmentForSyncs(const ISLogReader& reader,
             // Same value the index build stamps for this record -- Timestamp(), never
             // TimestampOrCurrentTime() (D0069 #1).
             const double   tsSec = cISDataMappings::Timestamp(&hdr, comm.rxPkt.data.ptr);
+            uint32_t localMs = 0;
+            if (haveLocalDelta && segOrdinal < reader.recordCount()) {
+                localMs = reader.recordAt(segOrdinal).localUptimeMs();
+            }
             stalls.observe(hdr.id, thisArrival, static_cast<uint64_t>(tsSec * 1000.0),
-                           static_cast<const uint8_t*>(comm.rxPkt.data.ptr), hdr.size);
+                           static_cast<const uint8_t*>(comm.rxPkt.data.ptr), hdr.size, localMs);
+            ++segOrdinal;
         }
 
         // SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS
@@ -913,7 +943,8 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
                      "timeline advanced %llu ms (ratio %.4f) -- NOT corroborated, falling back "
                      "to arrival-order bracketing",
                      run.did,
-                     run.ruler == StalledRun::Ruler::OwnClock ? "own-clock" : "cadence",
+                     run.ruler == StalledRun::Ruler::LocalDelta ? "idx-local-delta"
+                         : run.ruler == StalledRun::Ruler::OwnClock ? "own-clock" : "cadence",
                      (unsigned long long)ownDelta, (unsigned long long)tlDelta, run.rulerRatio);
             run.retimed.clear();
             run.ruler = StalledRun::Ruler::None;
@@ -939,7 +970,20 @@ ISTimeResolver::planStallRetiming(const StallEvidence& ev, StalledRun::Ruler& ou
     std::vector<std::pair<uint64_t, uint64_t>> out;
     if (ev.runArrivals.size() < 2) return out;
 
-    // PREFERRED: the DID's own companion uptime, one answer per record. Projected into the ToW
+    // MOST PREFERRED: the .idx per-record receipt delta. This is the WHEN, stamped for every
+    // record regardless of DID, so it needs no payload field and no assumption about output
+    // rate. The run's first record is still healthy, so its delta is the zero point.
+    if (ev.localDeltas.size() >= 2) {
+        const uint64_t base = ev.localDeltas.front().second;
+        out.reserve(ev.localDeltas.size());
+        for (const auto& [arr, local] : ev.localDeltas) {
+            out.emplace_back(arr, ev.stalledTsMs + (local >= base ? local - base : 0));
+        }
+        outKind = StalledRun::Ruler::LocalDelta;
+        return out;
+    }
+
+    // NEXT: the DID's own companion uptime, one answer per record. Projected into the ToW
     // frame through the run's first (still-healthy) pairing, so the seam is exact.
     if (ev.lastHealthyOwnMs != 0 && ev.ownSamples.size() >= 2) {
         const int64_t off = static_cast<int64_t>(ev.stalledTsMs) -
