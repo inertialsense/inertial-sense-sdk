@@ -147,9 +147,13 @@ TEST(AnchorCascade, BridgeRejectedWhenTowExceedsAGpsWeek) {
     EXPECT_EQ(a.tier, AnchorTier::None);
 }
 
-TEST(AnchorCascade, EarliestBridgeWinsAndDisagreementIsReported) {
-    // Both bridges are equally trustworthy, so the earliest one in the segment wins and the two
-    // disagreeing is itself the finding.
+TEST(AnchorCascade, EqualAuthorityDisagreementIsUnresolvedAndRaisedLoudly) {
+    // SUPERSEDES the old "earliest bridge wins" behaviour. Two bridges are equally trustworthy,
+    // so when they disagree there is no basis to prefer either -- taking whichever happened to
+    // appear first in the byte stream was an arbitrary tiebreak dressed up as determinism, and
+    // it silently discarded the finding. The anchor is still populated (deterministically, from
+    // the first of the tied candidates) so nothing blocks the user, but the state says plainly
+    // that it was not adjudicated.
     AnchorCollector c;
     feedTimeOnly(c, DID_PIMU, kUptimeMs);
     feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
@@ -158,9 +162,100 @@ TEST(AnchorCascade, EarliestBridgeWinsAndDisagreementIsReported) {
          kTowMs + 10'000);
 
     const AnchorAnalysis a = c.finish(nullptr);
-    EXPECT_EQ(a.anchorDid, DID_SYS_PARAMS) << "earliest bridge must win";
-    EXPECT_EQ(a.anchorTowMs, kTowMs);
-    EXPECT_TRUE(hasAnomalyContaining(a, "bridge clocks disagree"));
+    EXPECT_EQ(a.tier, AnchorTier::PayloadToWBridge) << "authority is unchanged by the conflict";
+    EXPECT_EQ(a.consensus, AnchorConsensus::DisagreedUnresolved);
+    EXPECT_TRUE(a.anchored()) << "must not block the application";
+    EXPECT_EQ(a.candidates.size(), 2u) << "both claims retained for the user to choose between";
+    EXPECT_TRUE(hasAnomalyContaining(a, "EQUAL-AUTHORITY clock disagreement"));
+    EXPECT_TRUE(hasAnomalyContaining(a, "NO CONSENSUS"));
+}
+
+TEST(AnchorCascade, HigherAuthorityWinsOutrightOverADisagreeingLesserSource) {
+    // Kyle's option (b): always anchor to the most trustworthy source. A tier-5 bridge needs no
+    // correlation step, so it beats a tier-4 ToW-only claim even when the two disagree -- but
+    // the dissent is still reported, because for an analysis tool that IS the finding.
+    AnchorCollector c;
+    feedTimeOnly(c, DID_PIMU, kUptimeMs);
+    feedTimeOnly(c, DID_GNSS1_POS, kTowMs + 30'000);   // tier 4, 30 s out
+    feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    EXPECT_EQ(a.tier, AnchorTier::PayloadToWBridge);
+    EXPECT_EQ(a.anchorDid, DID_SYS_PARAMS) << "highest authority wins outright";
+    EXPECT_EQ(a.consensus, AnchorConsensus::DisagreedResolvedByAuthority);
+    EXPECT_TRUE(hasAnomalyContaining(a, "lesser-authority clock disagrees"));
+    EXPECT_FALSE(hasAnomalyContaining(a, "NO CONSENSUS")) << "this case IS adjudicated";
+}
+
+TEST(AnchorCascade, MajorityOfThreeEqualSourcesRejectsTheOutlier) {
+    // Kyle's three-source rule: "if we have 3, and 2 of them generally align, we can reasonably
+    // reject the 3rd (and call it out as suspect)."
+    //
+    // All three must be of EQUAL authority for this to be a majority question at all -- if they
+    // differ in tier, the authority rule decides and no vote is needed (see
+    // HigherAuthorityWinsOutrightOverADisagreeingLesserSource). Three distinct ToW-only DIDs
+    // with no bridge record present gives three tier-4 peers. Distinct DIDs matter: repeated
+    // claims from ONE DID at one offset are folded as corroboration, not counted as votes.
+    AnchorCollector c;
+    feedTimeOnly(c, DID_PIMU, kUptimeMs);              // the correlation partner for all three
+    feedTimeOnly(c, DID_INS_1,     kTowMs);            // offset kTowMs - kUptimeMs
+    feedTimeOnly(c, DID_INS_2,     kTowMs);            // agrees
+    feedTimeOnly(c, DID_GNSS1_POS, kTowMs + 45'000);   // the outlier, 45 s out
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    EXPECT_EQ(a.tier, AnchorTier::PayloadToWSingle) << "no bridge present; all peers are tier 4";
+    EXPECT_EQ(a.candidates.size(), 3u);
+    EXPECT_EQ(a.consensus, AnchorConsensus::DisagreedResolvedByAuthority)
+        << "a real majority agreed, so this IS adjudicated -- not a deadlock";
+    EXPECT_EQ(a.offsetMs, kExpectedOff) << "the majority's offset must win, not the outlier's";
+    EXPECT_TRUE(hasAnomalyContaining(a, "rejected in favour of the more trustworthy source"));
+    EXPECT_TRUE(hasAnomalyContaining(a, std::to_string(DID_GNSS1_POS)))
+        << "the outlier must be named so a human can go look at it";
+}
+
+TEST(AnchorCascade, LesserSourceDissentIsReportedWithoutDowngradingConsensus) {
+    // A lesser authority that disagrees earns a warning but must not weaken the verdict, nor
+    // block anything -- two equal peers agreeing is still the strongest state available.
+    AnchorCollector c;
+    feedTimeOnly(c, DID_PIMU, kUptimeMs);
+    feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
+    feed(c, DID_GPX_STATUS, makeGpxStatus(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
+    feedTimeOnly(c, DID_GNSS1_POS, kTowMs + 45'000);   // tier 4 dissenter
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    EXPECT_EQ(a.consensus, AnchorConsensus::Corroborated)
+        << "the two equal-authority bridges agree; a lesser dissent does not change that";
+    EXPECT_TRUE(hasAnomalyContaining(a, "lesser-authority clock disagrees"))
+        << "but we still say so -- for an analysis tool that IS the finding";
+}
+
+TEST(AnchorCascade, LoneCandidateIsUncorroborated) {
+    // One claim, nothing contradicting it -- and nothing confirming it either. Distinct from
+    // two sources that agree, which is the state the old single `tier` field could not express.
+    AnchorCollector c;
+    feedTimeOnly(c, DID_PIMU, kUptimeMs);
+    feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    EXPECT_EQ(a.tier, AnchorTier::PayloadToWBridge);
+    EXPECT_EQ(a.consensus, AnchorConsensus::Uncorroborated);
+    EXPECT_EQ(a.candidates.size(), 1u);
+}
+
+TEST(AnchorCascade, ConsensusNamesAreAllDistinct) {
+    const AnchorConsensus all[] = {
+        AnchorConsensus::NotApplicable, AnchorConsensus::Uncorroborated,
+        AnchorConsensus::Corroborated, AnchorConsensus::DisagreedResolvedByAuthority,
+        AnchorConsensus::DisagreedUnresolved };
+    std::vector<std::string> names;
+    for (AnchorConsensus c : all) {
+        const std::string n = anchorConsensusName(c);
+        EXPECT_FALSE(n.empty());
+        EXPECT_NE(n, "?");
+        names.push_back(n);
+    }
+    std::sort(names.begin(), names.end());
+    EXPECT_EQ(std::adjacent_find(names.begin(), names.end()), names.end());
 }
 
 TEST(AnchorCascade, AgreeingBridgesRaiseNoAnomaly) {
@@ -171,7 +266,9 @@ TEST(AnchorCascade, AgreeingBridgesRaiseNoAnomaly) {
          kTowMs + 100);
 
     const AnchorAnalysis a = c.finish(nullptr);
-    EXPECT_FALSE(hasAnomalyContaining(a, "bridge clocks disagree"));
+    EXPECT_FALSE(hasAnomalyContaining(a, "disagree"));
+    EXPECT_EQ(a.consensus, AnchorConsensus::Corroborated)
+        << "two independent sources agreeing is the strongest state available";
 }
 
 // =====================================================================================

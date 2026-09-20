@@ -81,9 +81,68 @@ const char* anchorTierName(AnchorTier t) noexcept;
  * arbitrary record's raw timestamp) and by `ISDeviceLog::fromSegments()` (which orders by
  * `anchoredStartMs` and refuses to order on anything below `minimumOrderableTier`).
  */
+/**
+ * @brief How well a segment's anchor is CORROBORATED — orthogonal to how it was established.
+ *
+ * `AnchorTier` ranks the *kind* of evidence. This ranks *agreement among* evidence, which is a
+ * different question: a lone bridge record, two bridge records that agree, and two bridge
+ * records that disagree are three very different confidence states that all reach
+ * `AnchorTier::PayloadToWBridge`. Collapsing them lost exactly the finding an analysis tool
+ * exists to surface — two clocks that should converge (allowing for drift) and don't.
+ *
+ * @note SN-8629 / SN-8704. Kyle 2026-09-19: always anchor to the most trustworthy source;
+ *       raise the alarm only when sources of EQUAL authority disagree. A lesser authority
+ *       that conflicts still earns a warning, but nothing blocks the user or the application.
+ */
+enum class AnchorConsensus : uint8_t {
+    //! No absolute anchor was established, so there is nothing to corroborate.
+    NotApplicable = 0,
+
+    //! Exactly one candidate was found. Nothing contradicts it — and nothing confirms it.
+    Uncorroborated,
+
+    //! Two or more candidates agree within tolerance. The strongest state available.
+    Corroborated,
+
+    //! Candidates disagree, but they differ in authority, so the most trustworthy one was
+    //! taken and the dissenter recorded as an anomaly. Not a blocker (Kyle's option (b)).
+    DisagreedResolvedByAuthority,
+
+    //! Candidates of EQUAL authority disagree and no majority exists to break the tie. The
+    //! anchor is still populated — from the first of the tied candidates, so behaviour stays
+    //! deterministic — but this is the state that must be raised loudly.
+    DisagreedUnresolved,
+};
+
+/** @return  Human-readable name for @p c, for logging and UI. */
+const char* anchorConsensusName(AnchorConsensus c) noexcept;
+
+/**
+ * @brief One absolute-time claim made by one record, before consensus is resolved.
+ *
+ * Candidates are collected across the whole segment rather than "first valid one wins", which
+ * is what makes the majority/outlier logic possible at all.
+ */
+struct AnchorCandidate {
+    AnchorTier tier       = AnchorTier::None;  //!< Authority of this claim.
+    uint32_t   did        = 0;                 //!< DID that made it.
+    uint64_t   towMs      = 0;                 //!< Claimed GPS time-of-week, ms.
+    uint64_t   uptimeMs   = 0;                 //!< Paired uptime, ms (0 if none).
+    int64_t    offsetMs   = 0;                 //!< `towMs - uptimeMs`, the comparable quantity.
+    bool       accepted   = false;             //!< True for the candidate that supplied the anchor.
+};
+
 struct AnchorAnalysis {
     //! How `anchoredStartMs` was established. `None` means it was not.
     AnchorTier tier = AnchorTier::None;
+
+    //! How well that anchor is corroborated by OTHER candidates. Independent of `tier`.
+    AnchorConsensus consensus = AnchorConsensus::NotApplicable;
+
+    //! Every absolute-time claim seen in the segment, in the order encountered, with the one
+    //! that won marked `accepted`. Retained so a caller can show the user what disagreed and
+    //! offer a re-anchor (D0095's "call it out, list them, let the user re-anchor").
+    std::vector<AnchorCandidate> candidates;
 
     //! DID of the record the anchor came from; 0 when `tier` is `None`, `FilenameAnchor` or
     //! `PrevSegmentChained` (no record involved).

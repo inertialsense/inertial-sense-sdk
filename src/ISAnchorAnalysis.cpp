@@ -32,6 +32,17 @@ const char* anchorTierName(AnchorTier t) noexcept {
     return "?";
 }
 
+const char* anchorConsensusName(AnchorConsensus c) noexcept {
+    switch (c) {
+        case AnchorConsensus::NotApplicable:                return "NotApplicable";
+        case AnchorConsensus::Uncorroborated:               return "Uncorroborated";
+        case AnchorConsensus::Corroborated:                 return "Corroborated";
+        case AnchorConsensus::DisagreedResolvedByAuthority: return "DisagreedByAuthority";
+        case AnchorConsensus::DisagreedUnresolved:          return "DisagreedUNRESOLVED";
+    }
+    return "?";
+}
+
 namespace {
 
 //! A ToW that is plausibly within a GPS week. Guards against a zeroed or garbage field being
@@ -115,6 +126,12 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
             // one output period of this one.
             towOnlyUpMs = lastUptimeMs_;
         }
+        // Offer it regardless of whether it was the first: consensus needs every claim, and a
+        // ToW-only source whose offset wanders relative to a bridge is exactly the kind of
+        // disagreement worth reporting.
+        if (lastUptimeMs_ != 0) {
+            offerCandidate(AnchorTier::PayloadToWSingle, did, recordTsMs, lastUptimeMs_);
+        }
         return;
     }
 
@@ -134,7 +151,8 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
         const bool towValid = (sp.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
         if (towValid && plausibleTow(sp.timeOfWeekMs) && sp.upTime > 0.0) {
             const uint64_t upMs = static_cast<uint64_t>(sp.upTime * 1000.0);
-            offerBridge(DID_SYS_PARAMS, sp.timeOfWeekMs, upMs);
+            offerCandidate(AnchorTier::PayloadToWBridge, DID_SYS_PARAMS,
+                           sp.timeOfWeekMs, upMs);
         }
         return;
     }
@@ -145,37 +163,119 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
                                                GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID)) != 0;
         if (towValid && plausibleTow(gs.timeOfWeekMs) && gs.upTime > 0.0) {
             const uint64_t upMs = static_cast<uint64_t>(gs.upTime * 1000.0);
-            offerBridge(DID_GPX_STATUS, gs.timeOfWeekMs, upMs);
+            offerCandidate(AnchorTier::PayloadToWBridge, DID_GPX_STATUS,
+                           gs.timeOfWeekMs, upMs);
         }
         return;
     }
 }
 
-void AnchorCollector::offerBridge(uint32_t did, uint64_t towMs, uint64_t upMs) {
+void AnchorCollector::offerCandidate(AnchorTier tier, uint32_t did,
+                                     uint64_t towMs, uint64_t upMs) {
     const int64_t off = static_cast<int64_t>(towMs) - static_cast<int64_t>(upMs);
 
-    if (bridgeDid_ == 0) {
-        // Earliest bridge record in the segment wins.
-        bridgeDid_   = did;
-        bridgeTowMs_ = towMs;
-        bridgeUpMs_  = upMs;
-        bridgeOffMs_ = off;
+    // Fold a repeat of a claim we already hold. A 1 Hz bridge restating the same offset for
+    // twenty minutes corroborates it; it does not add a new opinion.
+    for (const auto& c : out_.candidates) {
+        if (c.did == did && std::llabs(c.offsetMs - off) <= kOffsetAgreementToleranceMs) {
+            return;
+        }
+    }
+    if (out_.candidates.size() >= kMaxCandidates) {
+        return;   // bounded; see kMaxCandidates
+    }
+
+    AnchorCandidate c;
+    c.tier     = tier;
+    c.did      = did;
+    c.towMs    = towMs;
+    c.uptimeMs = upMs;
+    c.offsetMs = off;
+    out_.candidates.push_back(c);
+}
+
+void AnchorCollector::resolveConsensus() {
+    if (out_.candidates.empty()) {
+        out_.consensus = AnchorConsensus::NotApplicable;
         return;
     }
 
-    // A second bridge from the OTHER device disagreeing with the first is an anomaly worth
-    // surfacing: the IMX and GPX clocks should agree, and if they do not, neither key is
-    // trustworthy without a human looking. The first (earliest) still wins so ordering stays
-    // deterministic.
-    if (did != bridgeDid_ && std::llabs(off - bridgeOffMs_) > kOffsetAgreementToleranceMs) {
-        if (!bridgeDisagreementReported_) {
-            bridgeDisagreementReported_ = true;
-            out_.anomalies.push_back(
-                "bridge clocks disagree: DID " + std::to_string(bridgeDid_) + " offset " +
-                std::to_string(bridgeOffMs_) + " ms vs DID " + std::to_string(did) + " offset " +
-                std::to_string(off) + " ms (delta " + std::to_string(off - bridgeOffMs_) +
-                " ms); using the earlier");
+    // Highest authority wins outright (Kyle's option (b)): a bridge record beats a ToW-only
+    // record even if the two disagree, because the bridge needs no correlation step.
+    AnchorTier best = AnchorTier::None;
+    for (const auto& c : out_.candidates) best = std::max(best, c.tier);
+
+    std::vector<std::size_t> top;
+    for (std::size_t i = 0; i < out_.candidates.size(); ++i) {
+        if (out_.candidates[i].tier == best) top.push_back(i);
+    }
+
+    // Among the top authority, find the largest cluster of mutually-agreeing offsets. With one
+    // candidate the cluster is itself; with two that agree it is both; with three where two
+    // align, the majority carries and the third is the outlier we reject and report.
+    std::size_t winner = top.front();
+    std::size_t winnerVotes = 0;
+    for (std::size_t i : top) {
+        std::size_t votes = 0;
+        for (std::size_t j : top) {
+            if (std::llabs(out_.candidates[i].offsetMs - out_.candidates[j].offsetMs)
+                    <= kOffsetAgreementToleranceMs) {
+                ++votes;
+            }
         }
+        // Strictly-greater keeps the FIRST of a tie, so a deadlock stays deterministic.
+        if (votes > winnerVotes) { winnerVotes = votes; winner = i; }
+    }
+
+    const AnchorCandidate& w = out_.candidates[winner];
+    out_.candidates[winner].accepted = true;
+    winnerDid_   = w.did;
+    winnerTowMs_ = w.towMs;
+    winnerUpMs_  = w.uptimeMs;
+    winnerOffMs_ = w.offsetMs;
+    haveWinner_  = true;
+
+    // Classify the agreement, and report every dissenter regardless of authority -- for an
+    // analysis tool a lesser source claiming a different time is precisely what we want to
+    // know about, even though it does not change the answer.
+    const std::size_t topCount = top.size();
+    std::size_t dissentSameTier = 0;
+    for (std::size_t i : top) {
+        if (i == winner) continue;
+        if (std::llabs(out_.candidates[i].offsetMs - w.offsetMs) > kOffsetAgreementToleranceMs) {
+            ++dissentSameTier;
+        }
+    }
+
+    if (topCount == 1) {
+        out_.consensus = (out_.candidates.size() > 1)
+                             ? AnchorConsensus::DisagreedResolvedByAuthority
+                             : AnchorConsensus::Uncorroborated;
+    } else if (dissentSameTier == 0) {
+        out_.consensus = AnchorConsensus::Corroborated;
+    } else if (winnerVotes * 2 > topCount) {
+        // A real majority agreed; the minority is rejected as suspect.
+        out_.consensus = AnchorConsensus::DisagreedResolvedByAuthority;
+    } else {
+        // Equal authority, no majority -- the one case we cannot adjudicate.
+        out_.consensus = AnchorConsensus::DisagreedUnresolved;
+    }
+
+    for (const auto& c : out_.candidates) {
+        if (c.accepted) continue;
+        const int64_t delta = c.offsetMs - w.offsetMs;
+        if (std::llabs(delta) <= kOffsetAgreementToleranceMs) continue;
+        const bool equalAuthority = (c.tier == best);
+        out_.anomalies.push_back(
+            std::string(equalAuthority ? "EQUAL-AUTHORITY clock disagreement: "
+                                       : "lesser-authority clock disagrees: ") +
+            "DID " + std::to_string(c.did) + " (" + anchorTierName(c.tier) + ") offset " +
+            std::to_string(c.offsetMs) + " ms vs accepted DID " + std::to_string(w.did) +
+            " (" + anchorTierName(w.tier) + ") offset " + std::to_string(w.offsetMs) +
+            " ms; delta " + std::to_string(delta) + " ms" +
+            (equalAuthority && out_.consensus == AnchorConsensus::DisagreedUnresolved
+                 ? " -- NO CONSENSUS, anchor is not adjudicated"
+                 : " -- rejected in favour of the more trustworthy source"));
     }
 }
 
@@ -201,19 +301,22 @@ void AnchorCollector::trackStall(uint32_t did, uint64_t recordTsMs) {
 }
 
 AnchorAnalysis AnchorCollector::finish(const AnchorAnalysis* prev) {
+    // ---- Adjudicate every absolute-time claim collected during the scan. This replaces
+    // "first valid candidate wins": the winner is the most trustworthy claim, ties among equal
+    // authority are broken by majority, and dissenters are reported whether or not they change
+    // the answer. See resolveConsensus() and AnchorConsensus.
+    resolveConsensus();
+
     // ---- Resolve the tier, strongest first.
-    if (bridgeDid_ != 0) {
-        out_.tier           = AnchorTier::PayloadToWBridge;
-        out_.anchorDid      = bridgeDid_;
-        out_.anchorTowMs    = bridgeTowMs_;
-        out_.anchorUptimeMs = bridgeUpMs_;
-        out_.offsetMs       = bridgeOffMs_;
-    } else if (towOnlyDid_ != 0 && towOnlyUpMs != 0) {
-        out_.tier           = AnchorTier::PayloadToWSingle;
-        out_.anchorDid      = towOnlyDid_;
-        out_.anchorTowMs    = towOnlyTowMs;
-        out_.anchorUptimeMs = towOnlyUpMs;
-        out_.offsetMs       = static_cast<int64_t>(towOnlyTowMs) - static_cast<int64_t>(towOnlyUpMs);
+    if (haveWinner_) {
+        const auto accepted = std::find_if(out_.candidates.begin(), out_.candidates.end(),
+                                           [](const AnchorCandidate& c) { return c.accepted; });
+        out_.tier           = (accepted != out_.candidates.end()) ? accepted->tier
+                                                                  : AnchorTier::None;
+        out_.anchorDid      = winnerDid_;
+        out_.anchorTowMs    = winnerTowMs_;
+        out_.anchorUptimeMs = winnerUpMs_;
+        out_.offsetMs       = winnerOffMs_;
     } else if (prev != nullptr && prev->anchored() && prev->offsetMs != 0 &&
                out_.uptimeMinMs != 0 && out_.uptimeMinMs >= prev->uptimeMaxMs) {
         // No absolute time of our own, but the previous segment's offset applies because our

@@ -98,6 +98,12 @@ private:
     //! a long run means the source's clock stopped while it kept emitting.
     static constexpr std::size_t kStallReportThreshold = 32;
 
+    //! Upper bound on retained candidates. A 1 Hz bridge over a long segment would otherwise
+    //! accumulate thousands of near-identical claims; consensus only needs enough to establish
+    //! a majority and name the dissenters. One claim per (DID, distinct offset) is kept, so
+    //! this is reached only by a source whose offset is genuinely wandering.
+    static constexpr std::size_t kMaxCandidates = 64;
+
     //! Per-DID timestamp-stall tracking.
     struct StallState {
         uint64_t    lastTsMs     = 0;
@@ -106,9 +112,25 @@ private:
         std::size_t worstRepeats = 0;
     };
 
-    //! Record a dual-domain (ToW + uptime) anchor candidate. Earliest wins; a later one from
-    //! the other device that disagrees raises an anomaly.
-    void offerBridge(uint32_t did, uint64_t towMs, uint64_t upMs);
+    /**
+     * @brief Record one absolute-time claim.
+     *
+     * Deliberately NOT first-wins. Every distinct claim is retained so `finish()` can rank by
+     * authority, find a majority, and name the outliers — none of which is possible if the
+     * first valid candidate short-circuits collection. Duplicate claims from the same DID at
+     * the same offset are folded (they corroborate rather than add information).
+     *
+     * @param tier      Authority of this claim.
+     * @param did       DID making it.
+     * @param towMs     Claimed GPS time-of-week.
+     * @param upMs      Paired uptime, or 0 when the claim carries none.
+     */
+    void offerCandidate(AnchorTier tier, uint32_t did, uint64_t towMs, uint64_t upMs);
+
+    //! Resolve `candidates` into a winner + an `AnchorConsensus`, appending any anomalies.
+    //! Implements Kyle's option (b): highest authority wins outright; an equal-authority
+    //! disagreement with no majority is `DisagreedUnresolved` and is raised loudly.
+    void resolveConsensus();
 
     //! Update per-DID stall state and remember the most recent uptime-domain timestamp (the
     //! correlation partner for a ToW-only anchor).
@@ -120,12 +142,12 @@ private:
     AnchorAnalysis out_{};
     std::size_t    seen_ = 0;
 
-    // Tier 5 — dual-domain bridge (DID_SYS_PARAMS / DID_GPX_STATUS).
-    uint32_t bridgeDid_   = 0;
-    uint64_t bridgeTowMs_ = 0;
-    uint64_t bridgeUpMs_  = 0;
-    int64_t  bridgeOffMs_ = 0;
-    bool     bridgeDisagreementReported_ = false;
+    //! The winning claim, filled in by resolveConsensus().
+    uint32_t winnerDid_   = 0;
+    uint64_t winnerTowMs_ = 0;
+    uint64_t winnerUpMs_  = 0;
+    int64_t  winnerOffMs_ = 0;
+    bool     haveWinner_  = false;
 
     // Tier 4 — ToW-only, paired with the nearest preceding uptime record.
     uint32_t towOnlyDid_ = 0;
