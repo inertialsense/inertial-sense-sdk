@@ -38,49 +38,13 @@ namespace {
 //! accepted as an anchor purely because a validity bit happened to be set.
 constexpr uint64_t kGpsWeekMs = 604'800'000ULL;
 
-/**
- * @brief Which time domain a DID's record timestamp is expressed in.
- *
- * @note SN-8629. This replaces a magnitude test (`recordTsMs >= 100'000'000` meant "GPS
- *       time-of-week, else host uptime"), which was WRONG and measurably so: a GPS ToW inside
- *       the first ~27.8 hours of the week is below that threshold, so it was misfiled as uptime.
- *       Across the 542-segment golden corpus the magnitude test misfiles **451,040 records** —
- *       every one of them a ToW-field record below the boundary. Mixing the two bases in one
- *       bucket made the segment's `uptimeMaxMs` a ToW value, and projecting it through the
- *       offset double-counted it: one segment reported a 7,149,064 ms span for ~218 s of data.
- *       No threshold can work, because ToW spans 0..604,800,000 ms and overlaps uptime entirely.
- */
-enum class TsDomain : uint8_t {
-    None,      //!< The DID declares no timestamp field; its records carry no internal time.
-    Uptime,    //!< Host/device uptime since boot (field `time` or `seconds`).
-    Tow,       //!< GPS time-of-week (field `timeOfWeek` or `timeOfWeekMs`).
-};
+//! Shorthand for the shared classifier. The domain of a record's timestamp is a known fact
+//! about its DID -- see cISDataMappings::TimestampDomain() for why this must never be a
+//! magnitude test, and for the 451,040 records the old magnitude test got wrong.
+using TsDomain = cISDataMappings::eTimestampDomain;
 
-/**
- * @brief Classify @p did's timestamp domain from the FIELD its timestamp is read out of.
- *
- * `cISDataMappings` already resolves, per DID and once at init, which named field supplies a
- * record's timestamp — it searches `{"time", "timeOfWeek", "timeOfWeekMs", "seconds"}` in that
- * order (`ISDataMappings.cpp`). The chosen name IS the domain, so the domain is a known fact
- * rather than something to infer from the value. Verified against the corpus: every `time`-field
- * DID stays below the old boundary (22.8M records, zero exceptions) while the `timeOfWeek*` DIDs
- * straddle it.
- *
- * Cached into a flat table on first use; `consume()` is called once per record, so this must not
- * do a string compare per record.
- */
-TsDomain timestampDomain(uint32_t did) noexcept {
-    static const std::vector<TsDomain> table = [] {
-        std::vector<TsDomain> t(DID_COUNT, TsDomain::None);
-        for (uint32_t d = 0; d < DID_COUNT; ++d) {
-            const data_set_t* ds = cISDataMappings::DataSet(d);
-            if (ds == nullptr || ds->timestampFields == nullptr) continue;
-            const std::string& n = ds->timestampFields->name;
-            t[d] = (n == "timeOfWeek" || n == "timeOfWeekMs") ? TsDomain::Tow : TsDomain::Uptime;
-        }
-        return t;
-    }();
-    return (did < table.size()) ? table[did] : TsDomain::None;
+inline TsDomain timestampDomain(uint32_t did) noexcept {
+    return cISDataMappings::TimestampDomain(did);
 }
 
 //! Tolerance on the (ToW - uptime) offset before two anchors in the same segment are treated as
@@ -109,12 +73,12 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
     // The domain comes from the DID's timestamp FIELD, never from the value's magnitude -- see
     // TsDomain above for why, and for the 451,040 records the magnitude test got wrong.
     const TsDomain domain = timestampDomain(did);
-    if (recordTsMs == 0 || domain == TsDomain::None) {
+    if (recordTsMs == 0 || domain == TsDomain::TIMESTAMP_DOMAIN_NONE) {
         // No internal time, or a timestamp we cannot place in a domain -- either way it
         // contributes no extremum. (A non-zero timestamp with no declared field should be
         // impossible: the value came FROM that field.)
         ++out_.untimedRecords;
-    } else if (domain == TsDomain::Tow) {
+    } else if (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW) {
         ++out_.towRecords;
         out_.towMinMs = out_.towMinMs ? std::min(out_.towMinMs, recordTsMs) : recordTsMs;
         out_.towMaxMs = std::max(out_.towMaxMs, recordTsMs);
@@ -142,7 +106,7 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
     // `needsPayload()` names, so a log with GNSS records but no bridge record would have
     // resolved a full tier lower there than it does from a byte scan. No log in the golden
     // corpus exercises tier 4, so nothing caught it; `TowOnlyAnchorNeedsNoPayload` does.
-    if (isTowOnlyCandidate(did) && domain == TsDomain::Tow && plausibleTow(recordTsMs)) {
+    if (isTowOnlyCandidate(did) && domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW && plausibleTow(recordTsMs)) {
         if (towOnlyDid_ == 0) {
             towOnlyDid_  = did;
             towOnlyTowMs = recordTsMs;
@@ -219,7 +183,7 @@ void AnchorCollector::trackStall(uint32_t did, uint64_t recordTsMs) {
     if (recordTsMs == 0) return;
     // Remember the most recent UPTIME-domain timestamp as the correlation partner for a
     // ToW-only anchor. Classified by the DID's timestamp field, not the value's magnitude.
-    if (timestampDomain(did) == TsDomain::Uptime) lastUptimeMs_ = recordTsMs;
+    if (timestampDomain(did) == TsDomain::TIMESTAMP_DOMAIN_UPTIME) lastUptimeMs_ = recordTsMs;
 
     auto& st = stalls_[did];
     ++st.count;

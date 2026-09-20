@@ -830,8 +830,27 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
             rec.timestamp = tsMs;
             rec.offset    = static_cast<uint64_t>(lastEmitEnd);
             rec.did       = dataHdr.id;
-            rec.flags     = 0;
+            // SN-8629: mark WHICH time domain this record's timestamp came from. Before this,
+            // the rebuild hardcoded flags = 0, so HAS_TOW was clear on every record it ever
+            // produced -- including records whose timestamp demonstrably IS a GPS time-of-week.
+            // That matters because a rebuilt sidecar is persisted and then trusted on the next
+            // open, making the loss permanent for that log, and because ISLogWriter derives
+            // sync_point_count from this bit (so a baked derivative reported zero sync points).
+            //
+            // The bit's documented meaning is specifically "carried a real GPS time-of-week
+            // field ... can be used as a sync anchor by ISTimeResolver", so it is gated on the
+            // DID's timestamp DOMAIN, not merely on having a timestamp. The live writer
+            // (DeviceLog.cpp) sets it whenever Timestamp() > 0, which over-claims for
+            // uptime-domain DIDs like DID_PIMU -- do not copy that here.
+            const bool towDomain =
+                cISDataMappings::TimestampDomain(dataHdr.id)
+                    == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW;
+            rec.flags     = (tsMs != 0 && towDomain) ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
             rec.reserved  = 0;
+            // local_uptime_ms stays 0: receipt time exists ONLY in the .idx (the .raw chunk
+            // header carries no time field), so a rebuild genuinely cannot recover it. The
+            // header's HAS_LOCAL_DELTA flag is left clear to say so honestly -- see
+            // finalizeScanHeader().
             records_.push_back(rec);
 
             if (collectAnchor) {
@@ -896,11 +915,43 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
             header_.last_timestamp_ms  = records_.back().timestamp;
         }
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
-        // SN-8629: see timestampsLookMixedDomain() -- the default HostUptimeMs
-        // (set when this reader's header was seeded) would be a lie here.
-        if (idx::timestampsLookMixedDomain(header_.first_timestamp_ms, header_.last_timestamp_ms)) {
-            header_.ts_units = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+
+        // SN-8629: describe the index's own provenance, rather than leaving the seeded
+        // defaults in place and letting consumers guess.
+        //
+        // `sync_point_count` is the number of records whose timestamp is a real GPS
+        // time-of-week -- i.e. the ones ISTimeResolver can anchor on. It is derived from the
+        // per-record HAS_TOW bits the scan now stamps; previously the rebuild left both the
+        // bits and this counter at zero, so a rebuilt index claimed a log had no sync points
+        // at all and ISLogWriter propagated that zero into any baked derivative.
+        std::size_t towRecords = 0;
+        for (const auto& r : records_) {
+            if ((r.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TOW) != 0) ++towRecords;
         }
+        header_.sync_point_count = static_cast<uint32_t>(towRecords);
+
+        // With the per-record domains known, the file-level units/source are facts rather than
+        // inferences. A rebuild that saw both domains is genuinely Mixed; one that saw only
+        // ToW-bearing records is GpsTowMs; one that saw none is host uptime.
+        const bool anyTow    = towRecords > 0;
+        const bool anyNonTow = towRecords < records_.size();
+        if (anyTow && anyNonTow) {
+            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+            header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::Mixed);
+        } else if (anyTow) {
+            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::GpsTowMs);
+            header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::PayloadToW);
+        } else {
+            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::HostUptimeMs);
+            header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::SessionOnly);
+        }
+
+        // HAS_LOCAL_DELTA is deliberately NOT set. Receipt time ("WHEN the device said it")
+        // lives only in the .idx -- the .raw chunk header carries no time field -- so a rebuild
+        // cannot recover it and must not claim to have it. Leaving the flag clear is what lets
+        // a downstream resolver know it is working without an independent witness, instead of
+        // trusting a column of zeros. (ISLogWriter currently sets this flag unconditionally;
+        // that is a separate defect, tracked in the SN-8704 hand-off.)
     }
 }
 
@@ -990,7 +1041,11 @@ void ISLogReader::buildIndexFromScanDat() {
             rec.timestamp = tsMs;
             rec.offset    = static_cast<uint64_t>(bodyPos);   // the p_data_hdr_t's own start — see recordEndOffset()
             rec.did       = recHdr.id;
-            rec.flags     = 0;
+            // SN-8629: same provenance marking as the .raw scan — see buildIndexFromScan().
+            rec.flags     = (tsMs != 0 &&
+                             cISDataMappings::TimestampDomain(recHdr.id)
+                                 == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW)
+                                ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
             rec.reserved  = 0;
             records_.push_back(rec);
 

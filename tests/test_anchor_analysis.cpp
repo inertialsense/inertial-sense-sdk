@@ -19,8 +19,10 @@
 #include "com_manager.h"
 
 #include "ISAnchorAnalysis.h"
+#include "ISDataMappings.h"
 #include "ISAnchorCollector.h"
 #include "ISDeviceLog.h"
+#include "ISLogIndex.h"
 #include "ISFileManager.h"
 #include "ISLogReader.h"
 #include "ISLogger.h"
@@ -643,6 +645,80 @@ TEST_F(AnchorSegmentTest, OpenedSegmentAlwaysCarriesAnAnalysis) {
     // every segment carrying one before it will order by time.
     EXPECT_NE(r->anchorAnalysis().tier, AnchorTier::None);
     EXPECT_NE(r->anchorAnalysis().anchoredStartMs, 0u);
+}
+
+TEST_F(AnchorSegmentTest, RebuiltIndexRecordsItsOwnProvenance) {
+    // The rebuild used to hardcode `rec.flags = 0` and leave the header's seeded defaults in
+    // place, so a scan-built index claimed: no record carried a GPS time-of-week, the log had
+    // zero sync points, and its units were host-uptime. All three were false, and because a
+    // rebuilt sidecar is persisted then trusted, the claim became authoritative on disk.
+    fs::remove(f_.idxFile);
+    auto r = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(r.has_value());
+    ASSERT_FALSE(r->hadOnDiskIndex()) << "expected the scan path";
+
+    std::size_t towRecords = 0;
+    for (auto v : r->allRecords()) {
+        const bool hasTow = (v.flags() & idx::IS_LOG_IDX_REC_FLAG_HAS_TOW) != 0;
+        if (hasTow) ++towRecords;
+        // The bit must track the DID's timestamp DOMAIN, not merely "has a timestamp" --
+        // that is the documented meaning ("a real GPS time-of-week field ... usable as a sync
+        // anchor"), and it is what stops an uptime-domain DID being offered as an anchor.
+        const bool towDomain =
+            cISDataMappings::TimestampDomain(v.did())
+                == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW;
+        if (v.timestamp().value != 0) {
+            EXPECT_EQ(hasTow, towDomain) << "DID " << v.did();
+        } else {
+            EXPECT_FALSE(hasTow) << "a record with no time cannot be a sync anchor";
+        }
+    }
+
+    const auto& h = r->header();
+    EXPECT_EQ(h.sync_point_count, towRecords) << "counter must agree with the per-record bits";
+    EXPECT_NE(h.flags & idx::IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u);
+    EXPECT_EQ(h.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA, 0u)
+        << "a rebuild cannot recover receipt time -- it must not claim to have it";
+}
+
+TEST_F(AnchorSegmentTest, RebuiltHeaderUnitsMatchTheRecordsPresent) {
+    fs::remove(f_.idxFile);
+    auto r = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(r.has_value());
+
+    std::size_t tow = 0;
+    for (auto v : r->allRecords())
+        if (v.flags() & idx::IS_LOG_IDX_REC_FLAG_HAS_TOW) ++tow;
+
+    const auto& h = r->header();
+    const bool anyTow = tow > 0, anyNonTow = tow < r->recordCount();
+    if (anyTow && anyNonTow) {
+        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::Mixed));
+        EXPECT_EQ(h.ts_source, static_cast<uint8_t>(idx::HeaderTimeSource::Mixed));
+    } else if (anyTow) {
+        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::GpsTowMs));
+    } else {
+        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::HostUptimeMs));
+    }
+}
+
+TEST(TimestampDomain, ClassifiesByFieldNotMagnitude) {
+    using D = cISDataMappings::eTimestampDomain;
+    // `time` -> uptime
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_PIMU),         D::TIMESTAMP_DOMAIN_UPTIME);
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_MAGNETOMETER), D::TIMESTAMP_DOMAIN_UPTIME);
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_BAROMETER),    D::TIMESTAMP_DOMAIN_UPTIME);
+    // `timeOfWeek` / `timeOfWeekMs` -> GPS ToW
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_INS_1),        D::TIMESTAMP_DOMAIN_GPS_TOW);
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_INS_2),        D::TIMESTAMP_DOMAIN_GPS_TOW);
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_SYS_PARAMS),   D::TIMESTAMP_DOMAIN_GPS_TOW);
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_GNSS1_POS),    D::TIMESTAMP_DOMAIN_GPS_TOW);
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_GPX_STATUS),   D::TIMESTAMP_DOMAIN_GPS_TOW);
+    // Raw GNSS passthrough carries an absolute observation time in a different domain
+    // entirely, and Timestamp() deliberately returns 0 for it — so: no domain.
+    EXPECT_EQ(cISDataMappings::TimestampDomain(DID_GNSS1_RAW),    D::TIMESTAMP_DOMAIN_NONE);
+    // Out of range is None, not a crash.
+    EXPECT_EQ(cISDataMappings::TimestampDomain(0xFFFFFFFFu),      D::TIMESTAMP_DOMAIN_NONE);
 }
 
 TEST_F(AnchorSegmentTest, ComposedDeviceLogOrdersByAnchoredStart) {
