@@ -66,6 +66,47 @@ gpx_status_t makeGpxStatus(uint32_t towMs, double upSec, bool towValid) {
     return gs;
 }
 
+//! Build a DID_INS_2 payload. `week`/`hdwStatus` are what the tier-4 gate reads --
+//! ins_2_t.hdwStatus is documented as a copy of DID_SYS_PARAMS.hdwStatus.
+ins_2_t makeIns2(double towSec, bool towValid, uint32_t week = 2338) {
+    ins_2_t v{};
+    v.week       = week;
+    v.timeOfWeek = towSec;
+    v.hdwStatus  = towValid ? HDW_STATUS_GNSS_TIME_OF_WEEK_VALID : 0u;
+    return v;
+}
+
+//! Build a DID_INS_1 payload. Same gate fields as ins_2_t, but a DIFFERENT struct size -- the
+//! gate is per-DID and checks `payloadSize >= sizeof(ins_1_t)`, so feeding an ins_2_t here is
+//! silently rejected. (That mistake cost a test failure; hence one builder per struct.)
+ins_1_t makeIns1(double towSec, bool towValid, uint32_t week = 2338) {
+    ins_1_t v{};
+    v.week       = week;
+    v.timeOfWeek = towSec;
+    v.hdwStatus  = towValid ? HDW_STATUS_GNSS_TIME_OF_WEEK_VALID : 0u;
+    return v;
+}
+
+//! Build a DID_GNSS1/2_VEL payload. gnss_vel_t carries NO `week`, so the fix type is the only
+//! signal the gate can use -- and its `status` sits at a different offset than gnss_pos_t's.
+gnss_vel_t makeGnssVel(uint32_t towMs, bool haveFix) {
+    gnss_vel_t v{};
+    v.timeOfWeekMs = towMs;
+    v.status       = haveFix ? static_cast<uint32_t>(GNSS_STATUS_FIX_3D)
+                             : static_cast<uint32_t>(GNSS_STATUS_FIX_NONE);
+    return v;
+}
+
+//! Build a DID_GNSS1_POS payload. The tier-4 gate reads `week` and the fix type in `status`.
+gnss_pos_t makeGnssPos(uint32_t towMs, bool haveFix, uint32_t week = 2338) {
+    gnss_pos_t v{};
+    v.week         = week;
+    v.timeOfWeekMs = towMs;
+    v.status       = haveFix ? static_cast<uint32_t>(GNSS_STATUS_FIX_3D)
+                             : static_cast<uint32_t>(GNSS_STATUS_FIX_NONE);
+    return v;
+}
+
 //! Offer a whole record whose payload is @p p.
 template <class T>
 void feed(AnchorCollector& c, uint32_t did, const T& p, uint64_t recordTsMs) {
@@ -177,7 +218,8 @@ TEST(AnchorCascade, HigherAuthorityWinsOutrightOverADisagreeingLesserSource) {
     // the dissent is still reported, because for an analysis tool that IS the finding.
     AnchorCollector c;
     feedTimeOnly(c, DID_PIMU, kUptimeMs);
-    feedTimeOnly(c, DID_GNSS1_POS, kTowMs + 30'000);   // tier 4, 30 s out
+    feed(c, DID_GNSS1_POS, makeGnssPos(static_cast<uint32_t>(kTowMs + 30'000), true),
+         kTowMs + 30'000);                              // tier 4, 30 s out
     feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
 
     const AnchorAnalysis a = c.finish(nullptr);
@@ -199,9 +241,12 @@ TEST(AnchorCascade, MajorityOfThreeEqualSourcesRejectsTheOutlier) {
     // claims from ONE DID at one offset are folded as corroboration, not counted as votes.
     AnchorCollector c;
     feedTimeOnly(c, DID_PIMU, kUptimeMs);              // the correlation partner for all three
-    feedTimeOnly(c, DID_INS_1,     kTowMs);            // offset kTowMs - kUptimeMs
-    feedTimeOnly(c, DID_INS_2,     kTowMs);            // agrees
-    feedTimeOnly(c, DID_GNSS1_POS, kTowMs + 45'000);   // the outlier, 45 s out
+    {   const ins_1_t p1 = makeIns1(static_cast<double>(kTowMs) / 1000.0, true);
+        const ins_2_t p2 = makeIns2(static_cast<double>(kTowMs) / 1000.0, true);
+        c.consume(DID_INS_1, 0, reinterpret_cast<const uint8_t*>(&p1), sizeof(p1), kTowMs);
+        c.consume(DID_INS_2, 0, reinterpret_cast<const uint8_t*>(&p2), sizeof(p2), kTowMs); }
+    feed(c, DID_GNSS1_POS, makeGnssPos(static_cast<uint32_t>(kTowMs + 45'000), true),
+         kTowMs + 45'000);                              // the outlier, 45 s out
 
     const AnchorAnalysis a = c.finish(nullptr);
     EXPECT_EQ(a.tier, AnchorTier::PayloadToWSingle) << "no bridge present; all peers are tier 4";
@@ -221,7 +266,8 @@ TEST(AnchorCascade, LesserSourceDissentIsReportedWithoutDowngradingConsensus) {
     feedTimeOnly(c, DID_PIMU, kUptimeMs);
     feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
     feed(c, DID_GPX_STATUS, makeGpxStatus(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
-    feedTimeOnly(c, DID_GNSS1_POS, kTowMs + 45'000);   // tier 4 dissenter
+    feed(c, DID_GNSS1_POS, makeGnssPos(static_cast<uint32_t>(kTowMs + 45'000), true),
+         kTowMs + 45'000);                              // tier 4 dissenter
 
     const AnchorAnalysis a = c.finish(nullptr);
     EXPECT_EQ(a.consensus, AnchorConsensus::Corroborated)
@@ -279,7 +325,8 @@ TEST(AnchorCascade, AgreeingBridgesRaiseNoAnomaly) {
 TEST(AnchorCascade, TowOnlyRecordCorrelatesAgainstPrecedingUptime) {
     AnchorCollector c;
     feedTimeOnly(c, DID_PIMU, kUptimeMs);          // the correlation partner
-    feedTimeOnly(c, DID_GNSS1_POS, kTowMs);        // ToW-domain record timestamp
+    // The TIME comes from the record's index timestamp; the VALIDITY comes from the payload.
+    feed(c, DID_GNSS1_POS, makeGnssPos(static_cast<uint32_t>(kTowMs), /*haveFix=*/true), kTowMs);
 
     const AnchorAnalysis a = c.finish(nullptr);
     EXPECT_EQ(a.tier, AnchorTier::PayloadToWSingle);
@@ -289,28 +336,77 @@ TEST(AnchorCascade, TowOnlyRecordCorrelatesAgainstPrecedingUptime) {
     EXPECT_EQ(a.offsetMs, kExpectedOff);
 }
 
-TEST(AnchorCascade, TowOnlyAnchorNeedsNoPayload) {
-    // Regression: tier 4 is recognized from the record's index timestamp alone. It used to be
-    // evaluated only AFTER a null-payload early-out, which made it unreachable from the
-    // index-driven path — that path supplies payloads only for the bridge DIDs. A log with GNSS
-    // records but no bridge record would then resolve a whole tier lower from a trusted sidecar
-    // than from a byte scan of the same bytes.
-    for (uint32_t did : { DID_INS_1, DID_INS_2, DID_GNSS1_POS, DID_GNSS2_POS,
-                          DID_GNSS1_VEL, DID_GNSS2_VEL }) {
+TEST(AnchorCascade, TowOnlyTakesTimeFromTheIndexButValidityFromThePayload) {
+    // SUPERSEDES TowOnlyAnchorNeedsNoPayload. The record's index timestamp IS the time-of-week,
+    // so the time needs no payload -- but whether that ToW MEANS anything does. Every other tier
+    // is validity-gated; tier 4 was not, and the only thing hiding it was an accident in the old
+    // magnitude domain test.
+    const double towSec = static_cast<double>(kTowMs) / 1000.0;
+    const ins_1_t   i1 = makeIns1(towSec, true);
+    const ins_2_t   i2 = makeIns2(towSec, true);
+    const gnss_pos_t gp = makeGnssPos(static_cast<uint32_t>(kTowMs), true);
+    const gnss_vel_t gv = makeGnssVel(static_cast<uint32_t>(kTowMs), true);
+
+    struct Case { uint32_t did; const uint8_t* p; uint32_t n; };
+    const Case cases[] = {
+        { DID_INS_1,     reinterpret_cast<const uint8_t*>(&i1), sizeof(i1) },
+        { DID_INS_2,     reinterpret_cast<const uint8_t*>(&i2), sizeof(i2) },
+        { DID_GNSS1_POS, reinterpret_cast<const uint8_t*>(&gp), sizeof(gp) },
+        { DID_GNSS2_POS, reinterpret_cast<const uint8_t*>(&gp), sizeof(gp) },
+        { DID_GNSS1_VEL, reinterpret_cast<const uint8_t*>(&gv), sizeof(gv) },
+        { DID_GNSS2_VEL, reinterpret_cast<const uint8_t*>(&gv), sizeof(gv) },
+    };
+    for (const auto& cs : cases) {
         AnchorCollector c;
         feedTimeOnly(c, DID_PIMU, kUptimeMs);
-        feedTimeOnly(c, did, kTowMs);
+        c.consume(cs.did, 0, cs.p, cs.n, kTowMs);
 
         const AnchorAnalysis a = c.finish(nullptr);
-        EXPECT_EQ(a.tier, AnchorTier::PayloadToWSingle) << "DID " << did;
-        EXPECT_EQ(a.anchorDid, did);
+        EXPECT_EQ(a.tier, AnchorTier::PayloadToWSingle) << "DID " << cs.did;
+        EXPECT_EQ(a.anchorDid, cs.did);
+        EXPECT_EQ(a.anchorTowMs, kTowMs) << "time still comes from the index timestamp";
+    }
+}
+
+TEST(AnchorCascade, TowOnlyRejectedWhenThePayloadSaysTheToWIsNotValid) {
+    // THE AHRS CASE. Four golden-corpus AHRS captures (22 segments) began anchoring at
+    // PayloadToWSingle off DID_INS_2.timeOfWeek the moment the domain classifier was fixed --
+    // a field with no meaning on a device that never had GNSS. FilenameAnchor is the honest
+    // answer there; claiming tier 4 asserts confidence we do not have.
+    {   // ToW-valid flag clear
+        AnchorCollector c;
+        feedTimeOnly(c, DID_PIMU, kUptimeMs);
+        const ins_2_t p = makeIns2(static_cast<double>(kTowMs) / 1000.0, /*towValid=*/false);
+        c.consume(DID_INS_2, 0, reinterpret_cast<const uint8_t*>(&p), sizeof(p), kTowMs);
+        EXPECT_EQ(c.finish(nullptr).tier, AnchorTier::None);
+    }
+    {   // GPS week zero -- the device never had a week number
+        AnchorCollector c;
+        feedTimeOnly(c, DID_PIMU, kUptimeMs);
+        const ins_2_t p = makeIns2(static_cast<double>(kTowMs) / 1000.0, /*towValid=*/true,
+                                   /*week=*/0);
+        c.consume(DID_INS_2, 0, reinterpret_cast<const uint8_t*>(&p), sizeof(p), kTowMs);
+        EXPECT_EQ(c.finish(nullptr).tier, AnchorTier::None);
+    }
+    {   // GNSS receiver reporting no fix has no GPS time to offer, whatever its ToW field says
+        AnchorCollector c;
+        feedTimeOnly(c, DID_PIMU, kUptimeMs);
+        const gnss_pos_t p = makeGnssPos(static_cast<uint32_t>(kTowMs), /*haveFix=*/false);
+        c.consume(DID_GNSS1_POS, 0, reinterpret_cast<const uint8_t*>(&p), sizeof(p), kTowMs);
+        EXPECT_EQ(c.finish(nullptr).tier, AnchorTier::None);
+    }
+    {   // and with no payload at all the candidate cannot be gated, so it is refused
+        AnchorCollector c;
+        feedTimeOnly(c, DID_PIMU, kUptimeMs);
+        feedTimeOnly(c, DID_GNSS1_POS, kTowMs);
+        EXPECT_EQ(c.finish(nullptr).tier, AnchorTier::None);
     }
 }
 
 TEST(AnchorCascade, BridgeOutranksTowOnly) {
     AnchorCollector c;
     feedTimeOnly(c, DID_PIMU, kUptimeMs);
-    feedTimeOnly(c, DID_GNSS1_POS, kTowMs);   // tier 4 candidate, seen first
+    feed(c, DID_GNSS1_POS, makeGnssPos(static_cast<uint32_t>(kTowMs), true), kTowMs);  // tier 4, first
     feed(c, DID_SYS_PARAMS, makeSysParams(static_cast<uint32_t>(kTowMs), 379.369, true), kTowMs);
 
     const AnchorAnalysis a = c.finish(nullptr);
@@ -535,12 +631,16 @@ TEST(AnchorCascade, PartialRecordsCountTowardExtremaButCannotAnchor) {
     EXPECT_EQ(a.uptimeRecords, 1u);
 }
 
-TEST(AnchorCascade, NeedsPayloadNamesOnlyTheBridgeDids) {
+TEST(AnchorCascade, NeedsPayloadNamesEveryAnchorCandidate) {
+    // Tier-4 DIDs joined this list when tier 4 became validity-gated: the index-driven path must
+    // re-frame their payloads too, or it would accept an ungated candidate and reach a tier the
+    // byte-scan path correctly refuses -- a route disagreement.
     EXPECT_TRUE(AnchorCollector::needsPayload(DID_SYS_PARAMS));
     EXPECT_TRUE(AnchorCollector::needsPayload(DID_GPX_STATUS));
-    EXPECT_FALSE(AnchorCollector::needsPayload(DID_GNSS1_POS));
-    EXPECT_FALSE(AnchorCollector::needsPayload(DID_INS_1));
-    EXPECT_FALSE(AnchorCollector::needsPayload(DID_PIMU));
+    EXPECT_TRUE(AnchorCollector::needsPayload(DID_GNSS1_POS));
+    EXPECT_TRUE(AnchorCollector::needsPayload(DID_INS_1));
+    EXPECT_FALSE(AnchorCollector::needsPayload(DID_PIMU)) << "not an anchor candidate";
+    EXPECT_FALSE(AnchorCollector::needsPayload(DID_MAGNETOMETER));
 }
 
 TEST(AnchorCascade, TierNamesAreAllDistinctAndNonEmpty) {

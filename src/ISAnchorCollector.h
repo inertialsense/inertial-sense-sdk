@@ -136,6 +136,20 @@ private:
     //! correlation partner for a ToW-only anchor).
     void trackStall(uint32_t did, uint64_t recordTsMs);
 
+    /**
+     * @brief Does a tier-4 candidate's payload actually assert that its time-of-week is valid?
+     *
+     * Tier 4 used to accept any plausible-looking ToW. That gap was hidden by an accident in the
+     * old magnitude-based domain test, which misfiled small ToW values as uptime so a GNSS-less
+     * log never produced a candidate. With the domain classifier fixed, four AHRS captures began
+     * anchoring off `DID_INS_2.timeOfWeek` -- meaningless on a device that never had GNSS.
+     *
+     * INS records copy `DID_SYS_PARAMS.hdwStatus`, so they use the same gate as the tier-5
+     * bridge; GNSS position/velocity carry a fix type instead.
+     */
+    static bool towOnlyPayloadIsValid(uint32_t did, const uint8_t* payload,
+                                      uint32_t payloadSize) noexcept;
+
     /** @return  True when @p did stamps GPS time-of-week but carries no uptime to pair it with. */
     static bool isTowOnlyCandidate(uint32_t did) noexcept;
 

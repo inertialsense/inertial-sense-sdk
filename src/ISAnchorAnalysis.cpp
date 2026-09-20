@@ -58,11 +58,34 @@ inline TsDomain timestampDomain(uint32_t did) noexcept {
     return cISDataMappings::TimestampDomain(did);
 }
 
-//! Tolerance on the (ToW - uptime) offset before two anchors in the same segment are treated as
-//! disagreeing. Sized to swallow the inter-record spacing at typical output rates (a bridge
-//! record and a ToW-only record sampled one output period apart legitimately differ by that
-//! period) while still catching a genuinely stale or wrong clock.
-constexpr int64_t kOffsetAgreementToleranceMs = 250;
+/**
+ * @brief Agreement tolerance on the `(ToW - uptime)` offset, PER TIER PAIR.
+ *
+ * A tier-5 bridge reads both halves of the offset out of ONE record, so two bridges that agree
+ * should agree almost exactly -- a tight tolerance there is meaningful. A tier-4 ToW-only
+ * candidate cannot: it pairs its ToW with the nearest PRECEDING uptime-domain record, which is up
+ * to one output period earlier. That correlation error is systematic, not noise.
+ *
+ * Measured on the 542-segment golden corpus, tier-4-vs-tier-5 offset deltas cluster at
+ * **-255..-370 ms (p50 -351)**. A flat 250 ms tolerance therefore flagged 278 false
+ * disagreements and buried the one genuine outlier (-502,446,094 ms, ~5.8 days) among them --
+ * which is the worst possible state for an anomaly channel: the real signal becomes invisible.
+ * Kyle's framing was "we need to know about it... within reason"; 278 cries of wolf is not that.
+ *
+ * So: tight between two bridges, one output period of slack when a tier-4 claim is involved, and
+ * double that when BOTH are tier 4 (each carries its own correlation error, and they can lean in
+ * opposite directions).
+ */
+constexpr int64_t kBridgeAgreementToleranceMs = 250;    //!< tier 5 vs tier 5 -- no correlation step
+constexpr int64_t kCorrelatedToleranceMs      = 600;    //!< one correlation step (>= the measured 370)
+
+//! Tolerance for comparing two offset claims of the given tiers.
+inline int64_t agreementToleranceMs(AnchorTier a, AnchorTier b) noexcept {
+    const int correlated = (a == AnchorTier::PayloadToWSingle ? 1 : 0) +
+                           (b == AnchorTier::PayloadToWSingle ? 1 : 0);
+    if (correlated == 0) return kBridgeAgreementToleranceMs;
+    return kCorrelatedToleranceMs * correlated;
+}
 
 /** @return  True when @p towMs sits inside a GPS week and is not the zero sentinel. */
 inline bool plausibleTow(uint64_t towMs) noexcept {
@@ -107,23 +130,37 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
 
     trackStall(did, recordTsMs);
 
+    // Past this point a payload is required. The index-driven path has a DID and a timestamp for
+    // every record but only pays to re-frame the payload of the DIDs that can actually anchor
+    // (`needsPayload()`), so it passes nullptr for the rest. Everything above — per-domain
+    // extrema, stall detection and the running uptime — must work without one.
+    if (payload == nullptr) return;
+
     // ---- Tier 4: ToW-only records. These give an absolute time but no uptime to pair it with,
     // so the offset can only be recovered by correlating against a neighbouring uptime-domain
-    // record. Remember the earliest one; pairing happens in finish().
+    // record.
     //
-    // Evaluated BEFORE the payload guard below, because it reads nothing out of the payload —
-    // the record's own index timestamp IS the time-of-week. Sitting after the guard made this
-    // tier unreachable from the index-driven path, which supplies a payload only for the DIDs
-    // `needsPayload()` names, so a log with GNSS records but no bridge record would have
-    // resolved a full tier lower there than it does from a byte scan. No log in the golden
-    // corpus exercises tier 4, so nothing caught it; `TowOnlyAnchorNeedsNoPayload` does.
-    if (isTowOnlyCandidate(did) && domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW && plausibleTow(recordTsMs)) {
+    // VALIDITY-GATED, like every other tier. It previously was not -- it accepted any
+    // plausible-looking ToW -- and that was masked by an accident: the old magnitude domain test
+    // misfiled small ToW values as uptime, so a GNSS-less log never produced a tier-4 candidate
+    // at all. Fixing the domain classifier removed that accidental safety net and four AHRS
+    // captures in the golden corpus (22 segments) immediately began anchoring at
+    // PayloadToWSingle off `DID_INS_2.timeOfWeek` -- a field with no meaning on a device that
+    // never had GNSS. Claiming tier 4 there is worse than admitting FilenameAnchor, because it
+    // asserts confidence we do not have.
+    //
+    // `ins_1/2/3/4_t.hdwStatus` is documented as a copy of `DID_SYS_PARAMS.hdwStatus`, so INS
+    // records can use the SAME gate as the tier-5 bridge. GNSS position/velocity carry a fix
+    // type in `status` instead.
+    if (isTowOnlyCandidate(did) && domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW &&
+        plausibleTow(recordTsMs) && towOnlyPayloadIsValid(did, payload, payloadSize)) {
         if (towOnlyDid_ == 0) {
             towOnlyDid_  = did;
             towOnlyTowMs = recordTsMs;
             // The nearest uptime-domain record seen so far is the correlation partner. Records
             // are written in arrival order, so the immediately-preceding uptime record is within
-            // one output period of this one.
+            // one output period of this one -- which is also why this tier's offset carries a
+            // systematic correlation error; see agreementToleranceMs().
             towOnlyUpMs = lastUptimeMs_;
         }
         // Offer it regardless of whether it was the first: consensus needs every claim, and a
@@ -134,12 +171,6 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
         }
         return;
     }
-
-    // Past this point a payload is required. The index-driven path has a DID and a timestamp for
-    // every record but only pays to re-frame the payload of the DIDs that can actually anchor,
-    // so it passes nullptr for the rest. Everything above — per-domain extrema, stall detection,
-    // the running uptime, and tier 4 — must work without one.
-    if (payload == nullptr) return;
 
     // ---- Tier 5: dual-domain bridge records. ToW and uptime in ONE payload, so the offset
     // needs no correlation against a neighbour. DID_SYS_PARAMS is the IMX bridge and
@@ -177,7 +208,8 @@ void AnchorCollector::offerCandidate(AnchorTier tier, uint32_t did,
     // Fold a repeat of a claim we already hold. A 1 Hz bridge restating the same offset for
     // twenty minutes corroborates it; it does not add a new opinion.
     for (const auto& c : out_.candidates) {
-        if (c.did == did && std::llabs(c.offsetMs - off) <= kOffsetAgreementToleranceMs) {
+        if (c.did == did &&
+            std::llabs(c.offsetMs - off) <= agreementToleranceMs(c.tier, tier)) {
             return;
         }
     }
@@ -219,7 +251,7 @@ void AnchorCollector::resolveConsensus() {
         std::size_t votes = 0;
         for (std::size_t j : top) {
             if (std::llabs(out_.candidates[i].offsetMs - out_.candidates[j].offsetMs)
-                    <= kOffsetAgreementToleranceMs) {
+                    <= agreementToleranceMs(out_.candidates[i].tier, out_.candidates[j].tier)) {
                 ++votes;
             }
         }
@@ -242,7 +274,8 @@ void AnchorCollector::resolveConsensus() {
     std::size_t dissentSameTier = 0;
     for (std::size_t i : top) {
         if (i == winner) continue;
-        if (std::llabs(out_.candidates[i].offsetMs - w.offsetMs) > kOffsetAgreementToleranceMs) {
+        if (std::llabs(out_.candidates[i].offsetMs - w.offsetMs) >
+                agreementToleranceMs(out_.candidates[i].tier, w.tier)) {
             ++dissentSameTier;
         }
     }
@@ -264,7 +297,7 @@ void AnchorCollector::resolveConsensus() {
     for (const auto& c : out_.candidates) {
         if (c.accepted) continue;
         const int64_t delta = c.offsetMs - w.offsetMs;
-        if (std::llabs(delta) <= kOffsetAgreementToleranceMs) continue;
+        if (std::llabs(delta) <= agreementToleranceMs(c.tier, w.tier)) continue;
         const bool equalAuthority = (c.tier == best);
         out_.anomalies.push_back(
             std::string(equalAuthority ? "EQUAL-AUTHORITY clock disagreement: "
@@ -437,11 +470,57 @@ std::vector<SessionAdoption>
     return out;
 }
 
+bool AnchorCollector::towOnlyPayloadIsValid(uint32_t did, const uint8_t* payload,
+                                            uint32_t payloadSize) noexcept {
+    if (payload == nullptr) return false;
+    switch (did) {
+        case DID_INS_1: {
+            if (payloadSize < sizeof(ins_1_t)) return false;
+            ins_1_t v{}; std::memcpy(&v, payload, sizeof(v));
+            return v.week != 0 && (v.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+        }
+        case DID_INS_2: {
+            if (payloadSize < sizeof(ins_2_t)) return false;
+            ins_2_t v{}; std::memcpy(&v, payload, sizeof(v));
+            return v.week != 0 && (v.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+        }
+        case DID_INS_3: {
+            if (payloadSize < sizeof(ins_3_t)) return false;
+            ins_3_t v{}; std::memcpy(&v, payload, sizeof(v));
+            return v.week != 0 && (v.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+        }
+        case DID_INS_4: {
+            if (payloadSize < sizeof(ins_4_t)) return false;
+            ins_4_t v{}; std::memcpy(&v, payload, sizeof(v));
+            return v.week != 0 && (v.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+        }
+        case DID_GNSS1_POS:
+        case DID_GNSS2_POS: {
+            if (payloadSize < sizeof(gnss_pos_t)) return false;
+            gnss_pos_t v{}; std::memcpy(&v, payload, sizeof(v));
+            // A receiver reporting no fix has no GPS time to offer, whatever its ToW field says.
+            return v.week != 0 &&
+                   (v.status & GNSS_STATUS_FIX_MASK) != GNSS_STATUS_FIX_NONE;
+        }
+        case DID_GNSS1_VEL:
+        case DID_GNSS2_VEL: {
+            if (payloadSize < sizeof(gnss_vel_t)) return false;
+            gnss_vel_t v{}; std::memcpy(&v, payload, sizeof(v));
+            // gnss_vel_t carries no `week`, so the fix type is the only signal available.
+            return (v.status & GNSS_STATUS_FIX_MASK) != GNSS_STATUS_FIX_NONE;
+        }
+        default:
+            return false;
+    }
+}
+
 bool AnchorCollector::needsPayload(uint32_t did) noexcept {
-    // Only the dual-domain bridge records are read out of their payload. Tier-4 ToW-only
-    // candidates are recognized from the record's index timestamp alone, so a caller working
-    // from an index never has to re-frame them.
-    return did == DID_SYS_PARAMS || did == DID_GPX_STATUS;
+    // Bridge records are read out of their payload for BOTH halves of the offset. Tier-4
+    // ToW-only candidates take their time from the record's index timestamp but their VALIDITY
+    // from the payload (see towOnlyPayloadIsValid), so they need it too -- without it the
+    // index-driven path would accept an ungated candidate and reach a tier the byte-scan path
+    // correctly refuses, which is exactly the route disagreement the tests assert against.
+    return did == DID_SYS_PARAMS || did == DID_GPX_STATUS || isTowOnlyCandidate(did);
 }
 
 bool AnchorCollector::isTowOnlyCandidate(uint32_t did) noexcept {
