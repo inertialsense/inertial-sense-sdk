@@ -833,7 +833,45 @@ void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
         }
 
         if (!needsReframe) {
-            collector.consume(rec.did, 0, bytes, static_cast<uint32_t>(nBytes), rec.timestamp);
+            // A `.dat` record's bytes are `[p_data_hdr_t][payload]`, NOT the payload alone --
+            // `buildIndexFromScanDat` deliberately sets `rec.offset` to the header's own start
+            // (see recordEndOffset()). Handing the whole range to the collector as the payload
+            // decoded every anchor struct `sizeof(p_data_hdr_t)` bytes early, so on a `.dat`
+            // segment NO record could ever become an anchor candidate and the cascade could
+            // never exceed FilenameAnchor.
+            //
+            // Proven on a DID_SYS_PARAMS record whose header and payload are both intact:
+            //   asHdr={id=10 size=64 offset=0}  bytes: 0a 40 00 00 00 | d7 fa 65 14 ...
+            //   -> gate saw towMs=16394 (the header's own bytes), hdwStatus=0x14, towValid=0
+            // where the real `timeOfWeekMs` is 0x1465fad7 = 342,227,671 at byte 5. Nothing was
+            // missing or short -- the payload pointer was valid and 69 bytes long, the gate was
+            // reached, and it rejected the candidate on misaligned CONTENT.
+            //
+            // `dataHdr.offset` also has to be forwarded as `structOffset`: it is how the
+            // collector excludes a partial record (one chunk of a larger struct), whose bytes
+            // do not hold the anchor fields at the expected positions. Passing 0 claimed every
+            // chunk was a whole record.
+            if (nBytes <= sizeof(p_data_hdr_t)) {
+                collector.consume(rec.did, 0, nullptr, 0, rec.timestamp);
+                continue;
+            }
+            p_data_hdr_t datHdr{};
+            std::memcpy(&datHdr, bytes, sizeof(datHdr));
+            if (datHdr.id != rec.did) {
+                // Index and bytes disagree; treat it as unanchorable rather than decoding a
+                // neighbour's payload. Mirrors the `.raw` reframe path's DID check.
+                collector.consume(rec.did, 0, nullptr, 0, rec.timestamp);
+                continue;
+            }
+            const std::size_t avail = nBytes - sizeof(p_data_hdr_t);
+            // Trust the header's size when it fits; `nBytes` can overrun the record for the
+            // last one in a chunk, and a payload longer than declared would read past the
+            // struct the gate is about to memcpy.
+            const std::size_t payloadSize =
+                (datHdr.size != 0 && datHdr.size <= avail) ? datHdr.size : avail;
+            collector.consume(rec.did, static_cast<uint16_t>(datHdr.offset),
+                              bytes + sizeof(p_data_hdr_t),
+                              static_cast<uint32_t>(payloadSize), rec.timestamp);
             continue;
         }
 

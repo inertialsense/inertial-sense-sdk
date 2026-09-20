@@ -1639,19 +1639,81 @@ TEST(SpanProvenance, TheAnchorOffsetComposesWithUptimeExtremaNotTheTranscription
     EXPECT_GT(naive - a.anchoredStartMs, 1000u * 60u * 60u)
         << "expected the two formulas to differ by hours, not milliseconds";
 
-    // The tag follows whatever tier the cascade actually reached, which is the derived-tag rule
-    // working -- not a fixed expectation of this fixture.
+    // The tag follows the tier the cascade reached -- derived, not asserted. This log carries a
+    // real bridge record, so PayloadToW is earned here: the rule is "PayloadToW only when
+    // earned", not "never PayloadToW".
     EXPECT_EQ(s.source, timeSourceForTier(a.tier));
+    EXPECT_EQ(s.source, TimeSource::PayloadToW);
+    EXPECT_EQ(a.tier, AnchorTier::PayloadToWBridge);
+    EXPECT_EQ(a.anchorDid, DID_SYS_PARAMS);
 
-    // NOTE, unresolved: this fixture's DID_SYS_PARAMS record is in the index with a ToW-domain
-    // timestamp (towRecords > 0), yet the cascade reports `candidates = 0` and falls to
-    // FilenameAnchor -- the collector's bridge gate is reached only when a payload arrives, and
-    // it did not. Whether that is a property of how cISLogger writes a `.dat` payload or a real
-    // gap in the index-driven analysis path is NOT established, so nothing here asserts a tier.
-    // Every existing bridge-tier test drives `AnchorCollector` directly, so none of them covers
-    // this route. Raised with Kyle; do not "fix" by asserting a tier until the mechanism is
-    // proven. The arithmetic under test is unaffected -- it only needs the transcription to
-    // differ from the uptime minimum, which it does by 342 million ms.
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// A dedicated regression test for the `.dat` payload handoff, kept separate from the span tests
+// because it is about the CASCADE reaching its tiers at all, not about the span's value.
+//
+// `analyzeFromRecords` used to hand the collector a `.dat` record's whole byte range as if it
+// were the payload. A `.dat` record is `[p_data_hdr_t][payload]` and the index's `rec.offset`
+// points at the header, so every anchor struct was decoded `sizeof(p_data_hdr_t)` bytes early:
+//
+//   asHdr={id=10 size=64 offset=0}   bytes: 0a 40 00 00 00 | d7 fa 65 14 ...
+//   gate saw towMs=16394 (the header's own bytes), hdwStatus=0x14, towValid=0
+//   real timeOfWeekMs = 0x1465fad7 = 342,227,671, at byte 5
+//
+// Consequence: on a `.dat` segment NO record could become a candidate, for ANY candidate DID --
+// both tier-5 bridges and every tier-4 ToW-only DID, since those need the payload for their
+// validity gate too. Every `.dat` log therefore anchored at best by filename. `.raw` was never
+// affected: it re-frames through the ISB parser and passes the true payload plus its struct
+// offset. `ISTimeResolver` and `RawSeriesBuilder` both skip the header correctly; this was the
+// only consumer that did not.
+TEST(AnchorDatPayload, ABridgeRecordInADatSegmentReachesTheBridgeTier) {
+    const fs::path dir = makeTempDir("dat_bridge_payload");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+    const fs::path raw = writeToWFirstMixedSegment(dir, 848484u, 20);
+    ASSERT_FALSE(raw.empty());
+
+    // Rebuild from the segment so the INDEX-DRIVEN path is what runs.
+    fs::path idxPath = raw;
+    idxPath.replace_extension(".idx");
+    fs::remove(idxPath);
+
+    auto seg = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(seg.has_value());
+    ASSERT_FALSE(seg->hadOnDiskIndex());
+
+    const AnchorAnalysis a = seg->anchorAnalysis();
+    std::printf("[measured] dat bridge: tier=%d candidates=%zu anchorDid=%u towMs=%llu "
+                "upMs=%llu offset=%lld\n",
+                static_cast<int>(a.tier), a.candidates.size(), a.anchorDid,
+                (unsigned long long)a.anchorTowMs, (unsigned long long)a.anchorUptimeMs,
+                (long long)a.offsetMs);
+
+    // The payload must actually reach the gate and pass it.
+    ASSERT_GT(a.candidates.size(), 0u)
+        << "no anchor candidate from a .dat carrying a valid DID_SYS_PARAMS bridge record";
+    EXPECT_EQ(a.tier, AnchorTier::PayloadToWBridge);
+    EXPECT_EQ(a.anchorDid, DID_SYS_PARAMS);
+    EXPECT_TRUE(a.firstHand()) << "a bridge record is first-hand evidence";
+
+    // The decoded fields must be the ones the fixture wrote, not header bytes. 16394 is the
+    // exact value the misaligned decode produced, so it is asserted against by name.
+    EXPECT_EQ(a.anchorTowMs, kTowMs);
+    EXPECT_NE(a.anchorTowMs, 16394u) << "that is the p_data_hdr_t read as a timeOfWeekMs";
+    EXPECT_EQ(a.anchorUptimeMs, 10000u) << "sys_params_t.upTime was 10.0 s";
+    EXPECT_EQ(a.offsetMs,
+              static_cast<int64_t>(kTowMs) - static_cast<int64_t>(10000));
+
+    // And the two analysis routes must agree -- a trusted sidecar takes the same index-driven
+    // path, so if one reaches the bridge tier the other must too.
+    auto reopened = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(reopened.has_value());
+    ASSERT_TRUE(reopened->hadOnDiskIndex()) << "the rebuild above should have persisted a sidecar";
+    const AnchorAnalysis b = reopened->anchorAnalysis();
+    EXPECT_EQ(b.tier, a.tier) << "sidecar route disagrees with the rebuild route";
+    EXPECT_EQ(b.anchorTowMs, a.anchorTowMs);
+    EXPECT_EQ(b.offsetMs, a.offsetMs);
 
     ISFileManager::DeleteDirectory(dir.string());
 }
