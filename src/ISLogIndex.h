@@ -58,14 +58,16 @@ inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_1_SIZE = 32;
 // ----- Timestamp interpretation enums --------------------------------------
 
 /**
- * Which KIND OF CLOCK `is_log_idx_record_v2_t::timestamp` is derived from in this file.
+ * Which ANCHOR `is_log_idx_record_v2_t::timestamp` is measured from in this file.
  *
- * Despite the type name, this does not discriminate *units* — every enumerator is
- * milliseconds. What it discriminates is the clock, i.e. the time DOMAIN, and therefore
- * whether a value is comparable against another file's. Stored in the header so a v3 with
- * a different clock doesn't re-break the world.
+ * The *unit* is always milliseconds, which is why this was misleadingly named
+ * `TimestampUnits` / `ts_units`: "units" implies a scalar or conversion factor, and there is
+ * none. What actually varies between the enumerators is the ZERO POINT — and therefore whether
+ * a value can be compared against another file's at all. Meaning and values are unchanged from
+ * `TimestampUnits`; only the name is corrected. Stored in the header so a v3 with a different
+ * anchor doesn't re-break the world.
  */
-enum class TimestampUnits : uint8_t {
+enum class TimestampAnchor : uint8_t {
     /// An elapsed-time clock with a LOCAL anchor: milliseconds since something this file
     /// defines, not since a shared epoch. Two files can carry the same value and mean two
     /// different instants, so it is never comparable across logs or devices without an
@@ -121,20 +123,28 @@ inline constexpr bool timestampsLookMixedDomain(uint64_t firstMs, uint64_t lastM
 inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_HAS_TOW = 1u << 0;
 
 /**
- * Bit 1 (D0096): this record's `log_time_offset_ms` was **approximated**, not observed.
+ * Bit 1 (D0096): this record's `log_time_offset_ms` was **RECONSTRUCTED**, not observed.
  *
- * Set only by the rebuild-from-file path (D0096 path 2), which has no wire-arrival timing
- * and therefore distributes un-clocked records between their clocked bookends. Paths 3 and 4
- * (rescan with an existing index, and bake/trim) may carry it forward.
+ * The WHEN of a record has exactly two possible provenances and they are mutually exclusive,
+ * so one field carries it and this bit says which:
+ *   - **clear = OBSERVED.** The live port->log path sampled the host clock as the record was
+ *     decoded (D0096 path 1). Independent of every device clock.
+ *   - **set = RECONSTRUCTED.** A file-sourced rebuild had no wire-arrival timing available
+ *     (path 2), so the value was rebuilt from the payload timestamps that do exist, with
+ *     un-clocked records distributed between their clocked bookends. Paths 3 and 4 carry the
+ *     bit forward with the value.
  *
- * The live port→log path (D0096 path 1) samples the host clock as each record is decoded, so
- * every offset it writes is directly observed and it **never** sets this bit.
+ * Per-record rather than per-file because a rescan over a truncated index can legitimately
+ * produce both: observed offsets carried forward for the records the old index covered, and
+ * reconstructed ones for the records it did not.
  *
- * Clear on a record whose offset is observed, and clear on a record that has no offset at all
- * (check the header's `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET` for that — absence of this bit
- * is not evidence of presence).
+ * @warning A consumer must not treat a reconstructed offset as independent evidence. It is
+ *          derived FROM payload timestamps, so it cannot corroborate a payload clock -- during
+ *          a stall those timestamps are frozen and the reconstruction is flat exactly where a
+ *          correction is needed. `ISTimeResolver` refuses these as a stall ruler for that
+ *          reason.
  */
-inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET = 1u << 1;
+inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET = 1u << 1;
 
 /**
  * Bit 2 (D0096): this record's `timestamp` is a REAL value read from the payload. Clear means
@@ -202,18 +212,6 @@ inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH = 1u << 2;
  */
 inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY = 1u << 3;
 
-/**
- * Bit 4 (D0096): the records carry a real `recon_time_offset_ms` — a chronology rebuilt from
- * the payload timestamps, for logs where the observed receipt time is unrecoverable.
- *
- * Asserts CONTENT, like `HAS_LOG_TIME_OFFSET`: set only when values were actually written.
- * These bytes were pad in every earlier file, so without this bit a reader cannot tell a
- * reconstructed zero from padding.
- *
- * A consumer that wants "when was this record seen" should prefer `log_time_offset_ms` and
- * fall back to this only knowingly — see the field docs for why the two are separate.
- */
-inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET = 1u << 4;
 
 // ----- Structs (logical, not on-disk) --------------------------------------
 //
@@ -239,7 +237,7 @@ struct is_log_idx_header_t {
     uint64_t first_timestamp_ms;    ///< 20..27: first record's `timestamp` (0 if unset)
     uint64_t last_timestamp_ms;     ///< 28..35: last record's `timestamp`  (0 if unset)
     uint32_t sync_point_count;      ///< 36..39: D-07 sync-event count tracked by writer (0 default)
-    uint8_t  ts_units;              ///< 40    : `TimestampUnits`
+    uint8_t  ts_anchor;              ///< 40    : `TimestampAnchor`
     uint8_t  ts_source;             ///< 41    : `HeaderTimeSource`
     uint8_t  flags;                 ///< 42    : `IS_LOG_IDX_HDR_FLAG_*`
     uint8_t  reserved8;             ///< 43    : pad
@@ -258,14 +256,14 @@ struct is_log_idx_header_t {
  *
  * ### Time references in a `.idx`, and how each is used (D0096)
  *
- * Five different time quantities live in this format. They are NOT interchangeable, and the
+ * Four different time quantities live in this format. They are NOT interchangeable, and the
  * whole SN-8704 class of defect came from treating one as another. Security-camera framing in
  * brackets, since it maps cleanly.
  *
  * **1. `timestamp` — the WHAT.** What the device itself claimed the time was, decoded from the
  * payload and hoisted into the index so it is searchable without touching the `.raw`. It is
  * *metadata about* the payload: legitimate to carry over, strip, or ignore. Its anchor is not
- * fixed — which clock it came from varies per file, which is what `ts_units` exists to state.
+ * fixed — which clock it came from varies per file, which is what `ts_anchor` exists to state.
  * **Never interpolated**: an absent one stays absent, because inventing a value here would be
  * fabricating a claim the device never made. `IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP` says whether
  * there is a value at all (0 is a legal value, so absence needs its own bit), and
@@ -273,40 +271,36 @@ struct is_log_idx_header_t {
  * *[the burned-in time rendered into the frame — in some frames, not others, and only as
  * trustworthy as whatever clock drew it.]*
  *
- * **2. `log_time_offset_ms` — the WHEN, observed.** When this record was actually seen,
- * as an offset from the start of the **log** (not the segment — every segment of one log
- * shares the anchor). Owes nothing to any payload, so it exists even for records with no time
- * field. Only the live capture path can produce it: receipt time exists nowhere in the `.raw`,
- * so a rebuild genuinely cannot recover it. Declared by
- * `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET`, which asserts CONTENT — set only when real
- * offsets were written, never merely because the field is present.
- * *[the time-code: offset into the recording, always present, always monotonic, independent
- * of anything in the picture.]*
+ * **2. `log_time_offset_ms` — the WHEN.** When this record was seen, as an offset from the
+ * start of the **log** (not the segment — every segment of one log shares the anchor). Owes
+ * nothing to any payload, so it exists even for records with no time field.
  *
- * **3. `recon_time_offset_ms` — the WHEN, reconstructed.** What a rebuild can honestly offer
- * in place of (2): a chronology rebuilt from the payload timestamps that DO exist, with
- * un-clocked records distributed between their clocked bookends rather than collapsed onto one
- * instant. Same anchor and units as (2) so the two are directly comparable, but kept in a
- * SEPARATE field precisely so "observed" and "estimated" never share a slot. Declared by
- * `IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET`; per record,
- * `IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET` distinguishes a value derived from that
- * record's own timestamp (exact) from one estimated between neighbours.
- * *[a chronology reconstructed in the edit suite from the burned-in times that survived.]*
+ * Its provenance is one of exactly two things, and they are mutually exclusive — a rebuild
+ * cannot observe receipt time (it exists nowhere in the `.raw`), and a live capture has no
+ * reason to reconstruct one. So a single field carries the value and
+ * `IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET` says which:
+ *   - **clear = OBSERVED** — the host clock, sampled as the record was decoded.
+ *   - **set = RECONSTRUCTED** — rebuilt from the payload timestamps that exist, with
+ *     un-clocked records distributed between their clocked bookends.
  *
- * **Why (2) and (3) must not share a field.** `ISTimeResolver` ranks (2) as its top-priority
- * stall ruler, on the strength of being independent of any device clock. A value reconstructed
- * from payload timestamps has no such independence — during a stalled clock those timestamps
- * are frozen, so using (3) as if it were (2) yields a flat ruler exactly where the correction
- * is needed. A consumer must therefore prefer (2), fall back to (3) knowingly, and never
- * confuse the two.
+ * `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET` declares whether the field holds anything at all,
+ * and asserts CONTENT — set only when real values were written, never merely because the
+ * field is present.
  *
- * **4. Header `capture_epoch_ms`.** Absolute host wall-clock (ms since the Unix epoch) sampled
+ * A reconstructed value must not be treated as independent evidence: it is derived FROM the
+ * payload clock, so it cannot corroborate that clock. `ISTimeResolver` refuses reconstructed
+ * offsets as a stall ruler for exactly this reason, and falls to its next ruler instead.
+ * *[the time-code: offset into the recording, always present, always monotonic, independent of
+ * anything in the picture — or, when the original time-code is gone, the editor's best
+ * reconstruction of it, labelled as such.]*
+ *
+ * **3. Header `capture_epoch_ms`.** Absolute host wall-clock (ms since the Unix epoch) sampled
  * once at log-open and written into EVERY segment's header, so it survives the purge of
  * earlier segments. This is what converts (2) or (3) into absolute time:
  * `capture_epoch_ms + offset`. Guarded by `IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH`; when clear,
  * the offsets remain valid for ordering and interval arithmetic but have no absolute anchor.
  *
- * **5. Header `first_timestamp_ms` / `last_timestamp_ms`.** A faithful transcription of the
+ * **4. Header `first_timestamp_ms` / `last_timestamp_ms`.** A faithful transcription of the
  * first and last record's `timestamp` — quantity (1), inheriting all of its caveats including
  * mixed domains. A DERIVED anchored value does not belong in them.
  *
@@ -316,7 +310,7 @@ struct is_log_idx_header_t {
  * could not influence.
  */
 struct is_log_idx_record_v2_t {
-    uint64_t timestamp;             ///<  0..7 : payload-derived ms (units per header `ts_units`)
+    uint64_t timestamp;             ///<  0..7 : payload-derived ms (units per header `ts_anchor`)
     uint64_t offset;                ///<  8..15: byte offset into the `.raw` segment
     uint32_t did;                   ///< 16..19: data ID; 0 = no associated DID (raw stream)
     uint16_t flags;                 ///< 20..21: `IS_LOG_IDX_REC_FLAG_*`
@@ -325,17 +319,10 @@ struct is_log_idx_record_v2_t {
     /// 24..27: host-clock time-OFFSET of this record from log start, in ms (SN-8383). An offset
     /// from a known anchor, NOT a delta from the previous record — see D0096's vocabulary. Valid
     /// only when the header sets `HAS_LOCAL_TS_OFFSET`; 0 on v2.0 records and on any producer
-    /// that did not compute one. `IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET` says whether this
+    /// that did not compute one. `IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET` says whether this
     /// particular value was observed on the wire or approximated during a rebuild.
     uint32_t log_time_offset_ms;
-    /// 28..31: RECONSTRUCTED time-offset from log start, in ms — quantity (3) above. Same
-    /// anchor and units as `log_time_offset_ms`, deliberately a different field so an
-    /// estimate can never be mistaken for an observation. Valid only when the header sets
-    /// `HAS_RECON_TIME_OFFSET`; 0 otherwise (and on every v2.0/v2.1 file predating it, where
-    /// these bytes were pad). Per record,
-    /// `IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET` says whether this particular value was
-    /// estimated between neighbours or derived from the record's own timestamp.
-    uint32_t recon_time_offset_ms;
+    uint32_t reserved2;             ///< 28..31: pad to an 8-byte multiple
 };
 
 #pragma pack(pop)
@@ -455,7 +442,7 @@ ISExpected<is_log_idx_record_v2_t> readRecord(
  * starts cleared; the writer sets `FINALIZED` only on clean close.
  */
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
-                                      TimestampUnits units,
+                                      TimestampAnchor units,
                                       HeaderTimeSource source,
                                       uint64_t capture_epoch_ms = 0) noexcept;
 

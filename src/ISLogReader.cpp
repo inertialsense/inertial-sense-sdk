@@ -543,7 +543,7 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
 
     if (!r.hadOnDiskIndex_) {
         // Default header; counters get filled in by buildIndexFromScan[Dat].
-        r.header_ = idx::makeDefaultHeader(0, idx::TimestampUnits::UptimeMs, idx::HeaderTimeSource::Mixed);
+        r.header_ = idx::makeDefaultHeader(0, idx::TimestampAnchor::UptimeMs, idx::HeaderTimeSource::Mixed);
         if (r.format_ == SegmentFormat::Dat) {
             r.buildIndexFromScanDat();
             // SN-8629: the .dat scan does not carry the collector (it walks chunk headers, not
@@ -674,7 +674,7 @@ ISExpected<ISLogReader> ISLogReader::openForAnalysis(const std::filesystem::path
     // Recorded for diagnostics only. openForAnalysis never touches this path -- that is the
     // whole point of not going through construct().
     r.idxPath_   = std::filesystem::path{ raw }.replace_extension(".idx");
-    r.header_    = idx::makeDefaultHeader(0, idx::TimestampUnits::UptimeMs,
+    r.header_    = idx::makeDefaultHeader(0, idx::TimestampAnchor::UptimeMs,
                                           idx::HeaderTimeSource::Mixed);
     return r;
 }
@@ -749,17 +749,21 @@ void ISLogReader::populateReconTimeOffsets() {
             ? r.timestamp
             : ISTimeResolver::interpolateArrivalTime(anchors, static_cast<uint64_t>(i));
         const uint64_t off = (ms > base) ? (ms - base) : 0;
-        r.recon_time_offset_ms = (off > UINT32_MAX) ? UINT32_MAX
-                                                    : static_cast<uint32_t>(off);
-        if (!ownBookend) {
-            r.flags |= idx::IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET;
-            ++estimated;
-        }
+        r.log_time_offset_ms = (off > UINT32_MAX) ? UINT32_MAX
+                                                  : static_cast<uint32_t>(off);
+        // Every value here is reconstructed -- a file rebuild cannot observe receipt time --
+        // so the provenance bit is set on all of them. `estimated` counts the narrower case of
+        // a record placed BETWEEN bookends rather than from its own timestamp, which is worth
+        // logging but is not a separate on-disk state.
+        r.flags |= idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET;
+        if (!ownBookend) ++estimated;
         ++wrote;
     }
 
-    // Declare it only because values were genuinely written (D0096 / audit A5).
-    header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET;
+    // Declare it only because values were genuinely written (D0096 / audit A5). The records
+    // each carry RECONSTRUCTED_TIME_OFFSET, so nothing downstream can mistake these for
+    // observed receipt times.
+    header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;
     log_debug(IS_LOG_ISLOG,
               "populateReconTimeOffsets: %zu record(s), %zu bookend(s) in the %s domain, "
               "%zu estimated",
@@ -1008,10 +1012,12 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
     if (collectAnchor) anchor_ = collector.finish(prev);
 
     // D0096 path 2: receipt time is unrecoverable from a file, so reconstruct a chronology
-    // from the payload timestamps that DO exist and persist it in `recon_time_offset_ms` --
-    // a separate field from the observed `log_time_offset_ms`, so an estimate can never be
-    // mistaken for an observation. Computing this and throwing it away meant re-deriving it
-    // on every single reload.
+    // from the payload timestamps that DO exist and persist it in `log_time_offset_ms`,
+    // with every record flagged RECONSTRUCTED so it can never pass for an observation.
+    // Observed and reconstructed are mutually exclusive -- a rebuild cannot observe receipt
+    // time and a live capture has no reason to reconstruct one -- so one field plus a
+    // provenance bit covers it. Computing this and throwing it away meant re-deriving it on
+    // every single reload.
     //
     // Reuses ISTimeResolver::interpolateArrivalTime rather than reimplementing the
     // distribution: it already places an arbitrary index between ascending (index, time)
@@ -1058,13 +1064,13 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
         const bool anyTow    = towRecords > 0;
         const bool anyNonTow = towRecords < records_.size();
         if (anyTow && anyNonTow) {
-            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+            header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::Mixed);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::Mixed);
         } else if (anyTow) {
-            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::GpsTowMs);
+            header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::GpsTowMs);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::PayloadToW);
         } else {
-            header_.ts_units  = static_cast<uint8_t>(idx::TimestampUnits::UptimeMs);
+            header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::UptimeMs);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::SessionOnly);
         }
 
@@ -1486,8 +1492,7 @@ ISRecordView ISLogReader::viewAt(std::size_t recordIdx) const noexcept {
         dataLen,
         rec.flags,
     };
-    v.setLogTimeOffsetMs(rec.log_time_offset_ms);       // SN-8383: OBSERVED receipt offset
-    v.setReconTimeOffsetMs(rec.recon_time_offset_ms);   // D0096: RECONSTRUCTED offset
+    v.setLogTimeOffsetMs(rec.log_time_offset_ms);   // SN-8383 / D0096: the record's WHEN
     return v;
 }
 

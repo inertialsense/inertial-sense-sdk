@@ -338,8 +338,16 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
         const uint8_t* payloadPtr = bytes.first + sizeof(p_data_hdr_t);
 
         const uint64_t thisArrival = arrivalIndex++;
+        // D0096: pass the offset ONLY when it was observed. A reconstructed one is derived
+        // from the payload clock, so it cannot corroborate that clock -- during a stall the
+        // payload timestamps are frozen and the reconstruction is flat exactly where the
+        // correction is needed. Withholding it here drops this run to the next ruler
+        // (own-clock, then cadence), which is the honest outcome.
+        const bool observedOffset =
+            haveLogTimeOffset &&
+            (v.flags() & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) == 0;
         stalls.observe(hdr.id, thisArrival, v.timestamp().value, payloadPtr, hdr.size,
-                       haveLogTimeOffset ? v.logTimeOffsetMs() : 0u);
+                       observedOffset ? v.logTimeOffsetMs() : 0u);
 
         if (hdr.id == DID_SYS_PARAMS && hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
             sys_params_t sp2{};
@@ -458,7 +466,12 @@ void scanSegmentForSyncs(const ISLogReader& reader,
             // TimestampOrCurrentTime() (D0069 #1).
             const double   tsSec = cISDataMappings::Timestamp(&hdr, comm.rxPkt.data.ptr);
             uint32_t localMs = 0;
-            if (haveLogTimeOffset && segOrdinal < reader.recordCount()) {
+            // D0096: observed offsets only -- see the note on the other scan path. A
+            // reconstructed offset comes FROM the payload clock and so cannot be used to
+            // correct it.
+            if (haveLogTimeOffset && segOrdinal < reader.recordCount()
+                && (reader.recordAt(segOrdinal).flags()
+                        & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) == 0) {
                 localMs = reader.recordAt(segOrdinal).logTimeOffsetMs();
             }
             stalls.observe(hdr.id, thisArrival, static_cast<uint64_t>(tsSec * 1000.0),

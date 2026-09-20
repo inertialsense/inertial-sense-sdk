@@ -89,14 +89,19 @@ ISExpected<ISLogWriter> ISLogWriter::create(Options opts) {
     w.sourceDeviceId_ = opts.sourceDeviceId;
     w.lineageNote_    = std::move(opts.lineageNote);
     w.header_         = idx::makeDefaultHeader(kProducerVersion,
-                                               opts.tsUnits,
+                                               opts.tsAnchor,
                                                opts.tsSource);
     // SN-8383: the SDK always writes the current .idx version (v2.1); it never
     // emits an older format. ISLogWriter carries each source record's
     // per-record log-start time-offset through via ISRecordView::logTimeOffsetMs()
     // (see append()), so it declares HAS_LOG_TIME_OFFSET. `record_size` stays at
     // makeDefaultHeader's 32.
-    w.header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;
+    // NOT declared here (audit A5 / D0096). This flag asserts CONTENT -- "these records carry
+    // a real time-offset" -- and at create() time no record has been appended, so there is
+    // nothing to assert. Declaring it up front meant a source with no offsets produced an
+    // output that claimed them over all-zero values, which satisfies ISTimeResolver's
+    // zero-refusing guard with nothing behind it. writeFinalHeader() sets it iff a non-zero
+    // offset was actually written. `record_size` already tells a reader the FIELD is present.
 
     w.rawStream_.open(rawTmp,
                       std::ios::binary | std::ios::out | std::ios::trunc);
@@ -248,7 +253,8 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     rec.did             = view.did();
     rec.flags           = view.flags();
     rec.reserved        = 0;
-    rec.log_time_offset_ms = view.logTimeOffsetMs();   // SN-8383: carry the source's per-record delta through
+    rec.log_time_offset_ms = view.logTimeOffsetMs();
+    if (rec.log_time_offset_ms != 0) sawLogTimeOffset_ = true;   // SN-8383: carry the source's per-record delta through
 
     // Always write the full v2.1 (32-byte) record — the SDK never emits an
     // older .idx version. The per-record delta is preserved from the source
@@ -282,12 +288,16 @@ ISExpected<void> ISLogWriter::writeFinalHeader() {
     header_.last_timestamp_ms  = lastTimestamp_;
     header_.sync_point_count   = syncPointCount_;
     header_.flags             |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    // D0096: honest content declaration -- see the note in create().
+    if (sawLogTimeOffset_) {
+        header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;
+    }
 
-    // SN-8629: override the caller's ts_units (informational, opts.tsUnits)
+    // SN-8629: override the caller's ts_anchor (informational, opts.tsAnchor)
     // when first/last prove it can't be a single domain -- see
     // timestampsLookMixedDomain().
     if (idx::timestampsLookMixedDomain(header_.first_timestamp_ms, header_.last_timestamp_ms)) {
-        header_.ts_units = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+        header_.ts_anchor = static_cast<uint8_t>(idx::TimestampAnchor::Mixed);
     }
 
     idxStream_.flush();

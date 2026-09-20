@@ -46,7 +46,7 @@ namespace {
 
 is_log_idx_header_t makeRoundTripHeader() {
     auto h = makeDefaultHeader(0x02010000u,
-                               TimestampUnits::GpsTowMs,
+                               TimestampAnchor::GpsTowMs,
                                HeaderTimeSource::PayloadToW);
     h.total_records       = 42;
     h.first_timestamp_ms  = 100ULL;
@@ -91,7 +91,7 @@ TEST(IdxRoundTrip, HeaderSerializeAndParse) {
     EXPECT_EQ(parsed->first_timestamp_ms,  src.first_timestamp_ms);
     EXPECT_EQ(parsed->last_timestamp_ms,   src.last_timestamp_ms);
     EXPECT_EQ(parsed->sync_point_count,    src.sync_point_count);
-    EXPECT_EQ(parsed->ts_units,            src.ts_units);
+    EXPECT_EQ(parsed->ts_anchor,            src.ts_anchor);
     EXPECT_EQ(parsed->ts_source,           src.ts_source);
     EXPECT_EQ(parsed->flags,               src.flags);
 }
@@ -431,7 +431,7 @@ TEST(IdxFinalize, FinalizedFlagSemantics) {
     // Producing a header with the flag clear means the writer
     // crashed or hasn't called finalizeIndex yet — readers can fall
     // back to scanning records to reconstruct totals.
-    auto h = makeDefaultHeader(0, TimestampUnits::UptimeMs,
+    auto h = makeDefaultHeader(0, TimestampAnchor::UptimeMs,
                                   HeaderTimeSource::Mixed);
     EXPECT_EQ(h.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
         << "default header must NOT have FINALIZED set — set it on close only";
@@ -809,7 +809,7 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
 //   (1) The comparator in ISDeviceLog::fromSegments must not let a
 //       not-safely-comparable header value override filename order.
 //   (2) The writer must qualify first_timestamp_ms/last_timestamp_ms (here:
-//       flag ts_units = Mixed) when it has direct, in-band proof they aren't
+//       flag ts_anchor = Mixed) when it has direct, in-band proof they aren't
 //       in one domain, so the file is honest about it on disk.
 // ---------------------------------------------------------------------------
 
@@ -857,16 +857,16 @@ TEST(IdxIntegration, WriterFlagsMixedDomainWhenFirstExceedsLast) {
     ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
     EXPECT_EQ(hdrR->first_timestamp_ms, 590000000ULL);
     EXPECT_EQ(hdrR->last_timestamp_ms, 101000ULL);
-    EXPECT_EQ(hdrR->ts_units, static_cast<uint8_t>(TimestampUnits::Mixed))
+    EXPECT_EQ(hdrR->ts_anchor, static_cast<uint8_t>(TimestampAnchor::Mixed))
         << "first > last is direct proof the two edges aren't one domain -- "
-           "ts_units must say so, not silently claim UptimeMs";
+           "ts_anchor must say so, not silently claim UptimeMs";
 
     std::remove((baseNoExt + ".idx").c_str());
 }
 
 TEST(IdxIntegration, WriterKeepsDefaultUnitsWhenConsistent) {
     // Both records are DID_IMUS_RAW (same domain), ascending -- the common,
-    // non-buggy case. ts_units must stay the conservative default; this is
+    // non-buggy case. ts_anchor must stay the conservative default; this is
     // the non-regression half of the SN-8629 AC.
     TestDeviceLog log;
     const auto basePath = makeTmpPath("consistent");
@@ -896,7 +896,7 @@ TEST(IdxIntegration, WriterKeepsDefaultUnitsWhenConsistent) {
     ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
     EXPECT_EQ(hdrR->first_timestamp_ms, 100000ULL);
     EXPECT_EQ(hdrR->last_timestamp_ms, 100500ULL);
-    EXPECT_EQ(hdrR->ts_units, static_cast<uint8_t>(TimestampUnits::UptimeMs))
+    EXPECT_EQ(hdrR->ts_anchor, static_cast<uint8_t>(TimestampAnchor::UptimeMs))
         << "consistent first/last must not regress to Mixed";
 
     std::remove((baseNoExt + ".idx").c_str());
@@ -904,20 +904,20 @@ TEST(IdxIntegration, WriterKeepsDefaultUnitsWhenConsistent) {
 
 TEST(IdxIntegration, PreFixMixedDomainHeaderStillParses) {
     // AC A3: "a log written before it [the qualifier fix] still opens." A
-    // pre-fix writer always wrote ts_units = UptimeMs, even for a segment
+    // pre-fix writer always wrote ts_anchor = UptimeMs, even for a segment
     // whose first/last were actually mixed-domain (the exact SN-63736 shape).
     // No on-disk format changed -- only which enum value a healthy writer
     // now chooses -- so a stale mislabeled header must still parse cleanly.
-    auto h = makeDefaultHeader(0, TimestampUnits::UptimeMs, HeaderTimeSource::Mixed);
+    auto h = makeDefaultHeader(0, TimestampAnchor::UptimeMs, HeaderTimeSource::Mixed);
     h.first_timestamp_ms = 590000000ULL;  // mixed-domain, but pre-fix writer
-    h.last_timestamp_ms  = 101000ULL;     // never overrides ts_units for this
+    h.last_timestamp_ms  = 101000ULL;     // never overrides ts_anchor for this
     h.flags = IS_LOG_IDX_HDR_FLAG_FINALIZED;
 
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     serializeHeader(buf, h);
     auto parsed = parseHeader(buf);
     ASSERT_TRUE(parsed.has_value()) << "pre-fix (mislabeled) header must still parse";
-    EXPECT_EQ(parsed->ts_units, static_cast<uint8_t>(TimestampUnits::UptimeMs));
+    EXPECT_EQ(parsed->ts_anchor, static_cast<uint8_t>(TimestampAnchor::UptimeMs));
     EXPECT_EQ(parsed->first_timestamp_ms, 590000000ULL);
     EXPECT_EQ(parsed->last_timestamp_ms, 101000ULL);
 }

@@ -1034,8 +1034,15 @@ TEST_F(AnchorSegmentTest, RebuiltIndexRecordsItsOwnProvenance) {
     const auto& h = r->header();
     EXPECT_EQ(h.sync_point_count, towRecords) << "counter must agree with the per-record bits";
     EXPECT_NE(h.flags & idx::IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u);
-    EXPECT_EQ(h.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET, 0u)
-        << "a rebuild cannot recover receipt time -- it must not claim to have it";
+    // D0096: a rebuild cannot OBSERVE receipt time, but it now reconstructs a chronology and
+    // persists it in the same field, with every record flagged RECONSTRUCTED. So the field is
+    // legitimately declared -- what it must never do is claim the values were observed.
+    EXPECT_NE(h.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET, 0u)
+        << "a rebuild reconstructs a chronology, so the field is declared";
+    for (auto v : r->allRecords()) {
+        EXPECT_NE(0, v.flags() & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET)
+            << "a rebuilt offset must never pass for an observed one";
+    }
 }
 
 TEST_F(AnchorSegmentTest, RebuiltHeaderUnitsMatchTheRecordsPresent) {
@@ -1050,12 +1057,12 @@ TEST_F(AnchorSegmentTest, RebuiltHeaderUnitsMatchTheRecordsPresent) {
     const auto& h = r->header();
     const bool anyTow = tow > 0, anyNonTow = tow < r->recordCount();
     if (anyTow && anyNonTow) {
-        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::Mixed));
+        EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::Mixed));
         EXPECT_EQ(h.ts_source, static_cast<uint8_t>(idx::HeaderTimeSource::Mixed));
     } else if (anyTow) {
-        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::GpsTowMs));
+        EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::GpsTowMs));
     } else {
-        EXPECT_EQ(h.ts_units, static_cast<uint8_t>(idx::TimestampUnits::UptimeMs));
+        EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::UptimeMs));
     }
 }
 
@@ -1419,9 +1426,11 @@ TEST(SpanProvenance, AnUptimeOnlyLogDoesNotClaimAPayloadToWSpan) {
 // measurements rather than against either comment.
 // =====================================================================================
 
-TEST_F(AnchorSegmentTest, ReaderRebuiltIndexDoesNotDeclareLogTimeOffset) {
-    // Premise, established not assumed: a reader-rebuilt index leaves the flag clear and
-    // the field zero. Everything below depends on this being the real starting state.
+TEST_F(AnchorSegmentTest, RebuiltIndexDeclaresItsOffsetsAsReconstructed) {
+    // D0096: this test asserted the opposite until Kyle's call to persist the reconstructed
+    // chronology -- a rebuild used to leave the field empty and re-derive it on every load.
+    // It now fills the field and labels the provenance, which is the point: the value is
+    // useful, and nothing can mistake it for an observation.
     ASSERT_TRUE(fs::exists(f_.idxFile));
     fs::remove(f_.idxFile);
 
@@ -1429,30 +1438,38 @@ TEST_F(AnchorSegmentTest, ReaderRebuiltIndexDoesNotDeclareLogTimeOffset) {
     ASSERT_TRUE(reopened.has_value()) << "rebuild-on-open failed";
     EXPECT_FALSE(reopened->hadOnDiskIndex()) << "expected a rebuild, not a trusted sidecar";
 
-    const bool declares =
-        (reopened->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET) != 0;
-    EXPECT_FALSE(declares) << "a rebuilt index must not claim per-record receipt deltas";
+    EXPECT_NE(0, reopened->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET)
+        << "values were written, so the field must be declared";
 
-    std::size_t nonZero = 0, total = 0;
+    std::size_t total = 0, nonZero = 0, observedClaims = 0;
     for (auto v : reopened->allRecords()) {
         ++total;
         if (v.logTimeOffsetMs() != 0) ++nonZero;
+        if ((v.flags() & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) == 0)
+            ++observedClaims;
     }
+    std::printf("[measured] rebuilt: records=%zu nonZeroOffsets=%zu claimingObserved=%zu\n",
+                total, nonZero, observedClaims);
     EXPECT_GT(total, 0u);
-    EXPECT_EQ(nonZero, 0u) << "rebuilt index unexpectedly carries non-zero deltas";
-    std::printf("[measured] rebuilt index: declares=%d records=%zu nonZeroDeltas=%zu\n",
-                (int)declares, total, nonZero);
+    EXPECT_GT(nonZero, 0u)      << "declared the field but wrote all zeros";
+    EXPECT_EQ(observedClaims, 0u)
+        << "a rebuild cannot observe receipt time -- no record may claim it did";
 }
 
-TEST_F(AnchorSegmentTest, BakingARebuiltIndexDeclaresOffsetsItDoesNotHave) {
-    // Continue from the premise above: rebuild the index so it honestly has no deltas...
+TEST_F(AnchorSegmentTest, BakingDoesNotDeclareOffsetsWhenTheSourceHasNone) {
+    // Audit A5, narrowed. Persisting the reconstructed chronology fixed the common case: a
+    // rebuilt source now genuinely HAS offsets, the writer copies view.flags() wholesale so
+    // the RECONSTRUCTED provenance survives the bake, and the declaration is honest.
+    //
+    // What remains is the empty case: a source carrying no offsets at all (a v2.0 file, or a
+    // rebuild that found no usable bookend). ISLogWriter declared the flag unconditionally at
+    // create(), so that output asserted receipt times over all-zero values -- satisfying the
+    // resolver's zero-refusing guard with nothing behind it.
     ASSERT_TRUE(fs::exists(f_.idxFile));
     fs::remove(f_.idxFile);
     auto src = ISLogReader::openSegment(f_.rawFile);
     ASSERT_TRUE(src.has_value());
-    ASSERT_EQ(0, src->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET);
 
-    // ...then bake it through ISLogWriter, exactly as a trim/bake does.
     const fs::path outRaw = f_.directory / "baked.raw";
     ISLogWriter::Options opts;
     opts.rawOutPath     = outRaw;
@@ -1463,7 +1480,11 @@ TEST_F(AnchorSegmentTest, BakingARebuiltIndexDeclaresOffsetsItDoesNotHave) {
     {
         ISLogWriter w = std::move(wR.value());
         for (auto v : src->allRecords()) {
-            ASSERT_TRUE(w.append(v).has_value());
+            // Strip the offset to synthesise the empty case explicitly, rather than hunting
+            // for a fixture that happens to lack one.
+            ISRecordView stripped = v;
+            stripped.setLogTimeOffsetMs(0);
+            ASSERT_TRUE(w.append(stripped).has_value());
         }
         ASSERT_TRUE(w.finalize().has_value());
     }
@@ -1485,15 +1506,12 @@ TEST_F(AnchorSegmentTest, BakingARebuiltIndexDeclaresOffsetsItDoesNotHave) {
         if (rec.log_time_offset_ms != 0) ++nonZero;
     }
     const bool declares = (hdr->flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET) != 0;
-    std::printf("[measured] baked index: declares=%d records=%llu nonZeroDeltas=%zu\n",
-                (int)declares, (unsigned long long)hdr->total_records, nonZero);
-
-    // THE COLLISION: the output asserts the flag over deltas that are entirely absent, and
-    // the resolver's zero-refusing guard reads exactly this flag.
-    EXPECT_EQ(nonZero, 0u) << "baked deltas appeared out of nowhere";
-    EXPECT_FALSE(declares && nonZero == 0)
-        << "baked index DECLARES per-record receipt deltas while carrying none -- "
-           "ISTimeResolver will trust zeros as receipt times (top-priority stall ruler)";
+    std::printf("[measured] baked from an offset-less source: declares=%d nonZero=%zu\n",
+                (int)declares, nonZero);
+    EXPECT_EQ(nonZero, 0u) << "offsets appeared from nowhere";
+    EXPECT_FALSE(declares)
+        << "declared per-record time-offsets while carrying none -- ISTimeResolver's "
+           "zero-refusing guard reads this flag";
 }
 
 // =====================================================================================
@@ -1590,25 +1608,24 @@ TEST_F(AnchorSegmentTest, RebuildPersistsAReconstructedChronology) {
     ASSERT_FALSE(r->hadOnDiskIndex());
 
     const auto flags = r->header().flags;
-    EXPECT_NE(0, flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET)
-        << "a rebuild reconstructs a chronology, so it must declare one";
-    // The OBSERVED field must stay undeclared: receipt time is not recoverable from a file,
-    // and this separation is what keeps the resolver's top-priority stall ruler honest.
-    EXPECT_EQ(0, flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET)
-        << "a rebuild must NOT claim observed receipt times";
+    EXPECT_NE(0, flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET)
+        << "a rebuild reconstructs a chronology, so the field must be declared";
 
     std::size_t nonZero = 0, estimated = 0, regressions = 0;
     uint32_t prev = 0;
     bool firstRec = true;
     for (auto v : r->allRecords()) {
-        const uint32_t off = v.reconTimeOffsetMs();
+        const uint32_t off = v.logTimeOffsetMs();
         if (off != 0) ++nonZero;
-        if ((v.flags() & idx::IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET) != 0) ++estimated;
+        if ((v.flags() & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) != 0) ++estimated;
         if (!firstRec && off < prev) ++regressions;
         prev = off; firstRec = false;
     }
     std::printf("[measured] recon offsets: nonZero=%zu estimated=%zu regressions=%zu\n",
                 nonZero, estimated, regressions);
     EXPECT_GT(nonZero, 0u) << "declared a chronology but wrote all zeros -- the A5 defect";
+    // EVERY value on this path is reconstructed, so every record must say so.
+    EXPECT_EQ(estimated, r->recordCount())
+        << "a rebuilt offset that is not flagged RECONSTRUCTED could pass for observed";
     EXPECT_EQ(regressions, 0u) << "a reconstructed chronology must not step backwards";
 }

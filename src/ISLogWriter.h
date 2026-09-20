@@ -54,7 +54,7 @@ public:
      *
      * Default-constructed values match the most-conservative behavior
      * (fail if output exists, host uptime ms timestamps). Callers
-     * generally only override `overwrite`, `tsUnits`, and `tsSource`
+     * generally only override `overwrite`, `tsAnchor`, and `tsSource`
      * when they have a reason to.
      */
     struct Options {
@@ -80,9 +80,9 @@ public:
         /// already exists. With `true`, the tempfile rename overwrites.
         bool overwrite = false;
 
-        /// Header `ts_units` (informational; doesn't transform the
+        /// Header `ts_anchor` (informational; doesn't transform the
         /// record timestamps written to the `.idx`).
-        idx::TimestampUnits tsUnits = idx::TimestampUnits::UptimeMs;
+        idx::TimestampAnchor tsAnchor = idx::TimestampAnchor::UptimeMs;
 
         /// Header `ts_source` (informational).
         idx::HeaderTimeSource tsSource = idx::HeaderTimeSource::PayloadToW;
@@ -279,7 +279,7 @@ private:
     std::ofstream rawStream_;
     std::ofstream idxStream_;
 
-    // Header template — `producer_version`, `ts_units`, `ts_source`
+    // Header template — `producer_version`, `ts_anchor`, `ts_source`
     // are seeded at create time and stays put. `total_records`,
     // `first_timestamp_ms`, `last_timestamp_ms`, `sync_point_count`,
     // `flags` are patched at finalize().
@@ -292,6 +292,9 @@ private:
     uint64_t                   lastTimestamp_   = 0;
     uint32_t                   syncPointCount_  = 0;
     uint64_t                   rawOffset_       = 0;
+    //! D0096: true once a non-zero `log_time_offset_ms` has actually been written, which is
+    //! what licenses declaring `HAS_LOG_TIME_OFFSET` in the final header (audit A5).
+    bool                       sawLogTimeOffset_ = false;
     bool                       initialized_     = false;
     bool                       finalized_       = false;
 };

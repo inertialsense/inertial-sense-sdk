@@ -271,15 +271,16 @@ public:
      *       chain, which could only ever push information later in the log, never earlier.
      */
     /**
-     * @brief D0096 path 2: fill `recon_time_offset_ms` for every record from the payload
+     * @brief D0096 path 2: fill `log_time_offset_ms` for every record from the payload
      *        timestamps that exist, distributing un-clocked records between their bookends.
      *
-     * Only the ONE dominant domain is used as bookends: interpolating between an
-     * uptime-domain and a GPS-ToW-domain neighbour would yield a number that is a duration in
-     * neither frame. Sets `IS_LOG_IDX_REC_FLAG_INTERPOLATED_TIME_OFFSET` on records whose
-     * value was estimated (not on those derived from their own timestamp), and
-     * `IS_LOG_IDX_HDR_FLAG_HAS_RECON_TIME_OFFSET` only if anything was actually written --
-     * declaring an all-zero field is the A5 defect this exists to avoid.
+     * A file rebuild cannot observe receipt time, so every value written here is
+     * RECONSTRUCTED and each record is flagged
+     * `IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET` to say so. Only the ONE dominant domain
+     * is used as bookends: interpolating between an uptime-domain and a GPS-ToW-domain
+     * neighbour would yield a number that is a duration in neither frame.
+     * `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET` is declared only if values were actually
+     * written -- declaring an all-zero field is the A5 defect this exists to avoid.
      *
      * No-op when no record carries a usable timestamp: there is nothing to reconstruct from,
      * and zeros must not be declared as a chronology.
@@ -417,14 +418,14 @@ public:
 
     /**
      * @return  Earliest record timestamp in this segment, in the
-     *          units indicated by `header().ts_units`. Returns 0
+     *          units indicated by `header().ts_anchor`. Returns 0
      *          if the segment contains no records.
      */
     uint64_t segmentStartTimestamp() const noexcept;
 
     /**
      * @return  Latest record timestamp in this segment, in the units
-     *          indicated by `header().ts_units`. Returns 0 if the
+     *          indicated by `header().ts_anchor`. Returns 0 if the
      *          segment contains no records.
      */
     uint64_t segmentEndTimestamp() const noexcept;

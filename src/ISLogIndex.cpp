@@ -84,7 +84,7 @@ void serializeHeader(uint8_t out[IS_LOG_IDX_HEADER_SIZE],
     put_u64(out + 20, hdr.first_timestamp_ms);
     put_u64(out + 28, hdr.last_timestamp_ms);
     put_u32(out + 36, hdr.sync_point_count);
-    out[40] = hdr.ts_units;
+    out[40] = hdr.ts_anchor;
     out[41] = hdr.ts_source;
     out[42] = hdr.flags;
     out[43] = hdr.reserved8;
@@ -117,7 +117,7 @@ ISExpected<is_log_idx_header_t> parseHeader(
     hdr.first_timestamp_ms  = get_u64(in + 20);
     hdr.last_timestamp_ms   = get_u64(in + 28);
     hdr.sync_point_count    = get_u32(in + 36);
-    hdr.ts_units            = in[40];
+    hdr.ts_anchor            = in[40];
     hdr.ts_source           = in[41];
     hdr.flags               = in[42];
     hdr.reserved8           = in[43];
@@ -147,7 +147,7 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
     put_u16(out + 20, rec.flags);
     put_u16(out + 22, rec.reserved);
     put_u32(out + 24, rec.log_time_offset_ms);   // v2.1 trailing field (SN-8383)
-    put_u32(out + 28, rec.recon_time_offset_ms);
+    put_u32(out + 28, rec.reserved2);
 }
 
 is_log_idx_record_v2_t parseRecord(
@@ -161,7 +161,7 @@ is_log_idx_record_v2_t parseRecord(
     // v2.1 trailing field present only when the on-disk record is >= 32 bytes.
     if (record_size >= IS_LOG_IDX_RECORD_V2_1_SIZE) {
         rec.log_time_offset_ms = get_u32(in + 24);
-        rec.recon_time_offset_ms = get_u32(in + 28);
+        rec.reserved2       = get_u32(in + 28);
     }
     return rec;
 }
@@ -225,7 +225,7 @@ ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file, std::size_t 
 }
 
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
-                                      TimestampUnits units,
+                                      TimestampAnchor units,
                                       HeaderTimeSource source,
                                       uint64_t capture_epoch_ms) noexcept {
     is_log_idx_header_t hdr{};
@@ -240,7 +240,7 @@ is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
     hdr.first_timestamp_ms  = 0;
     hdr.last_timestamp_ms   = 0;
     hdr.sync_point_count    = 0;
-    hdr.ts_units            = static_cast<uint8_t>(units);
+    hdr.ts_anchor            = static_cast<uint8_t>(units);
     hdr.ts_source           = static_cast<uint8_t>(source);
     hdr.flags               = 0;  // FINALIZED set on clean close
     hdr.reserved8           = 0;

@@ -427,9 +427,7 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
     // deltas of its timed neighbours instead of guessing by arrival index.
     const uint32_t logTimeOffset = static_cast<uint32_t>(current_uptimeMs() - m_logStartUpTime);
     rec.log_time_offset_ms = logTimeOffset;
-    // No reconstructed offset on the live path: the observed one above is the real thing,
-    // and HAS_RECON_TIME_OFFSET is left clear so nothing reads this as an estimate (D0096).
-    rec.recon_time_offset_ms = 0;
+    rec.reserved2       = 0;
 
     if (dataHdr != nullptr) {
         rec.did = dataHdr->id;
@@ -489,13 +487,13 @@ bool cDeviceLog::writeIndexChunk() {
 
     // First chunk write: emit the v2 header. total_records /
     // first/last timestamps stay zero here — finalizeIndex() seeks(0)
-    // and rewrites the header on close. ts_units = UptimeMs is
+    // and rewrites the header on close. ts_anchor = UptimeMs is
     // the conservative default; per-record `flags` bit 0 still tells
     // readers when a specific record actually carried a real ToW.
     if (!m_idxHeaderWritten) {
         is_log_idx_header_t hdr = makeDefaultHeader(
             encode_sdk_producer_version(),
-            TimestampUnits::UptimeMs,
+            TimestampAnchor::UptimeMs,
             HeaderTimeSource::Mixed,
             m_captureEpochMs);
         hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;   // SN-8383: every record carries log_time_offset_ms
@@ -542,18 +540,18 @@ bool cDeviceLog::finalizeIndex() {
 
     is_log_idx_header_t hdr = makeDefaultHeader(
         encode_sdk_producer_version(),
-        TimestampUnits::UptimeMs,
+        TimestampAnchor::UptimeMs,
         HeaderTimeSource::Mixed,
         m_captureEpochMs);
     hdr.total_records       = m_idxTotalRecords;
     hdr.first_timestamp_ms  = m_idxFirstTimestampMs;
     hdr.last_timestamp_ms   = m_idxLastTimestampMs;
-    // SN-8629: ts_units = UptimeMs (set above by makeDefaultHeader) would be
+    // SN-8629: ts_anchor = UptimeMs (set above by makeDefaultHeader) would be
     // a lie if the first/last timestamps landed in different domains -- flag it
     // Mixed so cross-segment consumers (ISDeviceLog::fromSegments) know these
     // two values aren't safely comparable against another segment's.
     if (timestampsLookMixedDomain(hdr.first_timestamp_ms, hdr.last_timestamp_ms)) {
-        hdr.ts_units = static_cast<uint8_t>(TimestampUnits::Mixed);
+        hdr.ts_anchor = static_cast<uint8_t>(TimestampAnchor::Mixed);
     }
     // Preserve the v2.1 flags across the finalize header rewrite (the plain
     // "= FINALIZED" would otherwise drop HAS_LOG_TIME_OFFSET / HAS_CAPTURE_EPOCH).
