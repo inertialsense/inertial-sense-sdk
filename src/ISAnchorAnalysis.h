@@ -190,6 +190,15 @@ struct AnchorAnalysis {
     bool anchored() const noexcept { return tier != AnchorTier::None; }
 
     /**
+     * @brief True when this anchor was established from the segment's OWN payload.
+     *
+     * First-hand evidence. Only such a segment may donate its offset to its session's siblings —
+     * a segment that itself inherited one is a relay, not a source, and treating it as a source
+     * would let a single weak claim propagate indefinitely while looking corroborated.
+     */
+    bool firstHand() const noexcept { return tier >= AnchorTier::PayloadToWSingle; }
+
+    /**
      * @brief Weakest tier that still yields a usable ordering key.
      *
      * `PrevSegmentChained` and above place a segment on the absolute frame well enough to sort
@@ -199,6 +208,49 @@ struct AnchorAnalysis {
      */
     static constexpr AnchorTier minimumOrderableTier = AnchorTier::FilenameAnchor;
 };
+
+/**
+ * @brief One segment's instruction to adopt an offset established elsewhere in its session.
+ *
+ * Output of @ref planSessionAdoptions.
+ */
+struct SessionAdoption {
+    std::size_t segment        = 0;      //!< Index of the segment that should adopt.
+    int64_t     offsetMs       = 0;      //!< The session's `(ToW - uptime)` constant.
+    uint32_t    donorDid       = 0;      //!< DID that established it.
+    bool        donorIsEarlier = false;  //!< True when the donor precedes @ref segment.
+};
+
+/**
+ * @brief Decide which segments should adopt which session offset — PURE, no I/O.
+ *
+ * The `(ToW - uptime)` offset is constant for a boot session: uptime and GPS time advance
+ * together until the device reboots. So once ANY segment of a session pins that constant, every
+ * other segment of the same session is anchored by it — **including segments earlier in the log
+ * than the one that supplied it**. That bidirectionality is the point: a log whose first five
+ * segments carry no absolute time, followed by a sixth that acquires a GPS fix, can have all six
+ * placed correctly instead of the first five being stranded.
+ *
+ * Session boundaries come from uptime RESETS. Uptime rises monotonically within a session, so a
+ * segment whose uptime starts below its predecessor's means the device rebooted, and the offset
+ * must NOT cross that boundary (D0069 §4 / SN-8339 — the offset is per-boot-session).
+ *
+ * Donor selection is authority-before-position, matching the within-segment consensus rule:
+ * strongest tier, then best-corroborated, then earliest. Only `firstHand()` analyses may donate.
+ *
+ * Kept pure so the policy is testable without building an index or touching a file — the same
+ * reason `ISLogReader::findGaps` is pure.
+ *
+ * @param perSegment  Per-segment analyses **in log (filename) order**.
+ * @return            Adoption instructions; segments that need none are absent. A segment that
+ *                    already has a first-hand anchor, or that has no uptime-domain records to
+ *                    project onto, never appears.
+ *
+ * @note SN-8629 / SN-8704. Replaces a forward-only pairwise chain that could only push
+ *       information later in the log, never earlier.
+ */
+std::vector<SessionAdoption>
+    planSessionAdoptions(const std::vector<AnchorAnalysis>& perSegment);
 
 }  // namespace inertial_sense
 

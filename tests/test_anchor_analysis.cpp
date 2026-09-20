@@ -558,6 +558,164 @@ TEST(AnchorCascade, TierNamesAreAllDistinctAndNonEmpty) {
 }
 
 // =====================================================================================
+// Session offset propagation — pure, no files (planSessionAdoptions)
+// =====================================================================================
+
+namespace {
+
+//! A segment analysis with only the fields the planner reads.
+AnchorAnalysis seg(AnchorTier tier, int64_t offsetMs, uint64_t upMin, uint64_t upMax,
+                   uint32_t anchorDid = 0,
+                   AnchorConsensus cons = AnchorConsensus::Uncorroborated) {
+    AnchorAnalysis a;
+    a.tier          = tier;
+    a.consensus     = tier == AnchorTier::None ? AnchorConsensus::NotApplicable : cons;
+    a.offsetMs      = offsetMs;
+    a.uptimeMinMs   = upMin;
+    a.uptimeMaxMs   = upMax;
+    a.uptimeRecords = (upMin != 0) ? 100 : 0;
+    a.anchorDid     = anchorDid;
+    if (tier != AnchorTier::None) {
+        a.anchoredStartMs = static_cast<uint64_t>(static_cast<int64_t>(upMin) + offsetMs);
+        a.anchoredEndMs   = static_cast<uint64_t>(static_cast<int64_t>(upMax) + offsetMs);
+    }
+    return a;
+}
+
+} // namespace
+
+TEST(SessionAdoption, OffsetPropagatesBACKWARDToEarlierSegments) {
+    // THE case the old forward-only chain could not do. Segments 0..2 carry no absolute time;
+    // segment 3 acquires a GPS fix. Everything needed to place 0..2 is in the log, and the
+    // offset is a session constant, so all three must be re-anchored from a LATER segment.
+    const int64_t off = 306'081'792;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::None,             0,   1'000,  60'000),
+        seg(AnchorTier::None,             0,  60'500, 120'000),
+        seg(AnchorTier::None,             0, 120'500, 180'000),
+        seg(AnchorTier::PayloadToWBridge, off, 180'500, 240'000, DID_SYS_PARAMS),
+    };
+    const auto plan = planSessionAdoptions(in);
+
+    ASSERT_EQ(plan.size(), 3u) << "all three unanchored segments must adopt";
+    for (const auto& a : plan) {
+        EXPECT_LT(a.segment, 3u);
+        EXPECT_EQ(a.offsetMs, off);
+        EXPECT_EQ(a.donorDid, static_cast<uint32_t>(DID_SYS_PARAMS));
+        EXPECT_FALSE(a.donorIsEarlier) << "the donor is segment 3 -- later than every adopter";
+    }
+}
+
+TEST(SessionAdoption, OffsetPropagatesForwardToo) {
+    const int64_t off = 306'081'792;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWBridge, off, 1'000, 60'000, DID_SYS_PARAMS),
+        seg(AnchorTier::None,             0,  60'500, 120'000),
+    };
+    const auto plan = planSessionAdoptions(in);
+    ASSERT_EQ(plan.size(), 1u);
+    EXPECT_EQ(plan[0].segment, 1u);
+    EXPECT_TRUE(plan[0].donorIsEarlier);
+}
+
+TEST(SessionAdoption, OffsetDoesNotCrossAnUptimeReset) {
+    // D0069 s4 / SN-8339: the offset is per-BOOT-SESSION. Segment 2's uptime restarts near
+    // zero, so the device rebooted and segment 0's constant no longer applies to it.
+    const int64_t off = 306'081'792;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWBridge, off, 100'000, 160'000, DID_SYS_PARAMS),
+        seg(AnchorTier::None,             0,   160'500, 220'000),
+        seg(AnchorTier::None,             0,       500,  60'000),   // <-- reboot
+        seg(AnchorTier::None,             0,    60'500, 120'000),
+    };
+    const auto plan = planSessionAdoptions(in);
+    ASSERT_EQ(plan.size(), 1u) << "only the pre-reboot sibling may adopt";
+    EXPECT_EQ(plan[0].segment, 1u);
+}
+
+TEST(SessionAdoption, EachSessionUsesItsOwnDonor) {
+    const int64_t offA = 306'081'792, offB = 500'000'000;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWBridge, offA, 100'000, 160'000, DID_SYS_PARAMS),
+        seg(AnchorTier::None,             0,    160'500, 220'000),
+        seg(AnchorTier::None,             0,        500,  60'000),        // reboot
+        seg(AnchorTier::PayloadToWBridge, offB,  60'500, 120'000, DID_GPX_STATUS),
+    };
+    const auto plan = planSessionAdoptions(in);
+    ASSERT_EQ(plan.size(), 2u);
+    for (const auto& a : plan) {
+        if (a.segment == 1) { EXPECT_EQ(a.offsetMs, offA); EXPECT_TRUE(a.donorIsEarlier); }
+        if (a.segment == 2) { EXPECT_EQ(a.offsetMs, offB); EXPECT_FALSE(a.donorIsEarlier); }
+    }
+}
+
+TEST(SessionAdoption, FirstHandAnchorsAreNeverOverridden) {
+    const int64_t offA = 306'081'792, offB = 306'081'000;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWBridge, offA, 1'000, 60'000, DID_SYS_PARAMS),
+        seg(AnchorTier::PayloadToWSingle, offB, 60'500, 120'000, DID_GNSS1_POS),
+    };
+    const auto plan = planSessionAdoptions(in);
+    EXPECT_TRUE(plan.empty()) << "both established their own anchor from their own payload";
+}
+
+TEST(SessionAdoption, StrongerTierWinsTheDonorRole) {
+    const int64_t offSingle = 1'000, offBridge = 2'000;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWSingle, offSingle, 1'000, 60'000, DID_GNSS1_POS),
+        seg(AnchorTier::None,             0,        60'500, 120'000),
+        seg(AnchorTier::PayloadToWBridge, offBridge, 120'500, 180'000, DID_SYS_PARAMS),
+    };
+    const auto plan = planSessionAdoptions(in);
+    ASSERT_EQ(plan.size(), 1u);
+    EXPECT_EQ(plan[0].offsetMs, offBridge) << "tier 5 outranks tier 4 regardless of position";
+    EXPECT_EQ(plan[0].donorDid, static_cast<uint32_t>(DID_SYS_PARAMS));
+}
+
+TEST(SessionAdoption, BetterCorroborationBreaksATierTie) {
+    const int64_t offLone = 1'000, offCorrob = 2'000;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWBridge, offLone,   1'000, 60'000, DID_SYS_PARAMS,
+            AnchorConsensus::Uncorroborated),
+        seg(AnchorTier::None,             0,        60'500, 120'000),
+        seg(AnchorTier::PayloadToWBridge, offCorrob, 120'500, 180'000, DID_GPX_STATUS,
+            AnchorConsensus::Corroborated),
+    };
+    const auto plan = planSessionAdoptions(in);
+    ASSERT_EQ(plan.size(), 1u);
+    EXPECT_EQ(plan[0].offsetMs, offCorrob) << "equal tier -> the corroborated claim donates";
+}
+
+TEST(SessionAdoption, SegmentWithNoUptimeRecordsCannotAdopt) {
+    // An uptime->ToW offset has nothing to project onto without uptime-domain records.
+    const int64_t off = 306'081'792;
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::PayloadToWBridge, off, 1'000, 60'000, DID_SYS_PARAMS),
+        seg(AnchorTier::None,             0,       0,      0),   // no uptime records at all
+    };
+    EXPECT_TRUE(planSessionAdoptions(in).empty());
+}
+
+TEST(SessionAdoption, NoDonorMeansNoPlan) {
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::None, 0, 1'000, 60'000),
+        seg(AnchorTier::None, 0, 60'500, 120'000),
+    };
+    EXPECT_TRUE(planSessionAdoptions(in).empty());
+    EXPECT_TRUE(planSessionAdoptions({}).empty());
+}
+
+TEST(SessionAdoption, AnInheritedAnchorIsNotItselfADonor) {
+    // BridgedToW is a relay, not a source. If it could donate, one weak claim would propagate
+    // indefinitely while looking increasingly well-established.
+    std::vector<AnchorAnalysis> in = {
+        seg(AnchorTier::BridgedToW, 306'081'792, 1'000, 60'000, DID_SYS_PARAMS),
+        seg(AnchorTier::None,       0,          60'500, 120'000),
+    };
+    EXPECT_TRUE(planSessionAdoptions(in).empty());
+}
+
+// =====================================================================================
 // Filename anchor parsing
 // =====================================================================================
 

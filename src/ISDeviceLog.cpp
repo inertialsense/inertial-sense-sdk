@@ -133,29 +133,63 @@ ISExpected<ISDeviceLog>
     //
     // When either fails, filename-lexicographic order stands -- always safe per D0051, and
     // correct for the comparable case too, which is the whole premise of a sortable pattern.
-    // SN-8629: chain each segment's anchor analysis to its predecessor's BEFORE testing
-    // orderability. A reader is built from one segment in isolation, so on its own it can only
-    // reach the tiers a segment establishes alone -- the chained tiers (`BridgedToW`,
-    // `PrevSegmentChained`) and the durability-regression check need a predecessor, and this is
-    // the only place that has one. Without this, a segment carrying no absolute time of its own
-    // fell all the way to `FilenameAnchor` (or `None`) even when its uptime ran continuously on
-    // from a well-anchored predecessor, which is strictly worse information than was available.
+    // SN-8629 / SN-8704: place every segment on the absolute frame BEFORE testing orderability.
     //
-    // The walk is in FILENAME order, which is the order established above and is timestamp-
-    // sortable by construction (D0051). That resolves the apparent circularity of "ordering needs
-    // anchors, chaining needs an order": filename order is the presumed-correct sequence, the
-    // anchors either confirm it or correct it below. Costs no I/O -- each re-resolve works off
-    // the record index already in memory.
+    // A reader is built from one segment in isolation, so on its own it can only reach the tiers
+    // a segment establishes from its own payload. The chained tiers need sibling context, and
+    // this is the only layer that has it.
+    //
+    // This walks the log by RECORDING SESSION rather than pairwise, which is what makes the
+    // propagation BIDIRECTIONAL. The (ToW - uptime) offset is a constant for a boot session:
+    // uptime and GPS time advance together until the device reboots. So the moment ANY segment
+    // of a session pins that constant, every other segment of the same session is anchored by
+    // it -- including segments EARLIER in the log than the one that supplied it. The previous
+    // implementation was a single forward pass, which could only ever push information later:
+    // a log whose first five segments had no absolute time of their own, followed by a sixth
+    // that acquired a GPS fix, left the first five stranded at FilenameAnchor or None even
+    // though the log contained everything needed to place them.
+    //
+    // Session boundaries come from uptime RESETS. Uptime rises monotonically within a session,
+    // so a segment whose uptime starts below its predecessor's means the device rebooted, and
+    // the offset must NOT be carried across that boundary (D0069 s4 / SN-8339: the offset is
+    // per-boot-session, not per-log).
+    //
+    // Doing it this way also dissolves the circularity the forward chain papered over --
+    // "ordering needs anchors, chaining needs an order". Session grouping only needs the
+    // filename order, which is timestamp-sortable by construction (D0051); the anchors then
+    // either confirm that order or correct it below.
     {
+        std::vector<AnchorAnalysis> analyses;
+        analyses.reserve(readers.size());
+        for (const auto& r : readers) analyses.push_back(r.anchorAnalysis());
+
+        for (const auto& a : planSessionAdoptions(analyses)) {
+            readers[a.segment].adoptSessionOffset(a.offsetMs, a.donorDid, a.donorIsEarlier);
+        }
+
+        // Anything still unanchored takes the per-segment fallbacks (filename, or none) plus the
+        // durability-regression check against its predecessor. Segments that adopted a session
+        // offset are already placed and are left alone.
         AnchorAnalysis prevAnalysis{};
         const AnchorAnalysis* prev = nullptr;
         for (auto& r : readers) {
-            r.reanalyzeWithPrevious(prev);
+            if (!r.anchorAnalysis().anchored()) {
+                r.reanalyzeWithPrevious(prev);
+            }
             prevAnalysis = r.anchorAnalysis();
             prev         = &prevAnalysis;
         }
     }
 
+    // Every segment must carry an anchor of at least `minimumOrderableTier` before the re-sort
+    // is allowed to touch the filename order established above. A single unanchored segment
+    // disables it for the whole composition, because a missing key cannot be compared -- and
+    // the pre-SN-8629 comparator's attempt to tolerate one (`if (aT && bT && ...) return false`)
+    // made a zero key tie with every segment while non-zero keys still ordered among
+    // themselves. That is not a strict weak ordering, so `std::stable_sort` was undefined.
+    //
+    // Mutual comparability is guaranteed by construction: every `anchoredStartMs` is expressed
+    // in the same absolute frame.
     const bool allSegmentsOrderable = std::all_of(readers.begin(), readers.end(),
         [](const ISLogReader& r) {
             const AnchorAnalysis& a = r.anchorAnalysis();

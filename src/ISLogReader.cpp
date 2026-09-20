@@ -699,6 +699,33 @@ ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::pa
     return r->anchorAnalysis();
 }
 
+void ISLogReader::adoptSessionOffset(int64_t offsetMs, uint32_t donorDid,
+                                     bool donorIsEarlier) {
+    // First-hand evidence always wins over an inherited constant.
+    if (anchor_.tier >= AnchorTier::PayloadToWSingle) return;
+    // Nothing to project onto: a segment with no uptime-domain records cannot be placed by an
+    // uptime->ToW offset. (A ToW-only segment already carries absolute time of its own.)
+    if (anchor_.uptimeRecords == 0 || anchor_.uptimeMinMs == 0) return;
+
+    anchor_.tier      = AnchorTier::BridgedToW;
+    anchor_.offsetMs  = offsetMs;
+    anchor_.anchorDid = donorDid;
+    anchor_.anchoredStartMs =
+        static_cast<uint64_t>(static_cast<int64_t>(anchor_.uptimeMinMs) + offsetMs);
+    anchor_.anchoredEndMs =
+        static_cast<uint64_t>(static_cast<int64_t>(anchor_.uptimeMaxMs) + offsetMs);
+    // The anchor is inherited, not witnessed -- say so, and say which way it came from, because
+    // a backward adoption is the case a reader is least likely to expect.
+    anchor_.anomalies.push_back(
+        std::string("no absolute time in this segment; adopted the session offset ") +
+        std::to_string(offsetMs) + " ms established by DID " + std::to_string(donorDid) +
+        (donorIsEarlier ? " in an earlier segment" : " in a LATER segment (re-anchored backwards)"));
+
+    log_debug(IS_LOG_ISLOG, "%s: adopted session offset %lld ms from DID %u (%s)",
+              rawPath_.filename().c_str(), (long long)offsetMs, donorDid,
+              donorIsEarlier ? "earlier" : "later");
+}
+
 void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
     AnchorCollector collector;
     collector.setFilenameAnchorMs(filenameAnchorMs(rawPath_));

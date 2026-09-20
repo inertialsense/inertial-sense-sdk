@@ -249,6 +249,30 @@ public:
     }
 
     /**
+     * @brief Adopt an absolute-time offset established by ANOTHER segment of the same recording
+     *        session, when this segment could not establish one itself.
+     *
+     * The `(ToW - uptime)` offset is a constant for a boot session: uptime and GPS time advance
+     * together until the device reboots. So once ANY segment of a session pins that constant,
+     * every other segment of the same session is anchored by it — including segments **earlier**
+     * in the log than the one that supplied it. That is the point of this entry: a log whose
+     * first five segments have no absolute time of their own, followed by one that acquires a
+     * GPS fix, can have all six placed correctly rather than the first five being stranded.
+     *
+     * Self-established anchors are never overridden: a segment that pinned the constant from its
+     * own payload keeps that, since it is first-hand evidence.
+     *
+     * @param offsetMs       The session's `(ToW - uptime)` constant.
+     * @param donorDid       DID that established it, for the audit trail.
+     * @param donorIsEarlier True when the donating segment precedes this one in the log.
+     *
+     * @note SN-8629 / SN-8704, Kyle 2026-09-19: "as soon as we have a TRUSTWORTHY absolute time
+     *       - we can go back and re-anchor the entire log". Replaces a forward-only pairwise
+     *       chain, which could only ever push information later in the log, never earlier.
+     */
+    void adoptSessionOffset(int64_t offsetMs, uint32_t donorDid, bool donorIsEarlier);
+
+    /**
      * @brief Parse the `YYYYMMDD_HHMMSS` field of a segment filename into Unix ms (UTC).
      *
      * The lowest rung of the anchor cascade: a log with no absolute time anywhere in its records

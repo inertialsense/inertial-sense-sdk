@@ -388,6 +388,55 @@ AnchorAnalysis AnchorCollector::finish(const AnchorAnalysis* prev) {
     return out_;
 }
 
+std::vector<SessionAdoption>
+    planSessionAdoptions(const std::vector<AnchorAnalysis>& perSegment) {
+    std::vector<SessionAdoption> out;
+    const std::size_t n = perSegment.size();
+    if (n == 0) return out;
+
+    // --- Partition into recording sessions on uptime resets.
+    std::vector<std::size_t> sessionOf(n, 0);
+    std::size_t sessions = 0;
+    uint64_t    prevUptimeMin = 0;
+    for (std::size_t i = 0; i < n; ++i) {
+        const uint64_t up = perSegment[i].uptimeMinMs;
+        if (i > 0 && up != 0 && prevUptimeMin != 0 && up < prevUptimeMin) {
+            ++sessions;   // uptime went backwards: the device rebooted here
+        }
+        sessionOf[i] = sessions;
+        if (up != 0) prevUptimeMin = up;
+    }
+
+    // --- Per session, pick the most trustworthy FIRST-HAND anchor and share it both ways.
+    for (std::size_t sess = 0; sess <= sessions; ++sess) {
+        std::size_t donor = n;
+        for (std::size_t i = 0; i < n; ++i) {
+            if (sessionOf[i] != sess) continue;
+            const AnchorAnalysis& a = perSegment[i];
+            if (!a.firstHand() || a.offsetMs == 0) continue;
+            if (donor == n) { donor = i; continue; }
+            const AnchorAnalysis& d = perSegment[donor];
+            if (a.tier > d.tier || (a.tier == d.tier && a.consensus > d.consensus)) donor = i;
+        }
+        if (donor == n) continue;   // no absolute time anywhere in this session
+
+        const AnchorAnalysis& d = perSegment[donor];
+        for (std::size_t i = 0; i < n; ++i) {
+            if (sessionOf[i] != sess || i == donor) continue;
+            const AnchorAnalysis& a = perSegment[i];
+            if (a.firstHand()) continue;                              // keep first-hand evidence
+            if (a.uptimeRecords == 0 || a.uptimeMinMs == 0) continue;  // nothing to project onto
+            SessionAdoption s;
+            s.segment        = i;
+            s.offsetMs       = d.offsetMs;
+            s.donorDid       = d.anchorDid;
+            s.donorIsEarlier = (donor < i);
+            out.push_back(s);
+        }
+    }
+    return out;
+}
+
 bool AnchorCollector::needsPayload(uint32_t did) noexcept {
     // Only the dual-domain bridge records are read out of their payload. Tier-4 ToW-only
     // candidates are recognized from the record's index timestamp alone, so a caller working
