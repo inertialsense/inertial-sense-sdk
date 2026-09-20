@@ -36,6 +36,9 @@
 
 #include <unistd.h>
 
+// SN-8704: `resolve()` now requires an arrival index. These tests resolve SYNTHETIC raw
+// values rather than records, so they pass `ISRecordView::kNoArrivalIndex` -- the honest
+// "no arrival context" value. A real record caller must always pass a real index.
 using namespace inertial_sense;
 namespace fs = std::filesystem;
 
@@ -228,7 +231,8 @@ TEST_F(TimeResolverTest, EmptyLogFallsBackToFileTimeAnchor) {
 
     EXPECT_TRUE(resolverR->syncPoints().empty());
 
-    TimeStamp t1 = resolverR->resolve(50000, kFixtureSerial);
+    TimeStamp t1 = resolverR->resolve(50000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t1.source, TimeSource::FileTimeAnchored);
     EXPECT_EQ(t1.confidence, TimeConfidence::Unknown);
     EXPECT_EQ(t1.deviceId, kFixtureSerial);
@@ -236,7 +240,8 @@ TEST_F(TimeResolverTest, EmptyLogFallsBackToFileTimeAnchor) {
 
     // The anchor is additive: two queries a known delta apart resolve that
     // same delta apart.
-    TimeStamp t2 = resolverR->resolve(60000, kFixtureSerial);
+    TimeStamp t2 = resolverR->resolve(60000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t2.value - t1.value, 10000u);
 }
 
@@ -263,7 +268,8 @@ TEST_F(TimeResolverTest, FileAnchorParsesTimestampFromFilename) {
     tm.tm_hour = 10;          tm.tm_min = 15;    tm.tm_sec  = 30;
     const int64_t expectedMs = static_cast<int64_t>(timegm(&tm)) * 1000;
 
-    const TimeStamp t = resolver->resolve(0, kFixtureSerial);
+    const TimeStamp t = resolver->resolve(0, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.source, TimeSource::FileTimeAnchored);
     EXPECT_EQ(t.confidence, TimeConfidence::Unknown);
     EXPECT_EQ(static_cast<int64_t>(t.value), expectedMs);
@@ -290,7 +296,8 @@ TEST_F(TimeResolverTest, FileAnchorFallsBackToLastWriteTimeWhenNameDoesNotParse)
     const auto afterMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
-    const TimeStamp t = resolver->resolve(0, kFixtureSerial);
+    const TimeStamp t = resolver->resolve(0, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.source, TimeSource::FileTimeAnchored);
     // Anchored near "now" (the file's last-write time), within generous slack
     // for test execution time -- proves the ctime tier fired, not a stale or
@@ -341,7 +348,8 @@ TEST_F(TimeResolverTest, ResolveExactAtSyncPoint) {
     auto resolver = ISTimeResolver::build(log.value());
     ASSERT_TRUE(resolver.has_value());
 
-    auto t = resolver->resolve(110000, kFixtureSerial);
+    auto t = resolver->resolve(110000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.source, TimeSource::PayloadToW);
     EXPECT_EQ(t.confidence, TimeConfidence::Exact);
     // SN-8107 / D0066: epoch-anchored output (gpsWeek=2300 in makeIns2).
@@ -376,7 +384,8 @@ TEST_F(TimeResolverTest, SessionUptimeRecordsBridgeViaSysParamsOffset) {
     ASSERT_TRUE(resolver.has_value());
 
     // Mag uptime 50 s -> ToW 50000 + 199,995,000 = 200,045,000 ms in week 2300.
-    auto t = resolver->resolve(50'000, kFixtureSerial);
+    auto t = resolver->resolve(50'000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
     // It is bridged (real timeline point), NOT excluded as SessionOnly — the
     // pre-fix bug tagged it SessionOnly/Unknown and dropped it from the extent.
@@ -412,7 +421,8 @@ TEST_F(TimeResolverTest, UnsyncedSysParamsDoesNotEstablishOffset) {
     // The bogus offset (if the gate were absent) would bridge mag uptime 50 s to
     // 200,045,000 ms. With the gate, the unsynced SYS_PARAMS is ignored, so the
     // mag does NOT land at that value.
-    auto t = resolver->resolve(50'000, kFixtureSerial);
+    auto t = resolver->resolve(50'000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_NE(t.value, expectedUnixMsForFixtureWeek(200'045'000ull, 2300));
 }
 
@@ -446,7 +456,8 @@ TEST_F(TimeResolverTest, SyncedSysParamsAloneEstablishesSyncPoints) {
     // Exact match against one of the sync points' own raw .idx timestamp
     // (== its timeOfWeekMs, the sync-record identity convention) resolves
     // PayloadToW/Exact -- not FileTimeAnchored/Unknown.
-    const TimeStamp t = resolver->resolve(200'010'000u, kFixtureSerial);
+    const TimeStamp t = resolver->resolve(200'010'000u, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.source, TimeSource::PayloadToW);
     EXPECT_EQ(t.confidence, TimeConfidence::Exact);
 }
@@ -511,7 +522,8 @@ TEST_F(TimeResolverTest, MultiBootSessionsBridgeUptimePerSession) {
     // the log-global offset (which the reboot makes wrong for session 1) and
     // lands somewhere other than its true 250,000,000 ms — the exact multi-boot
     // mis-resolution this overload fixes.
-    auto t1NoKey = resolver->resolve(100'000, kFixtureSerial);
+    auto t1NoKey = resolver->resolve(100'000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_NE(t1NoKey.value, t1.value);
 }
 
@@ -568,7 +580,8 @@ TEST_F(TimeResolverTest, ResolveInterpolated) {
     // Slope is identity (host==ToW for v2 sync points), so the result
     // ToW value equals the input; we then assert against the
     // epoch-anchored output (SN-8107 / D0066).
-    auto t = resolver->resolve(105000, kFixtureSerial);
+    auto t = resolver->resolve(105000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(t.confidence, TimeConfidence::Interpolated);
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000));
@@ -591,11 +604,13 @@ TEST_F(TimeResolverTest, ResolveExtrapolated) {
     auto resolver = ISTimeResolver::build(log.value());
     ASSERT_TRUE(resolver.has_value());
 
-    auto fwd = resolver->resolve(150000, kFixtureSerial);
+    auto fwd = resolver->resolve(150000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(fwd.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(fwd.confidence, TimeConfidence::ExtrapolatedForward);
 
-    auto bwd = resolver->resolve(50000, kFixtureSerial);
+    auto bwd = resolver->resolve(50000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(bwd.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
 }
@@ -631,7 +646,8 @@ TEST_F(TimeResolverTest, PreFixWeekZeroAnchorsToValidWeek) {
     EXPECT_EQ(resolver->syncPoints().front().gpsWeek, 0u);
 
     // Must anchor to the valid week 2300, NOT week 0.
-    auto t = resolver->resolve(105000, kFixtureSerial);
+    auto t = resolver->resolve(105000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000, 2300));
     EXPECT_GE(t.value, 315'964'800'000ULL + 2300ULL * 604'800'000ULL);  // real-year domain
     EXPECT_NE(t.value, 105000ULL);  // the un-anchored ToW-only (~1980) result
@@ -651,7 +667,8 @@ TEST_F(TimeResolverTest, AllWeekZeroFallsBackToToWOnly) {
     ASSERT_TRUE(log.has_value());
     auto resolver = ISTimeResolver::build(log.value());
     ASSERT_TRUE(resolver.has_value());
-    auto t = resolver->resolve(105000, kFixtureSerial);
+    auto t = resolver->resolve(105000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.value, 105000ULL);  // ToW-only passthrough, no epoch anchor
 }
 
@@ -677,7 +694,8 @@ TEST_F(TimeResolverTest, StartupTransientWeekLosesToDurableFix) {
     auto resolver = ISTimeResolver::build(log.value());
     ASSERT_TRUE(resolver.has_value());
     // Anchor to the durable week 2300, not the transient 1111.
-    auto t = resolver->resolve(300000, kFixtureSerial);
+    auto t = resolver->resolve(300000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(300000, 2300));
 }
 
@@ -700,12 +718,14 @@ TEST_F(TimeResolverTest, PreFixToWBeforeDurableWindowIsSessionOnly) {
     ASSERT_TRUE(resolver.has_value());
 
     // Pre-fix ToW (~1 s) is far before the durable window (~4.6 d) -> excluded.
-    auto pre = resolver->resolve(1000, kFixtureSerial);
+    auto pre = resolver->resolve(1000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(pre.source, TimeSource::SessionOnly);
     EXPECT_EQ(pre.confidence, TimeConfidence::Unknown);
 
     // A query inside the durable window still resolves (2300-anchored).
-    auto ok = resolver->resolve(400100000, kFixtureSerial);
+    auto ok = resolver->resolve(400100000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(ok.value, expectedUnixMsForFixtureWeek(400100000, 2300));
 }
 
@@ -820,20 +840,23 @@ TEST_F(TimeResolverTest, CrossDomainBridgeUnifiesPimuIntoTowFrame) {
     // Cross-domain bridge: resolve a session-uptime query (e.g. 100 ms).
     // Expected ToW: offset = 411500 - 150 = 411350; bridged ToW = 411450.
     // Expected epoch-anchored: bridged ToW + (2300 * 604800000) + 315964800000.
-    const TimeStamp bridged = resolver->resolve(100u, kFixtureSerial);
+    const TimeStamp bridged = resolver->resolve(100u, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(bridged.source, TimeSource::ResolvedViaSync);
     EXPECT_EQ(bridged.confidence, TimeConfidence::ExtrapolatedBackward);
     EXPECT_EQ(bridged.value, expectedUnixMsForFixtureWeek(411450));
 
     // A larger session-uptime query (e.g. 150 ms = exactly the captured
     // actualHostTimeMs) bridges to the sync's ToW, epoch-anchored.
-    const TimeStamp atSync = resolver->resolve(150u, kFixtureSerial);
+    const TimeStamp atSync = resolver->resolve(150u, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(atSync.value, expectedUnixMsForFixtureWeek(411500));
 
     // ToW-domain query (already in the resolver's anchor frame) falls
     // through the non-bridge path: 411500 = first sync, Exact match,
     // epoch-anchored.
-    const TimeStamp exact = resolver->resolve(411500u, kFixtureSerial);
+    const TimeStamp exact = resolver->resolve(411500u, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(exact.source, TimeSource::PayloadToW);
     EXPECT_EQ(exact.confidence, TimeConfidence::Exact);
     EXPECT_EQ(exact.value, expectedUnixMsForFixtureWeek(411500));
@@ -868,7 +891,8 @@ TEST_F(TimeResolverTest, CrossDomainBridgeSkippedWhenNoPreSyncNonSync) {
     // Result IS epoch-anchored (sync's gpsWeek=2300), so the value is
     // GPS-epoch + 2300 weeks + 100 ms.
     // SN-8107/D0066: prior expectation (ToW-0) predated epoch anchoring.
-    const TimeStamp legacy = resolver->resolve(100u, kFixtureSerial);
+    const TimeStamp legacy = resolver->resolve(100u, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(legacy.confidence, TimeConfidence::ExtrapolatedBackward);
     EXPECT_EQ(legacy.value, expectedUnixMsForFixtureWeek(100));
 }
@@ -888,14 +912,16 @@ TEST_F(TimeResolverTest, SingleSyncPointDegenerateSlope) {
     ASSERT_TRUE(resolver.has_value());
     ASSERT_EQ(resolver->syncPoints().size(), 1u);
 
-    auto t = resolver->resolve(105000, kFixtureSerial);
+    auto t = resolver->resolve(105000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.confidence, TimeConfidence::ExtrapolatedForward);
     // Slope defaults to 1.0 with a single sync point: ToW = 100_000 +
     // (105_000 - 100_000) = 105_000, then epoch-anchored (gpsWeek=2300).
     // SN-8107/D0066: prior expectation (raw ToW) predated epoch anchoring.
     EXPECT_EQ(t.value, expectedUnixMsForFixtureWeek(105000));
 
-    auto bwd = resolver->resolve(95000, kFixtureSerial);
+    auto bwd = resolver->resolve(95000, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
     EXPECT_EQ(bwd.value, expectedUnixMsForFixtureWeek(95000));
 }
@@ -924,7 +950,8 @@ TEST_F(TimeResolverTest, AlreadyAnchoredInputPassesThroughUnchanged) {
     // resolver must treat it as already-anchored and return it verbatim, NOT
     // run gpsToUnixMs on it (which would yield ~2x = year 2082).
     constexpr uint64_t kAnchored2026 = 1779821742200ULL;
-    const TimeStamp t = resolver->resolve(kAnchored2026, kFixtureSerial);
+    const TimeStamp t = resolver->resolve(kAnchored2026, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.value, kAnchored2026);
     EXPECT_LT(t.value, 2ULL * kAnchored2026);  // explicitly: not doubled
 }
@@ -945,10 +972,12 @@ TEST_F(TimeResolverTest, ResolveIsIdempotent) {
     ASSERT_TRUE(resolver.has_value());
 
     // First pass: a raw ToW query resolves to an epoch-anchored Unix-ms value.
-    const TimeStamp once = resolver->resolve(411500u, kFixtureSerial);
+    const TimeStamp once = resolver->resolve(411500u, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(once.value, expectedUnixMsForFixtureWeek(411500));
     // Second pass on the already-resolved value is a no-op.
-    const TimeStamp twice = resolver->resolve(once.value, kFixtureSerial);
+    const TimeStamp twice = resolver->resolve(once.value, kFixtureSerial,
+                          ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(twice.value, once.value);
 }
 
@@ -998,7 +1027,7 @@ TEST(TimeResolverLiveFixture, RealCltoolCaptureSmoke) {
     // Resolve the first sync point's hostTimeMs → must be Exact.
     if (!syncs.empty()) {
         const auto first = syncs.front();
-        const auto ts = resolver.resolve(first.hostTimeMs, first.deviceId);
+        const auto ts = resolver.resolve(first.hostTimeMs, first.deviceId, ISRecordView::kNoArrivalIndex);
         EXPECT_EQ(ts.source, TimeSource::PayloadToW);
         EXPECT_EQ(ts.confidence, TimeConfidence::Exact);
         EXPECT_EQ(ts.value, first.payloadToWMs);
@@ -1006,7 +1035,7 @@ TEST(TimeResolverLiveFixture, RealCltoolCaptureSmoke) {
 
     // Resolve a point well before the first sync → ExtrapolatedBackward.
     if (!syncs.empty()) {
-        const auto bwd = resolver.resolve(0u, log->deviceId());
+        const auto bwd = resolver.resolve(0u, log->deviceId(), ISRecordView::kNoArrivalIndex);
         EXPECT_EQ(bwd.source, TimeSource::ResolvedViaSync);
         EXPECT_EQ(bwd.confidence, TimeConfidence::ExtrapolatedBackward);
     }

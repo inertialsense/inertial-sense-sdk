@@ -241,7 +241,7 @@ TEST(V21EndToEnd, PseudoRandomMultiDidWithTimelessPortMonitor) {
     // (kStartTowMs + delta) — i.e. the moment it was actually logged.
     uint64_t prevResolved = 0;
     for (const uint64_t d : pmDeltas) {
-        const TimeStamp r = resolverR->resolve(d, kSerial);
+        const TimeStamp r = resolverR->resolve(d, kSerial, ISRecordView::kNoArrivalIndex);
         EXPECT_EQ(r.source, TimeSource::ResolvedViaSync) << "timeless record must bridge via sync, at delta " << d;
         const uint64_t want = expectedUnixMs(kStartTowMs + d);
         EXPECT_NEAR(static_cast<double>(r.value), static_cast<double>(want), 100.0)

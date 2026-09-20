@@ -197,38 +197,31 @@ public:
     // -----------------------------------------------------------------
 
     /**
-     * @brief Resolve a single record's stored timestamp to a tagged
-     *        `TimeStamp`.
+     * @brief Resolve a record's stored timestamp to a tagged `TimeStamp`.
      *
-     * @param hostTimeMs  The record's `.idx` `timestamp` field. For
-     *                    HAS_TOW records this is already the ToW; for
-     *                    non-HAS_TOW records it's host uptime delta.
-     * @param deviceId    Source device id; baked into the returned
-     *                    `TimeStamp`.
-     * @return            Tagged time:
-     *                    - `PayloadToW / Exact` if `hostTimeMs` matches
-     *                      a sync point exactly.
-     *                    - `ResolvedViaSync / Interpolated` between
-     *                      sync points.
-     *                    - `ResolvedViaSync / ExtrapolatedForward` past
-     *                      the last sync point.
-     *                    - `ResolvedViaSync / ExtrapolatedBackward`
-     *                      before the first sync point.
-     *                    - `SessionOnly / Unknown` when the resolver
-     *                      has no sync points to anchor against.
-     */
-    TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId) const;
-
-    /**
-     * @brief SN-8339: arrival-keyed resolve for multi-boot logs.
+     * @param hostTimeMs    The record's `.idx` `timestamp` field. For HAS_TOW records this is
+     *                      already the ToW; for non-HAS_TOW records it is a host-uptime delta.
+     * @param deviceId      Source device id; baked into the returned `TimeStamp`.
+     * @param arrivalIndex  The record's position in the device's global record-arrival order.
+     *                      Use `ISRecordView::arrivalIndex()`, which `ISDeviceLog` populates.
+     *                      Pass `ISRecordView::kNoArrivalIndex` ONLY when the query is not a
+     *                      record at all (e.g. resolving a span endpoint): the arrival-keyed
+     *                      behaviours are then skipped, which is correct for a non-record but
+     *                      WRONG for a record. Never pass it to avoid plumbing an index.
      *
-     * Identical to `resolve(hostTimeMs, deviceId)` EXCEPT that, when the log has
-     * more than one power-on session, `arrivalIndex` (the record's position in
-     * the device's global record-arrival order) selects which session's
-     * uptime->ToW offset bridges a session-uptime input — resolving the
-     * ambiguity where the same small uptime value occurs in two sessions. With a
-     * single session (or an out-of-range key), this is byte-identical to the
-     * no-key overload, so existing callers that don't pass a key are unaffected.
+     * @return  Tagged time: `PayloadToW / Exact` on an exact sync-point match;
+     *          `ResolvedViaSync` with `Interpolated` / `ExtrapolatedForward` /
+     *          `ExtrapolatedBackward` around the sync-anchored region; `SessionOnly / Unknown`
+     *          when there is nothing to anchor against.
+     *
+     * @note The arrival index is REQUIRED, not optional. There used to be a
+     *       `resolve(hostTimeMs, deviceId)` overload, and every application call site used it —
+     *       which silently disabled two arrival-keyed behaviours those callers needed:
+     *       SN-8339's per-boot-session offset selection, and SN-8704's re-timing of records
+     *       whose DID's clock stalled. The latter is not a refinement: 2,107 records sharing
+     *       one frozen timestamp cannot be told apart by `hostTimeMs`, so without the arrival
+     *       index the resolver returns the same known-bad instant for all of them. The overload
+     *       was deleted rather than deprecated so the compiler finds every caller.
      *
      * @param hostTimeMs   Record's `.idx` timestamp field.
      * @param deviceId     Source device id.

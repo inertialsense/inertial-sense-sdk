@@ -1030,14 +1030,6 @@ TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
                                           TimeConfidence::Interpolated);
 }
 
-TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const {
-    // No arrival key: bridge with the log-global uptime offset. Byte-identical
-    // to the pre-SN-8339 single-offset behavior — every existing caller keeps
-    // its exact results and multi-boot logs simply use one offset (best effort).
-    return resolveImpl(hostTimeMs, deviceId, uptimeToTowOffsetMs_,
-                       haveUptimeOffset_);
-}
-
 TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
                                   uint64_t arrivalIndex) const {
     // SN-8704: does this record belong to a run where its DID's stamped clock had STOPPED?
@@ -1048,7 +1040,8 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
     // This is checked BEFORE the session/offset logic below because the input `hostTimeMs` is
     // the very value we have decided not to trust; bridging it would just launder a known-bad
     // number through an otherwise-correct offset.
-    if (!stalledRuns_.empty() && !towTimeline_.empty()) {
+    if (!stalledRuns_.empty() && !towTimeline_.empty() &&
+        arrivalIndex != ISRecordView::kNoArrivalIndex) {
         for (const auto& run : stalledRuns_) {
             if (arrivalIndex < run.arrivalStart || arrivalIndex > run.arrivalEnd) continue;
             const uint64_t towMs = interpolateArrivalTime(towTimeline_, arrivalIndex);
@@ -1087,7 +1080,8 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
 ISTimeResolver::Stats ISTimeResolver::computeStats(const ISDeviceLog& log) const {
     Stats s{};
     for (auto v : log.allRecords()) {
-        const TimeStamp t = resolve(v.timestamp().value, log.deviceId());
+        const TimeStamp t = resolve(v.timestamp().value, log.deviceId(),
+                                    v.arrivalIndex());
         switch (t.confidence) {
             case TimeConfidence::Exact:                ++s.exact;        break;
             case TimeConfidence::Interpolated:         ++s.interpolated; break;
