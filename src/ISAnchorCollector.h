@@ -79,6 +79,15 @@ public:
      */
     void setFilenameAnchorMs(uint64_t ms) noexcept { filenameAnchorMs_ = ms; }
 
+    /**
+     * @brief Declare that this segment is the FIRST of its log (sequence `_0001`).
+     *
+     * Lets `finish()` establish the log's uptime zero from this segment's own uptime minimum.
+     * A later segment inherits that zero through `prev` instead; a log whose first segments were
+     * culled has no way to know it, and falls back to 0. See @ref AnchorAnalysis::logStartUptimeMs.
+     */
+    void setIsFirstSegmentOfLog(bool isFirst) noexcept { isFirstSegmentOfLog_ = isFirst; }
+
     /** @return  Number of records offered so far. */
     std::size_t recordsSeen() const noexcept { return seen_; }
 
@@ -170,6 +179,7 @@ private:
 
     uint64_t lastUptimeMs_    = 0;
     uint64_t filenameAnchorMs_ = 0;
+    bool     isFirstSegmentOfLog_ = false;
 
     std::map<uint32_t, StallState> stalls_;
 };

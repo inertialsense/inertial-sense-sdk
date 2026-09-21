@@ -94,6 +94,18 @@ bool hasSiblingSuccessor(const fs::path& rawPath) noexcept {
     return fs::exists(sibling, ec);
 }
 
+//! True when @p seg is sequence `_0001` of its log — the only reliable way to know that nothing
+//! precedes it, and therefore that its uptime minimum IS the log's uptime zero. A log whose early
+//! segments were culled starts at a higher sequence, and its zero is genuinely unknowable.
+bool isFirstSegmentOfLog(const fs::path& seg) noexcept {
+    const std::string stem = seg.stem().string();
+    const auto und = stem.find_last_of('_');
+    if (und == std::string::npos) return false;
+    const std::string seqStr = stem.substr(und + 1);
+    if (seqStr.empty() || seqStr.find_first_not_of("0123456789") != std::string::npos) return false;
+    try { return std::stoi(seqStr) == 1; } catch (...) { return false; }
+}
+
 //! Carry forward the log-level facts a rebuild cannot re-derive from the segment.
 //!
 //! `capture_epoch_ms` is sampled once at log-open and written into EVERY segment's header
@@ -1120,7 +1132,25 @@ void ISLogReader::populateReconTimeOffsets() {
     }
     if (anchors.empty()) return;
 
-    const uint64_t base = anchors.front().second;
+    // D0096 says this field is "an offset from the start of the LOG (not the segment -- every
+    // segment of one log shares the anchor)". Basing it on `anchors.front()` -- this segment's own
+    // first timestamp -- made it SEGMENT-relative, so every segment restarted near zero and a log
+    // held two conventions once a v1 upgrade contributed genuinely log-relative values.
+    //
+    // The cascade's `logStartUptimeMs` is the log's uptime zero, propagated across segments, so
+    // subtracting it yields elapsed-time-into-the-log exactly as documented. It only applies to
+    // the uptime domain, which is what it is a zero FOR; a ToW-dominant segment has no
+    // uptime-domain zero to subtract and keeps the segment-relative base, which is recorded as a
+    // known gap rather than papered over.
+    const bool logRelative = (domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_UPTIME)
+                             && anchor_.logStartUptimeMs != 0
+                             && anchors.front().second >= anchor_.logStartUptimeMs;
+    const uint64_t base = logRelative ? anchor_.logStartUptimeMs : anchors.front().second;
+    if (!logRelative && domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_UPTIME) {
+        log_debug(IS_LOG_ISLOG,
+                  "%s: no log uptime zero available; log_time_offset_ms is segment-relative",
+                  rawPath_.filename().c_str());
+    }
     std::size_t wrote = 0, estimated = 0;
     for (std::size_t i = 0; i < records_.size(); ++i) {
         auto& r = records_[i];
@@ -1157,6 +1187,37 @@ void ISLogReader::populateReconTimeOffsets() {
               estimated);
 }
 
+void ISLogReader::applyLogStartUptime(uint64_t logStartUptimeMs) {
+    if (logStartUptimeMs == 0) return;
+    anchor_.logStartUptimeMs = logStartUptimeMs;
+
+    // Only the filename tier derives its offset from the log's zero. Everything above it was
+    // established from real in-log time evidence.
+    if (anchor_.tier != AnchorTier::FilenameAnchor) return;
+
+    const uint64_t nameMs = filenameAnchorMs(rawPath_);
+    if (nameMs == 0) return;
+    anchor_.offsetMs = static_cast<int64_t>(nameMs) - static_cast<int64_t>(logStartUptimeMs);
+    if (anchor_.uptimeRecords > 0 && anchor_.uptimeMinMs != 0) {
+        anchor_.anchoredStartMs = static_cast<uint64_t>(
+            static_cast<int64_t>(anchor_.uptimeMinMs) + anchor_.offsetMs);
+        anchor_.anchoredEndMs = static_cast<uint64_t>(
+            static_cast<int64_t>(anchor_.uptimeMaxMs) + anchor_.offsetMs);
+    }
+    // Drop the "first segment is absent" caveat: the zero is known now.
+    anchor_.anomalies.erase(
+        std::remove_if(anchor_.anomalies.begin(), anchor_.anomalies.end(),
+                       [](const std::string& a) {
+                           return a.find("first segment is absent") != std::string::npos;
+                       }),
+        anchor_.anomalies.end());
+    stampPersistedAnchor();
+    log_debug(IS_LOG_ISLOG, "%s: applied log uptime zero %llu ms -> anchored=[%llu..%llu]",
+              rawPath_.filename().c_str(), (unsigned long long)logStartUptimeMs,
+              (unsigned long long)anchor_.anchoredStartMs,
+              (unsigned long long)anchor_.anchoredEndMs);
+}
+
 void ISLogReader::adoptSessionOffset(int64_t offsetMs, uint32_t donorDid,
                                      bool donorIsEarlier) {
     // First-hand evidence always wins over an inherited constant.
@@ -1187,6 +1248,7 @@ void ISLogReader::adoptSessionOffset(int64_t offsetMs, uint32_t donorDid,
 void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
     AnchorCollector collector;
     collector.setFilenameAnchorMs(filenameAnchorMs(rawPath_));
+    collector.setIsFirstSegmentOfLog(isFirstSegmentOfLog(rawPath_));
 
     // A `.dat` record's bytes ARE its payload (D-119); a `.raw` record's bytes are the whole ISB
     // packet, framing included, so the payload has to be re-framed out of them.
@@ -1308,7 +1370,10 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
     // SN-8629: the collector rides the SAME byte pass as the index build, so asking for
     // the anchor analysis costs no extra I/O.
     AnchorCollector collector;
-    if (collectAnchor) collector.setFilenameAnchorMs(filenameAnchorMs(rawPath_));
+    if (collectAnchor) {
+        collector.setFilenameAnchorMs(filenameAnchorMs(rawPath_));
+        collector.setIsFirstSegmentOfLog(isFirstSegmentOfLog(rawPath_));
+    }
 
     records_.clear();
     byDid_.clear();

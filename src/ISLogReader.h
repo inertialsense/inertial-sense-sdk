@@ -358,6 +358,25 @@ public:
     }
 
     /**
+     * @brief Apply the LOG's uptime zero to this segment, re-deriving a filename anchor from it.
+     *
+     * The log's uptime zero is a log-level fact — the device uptime when the log was opened —
+     * and only the layer that sees every segment can resolve it. A reader built from one segment
+     * knows it only when that segment is sequence `_0001`.
+     *
+     * Needed as a separate entry point rather than folded into @ref reanalyzeWithPrevious because
+     * that one only runs for UNANCHORED segments, and a filename-anchored segment is already
+     * "anchored" — so it would never inherit the zero and every segment would keep re-deriving a
+     * per-segment anchor, which is exactly the collapse this fixes.
+     *
+     * No-op for anything above `FilenameAnchor`: a payload or bridged anchor is derived from real
+     * time evidence and owes nothing to the filename.
+     *
+     * @param logStartUptimeMs  The log's uptime zero. 0 means "unknown" and changes nothing.
+     */
+    void applyLogStartUptime(uint64_t logStartUptimeMs);
+
+    /**
      * @brief Adopt an absolute-time offset established by ANOTHER segment of the same recording
      *        session, when this segment could not establish one itself.
      *

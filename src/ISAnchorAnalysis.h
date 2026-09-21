@@ -210,6 +210,27 @@ struct AnchorAnalysis {
     uint64_t anchoredStartMs = 0;
     uint64_t anchoredEndMs   = 0;
 
+    /**
+     * @brief The LOG's uptime zero — the device uptime at the moment the log was opened.
+     *
+     * A log-level constant, identical for every segment, propagated forward through `prev`. It is
+     * what makes a per-LOG anchor possible: record uptimes form ONE continuous axis across a
+     * log's segments (measured on a real log: `[869..222549]`, `[222552..441952]`,
+     * `[441969..661512]` — the 3 and 17 ms gaps are just the inter-segment write boundary), so
+     * subtracting this zero converts any record's uptime into elapsed-time-into-the-log.
+     *
+     * Established from the first segment's own `uptimeMinMs` when that segment is present
+     * (sequence `_0001`), inherited from `prev` otherwise, and **0 when a log's early segments
+     * were culled** — in which case it is genuinely unknowable and the consequence is a constant
+     * absolute shift applied uniformly, leaving the log's internal geometry exact.
+     *
+     * @note Kyle 2026-09-21. This replaced a per-SEGMENT filename-anchor calculation that used
+     *       each segment's own `uptimeMinMs` and therefore cancelled it out, collapsing every
+     *       filename-anchored segment of a log onto the log's open instant — and making
+     *       `ISDeviceLog::fromSegments` sort on all-equal keys.
+     */
+    uint64_t logStartUptimeMs = 0;
+
     //! Record counts by domain, and records carrying no internal timestamp at all.
     std::size_t uptimeRecords = 0;
     std::size_t towRecords    = 0;

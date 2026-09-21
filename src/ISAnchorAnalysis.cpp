@@ -370,6 +370,18 @@ AnchorAnalysis AnchorCollector::finish(const AnchorAnalysis* prev) {
     // the answer. See resolveConsensus() and AnchorConsensus.
     resolveConsensus();
 
+    // ---- Resolve the LOG's uptime zero first: the filename branch below needs it, and it is a
+    // log-level constant rather than anything about this segment. Record uptimes form one
+    // continuous axis across a log's segments, so subtracting this zero turns any record's
+    // uptime into elapsed-time-into-the-log. See AnchorAnalysis::logStartUptimeMs.
+    if (prev != nullptr && prev->logStartUptimeMs != 0) {
+        out_.logStartUptimeMs = prev->logStartUptimeMs;      // inherited; identical log-wide
+    } else if (isFirstSegmentOfLog_ && out_.uptimeMinMs != 0) {
+        out_.logStartUptimeMs = out_.uptimeMinMs;            // this segment IS the log's start
+    } else {
+        out_.logStartUptimeMs = 0;                           // early segments culled: unknowable
+    }
+
     // ---- Resolve the tier, strongest first.
     if (haveWinner_) {
         const auto accepted = std::find_if(out_.candidates.begin(), out_.candidates.end(),
@@ -398,12 +410,33 @@ AnchorAnalysis AnchorCollector::finish(const AnchorAnalysis* prev) {
         out_.anomalies.push_back("no absolute time available; chained from the previous "
                                  "segment's end");
     } else if (filenameAnchorMs_ != 0) {
+        // Re-anchor the LOG to the filename timestamp -- ONE offset for the whole log, not a
+        // per-segment calculation. Kyle 2026-09-21: this tier is reached only when the log
+        // carries no in-log wall clock at all, so every record is relative to device uptime and
+        // the log as a whole can be safely re-anchored; the result is inaccurate in absolute
+        // terms and that is accepted, because "without a durable wall-clock anchor from within
+        // the log itself, any conclusion about the actual time is purely hearsay" -- and some
+        // absolute time beats none.
+        //
+        // This previously subtracted THIS SEGMENT's `uptimeMinMs`, which then cancelled against
+        // it in `anchoredStartMs = uptimeMinMs + offsetMs`, so every filename-anchored segment
+        // of a log reported `filenameAnchorMs` identically. Two segments 90 s apart measured a
+        // 0 ms anchored gap, and `ISDeviceLog::fromSegments` -- which orders on
+        // `anchoredStartMs` -- was left sorting on all-equal keys.
+        //
+        // Subtracting the LOG's zero instead places the log's first record exactly on the
+        // filename timestamp and every later record at its true elapsed offset from it. When the
+        // log's early segments were culled the zero is unknowable and stays 0, which shifts the
+        // whole log late by the device's pre-logging uptime -- uniformly, so the log's internal
+        // geometry remains exact.
         out_.tier = AnchorTier::FilenameAnchor;
-        if (out_.uptimeMinMs != 0) {
-            out_.offsetMs = static_cast<int64_t>(filenameAnchorMs_) -
-                            static_cast<int64_t>(out_.uptimeMinMs);
-        }
-        out_.anomalies.push_back("anchored to the segment filename; no in-log absolute time");
+        out_.offsetMs = static_cast<int64_t>(filenameAnchorMs_) -
+                        static_cast<int64_t>(out_.logStartUptimeMs);
+        out_.anomalies.push_back(
+            out_.logStartUptimeMs != 0
+                ? "anchored to the log filename; no in-log absolute time"
+                : "anchored to the log filename, and the log's first segment is absent, so the "
+                  "whole log may be offset late by the device's uptime before logging began");
     } else {
         out_.tier = AnchorTier::None;
         out_.anomalies.push_back("no anchor of any kind; segment is session-relative only");

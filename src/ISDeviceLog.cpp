@@ -179,6 +179,27 @@ ISExpected<ISDeviceLog>
             prevAnalysis = r.anchorAnalysis();
             prev         = &prevAnalysis;
         }
+
+        // Share the LOG's uptime zero across every segment. Only a segment that is sequence
+        // `_0001` can establish it alone, so this is the layer that distributes it -- and it has
+        // to be a separate pass, because the loop above only re-analyses UNANCHORED segments and
+        // a filename-anchored one already counts as anchored.
+        //
+        // Without it each filename-anchored segment re-derives a per-SEGMENT anchor from its own
+        // uptime minimum, which cancels out and collapses every segment of the log onto the log's
+        // open instant -- leaving the `anchoredStartMs` sort below with all-equal keys. A log
+        // whose early segments were culled has no segment that knows the zero; it stays 0, the
+        // whole log shifts late uniformly, and its internal geometry is still correct.
+        uint64_t logZeroUptimeMs = 0;
+        for (const auto& r : readers) {
+            if (r.anchorAnalysis().logStartUptimeMs != 0) {
+                logZeroUptimeMs = r.anchorAnalysis().logStartUptimeMs;
+                break;
+            }
+        }
+        if (logZeroUptimeMs != 0) {
+            for (auto& r : readers) r.applyLogStartUptime(logZeroUptimeMs);
+        }
     }
 
     // Every segment must carry an anchor of at least `minimumOrderableTier` before the re-sort

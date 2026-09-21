@@ -458,6 +458,13 @@ TEST(AnchorCascade, ChainsFromPreviousEndWhenUptimeIsNotContinuous) {
     EXPECT_TRUE(hasAnomalyContaining(a, "chained from the previous"));
 }
 
+// Updated 2026-09-21: this used to assert `anchoredStartMs == filenameAnchorMs`, which IS the
+// collapse that `AnchorFilenameSpan` now guards against -- pinning the segment's start to the
+// LOG's open instant regardless of how far into the log it sits. The filename re-anchors the LOG
+// (Kyle), so the uptime is elapsed-into-the-log and must survive into the result.
+//
+// No `setIsFirstSegmentOfLog`, so this is the culled-log case: the log's uptime zero is unknown,
+// nothing is subtracted, and the whole log shifts late uniformly.
 TEST(AnchorCascade, FilenameAnchorIsTheLastResortBeforeNone) {
     AnchorCollector c;
     c.setFilenameAnchorMs(1'779'363'435'000ULL);
@@ -466,9 +473,30 @@ TEST(AnchorCascade, FilenameAnchorIsTheLastResortBeforeNone) {
 
     const AnchorAnalysis a = c.finish(nullptr);
     EXPECT_EQ(a.tier, AnchorTier::FilenameAnchor);
-    EXPECT_EQ(a.anchoredStartMs, 1'779'363'435'000ULL);
-    EXPECT_EQ(a.anchoredEndMs, 1'779'363'435'000ULL + 60'000);
-    EXPECT_TRUE(hasAnomalyContaining(a, "segment filename"));
+    EXPECT_EQ(a.logStartUptimeMs, 0u) << "no first segment declared; the zero is unknowable";
+    EXPECT_EQ(a.anchoredStartMs, 1'779'363'435'000ULL + 1000);
+    EXPECT_EQ(a.anchoredEndMs,   1'779'363'435'000ULL + 61'000);
+    EXPECT_EQ(a.anchoredEndMs - a.anchoredStartMs, 60'000u)
+        << "the segment's own 60 s duration must survive the anchor";
+    EXPECT_TRUE(hasAnomalyContaining(a, "log filename"));
+    EXPECT_TRUE(hasAnomalyContaining(a, "first segment is absent"));
+}
+
+// The counterpart: when the collector is told this IS the log's first segment, its uptime minimum
+// IS the log's zero, so the log's first record lands exactly on the filename timestamp.
+TEST(AnchorCascade, TheLogsFirstSegmentLandsExactlyOnTheFilenameTimestamp) {
+    AnchorCollector c;
+    c.setFilenameAnchorMs(1'779'363'435'000ULL);
+    c.setIsFirstSegmentOfLog(true);
+    feedTimeOnly(c, DID_PIMU, 1000);
+    feedTimeOnly(c, DID_PIMU, 61'000);
+
+    const AnchorAnalysis a = c.finish(nullptr);
+    EXPECT_EQ(a.tier, AnchorTier::FilenameAnchor);
+    EXPECT_EQ(a.logStartUptimeMs, 1000u) << "the log's zero is this segment's uptime minimum";
+    EXPECT_EQ(a.anchoredStartMs, 1'779'363'435'000ULL) << "the log starts when the filename says";
+    EXPECT_EQ(a.anchoredEndMs,   1'779'363'435'000ULL + 60'000);
+    EXPECT_FALSE(hasAnomalyContaining(a, "first segment is absent"));
 }
 
 TEST(AnchorCascade, NoAnchorAtAllIsNoneAndSaysSo) {
@@ -1663,22 +1691,18 @@ TEST(SpanProvenance, TheAnchorOffsetComposesWithUptimeExtremaNotTheTranscription
 // matters most on exactly the logs the filename anchor exists for: a culled/rolled log whose
 // early segments were deleted, where the surviving first segment may begin days after the
 // filename's timestamp. Two segments, same filename stem, 90 seconds apart in uptime.
-// DISABLED pending Kyle's call on the fix, which changes this tier's semantics rather than
-// correcting a local slip. Committed disabled rather than deleted so the reproduction survives,
-// and rather than left red so CI stays honest -- the same handling audit A2's proof test got.
+// Kyle, 2026-09-21: the FilenameAnchor tier is reached only when a log carries no in-log
+// wall-clock at all, so every record is relative to device uptime and "the log CAN be safely
+// re-anchored back to the filename's timestamp" -- inaccurate in absolute terms, and accepted,
+// because "without a durable wall-clock anchor from within the log itself, any conclusion about
+// the actual time is purely hearsay" and some absolute time beats none.
 //
-// The shape of the fix: treat the filename timestamp as the LOG's zero and the record uptime as
-// elapsed from it -- `offsetMs = filenameAnchorMs` rather than `filenameAnchorMs - uptimeMinMs`.
-// That preserves RELATIVE placement between segments, which is what ordering and spans need, at
-// the cost of a constant absolute error equal to (log start - device boot) whenever logging did
-// not begin at boot. Strictly better than the current collapse, and honest for a tier whose
-// confidence is already `Unknown`.
-//
-// Consequence worth weighing when deciding: `ISDeviceLog::fromSegments` orders segments by
-// `anchoredStartMs`, so a filename-anchored multi-segment log currently sorts on all-equal keys
-// and its segment order is unspecified -- the same class of defect as the segment mis-ordering
-// that manufactures phantom time jumps.
-TEST(AnchorFilenameSpan, DISABLED_FilenameAnchoredSegmentsAllClaimTheLogsStartInstant) {
+// The key word is LOG. Record uptimes form ONE continuous axis across a log's segments, so the
+// re-anchor is a single per-LOG offset. Subtracting each segment's OWN uptime minimum -- which is
+// what the code used to do -- cancelled the only quantity distinguishing segment 1 from segment
+// 18, collapsing every filename-anchored segment onto the log's open instant and leaving
+// `fromSegments` (which orders on anchoredStartMs) sorting all-equal keys.
+TEST(AnchorFilenameSpan, FilenameAnchoredSegmentsKeepTheirPlaceWithinTheLog) {
     const fs::path dirA = makeTempDir("fn_a");
     const fs::path dirB = makeTempDir("fn_b");
     const fs::path dirC = makeTempDir("fn_log");
@@ -1691,52 +1715,115 @@ TEST(AnchorFilenameSpan, DISABLED_FilenameAnchoredSegmentsAllClaimTheLogsStartIn
     ASSERT_FALSE(a.empty());
     ASSERT_FALSE(b.empty());
 
-    // Rename into one directory under a shared log timestamp, which is what a real log looks
-    // like -- every segment carries the log-open time, only the sequence number differs.
+    // One directory, shared log timestamp, differing sequence numbers -- a real log's shape.
     const fs::path segA = dirC / "LOG_SN424242_20260716_004640_0001.dat";
     const fs::path segB = dirC / "LOG_SN424242_20260716_004640_0002.dat";
     std::error_code ec;
     fs::copy_file(a, segA, fs::copy_options::overwrite_existing, ec);
     fs::copy_file(b, segB, fs::copy_options::overwrite_existing, ec);
     ASSERT_FALSE(ec);
-    // Drop the live sidecars so each is analysed from its own bytes.
     for (const auto& p : { segA, segB }) {
         fs::path i = p; i.replace_extension(".idx"); fs::remove(i);
     }
 
-    auto rA = ISLogReader::openSegment(segA);
-    auto rB = ISLogReader::openSegment(segB);
-    ASSERT_TRUE(rA.has_value());
-    ASSERT_TRUE(rB.has_value());
-    const AnchorAnalysis aa = rA->anchorAnalysis();
-    const AnchorAnalysis ab = rB->anchorAnalysis();
+    // Compose them as a device log, which is what propagates the log's zero across segments
+    // (via `prev`) -- the same chain the bridged/chained tiers already ride.
+    auto log = ISDeviceLog::fromSegments({ segA, segB });
+    ASSERT_TRUE(log.has_value());
+    ASSERT_EQ(log->segmentCount(), 2u);
+    const AnchorAnalysis aa = log->segment(0).anchorAnalysis();
+    const AnchorAnalysis ab = log->segment(1).anchorAnalysis();
 
-    std::printf("[measured] seg1 tier=%s uptime=[%llu..%llu] anchored=[%llu..%llu]\n",
-                anchorTierName(aa.tier),
+    std::printf("[measured] seg1 tier=%s logZero=%llu uptime=[%llu..%llu] anchored=[%llu..%llu]\n",
+                anchorTierName(aa.tier), (unsigned long long)aa.logStartUptimeMs,
                 (unsigned long long)aa.uptimeMinMs, (unsigned long long)aa.uptimeMaxMs,
                 (unsigned long long)aa.anchoredStartMs, (unsigned long long)aa.anchoredEndMs);
-    std::printf("[measured] seg2 tier=%s uptime=[%llu..%llu] anchored=[%llu..%llu]\n",
-                anchorTierName(ab.tier),
+    std::printf("[measured] seg2 tier=%s logZero=%llu uptime=[%llu..%llu] anchored=[%llu..%llu]\n",
+                anchorTierName(ab.tier), (unsigned long long)ab.logStartUptimeMs,
                 (unsigned long long)ab.uptimeMinMs, (unsigned long long)ab.uptimeMaxMs,
                 (unsigned long long)ab.anchoredStartMs, (unsigned long long)ab.anchoredEndMs);
 
-    // Premise: both reached the filename tier, and their uptimes really are 90 s apart.
     ASSERT_EQ(aa.tier, AnchorTier::FilenameAnchor);
     ASSERT_EQ(ab.tier, AnchorTier::FilenameAnchor);
-    ASSERT_EQ(ab.uptimeMinMs - aa.uptimeMinMs, 90'000u)
-        << "fixture uptimes are not 90 s apart; premise broken";
+    ASSERT_EQ(ab.uptimeMinMs - aa.uptimeMinMs, 90'000u) << "fixture premise broken";
 
-    // THE DEFECT, stated as the assertion it should satisfy: two segments 90 s apart in the log
-    // must not report the same start instant. Currently they do -- both equal the filename
-    // timestamp -- so this documents the gap Kyle identified.
-    const int64_t anchoredGap =
+    // The log's zero is a LOG-level constant: both segments must agree on it, and it must be
+    // segment 1's uptime minimum since segment _0001 is present.
+    EXPECT_EQ(aa.logStartUptimeMs, aa.uptimeMinMs);
+    EXPECT_EQ(ab.logStartUptimeMs, aa.uptimeMinMs) << "the log zero must propagate, not re-derive";
+
+    // Segment 1's first record lands exactly on the filename timestamp...
+    EXPECT_EQ(aa.anchoredStartMs, static_cast<uint64_t>(
+                  static_cast<int64_t>(aa.uptimeMinMs) + aa.offsetMs));
+    // ...and segment 2 sits 90 s later, which is the whole point.
+    const int64_t gap =
         static_cast<int64_t>(ab.anchoredStartMs) - static_cast<int64_t>(aa.anchoredStartMs);
-    std::printf("[measured] uptime gap = 90000 ms, anchored gap = %lld ms\n",
-                (long long)anchoredGap);
-    EXPECT_EQ(anchoredGap, 90'000)
-        << "both filename-anchored segments claim the same instant: a per-segment anchor taken "
-           "from the shared log filename cannot place a segment WITHIN the log. On a culled log "
-           "the surviving first segment may begin days after the filename's timestamp.";
+    std::printf("[measured] uptime gap = 90000 ms, anchored gap = %lld ms\n", (long long)gap);
+    EXPECT_EQ(gap, 90'000) << "filename-anchored segments collapsed onto one instant again";
+
+    // And the ordering key is therefore usable: strictly increasing, not tied.
+    EXPECT_LT(aa.anchoredStartMs, ab.anchoredStartMs)
+        << "fromSegments orders on this key; equal keys mean unspecified segment order";
+
+    ISFileManager::DeleteDirectory(dirA.string());
+    ISFileManager::DeleteDirectory(dirB.string());
+    ISFileManager::DeleteDirectory(dirC.string());
+}
+
+// The culled-log case Kyle flagged: when a log's early segments are deleted, the filename still
+// carries the LOG's start but the surviving first segment begins later. The log's uptime zero is
+// then unknowable, so nothing is subtracted -- the whole log shifts late by the device's
+// pre-logging uptime, UNIFORMLY, leaving its internal geometry exact. That is the honest outcome
+// for a "Hail Mary" tier, and it must still not collapse the segments together.
+TEST(AnchorFilenameSpan, ACulledLogKeepsItsInternalGeometryAndSaysTheZeroIsUnknown) {
+    const fs::path dirA = makeTempDir("culled_a");
+    const fs::path dirB = makeTempDir("culled_b");
+    const fs::path dirC = makeTempDir("culled_log");
+    ISFileManager::DeleteDirectory(dirC.string());
+    fs::create_directories(dirC);
+
+    const fs::path a = writeUptimeOnlySegment(dirA, 515151u, 20, /*startSec=*/500.0);
+    const fs::path b = writeUptimeOnlySegment(dirB, 515151u, 20, /*startSec=*/590.0);
+    ASSERT_FALSE(a.empty());
+    ASSERT_FALSE(b.empty());
+
+    // Sequences _0018 and _0019: segments 1..17 were culled, so neither is the log's first.
+    const fs::path segA = dirC / "LOG_SN515151_20260716_004640_0018.dat";
+    const fs::path segB = dirC / "LOG_SN515151_20260716_004640_0019.dat";
+    std::error_code ec;
+    fs::copy_file(a, segA, fs::copy_options::overwrite_existing, ec);
+    fs::copy_file(b, segB, fs::copy_options::overwrite_existing, ec);
+    ASSERT_FALSE(ec);
+    for (const auto& p : { segA, segB }) {
+        fs::path i = p; i.replace_extension(".idx"); fs::remove(i);
+    }
+
+    auto log = ISDeviceLog::fromSegments({ segA, segB });
+    ASSERT_TRUE(log.has_value());
+    ASSERT_EQ(log->segmentCount(), 2u);
+    const AnchorAnalysis aa = log->segment(0).anchorAnalysis();
+    const AnchorAnalysis ab = log->segment(1).anchorAnalysis();
+
+    std::printf("[measured] culled seg18 logZero=%llu uptime=[%llu..] anchored=[%llu..]\n",
+                (unsigned long long)aa.logStartUptimeMs, (unsigned long long)aa.uptimeMinMs,
+                (unsigned long long)aa.anchoredStartMs);
+    std::printf("[measured] culled seg19 logZero=%llu uptime=[%llu..] anchored=[%llu..]\n",
+                (unsigned long long)ab.logStartUptimeMs, (unsigned long long)ab.uptimeMinMs,
+                (unsigned long long)ab.anchoredStartMs);
+
+    ASSERT_EQ(aa.tier, AnchorTier::FilenameAnchor);
+    // The zero is unknowable and must be reported as such, not guessed from this segment.
+    EXPECT_EQ(aa.logStartUptimeMs, 0u)
+        << "a culled log must not mistake its first SURVIVING segment for its first segment";
+    EXPECT_TRUE(hasAnomalyContaining(aa, "first segment is absent"))
+        << "the uniform late shift must be declared, not silent";
+
+    // Internal geometry preserved: 90 s apart in uptime, 90 s apart on the timeline.
+    const int64_t gap =
+        static_cast<int64_t>(ab.anchoredStartMs) - static_cast<int64_t>(aa.anchoredStartMs);
+    std::printf("[measured] culled anchored gap = %lld ms (uptime gap 90000)\n", (long long)gap);
+    EXPECT_EQ(gap, 90'000);
+    EXPECT_LT(aa.anchoredStartMs, ab.anchoredStartMs);
 
     ISFileManager::DeleteDirectory(dirA.string());
     ISFileManager::DeleteDirectory(dirB.string());
