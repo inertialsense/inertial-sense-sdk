@@ -1340,7 +1340,8 @@ namespace {
 //! LOGTYPE_RAW expects already-framed ISB bytes through the `LogData(dev, size, bytes)`
 //! overload -- feeding it a DID header silently produces no segment file at all. Span
 //! tagging is format-agnostic, so `.dat` proves the point either way.
-fs::path writeUptimeOnlySegment(const fs::path& dir, uint32_t serial, int count) {
+fs::path writeUptimeOnlySegment(const fs::path& dir, uint32_t serial, int count,
+                                double startSec = 10.0) {
     cISLogger logger;
     cISLogger::sSaveOptions opts;
     opts.logType               = cISLogger::LOGTYPE_DAT;
@@ -1361,7 +1362,7 @@ fs::path writeUptimeOnlySegment(const fs::path& dir, uint32_t serial, int count)
 
     for (int i = 0; i < count; ++i) {
         pimu_t p{};
-        p.time = 10.0 + 0.1 * i;      // seconds since boot -- uptime, not ToW
+        p.time = startSec + 0.1 * i;  // seconds since boot -- uptime, not ToW
         p.dt   = 0.1f;
         p_data_hdr_t h{};
         h.id   = DID_PIMU;
@@ -1648,6 +1649,98 @@ TEST(SpanProvenance, TheAnchorOffsetComposesWithUptimeExtremaNotTheTranscription
     EXPECT_EQ(a.anchorDid, DID_SYS_PARAMS);
 
     ISFileManager::DeleteDirectory(dir.string());
+}
+
+// Kyle, 2026-09-21: "the filename will keep the actual start of the LOG - not the timestamp of
+// the first segment". Every segment of a log shares one filename timestamp, so a per-segment
+// anchor derived from it cannot distinguish segment 1 from segment 18 -- and the arithmetic
+// confirms it collapses:
+//
+//   offsetMs        = filenameAnchorMs - uptimeMinMs
+//   anchoredStartMs = uptimeMinMs + offsetMs  ==  filenameAnchorMs,  identically
+//
+// So EVERY filename-anchored segment of a log claims to start at the log's open time. This
+// matters most on exactly the logs the filename anchor exists for: a culled/rolled log whose
+// early segments were deleted, where the surviving first segment may begin days after the
+// filename's timestamp. Two segments, same filename stem, 90 seconds apart in uptime.
+// DISABLED pending Kyle's call on the fix, which changes this tier's semantics rather than
+// correcting a local slip. Committed disabled rather than deleted so the reproduction survives,
+// and rather than left red so CI stays honest -- the same handling audit A2's proof test got.
+//
+// The shape of the fix: treat the filename timestamp as the LOG's zero and the record uptime as
+// elapsed from it -- `offsetMs = filenameAnchorMs` rather than `filenameAnchorMs - uptimeMinMs`.
+// That preserves RELATIVE placement between segments, which is what ordering and spans need, at
+// the cost of a constant absolute error equal to (log start - device boot) whenever logging did
+// not begin at boot. Strictly better than the current collapse, and honest for a tier whose
+// confidence is already `Unknown`.
+//
+// Consequence worth weighing when deciding: `ISDeviceLog::fromSegments` orders segments by
+// `anchoredStartMs`, so a filename-anchored multi-segment log currently sorts on all-equal keys
+// and its segment order is unspecified -- the same class of defect as the segment mis-ordering
+// that manufactures phantom time jumps.
+TEST(AnchorFilenameSpan, DISABLED_FilenameAnchoredSegmentsAllClaimTheLogsStartInstant) {
+    const fs::path dirA = makeTempDir("fn_a");
+    const fs::path dirB = makeTempDir("fn_b");
+    const fs::path dirC = makeTempDir("fn_log");
+    ISFileManager::DeleteDirectory(dirC.string());
+    fs::create_directories(dirC);
+
+    // Two segments of the SAME log: uptime 10.0 s+ and 100.0 s+, i.e. 90 s apart.
+    const fs::path a = writeUptimeOnlySegment(dirA, 424242u, 20, /*startSec=*/10.0);
+    const fs::path b = writeUptimeOnlySegment(dirB, 424242u, 20, /*startSec=*/100.0);
+    ASSERT_FALSE(a.empty());
+    ASSERT_FALSE(b.empty());
+
+    // Rename into one directory under a shared log timestamp, which is what a real log looks
+    // like -- every segment carries the log-open time, only the sequence number differs.
+    const fs::path segA = dirC / "LOG_SN424242_20260716_004640_0001.dat";
+    const fs::path segB = dirC / "LOG_SN424242_20260716_004640_0002.dat";
+    std::error_code ec;
+    fs::copy_file(a, segA, fs::copy_options::overwrite_existing, ec);
+    fs::copy_file(b, segB, fs::copy_options::overwrite_existing, ec);
+    ASSERT_FALSE(ec);
+    // Drop the live sidecars so each is analysed from its own bytes.
+    for (const auto& p : { segA, segB }) {
+        fs::path i = p; i.replace_extension(".idx"); fs::remove(i);
+    }
+
+    auto rA = ISLogReader::openSegment(segA);
+    auto rB = ISLogReader::openSegment(segB);
+    ASSERT_TRUE(rA.has_value());
+    ASSERT_TRUE(rB.has_value());
+    const AnchorAnalysis aa = rA->anchorAnalysis();
+    const AnchorAnalysis ab = rB->anchorAnalysis();
+
+    std::printf("[measured] seg1 tier=%s uptime=[%llu..%llu] anchored=[%llu..%llu]\n",
+                anchorTierName(aa.tier),
+                (unsigned long long)aa.uptimeMinMs, (unsigned long long)aa.uptimeMaxMs,
+                (unsigned long long)aa.anchoredStartMs, (unsigned long long)aa.anchoredEndMs);
+    std::printf("[measured] seg2 tier=%s uptime=[%llu..%llu] anchored=[%llu..%llu]\n",
+                anchorTierName(ab.tier),
+                (unsigned long long)ab.uptimeMinMs, (unsigned long long)ab.uptimeMaxMs,
+                (unsigned long long)ab.anchoredStartMs, (unsigned long long)ab.anchoredEndMs);
+
+    // Premise: both reached the filename tier, and their uptimes really are 90 s apart.
+    ASSERT_EQ(aa.tier, AnchorTier::FilenameAnchor);
+    ASSERT_EQ(ab.tier, AnchorTier::FilenameAnchor);
+    ASSERT_EQ(ab.uptimeMinMs - aa.uptimeMinMs, 90'000u)
+        << "fixture uptimes are not 90 s apart; premise broken";
+
+    // THE DEFECT, stated as the assertion it should satisfy: two segments 90 s apart in the log
+    // must not report the same start instant. Currently they do -- both equal the filename
+    // timestamp -- so this documents the gap Kyle identified.
+    const int64_t anchoredGap =
+        static_cast<int64_t>(ab.anchoredStartMs) - static_cast<int64_t>(aa.anchoredStartMs);
+    std::printf("[measured] uptime gap = 90000 ms, anchored gap = %lld ms\n",
+                (long long)anchoredGap);
+    EXPECT_EQ(anchoredGap, 90'000)
+        << "both filename-anchored segments claim the same instant: a per-segment anchor taken "
+           "from the shared log filename cannot place a segment WITHIN the log. On a culled log "
+           "the surviving first segment may begin days after the filename's timestamp.";
+
+    ISFileManager::DeleteDirectory(dirA.string());
+    ISFileManager::DeleteDirectory(dirB.string());
+    ISFileManager::DeleteDirectory(dirC.string());
 }
 
 // A dedicated regression test for the `.dat` payload handoff, kept separate from the span tests
