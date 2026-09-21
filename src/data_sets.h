@@ -3715,6 +3715,7 @@ typedef struct PACKED
 
     uint16_t    rtkPositionRuntimeMs;   //!< (ms) RTK position solution runtime
     uint16_t    rtkCompassRuntimeMs;    //!< (ms) RTK compass solution runtime
+
     uint32_t    cycle_slips;            //!< Accumulation of total cycle slips
 
     float       rtk_to_rcvr_pos_error;  //!< RTK position Error with respect to GNSS receiver
