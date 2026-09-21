@@ -216,9 +216,8 @@ public:
     /**
      * @brief Sentinel for @ref upgradeIndex's `logStartHostUptimeMs`: "not supplied, go find it".
      *
-     * A no-op default. `UINT64_MAX` rather than 0 because 0 is a legal log start (the first
-     * segment of the measured corpus begins at host uptime 1 ms, and a log that begins at 0 is
-     * perfectly ordinary) — the same reasoning as `HAS_TIMESTAMP` on the record side.
+     * A no-op default. `UINT64_MAX` rather than 0 because 0 is a legal anchor — and, as it turns
+     * out, the usual one; see @ref upgradeIndex on why a v1 time needs no rebasing.
      */
     static constexpr uint64_t kDiscoverLogStart = UINT64_MAX;
 
@@ -282,14 +281,24 @@ public:
      * the result degrades to exactly today's behaviour and says so in `declined`.
      *
      * @param segment  Path to the `.raw`/`.dat`. Its sidecar is derived by extension substitution.
-     * @param logStartHostUptimeMs  Log-wide host uptime of the LOG's start, which is the anchor a
-     *        v1 `host_uptime_ms` must be rebased against (v1 times are log-wide, not
-     *        segment-relative, so using this segment's own first value would zero every
-     *        segment's start and collapse them onto each other). Defaults to
-     *        @ref kDiscoverLogStart, which makes this discover the log's first segment itself,
-     *        the way `ISLog::openDirectory` enumerates siblings. Callers that are already walking
-     *        a directory should pass it — `openDirectory` upgrades once per segment and knows the
-     *        log start after the first.
+     * @param logStartHostUptimeMs  Anchor a v1 `host_uptime_ms` is rebased against. Defaults to
+     *        @ref kDiscoverLogStart, which looks for the log's first segment the way
+     *        `ISLog::openDirectory` enumerates siblings; a caller already walking a directory
+     *        can pass a known anchor instead and skip that.
+     *
+     *        **Measured 2026-09-21: the anchor is normally 0, because a v1 `host_uptime_ms` is
+     *        already LOG-relative.** The first record of the corpus log — `record_counter` 0 at
+     *        byte offset 0, so provably the log's first — carries `time == 1` ms, not a
+     *        host-boot uptime. A second log corroborates it: its earliest surviving v1 segment
+     *        is 0018 at `t = 3,684,365`, and segments run ~220,000 ms each, so 17 × ~216,700
+     *        lands exactly there. The field is therefore usable verbatim, and the rebase exists
+     *        only for a log that ever turns up measuring from boot instead.
+     *
+     *        Discovery must PROVE it found the log's first segment (`record_counter == 0`) and
+     *        returns nothing otherwise, in which case no rebasing happens. Guessing is worse
+     *        than not rebasing: a mixed log — the normal case, since opening a v1 segment
+     *        persists a v2 sidecar over it, so the earliest segments convert first — would
+     *        otherwise anchor on a mid-log segment's own first record and collapse it onto zero.
      * @return The outcome, or an `ISError` if @p segment itself cannot be opened. A sidecar that
      *         is absent or unusable is NOT an error — it yields a result with `fromVersion == 0`.
      */

@@ -245,17 +245,22 @@ TEST(IndexUpgradeV1, TheJoinIsKeyedOnRecordCounterNotPosition) {
 
 // A mid-log segment: the counter does NOT start at 0, and the WHEN is log-wide. Getting this
 // wrong is invisible on a single-segment test and collapses every segment onto the same start.
-TEST(IndexUpgradeV1, AMidLogSegmentRebasesOnTheLogStartNotItsOwnFirstRecord) {
+TEST(IndexUpgradeV1, AMidLogSegmentKeepsItsLogRelativeOffsetsInsteadOfBeingZeroed) {
     const fs::path dir = makeTempDir("v1_midlog");
     const fs::path seg = writeSegment(dir, 321003u, 40);
     ASSERT_FALSE(seg.empty());
     const std::size_t n = scanCount(seg);
     ASSERT_GT(n, 4u);
 
-    // Counter base 500,000 and host times starting at 900,000 ms: a segment well into a log,
-    // whose v1 counter continues from earlier segments and whose WHEN is log-wide. This
-    // segment is the only one on disk, so IT is the log's first segment and discovery
-    // correctly resolves the anchor to its own earliest observed time (900,000).
+    // A segment well into a log: its v1 counter continues from earlier segments (base 500,000)
+    // and its WHEN is already log-relative (900,000 ms in). No earlier segment carries a legacy
+    // sidecar, so discovery cannot PROVE a log start -- and must therefore not rebase at all.
+    //
+    // This is the mixed-log case, which is the normal one: opening a v1 segment persists a v2
+    // sidecar over it, so a log's earliest segments are the first to lose their legacy data.
+    // Measured on corpus log 20260716_012243 -- 79 segments, only 8 still v1, and segment 0001
+    // already v2. Anchoring on this segment's own first record would zero a point 900 seconds
+    // into the log, which is exactly the collapse the anchor exists to prevent.
     writeV1Sidecar(seg, n, /*keepEvery=*/2, /*counterBase=*/500000u,
                    /*firstHostMs=*/900000u, /*stepMs=*/5);
 
@@ -263,24 +268,52 @@ TEST(IndexUpgradeV1, AMidLogSegmentRebasesOnTheLogStartNotItsOwnFirstRecord) {
     ASSERT_TRUE(r.has_value());
 
     std::size_t observed = 0, k = 0;
+    uint32_t firstObserved = UINT32_MAX;
     for (auto v : r->allRecords()) {
         if ((v.flags() & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) == 0) {
+            if (firstObserved == UINT32_MAX) firstObserved = v.logTimeOffsetMs();
             ++observed;
-            // The join must survive a non-zero counter base, and the offset must be rebased on
-            // the log start -- NOT left as the raw 900,000+ host uptime, and not zeroed.
-            EXPECT_EQ(v.logTimeOffsetMs(), static_cast<uint32_t>(k) * 5u)
-                << "record " << k << " was not rebased onto the log start";
+            // Verbatim, because a v1 WHEN is already measured from log open.
+            EXPECT_EQ(v.logTimeOffsetMs(), 900000u + static_cast<uint32_t>(k) * 5u)
+                << "record " << k << " was rebased when it should not have been";
         }
         ++k;
     }
     for (const auto& s : r->warnings()) std::printf("[measured] warn: %s\n", s.c_str());
-    EXPECT_GT(observed, 0u) << "a non-zero counter base must still join";
+    std::printf("[measured] mid-log: observed=%zu firstOffset=%u (zeroing would give 0)\n",
+                observed, firstObserved);
 
-    // Discovery resolved an anchor, so there must be no complaint about failing to.
-    const auto& w = r->warnings();
-    EXPECT_FALSE(std::any_of(w.begin(), w.end(), [](const std::string& s) {
-        return s.find("could not discover") != std::string::npos;
-    })) << "this segment IS the log's first; discovery should have succeeded";
+    EXPECT_GT(observed, 0u) << "a non-zero counter base must still join";
+    EXPECT_EQ(firstObserved, 900000u)
+        << "a mid-log segment must keep its place in the log, not be moved to zero";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// Discovery must refuse to answer from a segment it cannot prove is the log's first.
+TEST(IndexUpgradeV1, DiscoveryRefusesASegmentWhoseCounterDoesNotStartAtZero) {
+    const fs::path dir = makeTempDir("v1_discovery");
+    const fs::path seg = writeSegment(dir, 321007u, 20);
+    ASSERT_FALSE(seg.empty());
+    const std::size_t n = scanCount(seg);
+    ASSERT_GT(n, 2u);
+
+    // counter base 0 => provably the log's first record => discovery answers.
+    writeV1Sidecar(seg, n, /*keepEvery=*/2, /*counterBase=*/0,
+                   /*firstHostMs=*/7000u, /*stepMs=*/2);
+    const auto atZero = ISLogReader::discoverLogStartHostUptime(seg);
+    ASSERT_TRUE(atZero.has_value()) << "counter 0 is proof of the log's first record";
+    EXPECT_EQ(*atZero, 7000u);
+
+    // Any non-zero base => something preceded this => refuse rather than guess.
+    writeV1Sidecar(seg, n, /*keepEvery=*/2, /*counterBase=*/42u,
+                   /*firstHostMs=*/7000u, /*stepMs=*/2);
+    const auto midLog = ISLogReader::discoverLogStartHostUptime(seg);
+    std::printf("[measured] discovery: counter0=%llu counter42=%s\n",
+                (unsigned long long)*atZero,
+                midLog ? std::to_string(*midLog).c_str() : "nullopt");
+    EXPECT_FALSE(midLog.has_value())
+        << "a mid-log segment's time must never be mistaken for the log start";
 
     ISFileManager::DeleteDirectory(dir.string());
 }

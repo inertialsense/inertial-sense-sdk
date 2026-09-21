@@ -600,7 +600,7 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
             // start. Anchoring on this segment's own first value would zero every segment's
             // start and collapse them onto each other.
             const auto discovered = discoverLogStartHostUptime(rawPath);
-            const uint64_t logStart = discovered.value_or(legacyV1.front().host_uptime_ms);
+            const uint64_t logStart = discovered.value_or(0);
             if (r.adoptV1TimeOffsets(legacyV1, logStart, up)) {
                 r.warnings_.push_back(
                     "sidecar: upgraded from v1 -- " + std::to_string(up.observedAdopted)
@@ -822,8 +822,26 @@ std::optional<uint64_t> ISLogReader::discoverLogStartHostUptime(const fs::path& 
     // The first record in file order is the earliest: v1 host uptime is monotonic within a
     // sidecar on every healthy file measured. Take the minimum anyway -- it costs one pass and
     // makes a scrambled file yield a sane anchor rather than a large one.
-    uint64_t lo = recs.front().host_uptime_ms;
-    for (const auto& r : recs) lo = std::min<uint64_t>(lo, r.host_uptime_ms);
+    // PROVE this is the log's first record before believing its time. `record_counter` is
+    // log-wide and 0-based, so counter 0 is the only evidence that nothing preceded this -- and
+    // it is cheap, exact evidence.
+    //
+    // Without this gate the function is actively harmful on the common mixed log. Measured:
+    // the corpus log `20260716_012243` has 79 segments of which only 8 are still v1, and
+    // segment 0001's sidecar has already been converted to v2 -- so a walk back from segment
+    // 0018 reaches 0001, finds no legacy sidecar there, and the caller's fallback would then
+    // treat segment 0018's own first record (t = 3,684,365 ms, counter 1,111,464) as the log
+    // start, collapsing a mid-log segment onto zero. Mixed logs are the NORMAL case precisely
+    // because opening a v1 segment persists a v2 sidecar over it, so the earliest segments are
+    // the likeliest to have been converted already.
+    if (recs.front().record_counter != 0) {
+        log_debug(IS_LOG_ISLOG,
+                  "discoverLogStartHostUptime: %s starts at record_counter %u, not 0 -- this is "
+                  "not the log's first segment, so its time cannot anchor the log",
+                  idxPath.filename().c_str(), recs.front().record_counter);
+        return std::nullopt;
+    }
+    const uint64_t lo = recs.front().host_uptime_ms;
     log_debug(IS_LOG_ISLOG, "discoverLogStartHostUptime: log starts at %llu ms (from %s)",
               (unsigned long long)lo, idxPath.filename().c_str());
     return lo;
@@ -981,13 +999,10 @@ ISExpected<ISLogReader::IndexUpgrade> ISLogReader::upgradeIndex(
                 // No anchor supplied -- find the log's first segment ourselves, the way a
                 // directory walk would. v1 times are LOG-wide, so anchoring on this segment's
                 // own first value would zero every segment's start and collapse them together.
+                // No anchor supplied. Try to find the log's first segment; when that cannot be
+                // PROVEN, do not rebase at all -- see below for why 0 is the right answer.
                 const auto discovered = discoverLogStartHostUptime(segment);
-                logStart = discovered.value_or(v1.front().host_uptime_ms);
-                if (!discovered) {
-                    out.declined.push_back(
-                        "could not discover the log's first segment; rebased on this segment's "
-                        "own first observed time, so cross-segment offsets may not share an anchor");
-                }
+                logStart = discovered.value_or(0);
             }
             r.adoptV1TimeOffsets(v1, logStart, out);
         }
