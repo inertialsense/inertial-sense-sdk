@@ -700,6 +700,115 @@ TEST(IndexUpgradeApi, TheLogStartParameterDefaultsToDiscoveryAndIsHonouredWhenPa
 }
 
 // =====================================================================================
+// Kyle's non-negotiable #2, on REAL v2.0 data (GoldenLogs), and the reason there is no
+// per-record adoption branch for v2.0.
+//
+// Measured against the committed v2.0 sidecar of a GoldenLogs segment, 59,601 records:
+//
+//   DID mismatches       : 0        -> the scan reproduces every DID; adoption is pointless
+//   offset mismatches    : 57,985   -> 97% wrong. old offsets are 0,0,0... from record 2 on,
+//                                      while the scan gives real packet boundaries 0,52,100
+//   timestamp mismatches : 1,048    -> EVERY one is old-nonzero -> new-zero, on timeless DIDs
+//                                      (904 on DID 39, plus DID_DEV_INFO and friends)
+//
+// That last row is the D-112 / SN-7999 pattern: the legacy `TimestampOrCurrentTime()` fallback
+// parked a host-clock value in `timestamp` for records with no internal time field, and the
+// current scan writes 0 with HAS_TIMESTAMP clear instead. So the scan's values are not merely
+// equivalent, they are STRICTLY BETTER -- adopting the old ones would re-introduce exactly the
+// audit A2 defect where a non-timestamp masquerades as a timestamp.
+//
+// Conclusion, and why this test exists rather than an adoption feature: a v2.0 sidecar contains
+// nothing per-record worth taking. The only non-rederivable thing it holds is the header's
+// log-level fields, which carryForwardLogLevelHeaderFields() handles.
+TEST(IndexUpgradeRealFixture, ARealV20SidecarBecomesV21WithItsDidsIntact) {
+    fs::path dir = "/work/inertialsense/goldenlogs/imx/imx6/AHRS/20260521_113715";
+    if (const char* env = std::getenv("IS_SDK_V20_FIXTURE_DIR")) dir = env;
+    const std::string stem = "LOG_SN942742854_20260521_113715_0001";
+    const fs::path srcRaw = dir / (stem + ".raw");
+    const fs::path srcIdx = dir / (stem + ".idx");
+    if (!fs::exists(srcRaw) || !fs::exists(srcIdx)) {
+        GTEST_SKIP() << "GoldenLogs v2.0 fixture not present at " << dir
+                     << " (set IS_SDK_V20_FIXTURE_DIR to override)";
+    }
+
+    // COPY before opening: openSegment persists an upgraded sidecar, and doing this in place
+    // would rewrite a git-tracked corpus file.
+    const fs::path work = makeTempDir("real_v20");
+    const fs::path raw = work / srcRaw.filename();
+    std::error_code ec;
+    fs::copy_file(srcRaw, raw, fs::copy_options::overwrite_existing, ec);
+    fs::copy_file(srcIdx, work / srcIdx.filename(), fs::copy_options::overwrite_existing, ec);
+    ASSERT_FALSE(ec);
+
+    // Read the ORIGINAL v2.0 records straight off disk, before anything rewrites them.
+    std::vector<uint32_t> oldDids;
+    std::vector<uint64_t> oldOffsets;
+    uint16_t oldRecordSize = 0xFFFF;
+    {
+        std::ifstream in(work / srcIdx.filename(), std::ios::binary);
+        ASSERT_TRUE(in.good());
+        std::vector<uint8_t> buf((std::istreambuf_iterator<char>(in)),
+                                  std::istreambuf_iterator<char>());
+        ASSERT_GT(buf.size(), idx::IS_LOG_IDX_HEADER_SIZE);
+        auto h = idx::parseHeader(buf.data());
+        ASSERT_TRUE(h.has_value());
+        oldRecordSize = h->record_size;
+        ASSERT_LT(oldRecordSize, idx::IS_LOG_IDX_RECORD_V2_1_SIZE)
+            << "fixture is not v2.0 any more -- restore it from git";
+        const std::size_t stride = idx::IS_LOG_IDX_RECORD_V2_SIZE;
+        const std::size_t n = (buf.size() - idx::IS_LOG_IDX_HEADER_SIZE) / stride;
+        for (std::size_t i = 0; i < n; ++i) {
+            const auto rec = idx::parseRecord(
+                buf.data() + idx::IS_LOG_IDX_HEADER_SIZE + i * stride, stride);
+            oldDids.push_back(rec.did);
+            oldOffsets.push_back(rec.offset);
+        }
+    }
+    ASSERT_GT(oldDids.size(), 1000u);
+
+    auto r = ISLogReader::openSegment(raw);
+    ASSERT_TRUE(r.has_value());
+
+    std::size_t didMismatch = 0, offsetMismatch = 0, k = 0;
+    for (auto v : r->allRecords()) {
+        if (k < oldDids.size()) {
+            if (v.did() != oldDids[k])            ++didMismatch;
+            if (v.offsetInFile() != oldOffsets[k]) ++offsetMismatch;
+        }
+        ++k;
+    }
+    std::printf("[measured] real v2.0: records %zu -> %zu, record_size %u -> %u, "
+                "DID mismatches=%zu offset mismatches=%zu\n",
+                oldDids.size(), r->recordCount(), oldRecordSize, r->header().record_size,
+                didMismatch, offsetMismatch);
+
+    // The upgrade happened: the sidecar on disk is now v2.1.
+    EXPECT_EQ(r->header().record_size, idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
+    EXPECT_NE(0, r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY);
+
+    // Kyle's non-negotiable #2: every DID preserved. Record population is unchanged too.
+    EXPECT_EQ(r->recordCount(), oldDids.size()) << "record population changed across the upgrade";
+    EXPECT_EQ(didMismatch, 0u) << "a DID changed across the upgrade";
+
+    // Byte offsets deliberately do NOT match: the v2.0 sidecar's are broken (zeros from record 2
+    // onward here), and the scan's are real packet boundaries. Asserted as a NON-match so nobody
+    // "fixes" this by adopting them.
+    EXPECT_GT(offsetMismatch, oldDids.size() / 2)
+        << "the v2.0 sidecar's offsets suddenly agree with the scan -- if the writer's offset "
+           "bug is fixed, revisit whether adoption is now worthwhile";
+
+    // And every record must still resolve to real bytes after the upgrade.
+    std::size_t readable = 0;
+    for (auto v : r->allRecords()) {
+        const auto [bytes, nBytes] = v.bytes();
+        if (bytes != nullptr && nBytes > 0) ++readable;
+    }
+    EXPECT_EQ(readable, r->recordCount());
+
+    ISFileManager::DeleteDirectory(work.string());
+}
+
+// =====================================================================================
 // Real-fixture coverage. Numbers below were MEASURED on the corpus; they are not guesses.
 // Skipped when the corpus is absent so CI stays quiet. Override the directory with
 // IS_SDK_V1_FIXTURE_DIR.
