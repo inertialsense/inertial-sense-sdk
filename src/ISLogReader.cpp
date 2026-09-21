@@ -94,6 +94,29 @@ bool hasSiblingSuccessor(const fs::path& rawPath) noexcept {
     return fs::exists(sibling, ec);
 }
 
+//! Carry forward the log-level facts a rebuild cannot re-derive from the segment.
+//!
+//! `capture_epoch_ms` is sampled once at log-open and written into EVERY segment's header
+//! precisely so it survives the purge of earlier segments -- `OpenNewSaveFile()` deliberately
+//! does not reset it. A rebuild has no way to recover it from the `.raw`, so building a default
+//! header DESTROYS it, and for a GPS-less log it is the only absolute wall-clock anchor there
+//! is. The result is a log whose segments disagree about their own header: the rebuilt ones lose
+//! the epoch while their untouched siblings keep it.
+//!
+//! Staleness in the record body says nothing about a log-level constant, so this is adopted
+//! whenever a v2 header parsed at all -- which is the "take from the old what is trustworthy"
+//! rule this whole path is built on.
+void carryForwardLogLevelHeaderFields(idx::is_log_idx_header_t& fresh,
+                                      const idx::is_log_idx_header_t& prior) {
+    if ((prior.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH) != 0 &&
+        prior.capture_epoch_ms != 0) {
+        fresh.capture_epoch_ms = prior.capture_epoch_ms;
+        fresh.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH;
+        log_debug(IS_LOG_ISLOG, "carried forward capture_epoch_ms %llu from the prior sidecar",
+                  (unsigned long long)prior.capture_epoch_ms);
+    }
+}
+
 /**
  * @brief Recognizes a segment's on-disk format from its extension (D-119 / SN-8626).
  *
@@ -400,6 +423,10 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     // from scratch was a data-quality regression, not just a missing feature.
     std::vector<idx::is_log_idx_record_v1_t> legacyV1;
 
+    // The prior sidecar's header, when one parsed. Kept so a rebuild can carry forward the
+    // log-level fields it cannot re-derive -- see carryForwardLogLevelHeaderFields().
+    std::optional<idx::is_log_idx_header_t> priorHeader;
+
     std::error_code ec;
     if (fs::exists(idxPath, ec)) {
         auto idxSrc = ISFileSource::open(idxPath);
@@ -434,6 +461,7 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                         }
                     }
                 } else {
+                    priorHeader = *hdr;
                     const std::size_t bodyStart = hdr->header_size;
                     if (bodyStart > s.size()) {
                         rebuildReason = RebuildReason::Corrupted;
@@ -565,6 +593,7 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     if (!r.hadOnDiskIndex_) {
         // Default header; counters get filled in by buildIndexFromScan[Dat].
         r.header_ = idx::makeDefaultHeader(0, idx::TimestampAnchor::UptimeMs, idx::HeaderTimeSource::Mixed);
+        if (priorHeader) carryForwardLogLevelHeaderFields(r.header_, *priorHeader);
         if (r.format_ == SegmentFormat::Dat) {
             r.buildIndexFromScanDat();
             // SN-8629: the .dat scan does not carry the collector (it walks chunk headers, not
@@ -979,6 +1008,13 @@ ISExpected<ISLogReader::IndexUpgrade> ISLogReader::upgradeIndex(
     r.format_ = *fmt;
     r.header_ = idx::makeDefaultHeader(0, idx::TimestampAnchor::UptimeMs,
                                        idx::HeaderTimeSource::Mixed);
+    // A v2 sidecar may hold log-level facts the scan cannot re-derive. A v1 one cannot -- it has
+    // no header at all -- so there is nothing to carry forward on that path.
+    if (!sidecar.empty() && !looksLikeV1(sidecar)) {
+        if (auto priorHdr = idx::parseHeader(sidecar.data())) {
+            carryForwardLogLevelHeaderFields(r.header_, *priorHdr);
+        }
+    }
     if (r.format_ == SegmentFormat::Dat) {
         r.buildIndexFromScanDat();
         r.analyzeFromRecords(/*prev=*/nullptr);

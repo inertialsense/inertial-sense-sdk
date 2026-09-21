@@ -535,6 +535,113 @@ TEST(IndexUpgradeV20, PreservesEveryDidOffsetAndPayloadTimestamp) {
     ISFileManager::DeleteDirectory(dir.string());
 }
 
+// Mixed .idx versions within ONE log mean mixed HEADER CONTENT, and the rebuild/upgrade path is
+// what creates the mixture. `capture_epoch_ms` is sampled once at log-open and written into every
+// segment's header precisely so it survives the purge of earlier segments -- `OpenNewSaveFile()`
+// deliberately does not reset it. A rebuild cannot recover it from the `.raw`, so building a
+// default header DESTROYS it, leaving a log whose segments disagree about their own header: the
+// rebuilt ones lose the wall-clock anchor while their untouched siblings keep it. For a GPS-less
+// log that epoch is the ONLY absolute anchor there is.
+//
+// The corpus could not have caught this: every log on hand has HAS_CAPTURE_EPOCH clear and
+// capture_epoch_ms == 0, so the fixture here sets a real one explicitly.
+TEST(IndexUpgradeHeader, CaptureEpochSurvivesAnUpgradeAndARebuild) {
+    const fs::path dir = makeTempDir("epoch_carry");
+    const fs::path seg = writeSegment(dir, 325001u, 20);
+    ASSERT_FALSE(seg.empty());
+
+    constexpr uint64_t kEpoch = 1'789'000'000'123ULL;   // a real host wall-clock at log-open
+
+    // Rewrite the sidecar as a v2.0 (no time-offset field) that DOES carry the epoch.
+    std::vector<idx::is_log_idx_record_v2_t> recs;
+    idx::is_log_idx_header_t base{};
+    {
+        auto clean = ISLogReader::openSegment(seg);
+        ASSERT_TRUE(clean.has_value());
+        base = clean->header();
+        for (auto v : clean->allRecords()) {
+            idx::is_log_idx_record_v2_t rec{};
+            rec.timestamp = v.timestamp().value;
+            rec.offset    = v.offsetInFile();
+            rec.did       = v.did();
+            rec.flags     = v.flags();
+            recs.push_back(rec);
+        }
+    }
+    ASSERT_GT(recs.size(), 2u);
+
+    const auto writeV20WithEpoch = [&]() {
+        fs::path idxPath = seg;
+        idxPath.replace_extension(".idx");
+        idx::is_log_idx_header_t h = base;
+        h.record_size      = 0;                       // pre-v2.1 => 24-byte records
+        h.total_records    = recs.size();
+        h.capture_epoch_ms = kEpoch;
+        h.flags = static_cast<uint8_t>(idx::IS_LOG_IDX_HDR_FLAG_FINALIZED
+                                     | idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH);
+        uint8_t hb[idx::IS_LOG_IDX_HEADER_SIZE];
+        idx::serializeHeader(hb, h);
+        std::ofstream out(idxPath, std::ios::binary | std::ios::trunc);
+        ASSERT_TRUE(out.good());
+        out.write(reinterpret_cast<const char*>(hb), sizeof(hb));
+        for (const auto& rec : recs) {
+            uint8_t rb[idx::IS_LOG_IDX_RECORD_V2_1_SIZE];
+            idx::serializeRecord(rb, rec);
+            out.write(reinterpret_cast<const char*>(rb), idx::IS_LOG_IDX_RECORD_V2_SIZE);
+        }
+    };
+
+    // ---- Path 1: the explicit upgrade.
+    writeV20WithEpoch();
+    auto up = ISLogReader::upgradeIndex(seg);
+    ASSERT_TRUE(up.has_value());
+    {
+        auto r = ISLogReader::openSegment(seg);
+        ASSERT_TRUE(r.has_value());
+        std::printf("[measured] after upgradeIndex: capture_epoch_ms=%llu hasFlag=%d\n",
+                    (unsigned long long)r->header().capture_epoch_ms,
+                    (r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH) ? 1 : 0);
+        EXPECT_EQ(r->header().capture_epoch_ms, kEpoch)
+            << "the upgrade destroyed the log's wall-clock anchor";
+        EXPECT_NE(0, r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH);
+    }
+
+    // ---- Path 2: the automatic rebuild inside construct(), driven by a stale sidecar. Same
+    // header, but a total_records that disagrees with the body so the staleness check fires.
+    {
+        writeV20WithEpoch();
+        fs::path idxPath = seg;
+        idxPath.replace_extension(".idx");
+        // Corrupt the record COUNT only -- the header, and its epoch, stay intact and parseable.
+        uint8_t hb[idx::IS_LOG_IDX_HEADER_SIZE];
+        {
+            std::ifstream in(idxPath, std::ios::binary);
+            in.read(reinterpret_cast<char*>(hb), sizeof(hb));
+        }
+        auto h = idx::parseHeader(hb);
+        ASSERT_TRUE(h.has_value());
+        h->total_records = recs.size() + 9999;   // impossible for the body present
+        idx::serializeHeader(hb, *h);
+        {
+            std::fstream out(idxPath, std::ios::binary | std::ios::in | std::ios::out);
+            ASSERT_TRUE(out.good());
+            out.write(reinterpret_cast<const char*>(hb), sizeof(hb));
+        }
+
+        auto r = ISLogReader::openSegment(seg);
+        ASSERT_TRUE(r.has_value());
+        ASSERT_FALSE(r->hadOnDiskIndex()) << "expected the staleness check to force a rebuild";
+        std::printf("[measured] after stale rebuild: capture_epoch_ms=%llu hasFlag=%d\n",
+                    (unsigned long long)r->header().capture_epoch_ms,
+                    (r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH) ? 1 : 0);
+        EXPECT_EQ(r->header().capture_epoch_ms, kEpoch)
+            << "a stale-body rebuild destroyed a log-level header field it could have kept";
+        EXPECT_NE(0, r->header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH);
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
 // An already-current sidecar is a no-op, not a pointless rewrite.
 TEST(IndexUpgradeV21, AnAlreadyCurrentSidecarIsLeftAlone) {
     const fs::path dir = makeTempDir("v21_noop");
