@@ -527,7 +527,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
             serialPort->errorCode = errno;
             serialPort->error = strerror(errno);
             log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to set COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
-            serialPortClose(port);
+            CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
             return 0;
         }
     }
@@ -536,7 +536,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPort->errorCode = errno;
         serialPort->error = strerror(errno);
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retreive COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
-        serialPortClose(port);
+        CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
     }
 
@@ -575,7 +575,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPort->errorCode = errno;
         serialPort->error = strerror(errno);
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to configure COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
-        serialPortClose(port);
+        CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
     }
 
@@ -1053,6 +1053,11 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     if (result >= 0) {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
+    } else if (win32ErrorIndicatesDeviceLost((DWORD)serialPort->errorCode)) {
+        // SN-8697: mirror the write path — a device-lost read failure must invalidate the port
+        // so the firmware updater can detect the disconnect and rediscover the device.
+        portClose(port);
+        portInvalidate(port);
     }
 #else
     int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMs);
