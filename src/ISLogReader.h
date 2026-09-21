@@ -48,6 +48,7 @@
 #include "ISLogSource.h"
 #include "ISRecordView.h"
 #include "ISAnchorAnalysis.h"
+#include "ISDiagnostics.h"
 #include "ISTimeStamp.h"
 
 #include <cstddef>
@@ -577,6 +578,18 @@ public:
      *          open path was straightforward.
      */
     const std::vector<std::string>& warnings() const noexcept { return warnings_; }
+
+    /**
+     * @brief This segment's diagnostics, typed — audit B3.
+     *
+     * The same events `warnings()` and `anchorAnalysis().anomalies` already carry, classified so
+     * an application can act on them: a kind it can switch on, the path they are about, and a
+     * remedy where one exists. `warnings()` remains for anything that only wants to print.
+     *
+     * Built on demand rather than stored, because the inputs are already retained and a reader
+     * is read-only after construction.
+     */
+    std::vector<ISDiagnostic> diagnostics() const;
 
     /**
      * @return  Earliest record timestamp in this segment, in the

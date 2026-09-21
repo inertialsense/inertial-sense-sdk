@@ -74,6 +74,32 @@ public:
     static ISExpected<ISDeviceLog>
         fromSegments(std::vector<std::filesystem::path> segmentPaths);
 
+    /**
+     * @brief Compose from segments that are ALREADY OPEN, without re-opening them.
+     *
+     * Audit C1. `ISLog::openDirectory` has to open every segment anyway, to read its device id
+     * before it can group segments into devices — and it then dropped each reader so
+     * @ref fromSegments could open it a second time. Opening a segment is not cheap: it builds
+     * the record index (a full byte scan when the sidecar is missing or stale) and runs the
+     * anchor cascade, so a directory open paid for both **twice per segment**.
+     *
+     * @param readers  Open readers for one device's segments, **in filename order** — the
+     *                 composition uses that order as its tiebreaker when anchored starts are
+     *                 equal or missing, so an unsorted vector changes the result. Moved from.
+     * @return The composed log, or `ISErrorCode::InvalidArgument` if @p readers is empty,
+     *         `Corrupted` on a device-id mismatch, `Unsupported` on mixed `.raw`/`.dat`.
+     */
+    static ISExpected<ISDeviceLog>
+        fromReaders(std::vector<ISLogReader>&& readers);
+
+    /**
+     * @brief Every segment's diagnostics, in segment order — audit B3.
+     *
+     * The link that was missing: `ISLogReader` knew about stalled clocks, rebuilt sidecars and
+     * weak anchors, and nothing above it could ask.
+     */
+    std::vector<ISDiagnostic> diagnostics() const;
+
     ~ISDeviceLog();
     ISDeviceLog(const ISDeviceLog&)            = delete;
     ISDeviceLog& operator=(const ISDeviceLog&) = delete;
@@ -184,6 +210,36 @@ public:
      *          (raw) if the log has no anchorable records.
      */
     TimeStamp anchoredSpanStart(const ISTimeResolver& resolver) const noexcept;
+
+    /**
+     * @name Which "when does this log start" to use — audit B2
+     *
+     * There are three, they answer different questions, and before this note there was no
+     * documented precedence between them (D0065/D0066 ask for one canonical frame). In order of
+     * what a caller usually wants:
+     *
+     * 1. **`anchoredSpanStart/End(resolver)` — the user-visible wall clock.** Every record routed
+     *    through `ISTimeResolver`, folded to the extremes. This is the only one guaranteed to be
+     *    an absolute Unix-epoch time, because only the resolver knows the GPS week. Costs a full
+     *    per-record pass and needs a resolver, so it is for display and export, not for ordering.
+     * 2. **`anchorAnalysis().anchoredStartMs` — the canonical ORDERING key.** The cascade's
+     *    per-segment placement, and what `fromReaders` sorts on. Cheap: it comes free with the
+     *    index build.
+     * 3. **`spanStart/End()` — the cascade's answer folded across segments**, tagged with the
+     *    provenance it earned (audit A2). Same source as (2), so they never disagree.
+     *
+     * **The trap, and why (1) exists at all: (2) and (3) are NOT always a wall clock.** For a
+     * segment anchored only by payload time-of-week the cascade leaves the value in the ToW
+     * domain — it has no GPS week to convert with — so the value is a few hundred million ms and
+     * renders as 1980. That is the symptom customers report, and `TimeStamp::source` is how a
+     * consumer tells the cases apart: `PayloadToW` may still be ToW-domain, whereas
+     * `FileTimeAnchored` and a resolver-anchored value are Unix-absolute.
+     *
+     * What all three share, and what `SpanPrecedence.*` asserts: they must agree on **duration**.
+     * A frame shift may move where a log sits; it must never change how long it lasted.
+     */
+    ///@{
+    ///@}
 
     /**
      * @brief SN-8105: latest record timestamp, GPS-anchored via the resolver.

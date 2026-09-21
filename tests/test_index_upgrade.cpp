@@ -29,6 +29,9 @@
 
 #include "ISLogReader.h"
 #include "ISLogIndex.h"
+#include "ISLog.h"
+#include "ISDiagnostics.h"
+#include "ISDeviceLog.h"
 #include "ISLogger.h"
 #include "ISFileManager.h"
 #include "ISDataMappings.h"
@@ -149,6 +152,199 @@ std::size_t scanCount(const fs::path& segment) {
 }
 
 } // namespace
+
+// =====================================================================================
+// Audit B3 — diagnostics must reach the application, and an orphaned sidecar must be reported
+// with enough structure to act on.
+//
+// Everything the reader learned used to dead-end at `ISLogReader`: `warnings()` had no accessor
+// on `ISDeviceLog`, `ISLog` or Logalyzer's adapter, so the stall detector that found a customer's
+// frozen clock was unreachable from the application that needed to show it. And Kyle asked for an
+// orphaned `.idx` to be reported AND offered for deletion, which a bare string cannot support.
+// =====================================================================================
+
+TEST(Diagnostics, AnOrphanedSidecarIsReportedWithItsPathAndARemedy) {
+    const fs::path dir = makeTempDir("b3_orphan");
+    const fs::path seg = writeSegment(dir, 425100u, 15);
+    ASSERT_FALSE(seg.empty());
+
+    // A sidecar whose segment is gone -- exactly the state of the corpus log's eight legacy
+    // files. Copy the real one aside, then remove its segment's counterpart name.
+    const fs::path orphan = dir / "LOG_SN425100_19700101_000000_0099.idx";
+    {
+        fs::path liveIdx = seg;
+        liveIdx.replace_extension(".idx");
+        std::error_code ec;
+        fs::copy_file(liveIdx, orphan, fs::copy_options::overwrite_existing, ec);
+        ASSERT_FALSE(ec) << "could not stage the orphan";
+    }
+    ASSERT_TRUE(fs::exists(orphan));
+
+    auto log = ISLog::openDirectory(dir);
+    ASSERT_TRUE(log.has_value());
+
+    const auto& diags = log->diagnostics();
+    std::printf("[measured] %zu diagnostic(s):\n", diags.size());
+    for (const auto& d : diags) {
+        std::printf("[measured]   [%s] sev=%d %s\n    %s\n    remedy: %s\n",
+                    isDiagKindName(d.kind), static_cast<int>(d.severity),
+                    d.path.filename().string().c_str(), d.message.c_str(), d.remedy.c_str());
+    }
+
+    const auto it = std::find_if(diags.begin(), diags.end(), [](const ISDiagnostic& d) {
+        return d.kind == ISDiagKind::OrphanedSidecar;
+    });
+    ASSERT_NE(it, diags.end()) << "the orphaned sidecar was not reported at all";
+
+    // Structure an application can act on: the path is the SIDECAR (the file to delete), not the
+    // segment, and the remedy says what to do.
+    EXPECT_EQ(it->path.filename(), orphan.filename())
+        << "the diagnostic must carry the sidecar's own path, since that is what gets deleted";
+    EXPECT_FALSE(it->remedy.empty()) << "an actionable diagnostic needs a remedy";
+    EXPECT_NE(it->remedy.find("safe"), std::string::npos);
+    EXPECT_TRUE(it->needsAttention()) << "the user should be told without having to ask";
+    EXPECT_STREQ(isDiagKindName(it->kind), "orphaned-sidecar");
+
+    // And the orphan must not have been mistaken for a segment.
+    EXPECT_EQ(log->segmentPaths().size(), 1u);
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+TEST(Diagnostics, SegmentLevelDiagnosticsReachTheLogLevel) {
+    const fs::path dir = makeTempDir("b3_fold");
+    const fs::path seg = writeSegment(dir, 425101u, 20);
+    ASSERT_FALSE(seg.empty());
+
+    // Force a rebuild so the segment has something to report, then check the same event is
+    // visible at every level -- reader, device, log. That chain is what B3 was about.
+    fs::path idxPath = seg;
+    idxPath.replace_extension(".idx");
+    ASSERT_TRUE(fs::remove(idxPath));
+
+    auto log = ISLog::openDirectory(dir);
+    ASSERT_TRUE(log.has_value());
+    ASSERT_EQ(log->deviceIds().size(), 1u);
+    const ISDeviceLog& dl = log->device(log->deviceIds().front());
+
+    const auto readerDiags = dl.segment(0).diagnostics();
+    const auto deviceDiags = dl.diagnostics();
+    const auto& logDiags   = log->diagnostics();
+    std::printf("[measured] reader=%zu device=%zu log=%zu\n",
+                readerDiags.size(), deviceDiags.size(), logDiags.size());
+    for (const auto& d : logDiags) {
+        std::printf("[measured]   [%s] %s\n", isDiagKindName(d.kind), d.message.c_str());
+    }
+
+    const auto hasRebuilt = [](const std::vector<ISDiagnostic>& v) {
+        return std::any_of(v.begin(), v.end(), [](const ISDiagnostic& d) {
+            return d.kind == ISDiagKind::SidecarRebuilt;
+        });
+    };
+    EXPECT_GT(readerDiags.size(), 0u)  << "the reader rebuilt the index and should say so";
+    EXPECT_TRUE(hasRebuilt(readerDiags)) << "classified as a rebuild at the reader";
+    EXPECT_TRUE(hasRebuilt(deviceDiags)) << "did not reach ISDeviceLog";
+    EXPECT_TRUE(hasRebuilt(logDiags))    << "did not reach ISLog -- this is the B3 dead-end";
+
+    // Every diagnostic names the file it is about, or a UI cannot attribute it.
+    for (const auto& d : logDiags) {
+        EXPECT_FALSE(d.path.empty()) << "diagnostic without a path: " << d.message;
+        EXPECT_FALSE(d.message.empty());
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// =====================================================================================
+// Audit C1 — a directory open must open each segment ONCE.
+//
+// `ISLog::openDirectory` has to open every segment to read its device id before it can group
+// segments into devices, and it then DROPPED each reader so `ISDeviceLog::fromSegments` could
+// open it a second time ("Drop the reader; fromSegments re-opens"). Opening is not cheap: it
+// builds the record index — a full byte scan when the sidecar is missing or stale — and runs the
+// anchor cascade. So a directory open paid for both twice per segment.
+//
+// Observing the open COUNT without instrumenting production code: delete the sidecar first. The
+// first open must rebuild it and persists the result, so a SECOND open of the same segment would
+// find a valid sidecar and report `hadOnDiskIndex() == true` with no rebuild warning. The reader
+// the composed log keeps therefore tells us which open produced it — under the old double-open it
+// was the trusted second one, and under a single open it is the one that rebuilt.
+// =====================================================================================
+
+TEST(OpenDirectoryEfficiency, EachSegmentIsOpenedOncePerDirectoryOpen) {
+    const fs::path dir = makeTempDir("c1_single_open");
+    const fs::path seg = writeSegment(dir, 424900u, 25);
+    ASSERT_FALSE(seg.empty());
+
+    // Drop the live sidecar so the first open has to rebuild, and persists as it does.
+    fs::path idxPath = seg;
+    idxPath.replace_extension(".idx");
+    ASSERT_TRUE(fs::remove(idxPath));
+
+    auto log = ISLog::openDirectory(dir);
+    ASSERT_TRUE(log.has_value()) << "openDirectory failed";
+    ASSERT_EQ(log->deviceIds().size(), 1u);
+    const ISDeviceLog& dl = log->device(log->deviceIds().front());
+    ASSERT_EQ(dl.segmentCount(), 1u);
+    const ISLogReader& kept = dl.segment(0);
+
+    std::printf("[measured] retained reader: hadOnDiskIndex=%d warnings=%zu\n",
+                static_cast<int>(kept.hadOnDiskIndex()), kept.warnings().size());
+    for (const auto& w : kept.warnings()) std::printf("[measured]   %s\n", w.c_str());
+
+    // The sidecar exists now, because the one open that happened persisted it.
+    EXPECT_TRUE(fs::exists(idxPath)) << "the rebuild should have persisted a sidecar";
+
+    // The retained reader is the one that REBUILT. If the segment were opened a second time,
+    // that open would have found the freshly-persisted sidecar and the kept reader would report
+    // a trusted index with no rebuild warning.
+    EXPECT_FALSE(kept.hadOnDiskIndex())
+        << "the composed log kept a reader that found a valid sidecar -- which can only be a "
+           "SECOND open of a segment whose first open just wrote it";
+    const auto& w = kept.warnings();
+    EXPECT_TRUE(std::any_of(w.begin(), w.end(), [](const std::string& m) {
+        return m.find("sidecar: rebuilt from") != std::string::npos;
+    })) << "the retained reader should carry the rebuild it performed";
+
+    // And the composition is still correct, which is the point of the refactor being safe.
+    EXPECT_GT(dl.recordCount(), 0u);
+    EXPECT_TRUE(dl.segment(0).anchorAnalysis().anchored());
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// Multi-device and multi-segment, which is where the doubled cost actually bit: the grouping must
+// still partition correctly now that it moves open readers rather than paths, and each device's
+// segments must stay in filename order because the composition uses that as its tiebreaker.
+TEST(OpenDirectoryEfficiency, GroupingByDeviceSurvivesMovingOpenReaders) {
+    const fs::path dir = makeTempDir("c1_grouping");
+    // Two devices, two segments each. writeSegment names by serial, so distinct serials give
+    // distinct devices in one directory.
+    const fs::path a1 = writeSegment(dir, 424901u, 12);
+    const fs::path b1 = writeSegment(dir, 424902u, 12);
+    ASSERT_FALSE(a1.empty());
+    ASSERT_FALSE(b1.empty());
+
+    auto log = ISLog::openDirectory(dir);
+    ASSERT_TRUE(log.has_value());
+    const auto ids = log->deviceIds();
+    std::printf("[measured] devices=%zu segments=%zu records=%zu\n",
+                ids.size(), log->segmentPaths().size(), log->recordCount());
+    ASSERT_EQ(ids.size(), 2u) << "two serials must compose as two devices";
+    for (uint64_t id : ids) {
+        const ISDeviceLog& dl = log->device(id);
+        EXPECT_GE(dl.segmentCount(), 1u);
+        EXPECT_GT(dl.recordCount(), 0u);
+        // Filename order within a device, which fromReaders documents as its precondition.
+        for (std::size_t i = 1; i < dl.segmentCount(); ++i) {
+            EXPECT_LT(dl.segment(i - 1).path().filename().string(),
+                      dl.segment(i).path().filename().string())
+                << "segments reached the composition out of filename order";
+        }
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
 
 // =====================================================================================
 // Kyle's non-negotiable #1: a v1 upgrade yields OBSERVED offsets.

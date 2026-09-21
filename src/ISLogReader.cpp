@@ -1985,6 +1985,68 @@ TimeStamp ISLogReader::segmentSpanEnd() const noexcept {
     return TimeStamp::fromSessionOnly(segmentEndTimestamp(), deviceId_);
 }
 
+std::vector<ISDiagnostic> ISLogReader::diagnostics() const {
+    // Audit B3. Classify what the open already recorded, rather than re-plumbing every producer:
+    // the reasons are written once, at the point they are discovered, and a second parallel
+    // channel would be a second thing to forget to update.
+    std::vector<ISDiagnostic> out;
+    const auto has = [](const std::string& hay, const char* needle) {
+        return hay.find(needle) != std::string::npos;
+    };
+
+    for (const std::string& w : warnings_) {
+        ISDiagnostic d;
+        d.path    = rawPath_;
+        d.message = w;
+        if (has(w, "persist failed")) {
+            d.kind     = ISDiagKind::SidecarNotPersisted;
+            d.severity = ISDiagSeverity::Warning;
+            d.remedy   = "Reading works, but the index will be rebuilt again next time. Move the "
+                         "log somewhere writable to keep it.";
+        } else if (has(w, "truncation:")) {
+            d.kind     = ISDiagKind::SegmentTruncated;
+            d.severity = ISDiagSeverity::Warning;
+            d.remedy   = "The tail of this segment is unreadable; records after the cut are lost.";
+        } else if (has(w, "upgraded from v1") || has(w, "v1 upgrade declined")) {
+            d.kind     = ISDiagKind::SidecarUpgraded;
+            d.severity = ISDiagSeverity::Notice;
+        } else if (has(w, "rebuilt from")) {
+            d.kind     = ISDiagKind::SidecarRebuilt;
+            d.severity = ISDiagSeverity::Notice;
+        } else if (has(w, "trailing partial packet")) {
+            d.kind     = ISDiagKind::SegmentTruncated;
+            d.severity = ISDiagSeverity::Info;   // continues in the next segment; normal rotation
+        } else {
+            d.kind     = ISDiagKind::Other;
+            d.severity = ISDiagSeverity::Info;
+        }
+        out.push_back(std::move(d));
+    }
+
+    for (const std::string& a : anchor_.anomalies) {
+        ISDiagnostic d;
+        d.path    = rawPath_;
+        d.message = a;
+        if (has(a, "clock stalled")) {
+            d.kind     = ISDiagKind::StalledClock;
+            d.severity = ISDiagSeverity::Warning;
+            d.remedy   = "Those records were re-timed from their neighbours; treat their "
+                         "timestamps as estimates.";
+        } else if (has(a, "durability dropped") || has(a, "no anchor of any kind") ||
+                   has(a, "first segment is absent") || has(a, "anchored to the log filename") ||
+                   has(a, "chained from the previous") || has(a, "adopted the session offset") ||
+                   has(a, "carried the previous")) {
+            d.kind     = ISDiagKind::WeakAnchor;
+            d.severity = ISDiagSeverity::Notice;
+        } else {
+            d.kind     = ISDiagKind::Other;
+            d.severity = ISDiagSeverity::Info;
+        }
+        out.push_back(std::move(d));
+    }
+    return out;
+}
+
 std::vector<ISLogReader::did_t> ISLogReader::presentDids() const {
     std::vector<did_t> out;
     out.reserve(byDid_.size());

@@ -561,6 +561,68 @@ TEST_F(TimeResolverTest, AnchoredSpanIsGpsAnchoredNotRaw) {
 }
 
 // ---------------------------------------------------------------------------
+// Audit B2 — three answers to "when does this log start", and the invariant that ties them.
+//
+// `anchoredSpanStart/End(resolver)` is the user-visible wall clock (only the resolver knows the
+// GPS week). `anchorAnalysis().anchoredStartMs` is the canonical ordering key, and `spanStart/End`
+// folds that same cascade answer across segments — so those two never disagree. The audit found no
+// documented precedence between the three; the header now states it, and this pins the one
+// property that must hold regardless of frame: **they must agree on DURATION.** A frame shift may
+// move where a log sits on the timeline; it must never change how long the log lasted.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, SpanPrecedenceFramesMayDifferButDurationsMustNot) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    for (double tow : { 100.0, 110.0, 120.0, 130.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("span_precedence", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    const TimeStamp cascadeStart = log->spanStart();
+    const TimeStamp cascadeEnd   = log->spanEnd();
+    const TimeStamp wallStart    = log->anchoredSpanStart(resolver.value());
+    const TimeStamp wallEnd      = log->anchoredSpanEnd(resolver.value());
+    const AnchorAnalysis a       = log->segment(0).anchorAnalysis();
+
+    std::printf("[measured] cascade span = [%llu..%llu] src=%d\n",
+                (unsigned long long)cascadeStart.value, (unsigned long long)cascadeEnd.value,
+                static_cast<int>(cascadeStart.source));
+    std::printf("[measured] wall    span = [%llu..%llu] src=%d\n",
+                (unsigned long long)wallStart.value, (unsigned long long)wallEnd.value,
+                static_cast<int>(wallStart.source));
+    std::printf("[measured] cascade anchoredStartMs = %llu\n",
+                (unsigned long long)a.anchoredStartMs);
+
+    // (2) and (3) are the same source, so they agree exactly.
+    EXPECT_EQ(cascadeStart.value, a.anchoredStartMs)
+        << "spanStart must fold the cascade's own answer, not a second opinion";
+
+    // The frames DO differ here, and that is the documented trap: a ToW-only log's cascade value
+    // stays in the time-of-week domain (which is what renders as 1980), while the resolver
+    // converts to Unix-absolute using the GPS week.
+    constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
+    EXPECT_LT(cascadeStart.value, kGpsEpochUnixMs) << "cascade value is ToW-domain here";
+    EXPECT_GT(wallStart.value,    kGpsEpochUnixMs) << "resolver value is Unix-absolute";
+
+    // THE INVARIANT: same duration, whichever frame you ask in.
+    ASSERT_GT(cascadeEnd.value, cascadeStart.value);
+    ASSERT_GT(wallEnd.value,    wallStart.value);
+    const uint64_t cascadeMs = cascadeEnd.value - cascadeStart.value;
+    const uint64_t wallMs    = wallEnd.value    - wallStart.value;
+    std::printf("[measured] duration: cascade=%llu ms  wall=%llu ms\n",
+                (unsigned long long)cascadeMs, (unsigned long long)wallMs);
+    EXPECT_EQ(cascadeMs, wallMs)
+        << "the two frames disagree about how long the log lasted -- a frame shift must be a "
+           "translation, never a scaling";
+    EXPECT_EQ(cascadeMs, 30'000u) << "fixture spans 100.0 s .. 130.0 s";
+}
+
+// ---------------------------------------------------------------------------
 // Resolve between two sync points → Interpolated.
 // ---------------------------------------------------------------------------
 TEST_F(TimeResolverTest, ResolveInterpolated) {
