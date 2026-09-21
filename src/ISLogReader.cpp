@@ -667,6 +667,23 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
 
     r.deriveDeviceId(rawPath);
 
+    // Audit C3: verify, once, the invariant `recordEndOffset` binary-searches on. Cheap (one
+    // pass over an array already in cache) and it means a violated assumption degrades to the
+    // old linear scan instead of silently handing out a wrong byte range.
+    r.offsetsNonDecreasing_ = true;
+    for (std::size_t i = 1; i < r.records_.size(); ++i) {
+        if (r.records_[i].offset < r.records_[i - 1].offset) {
+            r.offsetsNonDecreasing_ = false;
+            log_warn(IS_LOG_ISLOG,
+                     "%s: record offsets decrease at index %zu (%llu -> %llu); record byte ranges "
+                     "fall back to a linear scan",
+                     rawPath.filename().c_str(), i,
+                     (unsigned long long)r.records_[i - 1].offset,
+                     (unsigned long long)r.records_[i].offset);
+            break;
+        }
+    }
+
     // Build allIndices_ once (0..N-1). RangeIterator over allRecords() walks this; it's the canonical "everything"
     // range.
     r.allIndices_.resize(r.records_.size());
@@ -2080,13 +2097,38 @@ std::size_t ISLogReader::recordEndOffset(std::size_t recordIdx) const noexcept {
     }
 
     if (recordIdx + 1 < records_.size()) {
-        // Records share an arrival-order array but their .raw offsets are per-arrival-chunk (the writer increments
-        // m_lastIndexOffset after each SaveData call). We use a sorted scan to find the smallest offset strictly
-        // greater than the current record's, which is the natural end-of-bytes for "this record" in the contiguous
-        // chunk-input case. If multiple records share an offset (one parser-loop emitted several index records), they
-        // all observe the same byte range — documented in ISRecordView.
+        // The end of "this record" is the smallest record offset strictly greater than its own.
+        // Records share an arrival-order array but their .raw offsets are per-arrival-chunk (the
+        // writer increments m_lastIndexOffset after each SaveData call). If several records share
+        // an offset (one parser-loop emitted several index records) they all observe the same
+        // byte range — documented in ISRecordView.
+        //
+        // Audit C3: this was a forward LINEAR scan. O(1) when the next record's offset is
+        // greater, which is the normal case — but O(n) for every record in a run that shares an
+        // offset, and real firmware sidecars do produce those. `viewAt()` is on the anchor
+        // cascade's hot path via analyzeFromRecords, so the pathological case is quadratic over
+        // the whole segment.
+        //
+        // Offsets are non-decreasing in arrival order: the reader's own scan emits them in file
+        // order, and `construct()` rejects a sidecar whose offsets strictly decrease (that is the
+        // chunk-relative-offset staleness check) and rebuilds instead. That makes the array
+        // partitioned for `upper_bound`. The invariant is VERIFIED once at construction rather
+        // than assumed, because a wrong answer here is a silently wrong byte range rather than a
+        // crash — if it ever fails to hold, this falls back to the linear scan.
         const uint64_t cur = records_[recordIdx].offset;
-        uint64_t next = rawSource_ ? rawSource_->size() : cur;
+        const uint64_t fileEnd = rawSource_ ? rawSource_->size() : cur;
+
+        if (offsetsNonDecreasing_) {
+            const auto begin = records_.begin() + static_cast<std::ptrdiff_t>(recordIdx) + 1;
+            const auto it = std::upper_bound(
+                begin, records_.end(), cur,
+                [](uint64_t value, const idx::is_log_idx_record_v2_t& r) {
+                    return value < r.offset;
+                });
+            return static_cast<std::size_t>(it == records_.end() ? fileEnd : it->offset);
+        }
+
+        uint64_t next = fileEnd;
         for (std::size_t i = recordIdx + 1; i < records_.size(); ++i) {
             if (records_[i].offset > cur) {
                 next = records_[i].offset;
@@ -2245,22 +2287,85 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
     // SN-8339: the resolver's arrival index is global across segments (in
     // composition order), so accumulate each segment's base from the prior
     // segments' record counts to key the multi-boot resolver per record.
+    // Audit C2: this resolved EVERY record of EVERY segment -- ~5 s on the 4.8M-record log --
+    // purely to find each segment's resolved min and max.
+    //
+    // The cascade's `anchoredStartMs`/`anchoredEndMs` cannot simply replace it, for two reasons
+    // worth stating because both are easy to assume away:
+    //   1. they are not always on the same frame (a ToW-only segment's cascade value stays in
+    //      the time-of-week domain -- see the span-precedence note on ISDeviceLog), and
+    //   2. gap detection needs the RESOLVED timeline specifically.
+    //
+    // What can be avoided is resolving records that cannot change the extrema. Within one boot
+    // session and outside a stalled run, `resolve()` is monotonic in its raw input per domain --
+    // uptime gets a constant offset, ToW a fixed epoch conversion -- so the resolved extrema are
+    // the resolve of the RAW per-domain extrema, at most four calls per segment instead of N.
+    //
+    // Both escapes are real and are checked per log, conservatively:
+    //   - a stalled run is RE-TIMED from its neighbours by arrival index, so a record whose raw
+    //     value is not extremal can become extremal after resolution. That is exactly the
+    //     customer log (2,107 records frozen on one timestamp, re-timed across 959 s).
+    //   - multi-boot means a per-session offset, so a large raw value in an earlier session can
+    //     resolve below a smaller one in a later session.
+    // If either applies anywhere in this log, every record is resolved exactly as before.
+    const bool mayReorder = !resolver.stalledRuns().empty() || resolver.sessions().size() > 1;
+    if (mayReorder) {
+        log_debug(IS_LOG_ISLOG,
+                  "detectGaps: %zu stalled run(s), %zu session(s) -- resolving every record",
+                  resolver.stalledRuns().size(), resolver.sessions().size());
+    }
+
     uint64_t segArrivalBase = 0;
+    std::size_t resolveCalls = 0, recordsSeen = 0;
     for (std::size_t s = 0; s < log.segmentCount(); ++s) {
         bool      any = false;
         TimeStamp lo{};
         TimeStamp hi{};
         uint64_t  recIdx = 0;
+
+        // Per-domain raw extrema and the arrival index each was seen at, for the fast path.
+        struct RawExtremum { bool seen = false; uint64_t raw = 0; uint64_t arrival = 0; };
+        RawExtremum upLo, upHi, towLo, towHi;
+        const auto note = [](RawExtremum& lower, RawExtremum& upper,
+                             uint64_t raw, uint64_t arrival) {
+            if (!lower.seen || raw < lower.raw) { lower = { true, raw, arrival }; }
+            if (!upper.seen || raw > upper.raw) { upper = { true, raw, arrival }; }
+        };
+
         for (auto v : log.segment(s).allRecords()) {
             const uint64_t arrivalIndex = segArrivalBase + recIdx++;
             const uint64_t raw = v.timestamp().value;
+            ++recordsSeen;
             if (raw == 0) continue;                       // metadata / sentinel
+            if (!mayReorder) {
+                // Defer: only the per-domain raw extrema can be the resolved extrema.
+                if (cISDataMappings::TimestampDomain(v.did())
+                        == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW) {
+                    note(towLo, towHi, raw, arrivalIndex);
+                } else {
+                    note(upLo, upHi, raw, arrivalIndex);
+                }
+                continue;
+            }
             const TimeStamp r = resolver.resolve(raw, devId, arrivalIndex);
+            ++resolveCalls;
             if (r.source == TimeSource::SessionOnly) continue;  // no wall-clock anchor
             if (r.value == 0) continue;
             if (!any || r.value < lo.value) lo = r;
             if (!any || r.value > hi.value) hi = r;
             any = true;
+        }
+
+        if (!mayReorder) {
+            for (const RawExtremum* e : { &upLo, &upHi, &towLo, &towHi }) {
+                if (!e->seen) continue;
+                const TimeStamp r = resolver.resolve(e->raw, devId, e->arrival);
+                ++resolveCalls;
+                if (r.source == TimeSource::SessionOnly || r.value == 0) continue;
+                if (!any || r.value < lo.value) lo = r;
+                if (!any || r.value > hi.value) hi = r;
+                any = true;
+            }
         }
         if (any) {
             SegmentSpan sp;
@@ -2275,9 +2380,9 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
     auto gaps = findGaps(std::move(spans), thresholdMs);
     log_debug(IS_LOG_ISLOG,
               "ISLogReader::detectGaps: device 0x%016llx, %zu segment(s) -> %zu gap(s) "
-              "(threshold %llu ms)",
+              "(threshold %llu ms); %zu resolve() call(s) for %zu record(s)",
               (unsigned long long)devId, log.segmentCount(), gaps.size(),
-              (unsigned long long)thresholdMs);
+              (unsigned long long)thresholdMs, resolveCalls, recordsSeen);
     return gaps;
 }
 

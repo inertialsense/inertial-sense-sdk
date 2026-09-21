@@ -1116,6 +1116,9 @@ private:
 
     SegmentFormat                          format_             = SegmentFormat::Raw;
     bool                                   hadOnDiskIndex_     = false;
+    //! Audit C3: true when `records_` offsets are non-decreasing, which is what lets
+    //! `recordEndOffset` binary-search instead of scanning. Verified once in `construct()`.
+    bool offsetsNonDecreasing_ = true;
 
     //! SN-8629: anchor analysis from the scan that built this index; `None` tier when the
     //! index came off disk instead.

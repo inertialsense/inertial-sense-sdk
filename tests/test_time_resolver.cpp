@@ -561,6 +561,107 @@ TEST_F(TimeResolverTest, AnchoredSpanIsGpsAnchoredNotRaw) {
 }
 
 // ---------------------------------------------------------------------------
+// Audit C2 — detectGaps must not resolve every record, and must get the same answer.
+//
+// It used to make one `resolve()` call per record of every segment (~5 s on the 4.8M-record log)
+// purely to find each segment's resolved extrema. Within one boot session and outside a stalled
+// run, `resolve()` is monotonic in its raw input per domain, so only the raw per-domain extrema
+// can be the resolved extrema — four calls per segment instead of N.
+//
+// This asserts the part that actually matters: the cheap path agrees EXACTLY with resolving
+// everything. The reference below is computed the old way, in the test, so the two cannot drift.
+// ---------------------------------------------------------------------------
+TEST_F(TimeResolverTest, DetectGapsAgreesWithResolvingEveryRecord) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // A deliberate gap: 100..130 s, then a jump to 400..430 s.
+    for (double tow : { 100.0, 110.0, 120.0, 130.0, 400.0, 410.0, 420.0, 430.0 }) {
+        recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    }
+    f = buildFixture("c2_equivalence", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+
+    auto log = ISDeviceLog::fromSegments({ f.rawFile });
+    ASSERT_TRUE(log.has_value());
+    auto resolver = ISTimeResolver::build(log.value());
+    ASSERT_TRUE(resolver.has_value());
+
+    // Premise for the fast path: no stalled runs, one session. If a future change breaks this the
+    // test still passes (it compares against the exhaustive reference either way) but say so.
+    std::printf("[measured] stalledRuns=%zu sessions=%zu\n",
+                resolver->stalledRuns().size(), resolver->sessions().size());
+
+    constexpr uint64_t kThreshold = 1000;
+    const auto gaps = ISLogReader::detectGaps(log.value(), resolver.value(), kThreshold);
+
+    // --- Reference: the pre-C2 algorithm, resolving every record.
+    const uint64_t devId = log->deviceId();
+    std::vector<ISLogReader::SegmentSpan> refSpans;
+    uint64_t base = 0;
+    for (std::size_t sg = 0; sg < log->segmentCount(); ++sg) {
+        bool any = false; TimeStamp lo{}, hi{}; uint64_t idx = 0;
+        for (auto v : log->segment(sg).allRecords()) {
+            const uint64_t arrival = base + idx++;
+            const uint64_t raw = v.timestamp().value;
+            if (raw == 0) continue;
+            const TimeStamp r = resolver->resolve(raw, devId, arrival);
+            if (r.source == TimeSource::SessionOnly || r.value == 0) continue;
+            if (!any || r.value < lo.value) lo = r;
+            if (!any || r.value > hi.value) hi = r;
+            any = true;
+        }
+        if (any) {
+            ISLogReader::SegmentSpan sp;
+            sp.segmentId = static_cast<int>(sg);
+            sp.start = lo; sp.end = hi;
+            refSpans.push_back(sp);
+        }
+        base += idx;
+    }
+    const std::size_t refSpansCount = refSpans.size();
+    const std::pair<uint64_t, uint64_t> refSpan =
+        refSpans.empty() ? std::pair<uint64_t, uint64_t>{ 0, 0 }
+                         : std::pair<uint64_t, uint64_t>{ refSpans.front().start.value,
+                                                          refSpans.front().end.value };
+    const auto refGaps = ISLogReader::findGaps(std::move(refSpans), kThreshold);
+
+    // The cheap path's own span, read back the same way detectGaps computes it.
+    std::pair<uint64_t, uint64_t> cheapSpan{ 0, 0 };
+    {
+        const TimeStamp cs = log->anchoredSpanStart(resolver.value());
+        const TimeStamp ce = log->anchoredSpanEnd(resolver.value());
+        cheapSpan = { cs.value, ce.value };
+    }
+    std::printf("[measured] cheap span=[%llu..%llu] ref span=[%llu..%llu]\n",
+                (unsigned long long)cheapSpan.first, (unsigned long long)cheapSpan.second,
+                (unsigned long long)refSpan.first, (unsigned long long)refSpan.second);
+
+    std::printf("[measured] fast path: %zu gap(s); exhaustive reference: %zu gap(s)\n",
+                gaps.size(), refGaps.size());
+    ASSERT_EQ(gaps.size(), refGaps.size())
+        << "the cheap path found a different number of gaps than resolving everything";
+    for (std::size_t i = 0; i < gaps.size(); ++i) {
+        std::printf("[measured]   gap %zu: [%llu..%llu] %llu ms  (ref [%llu..%llu])\n",
+                    i, (unsigned long long)gaps[i].startTime.value,
+                    (unsigned long long)gaps[i].endTime.value,
+                    (unsigned long long)gaps[i].durationMs(),
+                    (unsigned long long)refGaps[i].startTime.value,
+                    (unsigned long long)refGaps[i].endTime.value);
+        EXPECT_EQ(gaps[i].startTime.value, refGaps[i].startTime.value);
+        EXPECT_EQ(gaps[i].endTime.value,   refGaps[i].endTime.value);
+        EXPECT_EQ(gaps[i].segmentId,       refGaps[i].segmentId);
+    }
+    // Not a vacuous comparison of two empties: `findGaps` reports gaps BETWEEN segment spans, and
+    // this fixture is one segment, so the 130 s -> 400 s jump inside it is intra-segment and
+    // correctly not a gap. What proves the comparison had teeth is that the reference actually
+    // resolved records and found a real span -- the same span the cheap path must reproduce.
+    ASSERT_EQ(refSpansCount, 1u) << "the reference found no segment span to compare against";
+    EXPECT_EQ(cheapSpan.first,  refSpan.first)  << "cheap path's resolved span start differs";
+    EXPECT_EQ(cheapSpan.second, refSpan.second) << "cheap path's resolved span end differs";
+    EXPECT_GT(refSpan.second, refSpan.first);
+    EXPECT_EQ(refSpan.second - refSpan.first, 330'000u) << "fixture spans 100.0 s .. 430.0 s";
+}
+
+// ---------------------------------------------------------------------------
 // Audit B2 — three answers to "when does this log start", and the invariant that ties them.
 //
 // `anchoredSpanStart/End(resolver)` is the user-visible wall clock (only the resolver knows the

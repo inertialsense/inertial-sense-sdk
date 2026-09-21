@@ -154,6 +154,79 @@ std::size_t scanCount(const fs::path& segment) {
 } // namespace
 
 // =====================================================================================
+// Audit C3 — recordEndOffset must not scan, and must give the same answer either way.
+//
+// It was a forward linear scan for "the smallest record offset strictly greater than mine":
+// O(1) when the next record's offset is greater (normal), O(n) for every record in a run that
+// shares an offset -- and real firmware sidecars produce those. `viewAt()` sits on the anchor
+// cascade's hot path via analyzeFromRecords, so the pathological case is quadratic over a whole
+// segment. It is now a binary search over an array whose non-decreasing invariant is verified
+// once at construction.
+//
+// This asserts the binary search agrees with the linear definition for EVERY record, computed
+// independently here from the public offsets.
+// =====================================================================================
+
+TEST(RecordEndOffset, BinarySearchMatchesTheLinearDefinitionForEveryRecord) {
+    const fs::path dir = makeTempDir("c3_endoffset");
+    const fs::path seg = writeSegment(dir, 425200u, 40);
+    ASSERT_FALSE(seg.empty());
+
+    auto r = ISLogReader::openSegment(seg);
+    ASSERT_TRUE(r.has_value());
+    ASSERT_GT(r->recordCount(), 10u);
+
+    // Collect the offsets and byte-range lengths the reader reports.
+    std::vector<uint64_t> offsets;
+    std::vector<std::size_t> lengths;
+    for (auto v : r->allRecords()) {
+        const auto [bytes, n] = v.bytes();
+        offsets.push_back(v.offsetInFile());
+        lengths.push_back(bytes != nullptr ? n : 0);
+    }
+
+    // Independent reference: the linear definition, straight from the audit's wording.
+    const std::size_t fileEnd = r->fileSize();
+    std::size_t mismatches = 0;
+    for (std::size_t i = 0; i < offsets.size(); ++i) {
+        std::size_t expectedEnd = fileEnd;
+        for (std::size_t j = i + 1; j < offsets.size(); ++j) {
+            if (offsets[j] > offsets[i]) { expectedEnd = static_cast<std::size_t>(offsets[j]); break; }
+        }
+        const std::size_t expectedLen = expectedEnd > offsets[i]
+                                            ? expectedEnd - static_cast<std::size_t>(offsets[i])
+                                            : 0;
+        if (lengths[i] != expectedLen) {
+            if (mismatches < 5) {
+                std::printf("[measured]   rec %zu off=%llu got len=%zu want %zu\n",
+                            i, (unsigned long long)offsets[i], lengths[i], expectedLen);
+            }
+            ++mismatches;
+        }
+    }
+    std::printf("[measured] %zu record(s), fileSize=%zu, mismatches=%zu\n",
+                offsets.size(), fileEnd, mismatches);
+    EXPECT_EQ(mismatches, 0u)
+        << "the binary search disagrees with the linear definition of record end offset";
+
+    // The invariant the search depends on must actually hold on this fixture, or the test is
+    // silently exercising the fallback rather than the thing it means to check.
+    bool nonDecreasing = true;
+    for (std::size_t i = 1; i < offsets.size(); ++i) {
+        if (offsets[i] < offsets[i - 1]) { nonDecreasing = false; break; }
+    }
+    EXPECT_TRUE(nonDecreasing)
+        << "fixture offsets decrease, so this exercised the linear fallback, not the search";
+
+    // Every record must still resolve to real bytes.
+    for (std::size_t i = 0; i < lengths.size(); ++i) {
+        EXPECT_GT(lengths[i], 0u) << "record " << i << " resolved to an empty byte range";
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// =====================================================================================
 // Audit B3 — diagnostics must reach the application, and an orphaned sidecar must be reported
 // with enough structure to act on.
 //
