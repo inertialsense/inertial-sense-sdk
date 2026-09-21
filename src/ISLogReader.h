@@ -55,6 +55,7 @@
 #include <filesystem>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -213,6 +214,105 @@ public:
                                                      const AnchorAnalysis* prev = nullptr);
 
     /**
+     * @brief Sentinel for @ref upgradeIndex's `logStartHostUptimeMs`: "not supplied, go find it".
+     *
+     * A no-op default. `UINT64_MAX` rather than 0 because 0 is a legal log start (the first
+     * segment of the measured corpus begins at host uptime 1 ms, and a log that begins at 0 is
+     * perfectly ordinary) — the same reasoning as `HAS_TIMESTAMP` on the record side.
+     */
+    static constexpr uint64_t kDiscoverLogStart = UINT64_MAX;
+
+    /** @brief What @ref upgradeIndex did, and — when it declined — why. */
+    struct IndexUpgrade {
+        //! Sidecar version found on disk: 1, 2 (v2.0, no time-offset field), or 0 for none.
+        uint16_t fromVersion = 0;
+
+        //! True when the output sidecar is a v2.1 the caller did not previously have.
+        bool rewritten = false;
+
+        //! Records whose `log_time_offset_ms` came from the old sidecar as an OBSERVED value.
+        std::size_t observedAdopted = 0;
+
+        //! Records whose offset had to be reconstructed (no counterpart in the old sidecar, or
+        //! the old sidecar's WHEN was not adoptable at all).
+        std::size_t reconstructed = 0;
+
+        //! Log-wide host uptime the adopted offsets were rebased against.
+        uint64_t logStartHostUptimeMs = 0;
+
+        //! Every field NOT adopted, and the gate that refused it. Empty on a clean full adopt.
+        //! Surfaced through `warnings()` too, so an application sees it without extra plumbing.
+        std::vector<std::string> declined;
+
+        /** @return True when any per-record WHEN was salvaged from the old sidecar. */
+        bool adoptedAnything() const noexcept { return observedAdopted > 0; }
+    };
+
+    /**
+     * @brief D0096 path 3: build a v2.1 `.idx` for @p segment USING the existing sidecar, rather
+     *        than discarding it and byte-scanning from scratch.
+     *
+     * Kyle, 2026-09-19: *"rebuilding from existing `.idx` files is preferred to building
+     * `.idx`s only from `.raw`/`.dat` files."* Before this existed, `construct()` made a binary
+     * choice — trust the sidecar, or throw it away entirely — so `RebuildReason::V1` *detected* a
+     * legacy sidecar and then discarded it. That was a **data-quality regression, not merely a
+     * missing feature**: a v1 record's `host_uptime_ms` is the OBSERVED receipt time, the one
+     * quantity a byte scan can never recover, and `ISTimeResolver` ranks it as its top-priority
+     * stall ruler.
+     *
+     * What is taken from where, and why:
+     *
+     * | Quantity | Source | Rationale |
+     * |---|---|---|
+     * | DIDs, byte offsets, payload timestamps | always the SCAN | a v1 sidecar has no DID at all, and its byte offsets are measurably wrong |
+     * | per-record WHEN (`log_time_offset_ms`) | the old sidecar, when the gates pass | observed beats reconstructed |
+     * | records with no counterpart | interpolated between adopted neighbours | flagged `RECONSTRUCTED_TIME_OFFSET` |
+     *
+     * **v1 → v2.1** joins on `record_counter`, NOT on position and NOT on byte offset. A v1
+     * sidecar stores only ~70% of its segment's records, so a positional join silently
+     * mis-assigns every WHEN after the first gap; the counter's index space, by contrast, tiles
+     * the scan exactly. See @ref inertial_sense::idx::is_log_idx_record_v1_t for the measurements
+     * behind both statements.
+     *
+     * **v2.0 → v2.1** keeps the DIDs, byte offsets and payload timestamps that a v2.0 sidecar
+     * already holds correctly, and reconstructs the chronology it has no field for — flagged
+     * `RECONSTRUCTED_TIME_OFFSET`, because it genuinely is.
+     *
+     * Declines rather than guesses. Nothing is adopted from a sidecar that fails a trust gate;
+     * the result degrades to exactly today's behaviour and says so in `declined`.
+     *
+     * @param segment  Path to the `.raw`/`.dat`. Its sidecar is derived by extension substitution.
+     * @param logStartHostUptimeMs  Log-wide host uptime of the LOG's start, which is the anchor a
+     *        v1 `host_uptime_ms` must be rebased against (v1 times are log-wide, not
+     *        segment-relative, so using this segment's own first value would zero every
+     *        segment's start and collapse them onto each other). Defaults to
+     *        @ref kDiscoverLogStart, which makes this discover the log's first segment itself,
+     *        the way `ISLog::openDirectory` enumerates siblings. Callers that are already walking
+     *        a directory should pass it — `openDirectory` upgrades once per segment and knows the
+     *        log start after the first.
+     * @return The outcome, or an `ISError` if @p segment itself cannot be opened. A sidecar that
+     *         is absent or unusable is NOT an error — it yields a result with `fromVersion == 0`.
+     */
+    static ISExpected<IndexUpgrade> upgradeIndex(
+        const std::filesystem::path& segment,
+        uint64_t logStartHostUptimeMs = kDiscoverLogStart);
+
+    /**
+     * @brief Log-wide host-uptime anchor for @p segment's log, for @ref upgradeIndex.
+     *
+     * Walks back to the log's FIRST segment by sequence number (the `_0001` convention
+     * `hasSiblingSuccessor` also relies on) and reads its legacy sidecar's first
+     * `host_uptime_ms`. Exposed so a directory walk can resolve the anchor once and pass it to
+     * every subsequent @ref upgradeIndex call instead of re-deriving it per segment.
+     *
+     * @param segment  Any segment of the log.
+     * @return The log's first observed host uptime, or `std::nullopt` when no legacy sidecar in
+     *         the run can supply one.
+     */
+    static std::optional<uint64_t> discoverLogStartHostUptime(
+        const std::filesystem::path& segment);
+
+    /**
      * @brief This segment's anchor analysis — its domain-normalized position on the timeline.
      *
      * Populated for every successfully-opened segment, by whichever route produced the record
@@ -304,6 +404,22 @@ public:
      * never reads as "anchored, offset 0" — a legal state for a ToW-only segment.
      */
     void stampPersistedAnchor();
+
+    /**
+     * @brief Adopt a legacy sidecar's observed WHEN onto the records this reader just scanned.
+     *
+     * Runs the trust gates, performs the `record_counter`-keyed join, interpolates the records
+     * with no counterpart, and sets `HAS_LOG_TIME_OFFSET`. Leaves `records_` untouched and
+     * returns false (recording the reason in @p out.declined) when any gate refuses — the caller
+     * then falls back to @ref populateReconTimeOffsets.
+     *
+     * @param v1        Records parsed from the legacy sidecar, in file order.
+     * @param logStart  Log-wide host-uptime anchor to rebase against.
+     * @param out       Outcome accumulator.
+     * @return True when at least one observed WHEN was adopted.
+     */
+    bool adoptV1TimeOffsets(const std::vector<idx::is_log_idx_record_v1_t>& v1,
+                            uint64_t logStart, IndexUpgrade& out);
 
     void adoptSessionOffset(int64_t offsetMs, uint32_t donorDid, bool donorIsEarlier);
 

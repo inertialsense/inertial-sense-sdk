@@ -49,18 +49,19 @@
 class cDeviceLog {
 public:
     /**
-     * @brief Legacy v1 `.idx` record layout (host-uptime ms + record counter, 16 bytes).
+     * @brief Legacy v1 `.idx` record layout (16 bytes), for back-compat readers per D-01
+     *        (SN-7879). Writers emit v2 exclusively (see `index_record_t`).
      *
-     * Kept for back-compat readers per D-01 (SN-7879). Writers emit v2 exclusively (see
-     * `index_record_t`); this layout exists only so legacy-aware reader code can deserialize old
-     * `.idx` files produced by SDK <= 2.x.
+     * Aliases the canonical definition in `ISLogIndex.h`, which is where the format lives
+     * alongside v2. **The field names changed on 2026-09-20:** this struct used to declare
+     * `{ time, offset, msg_id, reserved }`, and `msg_id` ("data ID of the record") was simply
+     * wrong — measured across all 17 v1 sidecars in the corpus, field 3 is a log-wide monotonic
+     * RECORD COUNTER, not a DID. A reader that trusted the old label would mislabel the DID of
+     * every record it touched. Field 2's byte offset is also not trustworthy. See
+     * @ref inertial_sense::idx::is_log_idx_record_v1_t for the measurements.
      */
-    typedef struct index_record_v1_s {
-        uint32_t time;      //!< host-uptime milliseconds at the time this record was written
-        uint32_t offset;    //!< byte offset into the corresponding `.raw`/`.dat` segment
-        uint32_t msg_id;    //!< data ID of the record
-        uint32_t reserved;  //!< unused
-    } index_record_v1_t;
+    using index_record_v1_s = inertial_sense::idx::is_log_idx_record_v1_t;
+    using index_record_v1_t = inertial_sense::idx::is_log_idx_record_v1_t;
 
     /**
      * @brief Current (v2) `.idx` record type. Both spellings alias `is_log_idx_record_v2_t`.

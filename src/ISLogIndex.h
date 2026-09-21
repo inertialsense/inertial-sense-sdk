@@ -55,6 +55,9 @@ inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_SIZE = 24;
 /// header (`record_size`) so the reader strides correctly for either.
 inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_1_SIZE = 32;
 
+/// Legacy v1 record: four `uint32`s, no file header at all. See @ref is_log_idx_record_v1_t.
+inline constexpr std::size_t IS_LOG_IDX_RECORD_V1_SIZE = 16;
+
 // ----- Timestamp interpretation enums --------------------------------------
 
 /**
@@ -351,8 +354,44 @@ struct is_log_idx_record_v2_t {
     uint32_t reserved2;             ///< 28..31: pad to an 8-byte multiple
 };
 
+/**
+ * @brief Legacy v1 `.idx` record — four `uint32`s, 16 bytes, and NO file header.
+ *
+ * Written by SDK <= 2.x. A v1 file is a bare array of these; the absence of the `"ISIX"` magic
+ * at offset 0 is what identifies it (@ref parseHeader returns `LegacyFormat`).
+ *
+ * **The field names here were corrected on 2026-09-20 after measuring all 17 v1 sidecars in the
+ * corpus.** `DeviceLog.h` had called field 3 `msg_id` ("data ID of the record"); it is nothing of
+ * the kind, and a reader that believed that label would mislabel the DID of every record it
+ * upgraded. What the measurements showed:
+ *
+ * - `host_uptime_ms` — correct, and the only reason to read a v1 file at all. Log-wide host
+ *   uptime at the moment the record was written, monotonic, and **continuous across segments**
+ *   (segment 1 `[1..221877]`, segment 2 `[221883..441306]`, ...). This is the OBSERVED receipt
+ *   time — the one quantity a byte scan can never recover.
+ * - `byte_offset` — present, and **NOT trustworthy. Never adopt it.** Every sidecar measured has
+ *   exactly one reset to 0 partway through, and only 0.3%–3.9% of the post-reset run lands on an
+ *   ISB `EF 49` preamble — while a 1275/1275 hit on the pre-reset prefix proves `EF 49` is the
+ *   right preamble, so the rest genuinely are not packet starts. Some offsets also exceed the
+ *   paired segment's file size. Take byte offsets from a scan instead.
+ * - `record_counter` — a log-wide, strictly monotonic, 0-based record counter. **This is the
+ *   join key for an upgrade**: its per-segment span equals the scan's record count exactly on 7
+ *   of 8 healthy segments measured (the first segment is +1). A v1 sidecar stores only ~70% of
+ *   its segment's records, so a positional join is impossible, but this index space tiles the
+ *   scan.
+ * - `reserved` — genuinely reserved; zero on every record of all 17 files.
+ */
+struct is_log_idx_record_v1_t {
+    uint32_t host_uptime_ms;   ///<  0..3 : log-wide observed host uptime, ms (the WHEN)
+    uint32_t byte_offset;      ///<  4..7 : byte offset — UNRELIABLE, see the note above
+    uint32_t record_counter;   ///<  8..11: log-wide monotonic record index — the join key, NOT a DID
+    uint32_t reserved;         ///< 12..15: unused, always 0
+};
+
 #pragma pack(pop)
 
+static_assert(sizeof(is_log_idx_record_v1_t) == IS_LOG_IDX_RECORD_V1_SIZE,
+              "is_log_idx_record_v1_t must be exactly 16 bytes — pack discipline.");
 static_assert(sizeof(is_log_idx_header_t) == IS_LOG_IDX_HEADER_SIZE,
               "is_log_idx_header_t must be exactly 64 bytes — pack discipline.");
 static_assert(sizeof(is_log_idx_record_v2_t) == IS_LOG_IDX_RECORD_V2_1_SIZE,
@@ -411,6 +450,27 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
  *       v2.0 (0 ⇒ 24) and v2.1 (32), and a wrong assumption silently mis-parses
  *       (SN-8383). Callers pass `hdr.record_size` explicitly.
  */
+/**
+ * @brief Parse one legacy v1 record from @p in (16 bytes, little-endian).
+ *
+ * @param in  Buffer with at least `IS_LOG_IDX_RECORD_V1_SIZE` readable bytes.
+ * @return    The record. No validation — see `ISLogReader::upgradeIndex` for the trust gates
+ *            that decide whether a v1 file's fields may be believed.
+ */
+is_log_idx_record_v1_t parseRecordV1(const uint8_t* in) noexcept;
+
+/**
+ * @brief Parse a whole v1 `.idx` body (a bare array of 16-byte records, no header).
+ *
+ * @param data  Start of the file.
+ * @param size  File size in bytes. A trailing partial record is ignored, and reported via
+ *              @p trailingBytes so a caller can treat it as a staleness signal.
+ * @param trailingBytes  Out: `size % 16`, i.e. bytes in an incomplete final record.
+ * @return      The records, in file order.
+ */
+std::vector<is_log_idx_record_v1_t> parseRecordsV1(const uint8_t* data, std::size_t size,
+                                                   std::size_t* trailingBytes = nullptr);
+
 is_log_idx_record_v2_t parseRecord(
     const uint8_t* in,
     std::size_t record_size) noexcept;

@@ -394,6 +394,12 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     enum class RebuildReason { None, Missing, V1, Corrupted, Stale, ReadError };
     RebuildReason rebuildReason = RebuildReason::Missing;
 
+    // D0096 path 3: a legacy sidecar is PARSED and kept here, not discarded. Its per-record
+    // `host_uptime_ms` is the OBSERVED receipt time -- the one quantity a byte scan can never
+    // recover, and ISTimeResolver's top-priority stall ruler -- so throwing it away and scanning
+    // from scratch was a data-quality regression, not just a missing feature.
+    std::vector<idx::is_log_idx_record_v1_t> legacyV1;
+
     std::error_code ec;
     if (fs::exists(idxPath, ec)) {
         auto idxSrc = ISFileSource::open(idxPath);
@@ -412,6 +418,21 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                     rebuildReason = (hdr.error().code == ISErrorCode::LegacyFormat)
                         ? RebuildReason::V1
                         : RebuildReason::Corrupted;
+                    if (rebuildReason == RebuildReason::V1) {
+                        // Keep the legacy records for the upgrade below. A partial trailing
+                        // record is a staleness signal, so decline the whole file rather than
+                        // adopt a WHEN from a sidecar that was cut mid-write.
+                        std::size_t trailing = 0;
+                        auto v1 = idx::parseRecordsV1(s.data(), s.size(), &trailing);
+                        if (trailing == 0) {
+                            legacyV1 = std::move(v1);
+                        } else {
+                            log_warn(IS_LOG_ISLOG,
+                                     "%s: legacy sidecar has a %zu-byte partial trailing record; "
+                                     "not adopting its observed time offsets",
+                                     idxPath.filename().c_str(), trailing);
+                        }
+                    }
                 } else {
                     const std::size_t bodyStart = hdr->header_size;
                     if (bodyStart > s.size()) {
@@ -567,6 +588,32 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
         r.warnings_.push_back(std::string{"sidecar: rebuilt from "} + segKind + " scan (reason: " + reasonStr + ")");
         log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)", rawPath.filename().c_str(), segKind, reasonStr);
 
+        // D0096 path 3, the automatic half of upgradeIndex(). The scan above supplied the DIDs,
+        // byte offsets and payload timestamps -- a v1 sidecar has no DID at all and its byte
+        // offsets are measurably wrong, so those must come from the segment. What the legacy
+        // file DOES have is the observed WHEN, so adopt that over the reconstruction the scan
+        // just wrote. Declines leave today's behaviour untouched and are surfaced in warnings().
+        if (!legacyV1.empty()) {
+            IndexUpgrade up;
+            up.fromVersion = 1;
+            // v1 times are LOG-wide, not segment-relative, so the anchor must be the LOG's
+            // start. Anchoring on this segment's own first value would zero every segment's
+            // start and collapse them onto each other.
+            const auto discovered = discoverLogStartHostUptime(rawPath);
+            const uint64_t logStart = discovered.value_or(legacyV1.front().host_uptime_ms);
+            if (r.adoptV1TimeOffsets(legacyV1, logStart, up)) {
+                r.warnings_.push_back(
+                    "sidecar: upgraded from v1 -- " + std::to_string(up.observedAdopted)
+                    + " observed time offset(s) adopted, " + std::to_string(up.reconstructed)
+                    + " interpolated");
+            }
+            for (const auto& d : up.declined) {
+                r.warnings_.push_back("sidecar: v1 upgrade declined -- " + d);
+                log_warn(IS_LOG_ISLOG, "%s: v1 upgrade declined -- %s",
+                         rawPath.filename().c_str(), d.c_str());
+            }
+        }
+
         // Persist the rebuilt sidecar. Suppressed when the build flips IS_LOG_READER_NO_PERSIST_INDEX (e.g. tests,
         // customers who don't want surprise writes to log dirs) or when the .raw sits on read-only media.
 #if !defined(IS_LOG_READER_NO_PERSIST_INDEX)
@@ -697,6 +744,292 @@ ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::pa
         r->buildIndexFromScan(prev, /*collectAnchor=*/true);
     }
     return r->anchorAnalysis();
+}
+
+// ---------------------------------------------------------------------------------------------
+// D0096 path 3 -- upgrade an existing sidecar instead of discarding it
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+
+//! The log's FIRST segment by sequence number, following the same `_0001` convention
+//! `hasSiblingSuccessor` uses. Returns @p seg itself when the name does not carry a sequence.
+fs::path firstSegmentOfLog(const fs::path& seg) {
+    std::error_code ec;
+    const std::string stem = seg.stem().string();
+    const auto und = stem.find_last_of('_');
+    if (und == std::string::npos) return seg;
+    const std::string seqStr = stem.substr(und + 1);
+    if (seqStr.empty() || seqStr.find_first_not_of("0123456789") != std::string::npos) return seg;
+
+    int seq = 0;
+    try { seq = std::stoi(seqStr); } catch (...) { return seg; }
+
+    // Walk DOWN to the lowest sibling that exists, rather than assuming the run starts at 1 --
+    // a log whose earlier segments were purged (the case `capture_epoch_ms` exists for) starts
+    // wherever its surviving files start.
+    fs::path best = seg;
+    for (int candidate = seq - 1; candidate >= 0; --candidate) {
+        std::ostringstream os;
+        os << std::setw(static_cast<int>(seqStr.size())) << std::setfill('0') << candidate;
+        const fs::path p =
+            seg.parent_path() / (stem.substr(0, und + 1) + os.str() + seg.extension().string());
+        if (!fs::exists(p, ec)) break;   // contiguous run only; a gap ends the walk
+        best = p;
+    }
+    return best;
+}
+
+//! Read a whole file into memory. Returns empty on any failure -- callers treat that as
+//! "no usable sidecar", which is not an error.
+std::vector<uint8_t> readWholeFile(const fs::path& p) {
+    std::error_code ec;
+    if (!fs::exists(p, ec)) return {};
+    const auto sz = fs::file_size(p, ec);
+    if (ec || sz == 0) return {};
+    std::ifstream in(p, std::ios::binary);
+    if (!in) return {};
+    std::vector<uint8_t> buf(static_cast<std::size_t>(sz));
+    in.read(reinterpret_cast<char*>(buf.data()), static_cast<std::streamsize>(sz));
+    if (!in) return {};
+    return buf;
+}
+
+//! True when @p buf is a legacy v1 sidecar: no `"ISIX"` magic, and a whole number of 16-byte
+//! records. The magic test is `parseHeader`'s own v1/v2 discriminator.
+bool looksLikeV1(const std::vector<uint8_t>& buf) {
+    if (buf.size() < idx::IS_LOG_IDX_RECORD_V1_SIZE) return false;
+    if (buf[0] == 'I' && buf[1] == 'S' && buf[2] == 'I' && buf[3] == 'X') return false;
+    return true;
+}
+
+} // namespace
+
+std::optional<uint64_t> ISLogReader::discoverLogStartHostUptime(const fs::path& segment) {
+    const fs::path first = firstSegmentOfLog(segment);
+    fs::path idxPath = first;
+    idxPath.replace_extension(".idx");
+    const std::vector<uint8_t> buf = readWholeFile(idxPath);
+    if (!looksLikeV1(buf)) {
+        log_debug(IS_LOG_ISLOG, "discoverLogStartHostUptime: %s is not a legacy sidecar",
+                  idxPath.filename().c_str());
+        return std::nullopt;
+    }
+    std::size_t trailing = 0;
+    const auto recs = idx::parseRecordsV1(buf.data(), buf.size(), &trailing);
+    if (recs.empty()) return std::nullopt;
+
+    // The first record in file order is the earliest: v1 host uptime is monotonic within a
+    // sidecar on every healthy file measured. Take the minimum anyway -- it costs one pass and
+    // makes a scrambled file yield a sane anchor rather than a large one.
+    uint64_t lo = recs.front().host_uptime_ms;
+    for (const auto& r : recs) lo = std::min<uint64_t>(lo, r.host_uptime_ms);
+    log_debug(IS_LOG_ISLOG, "discoverLogStartHostUptime: log starts at %llu ms (from %s)",
+              (unsigned long long)lo, idxPath.filename().c_str());
+    return lo;
+}
+
+bool ISLogReader::adoptV1TimeOffsets(const std::vector<idx::is_log_idx_record_v1_t>& v1,
+                                     uint64_t logStart, IndexUpgrade& out) {
+    const auto decline = [&out](std::string why) {
+        out.declined.push_back(std::move(why));
+        return false;
+    };
+
+    if (v1.empty())       return decline("legacy sidecar holds no records");
+    if (records_.empty()) return decline("segment scan produced no records");
+
+    // ---- GATE 1: the join key must be strictly monotonic. It is a record counter; a repeat or
+    // a decrease means the file is scrambled and the index space cannot be trusted to tile.
+    for (std::size_t i = 1; i < v1.size(); ++i) {
+        if (v1[i].record_counter <= v1[i - 1].record_counter) {
+            return decline("legacy record_counter is not strictly monotonic (at index "
+                           + std::to_string(i) + "); cannot be used as a join key");
+        }
+    }
+
+    // ---- GATE 2: the observed WHEN must be monotonic. Host uptime only goes forward.
+    for (std::size_t i = 1; i < v1.size(); ++i) {
+        if (v1[i].host_uptime_ms < v1[i - 1].host_uptime_ms) {
+            return decline("legacy host_uptime_ms goes backwards (at index " + std::to_string(i)
+                           + "); not an observed chronology");
+        }
+    }
+
+    // ---- GATE 3: the counter's span must match what the scan actually found. This is the check
+    // that catches a sidecar belonging to a DIFFERENT or truncated segment, and it is the one
+    // segment 0009 of the measured corpus fails hardest (span 585,673 against 47,502 scanned).
+    // Tolerance of 1: the first segment of every healthy log measured spans exactly one more
+    // index than the scan emits.
+    const uint64_t span = static_cast<uint64_t>(v1.back().record_counter)
+                        - static_cast<uint64_t>(v1.front().record_counter) + 1;
+    const uint64_t scanned = static_cast<uint64_t>(records_.size());
+    const uint64_t diff = (span > scanned) ? (span - scanned) : (scanned - span);
+    if (diff > 1) {
+        return decline("legacy record_counter span " + std::to_string(span)
+                       + " does not match the " + std::to_string(scanned)
+                       + " records scanned; sidecar belongs to different or truncated content");
+    }
+
+    // ---- GATE 4: a truncated segment means the scan itself is short, so the span match above
+    // could only have passed by coincidence. Refuse rather than bank on it.
+    if (isTruncated_) {
+        return decline("segment is truncated; a legacy WHEN cannot be aligned to a short scan");
+    }
+
+    // ---- The join. Key on record_counter, NOT position: a v1 sidecar stores only ~70% of its
+    // segment's records, so a positional walk mis-assigns every WHEN after the first gap.
+    const uint64_t base = v1.front().record_counter;
+    std::unordered_map<uint64_t, uint32_t> whenByCounter;
+    whenByCounter.reserve(v1.size() * 2);
+    for (const auto& r : v1) whenByCounter.emplace(r.record_counter, r.host_uptime_ms);
+
+    // Adopted offsets, as (record index, offset) pairs, for interpolating the gaps afterwards.
+    std::vector<std::pair<uint64_t, uint64_t>> observed;
+    observed.reserve(v1.size());
+
+    for (std::size_t k = 0; k < records_.size(); ++k) {
+        const auto it = whenByCounter.find(base + static_cast<uint64_t>(k));
+        if (it == whenByCounter.end()) continue;
+        const uint64_t hostMs = it->second;
+        const uint64_t offMs  = (hostMs > logStart) ? (hostMs - logStart) : 0;
+        records_[k].log_time_offset_ms =
+            (offMs > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(offMs);
+        // The whole point of path 3: this WHEN was observed by the host as the record arrived,
+        // so the RECONSTRUCTED bit stays CLEAR and ISTimeResolver may use it as a stall ruler.
+        records_[k].flags &= static_cast<uint16_t>(~idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET);
+        observed.emplace_back(static_cast<uint64_t>(k), offMs);
+        ++out.observedAdopted;
+    }
+
+    if (observed.empty()) {
+        return decline("no scanned record matched a legacy record_counter; index spaces disjoint");
+    }
+
+    // ---- The records with no counterpart. Distribute them between their ADOPTED neighbours --
+    // observed bookends, which is strictly better than today's reconstruction from the payload
+    // clock. Flagged RECONSTRUCTED because they were not themselves observed.
+    for (std::size_t k = 0; k < records_.size(); ++k) {
+        if (whenByCounter.count(base + static_cast<uint64_t>(k)) != 0) continue;
+        const uint64_t est = ISTimeResolver::interpolateArrivalTime(observed,
+                                                                    static_cast<uint64_t>(k));
+        records_[k].log_time_offset_ms =
+            (est > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(est);
+        records_[k].flags |= idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET;
+        ++out.reconstructed;
+    }
+
+    // Real values were written, so the content flag is honest (D0096 / audit A5).
+    header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;
+    out.logStartHostUptimeMs = logStart;
+
+    log_info(IS_LOG_ISLOG,
+             "%s: upgraded legacy sidecar -- %zu of %zu records carry an OBSERVED time offset, "
+             "%zu interpolated between observed bookends (log start %llu ms)",
+             rawPath_.filename().c_str(), out.observedAdopted, records_.size(),
+             out.reconstructed, (unsigned long long)logStart);
+    return true;
+}
+
+ISExpected<ISLogReader::IndexUpgrade> ISLogReader::upgradeIndex(
+    const fs::path& segment, uint64_t logStartHostUptimeMs) {
+    IndexUpgrade out;
+
+    fs::path idxPath = segment;
+    idxPath.replace_extension(".idx");
+    const std::vector<uint8_t> sidecar = readWholeFile(idxPath);
+
+    // Scan first, unconditionally: the DIDs, byte offsets and payload timestamps always come
+    // from the segment, on every upgrade path. A v1 sidecar has no DID at all and its byte
+    // offsets are measurably wrong; a v2.0 sidecar's are correct but the scan agrees with them,
+    // and re-deriving keeps one code path instead of two.
+    auto src = ISFileSource::open(segment);
+    if (!src) {
+        log_error(IS_LOG_ISLOG, "upgradeIndex: cannot open %s: %s",
+                  segment.c_str(), src.error().message.c_str());
+        return tl::unexpected<ISError>{ src.error() };
+    }
+    ISLogReader r;
+    r.rawSource_ = std::move(*src);
+    r.rawPath_   = segment;
+    r.idxPath_   = idxPath;
+    auto fmt = formatFromExtension(segment);
+    if (!fmt) {
+        return fail(ISErrorCode::Unsupported,
+                    "upgradeIndex: unrecognized segment extension: " + segment.string());
+    }
+    r.format_ = *fmt;
+    r.header_ = idx::makeDefaultHeader(0, idx::TimestampAnchor::UptimeMs,
+                                       idx::HeaderTimeSource::Mixed);
+    if (r.format_ == SegmentFormat::Dat) {
+        r.buildIndexFromScanDat();
+        r.analyzeFromRecords(/*prev=*/nullptr);
+    } else {
+        r.buildIndexFromScan();
+    }
+
+    if (looksLikeV1(sidecar)) {
+        out.fromVersion = 1;
+        std::size_t trailing = 0;
+        const auto v1 = idx::parseRecordsV1(sidecar.data(), sidecar.size(), &trailing);
+        if (trailing != 0) {
+            out.declined.push_back("legacy sidecar has a " + std::to_string(trailing)
+                                   + "-byte partial trailing record; treating it as stale");
+        } else {
+            uint64_t logStart = logStartHostUptimeMs;
+            if (logStart == kDiscoverLogStart) {
+                // No anchor supplied -- find the log's first segment ourselves, the way a
+                // directory walk would. v1 times are LOG-wide, so anchoring on this segment's
+                // own first value would zero every segment's start and collapse them together.
+                const auto discovered = discoverLogStartHostUptime(segment);
+                logStart = discovered.value_or(v1.front().host_uptime_ms);
+                if (!discovered) {
+                    out.declined.push_back(
+                        "could not discover the log's first segment; rebased on this segment's "
+                        "own first observed time, so cross-segment offsets may not share an anchor");
+                }
+            }
+            r.adoptV1TimeOffsets(v1, logStart, out);
+        }
+    } else if (!sidecar.empty()) {
+        auto hdr = idx::parseHeader(sidecar.data());
+        if (hdr && hdr->record_size < idx::IS_LOG_IDX_RECORD_V2_1_SIZE) {
+            // v2.0: DIDs, offsets and payload timestamps are all present and correct, and the
+            // scan reproduces them. What it has no field for is the chronology, so that is
+            // reconstructed and labelled -- there is nothing observed to salvage here.
+            out.fromVersion = 2;
+            out.declined.push_back(
+                "v2.0 sidecar carries no time-offset field; chronology reconstructed");
+        } else if (hdr) {
+            // Already v2.1. Nothing to upgrade.
+            out.fromVersion = 2;
+            return out;
+        }
+    }
+
+    if (!out.adoptedAnything()) {
+        // Either no sidecar, or every gate refused. Fall back to exactly today's behaviour.
+        r.populateReconTimeOffsets();
+        out.reconstructed = r.records_.size();
+    }
+
+    r.stampTranscribedSpan();
+    r.stampPersistedAnchor();
+    r.header_.total_records = r.records_.size();
+    r.header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    r.header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;
+
+#if !defined(IS_LOG_READER_NO_PERSIST_INDEX)
+    out.rewritten = r.persistIndex();
+    if (!out.rewritten) {
+        out.declined.push_back("could not write the upgraded sidecar (read-only filesystem?)");
+    }
+#endif
+
+    for (const auto& d : out.declined) {
+        log_warn(IS_LOG_ISLOG, "upgradeIndex(%s): %s", segment.filename().c_str(), d.c_str());
+    }
+    return out;
 }
 
 void ISLogReader::populateReconTimeOffsets() {
@@ -1235,6 +1568,16 @@ void ISLogReader::buildIndexFromScanDat() {
     for (std::size_t i = 0; i < records_.size(); ++i) {
         byDid_[records_[i].did].push_back(i);
     }
+    // D0096 path 2 applies to BOTH scan paths: "file -> .idx where none exists" is the same
+    // situation whether the segment is a `.raw` or a `.dat`, so the reconstructed chronology
+    // must be persisted and flagged either way. Only `buildIndexFromScan` did this, so a `.dat`
+    // log silently got no `log_time_offset_ms` at all (the field stayed 0 with
+    // RECONSTRUCTED_TIME_OFFSET clear) while an equivalent `.raw` log got a full one. Latent
+    // rather than harmful, because HAS_LOG_TIME_OFFSET was also left clear so the resolver's
+    // guard refused the zeros -- but it made the format's meaning depend on the segment's
+    // extension, and it is the same neglected-`.dat`-path shape as the anchor payload defect.
+    populateReconTimeOffsets();
+
     if (!records_.empty()) {
         header_.total_records      = records_.size();
         stampTranscribedSpan();

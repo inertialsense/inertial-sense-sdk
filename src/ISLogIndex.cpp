@@ -152,6 +152,28 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
     put_u32(out + 28, rec.reserved2);
 }
 
+is_log_idx_record_v1_t parseRecordV1(const uint8_t* in) noexcept {
+    is_log_idx_record_v1_t rec{};
+    rec.host_uptime_ms = get_u32(in +  0);
+    rec.byte_offset    = get_u32(in +  4);
+    rec.record_counter = get_u32(in +  8);
+    rec.reserved       = get_u32(in + 12);
+    return rec;
+}
+
+std::vector<is_log_idx_record_v1_t> parseRecordsV1(const uint8_t* data, std::size_t size,
+                                                   std::size_t* trailingBytes) {
+    const std::size_t n = size / IS_LOG_IDX_RECORD_V1_SIZE;
+    if (trailingBytes != nullptr) *trailingBytes = size % IS_LOG_IDX_RECORD_V1_SIZE;
+    std::vector<is_log_idx_record_v1_t> out;
+    if (data == nullptr || n == 0) return out;
+    out.reserve(n);
+    for (std::size_t i = 0; i < n; ++i) {
+        out.push_back(parseRecordV1(data + i * IS_LOG_IDX_RECORD_V1_SIZE));
+    }
+    return out;
+}
+
 is_log_idx_record_v2_t parseRecord(
     const uint8_t* in, std::size_t record_size) noexcept {
     is_log_idx_record_v2_t rec{};
