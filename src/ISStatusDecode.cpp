@@ -356,6 +356,8 @@ status_field_decode_t buildGenFaultCodeDecode()
         "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags)."));
     d.subfields.push_back(bitField("EKF invalid IMU input", GFC_EKF_INPUT_INVALID_IMU, true,
         "0x10000000 - Fault: Invalid IMU input rejected by EKF."));
+    d.subfields.push_back(bitField("EKF bias saturated", GFC_EKF_BIAS_SATURATED, true,
+        "0x20000000 - Fault: EKF bias saturated."));
 
     // No single error-mask symbol exists; every defined bit is a fault, so the roll-up is their OR.
     d.errorMask = 0;
