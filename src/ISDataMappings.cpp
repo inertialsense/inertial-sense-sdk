@@ -1081,12 +1081,12 @@ static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t d
 
 static void PopulateMapISBTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<is_time_t> mapper(data_set, did);
-    mapper.AddMember("week", &is_time_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
-    mapper.AddMember("timeOfWeekMs", &is_time_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
-    mapper.AddMember("status", &is_time_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("syncCnt", &is_time_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
-    mapper.AddArray("reserved", &is_time_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
+    DataMapper<is_timepulse_t> mapper(data_set, did);
+    mapper.AddMember("week", &is_timepulse_t::week, DATA_TYPE_UINT32, "", "GPS number of weeks since January 6th, 1980");
+    mapper.AddMember("timeOfWeekMs", &is_timepulse_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week of the timepulse event");
+    mapper.AddMember("status", &is_timepulse_t::status, DATA_TYPE_UINT32, "", "Timepulse status flags", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("syncCnt", &is_timepulse_t::syncCnt, DATA_TYPE_UINT32, "", "Count of timepulse sync events since power-on");
+    mapper.AddArray("reserved", &is_timepulse_t::reserved, DATA_TYPE_UINT32, 4, {}, {}, DATA_FLAGS_READ_ONLY);
 }
 
 // PopulateMapPortMonitor is defined below, after the SN-8068 array-of-struct helper block
@@ -1551,18 +1551,18 @@ static void PopulateMapGnssVersion(data_set_t data_set[DID_COUNT], uint32_t did)
 
 static void PopulateMapGnssTimepulse(data_set_t data_set[DID_COUNT], uint32_t did)
 {
-    DataMapper<gnss_timepulse_t> mapper(data_set, did);
-    mapper.AddMember("towOffset", &gnss_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("towGps", &gnss_timepulse_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("timeMcu", &gnss_timepulse_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("msgTimeMs", &gnss_timepulse_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
-    mapper.AddMember("plsTimeMs", &gnss_timepulse_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
-    mapper.AddMember("syncCount", &gnss_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
-    mapper.AddMember("badPulseAgeCount", &gnss_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
-    mapper.AddMember("ppsInterruptReinitCount", &gnss_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GNSS PPS interrupt re-initalization.");
-    mapper.AddMember("plsCount", &gnss_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GNSS PPS via GPIO, not interrupt.");
-    mapper.AddMember("lastSyncTimeMs", &gnss_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
-    mapper.AddMember("sinceLastSyncTimeMs", &gnss_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
+    DataMapper<gnss_timesync_t> mapper(data_set, did);
+    mapper.AddMember("towOffset", &gnss_timesync_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GNSS time.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("towGps", &gnss_timesync_t::towGps, DATA_TYPE_F64, "s", "Week seconds for next timepulse (from start of GNSS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("timeMcu", &gnss_timesync_t::timeMcu, DATA_TYPE_F64, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddMember("msgTimeMs", &gnss_timesync_t::msgTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
+    mapper.AddMember("plsTimeMs", &gnss_timesync_t::plsTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
+    mapper.AddMember("syncCount", &gnss_timesync_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
+    mapper.AddMember("badPulseAgeCount", &gnss_timesync_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
+    mapper.AddMember("ppsInterruptReinitCount", &gnss_timesync_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GNSS PPS interrupt re-initalization.");
+    mapper.AddMember("plsCount", &gnss_timesync_t::plsCount, DATA_TYPE_UINT8, "", "Counter of GNSS PPS via GPIO, not interrupt.");
+    mapper.AddMember("lastSyncTimeMs", &gnss_timesync_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
+    mapper.AddMember("sinceLastSyncTimeMs", &gnss_timesync_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");
 }
 
 static void PopulateMapMagnetometer(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -2722,23 +2722,23 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_PIMU",                         // 3
     "DID_INS_1",                        // 4
     "DID_INS_2",                        // 5
-    "DID_GNSS1_RCVR_POS",                // 6
+    "DID_GNSS1_RCVR_POS",               // 6
     "DID_SYS_CMD",                      // 7
     "DID_NMEA_BCAST_PERIOD",            // 8
     "DID_RMC",                          // 9
     "DID_SYS_PARAMS",                   // 10
     "DID_SYS_SENSORS",                  // 11
     "DID_FLASH_CONFIG",                 // 12
-    "DID_GNSS1_POS",                     // 13
-    "DID_GNSS2_POS",                     // 14
-    "DID_GNSS1_SAT",                     // 15
-    "DID_GNSS2_SAT",                     // 16
-    "DID_GNSS1_VERSION",                 // 17
-    "DID_GNSS2_VERSION",                 // 18
+    "DID_GNSS1_POS",                    // 13
+    "DID_GNSS2_POS",                    // 14
+    "DID_GNSS1_SAT",                    // 15
+    "DID_GNSS2_SAT",                    // 16
+    "DID_GNSS1_VERSION",                // 17
+    "DID_GNSS2_VERSION",                // 18
     "DID_MAG_CAL",                      // 19
     "DID_IMUS",                         // 20
-    "DID_GNSS1_RTK_POS_REL",             // 21
-    "DID_GNSS1_RTK_POS_MISC",            // 22
+    "DID_GNSS1_RTK_POS_REL",            // 21
+    "DID_GNSS1_RTK_POS_MISC",           // 22
     "DID_FEATURE_BITS",                 // 23
     "DID_SENSORS_UCAL",                 // 24
     "DID_SENSORS_TCAL",                 // 25
@@ -2746,8 +2746,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GNSS2_TIMESYNC",               // 27
     "DID_SENSORS_ADC",                  // 28
     "DID_SCOMP",                        // 29
-    "DID_GNSS1_VEL",                     // 30
-    "DID_GNSS2_VEL",                     // 31
+    "DID_GNSS1_VEL",                    // 30
+    "DID_GNSS2_VEL",                    // 31
     "DID_HDW_PARAMS",                   // 32
     "DID_NVR_MANAGE_USERPAGE",          // 33
     "DID_NVR_USERPAGE_SN",              // 34
@@ -2759,9 +2759,9 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_SENSORS_MCAL",                 // 40
     "DID_GNSS1_TIMESYNC",               // 41
     "DID_CAL_SC",                       // 42
-    "DID_TIME_PULSE",                         // 43
+    "DID_TIMEPULSE",                    // 43
     "DID_CANFD_CONFIG",                 // 44
-    "DID_GNSS1_SIG",                     // 45
+    "DID_GNSS1_SIG",                    // 45
     "DID_SENSORS_ADC_SIGMA",            // 46
     "DID_REFERENCE_MAGNETOMETER",       // 47
     "DID_INL2_STATES",                  // 48
@@ -2770,14 +2770,14 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_INL2_MISC",                    // 51
     "DID_MAGNETOMETER",                 // 52
     "DID_BAROMETER",                    // 53
-    "DID_GNSS1_RTK_POS",                 // 54
+    "DID_GNSS1_RTK_POS",                // 54
     "DID_ROS_COVARIANCE_POSE_TWIST",    // 55
     "DID_COMMUNICATIONS_LOOPBACK",      // 56
     "DID_IMUS_UNCAL",                   // 57
     "DID_IMU",                          // 58
     "DID_INL2_MAG_OBS_INFO",            // 59
-    "DID_GNSS_BASE_RAW",                 // 60
-    "DID_GNSS_RTK_OPT",                  // 61
+    "DID_GNSS_BASE_RAW",                // 60
+    "DID_GNSS_RTK_OPT",                 // 61
     "DID_REFERENCE_PIMU",               // 62
     "DID_MANUFACTURING_INFO",           // 63
     "DID_BIT",                          // 64
@@ -2785,12 +2785,12 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_INS_4",                        // 66
     "DID_INL2_NED_SIGMA",               // 67
     "DID_STROBE_IN_TIME",               // 68
-    "DID_GNSS1_RAW",                     // 69
-    "DID_GNSS2_RAW",                     // 70
+    "DID_GNSS1_RAW",                    // 69
+    "DID_GNSS2_RAW",                    // 70
     "DID_WHEEL_ENCODER",                // 71
     "DID_DIAGNOSTIC_MESSAGE",           // 72
     "DID_SURVEY_IN",                    // 73
-    "DID_UNUSED_74",                  // 74
+    "DID_UNUSED_74",                    // 74
     "DID_PORT_MONITOR",                 // 75
     "DID_RTK_STATE",                    // 76
     "DID_RTK_PHASE_RESIDUAL",           // 77
@@ -2800,15 +2800,15 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_FLASH_CFG",                // 81
     "DID_EVB_DEBUG_ARRAY",              // 82
     "DID_EVB_RTOS_INFO",                // 83
-    "DID_GNSS2_SIG",                     // 84
+    "DID_GNSS2_SIG",                    // 84
     "DID_IMU_MAG",                      // 85
     "DID_PIMU_MAG",                     // 86
     "DID_GROUND_VEHICLE",               // 87
     "DID_POSITION_MEASUREMENT",         // 88
     "DID_RTK_DEBUG_2",                  // 89
     "DID_CAN_CONFIG",                   // 90
-    "DID_GNSS2_RTK_CMP_REL",             // 91
-    "DID_GNSS2_RTK_CMP_MISC",            // 92
+    "DID_GNSS2_RTK_CMP_REL",            // 91
+    "DID_GNSS2_RTK_CMP_MISC",           // 92
     "DID_EVB_DEV_INFO",                 // 93
     "DID_INFIELD_CAL",                  // 94 
     "DID_REFERENCE_IMU",                // 95 
@@ -2961,7 +2961,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
-    PopulateMapISBTimepulse(        m_data_set, DID_TIME_PULSE);
+    PopulateMapISBTimepulse(        m_data_set, DID_TIMEPULSE);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
