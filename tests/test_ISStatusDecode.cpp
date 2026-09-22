@@ -190,6 +190,8 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GNSS receiver time fault.");
     BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags).");
     BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
+    BIT_MSG(genFault, GFC_GNSS_RTOS_ERROR           , "0x20000000 - Fault: RTOS error.");
+    BIT_MSG(genFault, GFC_EKF_BIAS_SATURATED        , "0x40000000 - Fault: EKF bias saturated.");
 #undef BIT_MSG
     return buff.str();
 }
