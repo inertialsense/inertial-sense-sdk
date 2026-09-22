@@ -527,7 +527,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
             serialPort->errorCode = errno;
             serialPort->error = strerror(errno);
             log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to set COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
-            serialPortClose(port);
+            CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
             return 0;
         }
     }
@@ -536,7 +536,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPort->errorCode = errno;
         serialPort->error = strerror(errno);
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retreive COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
-        serialPortClose(port);
+        CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
     }
 
@@ -575,7 +575,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPort->errorCode = errno;
         serialPort->error = strerror(errno);
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to configure COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
-        serialPortClose(port);
+        CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
     }
 
@@ -854,14 +854,19 @@ static int serialPortDrainPlatform(port_handle_t port)
  * For non-blocking I/O, it uses `WaitForSingleObject` to wait for the read to complete.
  * If the read times out, it cancels the I/O and returns the bytes read so far.
  *
- * @param handle   Handle to the COM port (must be opened with FILE_FLAG_OVERLAPPED).
+ * @param serialPort The serial port (used only to record errorCode/error on a hard failure -- see
+ *   the two SN-8697 comments below; every other line is unchanged from the original handle-only form).
  * @param buffer    Pointer to the destination buffer.
  * @param readCount   The number of bytes requested to read.
  * @param timeoutMilliseconds Maximum time to wait in milliseconds.
- * @return          The actual number of bytes read (may be less than readCount on timeout).
+ * @return          The actual number of bytes read (may be less than readCount on timeout), or -1
+ *   if ReadFile()/GetOverlappedResult() failed outright (not a timeout) -- matching the negative-on-
+ *   hard-failure contract serialPortReadTimeoutPlatformLinux() already uses.
  */
-static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+static int serialPortReadTimeoutPlatformWindows(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
+    serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+
     if (readCount < 1)
     {
         return 0;
@@ -884,8 +889,19 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
                 dwRes = WaitForSingleObject(handle->ovRead.hEvent, _MAX(5, timeoutMilliseconds - (int)(GetTickCount64() - startTime)));
                 switch (dwRes) {
                     case WAIT_OBJECT_0:
-                        if (!GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1))
+                        if (!GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1)) {
+                            // SN-8697: this failure was previously discarded silently (just
+                            // CancelIo(), no error recorded, loop continues as if nothing
+                            // happened). Propagate it so a genuinely lost device (e.g. mid-reboot)
+                            // is observable via errorCode instead of looking identical to a
+                            // benign short read.
+                            DWORD result = GetLastError();
+                            serialPort->errorCode = (int)result;
+                            serialPort->error = "GetOverlappedResult() failed";
+                            log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error fetching 'overlapped result': %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
                             CancelIo(handle->platformHandle);
+                            return -1;
+                        }
                         else
                             totalRead += dwRead;
                         break;
@@ -898,7 +914,13 @@ static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsign
                         break;
                 }
             } else {
+                // SN-8697: ReadFile() failing outright (not ERROR_IO_PENDING) was previously
+                // discarded silently the same way -- see the comment above.
+                serialPort->errorCode = (int)dwRes;
+                serialPort->error = "ReadFile() failed";
+                log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
                 CancelIo(handle->platformHandle);
+                return -1;
             }
         }
     } while ((totalRead < readCount) && (GetTickCount64() - startTime < timeoutMilliseconds));
@@ -1021,10 +1043,24 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     }
 
 #if PLATFORM_IS_WINDOWS
-    int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMs);
+    int result = serialPortReadTimeoutPlatformWindows(serialPort, buffer, readCount, timeoutMs);
+
+    // SN-8697: serialPortReadTimeoutPlatformWindows() already records the real Win32 error
+    // directly into errorCode/error on a hard failure (matching how serialPortWritePlatform()
+    // handles WriteFile()/GetOverlappedResult() failures) -- errno is a CRT global unrelated to a
+    // WinAPI failure, so re-reading it here (the way the POSIX branch below does) would clobber a
+    // correctly-set error with a meaningless value. Only the success case needs handling here.
+    if (result >= 0) {
+        serialPort->errorCode = 0; // clear any previous errorcode
+        serialPort->error = NULL;
+    } else if (win32ErrorIndicatesDeviceLost((DWORD)serialPort->errorCode)) {
+        // SN-8697: mirror the write path — a device-lost read failure must invalidate the port
+        // so the firmware updater can detect the disconnect and rediscover the device.
+        portClose(port);
+        portInvalidate(port);
+    }
 #else
     int result = serialPortReadTimeoutPlatformLinux(serialPort, buffer, readCount, timeoutMs);
-#endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
@@ -1034,6 +1070,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
     }
+#endif
 
     log_bombastic(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform() received %d bytes", portName(port), result);
     debugDumpBuffer("<< ", buffer, result);
@@ -1105,6 +1142,41 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
     return 1;
 }
 
+#if PLATFORM_IS_WINDOWS
+/**
+ * @brief Whether a Win32 error code indicates the underlying serial device is gone (SN-8697).
+ *
+ * A rebooting IMX-6/GPX-1 (during an ISv2/FPKG firmware update) does not re-enumerate on Windows --
+ * the COM port's OS node persists throughout the reboot (see the "OS node persists" comment in
+ * ISFirmwareUpdater.cpp) -- so PortManager::discoverPorts()'s name-based validatePort() check never
+ * observes the port disappearing. The only signal that the device actually went away is a live I/O
+ * operation failing while the device is mid-reboot. Before this fix, only ERROR_NOT_SAME_DEVICE
+ * (WriteFile) and the undocumented 433 (GetOverlappedResult) were treated as "device gone" --
+ * self-acknowledged as an incomplete list ("this should probably be expanded to include other
+ * likely errors, but..."). This is that expansion: every code here is a standard, documented Win32
+ * error associated with a USB-serial device being removed, reset, or otherwise no longer reachable.
+ * ERROR_OPERATION_ABORTED is safe to include here: at every call site that checks this, it is
+ * examined before this code's own CancelIo() runs, so it can only reflect an OS-initiated abort
+ * (the device going away), not a benign cancellation we ourselves triggered a moment earlier.
+ */
+static int win32ErrorIndicatesDeviceLost(DWORD err)
+{
+    switch (err)
+    {
+    case ERROR_NOT_SAME_DEVICE:        // pre-existing check
+    case 433:                          // undocumented STATUS_NO_SUCH_DEVICE, pre-existing check
+    case ERROR_GEN_FAILURE:            // "A device attached to the system is not functioning."
+    case ERROR_DEVICE_NOT_CONNECTED:
+    case ERROR_OPERATION_ABORTED:      // OS-initiated abort due to device removal (see doc comment)
+    case ERROR_SEM_TIMEOUT:            // commonly returned when a USB device stops responding
+    case ERROR_INVALID_HANDLE:         // handle invalidated by the underlying device node going away
+        return 1;
+    default:
+        return 0;
+    }
+}
+#endif // PLATFORM_IS_WINDOWS
+
 /**
  * @brief Write to the serial port.
  * This function writes a buffer of data to the serial port.
@@ -1136,12 +1208,14 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         DWORD result = GetLastError();
         if (result != ERROR_IO_PENDING)
         {
-            serialPort->errorCode = errno;
-            serialPort->error = strerror(serialPort->errorCode);
+            // SN-8697: errorCode must carry the real Win32 error (result), not errno -- errno is
+            // an unrelated CRT global on Windows and holds whatever a prior C-runtime call left it
+            // at, not this WriteFile()'s failure.
+            serialPort->errorCode = (int)result;
+            serialPort->error = "WriteFile() failed";
             log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error writing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             CancelIo(handle->platformHandle);
-            if (result == ERROR_NOT_SAME_DEVICE) {
-                // this should probably be expanded to include other likely errors, but...
+            if (win32ErrorIndicatesDeviceLost(result)) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
                 portClose(port);
                 portInvalidate(port);
@@ -1154,13 +1228,12 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     {
         if (!GetOverlappedResult(handle->platformHandle, &handle->ovWrite, &dwWritten, 1))
         {
-            serialPort->errorCode = errno;
-            serialPort->error = strerror(serialPort->errorCode);
-            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             DWORD result = GetLastError();  // read this before we call CancelIo
+            serialPort->errorCode = (int)result;   // SN-8697: real Win32 error, not errno -- see above
+            serialPort->error = "GetOverlappedResult() failed";
+            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             CancelIo(handle->platformHandle);
-            if (result == 433) {    // 433 is an undocumented "STATUS_NO_SUCH_DEVICE"
-                // this should probably be expanded to include other likely errors, but...
+            if (win32ErrorIndicatesDeviceLost(result)) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
                 portClose(port);
                 portInvalidate(port);
