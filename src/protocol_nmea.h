@@ -254,7 +254,9 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info);
  * @brief Encode a $ASCE (auto-start configuration enable) sentence.
  * @param a    Output buffer.
  * @param aSize Capacity of @p a.
- * @param portIdx Port index this response describes (emitted in field 1).
+ * @param portIdx Zero-based index of the port this response describes. Field 1 is emitted as a
+ *                one-hot bit (1=ser0, 2=ser1, 4=ser2, 8=USB) so requests and responses share the
+ *                same port encoding as the OPTIONS selector.
  * @param nRMC RMC NMEA configuration to encode.
  * @return Number of bytes written, or negative on failure.
  */

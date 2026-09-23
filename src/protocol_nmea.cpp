@@ -822,15 +822,23 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
  *
  * @param a[] - output buffer
  * @param aSize - size of output buffer
- * @param portIdx - port index this response describes, emitted in field 1. Pass the index of the
+ * @param portIdx - zero-based index of the port this response describes. Pass the index of the
  *                  port whose nRMC is being encoded -- NOT the port the reply is written to. For a
  *                  reply about the receiving port those are the same; for a cross-port query
  *                  (SN-8450) they differ, and field 1 is how the host tells which port it got.
+ *
+ *                  Field 1 is emitted as a ONE-HOT BIT, not as this index, so that a request and
+ *                  its response use the same port encoding as the $ASCE OPTIONS selector:
+ *                  a query of "$ASCE,2" (bit 1 = Ser1) is answered by "$ASCE,2,...". Emitting the
+ *                  raw index would make the same number mean different ports in each direction,
+ *                  and would make "$ASCE,0" ambiguous between "Ser0" and pre-3.1.0 firmware,
+ *                  which stamped 0 unconditionally.
  * @param nRMC - per-port NMEA broadcast configuration (nmeaBits enable bitmask + nmeaPeriod[] array) to encode
  *
  * @note output message format: $ASCE,port,{msgID,msgPeriod}...*cs
  *  0    Message ID $ASCE
- *  1    Port index this response applies to (see portIdx)
+ *  1    Port this response applies to, as a one-hot bit (1=ser0, 2=ser1, 4=ser2, 8=USB) --
+ *       the same encoding the OPTIONS port selector uses. See @param portIdx.
  *  2n   msgID  - NMEA message ID of an enabled message (index into eNmeaMsgIdInx, see nRMC->nmeaBits bit position)
  *  2n+1 msgPeriod - broadcast period multiple for that message (see nRMC->nmeaPeriod[msgID])
  *      (the msgID,msgPeriod pair repeats once for every message with its enable bit set in nmeaBits and a non-zero period, up to MAX_nmeaBroadcastMsgPairs)
@@ -867,8 +875,10 @@ int nmea_ASCE(char a[], const int aSize, int portIdx, rmcNmea_t* nRMC)
         }
     }
 
-    // Base msg naming the port this response describes
-    int n = ssnprintf(a, aSize, "$ASCE,%d", portIdx);
+    // Base msg naming the port this response describes, as a one-hot bit matching the OPTIONS
+    // port selector (see @param portIdx).
+    uint32_t portBit = (portIdx >= 0) ? (((uint32_t)1 << portIdx) & RMC_OPTIONS_PORT_MASK) : 0;
+    int n = ssnprintf(a, aSize, "$ASCE,%u", (unsigned)portBit);
 
     // finish populating msg
     for (int i = 0; (i < activeRMC) && (i < MAX_nmeaBroadcastMsgPairs); i++)

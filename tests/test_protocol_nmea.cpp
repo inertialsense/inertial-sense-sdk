@@ -432,6 +432,39 @@ TEST(protocol_nmea, asce_query_still_honours_explicitly_set_options)
     EXPECT_EQ(rmci[0].rmcNmea.nmeaBits, (uint32_t)NMEA_RMC_BITS_GNGGA) << "setup state intact";
 }
 
+TEST(protocol_nmea, asce_response_port_field_is_one_hot)
+{
+    PRINT_TEST_DESCRIPTION("The $ASCE response encodes its port as a one-hot bit, matching the "
+                           "OPTIONS port selector, so a query and its reply use one encoding. "
+                           "Emitting the raw index would make the same number mean different "
+                           "ports in each direction.");
+
+    rmcNmea_t n0 = {};
+    char a[ASCII_BUF_LEN];
+
+    struct { int idx; const char *expect; } cases[] = {
+        { 0, "$ASCE,1" },   // ser0 -> bit 0
+        { 1, "$ASCE,2" },   // ser1 -> bit 1
+        { 2, "$ASCE,4" },   // ser2 -> bit 2
+        { 3, "$ASCE,8" },   // USB  -> bit 3
+    };
+
+    for (auto &c : cases)
+    {
+        memset(a, 0, sizeof(a));
+        nmea_ASCE(a, ASCII_BUF_LEN, c.idx, &n0);
+        EXPECT_EQ(strncmp(a, c.expect, strlen(c.expect)), 0)
+            << "index " << c.idx << " should emit " << c.expect << " but got " << a;
+    }
+
+    // And the bit must round-trip through the OPTIONS selector defines.
+    memset(a, 0, sizeof(a));
+    nmea_ASCE(a, ASCII_BUF_LEN, 1, &n0);
+    char expect[32];
+    snprintf(expect, sizeof(expect), "$ASCE,%u", (unsigned)RMC_OPTIONS_PORT_SER1);
+    EXPECT_EQ(strncmp(a, expect, strlen(expect)), 0) << a;
+}
+
 TEST(protocol_nmea, INFO)
 {
     dev_info_t info = {};
