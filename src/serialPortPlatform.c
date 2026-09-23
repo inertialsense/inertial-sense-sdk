@@ -543,7 +543,10 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     COMMTIMEOUTS timeouts;
     if (!GetCommTimeouts(platformHandle, &timeouts))
     {
-        serialPortClose(port);
+        serialPort->errorCode = errno;
+        serialPort->error = strerror(errno);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retrieve COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
+        CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
     }
 
