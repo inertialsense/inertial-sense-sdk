@@ -94,6 +94,24 @@ bool hasSiblingSuccessor(const fs::path& rawPath) noexcept {
     return fs::exists(sibling, ec);
 }
 
+/**
+ * @brief Whether @p t can only be a RESOLVED absolute time, not a raw `.idx` value — audit B6.
+ *
+ * `seek()` and `Range::in_time()` compare against raw record timestamps, which are GPS
+ * time-of-week (always under one week) or host uptime (hours at most). Neither can reach the GPS
+ * epoch, so a value at or beyond it is necessarily something that has already been through
+ * `ISTimeResolver` — and D0065 says every time value inside Logalyzer is exactly that, which is
+ * what makes this an easy mistake rather than an exotic one.
+ *
+ * Same discriminator SN-8115 used for the resolver's own idempotency guard, and for the same
+ * reason: it is the one test that cannot produce a false positive on a legitimate raw value.
+ */
+constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;   // 1980-01-06T00:00:00Z
+
+bool looksLikeResolvedAbsolute(const TimeStamp& t) noexcept {
+    return t.value >= kGpsEpochUnixMs;
+}
+
 //! True when @p seg is sequence `_0001` of its log — the only reliable way to know that nothing
 //! precedes it, and therefore that its uptime minimum IS the log's uptime zero. A log whose early
 //! segments were culled starts at a higher sequence, and its zero is genuinely unknowable.
@@ -670,6 +688,18 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     // Audit C3: verify, once, the invariant `recordEndOffset` binary-searches on. Cheap (one
     // pass over an array already in cache) and it means a violated assumption degrades to the
     // old linear scan instead of silently handing out a wrong byte range.
+    // Audit B6 (secondary): `seek()` needs to know whether record timestamps are monotonic so it
+    // can binary-search. Interleaved mixed domains (D0066) usually make them non-monotonic, so
+    // in practice it takes the linear branch -- but computing that per call put an O(n) scan in
+    // front of an O(log n) search. It is a property of an immutable vector; compute it once.
+    r.timestampsMonotonic_ = true;
+    for (std::size_t i = 1; i < r.records_.size(); ++i) {
+        if (r.records_[i].timestamp < r.records_[i - 1].timestamp) {
+            r.timestampsMonotonic_ = false;
+            break;
+        }
+    }
+
     r.offsetsNonDecreasing_ = true;
     for (std::size_t i = 1; i < r.records_.size(); ++i) {
         if (r.records_[i].offset < r.records_[i - 1].offset) {
@@ -2192,6 +2222,20 @@ ISLogReader::Range ISLogReader::allRecords() const noexcept {
 ISLogReader::Range ISLogReader::Range::in_time(TimeStamp t0, TimeStamp t1) const {
     if (parent_ == nullptr || indices_ == nullptr) return *this;
     if (begin_ >= end_) return *this;
+
+    // Audit B6: these bounds are compared against RAW `.idx` timestamps, and `.source` was
+    // ignored entirely. Passing a resolved absolute -- which D0065 makes the default shape of
+    // every time value in the application -- silently compared two different frames and returned
+    // a range that looked plausible. Refuse loudly instead: an empty range is a visible wrong
+    // answer, a mis-framed one is not.
+    if (looksLikeResolvedAbsolute(t0) || looksLikeResolvedAbsolute(t1)) {
+        log_error(IS_LOG_ISLOG,
+                  "Range::in_time called with a RESOLVED absolute bound ([%llu..%llu]); this API "
+                  "compares against raw .idx timestamps. Resolve the RECORDS instead, or pass "
+                  "raw-domain bounds.",
+                  (unsigned long long)t0.value, (unsigned long long)t1.value);
+        return Range{ parent_, indices_, begin_, begin_ };
+    }
     // Linear scan to find the first index with timestamp >= t0.value.
     std::size_t lo = begin_;
     while (lo < end_ && parent_->records_[(*indices_)[lo]].timestamp < t0.value) {
@@ -2210,20 +2254,22 @@ ISLogReader::RangeIterator ISLogReader::seek(TimeStamp target) const noexcept {
         return RangeIterator{ this, &allIndices_, 0 };
     }
 
-    // Detect monotonic timestamps in records_; if so, do a binary search. Otherwise fall back to linear scan. We don't
-    // cache the monotonicity check because the records_ vector is immutable after construction; the cost is amortized
-    // over potentially many seek() calls but recomputed each call. For typical workloads this is acceptable; if it
-    // shows up in profiling, cache the boolean in a const member set in construct().
-    bool monotonic = true;
-    for (std::size_t i = 1; i < records_.size(); ++i) {
-        if (records_[i].timestamp < records_[i - 1].timestamp) {
-            monotonic = false;
-            break;
-        }
+    // Audit B6, same trap as Range::in_time: `target` is compared against RAW `.idx` timestamps
+    // and `.source` was ignored. Seeking with a resolved absolute returned end() on a log that
+    // does contain the instant asked for -- a wrong answer that looks like "no such record".
+    if (looksLikeResolvedAbsolute(target)) {
+        log_error(IS_LOG_ISLOG,
+                  "seek called with a RESOLVED absolute time (%llu); this API compares against "
+                  "raw .idx timestamps. Resolve the RECORDS instead, or seek on a raw value.",
+                  (unsigned long long)target.value);
+        return RangeIterator{ this, &allIndices_, allIndices_.size() };
     }
 
+    // Audit B6 (secondary): the monotonicity test used to run on EVERY call -- an O(n) scan in
+    // front of an O(log n) search, which the previous comment acknowledged and deferred. It is a
+    // property of a vector that is immutable after construction, so it is computed once there.
     std::size_t pos;
-    if (monotonic) {
+    if (timestampsMonotonic_) {
         // std::lower_bound on the timestamps via the all-indices view.
         auto it = std::lower_bound(allIndices_.begin(), allIndices_.end(), target.value,
             [this](std::size_t i, uint64_t t) { return records_[i].timestamp < t; });

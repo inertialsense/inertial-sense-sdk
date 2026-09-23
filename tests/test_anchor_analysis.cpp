@@ -1830,6 +1830,109 @@ TEST(AnchorFilenameSpan, ACulledLogKeepsItsInternalGeometryAndSaysTheZeroIsUnkno
     ISFileManager::DeleteDirectory(dirC.string());
 }
 
+// Audit B1 — the resolver and the anchor cascade must agree on where the uptime<->ToW offset
+// comes from.
+//
+// The cascade treats DID_GPX_STATUS as a co-equal tier-5 bridge; the resolver read the pair from
+// DID_SYS_PARAMS ONLY. Segments were therefore ORDERED by one reconstruction of the offset and
+// MEASURED by another, which D0066 forbids.
+//
+// It was latent because the corpus contains no GPX-standalone log -- probe4 over 542 segments:
+// 539 with SYS_PARAMS, 177 with GPX_STATUS, **0 GPX-only** -- so the two sets never disagreed on
+// real data, and the cascade's GPX branch was exercised by unit tests only. This builds the log
+// the corpus lacks: GPX_STATUS as the only bridge record anywhere.
+//
+// The failure mode being closed: the cascade anchors such a log at tier 5 while the resolver
+// finds no offset source, so every record classifies SessionOnly, detectGaps reports zero gaps on
+// a fully-anchored log, and per D0066 every display path treats it as unanchored.
+TEST(AnchorBridgeParity, AGpxOnlyLogResolvesAsWellAsItAnchors) {
+    const fs::path dir = makeTempDir("b1_gpx_only");
+    ISFileManager::DeleteDirectory(dir.string());
+    fs::create_directories(dir);
+
+    // A GPX-standalone capture: DID_GPX_STATUS is the ONLY dual-domain bridge present, plus
+    // uptime-domain PIMU records for it to place. No DID_SYS_PARAMS anywhere.
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_DAT;
+    opts.useSubFolderTimestamp = false;
+    ASSERT_TRUE(logger.InitSave(dir.string(), opts));
+    auto dev = logger.registerDevice(kFixtureHwId, 616161u);
+    ASSERT_NE(dev, nullptr);
+    logger.EnableLogging(true);
+
+    dev_info_t info{};
+    info.serialNumber   = 616161u;
+    info.hardwareType   = IS_HARDWARE_TYPE_IMX;
+    info.hardwareVer[0] = 5;
+    p_data_hdr_t ih{}; ih.id = DID_DEV_INFO; ih.size = sizeof(info);
+    logger.LogData(dev, &ih, reinterpret_cast<const uint8_t*>(&info));
+
+    const gpx_status_t gs = makeGpxStatus(static_cast<uint32_t>(kTowMs), 10.0, /*towValid=*/true);
+    p_data_hdr_t gh{}; gh.id = DID_GPX_STATUS; gh.size = sizeof(gs);
+    logger.LogData(dev, &gh, reinterpret_cast<const uint8_t*>(&gs));
+
+    for (int i = 0; i < 20; ++i) {
+        pimu_t pm{};
+        pm.time = 10.0 + 0.1 * i;      // uptime domain
+        pm.dt   = 0.1f;
+        p_data_hdr_t ph{}; ph.id = DID_PIMU; ph.size = sizeof(pm);
+        logger.LogData(dev, &ph, reinterpret_cast<const uint8_t*>(&pm));
+    }
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> segs;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.dat$", segs);
+    ASSERT_FALSE(segs.empty());
+    const fs::path seg = segs.front().name;
+
+    auto log = ISDeviceLog::fromSegments({ seg });
+    ASSERT_TRUE(log.has_value());
+    const AnchorAnalysis a = log->segment(0).anchorAnalysis();
+
+    auto resolver = ISTimeResolver::build(*log);
+    ASSERT_TRUE(resolver.has_value());
+
+    std::printf("[measured] cascade tier=%s anchorDid=%u offsetMs=%lld | resolver syncPoints=%zu\n",
+                anchorTierName(a.tier), a.anchorDid, (long long)a.offsetMs,
+                resolver->syncPoints().size());
+
+    // Premise: this really is GPX-only, and the cascade really does anchor it.
+    ASSERT_EQ(a.towRecords, 1u) << "exactly one ToW-bearing record, the GPX_STATUS";
+    ASSERT_GT(a.uptimeRecords, 0u);
+
+    // THE PARITY ASSERTION: whatever the cascade can anchor from, the resolver must be able to
+    // bridge from. Before the fix the resolver had zero sync points on this log.
+    EXPECT_GT(resolver->syncPoints().size(), 0u)
+        << "the resolver found no sync point on a log the cascade anchors -- the two bridges "
+           "disagree, which is exactly audit B1";
+
+    // The audit predicted every record would resolve SessionOnly. MEASURED: it does not, because
+    // the filename fallback (Kyle 2026-09-07, Option B) catches a log with no sync points and
+    // resolves it FileTimeAnchored instead. So the severity was overstated -- the real cost is a
+    // downgrade, not a blackout: the log gets placed by its filename rather than by the GPS time
+    // it actually carries, which for a culled log can be days out. This assertion therefore holds
+    // both before and after the fix and is NOT the discriminating one; `syncPoints()` above is.
+    std::size_t sessionOnly = 0, anchored = 0;
+    for (auto v : log->segment(0).allRecords()) {
+        const uint64_t raw = v.timestamp().value;
+        if (raw == 0) continue;
+        const TimeStamp r = resolver->resolve(raw, log->deviceId(), v.arrivalIndex());
+        if (r.source == TimeSource::SessionOnly) ++sessionOnly; else ++anchored;
+    }
+    std::printf("[measured] resolved: %zu anchored, %zu SessionOnly\n", anchored, sessionOnly);
+    EXPECT_GT(anchored, 0u) << "records resolved to nothing usable at all";
+
+    // The sharper consequence: with the bridge in place the log is anchored from its OWN GPS
+    // time, so the resolver's sync source is the GPX record rather than the filename.
+    if (!resolver->syncPoints().empty()) {
+        EXPECT_EQ(resolver->syncPoints().front().sourceDid, uint32_t(DID_GPX_STATUS))
+            << "the sync point should come from the GPX bridge record on a GPX-only log";
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
 // A dedicated regression test for the `.dat` payload handoff, kept separate from the span tests
 // because it is about the CASCADE reaching its tiers at all, not about the span's value.
 //

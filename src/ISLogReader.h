@@ -852,6 +852,19 @@ public:
          *            with timestamps in `[t0, t1]`. Lifetime tied
          *            to the parent reader.
          *
+         * @warning **RAW-DOMAIN BOUNDS ONLY — audit B6.** `t0`/`t1` are compared against the
+         *          `.idx`'s raw record timestamps, which are mixed-domain (D0066): GPS
+         *          time-of-week on sync-bearing DIDs, host uptime elsewhere. `source` is not
+         *          consulted, and cannot be — an `ISLogReader` has no resolver.
+         *
+         *          D0065 makes a RESOLVED absolute the default shape of every time value in the
+         *          application, so passing one here is the easy mistake, and it used to compare
+         *          two different frames and return a plausible-looking range. A bound at or
+         *          beyond the GPS epoch can only be a resolved value, so that is now detected:
+         *          it logs an error and returns an EMPTY range rather than a mis-framed one.
+         *
+         *          To select by wall-clock time, resolve the RECORDS and filter on the result.
+         *
          * @see TimeStamp, ISLogReader::seek
          */
         Range in_time(TimeStamp t0, TimeStamp t1) const;
@@ -934,6 +947,13 @@ public:
      * @return        Iterator positioned at the first record with
      *                `timestamp().value >= target.value`, or
      *                `allRecords().end()` if no such record exists.
+     *
+     * @warning **RAW-DOMAIN TARGET ONLY — audit B6.** Same contract as
+     *          @ref Range::in_time: the comparison is against raw `.idx` timestamps and
+     *          `target.source` is not consulted. Seeking with a resolved absolute returned
+     *          `end()` on a log that does contain the instant asked for — a wrong answer wearing
+     *          the shape of "no such record". A target at or beyond the GPS epoch is now
+     *          detected, logged, and returns `end()` explicitly.
      */
     RangeIterator seek(TimeStamp target) const noexcept;
 
@@ -1116,6 +1136,10 @@ private:
 
     SegmentFormat                          format_             = SegmentFormat::Raw;
     bool                                   hadOnDiskIndex_     = false;
+    //! Audit B6: true when `records_` timestamps are monotonic, which is what lets `seek()`
+    //! binary-search. Computed once in `construct()` rather than per call.
+    bool timestampsMonotonic_ = false;
+
     //! Audit C3: true when `records_` offsets are non-decreasing, which is what lets
     //! `recordEndOffset` binary-search instead of scanning. Verified once in `construct()`.
     bool offsetsNonDecreasing_ = true;

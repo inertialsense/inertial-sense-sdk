@@ -156,6 +156,64 @@ int64_t medianOf(std::vector<int64_t> v) {
  * is precisely why they are the DIDs whose stalled ToW can be repaired from first-hand evidence
  * instead of inferred from neighbours.
  */
+/**
+ * @brief The uptime<->ToW bridge pair out of a dual-domain payload — audit B1.
+ *
+ * `DID_SYS_PARAMS` (IMX) and `DID_GPX_STATUS` (GPX) each carry a GPS time-of-week AND the
+ * device's own uptime in one payload, which is what makes the offset between the two domains
+ * recoverable without correlating neighbours.
+ *
+ * Before this, the resolver read the pair from `DID_SYS_PARAMS` **only**, while the anchor
+ * cascade treated `DID_GPX_STATUS` as a co-equal tier-5 bridge. Segments were therefore ORDERED
+ * by one reconstruction of the offset and MEASURED by another, which D0066 forbids — one shared
+ * frame. It was latent because the corpus contains no GPX-standalone log (`probe4`: 542 segments,
+ * 539 with SYS_PARAMS, 177 with GPX_STATUS, **0 GPX-only**), so the sets never disagreed on any
+ * real data, and the cascade's GPX branch was exercised by unit tests only.
+ *
+ * The failure mode it was hiding: on a GPX-only log the cascade anchors at tier 5 while the
+ * resolver finds no offset source at all, so every record classifies `SessionOnly`, `detectGaps`
+ * skips them and reports **zero gaps on a fully-anchored log**, and per D0066 every display path
+ * treats it as unanchored.
+ *
+ * Validity is gated per device family — the GPX reports it on either of its two GNSS receivers.
+ * An invalid bit means `timeOfWeekMs` is LOCAL system time, and differencing that against uptime
+ * yields a bogus offset that corrupts the median bridge.
+ */
+struct BridgePair {
+    uint64_t towMs = 0;      //!< Claimed GPS time-of-week, ms.
+    uint64_t upMs  = 0;      //!< The device's own uptime, ms.
+    double   upSec = 0.0;    //!< Same uptime in seconds, for the reboot test.
+    bool     towValid = false;
+};
+
+std::optional<BridgePair> bridgePair(uint32_t did, const uint8_t* payload, uint32_t size) {
+    if (payload == nullptr) return std::nullopt;
+    BridgePair p;
+    if (did == DID_SYS_PARAMS && size >= sizeof(sys_params_t)) {
+        sys_params_t v{};
+        std::memcpy(&v, payload, sizeof(v));
+        p.towMs    = v.timeOfWeekMs;
+        p.upSec    = v.upTime;
+        p.towValid = (v.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+    } else if (did == DID_GPX_STATUS && size >= sizeof(gpx_status_t)) {
+        gpx_status_t v{};
+        std::memcpy(&v, payload, sizeof(v));
+        p.towMs    = v.timeOfWeekMs;
+        p.upSec    = v.upTime;
+        p.towValid = (v.hdwStatus & (GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID |
+                                     GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID)) != 0;
+    } else {
+        return std::nullopt;
+    }
+    p.upMs = static_cast<uint64_t>(p.upSec * 1000.0);
+    return p;
+}
+
+/** @return True for a DID that carries the dual-domain bridge pair. */
+inline bool isBridgeDid(uint32_t did) noexcept {
+    return did == DID_SYS_PARAMS || did == DID_GPX_STATUS;
+}
+
 std::optional<uint64_t> ownClockMs(uint32_t did, const uint8_t* payload, uint32_t size) {
     if (payload == nullptr) return std::nullopt;
     if (did == DID_SYS_PARAMS && size >= sizeof(sys_params_t)) {
@@ -349,20 +407,21 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
         stalls.observe(hdr.id, thisArrival, v.timestamp().value, payloadPtr, hdr.size,
                        observedOffset ? v.logTimeOffsetMs() : 0u);
 
-        if (hdr.id == DID_SYS_PARAMS && hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
-            sys_params_t sp2{};
-            std::memcpy(&sp2, payloadPtr, sizeof(sp2));
-            if (sp2.upTime > 0.0) {
-                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+        // Audit B1: either bridge DID, via the shared extractor -- the resolver used to read the
+        // pair from DID_SYS_PARAMS only while the cascade accepted DID_GPX_STATUS as co-equal.
+        if (isBridgeDid(hdr.id) && hdr.offset == 0) {
+          if (const auto bp = bridgePair(hdr.id, payloadPtr, hdr.size)) {
+            if (bp->upSec > 0.0) {
+                if (prevUpTimeSec >= 0.0 && bp->upSec < prevUpTimeSec - 0.5) {
                     sessAccum.push_back(SessionAccum{ thisArrival, {} });
                 }
-                prevUpTimeSec = sp2.upTime;
+                prevUpTimeSec = bp->upSec;
             }
-            const bool towValid =
-                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
-            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
-                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
-                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+            const bool towValid = bp->towValid;
+            const auto& sp2 = *bp;
+            if (towValid && sp2.towMs > 0 && sp2.upSec > 0.0) {
+                const int64_t off = static_cast<int64_t>(sp2.towMs)
+                                  - static_cast<int64_t>(sp2.upMs);
                 upOffsetsOut.push_back(off);
                 if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);
             }
@@ -376,15 +435,16 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
             // gpsWeek: sys_params_t carries no week field, unlike ins_x_t/gnss_pos_t, so this
             // sync point can bridge host-uptime->ToW but never itself supply the epoch anchor
             // (chooseAnchorWeek skips week==0 candidates).
-            if (towValid && sp2.timeOfWeekMs > 0) {
+            if (towValid && sp2.towMs > 0) {
                 ISSyncPoint sysSp{};
-                sysSp.hostTimeMs       = sp2.timeOfWeekMs;
-                sysSp.payloadToWMs     = sp2.timeOfWeekMs;
+                sysSp.hostTimeMs       = sp2.towMs;
+                sysSp.payloadToWMs     = sp2.towMs;
                 sysSp.deviceId         = deviceId;
-                sysSp.sourceDid        = DID_SYS_PARAMS;
+                sysSp.sourceDid        = hdr.id;   // B1: SYS_PARAMS or GPX_STATUS
                 sysSp.actualHostTimeMs = lastNonSyncHostTimeMs;
                 out.push_back(sysSp);
             }
+          }
         }
 
         const double tsSec = cISDataMappings::Timestamp(&hdr, payloadPtr);
@@ -488,45 +548,47 @@ void scanSegmentForSyncs(const ISLogReader& reader,
         // GPS lock). This replaces the fragile per-sync actualHostTimeMs
         // heuristic. (Kyle 2026-07-23: SYS_PARAMS.upTime is the definitive
         // relative uptime; GNSS/INS are the accurate absolute clock.)
-        if (hdr.id == DID_SYS_PARAMS && comm.rxPkt.data.ptr &&
-            hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
-            sys_params_t sp2{};
-            std::memcpy(&sp2, comm.rxPkt.data.ptr, sizeof(sp2));
-            // SN-8339: a SYS_PARAMS.upTime that DROPS relative to the previous
-            // SYS_PARAMS (in arrival order) means the device rebooted — open a
-            // new power-on session starting at this record. (Checked on every
-            // SYS_PARAMS, regardless of GPS-time validity, since a fresh boot is
-            // typically pre-fix.)
-            if (sp2.upTime > 0.0) {
-                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+        // Audit B1: either bridge DID, through the shared extractor. This read the pair from
+        // DID_SYS_PARAMS only, while the anchor cascade accepted DID_GPX_STATUS as a co-equal
+        // tier-5 bridge -- so a GPX-standalone log would be ORDERED by an offset the resolver
+        // could not find, leaving every record SessionOnly on a fully-anchored log. See
+        // `bridgePair` for the measurements and the failure mode.
+        if (isBridgeDid(hdr.id) && comm.rxPkt.data.ptr && hdr.offset == 0) {
+          if (const auto bp = bridgePair(hdr.id, static_cast<const uint8_t*>(comm.rxPkt.data.ptr),
+                                          hdr.size)) {
+            // SN-8339: an upTime that DROPS relative to the previous bridge record (in arrival
+            // order) means the device rebooted — open a new power-on session starting at this
+            // record. Checked regardless of GPS-time validity, since a fresh boot is typically
+            // pre-fix.
+            if (bp->upSec > 0.0) {
+                if (prevUpTimeSec >= 0.0 && bp->upSec < prevUpTimeSec - 0.5) {
                     sessAccum.push_back(SessionAccum{ thisArrival, {} });
                 }
-                prevUpTimeSec = sp2.upTime;
+                prevUpTimeSec = bp->upSec;
             }
-            // Only trust timeOfWeekMs as GPS ToW when the device says so:
-            // HDW_STATUS_GNSS_TIME_OF_WEEK_VALID. Otherwise timeOfWeekMs is
-            // LOCAL system time (uptime-like), and differencing it against
-            // upTime yields a bogus offset that corrupts the median bridge.
-            const bool towValid =
-                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
-            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
-                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
-                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+            // Only trust timeOfWeekMs as GPS ToW when the device says so. Otherwise it is LOCAL
+            // system time (uptime-like), and differencing it against upTime yields a bogus offset
+            // that corrupts the median bridge.
+            const bool towValid = bp->towValid;
+            if (towValid && bp->towMs > 0 && bp->upSec > 0.0) {
+                const int64_t off = static_cast<int64_t>(bp->towMs)
+                                  - static_cast<int64_t>(bp->upMs);
                 upOffsetsOut.push_back(off);                       // global (SN-8323) offset samples
                 if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);  // per-session (SN-8339)
             }
-            // Kyle 2026-09-07 (Option A) -- same rationale as scanSegmentForSyncsDat's mirror of
-            // this block: DID_SYS_PARAMS wasn't in kToWBearingDids, so even a synced record never
-            // became a sync point itself, only used to calibrate OTHER DIDs' bridge. Push it too.
-            if (towValid && sp2.timeOfWeekMs > 0) {
+            // Kyle 2026-09-07 (Option A): a bridge record was never a sync point itself, only
+            // used to calibrate OTHER DIDs' bridge, so a log whose ONLY valid GPS time came from
+            // one had zero sync points. Push it too.
+            if (towValid && bp->towMs > 0) {
                 ISSyncPoint sysSp{};
-                sysSp.hostTimeMs       = sp2.timeOfWeekMs;
-                sysSp.payloadToWMs     = sp2.timeOfWeekMs;
+                sysSp.hostTimeMs       = bp->towMs;
+                sysSp.payloadToWMs     = bp->towMs;
                 sysSp.deviceId         = deviceId;
-                sysSp.sourceDid        = DID_SYS_PARAMS;
+                sysSp.sourceDid        = hdr.id;   // B1: SYS_PARAMS or GPX_STATUS
                 sysSp.actualHostTimeMs = lastNonSyncHostTimeMs;
                 out.push_back(sysSp);
             }
+          }
         }
 
         // Probe every record for a payload-side timestamp. ToW-bearing

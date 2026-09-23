@@ -154,6 +154,90 @@ std::size_t scanCount(const fs::path& segment) {
 } // namespace
 
 // =====================================================================================
+// Audit B6 — seek() / in_time() compare against RAW .idx timestamps, and ignored `.source`.
+//
+// D0065 makes a resolved absolute the default shape of every time value in the application, so
+// handing one to these is the easy mistake -- and it silently compared two different frames.
+// A value at or beyond the GPS epoch cannot be a raw time-of-week (under one week) or a host
+// uptime (hours), so it can only be a resolved absolute; that is now detected and refused.
+// =====================================================================================
+
+TEST(SeekDomainGuard, ARawTargetSeeksAndAResolvedAbsoluteIsRefused) {
+    const fs::path dir = makeTempDir("b6_seek");
+    const fs::path seg = writeSegment(dir, 425300u, 30);
+    ASSERT_FALSE(seg.empty());
+
+    auto r = ISLogReader::openSegment(seg);
+    ASSERT_TRUE(r.has_value());
+    ASSERT_GT(r->recordCount(), 5u);
+
+    // A RAW target works: the fixture's DID_PIMU records run 10.0 s .. upward in uptime ms.
+    const uint64_t rawTarget = 10'500;
+    auto it = r->seek(TimeStamp::fromSessionOnly(rawTarget, r->deviceId()));
+    std::size_t rawPos = 0;
+    for (auto scan = r->allRecords().begin(); scan != it && rawPos < r->recordCount(); ++scan) {
+        ++rawPos;
+    }
+    std::printf("[measured] raw seek(%llu) landed at index %zu of %zu\n",
+                (unsigned long long)rawTarget, rawPos, r->recordCount());
+    EXPECT_LT(rawPos, r->recordCount()) << "a raw-domain seek should land inside the records";
+
+    // A RESOLVED absolute must be refused, not compared. ~1.79e12 is a 2026 wall clock; the
+    // fixture's raw values are five-digit uptimes, so the old behaviour walked to the end and
+    // returned it as though the instant did not exist.
+    constexpr uint64_t kResolvedAbsolute = 1'789'601'171'000ULL;
+    auto bad = r->seek(TimeStamp::fromResolvedViaSync(kResolvedAbsolute, r->deviceId(),
+                                                       TimeConfidence::Exact));
+    std::size_t badPos = 0;
+    for (auto scan = r->allRecords().begin(); scan != bad && badPos <= r->recordCount(); ++scan) {
+        ++badPos;
+    }
+    std::printf("[measured] resolved seek(%llu) landed at index %zu (== recordCount %zu)\n",
+                (unsigned long long)kResolvedAbsolute, badPos, r->recordCount());
+    EXPECT_EQ(badPos, r->recordCount())
+        << "a resolved absolute must be refused explicitly, not compared against raw values";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+TEST(SeekDomainGuard, InTimeRefusesResolvedBoundsAndAcceptsRawOnes) {
+    const fs::path dir = makeTempDir("b6_intime");
+    const fs::path seg = writeSegment(dir, 425301u, 30);
+    ASSERT_FALSE(seg.empty());
+
+    auto r = ISLogReader::openSegment(seg);
+    ASSERT_TRUE(r.has_value());
+
+    const auto countRange = [](ISLogReader::Range rng) {
+        std::size_t n = 0;
+        for (auto v : rng) { (void)v; ++n; }
+        return n;
+    };
+
+    // Raw bounds select a real subset of the fixture's 10.0 s .. 12.9 s uptime range.
+    const auto rawRange = r->allRecords().in_time(
+        TimeStamp::fromSessionOnly(10'000, r->deviceId()),
+        TimeStamp::fromSessionOnly(11'000, r->deviceId()));
+    const std::size_t rawCount = countRange(rawRange);
+
+    // Resolved bounds must yield NOTHING rather than a mis-framed range.
+    const auto resolvedRange = r->allRecords().in_time(
+        TimeStamp::fromResolvedViaSync(1'789'601'171'000ULL, r->deviceId(),
+                                        TimeConfidence::Exact),
+        TimeStamp::fromResolvedViaSync(1'789'601'999'000ULL, r->deviceId(),
+                                        TimeConfidence::Exact));
+    const std::size_t resolvedCount = countRange(resolvedRange);
+
+    std::printf("[measured] in_time raw bounds -> %zu record(s); resolved bounds -> %zu\n",
+                rawCount, resolvedCount);
+    EXPECT_GT(rawCount, 0u)      << "raw-domain bounds should select records";
+    EXPECT_LT(rawCount, r->recordCount()) << "and should select a SUBSET, or the test is vacuous";
+    EXPECT_EQ(resolvedCount, 0u) << "resolved bounds must be refused, not compared";
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+// =====================================================================================
 // Audit C3 — recordEndOffset must not scan, and must give the same answer either way.
 //
 // It was a forward linear scan for "the smallest record offset strictly greater than mine":
