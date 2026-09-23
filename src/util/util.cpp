@@ -187,7 +187,10 @@ std::string utils::raw_hexdump(const char* raw_data, int bytesLen, int bytesPerL
     // gives no way to report. Callers dump whole packets and comparison windows, which routinely
     // run to hundreds of bytes.
     std::string out;
-    out.reserve((size_t)((bytesLen / bytesPerLine) + 1) * (size_t)((bytesPerLine * 3) + 5));
+    const size_t uBytesLen = static_cast<size_t>(bytesLen);
+    const size_t uBytesPerLine = static_cast<size_t>(bytesPerLine);
+    const size_t lineCount = (uBytesLen + uBytesPerLine - 1) / uBytesPerLine;
+    out.reserve(lineCount * 5 + uBytesLen * 3 + 1);
 
     for (int i = 0; i < bytesLen; i += bytesPerLine) {
         // Length of THIS line, so a bytesLen that is an exact multiple of bytesPerLine still emits
