@@ -714,9 +714,7 @@ TEST(ISStatusDecode, SysStatus_RoundTrip)
         const uint32_t v = (1u << b);
         EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderSysStatusReference(v)) << "bit " << b;
     }
-    // One error state: two GNSS receivers on different firmware. The other two bits are
-    // informational, so the mask is exactly that one bit.
-    EXPECT_EQ(dec->errorMask, (uint32_t)SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH);
+    EXPECT_EQ(dec->errorMask, (uint32_t)SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH);   // the one error state
 }
 
 TEST(ISStatusDecode, GenFaultCode_RoundTrip_EverySingleBit)
