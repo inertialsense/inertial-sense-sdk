@@ -162,6 +162,14 @@ void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
 void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3]);
 
 /**
+ * @brief Find the ECEF position given NED (north, east, down) offset relative to llaRef, double precision.
+ * @param ned     NED offset (meters) from llaRef.
+ * @param llaRefDeg Reference latitude (degrees), longitude (degrees), altitude (m; MSL or WGS-84, any datum consistent between llaRef and lla/result).
+ * @param ecef Output: ECEF position (m).
+ */
+void ned2ecef_d(const ixVector3 ned, const double llaRefDeg[3], double ecef[3]);
+
+/**
  * @brief Convert LLA from radians to degrees (altitude is passed through unchanged).
  * @param result Output: latitude (degrees), longitude (degrees), altitude (m).
  * @param lla    Input: latitude (rad), longitude (rad), altitude (m).
