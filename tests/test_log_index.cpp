@@ -46,13 +46,18 @@ namespace {
 
 is_log_idx_header_t makeRoundTripHeader() {
     auto h = makeDefaultHeader(0x02010000u,
-                               TimestampUnits::GpsTowMs,
+                               TimestampAnchor::GpsTowMs,
                                HeaderTimeSource::PayloadToW);
     h.total_records       = 42;
     h.first_timestamp_ms  = 100ULL;
     h.last_timestamp_ms   = 99'999'999ULL;
     h.sync_point_count    = 7;
-    h.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    h.flags               = IS_LOG_IDX_HDR_FLAG_FINALIZED
+                          | IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET;
+    // D0069/D0096 (audit A2): NEGATIVE on purpose. The persisted anchor is signed -- a device
+    // whose clock leads the absolute frame yields one -- and it round-trips through the u64
+    // byte writers as two's complement, which a positive-only fixture would never exercise.
+    h.anchor_offset_ms    = -1'234'567'890'123LL;
     return h;
 }
 
@@ -66,7 +71,7 @@ TEST(IdxLayout, StaticSizes) {
     EXPECT_EQ(sizeof(is_log_idx_record_v2_t), IS_LOG_IDX_RECORD_V2_1_SIZE);   // v2.1 struct = 32
     EXPECT_EQ(IS_LOG_IDX_HEADER_SIZE,      64u);
     EXPECT_EQ(IS_LOG_IDX_RECORD_V2_SIZE,   24u);   // v2.0 on-disk prefix (unchanged)
-    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_1_SIZE, 32u);   // SN-8383 trailing local_uptime_ms + pad
+    EXPECT_EQ(IS_LOG_IDX_RECORD_V2_1_SIZE, 32u);   // SN-8383 trailing log_time_offset_ms + pad
 }
 
 TEST(IdxRoundTrip, HeaderSerializeAndParse) {
@@ -91,9 +96,12 @@ TEST(IdxRoundTrip, HeaderSerializeAndParse) {
     EXPECT_EQ(parsed->first_timestamp_ms,  src.first_timestamp_ms);
     EXPECT_EQ(parsed->last_timestamp_ms,   src.last_timestamp_ms);
     EXPECT_EQ(parsed->sync_point_count,    src.sync_point_count);
-    EXPECT_EQ(parsed->ts_units,            src.ts_units);
+    EXPECT_EQ(parsed->ts_anchor,            src.ts_anchor);
     EXPECT_EQ(parsed->ts_source,           src.ts_source);
     EXPECT_EQ(parsed->flags,               src.flags);
+    EXPECT_EQ(parsed->capture_epoch_ms,    src.capture_epoch_ms);
+    EXPECT_EQ(parsed->anchor_offset_ms,    src.anchor_offset_ms);
+    EXPECT_LT(parsed->anchor_offset_ms,    0) << "sign must survive the round trip";
 }
 
 TEST(IdxRoundTrip, RecordSerializeAndParse) {
@@ -103,7 +111,7 @@ TEST(IdxRoundTrip, RecordSerializeAndParse) {
         /* did       */ 0x1234,
         /* flags     */ IS_LOG_IDX_REC_FLAG_HAS_TOW,
         /* reserved  */ 0,
-        /* local_uptime_ms */ 777u,
+        /* log_time_offset_ms */ 777u,
         /* reserved2 */ 0,
     };
     uint8_t buf[IS_LOG_IDX_RECORD_V2_1_SIZE];
@@ -114,12 +122,12 @@ TEST(IdxRoundTrip, RecordSerializeAndParse) {
     EXPECT_EQ(parsed.offset,          src.offset);
     EXPECT_EQ(parsed.did,             src.did);
     EXPECT_EQ(parsed.flags,           src.flags);
-    EXPECT_EQ(parsed.local_uptime_ms, src.local_uptime_ms);   // SN-8383 trailing field round-trips
+    EXPECT_EQ(parsed.log_time_offset_ms, src.log_time_offset_ms);   // SN-8383 trailing field round-trips
 
-    // v2.0 back-compat: parsing only the 24-byte prefix leaves local_uptime_ms 0.
+    // v2.0 back-compat: parsing only the 24-byte prefix leaves log_time_offset_ms 0.
     const auto parsed20 = parseRecord(buf, IS_LOG_IDX_RECORD_V2_SIZE);
     EXPECT_EQ(parsed20.timestamp,       src.timestamp);
-    EXPECT_EQ(parsed20.local_uptime_ms, 0u);
+    EXPECT_EQ(parsed20.log_time_offset_ms, 0u);
 }
 
 TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
@@ -163,7 +171,7 @@ TEST(IdxRoundTrip, ManyRecordsViaContiguousBuffer) {
 
 TEST(IdxLegacyDetection, V1FileReturnsLegacyFormat) {
     // A v1 .idx file starts with the first record's u32 `time`
-    // field (host uptime delta) — definitely not "ISIX". Use a
+    // field (a log-start time-offset) — definitely not "ISIX". Use a
     // representative byte pattern (0x12, 0x34, 0x56, 0x78 = 0x78563412
     // host uptime) for the first 4 bytes, with arbitrary remaining
     // bytes filling out 64.
@@ -283,7 +291,7 @@ TEST(IdxFileIO, HeaderAndRecordRoundTripViaCISLogFile) {
 // SN-8383 back-compat: a genuine v2.0 .idx file (legacy header record_size==0,
 // 24-byte on-disk records) must read cleanly under the v2.1 reader — the reader
 // strides by the header's record_size (0 => 24), reads only the 24-byte prefix,
-// and leaves the v2.1 trailing local_uptime_ms zeroed. A v2.1 file (record_size
+// and leaves the v2.1 trailing log_time_offset_ms zeroed. A v2.1 file (record_size
 // 32) reads its trailing field. Both directions in one test, side by side.
 TEST(IdxFileIO, V20AndV21FilesBothReadCleanly) {
     // ---- v2.0 file: legacy header (record_size 0) + 24-byte records ----
@@ -300,7 +308,7 @@ TEST(IdxFileIO, V20AndV21FilesBothReadCleanly) {
         // Write each record as its 24-byte v2.0 prefix ONLY (serialize the full
         // 32-byte layout, persist just the prefix) — a true on-disk v2.0 record.
         const is_log_idx_record_v2_t recs[3] = {
-            { 1000, 0,    0xAAAu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0, /*local_uptime*/ 111u },
+            { 1000, 0,    0xAAAu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0, /*log_time_offset*/ 111u },
             { 2000, 4096, 0xBBBu, 0,                            0,                  222u },
             { 3000, 8192, 0xCCCu, IS_LOG_IDX_REC_FLAG_HAS_TOW, 0,                  333u },
         };
@@ -326,7 +334,7 @@ TEST(IdxFileIO, V20AndV21FilesBothReadCleanly) {
             ASSERT_TRUE(r.has_value()) << "record " << i << ": " << r.error().message;
             EXPECT_EQ(r->did, wantDid[i]) << "record " << i;
             EXPECT_EQ(r->offset, wantOff[i]) << "record " << i;
-            EXPECT_EQ(r->local_uptime_ms, 0u)
+            EXPECT_EQ(r->log_time_offset_ms, 0u)
                 << "v2.0 record must have NO trailing delta (record " << i << ")";
         }
         // Reader consumed exactly header + 3*24 bytes; a 4th read hits EOF.
@@ -358,10 +366,10 @@ TEST(IdxFileIO, V20AndV21FilesBothReadCleanly) {
         auto a = readRecord(in, hdrR->record_size);
         ASSERT_TRUE(a.has_value());
         EXPECT_EQ(a->did, 0xD1u);
-        EXPECT_EQ(a->local_uptime_ms, 4444u) << "v2.1 record carries the trailing delta";
+        EXPECT_EQ(a->log_time_offset_ms, 4444u) << "v2.1 record carries the trailing delta";
         auto b = readRecord(in, hdrR->record_size);
         ASSERT_TRUE(b.has_value());
-        EXPECT_EQ(b->local_uptime_ms, 5555u);
+        EXPECT_EQ(b->log_time_offset_ms, 5555u);
     }
     std::remove(v21.c_str());
 }
@@ -431,7 +439,7 @@ TEST(IdxFinalize, FinalizedFlagSemantics) {
     // Producing a header with the flag clear means the writer
     // crashed or hasn't called finalizeIndex yet — readers can fall
     // back to scanning records to reconstruct totals.
-    auto h = makeDefaultHeader(0, TimestampUnits::HostUptimeMs,
+    auto h = makeDefaultHeader(0, TimestampAnchor::UptimeMs,
                                   HeaderTimeSource::Mixed);
     EXPECT_EQ(h.flags & IS_LOG_IDX_HDR_FLAG_FINALIZED, 0u)
         << "default header must NOT have FINALIZED set — set it on close only";
@@ -809,7 +817,7 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
 //   (1) The comparator in ISDeviceLog::fromSegments must not let a
 //       not-safely-comparable header value override filename order.
 //   (2) The writer must qualify first_timestamp_ms/last_timestamp_ms (here:
-//       flag ts_units = Mixed) when it has direct, in-band proof they aren't
+//       flag ts_anchor = Mixed) when it has direct, in-band proof they aren't
 //       in one domain, so the file is honest about it on disk.
 // ---------------------------------------------------------------------------
 
@@ -857,16 +865,16 @@ TEST(IdxIntegration, WriterFlagsMixedDomainWhenFirstExceedsLast) {
     ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
     EXPECT_EQ(hdrR->first_timestamp_ms, 590000000ULL);
     EXPECT_EQ(hdrR->last_timestamp_ms, 101000ULL);
-    EXPECT_EQ(hdrR->ts_units, static_cast<uint8_t>(TimestampUnits::Mixed))
+    EXPECT_EQ(hdrR->ts_anchor, static_cast<uint8_t>(TimestampAnchor::Mixed))
         << "first > last is direct proof the two edges aren't one domain -- "
-           "ts_units must say so, not silently claim HostUptimeMs";
+           "ts_anchor must say so, not silently claim UptimeMs";
 
     std::remove((baseNoExt + ".idx").c_str());
 }
 
 TEST(IdxIntegration, WriterKeepsDefaultUnitsWhenConsistent) {
     // Both records are DID_IMUS_RAW (same domain), ascending -- the common,
-    // non-buggy case. ts_units must stay the conservative default; this is
+    // non-buggy case. ts_anchor must stay the conservative default; this is
     // the non-regression half of the SN-8629 AC.
     TestDeviceLog log;
     const auto basePath = makeTmpPath("consistent");
@@ -896,7 +904,7 @@ TEST(IdxIntegration, WriterKeepsDefaultUnitsWhenConsistent) {
     ASSERT_TRUE(hdrR.has_value()) << hdrR.error().message;
     EXPECT_EQ(hdrR->first_timestamp_ms, 100000ULL);
     EXPECT_EQ(hdrR->last_timestamp_ms, 100500ULL);
-    EXPECT_EQ(hdrR->ts_units, static_cast<uint8_t>(TimestampUnits::HostUptimeMs))
+    EXPECT_EQ(hdrR->ts_anchor, static_cast<uint8_t>(TimestampAnchor::UptimeMs))
         << "consistent first/last must not regress to Mixed";
 
     std::remove((baseNoExt + ".idx").c_str());
@@ -904,20 +912,20 @@ TEST(IdxIntegration, WriterKeepsDefaultUnitsWhenConsistent) {
 
 TEST(IdxIntegration, PreFixMixedDomainHeaderStillParses) {
     // AC A3: "a log written before it [the qualifier fix] still opens." A
-    // pre-fix writer always wrote ts_units = HostUptimeMs, even for a segment
+    // pre-fix writer always wrote ts_anchor = UptimeMs, even for a segment
     // whose first/last were actually mixed-domain (the exact SN-63736 shape).
     // No on-disk format changed -- only which enum value a healthy writer
     // now chooses -- so a stale mislabeled header must still parse cleanly.
-    auto h = makeDefaultHeader(0, TimestampUnits::HostUptimeMs, HeaderTimeSource::Mixed);
+    auto h = makeDefaultHeader(0, TimestampAnchor::UptimeMs, HeaderTimeSource::Mixed);
     h.first_timestamp_ms = 590000000ULL;  // mixed-domain, but pre-fix writer
-    h.last_timestamp_ms  = 101000ULL;     // never overrides ts_units for this
+    h.last_timestamp_ms  = 101000ULL;     // never overrides ts_anchor for this
     h.flags = IS_LOG_IDX_HDR_FLAG_FINALIZED;
 
     uint8_t buf[IS_LOG_IDX_HEADER_SIZE];
     serializeHeader(buf, h);
     auto parsed = parseHeader(buf);
     ASSERT_TRUE(parsed.has_value()) << "pre-fix (mislabeled) header must still parse";
-    EXPECT_EQ(parsed->ts_units, static_cast<uint8_t>(TimestampUnits::HostUptimeMs));
+    EXPECT_EQ(parsed->ts_anchor, static_cast<uint8_t>(TimestampAnchor::UptimeMs));
     EXPECT_EQ(parsed->first_timestamp_ms, 590000000ULL);
     EXPECT_EQ(parsed->last_timestamp_ms, 101000ULL);
 }

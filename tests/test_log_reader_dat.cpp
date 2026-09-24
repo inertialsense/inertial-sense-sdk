@@ -577,7 +577,7 @@ TEST(LogReaderDat, SyncedSysParamsAloneEstablishesSyncPointsInDatLog) {
 
     auto resolverR = ISTimeResolver::build(*log);
     ASSERT_TRUE(resolverR.has_value());
-    const TimeStamp t = resolverR->resolve(200'010'000u, log->deviceId());
+    const TimeStamp t = resolverR->resolve(200'010'000u, log->deviceId(), ISRecordView::kNoArrivalIndex);
     EXPECT_EQ(t.source, TimeSource::PayloadToW);
     EXPECT_EQ(t.confidence, TimeConfidence::Exact);
 
@@ -626,7 +626,8 @@ TEST(LogReaderDat, TimeResolverFindsSyncPointsInDatLog) {
     bool foundAnchored = false;
     for (auto v : log->allRecords()) {
         if (v.timestamp().value == 0) continue;
-        const auto resolved = resolver.resolve(v.timestamp().value, log->deviceId());
+        const auto resolved = resolver.resolve(v.timestamp().value, log->deviceId(),
+                                               v.arrivalIndex());
         if (resolved.source == TimeSource::PayloadToW && resolved.confidence == TimeConfidence::Exact) {
             foundAnchored = true;
             break;

@@ -48,20 +48,36 @@ inline constexpr uint16_t IS_LOG_IDX_VERSION_V2 = 2;
 inline constexpr std::size_t IS_LOG_IDX_HEADER_SIZE = 64;
 inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_SIZE = 24;
 
-/// SN-8383: v2.1 grows the per-record entry by a trailing `local_uptime_ms`
+/// SN-8383: v2.1 grows the per-record entry by a trailing `log_time_offset_ms`
 /// (+ pad) — appended at the END so the 24-byte v2.0 prefix is byte-identical
 /// and a v2.1 reader can still stride v2.0 files (which lack the trailing
 /// field). The writer stamps v2.1 records; the on-disk record size lives in the
 /// header (`record_size`) so the reader strides correctly for either.
 inline constexpr std::size_t IS_LOG_IDX_RECORD_V2_1_SIZE = 32;
 
+/// Legacy v1 record: four `uint32`s, no file header at all. See @ref is_log_idx_record_v1_t.
+inline constexpr std::size_t IS_LOG_IDX_RECORD_V1_SIZE = 16;
+
 // ----- Timestamp interpretation enums --------------------------------------
 
-/// What `is_log_idx_record_v2_t::timestamp` means in this file. Stored
-/// in the header so a v3 with nanosecond-precision logs (or some
-/// other unit) doesn't re-break the world.
-enum class TimestampUnits : uint8_t {
-    HostUptimeMs   = 0,  ///< Milliseconds since `m_logStartUpTime` on the writer host.
+/**
+ * Which ANCHOR `is_log_idx_record_v2_t::timestamp` is measured from in this file.
+ *
+ * The *unit* is always milliseconds, which is why this was misleadingly named
+ * `TimestampUnits` / `ts_units`: "units" implies a scalar or conversion factor, and there is
+ * none. What actually varies between the enumerators is the ZERO POINT — and therefore whether
+ * a value can be compared against another file's at all. Meaning and values are unchanged from
+ * `TimestampUnits`; only the name is corrected. Stored in the header so a v3 with a different
+ * anchor doesn't re-break the world.
+ */
+enum class TimestampAnchor : uint8_t {
+    /// An elapsed-time clock with a LOCAL anchor: milliseconds since something this file
+    /// defines, not since a shared epoch. Two files can carry the same value and mean two
+    /// different instants, so it is never comparable across logs or devices without an
+    /// anchor. Was named `HostUptimeMs`, which was wrong on both counts — on a rebuild the
+    /// value comes from the DEVICE's own payload uptime field and no host is involved at
+    /// all, and even on the live path the anchor is log-open rather than system boot.
+    UptimeMs       = 0,
     GpsTowMs       = 1,  ///< GPS time-of-week in ms (resets every Sunday 00:00:00 UTC).
     UnixEpochMs    = 2,  ///< Milliseconds since 1970-01-01T00:00:00Z.
     Mixed          = 3,  ///< Mixed across records — readers must check per-record `flags`.
@@ -109,6 +125,54 @@ inline constexpr bool timestampsLookMixedDomain(uint64_t firstMs, uint64_t lastM
 /// (i.e. it can be used as a sync anchor by `ISTimeResolver`, D-07).
 inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_HAS_TOW = 1u << 0;
 
+/**
+ * Bit 1 (D0096): this record's `log_time_offset_ms` was **RECONSTRUCTED**, not observed.
+ *
+ * The WHEN of a record has exactly two possible provenances and they are mutually exclusive,
+ * so one field carries it and this bit says which:
+ *   - **clear = OBSERVED.** The live port->log path sampled the host clock as the record was
+ *     decoded (D0096 path 1). Independent of every device clock.
+ *   - **set = RECONSTRUCTED.** A file-sourced rebuild had no wire-arrival timing available
+ *     (path 2), so the value was rebuilt from the payload timestamps that do exist, with
+ *     un-clocked records distributed between their clocked bookends. Paths 3 and 4 carry the
+ *     bit forward with the value.
+ *
+ * Per-record rather than per-file because a rescan over a truncated index can legitimately
+ * produce both: observed offsets carried forward for the records the old index covered, and
+ * reconstructed ones for the records it did not.
+ *
+ * @warning A consumer must not treat a reconstructed offset as independent evidence. It is
+ *          derived FROM payload timestamps, so it cannot corroborate a payload clock -- during
+ *          a stall those timestamps are frozen and the reconstruction is flat exactly where a
+ *          correction is needed. `ISTimeResolver` refuses these as a stall ruler for that
+ *          reason.
+ */
+inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET = 1u << 1;
+
+/**
+ * Bit 2 (D0096): this record's `timestamp` is a REAL value read from the payload. Clear means
+ * the field is **null, not zero** — the DID carried no time field at all.
+ *
+ * Needed because `timestamp == 0` is genuinely ambiguous and always has been:
+ *   - 0 is a legal GPS time-of-week (exactly Sunday 00:00:00 UTC),
+ *   - 0 is a legal uptime (the first millisecond after boot),
+ *   - and 0 is what `cISDataMappings::Timestamp()` returns to mean "this DID has none".
+ *
+ * `HAS_TOW` cannot stand in for this: it is gated on the timestamp DOMAIN, so a record
+ * carrying a real `pimu_t::time` has a valid timestamp with `HAS_TOW` clear. Before this bit,
+ * `flags == 0` covered both "real uptime-domain timestamp" and "no timestamp whatsoever", and
+ * nothing in the record could tell them apart.
+ *
+ * `timestamp` is the WHAT and is never interpolated (see `is_log_idx_record_v2_t`), so a
+ * missing one stays missing — which is exactly why it has to be *expressible*.
+ *
+ * @warning Only meaningful when the header sets `IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY`.
+ *          Every record in every file written before this bit existed has it clear, so a
+ *          reader that treated "clear" as "null" unconditionally would void every timestamp
+ *          in every existing log.
+ */
+inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP = 1u << 2;
+
 // ----- Header flag bits ----------------------------------------------------
 
 /// Bit 0: `total_records` / `first_timestamp_ms` / `last_timestamp_ms`
@@ -117,15 +181,66 @@ inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_HAS_TOW = 1u << 0;
 /// reconstruct the totals.
 inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_FINALIZED = 1u << 0;
 
-/// Bit 1 (SN-8383, v2.1): per-record entries carry the trailing
-/// `local_uptime_ms` field (record_size == 32). Absent ⇒ plain v2.0 (24-byte
-/// records, no local delta).
-inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA = 1u << 1;
+/**
+ * Bit 1 (SN-8383; semantics fixed by D0096): the records carry a **real**
+ * `log_time_offset_ms` — a known elapsed-time offset from log start. (Which clock supplied
+ * it depends on the producer: the host's monotonic clock on the live path, the device's own
+ * payload time on a rebuild. Either way the anchor is log-open and the value is log-local.)
+ *
+ * This asserts CONTENT, not format capability. `record_size == 32` already tells a reader the
+ * field is *present*, so this bit is only worth setting when the values in it mean something;
+ * a writer sets it if and only if it actually wrote a non-zero offset.
+ *
+ * Getting this wrong is not cosmetic: `ISTimeResolver` gates its top-priority stall ruler on
+ * this bit precisely so it never reads zeros as receipt times. A producer that declares the bit
+ * over all-zero offsets satisfies that guard and hands the re-timer a flat ruler.
+ */
+inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET = 1u << 1;
 
 /// Bit 2 (SN-8340, v2.1): `capture_epoch_ms` in the header is set — a durable
 /// absolute host wall-clock (ms since Unix epoch) captured at log-open, so a
 /// log that never acquires GPS still has a real wall-clock anchor.
 inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH = 1u << 2;
+
+/**
+ * Bit 3 (D0096): this file's records declare timestamp validity via
+ * `IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP`, so a clear per-record bit means "null timestamp"
+ * rather than "producer predates the bit".
+ *
+ * Without this declaration the new per-record bit is unreadable on any pre-existing file: an
+ * older producer left it clear on every record, and a reader cannot distinguish that from a
+ * log in which nothing carried a time field. When this header bit is CLEAR, fall back to the
+ * historical heuristic — treat `timestamp == 0` as absent and accept the small ambiguity at
+ * exactly 0.
+ */
+inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY = 1u << 3;
+
+/**
+ * Bit 4 (D0069 / D0096, audit A2): `anchor_offset_ms` in the header is set — the constant that
+ * maps this segment's **uptime-domain** record timestamps onto the absolute frame
+ * (`absolute = uptime + anchor_offset_ms`), as established by the `AnchorAnalysis` cascade.
+ *
+ * This is the additive home D0069 specified for a persisted anchor, and it exists so an
+ * anchored value never has to be smuggled into `first_timestamp_ms` / `last_timestamp_ms` —
+ * those are a faithful transcription on every path (D0096), and writing a derived absolute
+ * into them was audit finding A2.
+ *
+ * **It is an offset, not a span.** Do NOT reconstruct the anchored span as
+ * `first_timestamp_ms + anchor_offset_ms`. The offset is defined against the **uptime** domain,
+ * so it composes with the uptime extrema: `anchoredStart/End = uptimeMin/Max + offset`, and
+ * those extrema come from the records. The two formulas agree on a single-domain log — where
+ * the transcription and the uptime minimum are the same record — and diverge as soon as a
+ * ToW-bearing record sits at the boundary. Measured on such a segment: the transcription was
+ * `342227671` (a GPS time-of-week) against an uptime minimum of `10000`, so the naive sum
+ * overshot by 342,217,671 ms — about four days.
+ * `test_anchor_analysis.cpp` keeps both cases as standing guards.
+ *
+ * Signed: a segment whose device clock leads the absolute frame yields a negative offset.
+ * Zero is a legal value (a ToW-only segment is already absolute), which is why presence needs
+ * this bit rather than a `!= 0` test.
+ */
+inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_HAS_ANCHOR_OFFSET = 1u << 4;
+
 
 // ----- Structs (logical, not on-disk) --------------------------------------
 //
@@ -148,39 +263,135 @@ struct is_log_idx_header_t {
     uint16_t header_size;           ///<  6..7 : on-disk header size in bytes (= 64 for v2)
     uint32_t producer_version;      ///<  8..11: ENCODE_VERSION-style value of the writing SDK
     uint64_t total_records;         ///< 12..19: count of records following the header (0 if not finalized)
-    uint64_t first_timestamp_ms;    ///< 20..27: first record's `timestamp` (0 if unset)
-    uint64_t last_timestamp_ms;     ///< 28..35: last record's `timestamp`  (0 if unset)
+    uint64_t first_timestamp_ms;    ///< 20..27: faithful transcription of the first timestamped record's `timestamp` (0 if none). Never a derived/anchored value — D0096.
+    uint64_t last_timestamp_ms;     ///< 28..35: faithful transcription of the last timestamped record's `timestamp` (0 if none). Never a derived/anchored value — D0096.
     uint32_t sync_point_count;      ///< 36..39: D-07 sync-event count tracked by writer (0 default)
-    uint8_t  ts_units;              ///< 40    : `TimestampUnits`
+    uint8_t  ts_anchor;              ///< 40    : `TimestampAnchor`
     uint8_t  ts_source;             ///< 41    : `HeaderTimeSource`
     uint8_t  flags;                 ///< 42    : `IS_LOG_IDX_HDR_FLAG_*`
     uint8_t  reserved8;             ///< 43    : pad
     uint16_t record_size;           ///< 44..45: on-disk per-record size in bytes (24=v2.0, 32=v2.1). 0 (pre-v2.1 header) ⇒ reader treats as 24. SN-8383.
     uint16_t reserved16;            ///< 46..47: pad
     uint64_t capture_epoch_ms;      ///< 48..55: absolute host wall-clock ms at log-open (0 = unset; valid only when HAS_CAPTURE_EPOCH). SN-8340.
-    uint8_t  reserved[8];           ///< 56..63: explicit pad to 64 bytes
+    int64_t  anchor_offset_ms;      ///< 56..63: uptime→absolute mapping constant from the anchor cascade (valid only when HAS_ANCHOR_OFFSET). D0069/D0096, audit A2.
 };
 
 /**
  * @brief Per-record entry in the body of a v2 `.idx` file.
  *
- * 24 bytes total. v2 stores meaningful payload-derived timestamps and
- * the actual DID, so `(did, ts_lo, ts_hi)` queries can binary-search
- * the index without touching the `.raw` segment.
+ * 24 bytes in v2.0, 32 in v2.1. v2 stores meaningful payload-derived timestamps and the
+ * actual DID, so `(did, ts_lo, ts_hi)` queries can binary-search the index without touching
+ * the `.raw` segment.
+ *
+ * ### Time references in a `.idx`, and how each is used (D0096)
+ *
+ * Four different time quantities live in this format. They are NOT interchangeable, and the
+ * whole SN-8704 class of defect came from treating one as another. Security-camera framing in
+ * brackets, since it maps cleanly.
+ *
+ * **1. `timestamp` — the WHAT.** What the device itself claimed the time was, decoded from the
+ * payload and hoisted into the index so it is searchable without touching the `.raw`. It is
+ * *metadata about* the payload: legitimate to carry over, strip, or ignore. Its anchor is not
+ * fixed — which clock it came from varies per file, which is what `ts_anchor` exists to state.
+ * **Never interpolated**: an absent one stays absent, because inventing a value here would be
+ * fabricating a claim the device never made. `IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP` says whether
+ * there is a value at all (0 is a legal value, so absence needs its own bit), and
+ * `IS_LOG_IDX_REC_FLAG_HAS_TOW` says whether that value is a GPS time-of-week.
+ * *[the burned-in time rendered into the frame — in some frames, not others, and only as
+ * trustworthy as whatever clock drew it.]*
+ *
+ * **2. `log_time_offset_ms` — the WHEN.** When this record was seen, as an offset from the
+ * start of the **log** (not the segment — every segment of one log shares the anchor). Owes
+ * nothing to any payload, so it exists even for records with no time field.
+ *
+ * Its provenance is one of exactly two things, and they are mutually exclusive — a rebuild
+ * cannot observe receipt time (it exists nowhere in the `.raw`), and a live capture has no
+ * reason to reconstruct one. So a single field carries the value and
+ * `IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET` says which:
+ *   - **clear = OBSERVED** — the host clock, sampled as the record was decoded.
+ *   - **set = RECONSTRUCTED** — rebuilt from the payload timestamps that exist, with
+ *     un-clocked records distributed between their clocked bookends.
+ *
+ * `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET` declares whether the field holds anything at all,
+ * and asserts CONTENT — set only when real values were written, never merely because the
+ * field is present.
+ *
+ * A reconstructed value must not be treated as independent evidence: it is derived FROM the
+ * payload clock, so it cannot corroborate that clock. `ISTimeResolver` refuses reconstructed
+ * offsets as a stall ruler for exactly this reason, and falls to its next ruler instead.
+ * *[the time-code: offset into the recording, always present, always monotonic, independent of
+ * anything in the picture — or, when the original time-code is gone, the editor's best
+ * reconstruction of it, labelled as such.]*
+ *
+ * **3. Header `capture_epoch_ms`.** Absolute host wall-clock (ms since the Unix epoch) sampled
+ * once at log-open and written into EVERY segment's header, so it survives the purge of
+ * earlier segments. This is what converts (2) or (3) into absolute time:
+ * `capture_epoch_ms + offset`. Guarded by `IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH`; when clear,
+ * the offsets remain valid for ordering and interval arithmetic but have no absolute anchor.
+ *
+ * **4. Header `first_timestamp_ms` / `last_timestamp_ms`.** A faithful transcription of the
+ * first and last record's `timestamp` — quantity (1), inheriting all of its caveats including
+ * mixed domains. A DERIVED anchored value does not belong in them.
+ *
+ * The practical consequence, and the reason all of this separation earns its keep: a frozen or
+ * wrong device clock corrupts (1) and leaves (2) untouched. That is what lets a reader detect
+ * the stall at all, and then re-time the affected records against something the broken clock
+ * could not influence.
  */
 struct is_log_idx_record_v2_t {
-    uint64_t timestamp;             ///<  0..7 : payload-derived ms (units per header `ts_units`)
+    uint64_t timestamp;             ///<  0..7 : payload-derived ms (units per header `ts_anchor`)
     uint64_t offset;                ///<  8..15: byte offset into the `.raw` segment
     uint32_t did;                   ///< 16..19: data ID; 0 = no associated DID (raw stream)
     uint16_t flags;                 ///< 20..21: `IS_LOG_IDX_REC_FLAG_*`
     uint16_t reserved;              ///< 22..23: pad  — end of the v2.0 (24-byte) prefix
     // ----- v2.1 trailing fields (present when header record_size == 32) -----
-    uint32_t local_uptime_ms;       ///< 24..27: host-uptime-since-log-start ms for THIS record, stamped by the writer for EVERY record (SN-8383). 0 on v2.0 records.
+    /// 24..27: host-clock time-OFFSET of this record from log start, in ms (SN-8383). An offset
+    /// from a known anchor, NOT a delta from the previous record — see D0096's vocabulary. Valid
+    /// only when the header sets `HAS_LOCAL_TS_OFFSET`; 0 on v2.0 records and on any producer
+    /// that did not compute one. `IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET` says whether this
+    /// particular value was observed on the wire or approximated during a rebuild.
+    uint32_t log_time_offset_ms;
     uint32_t reserved2;             ///< 28..31: pad to an 8-byte multiple
+};
+
+/**
+ * @brief Legacy v1 `.idx` record — four `uint32`s, 16 bytes, and NO file header.
+ *
+ * Written by SDK <= 2.x. A v1 file is a bare array of these; the absence of the `"ISIX"` magic
+ * at offset 0 is what identifies it (@ref parseHeader returns `LegacyFormat`).
+ *
+ * **The field names here were corrected on 2026-09-20 after measuring all 17 v1 sidecars in the
+ * corpus.** `DeviceLog.h` had called field 3 `msg_id` ("data ID of the record"); it is nothing of
+ * the kind, and a reader that believed that label would mislabel the DID of every record it
+ * upgraded. What the measurements showed:
+ *
+ * - `host_uptime_ms` — correct, and the only reason to read a v1 file at all. Log-wide host
+ *   uptime at the moment the record was written, monotonic, and **continuous across segments**
+ *   (segment 1 `[1..221877]`, segment 2 `[221883..441306]`, ...). This is the OBSERVED receipt
+ *   time — the one quantity a byte scan can never recover.
+ * - `byte_offset` — present, and **NOT trustworthy. Never adopt it.** Every sidecar measured has
+ *   exactly one reset to 0 partway through, and only 0.3%–3.9% of the post-reset run lands on an
+ *   ISB `EF 49` preamble — while a 1275/1275 hit on the pre-reset prefix proves `EF 49` is the
+ *   right preamble, so the rest genuinely are not packet starts. Some offsets also exceed the
+ *   paired segment's file size. Take byte offsets from a scan instead.
+ * - `record_counter` — a log-wide, strictly monotonic, 0-based record counter. **This is the
+ *   join key for an upgrade**: its per-segment span equals the scan's record count exactly on 7
+ *   of 8 healthy segments measured (the first segment is +1). A v1 sidecar stores only ~70% of
+ *   its segment's records, so a positional join is impossible, but this index space tiles the
+ *   scan.
+ * - `reserved` — genuinely reserved; zero on every record of all 17 files.
+ */
+struct is_log_idx_record_v1_t {
+    uint32_t host_uptime_ms;   ///<  0..3 : log-wide observed host uptime, ms (the WHEN)
+    uint32_t byte_offset;      ///<  4..7 : byte offset — UNRELIABLE, see the note above
+    uint32_t record_counter;   ///<  8..11: log-wide monotonic record index — the join key, NOT a DID
+    uint32_t reserved;         ///< 12..15: unused, always 0
 };
 
 #pragma pack(pop)
 
+static_assert(sizeof(is_log_idx_record_v1_t) == IS_LOG_IDX_RECORD_V1_SIZE,
+              "is_log_idx_record_v1_t must be exactly 16 bytes — pack discipline.");
 static_assert(sizeof(is_log_idx_header_t) == IS_LOG_IDX_HEADER_SIZE,
               "is_log_idx_header_t must be exactly 64 bytes — pack discipline.");
 static_assert(sizeof(is_log_idx_record_v2_t) == IS_LOG_IDX_RECORD_V2_1_SIZE,
@@ -220,7 +431,7 @@ ISExpected<is_log_idx_header_t> parseHeader(
  * @brief Serialize a record to a 32-byte v2.1 little-endian buffer.
  *
  * Always writes exactly `IS_LOG_IDX_RECORD_V2_1_SIZE` bytes (the full v2.1
- * layout, including the trailing `local_uptime_ms`). All newly-written `.idx`
+ * layout, including the trailing `log_time_offset_ms`). All newly-written `.idx`
  * files are v2.1-format; `record_size` in the header tells readers the stride.
  */
 void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
@@ -229,7 +440,7 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
 /**
  * @brief Parse a little-endian buffer into a record.
  *
- * Reads the 24-byte v2.0 prefix always; reads the trailing `local_uptime_ms`
+ * Reads the 24-byte v2.0 prefix always; reads the trailing `log_time_offset_ms`
  * (SN-8383) only when `record_size >= IS_LOG_IDX_RECORD_V2_1_SIZE` (else it's
  * left 0). `record_size` comes from the header (`hdr.record_size`, 0 ⇒ legacy
  * 24). Pure layout decode — never fails; caller ensures `in` holds at least
@@ -239,6 +450,27 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
  *       v2.0 (0 ⇒ 24) and v2.1 (32), and a wrong assumption silently mis-parses
  *       (SN-8383). Callers pass `hdr.record_size` explicitly.
  */
+/**
+ * @brief Parse one legacy v1 record from @p in (16 bytes, little-endian).
+ *
+ * @param in  Buffer with at least `IS_LOG_IDX_RECORD_V1_SIZE` readable bytes.
+ * @return    The record. No validation — see `ISLogReader::upgradeIndex` for the trust gates
+ *            that decide whether a v1 file's fields may be believed.
+ */
+is_log_idx_record_v1_t parseRecordV1(const uint8_t* in) noexcept;
+
+/**
+ * @brief Parse a whole v1 `.idx` body (a bare array of 16-byte records, no header).
+ *
+ * @param data  Start of the file.
+ * @param size  File size in bytes. A trailing partial record is ignored, and reported via
+ *              @p trailingBytes so a caller can treat it as a staleness signal.
+ * @param trailingBytes  Out: `size % 16`, i.e. bytes in an incomplete final record.
+ * @return      The records, in file order.
+ */
+std::vector<is_log_idx_record_v1_t> parseRecordsV1(const uint8_t* data, std::size_t size,
+                                                   std::size_t* trailingBytes = nullptr);
+
 is_log_idx_record_v2_t parseRecord(
     const uint8_t* in,
     std::size_t record_size) noexcept;
@@ -296,7 +528,7 @@ ISExpected<is_log_idx_record_v2_t> readRecord(
  * starts cleared; the writer sets `FINALIZED` only on clean close.
  */
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
-                                      TimestampUnits units,
+                                      TimestampAnchor units,
                                       HeaderTimeSource source,
                                       uint64_t capture_epoch_ms = 0) noexcept;
 
