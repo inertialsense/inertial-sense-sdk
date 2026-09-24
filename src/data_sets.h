@@ -437,6 +437,7 @@ enum eSysStatusFlags
 
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004,  //!< 0 = GNSS1 is the primary NMEA GNSS source, 1 = GNSS2 is the primary NMEA GNSS source
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,                //!< Bit offset of SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2 within sysStatus
+    SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH           = (int)0x00000008,  //!< GNSS1 and GNSS2 report different firmware versions (see DID_GNSS1_VERSION, DID_GNSS2_VERSION). Only where both are configured with a comparable receiver type; not latched.
 };
 
 // Used to validate GNSS position (and velocity)
