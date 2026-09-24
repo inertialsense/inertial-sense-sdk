@@ -178,12 +178,46 @@ public:
      * `LOG_..._0001.dat` → `LOG_..._0001.idx`) — matches the writer
      * convention (cf. `cDeviceLog::OpenNewSaveFile`).
      *
-     * @param raw  Path to the segment file (`.raw` or `.dat`).
-     * @return     Reader on success; `ISErrorCode` on failure:
-     *             `NotFound`, `PermissionDenied`, `Corrupted`, `Io`,
-     *             `Unsupported` (unrecognized extension).
+     * ### `ignoreIdx` — index from the segment's own bytes
+     *
+     * Pass `true` to bypass the sidecar completely: it is neither read nor written, and the
+     * in-memory index is built by scanning the segment. Use it when the answer must come from the
+     * file rather than from a derived artifact — validating a sidecar, or any full accounting of
+     * what a log actually contains.
+     *
+     * **Why this is a parameter and not something a caller can do afterwards.** When a sidecar is
+     * trusted, `buildIndexFromIdx` builds the in-memory index *from the sidecar's record list*, so
+     * `recordCount()`, `presentDids()` and `records()` enumerate **sidecar entries**. Payload bytes
+     * are then read from the `.raw` at each entry's offset — content from the file, enumeration
+     * from the sidecar. A caller that opens normally and walks every record is therefore counting
+     * the sidecar against itself, and a sidecar that under-reports the file cannot be detected that
+     * way at all. The decision has to be made at open time; there is nothing to undo later.
+     *
+     * Note that the default path is *not* naive about sidecars — it rebuilds by scanning when the
+     * header fails to parse, when `FINALIZED` disagrees with the body's record count, when
+     * timestamps look poisoned (D-112 / SN-7999 / SN-8328), or when record offsets decrease
+     * (SN-8328 B). What none of those checks can do is compare the sidecar's record count against
+     * what is actually parseable from the `.raw`: the count consistency check compares the header
+     * to the sidecar's own body. `ignoreIdx` is how a caller gets the other number.
+     *
+     * With `ignoreIdx`, persistence is suppressed and no "sidecar rebuilt" warning is raised — a
+     * caller who asked not to read the sidecar has not asked to overwrite it, and nothing was
+     * stale. Cost is a full read of the segment, so it belongs behind an explicit action rather
+     * than a hover.
+     *
+     * @param raw        Path to the segment file (`.raw` or `.dat`).
+     * @param ignoreIdx  `true` to index from the segment's bytes, ignoring and preserving any
+     *                   `.idx`. Defaults to `false` — the sidecar-first behaviour.
+     * @return           Reader on success; `ISErrorCode` on failure:
+     *                   `NotFound`, `PermissionDenied`, `Corrupted`, `Io`,
+     *                   `Unsupported` (unrecognized extension).
+     *
+     * @note `ignoreIdx` added for SN-8444. It replaced a separate `openSegmentIgnoringSidecar`
+     *       entry point (Kyle, 2026-09-24: a defaulted argument on the one open function, not a
+     *       second function).
      */
-    static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw);
+    static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw,
+                                               bool ignoreIdx = false);
 
     /**
      * @brief Determine a segment's absolute start/end time and how trustworthy that is, WITHOUT
@@ -214,40 +248,6 @@ public:
     static ISExpected<AnchorAnalysis> analyzeSegment(const std::filesystem::path& raw,
                                                      const AnchorAnalysis* prev = nullptr);
 
-    /**
-     * @brief Open a segment from its own bytes, ignoring any `.idx` sidecar and writing none.
-     *
-     * The one thing that distinguishes this from @ref openSegment is in the name: the sidecar is
-     * not consulted. The returned reader's index is built entirely from the bytes on disk, so
-     * every count-and-iterate API on it — @ref recordCount, @ref presentDids, @ref records —
-     * answers for the **`.raw`** rather than for whatever a sidecar recorded. The sidecar is neither read
-     * nor written, so calling this never mutates the log directory.
-     *
-     * This exists because **the `.raw` is the source of truth and the `.idx` can legitimately
-     * fall short of it** (Kyle, 2026-09-24). A caller that wants to know whether a log's sidecar
-     * actually accounts for the stream opens the segment both ways and compares:
-     *
-     * ```
-     * auto viaIdx  = ISLogReader::openSegment(raw);              // trusts the sidecar
-     * auto viaRaw  = ISLogReader::openSegmentIgnoringSidecar(raw); // trusts the bytes
-     * const bool complete = viaIdx->recordCount() == viaRaw->recordCount();
-     * ```
-     *
-     * It is deliberately a separate entry point rather than a flag on @ref openSegment: a scan
-     * costs a full pass over the file, so it must be something a caller asks for explicitly and
-     * never something the normal open path might do.
-     *
-     * @warning Do NOT implement this by delegating to @ref openSegment — that path persists a
-     *          rebuilt sidecar when one is missing, which is the side effect this avoids. Same
-     *          hazard, and same reason, as @ref analyzeSegment.
-     *
-     * @param raw  Path to the segment file (`.raw` or `.dat`).
-     * @return     A reader whose index came from the bytes; `ISErrorCode` if it cannot be opened.
-     *
-     * @note SN-8444. Wall-clock cost is a full read of the segment, so this belongs behind an
-     *       explicit user action, not behind a hover.
-     */
-    static ISExpected<ISLogReader> openSegmentIgnoringSidecar(const std::filesystem::path& raw);
 
     /**
      * @brief Sentinel for @ref upgradeIndex's `logStartHostUptimeMs`: "not supplied, go find it".
@@ -1005,15 +1005,18 @@ private:
      * record vector + byDid_ map, and derives the device id.
      *
      * @param raw      Opened byte source for the `.raw` segment.
-     * @param rawPath  Path the segment was opened from; used for
-     *                 sidecar discovery and filename-based device-id
-     *                 fallback.
-     * @return         A fully-initialized reader, or an `ISError`
-     *                 if `.idx` parsing reports `Corrupted`.
+     * @param rawPath    Path the segment was opened from; used for
+     *                   sidecar discovery and filename-based device-id
+     *                   fallback.
+     * @param ignoreIdx  Forwarded from @ref openSegment: skip sidecar discovery, index from the
+     *                   segment's bytes, and neither persist a rebuild nor warn about one.
+     * @return           A fully-initialized reader, or an `ISError`
+     *                   if `.idx` parsing reports `Corrupted`.
      */
     static ISExpected<ISLogReader>
         construct(std::unique_ptr<ISLogSource> raw,
-                  const std::filesystem::path& rawPath);
+                  const std::filesystem::path& rawPath,
+                  bool ignoreIdx = false);
 
     /**
      * Builds the in-memory index from an already-parsed `.idx`

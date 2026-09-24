@@ -407,17 +407,19 @@ ISLogReader::~ISLogReader() = default;
 ISLogReader::ISLogReader(ISLogReader&&) noexcept = default;
 ISLogReader& ISLogReader::operator=(ISLogReader&&) noexcept = default;
 
-ISExpected<ISLogReader> ISLogReader::openSegment(const fs::path& raw) {
-    log_debug(IS_LOG_ISLOG, "ISLogReader::openSegment: %s", raw.c_str());
+ISExpected<ISLogReader> ISLogReader::openSegment(const fs::path& raw, bool ignoreIdx) {
+    log_debug(IS_LOG_ISLOG, "ISLogReader::openSegment: %s%s", raw.c_str(),
+              ignoreIdx ? " (ignoring sidecar)" : "");
     auto src = ISFileSource::open(raw);
     if (!src) {
         log_error(IS_LOG_ISLOG, "ISFileSource::open failed for %s: %s", raw.c_str(), src.error().message.c_str());
         return tl::unexpected<ISError>{ src.error() };
     }
-    return construct(std::move(*src), raw);
+    return construct(std::move(*src), raw, ignoreIdx);
 }
 
-ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawSource, const fs::path& rawPath) {
+ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawSource,
+                                              const fs::path& rawPath, bool ignoreIdx) {
     ISLogReader r;
     r.rawSource_ = std::move(rawSource);
     r.rawPath_   = rawPath;
@@ -458,7 +460,11 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     std::optional<idx::is_log_idx_header_t> priorHeader;
 
     std::error_code ec;
-    if (fs::exists(idxPath, ec)) {
+    // `ignoreIdx` skips sidecar discovery entirely rather than discarding the result afterwards.
+    // It has to be a decision made HERE: once `buildIndexFromIdx` has run, the in-memory index --
+    // and therefore `recordCount()`, `presentDids()` and `records()` -- enumerates SIDECAR
+    // ENTRIES, so anything that then walks the records is counting the sidecar, not the file.
+    if (!ignoreIdx && fs::exists(idxPath, ec)) {
         auto idxSrc = ISFileSource::open(idxPath);
         if (!idxSrc) {
             rebuildReason = RebuildReason::ReadError;
@@ -633,7 +639,9 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
             r.buildIndexFromScan();
         }
 
-        // Document the rebuild for the caller.
+        // Document the rebuild for the caller -- but only when it WAS a rebuild. With
+        // `ignoreIdx` the scan is what the caller asked for, so reporting "sidecar rebuilt
+        // (reason: missing)" would be actively wrong: the sidecar may be present and fine.
         const char* reasonStr = "unknown";
         switch (rebuildReason) {
             case RebuildReason::Missing:    reasonStr = "missing";    break;
@@ -644,8 +652,13 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
             case RebuildReason::None:       reasonStr = "n/a";        break;
         }
         const char* segKind = (r.format_ == SegmentFormat::Dat) ? ".dat" : ".raw";
-        r.warnings_.push_back(std::string{"sidecar: rebuilt from "} + segKind + " scan (reason: " + reasonStr + ")");
-        log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)", rawPath.filename().c_str(), segKind, reasonStr);
+        if (ignoreIdx) {
+            log_debug(IS_LOG_ISLOG, "%s: indexed from %s scan at caller's request (sidecar ignored)",
+                      rawPath.filename().c_str(), segKind);
+        } else {
+            r.warnings_.push_back(std::string{"sidecar: rebuilt from "} + segKind + " scan (reason: " + reasonStr + ")");
+            log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)", rawPath.filename().c_str(), segKind, reasonStr);
+        }
 
         // D0096 path 3, the automatic half of upgradeIndex(). The scan above supplied the DIDs,
         // byte offsets and payload timestamps -- a v1 sidecar has no DID at all and its byte
@@ -674,9 +687,12 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
         }
 
         // Persist the rebuilt sidecar. Suppressed when the build flips IS_LOG_READER_NO_PERSIST_INDEX (e.g. tests,
-        // customers who don't want surprise writes to log dirs) or when the .raw sits on read-only media.
+        // customers who don't want surprise writes to log dirs), when the .raw sits on read-only
+        // media, or when the caller passed `ignoreIdx` -- a caller that asked not to READ the
+        // sidecar has not asked to OVERWRITE it, and a validate-style call must leave the log
+        // directory exactly as it found it.
 #if !defined(IS_LOG_READER_NO_PERSIST_INDEX)
-        if (!r.persistIndex()) {
+        if (!ignoreIdx && !r.persistIndex()) {
             r.warnings_.push_back("sidecar: persist failed (read-only filesystem?)");
             log_warn(IS_LOG_ISLOG, "%s: sidecar persist failed (read-only filesystem?)", rawPath.filename().c_str());
         }
@@ -832,24 +848,6 @@ ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::pa
         r->buildIndexFromScan(prev, /*collectAnchor=*/true);
     }
     return r->anchorAnalysis();
-}
-
-ISExpected<ISLogReader> ISLogReader::openSegmentIgnoringSidecar(
-        const std::filesystem::path& raw) {
-    // openForAnalysis, NOT openSegment, for exactly the reason analyzeSegment says: openSegment
-    // reads the sidecar and persists a rebuilt one when it is missing, which would both defeat the
-    // point (the answer has to come from the bytes) and write into the caller's log directory.
-    auto r = openForAnalysis(raw);
-    if (!r) return tl::unexpected<ISError>{ r.error() };
-
-    if (r->format_ == SegmentFormat::Dat) {
-        r->buildIndexFromScanDat();
-    } else {
-        // No anchor collector: a caller comparing record counts does not need the cascade, and
-        // collecting it is not free.
-        r->buildIndexFromScan(nullptr, /*collectAnchor=*/false);
-    }
-    return r;
 }
 
 // ---------------------------------------------------------------------------------------------
