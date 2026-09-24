@@ -180,6 +180,10 @@ private:
     uint64_t lastUptimeMs_    = 0;
     uint64_t filenameAnchorMs_ = 0;
     bool     isFirstSegmentOfLog_ = false;
+    //! Copilot review, #1316: per-domain extrema presence. Zero is a legal timestamp in either
+    //! domain, so it cannot double as the "nothing seen yet" sentinel.
+    bool     towSeen_    = false;
+    bool     uptimeSeen_ = false;
 
     std::map<uint32_t, StallState> stalls_;
 };

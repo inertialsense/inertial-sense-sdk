@@ -295,6 +295,11 @@ private:
     //! D0096: true once a non-zero `log_time_offset_ms` has actually been written, which is
     //! what licenses declaring `HAS_LOG_TIME_OFFSET` in the final header (audit A5).
     bool                       sawLogTimeOffset_ = false;
+    //! Copilot review, #1316: whether any record declaring HAS_TIMESTAMP has been appended, so
+    //! the header's first/last transcription skips timeless records rather than taking the
+    //! log-time offset they park in that field. Cannot be a `firstTimestamp_ == 0` test: 0 is a
+    //! legal timestamp, which is what HAS_TIMESTAMP exists to express.
+    bool                       sawTimestamp_ = false;
     bool                       initialized_     = false;
     bool                       finalized_       = false;
 };

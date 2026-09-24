@@ -270,6 +270,16 @@ public:
         }
 
         // ---- Per-DID stall tracking.
+        //
+        // Copilot review, #1316: a DID that declares NO timestamp domain must not enter stall
+        // tracking at all. The `recordTsMs == 0` guard above is not enough, because the live
+        // writer deliberately parks the record's `log_time_offset_ms` in the `timestamp` field
+        // for a timeless DID (DeviceLog.cpp) — a NON-zero value that repeats freely. Measured on
+        // a real fixture: all 41 records shared `offsetMs = 5`. That is indistinguishable from a
+        // frozen clock here, so a timeless DID could form a false `kStallThreshold`-long run and
+        // drag unrelated data into a repair. Its `timestamp` is not a clock and cannot stall.
+        if (domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE) return;
+
         const auto own = ownClockMs(did, payload, payloadSize);
         auto& st = perDid_[did];
         if (st.count == 0 || recordTsMs != st.lastTsMs) {
@@ -349,6 +359,10 @@ private:
             r.arrivalStart = st.runStart;
             r.arrivalEnd   = st.runEnd;
             r.recordCount  = st.runLen;
+            // Copilot review, #1316: carry the stalled DID's OWN arrival indices, so `resolve()`
+            // can tell a member of the run from another DID's record that merely arrived inside
+            // the same window.
+            r.arrivals     = st.runArrivals;
             ISTimeResolver::StallEvidence ev;
             ev.runArrivals       = st.runArrivals;
             ev.stalledTsMs       = st.lastTsMs;
@@ -357,6 +371,22 @@ private:
             ev.advanceDeltas     = st.advanceDeltas;
             ev.logTimeOffsets       = st.localSamples;
             r.retimed = ISTimeResolver::planStallRetiming(ev, r.ruler);
+
+            // Copilot review, #1316: when the run outgrew the retention cap, `runArrivals` (and
+            // the sample vectors built alongside it) stopped growing while `runLen`/`runEnd` kept
+            // going. The resulting `retimed` covers only the first `kMaxRetimedPerRun` records,
+            // and `resolve()`'s nearest-preceding fallback then hands every later arrival the
+            // LAST planned value -- silently collapsing the tail of a pathological stall onto the
+            // cap boundary. Partial evidence is not a ruler: drop it and let the resolver bracket
+            // against the collective timeline, which is the documented no-evidence path.
+            if (st.runLen > st.runArrivals.size()) {
+                log_warn(IS_LOG_ISLOG,
+                         "stalled DID %u: run of %zu record(s) exceeds the %zu-record evidence cap; "
+                         "discarding the partial ruler and bracketing instead",
+                         did, st.runLen, kMaxRetimedPerRun);
+                r.retimed.clear();
+                r.ruler = ISTimeResolver::StalledRun::Ruler::None;
+            }
             runs_.push_back(r);
         }
         st.runLen = 0;
@@ -1304,6 +1334,18 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
         arrivalIndex != ISRecordView::kNoArrivalIndex) {
         for (const auto& run : stalledRuns_) {
             if (arrivalIndex < run.arrivalStart || arrivalIndex > run.arrivalEnd) continue;
+            // Copilot review, #1316: the interval test above is necessary but NOT sufficient. A
+            // stall belongs to ONE DID, and every other DID's record arriving inside its window
+            // was being re-timed as though its own clock were frozen -- throwing away a good
+            // timestamp for an interpolation. On the customer capture a GPX_STATUS stall spanning
+            // 959 s would have re-timed every PIMU and INS record in that window.
+            //
+            // `resolve()` has no DID parameter (and adding one would change every caller), so
+            // membership is tested against the stalled DID's OWN arrival indices instead.
+            // `run.arrivals` is ascending, so this is a binary search.
+            if (!std::binary_search(run.arrivals.begin(), run.arrivals.end(), arrivalIndex)) {
+                continue;
+            }
             // Prefer the device's own corroborated clock; fall back to bracketing against the
             // collective timeline when it has none or it could not be corroborated.
             uint64_t towMs = 0;

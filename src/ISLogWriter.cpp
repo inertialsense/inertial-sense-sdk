@@ -269,10 +269,20 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     }
 
     // Stats.
-    if (recordCount_ == 0) {
-        firstTimestamp_ = rec.timestamp;
+    //
+    // Copilot review, #1316: the transcription must skip a record that declares NO timestamp.
+    // For a timeless DID the `timestamp` field deliberately carries the log-time offset instead
+    // (DeviceLog.cpp), so taking it here wrote an elapsed-time offset into the header's
+    // first/last transcription -- reintroducing audit A2 in every baked derivative whose
+    // boundary record happens to be timeless. The same rule the reader and the live writer now
+    // follow; this path was missed.
+    if ((rec.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0) {
+        if (!sawTimestamp_) {
+            firstTimestamp_ = rec.timestamp;
+            sawTimestamp_   = true;
+        }
+        lastTimestamp_ = rec.timestamp;
     }
-    lastTimestamp_ = rec.timestamp;
     if ((rec.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TOW) != 0) {
         ++syncPointCount_;
     }
@@ -288,6 +298,12 @@ ISExpected<void> ISLogWriter::writeFinalHeader() {
     header_.last_timestamp_ms  = lastTimestamp_;
     header_.sync_point_count   = syncPointCount_;
     header_.flags             |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    // Copilot review, #1316: declare that this file's records carry HAS_TIMESTAMP. The writer
+    // preserves the per-record bit (`rec.flags = view.flags()`) but never said so, and a reader
+    // that finds this header flag clear falls back to the historical `timestamp != 0` heuristic
+    // -- so a baked log silently lost the distinction between a null timestamp and a valid zero,
+    // which is the whole point of the bit.
+    header_.flags             |= idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;
     // D0096: honest content declaration -- see the note in create().
     if (sawLogTimeOffset_) {
         header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;

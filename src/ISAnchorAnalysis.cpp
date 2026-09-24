@@ -137,19 +137,28 @@ void AnchorCollector::consume(uint32_t did, uint16_t structOffset, const uint8_t
     // The domain comes from the DID's timestamp FIELD, never from the value's magnitude -- see
     // TsDomain above for why, and for the 451,040 records the magnitude test got wrong.
     const TsDomain domain = timestampDomain(did);
-    if (recordTsMs == 0 || domain == TsDomain::TIMESTAMP_DOMAIN_NONE) {
-        // No internal time, or a timestamp we cannot place in a domain -- either way it
-        // contributes no extremum. (A non-zero timestamp with no declared field should be
-        // impossible: the value came FROM that field.)
+    if (domain == TsDomain::TIMESTAMP_DOMAIN_NONE) {
+        // Copilot review, #1316: the DECLARED DOMAIN decides this, not the value. The old
+        // `recordTsMs == 0 ||` also discarded a legal zero -- ToW 0 is Sunday midnight, uptime 0
+        // the first ms after boot -- so a week-boundary or first-boot record contributed no
+        // extremum and an all-zero segment could look unanchorable. A DID with no time field can
+        // never have one, and the live writer parks its log-time offset in `timestamp` for such
+        // records, so domain NONE is exactly the set to exclude.
         ++out_.untimedRecords;
     } else if (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW) {
+        // Copilot review, #1316: explicit "seen" flags rather than `x ? min : value`. Using zero
+        // as the unset sentinel cannot represent a legal zero extremum -- ToW 0 is Sunday
+        // midnight, uptime 0 the first ms after boot -- so a week-boundary or first-boot record
+        // was silently excluded from the extrema it should define.
         ++out_.towRecords;
-        out_.towMinMs = out_.towMinMs ? std::min(out_.towMinMs, recordTsMs) : recordTsMs;
-        out_.towMaxMs = std::max(out_.towMaxMs, recordTsMs);
+        out_.towMinMs = towSeen_ ? std::min(out_.towMinMs, recordTsMs) : recordTsMs;
+        out_.towMaxMs = towSeen_ ? std::max(out_.towMaxMs, recordTsMs) : recordTsMs;
+        towSeen_ = true;
     } else {
         ++out_.uptimeRecords;
-        out_.uptimeMinMs = out_.uptimeMinMs ? std::min(out_.uptimeMinMs, recordTsMs) : recordTsMs;
-        out_.uptimeMaxMs = std::max(out_.uptimeMaxMs, recordTsMs);
+        out_.uptimeMinMs = uptimeSeen_ ? std::min(out_.uptimeMinMs, recordTsMs) : recordTsMs;
+        out_.uptimeMaxMs = uptimeSeen_ ? std::max(out_.uptimeMaxMs, recordTsMs) : recordTsMs;
+        uptimeSeen_ = true;
     }
 
     // A partial record (dataHdr.offset != 0) is one chunk of a larger struct. It carries a real
@@ -392,7 +401,12 @@ AnchorAnalysis AnchorCollector::finish(const AnchorAnalysis* prev) {
         out_.anchorTowMs    = winnerTowMs_;
         out_.anchorUptimeMs = winnerUpMs_;
         out_.offsetMs       = winnerOffMs_;
-    } else if (prev != nullptr && prev->anchored() && prev->offsetMs != 0 &&
+    // Copilot review, #1316: no `prev->offsetMs != 0` test. Zero is a LEGAL offset -- a ToW-only
+    // segment is already on the absolute frame, so its mapping constant is genuinely 0, which is
+    // exactly why `HAS_ANCHOR_OFFSET` exists as a presence bit rather than a `!= 0` check. The
+    // old guard made such a predecessor un-inheritable and dropped this segment to a weaker tier
+    // while a valid bridge was available.
+    } else if (prev != nullptr && prev->anchored() &&
                out_.uptimeMinMs != 0 && out_.uptimeMinMs >= prev->uptimeMaxMs) {
         // No absolute time of our own, but the previous segment's offset applies because our
         // uptime picks up where theirs left off.

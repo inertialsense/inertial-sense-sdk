@@ -441,7 +441,19 @@ void cDeviceLog::addIndexRecord(const p_data_hdr_t* dataHdr, const uint8_t* data
             // D0096: HAS_TIMESTAMP says the value is real; HAS_TOW additionally says which
             // domain it is in. They are different questions, and a record can answer yes to
             // the first and no to the second (any uptime-domain DID, e.g. DID_PIMU).
-            rec.flags = IS_LOG_IDX_REC_FLAG_HAS_TOW | IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
+            //
+            // Copilot review, #1316: and this code set BOTH regardless of domain, which the
+            // comment directly above already said was wrong. HAS_TOW's documented meaning is
+            // "carried a real GPS time-of-week ... can be used as a sync anchor", so setting it
+            // for DID_PIMU made an uptime record look like a ToW anchor -- and
+            // `sync_point_count` is derived from these bits, so a live sidecar over-counted its
+            // own anchors. The reader's rebuild already classified by declared domain; this is
+            // the live path catching up.
+            rec.flags = IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
+            if (cISDataMappings::TimestampDomain(dataHdr->id)
+                    == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW) {
+                rec.flags |= IS_LOG_IDX_REC_FLAG_HAS_TOW;
+            }
         } else {
             rec.timestamp = logTimeOffset;
             rec.flags = 0;   // no payload time: `timestamp` is NOT a timestamp here

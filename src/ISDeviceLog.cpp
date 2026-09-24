@@ -184,6 +184,20 @@ ISExpected<ISDeviceLog> ISDeviceLog::fromReaders(std::vector<ISLogReader>&& read
         AnchorAnalysis prevAnalysis{};
         const AnchorAnalysis* prev = nullptr;
         for (auto& r : readers) {
+            // Copilot review, #1316 proposed calling this for EVERY reader, not only the
+            // unanchored ones, so a filename-anchored segment would also get the chained
+            // fallbacks and the durability-regression diagnostic. MEASURED, that is wrong here:
+            // a filename-anchored segment following a filename-anchored predecessor is relabelled
+            // `BridgedToW`, whose TimeSource is `ResolvedViaSync` -- claiming a time-of-week
+            // bridge on a log that contains no time-of-week anywhere. The anchored span is
+            // IDENTICAL either way (the inherited offset equals the filename-derived one), so the
+            // only effect is a false provenance, which is precisely the audit A2 class of defect
+            // this change set exists to remove. Two tests catch it.
+            //
+            // The valid kernel of that review -- that the durability-regression anomaly is
+            // unreachable for an already-anchored segment -- stands, and needs a check that runs
+            // WITHOUT replacing the anchor. Left as a follow-up rather than traded for a
+            // provenance lie.
             if (!r.anchorAnalysis().anchored()) {
                 r.reanalyzeWithPrevious(prev);
             }
@@ -240,6 +254,25 @@ ISExpected<ISDeviceLog> ISDeviceLog::fromReaders(std::vector<ISLogReader>&& read
             const AnchorAnalysis& a = r.anchorAnalysis();
             return a.uptimeRecords > 0 && a.uptimeMinMs != 0;
         });
+
+    // Copilot review, #1316, UNRESOLVED BY DESIGN -- needs Kyle's call, so deliberately not
+    // changed here.
+    //
+    // The review's point is sound: having uptime everywhere does NOT make it comparable across
+    // the whole vector, because uptime RESETS on reboot (`planSessionAdoptions` above exists
+    // because that happens). Segments `[100..200]` then `[10..50]` sort the post-reboot one
+    // FIRST, reversing filename order.
+    //
+    // But gating this on "minima are monotonic in filename order" breaks
+    // `ISDeviceLog.ComposesInTimestampOrderWhenBothSegmentsAreConsistent`, an explicit AC from
+    // SN-8629 (AC A2) which requires exactly that pattern -- `_0002` carrying the SMALLER
+    // timestamp -- to be reordered by timestamp. For uptime-domain data the two readings of
+    // "later filename, smaller value" are mutually exclusive: either the filenames misreport
+    // record order (the AC's reading) or the device rebooted (the review's reading). D0051 says
+    // the filename pattern IS timestamp-sortable, which favours the review -- but overturning a
+    // stated AC is not a call to make inside a review sweep.
+    //
+    // Measured cost of the gate: that one test fails and nothing else moves.
 
     if (allSegmentsOrderable) {
         std::stable_sort(readers.begin(), readers.end(),

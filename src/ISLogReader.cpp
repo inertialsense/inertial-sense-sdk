@@ -1485,7 +1485,12 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
             const bool towDomain =
                 cISDataMappings::TimestampDomain(dataHdr.id)
                     == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW;
-            rec.flags     = (tsMs != 0 && towDomain) ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
+            // Copilot review, #1316: derived from the DOMAIN alone. The old `tsMs != 0 &&`
+            // dropped the bit exactly at GPS week zero -- a legal timestamp -- and contradicted
+            // the rule stated four lines below for HAS_TIMESTAMP, that a DID which has a time
+            // field can legitimately read 0. Presence is HAS_TIMESTAMP's job; this bit answers
+            // only "which domain".
+            rec.flags     = towDomain ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
             // D0096: say explicitly whether `timestamp` is a value or a null. The DID's
             // declared domain is the authority -- a DID with no timestamp field can never
             // have one, and a DID that has one can legitimately read 0 (ToW 0 is Sunday
@@ -1706,8 +1711,9 @@ void ISLogReader::buildIndexFromScanDat() {
             rec.offset    = static_cast<uint64_t>(bodyPos);   // the p_data_hdr_t's own start — see recordEndOffset()
             rec.did       = recHdr.id;
             // SN-8629: same provenance marking as the .raw scan — see buildIndexFromScan().
-            rec.flags     = (tsMs != 0 &&
-                             cISDataMappings::TimestampDomain(recHdr.id)
+            // Copilot review, #1316: domain alone, for the same reason as there -- ToW 0 is a
+            // legal timestamp and must not clear the domain bit.
+            rec.flags     = (cISDataMappings::TimestampDomain(recHdr.id)
                                  == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW)
                                 ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
             // D0096: and the same timestamp-validity marking — a `.dat` segment has exactly

@@ -120,6 +120,20 @@ public:
         uint64_t    arrivalEnd    = 0;      //!< Last affected record's arrival index (inclusive).
         std::size_t recordCount   = 0;      //!< Records in the run.
 
+        /**
+         * @brief Arrival indices of the STALLED DID's own records in this run, ascending.
+         *
+         * Copilot review, #1316: the repair used to be selected by arrival INTERVAL alone
+         * (`arrivalStart <= i <= arrivalEnd`), so every OTHER DID's record arriving inside a
+         * stalled DID's window was re-timed as though its own clock were frozen — discarding a
+         * perfectly good timestamp in favour of an interpolation. A stall belongs to one DID;
+         * membership here is what says so, and `resolve()` has no DID parameter to test instead.
+         *
+         * Truncated to `kMaxRetimedPerRun`; when that happens the ruler is invalidated (see
+         * `ruler`), because partial evidence must not be presented as a complete one.
+         */
+        std::vector<uint64_t> arrivals;
+
         //! Which evidence supplied the replacement times in `retimed`.
         enum class Ruler : uint8_t {
             None,        //!< Nothing usable; the resolver brackets against the collective timeline.
