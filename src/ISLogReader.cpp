@@ -834,7 +834,8 @@ ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::pa
     return r->anchorAnalysis();
 }
 
-ISExpected<ISLogReader> ISLogReader::openByScan(const std::filesystem::path& raw) {
+ISExpected<ISLogReader> ISLogReader::openSegmentIgnoringSidecar(
+        const std::filesystem::path& raw) {
     // openForAnalysis, NOT openSegment, for exactly the reason analyzeSegment says: openSegment
     // reads the sidecar and persists a rebuilt one when it is missing, which would both defeat the
     // point (the answer has to come from the bytes) and write into the caller's log directory.

@@ -215,11 +215,12 @@ public:
                                                      const AnchorAnalysis* prev = nullptr);
 
     /**
-     * @brief Open a segment by byte-scanning it, ignoring any `.idx` and writing none.
+     * @brief Open a segment from its own bytes, ignoring any `.idx` sidecar and writing none.
      *
-     * The returned reader's index is built entirely from the bytes on disk, so every
-     * count-and-iterate API on it — @ref recordCount, @ref presentDids, @ref records — answers
-     * for the **`.raw`** rather than for whatever a sidecar recorded. The sidecar is neither read
+     * The one thing that distinguishes this from @ref openSegment is in the name: the sidecar is
+     * not consulted. The returned reader's index is built entirely from the bytes on disk, so
+     * every count-and-iterate API on it — @ref recordCount, @ref presentDids, @ref records —
+     * answers for the **`.raw`** rather than for whatever a sidecar recorded. The sidecar is neither read
      * nor written, so calling this never mutates the log directory.
      *
      * This exists because **the `.raw` is the source of truth and the `.idx` can legitimately
@@ -227,9 +228,9 @@ public:
      * actually accounts for the stream opens the segment both ways and compares:
      *
      * ```
-     * auto viaIdx  = ISLogReader::openSegment(raw);   // trusts the sidecar
-     * auto viaScan = ISLogReader::openByScan(raw);    // trusts the bytes
-     * const bool complete = viaIdx->recordCount() == viaScan->recordCount();
+     * auto viaIdx  = ISLogReader::openSegment(raw);              // trusts the sidecar
+     * auto viaRaw  = ISLogReader::openSegmentIgnoringSidecar(raw); // trusts the bytes
+     * const bool complete = viaIdx->recordCount() == viaRaw->recordCount();
      * ```
      *
      * It is deliberately a separate entry point rather than a flag on @ref openSegment: a scan
@@ -246,7 +247,7 @@ public:
      * @note SN-8444. Wall-clock cost is a full read of the segment, so this belongs behind an
      *       explicit user action, not behind a hover.
      */
-    static ISExpected<ISLogReader> openByScan(const std::filesystem::path& raw);
+    static ISExpected<ISLogReader> openSegmentIgnoringSidecar(const std::filesystem::path& raw);
 
     /**
      * @brief Sentinel for @ref upgradeIndex's `logStartHostUptimeMs`: "not supplied, go find it".
