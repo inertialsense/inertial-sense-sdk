@@ -47,6 +47,8 @@
 #include "data_sets.h"      // dev_info_t, returned by devInfo()
 #include "ISLogSource.h"
 #include "ISRecordView.h"
+#include "ISAnchorAnalysis.h"
+#include "ISDiagnostics.h"
 #include "ISTimeStamp.h"
 
 #include <cstddef>
@@ -54,6 +56,7 @@
 #include <filesystem>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -182,6 +185,286 @@ public:
      */
     static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw);
 
+    /**
+     * @brief Determine a segment's absolute start/end time and how trustworthy that is, WITHOUT
+     *        building or writing an index.
+     *
+     * Opens @p raw directly — bypassing sidecar discovery entirely — runs one byte scan with the
+     * anchor collector attached, and returns the result. The segment's own `.idx` is neither
+     * read nor written: not read, so the answer always comes from the bytes on disk rather than
+     * from whatever an older writer recorded; not written, so calling this never mutates the log
+     * directory. The reader is discarded on return. That combination is what makes the cascade
+     * testable and queryable without a rebuild.
+     *
+     * @warning Do NOT implement this by delegating to @ref openSegment. That path persists a
+     *          rebuilt sidecar when one is missing (see `persistIndex()`), which silently
+     *          created `.idx` files in the caller's log directory — the exact side effect this
+     *          entry point exists to avoid.
+     *
+     * @param raw   Path to the segment file (`.raw` or `.dat`).
+     * @param prev  Analysis of the preceding segment, or `nullptr`. Supplies the chained-hint
+     *              fallbacks (`BridgedToW`, `PrevSegmentChained`) for a segment that carries no
+     *              absolute time of its own, and enables the durability-regression check.
+     * @return      The analysis on success; `ISErrorCode` if the segment cannot be opened.
+     *
+     * @note SN-8629. Prefer the analysis carried on an already-open reader
+     *       (`anchorAnalysis()`) when you have one — it was produced by the same scan that
+     *       built the index, so asking for it costs nothing.
+     */
+    static ISExpected<AnchorAnalysis> analyzeSegment(const std::filesystem::path& raw,
+                                                     const AnchorAnalysis* prev = nullptr);
+
+    /**
+     * @brief Sentinel for @ref upgradeIndex's `logStartHostUptimeMs`: "not supplied, go find it".
+     *
+     * A no-op default. `UINT64_MAX` rather than 0 because 0 is a legal anchor — and, as it turns
+     * out, the usual one; see @ref upgradeIndex on why a v1 time needs no rebasing.
+     */
+    static constexpr uint64_t kDiscoverLogStart = UINT64_MAX;
+
+    /** @brief What @ref upgradeIndex did, and — when it declined — why. */
+    struct IndexUpgrade {
+        //! Sidecar version found on disk: 1, 2 (v2.0, no time-offset field), or 0 for none.
+        uint16_t fromVersion = 0;
+
+        //! True when the output sidecar is a v2.1 the caller did not previously have.
+        bool rewritten = false;
+
+        //! Records whose `log_time_offset_ms` came from the old sidecar as an OBSERVED value.
+        std::size_t observedAdopted = 0;
+
+        //! Records whose offset had to be reconstructed (no counterpart in the old sidecar, or
+        //! the old sidecar's WHEN was not adoptable at all).
+        std::size_t reconstructed = 0;
+
+        //! Log-wide host uptime the adopted offsets were rebased against.
+        uint64_t logStartHostUptimeMs = 0;
+
+        //! Every field NOT adopted, and the gate that refused it. Empty on a clean full adopt.
+        //! Surfaced through `warnings()` too, so an application sees it without extra plumbing.
+        std::vector<std::string> declined;
+
+        /** @return True when any per-record WHEN was salvaged from the old sidecar. */
+        bool adoptedAnything() const noexcept { return observedAdopted > 0; }
+    };
+
+    /**
+     * @brief D0096 path 3: build a v2.1 `.idx` for @p segment USING the existing sidecar, rather
+     *        than discarding it and byte-scanning from scratch.
+     *
+     * Kyle, 2026-09-19: *"rebuilding from existing `.idx` files is preferred to building
+     * `.idx`s only from `.raw`/`.dat` files."* Before this existed, `construct()` made a binary
+     * choice — trust the sidecar, or throw it away entirely — so `RebuildReason::V1` *detected* a
+     * legacy sidecar and then discarded it. That was a **data-quality regression, not merely a
+     * missing feature**: a v1 record's `host_uptime_ms` is the OBSERVED receipt time, the one
+     * quantity a byte scan can never recover, and `ISTimeResolver` ranks it as its top-priority
+     * stall ruler.
+     *
+     * What is taken from where, and why:
+     *
+     * | Quantity | Source | Rationale |
+     * |---|---|---|
+     * | DIDs, byte offsets, payload timestamps | always the SCAN | a v1 sidecar has no DID at all, and its byte offsets are measurably wrong |
+     * | per-record WHEN (`log_time_offset_ms`) | the old sidecar, when the gates pass | observed beats reconstructed |
+     * | records with no counterpart | interpolated between adopted neighbours | flagged `RECONSTRUCTED_TIME_OFFSET` |
+     *
+     * **v1 → v2.1** joins on `record_counter`, NOT on position and NOT on byte offset. A v1
+     * sidecar stores only ~70% of its segment's records, so a positional join silently
+     * mis-assigns every WHEN after the first gap; the counter's index space, by contrast, tiles
+     * the scan exactly. See @ref inertial_sense::idx::is_log_idx_record_v1_t for the measurements
+     * behind both statements.
+     *
+     * **v2.0 → v2.1** keeps the DIDs, byte offsets and payload timestamps that a v2.0 sidecar
+     * already holds correctly, and reconstructs the chronology it has no field for — flagged
+     * `RECONSTRUCTED_TIME_OFFSET`, because it genuinely is.
+     *
+     * Declines rather than guesses. Nothing is adopted from a sidecar that fails a trust gate;
+     * the result degrades to exactly today's behaviour and says so in `declined`.
+     *
+     * @param segment  Path to the `.raw`/`.dat`. Its sidecar is derived by extension substitution.
+     * @param logStartHostUptimeMs  Anchor a v1 `host_uptime_ms` is rebased against. Defaults to
+     *        @ref kDiscoverLogStart, which looks for the log's first segment the way
+     *        `ISLog::openDirectory` enumerates siblings; a caller already walking a directory
+     *        can pass a known anchor instead and skip that.
+     *
+     *        **Measured 2026-09-21: the anchor is normally 0, because a v1 `host_uptime_ms` is
+     *        already LOG-relative.** The first record of the corpus log — `record_counter` 0 at
+     *        byte offset 0, so provably the log's first — carries `time == 1` ms, not a
+     *        host-boot uptime. A second log corroborates it: its earliest surviving v1 segment
+     *        is 0018 at `t = 3,684,365`, and segments run ~220,000 ms each, so 17 × ~216,700
+     *        lands exactly there. The field is therefore usable verbatim, and the rebase exists
+     *        only for a log that ever turns up measuring from boot instead.
+     *
+     *        Discovery must PROVE it found the log's first segment (`record_counter == 0`) and
+     *        returns nothing otherwise, in which case no rebasing happens. Guessing is worse
+     *        than not rebasing: a mixed log — the normal case, since opening a v1 segment
+     *        persists a v2 sidecar over it, so the earliest segments convert first — would
+     *        otherwise anchor on a mid-log segment's own first record and collapse it onto zero.
+     * @return The outcome, or an `ISError` if @p segment itself cannot be opened. A sidecar that
+     *         is absent or unusable is NOT an error — it yields a result with `fromVersion == 0`.
+     */
+    static ISExpected<IndexUpgrade> upgradeIndex(
+        const std::filesystem::path& segment,
+        uint64_t logStartHostUptimeMs = kDiscoverLogStart);
+
+    /**
+     * @brief Log-wide host-uptime anchor for @p segment's log, for @ref upgradeIndex.
+     *
+     * Walks back to the log's FIRST segment by sequence number (the `_0001` convention
+     * `hasSiblingSuccessor` also relies on) and reads its legacy sidecar's first
+     * `host_uptime_ms`. Exposed so a directory walk can resolve the anchor once and pass it to
+     * every subsequent @ref upgradeIndex call instead of re-deriving it per segment.
+     *
+     * @param segment  Any segment of the log.
+     * @return The log's first observed host uptime, or `std::nullopt` when no legacy sidecar in
+     *         the run can supply one.
+     */
+    static std::optional<uint64_t> discoverLogStartHostUptime(
+        const std::filesystem::path& segment);
+
+    /**
+     * @brief This segment's anchor analysis — its domain-normalized position on the timeline.
+     *
+     * Populated for every successfully-opened segment, by whichever route produced the record
+     * index: the scan itself when the index was rebuilt, or @ref analyzeFromRecords when a
+     * trusted sidecar made a scan unnecessary. Both routes run the same cascade and are
+     * expected to agree; `test_anchor_analysis` asserts they do.
+     *
+     * This must hold for the sidecar path too, not just the rebuild path. `ISDeviceLog::
+     * fromSegments` orders segments by `anchoredStartMs` and requires EVERY segment to carry an
+     * orderable anchor before it will re-sort — so leaving the analysis empty whenever a valid
+     * `.idx` was present (which is the common case for a captured log) left the ordering fix
+     * dormant exactly where it was needed, silently falling back to filename order.
+     */
+    const AnchorAnalysis& anchorAnalysis() const noexcept { return anchor_; }
+
+    /**
+     * @brief Re-resolve this segment's anchor with its predecessor's analysis as a hint.
+     *
+     * A reader is constructed from one segment and knows nothing about its siblings, so its
+     * initial analysis can only reach the tiers a segment can establish alone. The chained tiers
+     * — `BridgedToW` (reuse the predecessor's offset because uptime is continuous) and
+     * `PrevSegmentChained` — are by definition unavailable to it, as is the
+     * durability-regression check. Whoever composes segments into a device log must supply that
+     * context; `ISDeviceLog::fromSegments` does, walking the segments in filename order.
+     *
+     * Costs no I/O — it re-resolves from the existing record index. A segment already at the top
+     * tier is left alone: a hint cannot improve it and it cannot have regressed.
+     *
+     * @param prev  Predecessor's analysis, or `nullptr` for the first segment.
+     */
+    void reanalyzeWithPrevious(const AnchorAnalysis* prev) {
+        if (anchor_.tier == AnchorTier::PayloadToWBridge) return;
+        analyzeFromRecords(prev);
+    }
+
+    /**
+     * @brief Apply the LOG's uptime zero to this segment, re-deriving a filename anchor from it.
+     *
+     * The log's uptime zero is a log-level fact — the device uptime when the log was opened —
+     * and only the layer that sees every segment can resolve it. A reader built from one segment
+     * knows it only when that segment is sequence `_0001`.
+     *
+     * Needed as a separate entry point rather than folded into @ref reanalyzeWithPrevious because
+     * that one only runs for UNANCHORED segments, and a filename-anchored segment is already
+     * "anchored" — so it would never inherit the zero and every segment would keep re-deriving a
+     * per-segment anchor, which is exactly the collapse this fixes.
+     *
+     * No-op for anything above `FilenameAnchor`: a payload or bridged anchor is derived from real
+     * time evidence and owes nothing to the filename.
+     *
+     * @param logStartUptimeMs  The log's uptime zero. 0 means "unknown" and changes nothing.
+     */
+    void applyLogStartUptime(uint64_t logStartUptimeMs);
+
+    /**
+     * @brief Adopt an absolute-time offset established by ANOTHER segment of the same recording
+     *        session, when this segment could not establish one itself.
+     *
+     * The `(ToW - uptime)` offset is a constant for a boot session: uptime and GPS time advance
+     * together until the device reboots. So once ANY segment of a session pins that constant,
+     * every other segment of the same session is anchored by it — including segments **earlier**
+     * in the log than the one that supplied it. That is the point of this entry: a log whose
+     * first five segments have no absolute time of their own, followed by one that acquires a
+     * GPS fix, can have all six placed correctly rather than the first five being stranded.
+     *
+     * Self-established anchors are never overridden: a segment that pinned the constant from its
+     * own payload keeps that, since it is first-hand evidence.
+     *
+     * @param offsetMs       The session's `(ToW - uptime)` constant.
+     * @param donorDid       DID that established it, for the audit trail.
+     * @param donorIsEarlier True when the donating segment precedes this one in the log.
+     *
+     * @note SN-8629 / SN-8704, Kyle 2026-09-19: "as soon as we have a TRUSTWORTHY absolute time
+     *       - we can go back and re-anchor the entire log". Replaces a forward-only pairwise
+     *       chain, which could only ever push information later in the log, never earlier.
+     */
+    /**
+     * @brief D0096 path 2: fill `log_time_offset_ms` for every record from the payload
+     *        timestamps that exist, distributing un-clocked records between their bookends.
+     *
+     * A file rebuild cannot observe receipt time, so every value written here is
+     * RECONSTRUCTED and each record is flagged
+     * `IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET` to say so. Only the ONE dominant domain
+     * is used as bookends: interpolating between an uptime-domain and a GPS-ToW-domain
+     * neighbour would yield a number that is a duration in neither frame.
+     * `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET` is declared only if values were actually
+     * written -- declaring an all-zero field is the A5 defect this exists to avoid.
+     *
+     * No-op when no record carries a usable timestamp: there is nothing to reconstruct from,
+     * and zeros must not be declared as a chronology.
+     */
+    void populateReconTimeOffsets();
+
+    /**
+     * @brief Stamp `first_timestamp_ms` / `last_timestamp_ms` as a faithful transcription.
+     *
+     * D0096: these are the first and last *record timestamps*, never a derived absolute.
+     * Records that declare no timestamp (`HAS_TIMESTAMP` clear) are skipped — the live writer
+     * parks a record's `log_time_offset_ms` in that field for timeless DIDs, so transcribing
+     * the boundary record blindly copies a non-timestamp into a field named for one.
+     */
+    void stampTranscribedSpan();
+
+    /**
+     * @brief Stamp the cascade's mapping constant into `anchor_offset_ms` + its header flag.
+     *
+     * D0069's additive anchor. The flag is cleared when the segment is unanchored, so a 0
+     * never reads as "anchored, offset 0" — a legal state for a ToW-only segment.
+     */
+    void stampPersistedAnchor();
+
+    /**
+     * @brief Adopt a legacy sidecar's observed WHEN onto the records this reader just scanned.
+     *
+     * Runs the trust gates, performs the `record_counter`-keyed join, interpolates the records
+     * with no counterpart, and sets `HAS_LOG_TIME_OFFSET`. Leaves `records_` untouched and
+     * returns false (recording the reason in @p out.declined) when any gate refuses — the caller
+     * then falls back to @ref populateReconTimeOffsets.
+     *
+     * @param v1        Records parsed from the legacy sidecar, in file order.
+     * @param logStart  Log-wide host-uptime anchor to rebase against.
+     * @param out       Outcome accumulator.
+     * @return True when at least one observed WHEN was adopted.
+     */
+    bool adoptV1TimeOffsets(const std::vector<idx::is_log_idx_record_v1_t>& v1,
+                            uint64_t logStart, IndexUpgrade& out);
+
+    void adoptSessionOffset(int64_t offsetMs, uint32_t donorDid, bool donorIsEarlier);
+
+    /**
+     * @brief Parse the `YYYYMMDD_HHMMSS` field of a segment filename into Unix ms (UTC).
+     *
+     * The lowest rung of the anchor cascade: a log with no absolute time anywhere in its records
+     * can still be placed on the timeline by the writer's filename pattern
+     * (`LOG_SN<serial>_<YYYYMMDD>_<HHMMSS>_<NNNN>`). Returns 0 when the filename carries no
+     * parseable date, which the cascade reads as "no filename anchor available".
+     *
+     * Public so the parse can be tested directly — it has a history of failing on serial-number
+     * lengths that create a false date-shaped window earlier in the name.
+     */
+    static uint64_t filenameAnchorMs(const std::filesystem::path& p);
+
     /** Destroys the reader and releases the mmap (or buffer) and file handle. */
     ~ISLogReader();
 
@@ -297,18 +580,63 @@ public:
     const std::vector<std::string>& warnings() const noexcept { return warnings_; }
 
     /**
+     * @brief This segment's diagnostics, typed — audit B3.
+     *
+     * The same events `warnings()` and `anchorAnalysis().anomalies` already carry, classified so
+     * an application can act on them: a kind it can switch on, the path they are about, and a
+     * remedy where one exists. `warnings()` remains for anything that only wants to print.
+     *
+     * Built on demand rather than stored, because the inputs are already retained and a reader
+     * is read-only after construction.
+     */
+    std::vector<ISDiagnostic> diagnostics() const;
+
+    /**
      * @return  Earliest record timestamp in this segment, in the
-     *          units indicated by `header().ts_units`. Returns 0
+     *          units indicated by `header().ts_anchor`. Returns 0
      *          if the segment contains no records.
+     *
+     * @warning RAW and MIXED-DOMAIN. This is the `.idx`'s transcription, not a placed time —
+     *          it is whatever domain the earliest timestamped record's DID stamps. Do not
+     *          compare it against another segment's, and do not show it to a user. For a value
+     *          on the unified absolute frame, with an honest provenance tag, use
+     *          @ref segmentSpanStart (audit A2 / D0066).
      */
     uint64_t segmentStartTimestamp() const noexcept;
 
     /**
      * @return  Latest record timestamp in this segment, in the units
-     *          indicated by `header().ts_units`. Returns 0 if the
+     *          indicated by `header().ts_anchor`. Returns 0 if the
      *          segment contains no records.
+     *
+     * @warning RAW and MIXED-DOMAIN — see @ref segmentStartTimestamp. Prefer
+     *          @ref segmentSpanEnd.
      */
     uint64_t segmentEndTimestamp() const noexcept;
+
+    /**
+     * @brief This segment's start on the unified absolute frame, tagged with how it was placed.
+     *
+     * The value is the anchor cascade's `anchoredStartMs` — derived from the extrema of the
+     * segment's timestamped records in one domain, not from whichever record happens to sit
+     * first in arrival order — and the `TimeSource` is derived from the cascade's tier via
+     * @ref timeSourceForTier.
+     *
+     * This is the accessor audit A2 exists for. The old route (`segmentStartTimestamp()`
+     * wrapped in `TimeStamp::fromPayloadToW` by the caller) was wrong twice over on a measured
+     * fixture: it returned 5 ms — the `log_time_offset_ms` the live writer parks in the
+     * `timestamp` field of a timeless `DID_DEV_INFO` — where the first real record was at
+     * 10000 ms and the true anchored start was 1789938572000, and it tagged that `PayloadToW`
+     * on a log containing no time-of-week at all.
+     *
+     * @return  `{anchoredStartMs, timeSourceForTier(tier)}` when the segment is anchored;
+     *          otherwise the raw transcription tagged `SessionOnly`, which is the honest
+     *          description of an unanchored segment. Value 0 when there are no records.
+     */
+    TimeStamp segmentSpanStart() const noexcept;
+
+    /** @brief This segment's end on the unified absolute frame. See @ref segmentSpanStart. */
+    TimeStamp segmentSpanEnd() const noexcept;
 
     /**
      * @return  Total record count across all DIDs in this segment.
@@ -524,6 +852,19 @@ public:
          *            with timestamps in `[t0, t1]`. Lifetime tied
          *            to the parent reader.
          *
+         * @warning **RAW-DOMAIN BOUNDS ONLY — audit B6.** `t0`/`t1` are compared against the
+         *          `.idx`'s raw record timestamps, which are mixed-domain (D0066): GPS
+         *          time-of-week on sync-bearing DIDs, host uptime elsewhere. `source` is not
+         *          consulted, and cannot be — an `ISLogReader` has no resolver.
+         *
+         *          D0065 makes a RESOLVED absolute the default shape of every time value in the
+         *          application, so passing one here is the easy mistake, and it used to compare
+         *          two different frames and return a plausible-looking range. A bound at or
+         *          beyond the GPS epoch can only be a resolved value, so that is now detected:
+         *          it logs an error and returns an EMPTY range rather than a mis-framed one.
+         *
+         *          To select by wall-clock time, resolve the RECORDS and filter on the result.
+         *
          * @see TimeStamp, ISLogReader::seek
          */
         Range in_time(TimeStamp t0, TimeStamp t1) const;
@@ -606,6 +947,13 @@ public:
      * @return        Iterator positioned at the first record with
      *                `timestamp().value >= target.value`, or
      *                `allRecords().end()` if no such record exists.
+     *
+     * @warning **RAW-DOMAIN TARGET ONLY — audit B6.** Same contract as
+     *          @ref Range::in_time: the comparison is against raw `.idx` timestamps and
+     *          `target.source` is not consulted. Seeking with a resolved absolute returned
+     *          `end()` on a log that does contain the instant asked for — a wrong answer wearing
+     *          the shape of "no such record". A target at or beyond the GPS epoch is now
+     *          detected, logged, and returns `end()` explicitly.
      */
     RangeIterator seek(TimeStamp target) const noexcept;
 
@@ -647,7 +995,39 @@ private:
      * the `.raw` and persisting the result. `.raw`-specific — see
      * @ref buildIndexFromScanDat for the `.dat` equivalent (D-119).
      */
-    void buildIndexFromScan();
+    //! SN-8629: when non-null, the collector is attached to the scan and the resulting
+    //! analysis stamped into `anchor_` and the index header. Pass the previous segment's
+    //! analysis to enable the chained-hint tiers.
+    void buildIndexFromScan(const AnchorAnalysis* prev = nullptr, bool collectAnchor = true);
+
+
+    /**
+     * @brief Run the anchor cascade over an already-populated `records_`, without a byte scan.
+     *
+     * The route used when a trusted `.idx` sidecar made a scan unnecessary, and for `.dat`
+     * segments (whose index build does not carry the collector). Every record contributes its
+     * DID and timestamp — that is what the per-domain extrema and the stall detector are built
+     * from — while only the few DIDs that can actually anchor
+     * (`AnchorCollector::needsPayload`) have their payload materialized. The source is mmap'd
+     * or fully buffered, so materializing one is pointer arithmetic plus a re-frame, not I/O.
+     *
+     * @param prev  Previous segment's analysis, or `nullptr`. Same role as in
+     *              @ref buildIndexFromScan.
+     */
+    void analyzeFromRecords(const AnchorAnalysis* prev = nullptr);
+
+    /**
+     * @brief Open a segment for analysis only — no sidecar read, no sidecar write.
+     *
+     * Deliberately NOT @ref construct: that performs sidecar discovery and, on a miss, persists
+     * the rebuilt index. @ref analyzeSegment promises neither, so it needs a source-only open.
+     *
+     * @param raw  Path to the segment file.
+     * @return     A reader with its source, path, format and a default header set, and an empty
+     *             record index; or an `ISError` if the file cannot be opened or its extension
+     *             is unrecognized.
+     */
+    static ISExpected<ISLogReader> openForAnalysis(const std::filesystem::path& raw);
 
     /**
      * @brief `.dat` equivalent of @ref buildIndexFromScan (D-119 / SN-8626).
@@ -756,6 +1136,17 @@ private:
 
     SegmentFormat                          format_             = SegmentFormat::Raw;
     bool                                   hadOnDiskIndex_     = false;
+    //! Audit B6: true when `records_` timestamps are monotonic, which is what lets `seek()`
+    //! binary-search. Computed once in `construct()` rather than per call.
+    bool timestampsMonotonic_ = false;
+
+    //! Audit C3: true when `records_` offsets are non-decreasing, which is what lets
+    //! `recordEndOffset` binary-search instead of scanning. Verified once in `construct()`.
+    bool offsetsNonDecreasing_ = true;
+
+    //! SN-8629: anchor analysis from the scan that built this index; `None` tier when the
+    //! index came off disk instead.
+    AnchorAnalysis anchor_{};
     bool                                   isTruncated_        = false;
     uint64_t                               truncationOffset_   = 0;
     uint64_t                               deviceId_           = 0;

@@ -34,6 +34,7 @@ if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_did_traits.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_index.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_index_upgrade.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_reader.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_writer.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISHttpRequest.cpp")

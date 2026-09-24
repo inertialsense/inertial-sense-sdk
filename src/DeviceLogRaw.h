@@ -105,7 +105,7 @@ private:
     //! packet split across two LogData() calls still gets its true start offset.
     //! Reset to 0 when a fresh .raw file begins. Stamped into each .idx record so
     //! ISLogReader trusts the sidecar instead of rebuilding (a rebuild would drop
-    //! the SN-8383 per-record host-uptime deltas).
+    //! the SN-8383 per-record log-start time-offsets).
     uint64_t m_rawIndexCursor = 0;
 };
 
