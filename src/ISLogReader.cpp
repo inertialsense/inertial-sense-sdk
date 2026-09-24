@@ -834,6 +834,23 @@ ISExpected<AnchorAnalysis> ISLogReader::analyzeSegment(const std::filesystem::pa
     return r->anchorAnalysis();
 }
 
+ISExpected<ISLogReader> ISLogReader::openByScan(const std::filesystem::path& raw) {
+    // openForAnalysis, NOT openSegment, for exactly the reason analyzeSegment says: openSegment
+    // reads the sidecar and persists a rebuilt one when it is missing, which would both defeat the
+    // point (the answer has to come from the bytes) and write into the caller's log directory.
+    auto r = openForAnalysis(raw);
+    if (!r) return tl::unexpected<ISError>{ r.error() };
+
+    if (r->format_ == SegmentFormat::Dat) {
+        r->buildIndexFromScanDat();
+    } else {
+        // No anchor collector: a caller comparing record counts does not need the cascade, and
+        // collecting it is not free.
+        r->buildIndexFromScan(nullptr, /*collectAnchor=*/false);
+    }
+    return r;
+}
+
 // ---------------------------------------------------------------------------------------------
 // D0096 path 3 -- upgrade an existing sidecar instead of discarding it
 // ---------------------------------------------------------------------------------------------

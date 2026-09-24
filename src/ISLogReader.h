@@ -215,6 +215,40 @@ public:
                                                      const AnchorAnalysis* prev = nullptr);
 
     /**
+     * @brief Open a segment by byte-scanning it, ignoring any `.idx` and writing none.
+     *
+     * The returned reader's index is built entirely from the bytes on disk, so every
+     * count-and-iterate API on it — @ref recordCount, @ref presentDids, @ref records — answers
+     * for the **`.raw`** rather than for whatever a sidecar recorded. The sidecar is neither read
+     * nor written, so calling this never mutates the log directory.
+     *
+     * This exists because **the `.raw` is the source of truth and the `.idx` can legitimately
+     * fall short of it** (Kyle, 2026-09-24). A caller that wants to know whether a log's sidecar
+     * actually accounts for the stream opens the segment both ways and compares:
+     *
+     * ```
+     * auto viaIdx  = ISLogReader::openSegment(raw);   // trusts the sidecar
+     * auto viaScan = ISLogReader::openByScan(raw);    // trusts the bytes
+     * const bool complete = viaIdx->recordCount() == viaScan->recordCount();
+     * ```
+     *
+     * It is deliberately a separate entry point rather than a flag on @ref openSegment: a scan
+     * costs a full pass over the file, so it must be something a caller asks for explicitly and
+     * never something the normal open path might do.
+     *
+     * @warning Do NOT implement this by delegating to @ref openSegment — that path persists a
+     *          rebuilt sidecar when one is missing, which is the side effect this avoids. Same
+     *          hazard, and same reason, as @ref analyzeSegment.
+     *
+     * @param raw  Path to the segment file (`.raw` or `.dat`).
+     * @return     A reader whose index came from the bytes; `ISErrorCode` if it cannot be opened.
+     *
+     * @note SN-8444. Wall-clock cost is a full read of the segment, so this belongs behind an
+     *       explicit user action, not behind a hover.
+     */
+    static ISExpected<ISLogReader> openByScan(const std::filesystem::path& raw);
+
+    /**
      * @brief Sentinel for @ref upgradeIndex's `logStartHostUptimeMs`: "not supplied, go find it".
      *
      * A no-op default. `UINT64_MAX` rather than 0 because 0 is a legal anchor — and, as it turns
