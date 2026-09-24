@@ -2392,6 +2392,9 @@ class logPlot:
                 ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x04000000) != 0))
                 if r: ax.text(labelX, -cnt * 1.5, 'GNSS Rcvr Time Fault', transform=ax.get_yaxis_transform())
                 cnt += 1
+                ax.plot(faultTime, -cnt * 1.5 + ((genFaultCode & 0x40000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'EKF Bias Saturated', transform=ax.get_yaxis_transform())
+                cnt += 1
                 cnt += 1
 
             ax.grid(True)
