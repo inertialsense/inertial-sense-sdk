@@ -156,7 +156,7 @@ std::pair<uint64_t, uint64_t> resolvedSpan(const ISDeviceLog& log, const ISTimeR
     uint64_t lo = UINT64_MAX, hi = 0; bool any = false;
     const uint64_t dev = log.deviceId();
     for (auto rv : log.allRecords()) {
-        const TimeStamp t = r.resolve(rv.timestamp().value, dev);
+        const TimeStamp t = r.resolve(rv.timestamp().value, dev, rv.arrivalIndex());
         if (t.source == TimeSource::SessionOnly && t.confidence == TimeConfidence::Unknown) continue;
         lo = std::min(lo, t.value); hi = std::max(hi, t.value); any = true;
     }
@@ -169,7 +169,7 @@ std::pair<uint64_t, uint64_t> resolvedDidSpan(const ISDeviceLog& log, const ISTi
     uint64_t lo = UINT64_MAX, hi = 0; bool any = false;
     const uint64_t dev = log.deviceId();
     for (auto rv : log.records(did)) {
-        const TimeStamp t = r.resolve(rv.timestamp().value, dev);
+        const TimeStamp t = r.resolve(rv.timestamp().value, dev, rv.arrivalIndex());
         if (t.source == TimeSource::SessionOnly && t.confidence == TimeConfidence::Unknown) continue;
         lo = std::min(lo, t.value); hi = std::max(hi, t.value); any = true;
     }

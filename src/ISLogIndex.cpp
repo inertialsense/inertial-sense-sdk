@@ -84,14 +84,16 @@ void serializeHeader(uint8_t out[IS_LOG_IDX_HEADER_SIZE],
     put_u64(out + 20, hdr.first_timestamp_ms);
     put_u64(out + 28, hdr.last_timestamp_ms);
     put_u32(out + 36, hdr.sync_point_count);
-    out[40] = hdr.ts_units;
+    out[40] = hdr.ts_anchor;
     out[41] = hdr.ts_source;
     out[42] = hdr.flags;
     out[43] = hdr.reserved8;
     put_u16(out + 44, hdr.record_size);        // SN-8383: on-disk record stride
     put_u16(out + 46, hdr.reserved16);
     put_u64(out + 48, hdr.capture_epoch_ms);   // SN-8340: absolute host wall-clock at log-open
-    // out[56..63] left zero from memset.
+    // D0069/D0096 (audit A2): the persisted anchor, additive. Signed, so it round-trips through
+    // u64 two's-complement rather than a magnitude+sign encoding.
+    put_u64(out + 56, static_cast<uint64_t>(hdr.anchor_offset_ms));
 }
 
 ISExpected<is_log_idx_header_t> parseHeader(
@@ -117,14 +119,14 @@ ISExpected<is_log_idx_header_t> parseHeader(
     hdr.first_timestamp_ms  = get_u64(in + 20);
     hdr.last_timestamp_ms   = get_u64(in + 28);
     hdr.sync_point_count    = get_u32(in + 36);
-    hdr.ts_units            = in[40];
+    hdr.ts_anchor            = in[40];
     hdr.ts_source           = in[41];
     hdr.flags               = in[42];
     hdr.reserved8           = in[43];
     hdr.record_size         = get_u16(in + 44);   // 0 on legacy pre-v2.1 headers
     hdr.reserved16          = get_u16(in + 46);
     hdr.capture_epoch_ms    = get_u64(in + 48);
-    std::memcpy(hdr.reserved, in + 56, sizeof(hdr.reserved));
+    hdr.anchor_offset_ms    = static_cast<int64_t>(get_u64(in + 56));
 
     if (hdr.version != IS_LOG_IDX_VERSION_V2) {
         return fail(ISErrorCode::Unsupported,
@@ -146,8 +148,30 @@ void serializeRecord(uint8_t out[IS_LOG_IDX_RECORD_V2_1_SIZE],
     put_u32(out + 16, rec.did);
     put_u16(out + 20, rec.flags);
     put_u16(out + 22, rec.reserved);
-    put_u32(out + 24, rec.local_uptime_ms);   // v2.1 trailing field (SN-8383)
+    put_u32(out + 24, rec.log_time_offset_ms);   // v2.1 trailing field (SN-8383)
     put_u32(out + 28, rec.reserved2);
+}
+
+is_log_idx_record_v1_t parseRecordV1(const uint8_t* in) noexcept {
+    is_log_idx_record_v1_t rec{};
+    rec.host_uptime_ms = get_u32(in +  0);
+    rec.byte_offset    = get_u32(in +  4);
+    rec.record_counter = get_u32(in +  8);
+    rec.reserved       = get_u32(in + 12);
+    return rec;
+}
+
+std::vector<is_log_idx_record_v1_t> parseRecordsV1(const uint8_t* data, std::size_t size,
+                                                   std::size_t* trailingBytes) {
+    const std::size_t n = size / IS_LOG_IDX_RECORD_V1_SIZE;
+    if (trailingBytes != nullptr) *trailingBytes = size % IS_LOG_IDX_RECORD_V1_SIZE;
+    std::vector<is_log_idx_record_v1_t> out;
+    if (data == nullptr || n == 0) return out;
+    out.reserve(n);
+    for (std::size_t i = 0; i < n; ++i) {
+        out.push_back(parseRecordV1(data + i * IS_LOG_IDX_RECORD_V1_SIZE));
+    }
+    return out;
 }
 
 is_log_idx_record_v2_t parseRecord(
@@ -160,7 +184,7 @@ is_log_idx_record_v2_t parseRecord(
     rec.reserved  = get_u16(in + 22);
     // v2.1 trailing field present only when the on-disk record is >= 32 bytes.
     if (record_size >= IS_LOG_IDX_RECORD_V2_1_SIZE) {
-        rec.local_uptime_ms = get_u32(in + 24);
+        rec.log_time_offset_ms = get_u32(in + 24);
         rec.reserved2       = get_u32(in + 28);
     }
     return rec;
@@ -225,7 +249,7 @@ ISExpected<is_log_idx_record_v2_t> readRecord(cISLogFileBase& file, std::size_t 
 }
 
 is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
-                                      TimestampUnits units,
+                                      TimestampAnchor units,
                                       HeaderTimeSource source,
                                       uint64_t capture_epoch_ms) noexcept {
     is_log_idx_header_t hdr{};
@@ -240,18 +264,20 @@ is_log_idx_header_t makeDefaultHeader(uint32_t producer_version,
     hdr.first_timestamp_ms  = 0;
     hdr.last_timestamp_ms   = 0;
     hdr.sync_point_count    = 0;
-    hdr.ts_units            = static_cast<uint8_t>(units);
+    hdr.ts_anchor            = static_cast<uint8_t>(units);
     hdr.ts_source           = static_cast<uint8_t>(source);
     hdr.flags               = 0;  // FINALIZED set on clean close
     hdr.reserved8           = 0;
     // v2.1: all newly-written .idx use 32-byte records; record_size drives the
     // reader's stride (legacy v2.0 files carry 0 ⇒ reader treats as 24). The
-    // live writer sets HAS_LOCAL_DELTA once it stamps real per-record deltas.
+    // live writer sets HAS_LOG_TIME_OFFSET once it stamps real per-record offsets.
     hdr.record_size         = static_cast<uint16_t>(IS_LOG_IDX_RECORD_V2_1_SIZE);
     hdr.reserved16          = 0;
     hdr.capture_epoch_ms    = capture_epoch_ms;
     if (capture_epoch_ms != 0) hdr.flags |= IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH;
-    std::memset(hdr.reserved, 0, sizeof(hdr.reserved));
+    // No anchor is known at header-creation time; the flag stays clear until a producer that
+    // ran the cascade sets both together.
+    hdr.anchor_offset_ms    = 0;
     return hdr;
 }
 

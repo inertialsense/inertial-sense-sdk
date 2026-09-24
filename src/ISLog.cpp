@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <iterator>
 #include <map>
 #include <stdexcept>
 #include <system_error>
@@ -92,8 +93,14 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
     // Sort lexicographically so per-device segment order is stable.
     std::sort(segmentFiles.begin(), segmentFiles.end());
 
-    // Open each segment, group by device-id.
-    std::map<uint64_t, std::vector<fs::path>> byDevice;
+    // Open each segment once, group the OPEN readers by device-id.
+    //
+    // Audit C1: this used to drop each reader and let `ISDeviceLog::fromSegments` open the
+    // segment a second time. Opening is not cheap — it builds the record index (a full byte scan
+    // when the sidecar is missing or stale) and runs the anchor cascade — so a directory open
+    // paid for both twice per segment. `segmentFiles` is already sorted lexicographically above,
+    // and grouping preserves that order, which is the filename order `fromReaders` requires.
+    std::map<uint64_t, std::vector<ISLogReader>> byDevice;
     for (const auto& path : segmentFiles) {
         auto r = ISLogReader::openSegment(path);
         if (!r) {
@@ -104,23 +111,58 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
         const uint64_t devId = r->deviceId();
         log_debug(IS_LOG_ISLOG, "  %s -> device 0x%016llx",
                   path.filename().string().c_str(), static_cast<unsigned long long>(devId));
-        byDevice[devId].push_back(path);
-        // Drop the reader; ISDeviceLog::fromSegments re-opens.
-        r = tl::unexpected<ISError>{ ISError{ ISErrorCode::Internal, "drop" } };
+        byDevice[devId].push_back(std::move(*r));
     }
 
     ISLog out;
     out.directory_   = logDir;
+
+    // Audit B3 + Kyle 2026-09-21: an orphaned `.idx` -- a sidecar with no segment beside it -- is
+    // invisible to everything else here, because discovery is driven by `.raw`/`.dat`. It can
+    // never be upgraded (an upgrade needs the segment to scan) and indexes nothing reachable, so
+    // it is reported with its own path and the note that deleting it is safe. Measured on a real
+    // corpus log: of 79 sidecars, the 71 with a segment were all current and the 8 still legacy
+    // were exactly the 8 whose segment was gone.
+    {
+        std::error_code sec;
+        fs::directory_iterator sit(logDir, sec);
+        const fs::directory_iterator send;
+        for (; !sec && sit != send; sit.increment(sec)) {
+            const auto& entry = *sit;
+            if (!entry.is_regular_file()) continue;
+            const fs::path& sidecar = entry.path();
+            if (sidecar.extension() != ".idx") continue;
+            bool paired = false;
+            for (const char* ext : { ".raw", ".dat", ".RAW", ".DAT" }) {
+                fs::path cand = sidecar;
+                cand.replace_extension(ext);
+                if (fs::exists(cand, sec)) { paired = true; break; }
+            }
+            if (paired) continue;
+            ISDiagnostic d;
+            d.severity = ISDiagSeverity::Notice;
+            d.kind     = ISDiagKind::OrphanedSidecar;
+            d.path     = sidecar;
+            d.message  = sidecar.filename().string() +
+                         " has no matching log segment, so it indexes no data that can be read.";
+            d.remedy   = "Deleting this file is safe; it cannot be repaired or upgraded without "
+                         "its segment.";
+            log_warn(IS_LOG_ISLOG, "orphaned sidecar: %s",
+                     sidecar.filename().string().c_str());
+            out.diagnostics_.push_back(std::move(d));
+        }
+    }
+
     out.allSegments_ = std::move(segmentFiles);
 
     out.orderedIds_.reserve(byDevice.size());
-    for (auto& [devId, paths] : byDevice) {
+    for (auto& [devId, devReaders] : byDevice) {
         log_more_info(IS_LOG_ISLOG,
                       "  building device 0x%016llx: %zu segment(s)",
-                      static_cast<unsigned long long>(devId), paths.size());
-        auto dl = ISDeviceLog::fromSegments(std::move(paths));
+                      static_cast<unsigned long long>(devId), devReaders.size());
+        auto dl = ISDeviceLog::fromReaders(std::move(devReaders));
         if (!dl) {
-            log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments failed for "
+            log_error(IS_LOG_ISLOG, "ISDeviceLog::fromReaders failed for "
                       "device 0x%016llx: %s",
                       static_cast<unsigned long long>(devId),
                       dl.error().message.c_str());
@@ -128,6 +170,13 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
         }
         out.devicesById_.emplace(devId, std::move(*dl));
         out.orderedIds_.push_back(devId);
+    }
+
+    for (const uint64_t devId : out.orderedIds_) {
+        auto d = out.devicesById_.at(devId).diagnostics();
+        out.diagnostics_.insert(out.diagnostics_.end(),
+                                std::make_move_iterator(d.begin()),
+                                std::make_move_iterator(d.end()));
     }
 
     log_info(IS_LOG_ISLOG, "ISLog::openDirectory: %s -> %zu device(s), "
@@ -159,26 +208,35 @@ const ISDeviceLog& ISLog::device(uint64_t deviceId) const {
     return it->second;
 }
 
+// Audit A2, third layer. These folded the per-device spans by reading `.value`, discarding the
+// source, and then re-asserting `fromPayloadToW` on the winner -- so fixing ISDeviceLog and
+// ISLogReader alone would have had this layer throw the derived provenance away again.
+//
+// The fold now carries the whole `TimeStamp`: the winning device's own provenance survives,
+// with its `deviceId` cleared to 0 because a cross-device extremum belongs to no single device
+// (the documented meaning of `deviceId == 0`).
 TimeStamp ISLog::spanStart() const noexcept {
-    uint64_t best = 0;
+    TimeStamp best = TimeStamp::fromSessionOnly(0, /*deviceId*/ 0);
     bool any = false;
     for (const auto& [_, dl] : devicesById_) {
-        const uint64_t v = dl.spanStart().value;
-        if (v == 0) continue;
-        if (!any || v < best) { best = v; any = true; }
+        const TimeStamp t = dl.spanStart();
+        if (t.value == 0) continue;
+        if (!any || t.value < best.value) { best = t; any = true; }
     }
-    return TimeStamp::fromPayloadToW(best, /*deviceId*/ 0);
+    best.deviceId = 0;
+    return best;
 }
 
 TimeStamp ISLog::spanEnd() const noexcept {
-    uint64_t best = 0;
+    TimeStamp best = TimeStamp::fromSessionOnly(0, /*deviceId*/ 0);
     bool any = false;
     for (const auto& [_, dl] : devicesById_) {
-        const uint64_t v = dl.spanEnd().value;
-        if (v == 0) continue;
-        if (!any || v > best) { best = v; any = true; }
+        const TimeStamp t = dl.spanEnd();
+        if (t.value == 0) continue;
+        if (!any || t.value > best.value) { best = t; any = true; }
     }
-    return TimeStamp::fromPayloadToW(best, /*deviceId*/ 0);
+    best.deviceId = 0;
+    return best;
 }
 
 std::vector<fs::path> ISLog::segmentPaths() const {

@@ -13,6 +13,7 @@
 
 #include "ISComm.h"
 #include "ISDataMappings.h"
+#include "core/msg_logger.h"
 #include "data_sets.h"
 
 #include <algorithm>
@@ -148,14 +149,273 @@ int64_t medianOf(std::vector<int64_t> v) {
  * UBX noise to skip, unlike `.raw`'s byte-by-byte comm scan). Same DID_SYS_PARAMS / ToW-bearing
  * logic as the `.raw` path below — see its comments for the "why" of each step.
  */
+/**
+ * @brief The device's OWN steady clock from a dual-domain payload, in ms, if it has one.
+ *
+ * Only `DID_SYS_PARAMS` and `DID_GPX_STATUS` carry an `upTime` alongside `timeOfWeekMs` — which
+ * is precisely why they are the DIDs whose stalled ToW can be repaired from first-hand evidence
+ * instead of inferred from neighbours.
+ */
+/**
+ * @brief The uptime<->ToW bridge pair out of a dual-domain payload — audit B1.
+ *
+ * `DID_SYS_PARAMS` (IMX) and `DID_GPX_STATUS` (GPX) each carry a GPS time-of-week AND the
+ * device's own uptime in one payload, which is what makes the offset between the two domains
+ * recoverable without correlating neighbours.
+ *
+ * Before this, the resolver read the pair from `DID_SYS_PARAMS` **only**, while the anchor
+ * cascade treated `DID_GPX_STATUS` as a co-equal tier-5 bridge. Segments were therefore ORDERED
+ * by one reconstruction of the offset and MEASURED by another, which D0066 forbids — one shared
+ * frame. It was latent because the corpus contains no GPX-standalone log (`probe4`: 542 segments,
+ * 539 with SYS_PARAMS, 177 with GPX_STATUS, **0 GPX-only**), so the sets never disagreed on any
+ * real data, and the cascade's GPX branch was exercised by unit tests only.
+ *
+ * The failure mode it was hiding: on a GPX-only log the cascade anchors at tier 5 while the
+ * resolver finds no offset source at all, so every record classifies `SessionOnly`, `detectGaps`
+ * skips them and reports **zero gaps on a fully-anchored log**, and per D0066 every display path
+ * treats it as unanchored.
+ *
+ * Validity is gated per device family — the GPX reports it on either of its two GNSS receivers.
+ * An invalid bit means `timeOfWeekMs` is LOCAL system time, and differencing that against uptime
+ * yields a bogus offset that corrupts the median bridge.
+ */
+struct BridgePair {
+    uint64_t towMs = 0;      //!< Claimed GPS time-of-week, ms.
+    uint64_t upMs  = 0;      //!< The device's own uptime, ms.
+    double   upSec = 0.0;    //!< Same uptime in seconds, for the reboot test.
+    bool     towValid = false;
+};
+
+std::optional<BridgePair> bridgePair(uint32_t did, const uint8_t* payload, uint32_t size) {
+    if (payload == nullptr) return std::nullopt;
+    BridgePair p;
+    if (did == DID_SYS_PARAMS && size >= sizeof(sys_params_t)) {
+        sys_params_t v{};
+        std::memcpy(&v, payload, sizeof(v));
+        p.towMs    = v.timeOfWeekMs;
+        p.upSec    = v.upTime;
+        p.towValid = (v.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
+    } else if (did == DID_GPX_STATUS && size >= sizeof(gpx_status_t)) {
+        gpx_status_t v{};
+        std::memcpy(&v, payload, sizeof(v));
+        p.towMs    = v.timeOfWeekMs;
+        p.upSec    = v.upTime;
+        p.towValid = (v.hdwStatus & (GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID |
+                                     GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID)) != 0;
+    } else {
+        return std::nullopt;
+    }
+    p.upMs = static_cast<uint64_t>(p.upSec * 1000.0);
+    return p;
+}
+
+/** @return True for a DID that carries the dual-domain bridge pair. */
+inline bool isBridgeDid(uint32_t did) noexcept {
+    return did == DID_SYS_PARAMS || did == DID_GPX_STATUS;
+}
+
+std::optional<uint64_t> ownClockMs(uint32_t did, const uint8_t* payload, uint32_t size) {
+    if (payload == nullptr) return std::nullopt;
+    if (did == DID_SYS_PARAMS && size >= sizeof(sys_params_t)) {
+        sys_params_t v{}; std::memcpy(&v, payload, sizeof(v));
+        if (v.upTime > 0.0) return static_cast<uint64_t>(v.upTime * 1000.0);
+    } else if (did == DID_GPX_STATUS && size >= sizeof(gpx_status_t)) {
+        gpx_status_t v{}; std::memcpy(&v, payload, sizeof(v));
+        if (v.upTime > 0.0) return static_cast<uint64_t>(v.upTime * 1000.0);
+    }
+    return std::nullopt;
+}
+
+/**
+ * @brief SN-8704: watches the record stream for a DID whose stamped clock stops advancing, and
+ *        simultaneously collects the timeline of sources that are still advancing.
+ *
+ * Fed by both the `.raw` and `.dat` scans so the two cannot drift apart. Holds no file and does
+ * no I/O; it is a sink, like `AnchorCollector`.
+ */
+class StallWatcher {
+public:
+    //! Consecutive identical-timestamp records from one DID before the run is reported. A few
+    //! repeats are normal for a DID emitted faster than its time field's resolution; a long run
+    //! means the clock stopped while the device kept talking.
+    static constexpr std::size_t kStallThreshold = 32;
+
+    //! Keep every Nth advancing sample. The timeline only has to be dense enough to bracket a
+    //! record; at typical rates this is a sample every few hundred ms.
+    static constexpr uint64_t kTimelineStride = 16;
+
+    //! Cap on retained own-clock samples per run. 2,107 was the motivating case; this bounds a
+    //! pathological log without touching any realistic one. Exceeding it falls back to
+    //! arrival-order bracketing rather than growing without limit.
+    static constexpr std::size_t kMaxRetimedPerRun = 500'000;
+
+    //! Cadence samples retained per DID. A median needs far fewer than this.
+    static constexpr std::size_t kMaxCadenceSamples = 256;
+
+    void observe(uint32_t did, uint64_t arrivalIndex, uint64_t recordTsMs,
+                 const uint8_t* payload = nullptr, uint32_t payloadSize = 0,
+                 uint32_t logTimeOffsetMs = 0) {
+        if (recordTsMs == 0) return;
+        const auto domain = cISDataMappings::TimestampDomain(did);
+
+        // ---- Collective timeline: admit a ToW sample only when it ADVANCES. A stalled source
+        // repeats one value, so it can never advance past the last admitted sample and excludes
+        // itself by construction -- no retroactive fix-up needed once a run is recognized.
+        if (domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW &&
+            recordTsMs > lastTimelineTow_) {
+            if (timelineCounter_++ % kTimelineStride == 0 || timeline_.empty()) {
+                timeline_.emplace_back(arrivalIndex, recordTsMs);
+            }
+            lastTimelineTow_ = recordTsMs;
+        }
+
+        // ---- Per-DID stall tracking.
+        //
+        // Copilot review, #1316: a DID that declares NO timestamp domain must not enter stall
+        // tracking at all. The `recordTsMs == 0` guard above is not enough, because the live
+        // writer deliberately parks the record's `log_time_offset_ms` in the `timestamp` field
+        // for a timeless DID (DeviceLog.cpp) — a NON-zero value that repeats freely. Measured on
+        // a real fixture: all 41 records shared `offsetMs = 5`. That is indistinguishable from a
+        // frozen clock here, so a timeless DID could form a false `kStallThreshold`-long run and
+        // drag unrelated data into a repair. Its `timestamp` is not a clock and cannot stall.
+        if (domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE) return;
+
+        const auto own = ownClockMs(did, payload, payloadSize);
+        auto& st = perDid_[did];
+        if (st.count == 0 || recordTsMs != st.lastTsMs) {
+            // The clock advanced: this interval is evidence of the DID's own cadence, which is
+            // what lets a stalled DID with no companion uptime still be re-timed from first-hand
+            // evidence rather than from the global record rate.
+            if (st.count != 0 && recordTsMs > st.lastTsMs &&
+                st.advanceDeltas.size() < kMaxCadenceSamples) {
+                st.advanceDeltas.push_back(recordTsMs - st.lastTsMs);
+            }
+            closeRun(did, st);
+            // This record's clock is advancing, so it is the last HEALTHY pairing we have seen:
+            // remember it, because the repair offset is anchored on it (giving a zero-ms seam
+            // where the good data meets the rebuilt data).
+            if (own) { st.lastHealthyTow = recordTsMs; st.lastHealthyOwn = *own; }
+            st.lastTsMs      = recordTsMs;
+            st.runStart      = arrivalIndex;
+            st.runEnd        = arrivalIndex;
+            st.runLen        = 1;
+            st.count         = 1;
+            st.ownSamples.clear();
+            st.runArrivals.clear();
+            st.localSamples.clear();
+            if (own) st.ownSamples.emplace_back(arrivalIndex, *own);
+            if (logTimeOffsetMs != 0) st.localSamples.emplace_back(arrivalIndex, logTimeOffsetMs);
+            st.runArrivals.push_back(arrivalIndex);
+            return;
+        }
+        ++st.count;
+        ++st.runLen;
+        st.runEnd = arrivalIndex;
+        if (own && st.ownSamples.size() < kMaxRetimedPerRun) {
+            st.ownSamples.emplace_back(arrivalIndex, *own);
+        }
+        if (st.runArrivals.size() < kMaxRetimedPerRun) st.runArrivals.push_back(arrivalIndex);
+        if (logTimeOffsetMs != 0 && st.localSamples.size() < kMaxRetimedPerRun) {
+            st.localSamples.emplace_back(arrivalIndex, logTimeOffsetMs);
+        }
+    }
+
+    //! Close any run still open at end-of-log. A stall that runs to the last record -- the
+    //! customer case -- would otherwise never be reported.
+    void finish() {
+        for (auto& [did, st] : perDid_) closeRun(did, st);
+    }
+
+    std::vector<ISTimeResolver::StalledRun> takeRuns() { return std::move(runs_); }
+    std::vector<std::pair<uint64_t, uint64_t>> takeTimeline() { return std::move(timeline_); }
+
+private:
+    struct DidState {
+        uint64_t    lastTsMs  = 0;
+        uint64_t    runStart  = 0;
+        uint64_t    runEnd    = 0;
+        std::size_t runLen    = 0;
+        std::size_t count     = 0;
+        //! `(arrivalIndex, ownClockMs)` for the run in progress, when the DID has an own clock.
+        std::vector<std::pair<uint64_t, uint64_t>> ownSamples;
+        //! Arrival indices of the run in progress. Needed for the cadence ruler, which has no
+        //! per-record evidence and so must map arrivalIndex -> ordinal within the run.
+        std::vector<uint64_t> runArrivals;
+        //! Inter-record intervals observed while THIS DID's clock was still advancing. The
+        //! median is the cadence ruler. Bounded -- a few hundred samples is ample for a median.
+        std::vector<uint64_t> advanceDeltas;
+        //! The last pairing seen while this DID's clock was still ADVANCING -- the repair anchor.
+        uint64_t    lastHealthyTow = 0;
+        uint64_t    lastHealthyOwn = 0;
+        //! `(arrivalIndex, log_time_offset_ms)` for the run in progress, when the index has them.
+        std::vector<std::pair<uint64_t, uint64_t>> localSamples;
+    };
+
+    void closeRun(uint32_t did, DidState& st) {
+        if (st.runLen >= kStallThreshold) {
+            ISTimeResolver::StalledRun r;
+            r.did          = did;
+            r.stalledTsMs  = st.lastTsMs;
+            r.arrivalStart = st.runStart;
+            r.arrivalEnd   = st.runEnd;
+            r.recordCount  = st.runLen;
+            // Copilot review, #1316: carry the stalled DID's OWN arrival indices, so `resolve()`
+            // can tell a member of the run from another DID's record that merely arrived inside
+            // the same window.
+            r.arrivals     = st.runArrivals;
+            ISTimeResolver::StallEvidence ev;
+            ev.runArrivals       = st.runArrivals;
+            ev.stalledTsMs       = st.lastTsMs;
+            ev.ownSamples        = st.ownSamples;
+            ev.lastHealthyOwnMs  = st.lastHealthyOwn;
+            ev.advanceDeltas     = st.advanceDeltas;
+            ev.logTimeOffsets       = st.localSamples;
+            r.retimed = ISTimeResolver::planStallRetiming(ev, r.ruler);
+
+            // Copilot review, #1316: when the run outgrew the retention cap, `runArrivals` (and
+            // the sample vectors built alongside it) stopped growing while `runLen`/`runEnd` kept
+            // going. The resulting `retimed` covers only the first `kMaxRetimedPerRun` records,
+            // and `resolve()`'s nearest-preceding fallback then hands every later arrival the
+            // LAST planned value -- silently collapsing the tail of a pathological stall onto the
+            // cap boundary. Partial evidence is not a ruler: drop it and let the resolver bracket
+            // against the collective timeline, which is the documented no-evidence path.
+            if (st.runLen > st.runArrivals.size()) {
+                log_warn(IS_LOG_ISLOG,
+                         "stalled DID %u: run of %zu record(s) exceeds the %zu-record evidence cap; "
+                         "discarding the partial ruler and bracketing instead",
+                         did, st.runLen, kMaxRetimedPerRun);
+                r.retimed.clear();
+                r.ruler = ISTimeResolver::StalledRun::Ruler::None;
+            }
+            runs_.push_back(r);
+        }
+        st.runLen = 0;
+        st.ownSamples.clear();
+        st.runArrivals.clear();
+        st.localSamples.clear();
+    }
+
+    std::map<uint32_t, DidState>                perDid_;
+    std::vector<ISTimeResolver::StalledRun>     runs_;
+    std::vector<std::pair<uint64_t, uint64_t>>  timeline_;
+    uint64_t                                    lastTimelineTow_ = 0;
+    uint64_t                                    timelineCounter_ = 0;
+};
+
 void scanSegmentForSyncsDat(const ISLogReader& reader,
                             uint64_t deviceId,
                             std::vector<ISSyncPoint>& out,
                             std::vector<int64_t>& upOffsetsOut,
                             uint64_t& arrivalIndex,
                             double& prevUpTimeSec,
-                            std::vector<SessionAccum>& sessAccum) {
+                            std::vector<SessionAccum>& sessAccum,
+                            StallWatcher& stalls) {
     uint64_t lastNonSyncHostTimeMs = 0;
+    // SN-8704: only trust log_time_offset_ms when the index DECLARES it. A reader-rebuilt index
+    // leaves the flag clear and the field zero, and reading zeros as receipt times would be
+    // worse than having none.
+    const bool haveLogTimeOffset =
+        (reader.header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET) != 0;
 
     for (auto v : reader.allRecords()) {
         const auto bytes = v.bytes();
@@ -166,21 +426,32 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
         const uint8_t* payloadPtr = bytes.first + sizeof(p_data_hdr_t);
 
         const uint64_t thisArrival = arrivalIndex++;
+        // D0096: pass the offset ONLY when it was observed. A reconstructed one is derived
+        // from the payload clock, so it cannot corroborate that clock -- during a stall the
+        // payload timestamps are frozen and the reconstruction is flat exactly where the
+        // correction is needed. Withholding it here drops this run to the next ruler
+        // (own-clock, then cadence), which is the honest outcome.
+        const bool observedOffset =
+            haveLogTimeOffset &&
+            (v.flags() & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) == 0;
+        stalls.observe(hdr.id, thisArrival, v.timestamp().value, payloadPtr, hdr.size,
+                       observedOffset ? v.logTimeOffsetMs() : 0u);
 
-        if (hdr.id == DID_SYS_PARAMS && hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
-            sys_params_t sp2{};
-            std::memcpy(&sp2, payloadPtr, sizeof(sp2));
-            if (sp2.upTime > 0.0) {
-                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+        // Audit B1: either bridge DID, via the shared extractor -- the resolver used to read the
+        // pair from DID_SYS_PARAMS only while the cascade accepted DID_GPX_STATUS as co-equal.
+        if (isBridgeDid(hdr.id) && hdr.offset == 0) {
+          if (const auto bp = bridgePair(hdr.id, payloadPtr, hdr.size)) {
+            if (bp->upSec > 0.0) {
+                if (prevUpTimeSec >= 0.0 && bp->upSec < prevUpTimeSec - 0.5) {
                     sessAccum.push_back(SessionAccum{ thisArrival, {} });
                 }
-                prevUpTimeSec = sp2.upTime;
+                prevUpTimeSec = bp->upSec;
             }
-            const bool towValid =
-                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
-            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
-                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
-                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+            const bool towValid = bp->towValid;
+            const auto& sp2 = *bp;
+            if (towValid && sp2.towMs > 0 && sp2.upSec > 0.0) {
+                const int64_t off = static_cast<int64_t>(sp2.towMs)
+                                  - static_cast<int64_t>(sp2.upMs);
                 upOffsetsOut.push_back(off);
                 if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);
             }
@@ -194,15 +465,16 @@ void scanSegmentForSyncsDat(const ISLogReader& reader,
             // gpsWeek: sys_params_t carries no week field, unlike ins_x_t/gnss_pos_t, so this
             // sync point can bridge host-uptime->ToW but never itself supply the epoch anchor
             // (chooseAnchorWeek skips week==0 candidates).
-            if (towValid && sp2.timeOfWeekMs > 0) {
+            if (towValid && sp2.towMs > 0) {
                 ISSyncPoint sysSp{};
-                sysSp.hostTimeMs       = sp2.timeOfWeekMs;
-                sysSp.payloadToWMs     = sp2.timeOfWeekMs;
+                sysSp.hostTimeMs       = sp2.towMs;
+                sysSp.payloadToWMs     = sp2.towMs;
                 sysSp.deviceId         = deviceId;
-                sysSp.sourceDid        = DID_SYS_PARAMS;
+                sysSp.sourceDid        = hdr.id;   // B1: SYS_PARAMS or GPX_STATUS
                 sysSp.actualHostTimeMs = lastNonSyncHostTimeMs;
                 out.push_back(sysSp);
             }
+          }
         }
 
         const double tsSec = cISDataMappings::Timestamp(&hdr, payloadPtr);
@@ -237,11 +509,13 @@ void scanSegmentForSyncs(const ISLogReader& reader,
                          std::vector<int64_t>& upOffsetsOut,
                          uint64_t& arrivalIndex,
                          double& prevUpTimeSec,
-                         std::vector<SessionAccum>& sessAccum) {
+                         std::vector<SessionAccum>& sessAccum,
+                         StallWatcher& stalls) {
     // D-119 / SN-8626: .dat has no wire protocol for this function's is_comm_parse_byte scan to
     // find anything in — route to the .dat-native equivalent instead.
     if (reader.format() == ISLogReader::SegmentFormat::Dat) {
-        scanSegmentForSyncsDat(reader, deviceId, out, upOffsetsOut, arrivalIndex, prevUpTimeSec, sessAccum);
+        scanSegmentForSyncsDat(reader, deviceId, out, upOffsetsOut, arrivalIndex, prevUpTimeSec,
+                               sessAccum, stalls);
         return;
     }
 
@@ -259,6 +533,15 @@ void scanSegmentForSyncs(const ISLogReader& reader,
     // a newer non-sync time arrives.
     uint64_t lastNonSyncHostTimeMs = 0;
 
+    // SN-8704: only trust log_time_offset_ms when the index DECLARES it (see the .dat note).
+    const bool haveLogTimeOffset =
+        (reader.header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET) != 0;
+    // The byte walk has no ISRecordView, so step the segment's index records in lockstep. Both
+    // this walk and buildIndexFromScan emit ISB packets in file order, which is the same
+    // invariant the arrival index itself rests on -- verified equal across 125 corpus segments
+    // (ISB-only parse == all-protocol parse == recordCount()).
+    std::size_t segOrdinal = 0;
+
     for (std::size_t i = 0; i < bytes.second; ++i) {
         protocol_type_t p = is_comm_parse_byte(&comm, bytes.first[i]);
         if (p != _PTYPE_INERTIAL_SENSE_DATA && p != _PTYPE_INERTIAL_SENSE_CMD) {
@@ -268,6 +551,23 @@ void scanSegmentForSyncs(const ISLogReader& reader,
         // SN-8339: global record-arrival index (matches ISDeviceLog's ISB-only,
         // arrival-ordered record stream — both parse the same .raw for ISB).
         const uint64_t thisArrival = arrivalIndex++;
+        {
+            // Same value the index build stamps for this record -- Timestamp(), never
+            // TimestampOrCurrentTime() (D0069 #1).
+            const double   tsSec = cISDataMappings::Timestamp(&hdr, comm.rxPkt.data.ptr);
+            uint32_t localMs = 0;
+            // D0096: observed offsets only -- see the note on the other scan path. A
+            // reconstructed offset comes FROM the payload clock and so cannot be used to
+            // correct it.
+            if (haveLogTimeOffset && segOrdinal < reader.recordCount()
+                && (reader.recordAt(segOrdinal).flags()
+                        & idx::IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET) == 0) {
+                localMs = reader.recordAt(segOrdinal).logTimeOffsetMs();
+            }
+            stalls.observe(hdr.id, thisArrival, static_cast<uint64_t>(tsSec * 1000.0),
+                           static_cast<const uint8_t*>(comm.rxPkt.data.ptr), hdr.size, localMs);
+            ++segOrdinal;
+        }
 
         // SN-8323 (uptime unification): DID_SYS_PARAMS carries BOTH the GPS
         // time-of-week (timeOfWeekMs) and the definitive system uptime (upTime,
@@ -278,45 +578,47 @@ void scanSegmentForSyncs(const ISLogReader& reader,
         // GPS lock). This replaces the fragile per-sync actualHostTimeMs
         // heuristic. (Kyle 2026-07-23: SYS_PARAMS.upTime is the definitive
         // relative uptime; GNSS/INS are the accurate absolute clock.)
-        if (hdr.id == DID_SYS_PARAMS && comm.rxPkt.data.ptr &&
-            hdr.offset == 0 && hdr.size >= sizeof(sys_params_t)) {
-            sys_params_t sp2{};
-            std::memcpy(&sp2, comm.rxPkt.data.ptr, sizeof(sp2));
-            // SN-8339: a SYS_PARAMS.upTime that DROPS relative to the previous
-            // SYS_PARAMS (in arrival order) means the device rebooted — open a
-            // new power-on session starting at this record. (Checked on every
-            // SYS_PARAMS, regardless of GPS-time validity, since a fresh boot is
-            // typically pre-fix.)
-            if (sp2.upTime > 0.0) {
-                if (prevUpTimeSec >= 0.0 && sp2.upTime < prevUpTimeSec - 0.5) {
+        // Audit B1: either bridge DID, through the shared extractor. This read the pair from
+        // DID_SYS_PARAMS only, while the anchor cascade accepted DID_GPX_STATUS as a co-equal
+        // tier-5 bridge -- so a GPX-standalone log would be ORDERED by an offset the resolver
+        // could not find, leaving every record SessionOnly on a fully-anchored log. See
+        // `bridgePair` for the measurements and the failure mode.
+        if (isBridgeDid(hdr.id) && comm.rxPkt.data.ptr && hdr.offset == 0) {
+          if (const auto bp = bridgePair(hdr.id, static_cast<const uint8_t*>(comm.rxPkt.data.ptr),
+                                          hdr.size)) {
+            // SN-8339: an upTime that DROPS relative to the previous bridge record (in arrival
+            // order) means the device rebooted — open a new power-on session starting at this
+            // record. Checked regardless of GPS-time validity, since a fresh boot is typically
+            // pre-fix.
+            if (bp->upSec > 0.0) {
+                if (prevUpTimeSec >= 0.0 && bp->upSec < prevUpTimeSec - 0.5) {
                     sessAccum.push_back(SessionAccum{ thisArrival, {} });
                 }
-                prevUpTimeSec = sp2.upTime;
+                prevUpTimeSec = bp->upSec;
             }
-            // Only trust timeOfWeekMs as GPS ToW when the device says so:
-            // HDW_STATUS_GNSS_TIME_OF_WEEK_VALID. Otherwise timeOfWeekMs is
-            // LOCAL system time (uptime-like), and differencing it against
-            // upTime yields a bogus offset that corrupts the median bridge.
-            const bool towValid =
-                (sp2.hdwStatus & HDW_STATUS_GNSS_TIME_OF_WEEK_VALID) != 0;
-            if (towValid && sp2.timeOfWeekMs > 0 && sp2.upTime > 0.0) {
-                const int64_t upMs = static_cast<int64_t>(sp2.upTime * 1000.0);
-                const int64_t off  = static_cast<int64_t>(sp2.timeOfWeekMs) - upMs;
+            // Only trust timeOfWeekMs as GPS ToW when the device says so. Otherwise it is LOCAL
+            // system time (uptime-like), and differencing it against upTime yields a bogus offset
+            // that corrupts the median bridge.
+            const bool towValid = bp->towValid;
+            if (towValid && bp->towMs > 0 && bp->upSec > 0.0) {
+                const int64_t off = static_cast<int64_t>(bp->towMs)
+                                  - static_cast<int64_t>(bp->upMs);
                 upOffsetsOut.push_back(off);                       // global (SN-8323) offset samples
                 if (!sessAccum.empty()) sessAccum.back().upOffsets.push_back(off);  // per-session (SN-8339)
             }
-            // Kyle 2026-09-07 (Option A) -- same rationale as scanSegmentForSyncsDat's mirror of
-            // this block: DID_SYS_PARAMS wasn't in kToWBearingDids, so even a synced record never
-            // became a sync point itself, only used to calibrate OTHER DIDs' bridge. Push it too.
-            if (towValid && sp2.timeOfWeekMs > 0) {
+            // Kyle 2026-09-07 (Option A): a bridge record was never a sync point itself, only
+            // used to calibrate OTHER DIDs' bridge, so a log whose ONLY valid GPS time came from
+            // one had zero sync points. Push it too.
+            if (towValid && bp->towMs > 0) {
                 ISSyncPoint sysSp{};
-                sysSp.hostTimeMs       = sp2.timeOfWeekMs;
-                sysSp.payloadToWMs     = sp2.timeOfWeekMs;
+                sysSp.hostTimeMs       = bp->towMs;
+                sysSp.payloadToWMs     = bp->towMs;
                 sysSp.deviceId         = deviceId;
-                sysSp.sourceDid        = DID_SYS_PARAMS;
+                sysSp.sourceDid        = hdr.id;   // B1: SYS_PARAMS or GPX_STATUS
                 sysSp.actualHostTimeMs = lastNonSyncHostTimeMs;
                 out.push_back(sysSp);
             }
+          }
         }
 
         // Probe every record for a payload-side timestamp. ToW-bearing
@@ -559,7 +861,9 @@ std::vector<ISSyncPoint> ISTimeResolver::detectSyncPoints(const ISDeviceLog& log
 
 std::vector<ISSyncPoint> ISTimeResolver::detectSyncPointsImpl(
     const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut,
-    std::vector<Session>& sessionsOut) {
+    std::vector<Session>& sessionsOut,
+    std::vector<StalledRun>* stalledOut,
+    std::vector<std::pair<uint64_t, uint64_t>>* timelineOut) {
     std::vector<ISSyncPoint> out;
     const uint64_t deviceId = log.deviceId();
 
@@ -570,11 +874,17 @@ std::vector<ISSyncPoint> ISTimeResolver::detectSyncPointsImpl(
     double   prevUpTimeSec = -1.0;
     std::vector<SessionAccum> sessAccum;
     sessAccum.push_back(SessionAccum{ 0, {} });
+    StallWatcher stalls;
 
     for (std::size_t s = 0; s < log.segmentCount(); ++s) {
         scanSegmentForSyncs(log.segment(s), deviceId, out, upOffsetsOut,
-                            arrivalIndex, prevUpTimeSec, sessAccum);
+                            arrivalIndex, prevUpTimeSec, sessAccum, stalls);
     }
+    // A stall that runs to the final record -- the customer case -- is only reportable once the
+    // scan ends, so close any run still open.
+    stalls.finish();
+    if (stalledOut)  *stalledOut  = stalls.takeRuns();
+    if (timelineOut) *timelineOut = stalls.takeTimeline();
 
     // Finalize sessions: arrivalEnd = next session's start - 1 (last record for
     // the final session); per-session offset = median of its own SYS_PARAMS
@@ -626,7 +936,9 @@ ISExpected<ISTimeResolver>
 ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
     std::vector<int64_t> upOffsets;
     std::vector<Session> sessions;
-    auto syncs = detectSyncPointsImpl(log, upOffsets, sessions);
+    std::vector<StalledRun> stalled;
+    std::vector<std::pair<uint64_t, uint64_t>> towTimeline;
+    auto syncs = detectSyncPointsImpl(log, upOffsets, sessions, &stalled, &towTimeline);
 
     std::vector<Discontinuity> discs;
     if (syncs.size() >= 3) {
@@ -702,11 +1014,131 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
         }
     }
 
-    return ISTimeResolver{ std::move(syncs), std::move(discs), anchorWeek,
-                           anchorTowStart, anchorTowEnd,
-                           uptimeToTowOffsetMs, haveUptimeOffset,
-                           fileAnchorMs, haveFileAnchor,
-                           std::move(sessions) };
+    ISTimeResolver r{ std::move(syncs), std::move(discs), anchorWeek,
+                      anchorTowStart, anchorTowEnd,
+                      uptimeToTowOffsetMs, haveUptimeOffset,
+                      fileAnchorMs, haveFileAnchor,
+                      std::move(sessions) };
+    // SN-8704: assigned rather than threaded through the constructor -- these are diagnostic
+    // state, not part of the resolve identity, and the ctor is already ten arguments deep.
+    r.stalledRuns_  = std::move(stalled);
+    r.towTimeline_  = std::move(towTimeline);
+
+    // SN-8704: decide, per run, whether the device's OWN clock may serve as the ruler.
+    //
+    // Kyle's rule: do not trust the concussed witness -- but once independent witnesses
+    // corroborate its account, its detailed account is the best source available. So the
+    // collective timeline decides WHETHER to trust; the device's own counter then decides WHERE
+    // each record goes, because it has 0.5 s resolution while arrival-order bracketing skews
+    // wherever the record rate shifts (and it shifts exactly at a stall -- the GNSS DIDs stop).
+    for (auto& run : r.stalledRuns_) {
+        if (run.retimed.size() < 2 || r.towTimeline_.size() < 2) continue;
+        const uint64_t ownDelta = run.retimed.back().second - run.retimed.front().second;
+        const uint64_t tlStart  = interpolateArrivalTime(r.towTimeline_, run.arrivalStart);
+        const uint64_t tlEnd    = interpolateArrivalTime(r.towTimeline_, run.arrivalEnd);
+        if (tlEnd <= tlStart || ownDelta == 0) { run.retimed.clear(); continue; }
+        const uint64_t tlDelta = tlEnd - tlStart;
+        run.rulerRatio = static_cast<double>(ownDelta) / static_cast<double>(tlDelta);
+        // 5% is generous for an oscillator but tight enough to reject a clock that is not
+        // actually tracking real time. The motivating case measured 1.0016.
+        run.rulerCorroborated = (run.rulerRatio > 0.95 && run.rulerRatio < 1.05);
+        if (!run.rulerCorroborated) {
+            log_warn(IS_LOG_ISLOG,
+                     "ISTimeResolver: DID %u %s ruler advanced %llu ms while the collective "
+                     "timeline advanced %llu ms (ratio %.4f) -- NOT corroborated, falling back "
+                     "to arrival-order bracketing",
+                     run.did,
+                     run.ruler == StalledRun::Ruler::LogTimeOffset ? "idx-local-delta"
+                         : run.ruler == StalledRun::Ruler::OwnClock ? "own-clock" : "cadence",
+                     (unsigned long long)ownDelta, (unsigned long long)tlDelta, run.rulerRatio);
+            run.retimed.clear();
+            run.ruler = StalledRun::Ruler::None;
+        }
+    }
+
+    if (!r.stalledRuns_.empty()) {
+        for (const auto& run : r.stalledRuns_) {
+            log_warn(IS_LOG_ISLOG,
+                     "ISTimeResolver: DID %u stamped clock STALLED at %llu ms for %zu records "
+                     "(arrival %llu..%llu) -- those records will be re-timed against the "
+                     "collective timeline, not their own clock",
+                     run.did, (unsigned long long)run.stalledTsMs, run.recordCount,
+                     (unsigned long long)run.arrivalStart, (unsigned long long)run.arrivalEnd);
+        }
+    }
+    return r;
+}
+
+std::vector<std::pair<uint64_t, uint64_t>>
+ISTimeResolver::planStallRetiming(const StallEvidence& ev, StalledRun::Ruler& outKind) {
+    outKind = StalledRun::Ruler::None;
+    std::vector<std::pair<uint64_t, uint64_t>> out;
+    if (ev.runArrivals.size() < 2) return out;
+
+    // MOST PREFERRED: the .idx per-record receipt delta. This is the WHEN, stamped for every
+    // record regardless of DID, so it needs no payload field and no assumption about output
+    // rate. The run's first record is still healthy, so its delta is the zero point.
+    if (ev.logTimeOffsets.size() >= 2) {
+        const uint64_t base = ev.logTimeOffsets.front().second;
+        out.reserve(ev.logTimeOffsets.size());
+        for (const auto& [arr, local] : ev.logTimeOffsets) {
+            out.emplace_back(arr, ev.stalledTsMs + (local >= base ? local - base : 0));
+        }
+        outKind = StalledRun::Ruler::LogTimeOffset;
+        return out;
+    }
+
+    // NEXT: the DID's own companion uptime, one answer per record. Projected into the ToW
+    // frame through the run's first (still-healthy) pairing, so the seam is exact.
+    if (ev.lastHealthyOwnMs != 0 && ev.ownSamples.size() >= 2) {
+        const int64_t off = static_cast<int64_t>(ev.stalledTsMs) -
+                            static_cast<int64_t>(ev.lastHealthyOwnMs);
+        out.reserve(ev.ownSamples.size());
+        for (const auto& [arr, own] : ev.ownSamples) {
+            out.emplace_back(arr, static_cast<uint64_t>(static_cast<int64_t>(own) + off));
+        }
+        outKind = StalledRun::Ruler::OwnClock;
+        return out;
+    }
+
+    // GENERAL FALLBACK: 25 of the 27 ToW-bearing record types have no companion uptime, so most
+    // stalls land here. The DID's own median inter-record interval, applied uniformly, assumes
+    // only that its output rate is steady -- far weaker than assuming the GLOBAL record rate is
+    // steady, which is what arrival-order bracketing needs and which a stall routinely breaks
+    // (the GNSS DIDs stop emitting at the same instant the clock freezes).
+    if (!ev.advanceDeltas.empty()) {
+        std::vector<uint64_t> d = ev.advanceDeltas;
+        std::sort(d.begin(), d.end());
+        const uint64_t cadence = d[d.size() / 2];
+        if (cadence > 0) {
+            out.reserve(ev.runArrivals.size());
+            for (std::size_t k = 0; k < ev.runArrivals.size(); ++k) {
+                out.emplace_back(ev.runArrivals[k],
+                                 ev.stalledTsMs + static_cast<uint64_t>(k) * cadence);
+            }
+            outKind = StalledRun::Ruler::Cadence;
+        }
+    }
+    return out;
+}
+
+uint64_t ISTimeResolver::interpolateArrivalTime(
+    const std::vector<std::pair<uint64_t, uint64_t>>& anchors, uint64_t arrivalIndex) {
+    // Lifted from Logalyzer's RawSeriesBuilder (SN-8131). Precondition: non-empty, ascending.
+    if (anchors.empty()) return 0;
+    auto hi = std::lower_bound(
+        anchors.begin(), anchors.end(), arrivalIndex,
+        [](const std::pair<uint64_t, uint64_t>& a, uint64_t k) { return a.first < k; });
+    if (hi == anchors.begin()) return anchors.front().second;   // at/before the first anchor
+    if (hi == anchors.end())   return anchors.back().second;    // after the last anchor
+    const auto& lo = *(hi - 1);
+    const auto& up = *hi;
+    const uint64_t span = up.first - lo.first;
+    if (span == 0) return lo.second;
+    const double frac = static_cast<double>(arrivalIndex - lo.first) /
+                        static_cast<double>(span);
+    return lo.second + static_cast<uint64_t>(
+               (static_cast<double>(up.second) - static_cast<double>(lo.second)) * frac);
 }
 
 // ============================================================
@@ -888,16 +1320,61 @@ TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
                                           TimeConfidence::Interpolated);
 }
 
-TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId) const {
-    // No arrival key: bridge with the log-global uptime offset. Byte-identical
-    // to the pre-SN-8339 single-offset behavior — every existing caller keeps
-    // its exact results and multi-boot logs simply use one offset (best effort).
-    return resolveImpl(hostTimeMs, deviceId, uptimeToTowOffsetMs_,
-                       haveUptimeOffset_);
-}
-
 TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
                                   uint64_t arrivalIndex) const {
+    // SN-8704: does this record belong to a run where its DID's stamped clock had STOPPED?
+    // If so its own timestamp is worthless -- every record in the run carries the same frozen
+    // value, which is what collapses a whole device's tail onto one instant. Re-time it from
+    // its position among the witnesses that were still working, rather than believing it.
+    //
+    // This is checked BEFORE the session/offset logic below because the input `hostTimeMs` is
+    // the very value we have decided not to trust; bridging it would just launder a known-bad
+    // number through an otherwise-correct offset.
+    if (!stalledRuns_.empty() && !towTimeline_.empty() &&
+        arrivalIndex != ISRecordView::kNoArrivalIndex) {
+        for (const auto& run : stalledRuns_) {
+            if (arrivalIndex < run.arrivalStart || arrivalIndex > run.arrivalEnd) continue;
+            // Copilot review, #1316: the interval test above is necessary but NOT sufficient. A
+            // stall belongs to ONE DID, and every other DID's record arriving inside its window
+            // was being re-timed as though its own clock were frozen -- throwing away a good
+            // timestamp for an interpolation. On the customer capture a GPX_STATUS stall spanning
+            // 959 s would have re-timed every PIMU and INS record in that window.
+            //
+            // `resolve()` has no DID parameter (and adding one would change every caller), so
+            // membership is tested against the stalled DID's OWN arrival indices instead.
+            // `run.arrivals` is ascending, so this is a binary search.
+            if (!std::binary_search(run.arrivals.begin(), run.arrivals.end(), arrivalIndex)) {
+                continue;
+            }
+            // Prefer the device's own corroborated clock; fall back to bracketing against the
+            // collective timeline when it has none or it could not be corroborated.
+            uint64_t towMs = 0;
+            if (!run.retimed.empty()) {
+                const auto it = std::lower_bound(
+                    run.retimed.begin(), run.retimed.end(), arrivalIndex,
+                    [](const std::pair<uint64_t, uint64_t>& a, uint64_t k) { return a.first < k; });
+                if (it != run.retimed.end() && it->first == arrivalIndex) {
+                    towMs = it->second;
+                } else if (it != run.retimed.begin()) {
+                    towMs = (it - 1)->second;   // a record of another DID inside the run's span
+                }
+            }
+            if (towMs == 0) towMs = interpolateArrivalTime(towTimeline_, arrivalIndex);
+            if (towMs == 0) break;
+            // Same epoch-anchoring rule the normal path uses (SN-8323): project onto Unix ms
+            // via the durable-fix week when there is one, else stay in the ToW frame. Using a
+            // different rule here would put re-timed records in a different frame from their
+            // healthy neighbours -- the exact D0066 violation this work exists to remove.
+            const uint64_t absMs = (anchorWeek_ != 0) ? gpsToUnixMs(anchorWeek_, towMs) : towMs;
+            // Reconstructed, and forward of the last anchor this device itself supplied --
+            // exactly what {ResolvedViaSync, ExtrapolatedForward} means. D-58's dashed
+            // rendering keys off confidence, so these draw as reconstructed for free rather
+            // than passing for measured.
+            return TimeStamp::fromResolvedViaSync(absMs, deviceId,
+                                                  TimeConfidence::ExtrapolatedForward);
+        }
+    }
+
     // SN-8339: with a known arrival index and more than one power-on session,
     // pick the session whose arrival range covers this record and bridge with
     // that session's own offset. A single-session log (the common case) is
@@ -918,7 +1395,8 @@ TimeStamp ISTimeResolver::resolve(uint64_t hostTimeMs, uint64_t deviceId,
 ISTimeResolver::Stats ISTimeResolver::computeStats(const ISDeviceLog& log) const {
     Stats s{};
     for (auto v : log.allRecords()) {
-        const TimeStamp t = resolve(v.timestamp().value, log.deviceId());
+        const TimeStamp t = resolve(v.timestamp().value, log.deviceId(),
+                                    v.arrivalIndex());
         switch (t.confidence) {
             case TimeConfidence::Exact:                ++s.exact;        break;
             case TimeConfidence::Interpolated:         ++s.interpolated; break;

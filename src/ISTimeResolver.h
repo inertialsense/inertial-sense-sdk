@@ -15,7 +15,7 @@
  *   - **Sync records** (HAS_TOW=1): stored timestamp = payload ToW
  *     (ms). These are the anchor points.
  *   - **Non-sync records** (HAS_TOW=0): stored timestamp = host
- *     uptime delta (ms since logger session start).
+ *     uptime-domain time-offset (ms since logger session start).
  * These two clusters typically don't overlap on the same numeric
  * axis (host uptime is a few seconds; ToW is ~hundreds of millions
  * of ms into the GPS week). The host-side timestamp at sync time is
@@ -41,6 +41,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 namespace inertial_sense {
@@ -90,6 +91,97 @@ public:
         uint64_t arrivalEnd          = 0;      //!< last record's global arrival index (inclusive)
         int64_t  uptimeToTowOffsetMs = 0;      //!< this session's median uptime->ToW offset
         bool     haveOffset          = false;  //!< a synced SYS_PARAMS gave this session an offset
+    };
+
+    /**
+     * @brief SN-8704: a run of records whose DID's stamped clock STOPPED while the rest of the
+     *        log kept advancing.
+     *
+     * A device that loses its time source can keep running and keep emitting — reporting the
+     * last time-of-week it knew, forever. Because a record's index timestamp IS that field, every
+     * such record lands on one instant, and the whole tail of the device's data collapses onto a
+     * single point on the timeline. Observed on a customer capture: a GPX lost GNSS and 2,107
+     * `DID_GPX_STATUS` records across four segments all carry ToW 342,615,500 while the IMX
+     * clock advanced 16 real minutes beside them.
+     *
+     * The records are not wrong about anything except *when* — they are retained, ordered, and
+     * their payloads are intact. So rather than plotting them on top of each other, the resolver
+     * distrusts the stalled field and re-times them against the collective timeline of the
+     * witnesses that were still working. See `interpolateArrivalTime`.
+     *
+     * @note The detectable signature is "stamped time static while the log advances". NOT "the
+     *       payload's time leaps" — in the observed case the device's own `upTime` advances a
+     *       tidy 0.501 s per record throughout, so a leap test never fires.
+     */
+    struct StalledRun {
+        uint32_t    did           = 0;      //!< DID whose stamped clock stopped.
+        uint64_t    stalledTsMs   = 0;      //!< The frozen value every record in the run carries.
+        uint64_t    arrivalStart  = 0;      //!< First affected record's arrival index (inclusive).
+        uint64_t    arrivalEnd    = 0;      //!< Last affected record's arrival index (inclusive).
+        std::size_t recordCount   = 0;      //!< Records in the run.
+
+        /**
+         * @brief Arrival indices of the STALLED DID's own records in this run, ascending.
+         *
+         * Copilot review, #1316: the repair used to be selected by arrival INTERVAL alone
+         * (`arrivalStart <= i <= arrivalEnd`), so every OTHER DID's record arriving inside a
+         * stalled DID's window was re-timed as though its own clock were frozen — discarding a
+         * perfectly good timestamp in favour of an interpolation. A stall belongs to one DID;
+         * membership here is what says so, and `resolve()` has no DID parameter to test instead.
+         *
+         * Truncated to `kMaxRetimedPerRun`; when that happens the ruler is invalidated (see
+         * `ruler`), because partial evidence must not be presented as a complete one.
+         */
+        std::vector<uint64_t> arrivals;
+
+        //! Which evidence supplied the replacement times in `retimed`.
+        enum class Ruler : uint8_t {
+            None,        //!< Nothing usable; the resolver brackets against the collective timeline.
+            Cadence,     //!< The DID's own pre-stall inter-record interval, applied uniformly.
+            OwnClock,    //!< The DID's own companion uptime, per record.
+            LogTimeOffset,  //!< The `.idx` per-record RECEIPT delta. Exact, and works for any DID.
+        };
+
+        /**
+         * @brief Per-record replacement times, `(arrivalIndex, towMs)`, ascending. Empty when no
+         *        ruler could be established or corroborated — the resolver then brackets against
+         *        the collective timeline.
+         *
+         * Why a ruler at all, rather than always bracketing: bracketing against the GLOBAL
+         * arrival order assumes the log's record RATE is locally steady, and at a stall it
+         * usually is not. In the motivating capture the GNSS position/velocity DIDs stop emitting
+         * at the same instant the clock freezes, so records-per-second drops exactly where the
+         * run begins. Measured, arrival-order bracketing produced 3 ms..611 ms spacing (mean
+         * 454.7 against an expected 500) and left the run ~1.7 s short.
+         *
+         * Two rulers, in preference order:
+         *
+         * - `OwnClock` — a companion `upTime` in the same payload, giving a per-record answer.
+         *   Only `sys_params_t` and `gpx_status_t` have one: **2 of the 27 ToW-bearing record
+         *   types**. It is emphatically NOT the case that the DIDs which can stall are the ones
+         *   with a companion uptime — ANY DID can stall, and 25 of 27 have no such field.
+         * - `Cadence` — the DID's own median inter-record interval measured while its clock was
+         *   still advancing, applied uniformly across the run. Needs no payload field, so it
+         *   covers the other 25. Assumes the DID's output rate is steady, which is a far weaker
+         *   assumption than the global record rate being steady.
+         *
+         * Either way the run's FIRST record keeps its genuine timestamp, so the repair is
+         * continuous at the seam by construction (measured: 0 ms).
+         *
+         * The eventual exact answer is `log_time_offset_ms` — a per-record receipt delta the format
+         * already defines for EVERY record regardless of DID. It is zero in every log to hand
+         * because only the live capture writer stamps it.
+         */
+        std::vector<std::pair<uint64_t, uint64_t>> retimed;
+
+        Ruler ruler = Ruler::None;          //!< Which evidence `retimed` came from.
+
+        //! `rulerDelta / collectiveTimelineDelta` over the run. 1.0 is perfect agreement.
+        double rulerRatio = 0.0;
+
+                //! True when `retimed` is populated, i.e. the device's own clock agreed with the
+        //! collective timeline closely enough to be trusted as the ruler.
+        bool rulerCorroborated = false;
     };
 
     /**
@@ -168,42 +260,44 @@ public:
     // -----------------------------------------------------------------
 
     /**
-     * @brief Resolve a single record's stored timestamp to a tagged
-     *        `TimeStamp`.
+     * @brief Resolve a record's stored timestamp to a tagged `TimeStamp`.
      *
-     * @param hostTimeMs  The record's `.idx` `timestamp` field. For
-     *                    HAS_TOW records this is already the ToW; for
-     *                    non-HAS_TOW records it's host uptime delta.
-     * @param deviceId    Source device id; baked into the returned
-     *                    `TimeStamp`.
-     * @return            Tagged time:
-     *                    - `PayloadToW / Exact` if `hostTimeMs` matches
-     *                      a sync point exactly.
-     *                    - `ResolvedViaSync / Interpolated` between
-     *                      sync points.
-     *                    - `ResolvedViaSync / ExtrapolatedForward` past
-     *                      the last sync point.
-     *                    - `ResolvedViaSync / ExtrapolatedBackward`
-     *                      before the first sync point.
-     *                    - `SessionOnly / Unknown` when the resolver
-     *                      has no sync points to anchor against.
-     */
-    TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId) const;
-
-    /**
-     * @brief SN-8339: arrival-keyed resolve for multi-boot logs.
+     * @param hostTimeMs    The record's `.idx` `timestamp` field. For HAS_TOW records this is
+     *                      already the ToW; for non-HAS_TOW records it is an uptime-domain value.
+     * @param deviceId      Source device id; baked into the returned `TimeStamp`.
+     * @param arrivalIndex  The record's position in the device's global record-arrival order.
+     *                      Use `ISRecordView::arrivalIndex()`, which `ISDeviceLog` populates.
+     *                      Pass `ISRecordView::kNoArrivalIndex` ONLY when the query is not a
+     *                      record at all (e.g. resolving a span endpoint): the arrival-keyed
+     *                      behaviours are then skipped, which is correct for a non-record but
+     *                      WRONG for a record. Never pass it to avoid plumbing an index.
      *
-     * Identical to `resolve(hostTimeMs, deviceId)` EXCEPT that, when the log has
-     * more than one power-on session, `arrivalIndex` (the record's position in
-     * the device's global record-arrival order) selects which session's
-     * uptime->ToW offset bridges a session-uptime input — resolving the
-     * ambiguity where the same small uptime value occurs in two sessions. With a
-     * single session (or an out-of-range key), this is byte-identical to the
-     * no-key overload, so existing callers that don't pass a key are unaffected.
+     * @return  Tagged time: `PayloadToW / Exact` on an exact sync-point match;
+     *          `ResolvedViaSync` with `Interpolated` / `ExtrapolatedForward` /
+     *          `ExtrapolatedBackward` around the sync-anchored region; `SessionOnly / Unknown`
+     *          when there is nothing to anchor against.
+     *
+     * @note The arrival index is REQUIRED, not optional. There used to be a
+     *       `resolve(hostTimeMs, deviceId)` overload, and every application call site used it —
+     *       which silently disabled two arrival-keyed behaviours those callers needed:
+     *       SN-8339's per-boot-session offset selection, and SN-8704's re-timing of records
+     *       whose DID's clock stalled. The latter is not a refinement: 2,107 records sharing
+     *       one frozen timestamp cannot be told apart by `hostTimeMs`, so without the arrival
+     *       index the resolver returns the same known-bad instant for all of them. The overload
+     *       was deleted rather than deprecated so the compiler finds every caller.
      *
      * @param hostTimeMs   Record's `.idx` timestamp field.
      * @param deviceId     Source device id.
      * @param arrivalIndex Record's global arrival index (see `ISRecordView`).
+     */
+    /**
+     * @warning `arrivalIndex` is **0-BASED** — the first record of the first segment is index 0,
+     *          matching the resolver's own build scan (`thisArrival = arrivalIndex++`) and
+     *          `ISLogReader::detectGaps`. An off-by-one is silent for the session-selection path
+     *          (session windows are thousands of records wide) but NOT for the stalled-run path
+     *          added in SN-8704: a caller counting from 1 mis-resolves the record at each run
+     *          boundary, which looks like a lone ~16-minute backward jump. Count with a
+     *          post-increment over `allRecords()` in composition order.
      */
     TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId,
                       uint64_t arrivalIndex) const;
@@ -226,6 +320,90 @@ public:
      * @return  Clock-correction events detected during build, in
      *          chronological order. Empty for clean logs.
      */
+    /**
+     * @return  Stalled-clock runs found during build (SN-8704), in arrival order. Empty for a
+     *          healthy log. Surfaced so the application can CALL THIS OUT rather than quietly
+     *          presenting reconstructed times as measured ones.
+     */
+    const std::vector<StalledRun>& stalledRuns() const noexcept { return stalledRuns_; }
+
+    /**
+     * @brief Interpolate an absolute time for a record from its position in the arrival order.
+     *
+     * Used when a record's own stamped time cannot be trusted: its neighbours in the arrival
+     * stream can be, so the record is bracketed between them. Lifted from Logalyzer's
+     * `RawSeriesBuilder` (SN-8131), where it placed *timeless* records — a record whose clock
+     * stalled is the same problem, a record whose own claim is worthless, so it gets the same
+     * treatment rather than a second mechanism. Kyle 2026-09-20 approved the move SDK-side.
+     *
+     * @param anchors       `(arrivalIndex, absoluteMs)` pairs, ascending by arrival index and
+     *                      non-empty. Clamps to the first/last anchor outside their range.
+     * @param arrivalIndex  Record to place.
+     * @return              Interpolated absolute ms.
+     *
+     * @note Interpolating against the GLOBAL arrival order assumes the log's overall record rate
+     *       is locally steady, which is what makes it safe here: the stalled DID is by definition
+     *       the misbehaving one, while the anchors come from sources that were still healthy.
+     */
+    /**
+     * @brief Evidence for re-timing one stalled run — PURE, no I/O, no log.
+     *
+     * Extracted so the ruler selection is testable without synthesising a log with a stalled
+     * clock, for the same reason `findGaps` and `planSessionAdoptions` are pure: the interesting
+     * cases (cadence covering the 25 record types with no companion uptime, own-clock preference,
+     * degenerate inputs) are otherwise unreachable from a test.
+     */
+    struct StallEvidence {
+        //! Arrival indices of every record in the run, ascending. The run's FIRST record is the
+        //! one whose timestamp legitimately advanced to the value that then froze, so it keeps
+        //! its own time and the repair is continuous at the seam.
+        std::vector<uint64_t> runArrivals;
+
+        //! The frozen timestamp — also the run's first record's genuine time.
+        uint64_t stalledTsMs = 0;
+
+        //! `(arrivalIndex, ownClockMs)` where the DID carries a companion uptime. Empty for the
+        //! 25 of 27 ToW-bearing record types that do not.
+        std::vector<std::pair<uint64_t, uint64_t>> ownSamples;
+
+        //! The companion uptime at the run's first (still-healthy) record. 0 when absent.
+        uint64_t lastHealthyOwnMs = 0;
+
+        //! Inter-record intervals seen while this DID's clock was still advancing. The median is
+        //! the cadence ruler.
+        std::vector<uint64_t> advanceDeltas;
+
+        /**
+         * @brief `(arrivalIndex, log_time_offset_ms)` for the run, when the segment's `.idx`
+         *        declares `IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET`.
+         *
+         * This is the WHEN — a log-start time-offset the live capture writer stamps for EVERY record
+         * independent of any payload (SN-8383). It is the exact ruler and the only one that works
+         * for any DID, so it is preferred over both the companion-uptime and cadence rulers.
+         *
+         * Empty for every log to hand: only `DeviceLog.cpp` stamps it, and a reader-rebuilt index
+         * cannot recover it (receipt time exists nowhere in the `.raw`). A rebuilt index leaves
+         * `HAS_LOCAL_DELTA` clear, which is what makes this check meaningful rather than a trap.
+         */
+        std::vector<std::pair<uint64_t, uint64_t>> logTimeOffsets;
+    };
+
+    /**
+     * @brief Choose a ruler and produce per-record replacement times. PURE.
+     *
+     * Preference: `OwnClock` (per-record, most faithful) then `Cadence` (the DID's own output
+     * rate, applied uniformly) then `None` (caller brackets against the collective timeline).
+     *
+     * @param ev       Evidence gathered during the scan.
+     * @param outKind  Receives which ruler was chosen.
+     * @return         `(arrivalIndex, towMs)` pairs, ascending; empty when no ruler applies.
+     */
+    static std::vector<std::pair<uint64_t, uint64_t>>
+        planStallRetiming(const StallEvidence& ev, StalledRun::Ruler& outKind);
+
+    static uint64_t interpolateArrivalTime(
+        const std::vector<std::pair<uint64_t, uint64_t>>& anchors, uint64_t arrivalIndex);
+
     const std::vector<Discontinuity>& discontinuities() const noexcept {
         return discontinuities_;
     }
@@ -262,9 +440,14 @@ private:
     //! Core detection: scans all segments for sync points AND (SN-8323 uptime
     //! unification) authoritative uptime->ToW offset samples from DID_SYS_PARAMS.
     //! `detectSyncPoints` and `build` both delegate here.
+    //! @param stalledOut   SN-8704: receives the stalled-clock runs found during the scan.
+    //! @param timelineOut   SN-8704: receives `(arrivalIndex, payloadToWMs)` samples from
+    //!                      ToW sources that were still advancing. Both optional.
     static std::vector<ISSyncPoint> detectSyncPointsImpl(
         const ISDeviceLog& log, std::vector<int64_t>& upOffsetsOut,
-        std::vector<Session>& sessionsOut);
+        std::vector<Session>& sessionsOut,
+        std::vector<StalledRun>* stalledOut = nullptr,
+        std::vector<std::pair<uint64_t, uint64_t>>* timelineOut = nullptr);
 
     //! SN-8339: shared resolve body, parameterized on the uptime->ToW offset so
     //! both the global (no-key) path and the per-session (arrival-keyed) path
@@ -311,6 +494,15 @@ private:
     //! arrival order). Size 1 for a single-boot log; the arrival-keyed resolve()
     //! overload uses per-session offsets when size > 1.
     std::vector<Session>        sessions_;
+
+    //! SN-8704: runs where one DID's stamped clock stopped while the log advanced.
+    std::vector<StalledRun>     stalledRuns_;
+
+    //! SN-8704: `(arrivalIndex, payloadToWMs)` samples from ToW sources that were still
+    //! ADVANCING — the collective timeline a stalled record is bracketed against. Only
+    //! strictly-increasing ToW values are admitted, so a stalled source excludes itself by
+    //! construction: it can never advance past the last admitted sample.
+    std::vector<std::pair<uint64_t, uint64_t>> towTimeline_;
 };
 
 } // namespace inertial_sense

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "ISDeviceLog.h"
+#include "ISDiagnostics.h"
 #include "ISError.h"
 #include "ISTimeStamp.h"
 
@@ -88,6 +89,21 @@ public:
      */
     std::vector<std::filesystem::path> segmentPaths() const;
 
+    /**
+     * @brief Everything worth telling the user about this log — audit B3.
+     *
+     * Folds every device's segment diagnostics, and adds the ones only a directory-level view
+     * can see. Chief among those is an **orphaned `.idx`**: a sidecar with no segment beside it.
+     * `openDirectory` discovers segments by their `.raw`/`.dat`, so an orphan is never opened,
+     * can never be upgraded (an upgrade needs the segment to scan), and indexes nothing
+     * reachable — it is safe to delete, and the diagnostic says so in `remedy`, carrying the
+     * sidecar's own path so an application can offer that action.
+     *
+     * @return Log-level diagnostics first, then per device in composition order. Empty when
+     *         nothing about the open was worth reporting.
+     */
+    const std::vector<ISDiagnostic>& diagnostics() const noexcept { return diagnostics_; }
+
     /** @return  Total record count summed across every device-log. */
     std::size_t recordCount() const noexcept;
 
@@ -110,6 +126,7 @@ private:
     std::unordered_map<uint64_t, ISDeviceLog>          devicesById_;
     std::vector<uint64_t>                              orderedIds_;  // for stable iteration
     std::vector<std::filesystem::path>                 allSegments_; // flat
+    std::vector<ISDiagnostic>                          diagnostics_; // audit B3
 };
 
 } // namespace inertial_sense
