@@ -1346,6 +1346,9 @@ void cltool_outputUsage()
     cout << "    -use-relay=" << boldOff << "URL[,URL...]  Register and enable one or more manual relay host URLs (any of \"http://host:port\", \"host:port\", or bare hostname/IP)." << endlbOn;
     cout << "    -use-relay-only=" << boldOff << "HOST[,HOST...]  When auto-enabling mDNS-discovered relays, enable only hosts whose hostname matches the whitelist." << endlbOn;
     cout << "    -use-relay-list" << boldOff << " Enable relay discovery, print the resulting host list, and exit." << endlbOn;
+    cout << boldOff << "                    Relay connections are annotated with name 'cltool', this command line as the purpose, and priority" << endlbOn;
+    cout << boldOff << "                    high during a firmware update (normal otherwise). Override with the environment variables" << endlbOn;
+    cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;

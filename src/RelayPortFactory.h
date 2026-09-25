@@ -70,6 +70,34 @@ public:
     RelayPortFactory(RelayPortFactory const&) = delete;
     RelayPortFactory& operator=(RelayPortFactory const&) = delete;
 
+    /**
+     * The client currently attached to a relay device slot, as the relay reports it. The name, purpose
+     * and link are whatever that client sent with annotatePort(), and are empty if it sent nothing.
+     * The annotation is self-asserted and descriptive; it identifies nobody.
+     */
+    struct RelayClientInfo {
+        bool         present = false;       //!< a client is attached; the other fields are meaningful only if true
+        std::string  peer;                  //!< the client's address and port as the relay accepted it
+        int64_t      sinceUnixMs = 0;       //!< when the client attached (Unix epoch, ms)
+        int64_t      idleMs = 0;            //!< time since the client last moved any bytes
+        uint64_t     sentBytes = 0;         //!< bytes the relay has sent to the client
+        uint64_t     receivedBytes = 0;     //!< bytes the relay has received from the client
+        std::string  priority;              //!< "low", "normal", "high", "critical", or "anonymous" if never annotated
+        std::string  name;                  //!< client-supplied name
+        std::string  purpose;               //!< client-supplied purpose
+        std::string  link;                  //!< client-supplied link, e.g. a CI run URL
+    };
+
+    /** An operator reservation on a relay device slot, which refuses clients other than the one it allows. */
+    struct RelayHoldInfo {
+        bool         present = false;       //!< a hold is in effect; the other fields are meaningful only if true
+        std::string  mode;                  //!< "all" (no client may attach) or "host" (only @ref host may)
+        std::string  host;                  //!< the one host permitted when mode is "host"
+        int64_t      untilUnixMs = 0;       //!< when the hold expires (Unix epoch, ms)
+        std::string  reason;                //!< operator-supplied reason
+        std::string  by;                    //!< who placed the hold
+    };
+
     // -- Per-device record parsed from the relay's HTTP response --
     /** A single device entry parsed from a relay host's /api/availableDevices response or SSE snapshot. */
     struct DeviceRecord {
@@ -77,6 +105,8 @@ public:
         dev_info_t   hint = {};     //!< bridgeboard-authoritative device info for seedDeviceHint()
         bool         hasTcpClient = false;  //!< a client currently holds this device's slot
         bool         listening = true;      //!< the relay is offering this slot at all
+        RelayClientInfo client;             //!< who holds the slot, when hasTcpClient
+        RelayHoldInfo   hold;               //!< an operator reservation on the slot, if any
     };
 
     /**
@@ -157,6 +187,8 @@ public:
         dev_info_t  hint = {};              //!< announced identity -- a claim, not an answer; see DeviceFactory::beginValidation()
         bool        hasTcpClient = false;   //!< a client currently holds this slot
         bool        listening = true;       //!< the relay is offering this slot
+        RelayClientInfo client;             //!< who holds the slot, when hasTcpClient
+        RelayHoldInfo   hold;               //!< an operator reservation on the slot, if any
     };
 
     /**
@@ -165,6 +197,118 @@ public:
      * Serves the cached view maintained by the poll/SSE feed, so it performs no I/O and opens nothing.
      */
     std::vector<RelayDeviceStatus> getRelayDevices() const;
+
+    /**
+     * Looks up the relay's current view of the device behind a relay port URL.
+     *
+     * Useful for explaining a refused connection: a slot that accepts and then closes a client is held
+     * by another client or by an operator, and this names which.
+     *
+     * @param portUrl    the tcp:// URL of the device's slot, as returned by getRelayDevices() or portName()
+     * @param[out] out   the device's status, if found
+     * @return true if an enabled relay host reports a device at @p portUrl
+     */
+    bool getRelayDevice(const std::string& portUrl, RelayDeviceStatus& out) const;
+
+    /**
+     * Formats who holds a relay device slot, for a message explaining why a connection was refused:
+     * "held by an operator (<reason>) until <time>", "held by <name> (<purpose>) since <time>", or
+     * "held by <peer> since <time>" for a client that never annotated. Empty if the slot is free.
+     *
+     * @param dev  a device status from getRelayDevices() or getRelayDevice()
+     * @return a short human-readable description of the holder, or an empty string
+     */
+    static std::string describeHolder(const RelayDeviceStatus& dev);
+
+    // -- Connection annotation --
+
+    /** Priority a client claims for its relay connection. High and critical make an operator eject require force. */
+    enum class ClientPriority : uint8_t {
+        Low,
+        Normal,
+        High,
+        Critical,
+    };
+
+    /** Outcome of annotatePort(). */
+    enum class AnnotateResult : uint8_t {
+        Ok,             //!< the relay accepted the annotation
+        NotARelayPort,  //!< the port is not a TCP port known to an enabled relay host
+        NotOpen,        //!< the port is not open, or its connect has not completed; nothing was sent
+        NoRoute,        //!< the relay predates connection annotation; nothing to do
+        NoDevice,       //!< the relay no longer has a device on that port
+        Refused,        //!< the relay does not see this connection as the slot's attached client
+        Error,          //!< any other failure: unreachable relay, timeout, bad request
+    };
+
+    /** @return a short name for @p result, for logging. */
+    static const char* toString(AnnotateResult result);
+
+    /**
+     * Tells the relay who holds @p port and why, so its dashboard and API can show it.
+     *
+     * Sends one PUT /api/relay/connection immediately and waits for the answer (bounded by a short
+     * timeout). The device is identified by the slot's TCP port, and the connection by this socket's
+     * local port, so on a host running several clients only this connection is annotated. Nothing is
+     * retried, queued or remembered: the relay drops the annotation when the TCP connection closes, so a
+     * caller that reopens the port annotates it again. A port that is not yet open, or whose connect is
+     * still in flight, returns NotOpen without contacting the relay.
+     *
+     * Values longer than the relay accepts (name 64, purpose 256, link 512 characters) are truncated.
+     *
+     * @param port      an open port bound from a relay-known tcp:// URL
+     * @param name      the client's name; empty uses the executable's file name
+     * @param purpose   what the client is doing with the device
+     * @param priority  the priority to claim; High or Critical protects the connection from an unforced eject
+     * @param link      a URL with more context, e.g. a CI run
+     * @return the outcome; see AnnotateResult
+     */
+    AnnotateResult annotatePort(port_handle_t port,
+                                const std::string& name = "",
+                                const std::string& purpose = "",
+                                ClientPriority priority = ClientPriority::Normal,
+                                const std::string& link = "");
+
+    /**
+     * annotatePort() by slot URL, for a caller that does not hold the port handle -- such as a port the ISv1
+     * bootloader opens for itself -- or that must not touch it from the calling thread. With @p clientPort 0
+     * the connection is identified by this host alone, so the annotation applies to whichever connection
+     * this host has on that slot; pass connectionId() of the port to name one connection exactly. Returns
+     * Refused while no matching connection is attached.
+     *
+     * @param portUrl     the slot's tcp:// URL, as known to an enabled relay host
+     * @param name        the client's name; empty uses the executable's file name
+     * @param purpose     what the client is doing with the device
+     * @param priority    the priority to claim
+     * @param link        a URL with more context
+     * @param clientPort  the connection's local port (see connectionId()), or 0 to match on host only
+     * @return the outcome; NotARelayPort if no enabled relay host knows @p portUrl
+     */
+    AnnotateResult annotatePort(const std::string& portUrl,
+                                const std::string& name = "",
+                                const std::string& purpose = "",
+                                ClientPriority priority = ClientPriority::Normal,
+                                const std::string& link = "",
+                                int clientPort = 0);
+
+    /**
+     * Identifies the TCP connection a port currently has: its socket's local port. It changes whenever the
+     * port reconnects, which is when a relay forgets the connection's annotation, so a client can compare
+     * it to decide when to annotate again.
+     *
+     * @param port  a TCP port
+     * @return the local port of the port's connection, or 0 if it has none (not TCP, not open)
+     */
+    static int connectionId(port_handle_t port);
+
+    /**
+     * Parses a priority name ("low", "normal", "high", "critical"; case-insensitive).
+     *
+     * @param s          the name to parse
+     * @param[out] out   the parsed priority
+     * @return true if @p s named a priority
+     */
+    static bool parsePriority(const std::string& s, ClientPriority& out);
 
     /**
      * Turns automatic mDNS relay-host discovery on or off. Enabled by default.
@@ -249,6 +393,14 @@ private:
      * @param portUrl  the tcp:// URL whose relay device hint should be seeded
      */
     void seedHintForPortIfKnown(port_handle_t port, const std::string& portUrl);
+
+    /** @return the canonical URL of the enabled relay host that knows @p portUrl, or an empty string. */
+    std::string relayUrlForPort(const std::string& portUrl) const;
+
+    /** Sends one annotation PUT; @p localPort 0 omits client_port. Shared by both annotatePort() forms. */
+    AnnotateResult sendAnnotation(const std::string& relayUrl, const std::string& portUrl, int localPort,
+                                  const std::string& name, const std::string& purpose,
+                                  ClientPriority priority, const std::string& link);
 
 public:
 

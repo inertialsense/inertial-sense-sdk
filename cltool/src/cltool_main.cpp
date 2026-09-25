@@ -32,7 +32,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 *  the project in solution explorer and then selecting properties -> debugging -> command line arguments
 */
 
+#include <atomic>
 #include <signal.h>
+#include <thread>
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
@@ -67,6 +69,113 @@ shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
 static void sendNmea(serial_port_t &port, string nmeaMsg);
 
+/// The command line cltool was started with, excluding the executable; the default relay annotation purpose.
+static std::string g_commandLineText;
+
+/// The relay port URLs cltool opened a device on, for explaining a refusal after the device has gone.
+static std::set<std::string> g_relayPortNames;
+
+/// @return the value of environment variable @p name, or an empty string if unset.
+static std::string envOrEmpty(const char* name) {
+    const char* v = getenv(name);
+    return v ? std::string(v) : std::string();
+}
+
+/// What cltool tells a relay about its connections; see cltoolRelayIdentity().
+struct cltool_relay_identity_t {
+    std::string name;
+    std::string purpose;
+    RelayPortFactory::ClientPriority priority;
+    std::string link;
+};
+
+/**
+ * @return cltool's relay annotation: name "cltool", its command line as the purpose, and high priority for a
+ *   firmware update (normal otherwise), each overridable by IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE,
+ *   IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK.
+ */
+static cltool_relay_identity_t cltoolRelayIdentity(bool isFwUpdate)
+{
+    cltool_relay_identity_t id;
+    id.priority = isFwUpdate ? RelayPortFactory::ClientPriority::High : RelayPortFactory::ClientPriority::Normal;
+    std::string envPriority = envOrEmpty("IS_RELAY_CLIENT_PRIORITY");
+    if (!envPriority.empty() && !RelayPortFactory::parsePriority(envPriority, id.priority))
+        fprintf(stderr, "Ignoring unrecognized IS_RELAY_CLIENT_PRIORITY '%s'.\n", envPriority.c_str());
+    id.name = envOrEmpty("IS_RELAY_CLIENT_NAME");
+    id.purpose = envOrEmpty("IS_RELAY_CLIENT_PURPOSE");
+    id.link = envOrEmpty("IS_RELAY_CLIENT_LINK");
+    if (id.name.empty())    id.name = "cltool";
+    if (id.purpose.empty()) id.purpose = g_commandLineText;
+    return id;
+}
+
+/**
+ * Annotates each relay connection cltool holds, so the relay shows who holds the device and why (see
+ * cltoolRelayIdentity()). High priority during a firmware update protects the connection from an unforced
+ * operator eject.
+ *
+ * Each connection is annotated once. The relay forgets an annotation when its TCP connection closes, so a
+ * port is annotated again whenever RelayPortFactory::connectionId() changes. Cheap to call every loop: a
+ * port only reaches the relay when it needs annotating.
+ */
+static void cltoolAnnotateRelayPorts(InertialSense& is)
+{
+    if (!g_commandLineOptions.useRelay)
+        return;
+
+    struct state_t { int connection = 0; uint32_t retryAfterMs = 0; };
+    static std::map<port_handle_t, state_t> annotated;
+    static const cltool_relay_identity_t id = cltoolRelayIdentity(
+            (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty());
+
+    auto& rpf = RelayPortFactory::getInstance();
+    std::map<port_handle_t, state_t> current;
+    for (auto& device : is.getDevices()) {
+        port_handle_t port = device ? device->port : nullptr;
+        if (!port || !(portType(port) & PORT_TYPE__TCP))
+            continue;
+
+        state_t st = annotated.count(port) ? annotated[port] : state_t{};
+        const int connection = RelayPortFactory::connectionId(port);
+        if ((connection != 0) && (connection != st.connection) && (current_timeMs() >= st.retryAfterMs)) {
+            auto result = rpf.annotatePort(port, id.name, id.purpose, id.priority, id.link);
+            switch (result) {
+                case RelayPortFactory::AnnotateResult::NotOpen:
+                    st.retryAfterMs = current_timeMs() + 250;       // connect still in flight
+                    break;
+                case RelayPortFactory::AnnotateResult::Refused:
+                case RelayPortFactory::AnnotateResult::Error:
+                    st.retryAfterMs = current_timeMs() + 1000;      // may be transient; try this connection again
+                    log_info(IS_LOG_PORT_FACTORY, "Relay annotation of '%s' not applied: %s", portName(port), RelayPortFactory::toString(result));
+                    break;
+                default:
+                    st.connection = connection;                     // done for this connection
+                    if ((result != RelayPortFactory::AnnotateResult::Ok) && (result != RelayPortFactory::AnnotateResult::NotARelayPort))
+                        log_info(IS_LOG_PORT_FACTORY, "Relay annotation of '%s' not applied: %s", portName(port), RelayPortFactory::toString(result));
+                    break;
+            }
+        }
+        current[port] = st;
+    }
+    annotated.swap(current);    // forget ports that are gone, so a reallocated handle starts fresh
+}
+
+/**
+ * Prints who holds each of cltool's relay devices. A relay slot held by another client or by an operator
+ * accepts the connection and then closes it, so the refusal otherwise looks like a device disconnecting.
+ */
+static void cltoolReportRelayHolders()
+{
+    for (const auto& url : g_relayPortNames) {
+        RelayPortFactory::RelayDeviceStatus dev;
+        if (!RelayPortFactory::getInstance().getRelayDevice(url, dev))
+            continue;
+        std::string holder = RelayPortFactory::describeHolder(dev);
+        if (!holder.empty())
+            cerr << ISDevice::getIdAsString(dev.hint) << " (" << url << ") is " << holder << endl;
+    }
+}
+
 /// Extract the hostname portion of a canonical "http://host:port" URL for hostname-based filtering.
 static std::string hostnameFromUrl(const std::string& url) {
     return utils::parseUri(url).host;
@@ -82,6 +191,10 @@ static std::string hostnameFromUrl(const std::string& url) {
 static void cltoolWarmRelayDiscovery() {
     auto& rpf = RelayPortFactory::getInstance();
 
+    // Progress goes to stderr so it cannot corrupt machine-readable output (e.g. -get YAML on stdout);
+    // for -use-relay-list the host list IS the output.
+    FILE* out = g_commandLineOptions.useRelayList ? stdout : stderr;
+
     // 1. Register any manually-provided URLs and enable them immediately.
     for (const auto& url : g_commandLineOptions.relayUrls) {
         if (url.empty()) continue;
@@ -89,7 +202,7 @@ static void cltoolWarmRelayDiscovery() {
         rpf.setRelayHostEnabled(url, true);
     }
 
-    printf("Discovering relay hosts...\n");
+    fprintf(out, "Discovering relay hosts...\n");
     uint32_t deadline = current_timeMs() + 3000;
 
     const bool hasManualUrls = !g_commandLineOptions.relayUrls.empty();
@@ -136,13 +249,13 @@ static void cltoolWarmRelayDiscovery() {
     // Summary line per host, including transport badge.
     auto hosts = rpf.getRelayHosts();
     if (hosts.empty()) {
-        printf("  No relay hosts discovered.\n");
+        fprintf(out, "  No relay hosts discovered.\n");
     } else {
         for (const auto& h : hosts) {
             const char* feed = (h.feedType == RelayPortFactory::RelayFeedType::SSE)     ? "SSE"
                              : (h.feedType == RelayPortFactory::RelayFeedType::Polling) ? "Polling"
                              :                                                            "Auto";
-            printf("  Relay: %s  enabled=%d  devices=%zu  feed=%s  %s\n",
+            fprintf(out, "  Relay: %s  enabled=%d  devices=%zu  feed=%s  %s\n",
                    h.url.c_str(), h.enabled, h.deviceCount, feed,
                    h.viaMdns ? "(mDNS)" : "(manual)");
         }
@@ -785,6 +898,24 @@ static int cltool_updateFirmware()
         return -1;
     }
 
+    // The ISv1 updater opens each target's port itself, and reopens it from phase to phase, so there is no
+    // port handle to annotate and each reopen drops the annotation. Name the slot instead, and restate it
+    // for as long as the update runs.
+    std::atomic<bool> updating{true};
+    std::thread relayAnnotator;
+    if (g_commandLineOptions.useRelay) {
+        cltoolWarmRelayDiscovery();
+        relayAnnotator = std::thread([&updating, targets]() {
+            const cltool_relay_identity_t id = cltoolRelayIdentity(true);
+            while (updating.load()) {
+                for (const auto& target : targets)
+                    RelayPortFactory::getInstance().annotatePort(target, id.name, id.purpose, id.priority, id.link);
+                for (int i = 0; (i < 10) && updating.load(); i++)
+                    SLEEP_MS(100);
+            }
+        });
+    }
+
     ISBootloader::firmwares_t files;
     files.fw_uINS_3.path = g_commandLineOptions.updateAppFirmwareFilename;
     files.bl_uINS_3.path = g_commandLineOptions.updateBootloaderFilename;
@@ -814,6 +945,10 @@ static int cltool_updateFirmware()
         // failure as well as a total one, so there is nothing to re-derive here.
         result = -1;
     }
+
+    updating.store(false);
+    if (relayAnnotator.joinable())
+        relayAnnotator.join();
 
     printf("\n\r");
 #if !PLATFORM_IS_WINDOWS
@@ -1239,10 +1374,40 @@ static int cltool_dataStreaming()
                 } else {
                     cout << "port opened but device did not respond to discovery";
                 }
+                // A relay slot accepts a second client and then closes it, so a held device looks like
+                // one that will not answer. Say who holds it.
+                RelayPortFactory::RelayDeviceStatus relayDev;
+                if (!hasDevice && name && RelayPortFactory::getInstance().getRelayDevice(name, relayDev)) {
+                    std::string holder = RelayPortFactory::describeHolder(relayDev);
+                    if (!holder.empty())
+                        cout << " -- " << holder;
+                }
                 cout << endl;
             }
         }
         return -1;
+    }
+
+    // A relay announces each device's identity, so discovery can register a device from that
+    // announcement without opening its port. Everything below talks to the device, so open it now.
+    if (g_commandLineOptions.useRelay && !g_commandLineOptions.list_devices) {
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (!device || !device->port)
+                continue;
+            g_relayPortNames.insert(device->getPortName());
+            if (portIsOpened(device->port))
+                continue;
+            if (!device->connect()) {
+                cerr << "Unable to open " << device->getPortName() << " for " << device->getIdAsString() << endl;
+                continue;
+            }
+            // What InertialSense::Open() does for a device whose port it opened itself.
+            device->GetData(DID_SYS_PARAMS);
+            device->GetData(DID_FLASH_CONFIG);
+            device->GetData(DID_GPX_FLASH_CFG);
+            device->GetData(DID_GPX_STATUS);
+            device->WaitForImxFlashCfgSynced();
+        }
     }
 
     if (g_commandLineOptions.list_devices) {
@@ -1290,6 +1455,8 @@ static int cltool_dataStreaming()
             }
         }
     }
+
+    cltoolAnnotateRelayPorts(inertialSenseInterface);
 
     // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
     if (cltool_setupCommunications(inertialSenseInterface))
@@ -1375,9 +1542,12 @@ static int cltool_dataStreaming()
 
                 if (!inertialSenseInterface.Update())
                 {   // device disconnected, exit
+                    cltoolReportRelayHolders();
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
                     break;
                 }
+
+                cltoolAnnotateRelayPorts(inertialSenseInterface);
 
                 if (g_correctionInput && (g_correctionInput->step() < 0)) {
                     exitCode = EXIT_CODE_DEVICE_DISCONNECTED;
@@ -1667,6 +1837,9 @@ int main(int argc, char* argv[])
 
     // IS_LOG_OUTPUT(stdout);
     // IS_SET_LOG_LEVEL(IS_LOG_LEVEL_MORE_DEBUG);
+
+    for (int i = 1; i < argc; i++)
+        g_commandLineText += (i > 1 ? " " : "") + std::string(argv[i]);
 
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))
