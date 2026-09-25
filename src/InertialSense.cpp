@@ -1015,6 +1015,11 @@ bool InertialSense::OpenPorts(const char* portPattern, int baudRate, uint16_t fi
 
     // request extended device info for remaining connected devices...
     for (auto device : deviceManager) {
+        // A device registered from a relay's announcement has no open port yet; waiting on it would
+        // only time out.
+        if (!device->isConnected())
+            continue;
+
         // but only if they are of a compatible protocol version
         if (device->hasDeviceInfo()) {
             device->GetData(DID_SYS_PARAMS);
