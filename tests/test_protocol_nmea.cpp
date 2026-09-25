@@ -252,6 +252,219 @@ TEST(protocol_nmea, nmea_parse_asce)
     }
 }
 
+// SN-8450: regression guard for $ASCE port selection.
+//
+// The pre-existing test above (nmea_parse_asce) does not cover this: it aliases
+// outRmci onto rmci[] and then asserts each struct against itself, and it passes
+// no port mask, so only the RMC_OPTIONS_PORT_CURRENT branch is exercised. These
+// tests pin down the behaviour that the cross-port read-back work must preserve.
+
+static void asce_build(char *a, int aSize, int &n, const char *body)
+{
+    n = 0;
+    nmea_sprint(a, aSize, n, "$ASCE,%s", body);
+    nmea_sprint_footer(a, aSize, n);
+}
+
+TEST(protocol_nmea, asce_port_selection_targets_named_port)
+{
+    PRINT_TEST_DESCRIPTION("$ASCE options port mask must write the NAMED port, not the receiver.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+    // Received on TEST0_PORT (index 0), targeting SER1 (index 1) only.
+    asce_build(a, ASCII_BUF_LEN, n, "2,GNGGA,1");
+    nmea_parse_asce(TEST0_PORT, a, n, out);
+
+    // SER1 got it...
+    EXPECT_EQ(rmci[1].rmcNmea.nmeaBits, (uint32_t)NMEA_RMC_BITS_GNGGA);
+    EXPECT_EQ(rmci[1].rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGGA], 1);
+    // ...and no other port did, least of all the receiving port.
+    EXPECT_EQ(rmci[0].rmcNmea.nmeaBits, 0u);
+    EXPECT_EQ(rmci[2].rmcNmea.nmeaBits, 0u);
+    EXPECT_EQ(rmci[3].rmcNmea.nmeaBits, 0u);
+}
+
+TEST(protocol_nmea, asce_port_current_targets_receiving_port)
+{
+    PRINT_TEST_DESCRIPTION("$ASCE with options=0 (PORT_CURRENT) must write only the receiver.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, "0,GNGGA,1");
+    nmea_parse_asce(TEST0_PORT, a, n, out);
+
+    EXPECT_EQ(rmci[portId(TEST0_PORT)].rmcNmea.nmeaBits, (uint32_t)NMEA_RMC_BITS_GNGGA);
+    for (int i = 0; i < NUM_COM_PORTS; i++)
+    {
+        if (i == (int)portId(TEST0_PORT)) continue;
+        EXPECT_EQ(rmci[i].rmcNmea.nmeaBits, 0u) << "port " << i << " should be untouched";
+    }
+}
+
+TEST(protocol_nmea, asce_port_all_targets_every_port)
+{
+    PRINT_TEST_DESCRIPTION("$ASCE with options=255 (PORT_ALL) must write every port.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, "255,GNGGA,1");
+    nmea_parse_asce(TEST0_PORT, a, n, out);
+
+    for (int i = 0; i < NUM_COM_PORTS; i++)
+        EXPECT_EQ(rmci[i].rmcNmea.nmeaBits, (uint32_t)NMEA_RMC_BITS_GNGGA) << "port " << i;
+}
+
+TEST(protocol_nmea, asce_options_only_is_a_query_not_a_set)
+{
+    PRINT_TEST_DESCRIPTION("$ASCE,<mask> with no ID/period pairs is the cross-port QUERY form: "
+                           "pairCount comes back 0, and no port state is modified.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, "2");          // port selector only, no pairs
+    int pairCount = -1;
+    uint32_t opts = nmea_parse_asce(TEST0_PORT, a, n, out, &pairCount);
+
+    EXPECT_EQ(pairCount, 0) << "no pairs -> this is a query";
+    EXPECT_EQ(opts, (uint32_t)RMC_OPTIONS_PORT_SER1) << "options must round-trip so the caller "
+                                                        "knows which port was asked about";
+    for (int i = 0; i < NUM_COM_PORTS; i++)
+    {
+        EXPECT_EQ(rmci[i].rmcNmea.nmeaBits, 0u) << "port " << i << " must be untouched by a query";
+        EXPECT_EQ(rmci[i].rmc.bits, 0ull) << "port " << i << " must be untouched by a query";
+    }
+}
+
+TEST(protocol_nmea, asce_with_pairs_reports_pair_count)
+{
+    PRINT_TEST_DESCRIPTION("A normal $ASCE set reports pairCount > 0, distinguishing it from a query.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, "2,GNGGA,1,GNRMC,2");
+    int pairCount = -1;
+    nmea_parse_asce(TEST0_PORT, a, n, out, &pairCount);
+
+    EXPECT_EQ(pairCount, 2) << "two ID/period pairs were supplied";
+    EXPECT_NE(rmci[1].rmcNmea.nmeaBits, 0u) << "and they were applied to SER1";
+}
+
+TEST(protocol_nmea, asce_plain_query_has_no_side_effects)
+{
+    PRINT_TEST_DESCRIPTION("A plain port query ($ASCE,<portmask> with no other bits) must not "
+                           "change any device state, including the speed filter.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+
+    // Put the filter in a known state via a normal set.
+    uint32_t enable = (RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET);
+    char body[64];
+    snprintf(body, sizeof(body), "%u,GNGGA,1", (unsigned)enable);
+    asce_build(a, ASCII_BUF_LEN, n, body);
+    nmea_parse_asce(TEST0_PORT, a, n, out);
+    ASSERT_TRUE(nmea_getSpeedFilterEnabled());
+
+    // A plain port query must leave it alone.
+    n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, "2");
+    int pairCount = -1;
+    nmea_parse_asce(TEST0_PORT, a, n, out, &pairCount);
+
+    EXPECT_EQ(pairCount, 0);
+    EXPECT_TRUE(nmea_getSpeedFilterEnabled()) << "a plain query must not change the filter";
+}
+
+TEST(protocol_nmea, asce_query_still_honours_explicitly_set_options)
+{
+    PRINT_TEST_DESCRIPTION("A query carrying speed-filter bits STILL applies them. The options-only "
+                           "form was undocumented but did apply these side effects, and a "
+                           "customer's proprietary command sequence may depend on it -- so the "
+                           "query is additive. Side effects occur only for bits the sender set.");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> out = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+    char a[ASCII_BUF_LEN] = {};
+    int n = 0;
+    char body[64];
+
+    // Establish: filter ON via a normal set.
+    uint32_t enable = (RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET);
+    snprintf(body, sizeof(body), "%u,GNGGA,1", (unsigned)enable);
+    asce_build(a, ASCII_BUF_LEN, n, body);
+    nmea_parse_asce(TEST0_PORT, a, n, out);
+    ASSERT_TRUE(nmea_getSpeedFilterEnabled());
+
+    // Pairless sentence carrying DISABLE -- still a query (pairCount 0), but the explicitly
+    // requested filter change is honoured, exactly as before this feature existed.
+    uint32_t disable = (RMC_OPTIONS_NMEA_SPEED_FILTER_DISABLE << RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET);
+    snprintf(body, sizeof(body), "%u", (unsigned)(disable | RMC_OPTIONS_PORT_SER1));
+    n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, body);
+    int pairCount = -1;
+    nmea_parse_asce(TEST0_PORT, a, n, out, &pairCount);
+
+    EXPECT_EQ(pairCount, 0) << "still a query";
+    EXPECT_FALSE(nmea_getSpeedFilterEnabled()) << "explicitly requested filter change preserved";
+
+    // The query applied no message config to the port it named. (Port 0 legitimately still holds
+    // GNGGA from this test's own setup step above, which targeted PORT_CURRENT.)
+    EXPECT_EQ(rmci[1].rmcNmea.nmeaBits, 0u) << "queried port must not be modified by a query";
+    EXPECT_EQ(rmci[2].rmcNmea.nmeaBits, 0u);
+    EXPECT_EQ(rmci[0].rmcNmea.nmeaBits, (uint32_t)NMEA_RMC_BITS_GNGGA) << "setup state intact";
+}
+
+TEST(protocol_nmea, asce_response_port_field_is_one_hot)
+{
+    PRINT_TEST_DESCRIPTION("The $ASCE response encodes its port as a one-hot bit, matching the "
+                           "OPTIONS port selector, so a query and its reply use one encoding. "
+                           "Emitting the raw index would make the same number mean different "
+                           "ports in each direction.");
+
+    rmcNmea_t n0 = {};
+    char a[ASCII_BUF_LEN];
+
+    struct { int idx; const char *expect; } cases[] = {
+        { 0, "$ASCE,1" },   // ser0 -> bit 0
+        { 1, "$ASCE,2" },   // ser1 -> bit 1
+        { 2, "$ASCE,4" },   // ser2 -> bit 2
+        { 3, "$ASCE,8" },   // USB  -> bit 3
+    };
+
+    for (auto &c : cases)
+    {
+        memset(a, 0, sizeof(a));
+        nmea_ASCE(a, ASCII_BUF_LEN, c.idx, &n0);
+        EXPECT_EQ(strncmp(a, c.expect, strlen(c.expect)), 0)
+            << "index " << c.idx << " should emit " << c.expect << " but got " << a;
+    }
+
+    // And the bit must round-trip through the OPTIONS selector defines.
+    memset(a, 0, sizeof(a));
+    nmea_ASCE(a, ASCII_BUF_LEN, 1, &n0);
+    char expect[32];
+    snprintf(expect, sizeof(expect), "$ASCE,%u", (unsigned)RMC_OPTIONS_PORT_SER1);
+    EXPECT_EQ(strncmp(a, expect, strlen(expect)), 0) << a;
+}
+
 TEST(protocol_nmea, INFO)
 {
     dev_info_t info = {};

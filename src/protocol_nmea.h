@@ -254,10 +254,19 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info);
  * @brief Encode a $ASCE (auto-start configuration enable) sentence.
  * @param a    Output buffer.
  * @param aSize Capacity of @p a.
+ * @param portIdx Zero-based index of the port this response describes. Field 1 is emitted as a
+ *                one-hot bit (1=ser0, 2=ser1, 4=ser2, 8=USB) so requests and responses share the
+ *                same port encoding as the OPTIONS selector.
  * @param nRMC RMC NMEA configuration to encode.
  * @return Number of bytes written, or negative on failure.
  */
-int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC);
+int nmea_ASCE(char a[], const int aSize, int portIdx, rmcNmea_t* nRMC);
+
+/**
+ * @brief Reports whether NMEA speed filtering is currently enabled (see the $ASCE options field).
+ * @return true if enabled.
+ */
+bool nmea_getSpeedFilterEnabled(void);
 
 /**
  * @brief Encode a $PTOW time-of-week sentence from IMU and INS timestamps.
@@ -523,9 +532,11 @@ int nmea_parse_pgpsp(gnss_pos_t &gnssPos, gnss_vel_t &gnssVel, const char a[], c
  * @param a     Input NMEA sentence buffer.
  * @param aSize Length of @p a.
  * @param rmci  Vector of pointers to per-port RMC configuration structures to update.
- * @return Bitmask of ports whose configuration was updated.
+ * @param pairCount [out, optional] Number of ID/period pairs applied. Zero means the sentence was
+ *                  an options-only cross-port QUERY (SN-8450) and nothing was applied.
+ * @return The parsed options bitmask (0 if @p port is NULL).
  */
-uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci);
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci, int *pairCount = nullptr);
 
 /**
  * @brief Parse a $ASCE sentence and update a grmci_t configuration array.
@@ -535,7 +546,7 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
  * @param grmci Vector of pointers to per-port GNSS RMC configuration structures to update.
  * @return Bitmask of ports whose configuration was updated.
  */
-uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci);
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci, int *pairCount = nullptr);
 
 /**
  * @brief Parse a $GNS GNSS fix sentence into a gnss_pos_t structure.
