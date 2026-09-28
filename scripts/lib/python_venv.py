@@ -6,6 +6,9 @@ import venv
 from typing import Optional
 
 def is_virtual_environment(path: str) -> bool:
+    # pyvenv.cfg guards against a directory that only has a stale activate script
+    if not os.path.isfile(os.path.join(path, 'pyvenv.cfg')):
+        return False
     if os.name == 'nt':  # Windows
         scripts_path = os.path.join(path, 'Scripts')
         return os.path.isdir(scripts_path) and os.path.isfile(os.path.join(scripts_path, 'activate.bat'))
