@@ -781,16 +781,58 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         g_cmdSuccessExitAppNow = true; // Exit cltool now and report success code
     }
     if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
-    {   // Confirm
-        cout << "CAUTION!!!\n\nSetting the device(s) platform type in OTP memory.  This can only be done a limited number of times.\n\nPlatform: " << g_commandLineOptions.platformType << "\n\n";
+    {
+        const bool preflight = g_commandLineOptions.platformTypePreflight;
+        if (preflight)
+            cout << "Checking that platform type " << g_commandLineOptions.platformType << " can be written to OTP memory (nothing will be written).\n\n";
+        else
+            cout << "CAUTION!!!\n\nSetting the device(s) platform type in OTP memory.  This can only be done a limited number of times.\n\nPlatform: " << g_commandLineOptions.platformType << "\n\n";
 
-        // Set platform type in OTP memory
-        manufacturing_info_t manfInfo = {};
-        manfInfo.key = 72720;
-        manfInfo.platformType = g_commandLineOptions.platformType;
-        // Write key (uint32_t) and platformType (int32_t), 8 bytes
-        inertialSenseInterface.SendData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
-        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
+        uint32_t manfKey = g_commandLineOptions.manfKey;
+        if (!preflight && !g_commandLineOptions.manfKeySet)
+        {   // The manufacturing key is supplied by the operator, never built in
+            cout << "Enter manufacturing key: " << flush;
+            std::string line;
+            if (!std::getline(std::cin, line) || line.empty() || !isdigit((unsigned char)line[0]))
+            {
+                cout << "No manufacturing key entered; platform type not set.\n";
+                std::exit(EXIT_CODE_PLATFORM_TYPE_NOT_SET);
+            }
+            manfKey = (uint32_t)strtoul(line.c_str(), NULL, 10);
+        }
+
+        bool allOk = true;
+        int numImx = 0;
+        for (auto& device : inertialSenseInterface.getDevices())
+        {
+            if (!device || (device->devInfo.hardwareType != IS_HARDWARE_TYPE_IMX))
+                continue;
+
+            numImx++;
+            ISDevice::ManfPlatformResult result = device->setManufacturingPlatformType(g_commandLineOptions.platformType, manfKey, preflight);
+            const manufacturing_info_t& manf = device->manfInfo;
+            printf("SN%u: %s\n", device->devInfo.serialNumber, ISDevice::manfPlatformResultString(result));
+            printf("    OTP: platformType %d, write count %u, hardwareId 0x%04X, lot %u\n",
+                   manf.platformType, manf.key, manf.hardwareId, manf.lotNumber);
+            const bool bitRead = (result >= ISDevice::MANF_PLATFORM__WRITTEN && result != ISDevice::MANF_PLATFORM__ALREADY_SET) ||
+                                 (result <= ISDevice::MANF_PLATFORM__HARDWARE_ID_MISMATCH);
+            if (bitRead)
+                printf("    BIT: detected hardwareId 0x%04X\n", device->imxBit.detectedHardwareId);
+            if (result == ISDevice::MANF_PLATFORM__WRITTEN)
+                printf("    Reset the device to apply the new platform configuration.\n");
+            if (result < 0)
+                allOk = false;
+        }
+
+        if (numImx == 0)
+        {
+            cout << "No IMX device found; platform type not set.\n";
+            allOk = false;
+        }
+        if (!allOk)
+        {   // Exit cltool now and report error code
+            std::exit(EXIT_CODE_PLATFORM_TYPE_NOT_SET);
+        }
         g_cmdSuccessExitAppNow = true;
     }
     if (g_commandLineOptions.roverConnection.length() != 0)
