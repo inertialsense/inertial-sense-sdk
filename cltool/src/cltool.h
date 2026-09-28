@@ -57,6 +57,7 @@ enum eExitCodes
     EXIT_CODE_DEVICE_DISCONNECTED                   = -4,
     EXIT_CODE_FIRMWARE_UPDATE_FAILED                = -5,
     EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS        = -6,
+    EXIT_CODE_PLATFORM_TYPE_NOT_SET                 = -7,
 };
 
 // Exit code descriptions
@@ -71,6 +72,7 @@ static const struct {
     { EXIT_CODE_DEVICE_DISCONNECTED,            "Device disconnected" },
     { EXIT_CODE_FIRMWARE_UPDATE_FAILED,         "Firmware update failed" },
     { EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS, "Failed to setup communications" },
+    { EXIT_CODE_PLATFORM_TYPE_NOT_SET,          "Platform type not set in OTP" },
 };
 
 // Get human-readable description for exit code
@@ -175,6 +177,9 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     
     uint32_t sysCommand;
     int32_t platformType;
+    bool platformTypePreflight = false;     // check the preconditions for -platform= without writing OTP
+    bool manfKeySet = false;                // -manfKey= was given; otherwise -platform= prompts for the key
+    uint32_t manfKey = 0;                   // manufacturing key that enables the -platform= OTP write
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)
