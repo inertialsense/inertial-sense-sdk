@@ -87,6 +87,22 @@ public:
         ASYNC_STATE__SUCCESS     = 1,           //!< indicates that the async operation was successful, and no further actions are necessary
     };
 
+    /** @brief Outcome of setManufacturingPlatformType(). Negative values are failures. */
+    enum ManfPlatformResult {
+        MANF_PLATFORM__UNCONFIRMED          = -10,  //!< write sent, but the device did not reply afterwards, so whether an OTP slot was consumed is unknown
+        MANF_PLATFORM__READBACK_MISMATCH    = -9,   //!< an OTP slot was consumed, but the platform type read back differs from the one requested
+        MANF_PLATFORM__REJECTED             = -8,   //!< write sent, and the device kept replying with an unchanged OTP write count (older firmware reports a successful write only after a reset)
+        MANF_PLATFORM__HARDWARE_ID_MISMATCH = -7,   //!< BIT-detected hardware id differs from the OTP hardware id, so the firmware would reject the write
+        MANF_PLATFORM__NO_BIT               = -6,   //!< the device did not return DID_BIT
+        MANF_PLATFORM__REQUIREMENTS_NOT_MET = -5,   //!< lot number, hardware id or date in OTP is invalid, so the firmware would reject the write
+        MANF_PLATFORM__NO_MANF_INFO         = -4,   //!< the device did not return DID_MANUFACTURING_INFO
+        MANF_PLATFORM__INVALID_PLATFORM     = -3,   //!< platform type is outside ePlatformConfig's type range
+        MANF_PLATFORM__NOT_CONNECTED        = -2,   //!< no connected device in application mode
+        MANF_PLATFORM__WRITTEN              = 0,    //!< written to OTP and confirmed by read-back
+        MANF_PLATFORM__ALREADY_SET          = 1,    //!< OTP already holds the requested platform type, so nothing was written
+        MANF_PLATFORM__PREFLIGHT_OK         = 2,    //!< preflight only: every precondition the firmware checks is met, nothing was written
+    };
+
     /** @brief Bitmask flags controlling the verbosity/format of getName()/getDescription()/getFirmwareInfo() output. */
     enum DevInfoFormatFlags : uint16_t {
         // Description Options
@@ -473,6 +489,44 @@ public:
      */
     bool manufacturingInfo(manufacturing_info_t& manfInfo, uint32_t timeoutMs = 100);
 
+    /**
+     * Requests DID_MANUFACTURING_INFO from the device and waits for a reply, discarding any cached copy.
+     * @param manfInfo populated with the reply
+     * @param timeoutMs the maximum amount of time to wait for the reply
+     * @return true if a reply was received within timeoutMs
+     */
+    bool refreshManufacturingInfo(manufacturing_info_t& manfInfo, uint32_t timeoutMs = 500);
+
+    /**
+     * Requests DID_BIT from the device and waits for a reply, discarding any cached copy.
+     * @param bitInfo populated with the reply
+     * @param timeoutMs the maximum amount of time to wait for the reply
+     * @return true if a reply was received within timeoutMs
+     */
+    bool refreshBit(bit_t& bitInfo, uint32_t timeoutMs = 500);
+
+    /**
+     * Writes the platform type into the device's OTP manufacturing record and confirms it by read-back.
+     *
+     * The device acknowledges a DID_MANUFACTURING_INFO write whether or not it accepts it, so the result is
+     * established only by reading the record back: success requires the OTP write count (manufacturing_info_t::key)
+     * to advance by exactly one and the platform type to match. Before sending, this checks every condition the
+     * firmware checks, and runs a basic BIT if the BIT-detected hardware id does not match the one in OTP. Nothing is
+     * written if any precondition fails or if OTP already holds the requested platform type.
+     *
+     * Each successful write permanently consumes one of a small, fixed number of OTP slots.
+     *
+     * @param platformType the platform type to write (ePlatformConfig::PLATFORM_CFG_TYPE_MASK)
+     * @param unlockKey the manufacturing key that enables the write; the device rejects the write without it (not used when preflightOnly)
+     * @param preflightOnly if true, run every check but do not write
+     * @param timeoutMs the maximum amount of time to wait for the read-back to confirm the write
+     * @return the outcome; manfInfo and imxBit hold the most recent values read from the device
+     */
+    ManfPlatformResult setManufacturingPlatformType(int32_t platformType, uint32_t unlockKey, bool preflightOnly = false, uint32_t timeoutMs = 3000);
+
+    /** @return a short human-readable description of a ManfPlatformResult */
+    static const char* manfPlatformResultString(ManfPlatformResult result);
+
     // Core Interface Functions - these should be the only calls which call into the ComManager functions directly,
     //     these are essentially the basis of all comms to the device, with few exceptions.
 
@@ -793,6 +847,7 @@ public:
     uint32_t                    gpxFlashCfgUploadChecksum = 0;        //!< checksum of the most recently uploaded GPX flash config, used to detect upload success/failure
     system_command_t            sysCmd = { };                        //!< most recent system_command_t sent via SetSysCmd()
     manufacturing_info_t        manfInfo = {};                       //!< manufacturing info populated by manufacturingInfo()
+    bit_t                       imxBit = {};                         //!< IMX built-in test status, updated as DID_BIT messages are received
 
     logger_handle_t             devLogger = { };                     //!< logger this device is registered with (see registerWithLogger()), if any
     fwUpdate::update_status_e   closeStatus = { };                   //!< firmware-update status captured at the time this device/port was closed
@@ -957,6 +1012,8 @@ private:
     uint32_t                    nextValidationMs = 0;                //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
     bool                        doNotValidate = false;               //!< never attempt validation on this device; see disableValidation()
+    uint32_t                    manfInfoRxCount = 0;                 //!< number of DID_MANUFACTURING_INFO messages received; lets a refresh detect a new reply
+    uint32_t                    imxBitRxCount = 0;                   //!< number of DID_BIT messages received; lets a refresh detect a new reply
     unsigned int                syncCheckTimeMs = 0;
 
     std::array<std::chrono::high_resolution_clock::time_point, _PTYPE_SIZE> lastRxTs; //!< An array of timestamps of when last data was received of a particular protocol type (ISB, NMEA, RTCM3, etc)
