@@ -669,10 +669,13 @@ class logPlot:
 
         for idx, d in enumerate(included_devs):
             hdw_data = self.getData(d, DID_DEV_INFO, 'hardwareVer')
-            if len(hdw_data) <= d:
+            variant_data = self.getData(d, DID_DEV_INFO, 'hardwareVariant')
+            if len(hdw_data) == 0 or len(variant_data) == 0:
                 continue
-            hdw_version = [int(x) for x in hdw_data[d]]
-            hdw_variant = hdw_version[3]
+            # hardwareVer is only [major, minor, pcb_rev] (3 elements) -- the IMU population/variant
+            # id is a separate DID_DEV_INFO field, hardwareVariant, not a 4th hardwareVer entry.
+            hdw_version = [int(x) for x in hdw_data[-1]]
+            hdw_variant = int(variant_data[-1])
             imu_type = imuTypesForHdwVariant(hdw_variant, n_slots)
 
             device_node = data.setdefault(str(int(self.log.serials[d])), {})
