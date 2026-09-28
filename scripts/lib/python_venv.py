@@ -1,5 +1,6 @@
 # python_venv.py
 import os
+import shutil
 import sys
 import venv
 from typing import Optional
@@ -13,10 +14,26 @@ def is_virtual_environment(path: str) -> bool:
         return os.path.isdir(bin_path) and os.path.isfile(os.path.join(bin_path, 'activate'))
 
 def create_virtual_environment(path: str) -> str:
-    if os.path.exists(path):
+    if is_virtual_environment(path):
         print(f"Virtual environment already exists: '{path}'.")
         return path
-    venv.create(path, with_pip=True)
+    if os.path.exists(path):
+        if not os.path.isfile(os.path.join(path, 'pyvenv.cfg')):
+            raise RuntimeError(f"'{path}' exists but is not a virtual environment. Remove it and try again.")
+        # Left behind by an earlier failed venv.create() (e.g. no 'activate' script)
+        print(f"Removing incomplete virtual environment: '{path}'.")
+        shutil.rmtree(path)
+    try:
+        import ensurepip  # noqa: F401
+    except ImportError:
+        ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+        raise RuntimeError(f"Python module 'ensurepip' is missing, so a virtual environment with pip cannot be created. "
+                           f"On Debian/Ubuntu run: sudo apt install python{ver}-venv")
+    try:
+        venv.create(path, with_pip=True)
+    except Exception:
+        shutil.rmtree(path, ignore_errors=True)
+        raise
     print(f"New virtual environment created: '{path}'.")
     return path
 
@@ -81,4 +98,8 @@ def activate_virtual_environment() -> bool:
 
 if __name__ == "__main__":
     # Print the resolved venv path (useful when invoked from batch/scripts)
-    print(find_virtualenv())
+    try:
+        print(find_virtualenv())
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
