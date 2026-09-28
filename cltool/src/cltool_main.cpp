@@ -675,6 +675,19 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         else
             cout << "CAUTION!!!\n\nSetting the device(s) platform type in OTP memory.  This can only be done a limited number of times.\n\nPlatform: " << g_commandLineOptions.platformType << "\n\n";
 
+        uint32_t manfKey = g_commandLineOptions.manfKey;
+        if (!preflight && !g_commandLineOptions.manfKeySet)
+        {   // The manufacturing key is supplied by the operator, never built in
+            cout << "Enter manufacturing key: " << flush;
+            std::string line;
+            if (!std::getline(std::cin, line) || line.empty() || !isdigit((unsigned char)line[0]))
+            {
+                cout << "No manufacturing key entered; platform type not set.\n";
+                std::exit(EXIT_CODE_PLATFORM_TYPE_NOT_SET);
+            }
+            manfKey = (uint32_t)strtoul(line.c_str(), NULL, 10);
+        }
+
         bool allOk = true;
         int numImx = 0;
         for (auto& device : inertialSenseInterface.getDevices())
@@ -683,7 +696,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                 continue;
 
             numImx++;
-            ISDevice::ManfPlatformResult result = device->setManufacturingPlatformType(g_commandLineOptions.platformType, preflight);
+            ISDevice::ManfPlatformResult result = device->setManufacturingPlatformType(g_commandLineOptions.platformType, manfKey, preflight);
             const manufacturing_info_t& manf = device->manfInfo;
             printf("SN%u: %s\n", device->devInfo.serialNumber, ISDevice::manfPlatformResultString(result));
             printf("    OTP: platformType %d, write count %u, hardwareId 0x%04X, lot %u\n",

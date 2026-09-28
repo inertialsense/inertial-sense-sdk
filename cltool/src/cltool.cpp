@@ -795,6 +795,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.nmeaRx = true;
         }
+        else if (startsWith(a, "-manfKey="))
+        {
+            const char* value = &a[strlen("-manfKey=")];
+            if (!isdigit(*value))
+            {
+                cout << "Manufacturing key not specified.\n\n";
+                return false;
+            }
+            g_commandLineOptions.manfKey = (uint32_t)strtoul(value, NULL, 10);
+            g_commandLineOptions.manfKeySet = true;
+        }
         else if (startsWith(a, "-platform=") || startsWith(a, "-platformCheck="))
         {
             g_commandLineOptions.platformTypePreflight = startsWith(a, "-platformCheck=");
@@ -1373,6 +1384,7 @@ void cltool_outputUsage()
     cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
     cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (a limited number of writes), verified by read-back." << endlbOn;
     cout << "    -platformCheck=[t]" << boldOff << " Checks that -platform=[t] would be accepted, without writing OTP." << endlbOn;
+    cout << "    -manfKey=[k]" << boldOff << "    Manufacturing key for -platform=[t]. Prompted for if not given." << endlbOn;
     }
 
     cout << endlbOn;

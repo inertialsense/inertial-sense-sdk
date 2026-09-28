@@ -517,11 +517,12 @@ public:
      * Each successful write permanently consumes one of a small, fixed number of OTP slots.
      *
      * @param platformType the platform type to write (ePlatformConfig::PLATFORM_CFG_TYPE_MASK)
+     * @param unlockKey the manufacturing key that enables the write; the device rejects the write without it (not used when preflightOnly)
      * @param preflightOnly if true, run every check but do not write
      * @param timeoutMs the maximum amount of time to wait for the read-back to confirm the write
      * @return the outcome; manfInfo and imxBit hold the most recent values read from the device
      */
-    ManfPlatformResult setManufacturingPlatformType(int32_t platformType, bool preflightOnly = false, uint32_t timeoutMs = 3000);
+    ManfPlatformResult setManufacturingPlatformType(int32_t platformType, uint32_t unlockKey, bool preflightOnly = false, uint32_t timeoutMs = 3000);
 
     /** @return a short human-readable description of a ManfPlatformResult */
     static const char* manfPlatformResultString(ManfPlatformResult result);

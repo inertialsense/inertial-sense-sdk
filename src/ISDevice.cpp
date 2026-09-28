@@ -1652,7 +1652,7 @@ bool ISDevice::refreshBit(bit_t& bitInfo, uint32_t timeoutMs) {
     return false;
 }
 
-ISDevice::ManfPlatformResult ISDevice::setManufacturingPlatformType(int32_t platformType, bool preflightOnly, uint32_t timeoutMs) {
+ISDevice::ManfPlatformResult ISDevice::setManufacturingPlatformType(int32_t platformType, uint32_t unlockKey, bool preflightOnly, uint32_t timeoutMs) {
     static_assert(offsetof(manufacturing_info_t, platformType) == offsetof(manufacturing_info_t, key) + sizeof(uint32_t),
                   "the platform-type write sends key and platformType as one contiguous 8-byte block");
 
@@ -1704,7 +1704,7 @@ ISDevice::ManfPlatformResult ISDevice::setManufacturingPlatformType(int32_t plat
     log_info(IS_LOG_ISDEVICE, "[%s] Writing platform type %d to OTP (write count %u)", desc.c_str(), platformType, before.key);
 
     manufacturing_info_t request = {};
-    request.key = MANF_INFO_UNLOCK_KEY;
+    request.key = unlockKey;
     request.platformType = platformType;
     SendData(DID_MANUFACTURING_INFO, &request.key, sizeof(request.key) + sizeof(request.platformType), offsetof(manufacturing_info_t, key));
 

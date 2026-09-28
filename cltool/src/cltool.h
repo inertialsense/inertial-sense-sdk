@@ -178,6 +178,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t sysCommand;
     int32_t platformType;
     bool platformTypePreflight = false;     // check the preconditions for -platform= without writing OTP
+    bool manfKeySet = false;                // -manfKey= was given; otherwise -platform= prompts for the key
+    uint32_t manfKey = 0;                   // manufacturing key that enables the -platform= OTP write
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
     uint32_t runDurationMs = 0;             // Run for this many millis before exiting (0 = indefinitely)

@@ -737,9 +737,6 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
 #define RTCM3_MSG_ID(msg)       messageStatsGetbitu((const unsigned char*)msg, 24, 12)
 #define RTCM3_MSG_LENGTH(msg)   messageStatsGetbitu((const unsigned char*)msg, 14, 10)
 
-/** Value written to manufacturing_info_t::key to enable a DID_MANUFACTURING_INFO write */
-#define MANF_INFO_UNLOCK_KEY    72720
-
 /**
  * @brief (DID_MANUFACTURING_INFO) Manufacturing info, INTERNAL USE ONLY. One-time-programmable
  * (OTP) identity and provenance data written during manufacturing/testing; not intended for
