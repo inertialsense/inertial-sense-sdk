@@ -1056,7 +1056,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     if (result >= 0) {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
-    } else if (win32ErrorIndicatesDeviceLost((DWORD)serialPort->errorCode)) {
+    } else if (win32ErrorIndicatesDeviceLost((DWORD)serialPort->errorCode, serialPort->portName)) {
         // SN-8697: mirror the write path — a device-lost read failure must invalidate the port
         // so the firmware updater can detect the disconnect and rediscover the device.
         portClose(port);
@@ -1147,6 +1147,18 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 #if PLATFORM_IS_WINDOWS
 /**
+ * @brief Confirms via Windows COM-port enumeration whether a named port is still known to the OS
+ * (SN-8650). Mirrors the exact check `SerialPortFactory::validatePort()` (PortFactory.cpp) already
+ * uses to decide whether a port name is real -- duplicated locally rather than called cross-layer,
+ * since this file is the low-level C serial driver and PortFactory is a higher C++ layer built on it.
+ */
+static int win32PortStillEnumerated(const char* pName)
+{
+    char targetPath[256];
+    return (QueryDosDeviceA(pName, targetPath, sizeof(targetPath)) != 0);
+}
+
+/**
  * @brief Whether a Win32 error code indicates the underlying serial device is gone (SN-8697).
  *
  * A rebooting IMX-6/GPX-1 (during an ISv2/FPKG firmware update) does not re-enumerate on Windows --
@@ -1161,8 +1173,15 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
  * ERROR_OPERATION_ABORTED is safe to include here: at every call site that checks this, it is
  * examined before this code's own CancelIo() runs, so it can only reflect an OS-initiated abort
  * (the device going away), not a benign cancellation we ourselves triggered a moment earlier.
+ *
+ * SN-8650: ERROR_SEM_TIMEOUT is the one code here that is NOT a documented "device physically gone"
+ * signal -- it also fires on a still-present device that's simply slow to answer (observed in the
+ * field: many devices sharing one USB hub/testbed, a transient write timeout under bus contention
+ * trips this same code with the device never actually leaving). Confirm via OS-level enumeration
+ * before treating it as fatal; a device that's truly gone won't resolve via QueryDosDevice either,
+ * so the reboot-recovery case this code exists for is unaffected.
  */
-static int win32ErrorIndicatesDeviceLost(DWORD err)
+static int win32ErrorIndicatesDeviceLost(DWORD err, const char* pName)
 {
     switch (err)
     {
@@ -1171,9 +1190,11 @@ static int win32ErrorIndicatesDeviceLost(DWORD err)
     case ERROR_GEN_FAILURE:            // "A device attached to the system is not functioning."
     case ERROR_DEVICE_NOT_CONNECTED:
     case ERROR_OPERATION_ABORTED:      // OS-initiated abort due to device removal (see doc comment)
-    case ERROR_SEM_TIMEOUT:            // commonly returned when a USB device stops responding
     case ERROR_INVALID_HANDLE:         // handle invalidated by the underlying device node going away
         return 1;
+    case ERROR_SEM_TIMEOUT:            // commonly returned when a USB device stops responding, but
+                                        // not exclusively -- see SN-8650 note above
+        return !win32PortStillEnumerated(pName);
     default:
         return 0;
     }
@@ -1218,7 +1239,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             serialPort->error = "WriteFile() failed";
             log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error writing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             CancelIo(handle->platformHandle);
-            if (win32ErrorIndicatesDeviceLost(result)) {
+            if (win32ErrorIndicatesDeviceLost(result, portName(port))) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
                 portClose(port);
                 portInvalidate(port);
@@ -1236,7 +1257,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             serialPort->error = "GetOverlappedResult() failed";
             log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
             CancelIo(handle->platformHandle);
-            if (win32ErrorIndicatesDeviceLost(result)) {
+            if (win32ErrorIndicatesDeviceLost(result, portName(port))) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
                 portClose(port);
                 portInvalidate(port);
