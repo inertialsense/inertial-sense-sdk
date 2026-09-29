@@ -263,6 +263,19 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info);
 int nmea_ASCE(char a[], const int aSize, int portIdx, rmcNmea_t* nRMC);
 
 /**
+ * @brief Encode a $ASCE sentence without naming the port it describes.
+ * @note Pre-SN-8450 signature, retained for source compatibility with callers written before the
+ *       port index was added. Field 1 is emitted as `0`, which is what this function always did
+ *       prior to SN-8450. Prefer the four-argument form, which identifies the port and lets a
+ *       host distinguish the replies to a multi-port query.
+ * @param a     Output buffer.
+ * @param aSize Capacity of @p a.
+ * @param nRMC  RMC NMEA configuration to encode.
+ * @return Number of bytes written, or negative on failure.
+ */
+int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC);
+
+/**
  * @brief Reports whether NMEA speed filtering is currently enabled (see the $ASCE options field).
  * @return true if enabled.
  */
@@ -544,7 +557,9 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
  * @param a     Input NMEA sentence buffer.
  * @param aSize Length of @p a.
  * @param grmci Vector of pointers to per-port GNSS RMC configuration structures to update.
- * @return Bitmask of ports whose configuration was updated.
+ * @param pairCount [out, optional] Number of ID/period pairs applied. Zero means the sentence was
+ *                  an options-only cross-port QUERY (SN-8450) and nothing was applied.
+ * @return The parsed options bitmask (0 if @p port is NULL).
  */
 uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci, int *pairCount = nullptr);
 

@@ -465,6 +465,112 @@ TEST(protocol_nmea, asce_response_port_field_is_one_hot)
     EXPECT_EQ(strncmp(a, expect, strlen(expect)), 0) << a;
 }
 
+TEST(protocol_nmea, asce_legacy_three_arg_overload_preserves_old_output)
+{
+    PRINT_TEST_DESCRIPTION("SN-8450 added a portIdx parameter to nmea_ASCE(). The pre-SN-8450 "
+                           "three-argument form is retained so existing callers still compile, "
+                           "and must reproduce the old output exactly -- field 1 emitted as 0. "
+                           "A caller that has not been updated therefore sees no behaviour "
+                           "change, while an updated caller gets the real port bit.");
+
+    rmcNmea_t n0 = {};
+    char legacy[ASCII_BUF_LEN], modern[ASCII_BUF_LEN];
+
+    // Legacy 3-arg form: port field is 0, as nmea_ASCE() always emitted before SN-8450.
+    memset(legacy, 0, sizeof(legacy));
+    int nLegacy = nmea_ASCE(legacy, ASCII_BUF_LEN, &n0);
+    EXPECT_GT(nLegacy, 0);
+    EXPECT_EQ(strncmp(legacy, "$ASCE,0", 7), 0)
+        << "legacy overload must emit port 0, got " << legacy;
+
+    // It must be identical to passing a negative index explicitly.
+    memset(modern, 0, sizeof(modern));
+    nmea_ASCE(modern, ASCII_BUF_LEN, -1, &n0);
+    EXPECT_STREQ(legacy, modern) << "3-arg form must equal 4-arg form with portIdx = -1";
+
+    // And it must differ from a real port index, or the overload would be hiding the fix.
+    memset(modern, 0, sizeof(modern));
+    nmea_ASCE(modern, ASCII_BUF_LEN, 1, &n0);
+    EXPECT_STRNE(legacy, modern) << "4-arg form with a valid index must name the port";
+
+    // Same again with messages enabled, so the pair-encoding path is covered too, not just
+    // the empty-config case.
+    rmcNmea_t n1 = {};
+    n1.nmeaBits = NMEA_RMC_BITS_PPIMU;
+    n1.nmeaPeriod[NMEA_MSG_ID_PPIMU] = 1;
+
+    memset(legacy, 0, sizeof(legacy));
+    nmea_ASCE(legacy, ASCII_BUF_LEN, &n1);
+    EXPECT_EQ(strncmp(legacy, "$ASCE,0,2,1", 11), 0)
+        << "legacy overload with a pair must emit port 0 then the pair, got " << legacy;
+
+    memset(modern, 0, sizeof(modern));
+    nmea_ASCE(modern, ASCII_BUF_LEN, 1, &n1);
+    EXPECT_EQ(strncmp(modern, "$ASCE,2,2,1", 11), 0)
+        << "4-arg form must emit the port bit then the pair, got " << modern;
+}
+
+TEST(protocol_nmea, asce_parse_overloads_accept_omitted_pairCount)
+{
+    PRINT_TEST_DESCRIPTION("SN-8450 added an optional pairCount out-parameter to both "
+                           "nmea_parse_asce() and nmea_parse_asce_grmci(). It defaults to "
+                           "nullptr, so pre-SN-8450 call sites compile and behave unchanged. "
+                           "Verified for both overloads, with and without the argument, and "
+                           "that omitting it does not suppress the parse or the return value.");
+
+    // --- nmea_parse_asce(): rmci_t flavour ---
+    {
+        char a[ASCII_BUF_LEN] = {};
+        int n = 0;
+        asce_build(a, ASCII_BUF_LEN, n, "0,2,1");      // a set: one ID/period pair
+
+        rmci_t rmciA[NUM_COM_PORTS] = {};
+        std::vector<rmci_t *> outA = { &rmciA[0], &rmciA[1], &rmciA[2],
+                                       &rmciA[3], &rmciA[4], &rmciA[5] };
+        // Pre-SN-8450 call shape: pairCount omitted entirely.
+        uint32_t optsNoCount = nmea_parse_asce(TEST0_PORT, a, n, outA);
+
+        rmci_t rmciB[NUM_COM_PORTS] = {};
+        std::vector<rmci_t *> outB = { &rmciB[0], &rmciB[1], &rmciB[2],
+                                       &rmciB[3], &rmciB[4], &rmciB[5] };
+        int pairCount = -1;
+        uint32_t optsWithCount = nmea_parse_asce(TEST0_PORT, a, n, outB, &pairCount);
+
+        EXPECT_EQ(optsNoCount, optsWithCount)
+            << "omitting pairCount must not change the returned options bitmask";
+        EXPECT_EQ(pairCount, 1) << "one ID/period pair was supplied";
+
+        // The parse must still take effect when pairCount is omitted.
+        EXPECT_EQ(rmciA[0].rmcNmea.nmeaBits, rmciB[0].rmcNmea.nmeaBits)
+            << "omitting pairCount must not suppress the configuration write";
+        EXPECT_NE(rmciA[0].rmcNmea.nmeaBits, 0u) << "the set should have applied";
+    }
+
+    // --- nmea_parse_asce_grmci(): grmci_t flavour ---
+    {
+        char a[ASCII_BUF_LEN] = {};
+        int n = 0;
+        asce_build(a, ASCII_BUF_LEN, n, "2");          // options-only: a query
+
+        grmci_t grmciA[NUM_COM_PORTS] = {};
+        std::vector<grmci_t *> outA = { &grmciA[0], &grmciA[1], &grmciA[2],
+                                        &grmciA[3], &grmciA[4], &grmciA[5] };
+        uint32_t optsNoCount = nmea_parse_asce_grmci(TEST0_PORT, a, n, outA);
+
+        grmci_t grmciB[NUM_COM_PORTS] = {};
+        std::vector<grmci_t *> outB = { &grmciB[0], &grmciB[1], &grmciB[2],
+                                        &grmciB[3], &grmciB[4], &grmciB[5] };
+        int pairCount = -1;
+        uint32_t optsWithCount = nmea_parse_asce_grmci(TEST0_PORT, a, n, outB, &pairCount);
+
+        EXPECT_EQ(optsNoCount, optsWithCount)
+            << "omitting pairCount must not change the returned options bitmask";
+        EXPECT_EQ(optsNoCount, (uint32_t)RMC_OPTIONS_PORT_SER1)
+            << "the return value is the parsed options bitmask, not a port-updated mask";
+        EXPECT_EQ(pairCount, 0) << "an options-only sentence is a query: no pairs applied";
+    }
+}
+
 TEST(protocol_nmea, INFO)
 {
     dev_info_t info = {};

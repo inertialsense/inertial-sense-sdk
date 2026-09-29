@@ -887,6 +887,12 @@ int nmea_ASCE(char a[], const int aSize, int portIdx, rmcNmea_t* nRMC)
     return nmea_sprint_footer(a, aSize, n);
 }
 
+int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
+{   // Pre-SN-8450 signature, retained for source compatibility. Passing -1 reproduces the old
+    // output exactly: field 1 emitted as 0 rather than the one-hot port bit.
+    return nmea_ASCE(a, aSize, -1, nRMC);
+}
+
 
 /**
  * @brief Builds a $PTOW proprietary NMEA message reporting the IMU and INS time-of-week values used to timestamp navigation output.
