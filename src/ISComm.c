@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISComm.h"
 
 #define MAX_MSG_LENGTH_ISB          PKT_BUF_SIZE
+#define MAX_MSG_LENGTH_SBF          4096 // MAX len for incoming SBF messages (Septentrio Binary Format)
 #define MAX_MSG_LENGTH_NMEA         200
 #define MAX_MSG_LENGTH_RTCM         1023  // RTCM3 standard
 #define MAX_MSG_LENGTH_UBX          1024
@@ -732,7 +733,7 @@ static protocol_type_t processSeptentrioSBFPkt(void* v)
         // Parse header
         sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
         p->size = sepPkt->payloadSize;
-        if (p->size > MAX_MSG_LENGTH_ISB || p->size < 4)
+        if (p->size > MAX_MSG_LENGTH_SBF || p->size < 4)
         {	// Invalid size
             return parseErrorResetState(c, EPARSE_INVALID_SIZE);
         }
