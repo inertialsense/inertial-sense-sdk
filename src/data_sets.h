@@ -754,7 +754,7 @@ typedef struct PACKED
 
     uint32_t    key;           //!< Key - write: unlock manufacturing info, read: number of times OTP has been set, 15 max
 
-    int32_t     platformType;  //!< Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK). Only valid if greater than zero.
+    int32_t     platformType;  //!< Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK). Only valid if greater than zero. Write: a negative value in a full-struct write keeps the current platform type.
 
     int32_t     reserved;      //!< Reserved
 

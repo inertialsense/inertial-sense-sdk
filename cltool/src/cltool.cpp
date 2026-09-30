@@ -795,16 +795,28 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.nmeaRx = true;
         }
-        else if (startsWith(a, "-platform"))
+        else if (startsWith(a, "-manfKey="))
         {
-            #define PLATFORM_TYPE_TAG_LEN    10
-            if (strlen(a) <= PLATFORM_TYPE_TAG_LEN || !isdigit(a[PLATFORM_TYPE_TAG_LEN]))
+            const char* value = &a[strlen("-manfKey=")];
+            if (!isdigit(*value))
+            {
+                cout << "Manufacturing key not specified.\n\n";
+                return false;
+            }
+            g_commandLineOptions.manfKey = (uint32_t)strtoul(value, NULL, 10);
+            g_commandLineOptions.manfKeySet = true;
+        }
+        else if (startsWith(a, "-platform=") || startsWith(a, "-platformCheck="))
+        {
+            g_commandLineOptions.platformTypePreflight = startsWith(a, "-platformCheck=");
+            const char* value = strchr(a, '=') + 1;
+            if (!isdigit(*value))
             {
                 cout << "Platform type not specified.\n\n";
                 return false;
             }
 
-            int platformType = (uint32_t)strtoul(&a[PLATFORM_TYPE_TAG_LEN], NULL, 10);
+            int platformType = (uint32_t)strtoul(value, NULL, 10);
             if (platformType < 0 || platformType >= PLATFORM_CFG_TYPE_COUNT)
             {
                 cout << "Invalid platform type: " << platformType << "\n\n";
@@ -1346,6 +1358,9 @@ void cltool_outputUsage()
     cout << "    -use-relay=" << boldOff << "URL[,URL...]  Register and enable one or more manual relay host URLs (any of \"http://host:port\", \"host:port\", or bare hostname/IP)." << endlbOn;
     cout << "    -use-relay-only=" << boldOff << "HOST[,HOST...]  When auto-enabling mDNS-discovered relays, enable only hosts whose hostname matches the whitelist." << endlbOn;
     cout << "    -use-relay-list" << boldOff << " Enable relay discovery, print the resulting host list, and exit." << endlbOn;
+    cout << boldOff << "                    Relay connections are annotated with name 'cltool', this command line as the purpose, and priority" << endlbOn;
+    cout << boldOff << "                    high during a firmware update (normal otherwise). Override with the environment variables" << endlbOn;
+    cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
@@ -1370,7 +1385,9 @@ void cltool_outputUsage()
     if (g_internal)
     {
     cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
-    cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
+    cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (a limited number of writes), verified by read-back." << endlbOn;
+    cout << "    -platformCheck=[t]" << boldOff << " Checks that -platform=[t] would be accepted, without writing OTP." << endlbOn;
+    cout << "    -manfKey=[k]" << boldOff << "    Manufacturing key for -platform=[t]. Prompted for if not given." << endlbOn;
     }
 
     cout << endlbOn;

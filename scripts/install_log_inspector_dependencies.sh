@@ -1,6 +1,6 @@
 #!/bin/bash
 cd "$(dirname "$(realpath $0)")" > /dev/null
-source lib/activate_python_venv.sh
+source lib/activate_python_venv.sh || exit 1
 
 sudo apt install -y python3 python3-pip
 python3 -m pip install -U pip # update pip3 to latest version
