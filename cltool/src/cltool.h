@@ -207,7 +207,6 @@ extern cInertialSenseDisplay g_inertialSenseDisplay;
 extern bool g_ctrlCPressed;
 
 int cltool_main(int argc, char* argv[]);
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend);
 
 // returns false if failure
 bool cltool_setupLogger(InertialSense& inertialSenseInterface);
