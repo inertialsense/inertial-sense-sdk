@@ -134,7 +134,7 @@ typedef enum
 
 /** The maximum buffer space that is used for sending and receiving packets */
 #ifndef PKT_BUF_SIZE
-#define PKT_BUF_SIZE            2048
+#define PKT_BUF_SIZE            4096
 #endif
 
 /** The maximum time between received data that will reset in the parser */
