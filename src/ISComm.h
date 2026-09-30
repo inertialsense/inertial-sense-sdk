@@ -976,11 +976,17 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 *          contributes nothing. Measured on a 5 MB capture: one call consumed 697 bytes, and the
 *          next fourteen each reported a complete valid packet having consumed one byte.
 *
-*          Take a packet's length from `rxPkt.size`, and its position from `rxBuf.head` (which
-*          `setParserStart` moves to the packet's first byte and `validPacketReset` moves past its
-*          last) — never from a caller-side byte counter. If you need `rxBuf.head` as a stable
-*          file offset, feed the parser in BULK instead (see the quick-start above) and note that
-*          `is_comm_free` compacts the buffer, so only head DELTAS survive across it.
+*          Take a packet's length from `rxPkt.size`. Do NOT use `rxBuf.head` itself as a stable
+*          file offset, and do NOT use a delta between two `head` readings either: `is_comm_free`'s
+*          compaction resets `head` to a fixed `buf->start` and shifts `tail`/`scan` by the same
+*          amount, so `head`'s own absolute value (and any delta against a prior reading of it)
+*          carries no relationship to bytes actually consumed — it is pure compaction-shift noise.
+*          What DOES survive compaction is the outstanding byte count `tail - head` (both operands
+*          shift together, so the difference is invariant). Feed the parser in BULK (see the
+*          quick-start above) and keep your own running "total bytes ever fed" counter; the
+*          parser's absolute consumed position is then `totalFed - (tail - head)`, and a packet's
+*          start is that minus `rxPkt.size` — exactly what the live `.raw` writer does
+*          (`cDeviceLogRaw::SaveData`, `m_rawFedBytes`/`consumedEnd`).
 *
 *          Both in-tree callers got this wrong identically and wrote `.idx` offsets that were not
 *          packet starts — see SN-8765.

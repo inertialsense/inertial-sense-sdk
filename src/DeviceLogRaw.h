@@ -120,6 +120,20 @@ private:
      * still gets its true start. Re-based when a fresh `.raw` file begins.
      */
     uint64_t m_rawFedBytes = 0;
+
+    /**
+     * @brief How many bytes at the start of the current `m_rawFedBytes` counting scheme are
+     *        actually carried-over, already-parsed-elsewhere bytes from the PREVIOUS `.raw`
+     *        segment, rather than bytes physically present in the current file (PR #1333 review).
+     *
+     * Set once per segment, at the same rebase point that resets `m_rawFedBytes` to
+     * `rxBuf.tail - rxBuf.head` when a fresh file begins: that rebase treats whatever the parser
+     * still has buffered as if it started at this segment's byte 0, but those bytes were fed to
+     * the parser during the PREVIOUS segment and their preamble was already flushed to the
+     * PREVIOUS file. A packet whose computed start falls below this threshold therefore has its
+     * preamble in the previous segment, not this one, and must not be indexed against this file.
+     */
+    uint64_t m_rawSegmentCarryoverBytes = 0;
 };
 
 #endif // IS_SDK__DEVICE_LOG_RAW_H

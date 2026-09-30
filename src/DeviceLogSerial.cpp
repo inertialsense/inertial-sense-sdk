@@ -108,11 +108,9 @@ bool cDeviceLogSerial::FlushToFile() {
 
 
 bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype) {
-    // D-119/SN-8626: ensure this record's chunk fits BEFORE indexing it (moved up
-    // from below cDeviceLog::SaveData()'s call, which stamps the .idx offset from
-    // m_lastIndexOffset). Indexing must see the post-flush/post-rotation chunk
-    // state, or a record that triggers a flush gets stamped with the PRE-flush
-    // offset -- wrong by a full chunk. Mirrors cDeviceLogRaw's SN-8328 ordering.
+    // D-119/SN-8626: ensure this record's chunk fits BEFORE indexing it. Indexing must see the
+    // post-flush/post-rotation chunk state, or a record that triggers a flush gets stamped with
+    // the PRE-flush offset -- wrong by a full chunk. Mirrors cDeviceLogRaw's SN-8328 ordering.
     int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
     int32_t buffFree = m_chunk.GetBuffFree();
     if (dataBytes > buffFree) {
@@ -134,6 +132,13 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, p
     // written yet.
     m_lastIndexOffset = static_cast<uint64_t>(m_fileSize) + sizeof(sChunkHeader)
                        + static_cast<uint64_t>(m_chunk.GetDataSize());
+
+    // PR #1333 review: addIndexRecord() used to run inside cDeviceLog::SaveData() itself, which
+    // meant every format that calls the base (including CSV/JSON/KML, which never track a true
+    // on-disk offset) got an .idx record too -- with whatever stale m_lastIndexOffset happened to
+    // be sitting at. Calling it here, immediately after the stamp above, keeps indexing opt-in to
+    // formats that actually maintain a meaningful offset.
+    addIndexRecord(dataHdr, dataBuf);
 
     cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 

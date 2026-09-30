@@ -598,3 +598,85 @@ TEST(ScanOffsets, LiveWriterSurvivesPacketsSplitAcrossLogDataCalls) {
 
     ISFileManager::DeleteDirectory(dir.string());
 }
+
+/**
+ * @brief A packet that straddles a segment rotation must not be indexed with a wrong offset
+ * (PR #1333 review).
+ *
+ * `m_rawFedBytes` is rebased to `rxBuf.tail - rxBuf.head` when a fresh `.raw` file begins, so
+ * whatever the parser still has buffered from the OLD segment is treated as if it started at the
+ * NEW segment's byte 0. A packet completed from those carried-over bytes would then be indexed at
+ * a small offset in the new file -- but its preamble was already flushed to the OLD file. The fix
+ * tracks that carryover and withholds the `.idx` record for exactly that one packet; the packet's
+ * bytes themselves are still written (split across both segments) exactly as before.
+ *
+ * Forces a real rotation by feeding enough data to fill the fixed 128 KB in-memory chunk
+ * (`DEFAULT_CHUNK_DATA_SIZE`) -- that is what triggers `WriteChunkToFile()` + `CloseAllFiles()` --
+ * and sets `maxFileSize` small so the very first flush also rotates. The two `LogData()` calls
+ * split deliberately inside one packet, just before the chunk fills, so that packet's prefix is
+ * flushed+rotated out from under it before its suffix arrives.
+ */
+TEST(ScanOffsets, LiveWriterSkipsIndexingAPacketThatStraddlesSegmentRotation) {
+    const fs::path dir = makeTempDir("sn8765_live_rotate");
+    ISFileManager::DeleteDirectory(dir.string());
+
+    std::vector<uint8_t> stream;
+    std::vector<uint64_t> packetStarts;
+    pimu_t pimu{};
+    // Enough packets to exceed the fixed 128 KB chunk capacity -- that is what forces at least one
+    // WriteChunkToFile()+rotation, regardless of how the LogData() calls are split.
+    while (stream.size() < 129 * 1024) {
+        packetStarts.push_back(stream.size());
+        pimu.time = 1.0 + static_cast<double>(packetStarts.size());
+        appendIsb(stream, DID_PIMU, sizeof(pimu), &pimu);
+    }
+
+    // The packet straddling 127 KB: its prefix lands in the pre-rotation chunk, its suffix arrives
+    // after. Split strictly inside it (not at its first byte), so this call actually delivers a
+    // partial packet to the parser rather than a clean boundary.
+    std::size_t straddlerIdx = 0;
+    for (std::size_t i = 0; i < packetStarts.size(); ++i) {
+        if (packetStarts[i] > 127 * 1024) { straddlerIdx = i; break; }
+    }
+    ASSERT_GT(straddlerIdx, 0u) << "stream too short to place a straddler before the chunk fills";
+    const std::size_t splitPoint = static_cast<std::size_t>(packetStarts[straddlerIdx]) + 3;
+    ASSERT_LT(splitPoint, stream.size());
+
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_RAW;
+    opts.useSubFolderTimestamp = false;
+    opts.maxFileSize           = 1000;   // force rotation on the very first chunk flush
+    ASSERT_TRUE(logger.InitSave(dir.string(), opts));
+    auto dev = logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), 777003u);
+    ASSERT_TRUE(dev);
+    logger.EnableLogging(true);
+
+    logger.LogData(dev, static_cast<int>(splitPoint), stream.data());
+    logger.LogData(dev, static_cast<int>(stream.size() - splitPoint), stream.data() + splitPoint);
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> rawInfos;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.raw$", rawInfos);
+    std::vector<fs::path> rawPaths;
+    for (const auto& r : rawInfos) rawPaths.emplace_back(r.name);
+    std::sort(rawPaths.begin(), rawPaths.end());
+    ASSERT_GE(rawPaths.size(), 2u)
+        << "the stream did not actually rotate -- this run did not exercise the defect";
+
+    // Every indexed record, in EVERY segment, must be a real packet start in THAT segment's own
+    // bytes. The straddling packet must simply be absent from the index, not misindexed.
+    for (const auto& path : rawPaths) {
+        auto reader = ISLogReader::openSegment(path);
+        ASSERT_TRUE(reader.has_value());
+        const auto bytes = readAll(path);
+        for (std::size_t k = 0; k < reader->recordCount(); ++k) {
+            const auto rv = reader->recordAt(k);
+            EXPECT_EQ(didAtPacketStart(bytes.data(), bytes.size(), rv.offsetInFile()), rv.did())
+                << path << ": record " << k << " offset " << rv.offsetInFile()
+                << " is not a real packet start in this segment";
+        }
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}

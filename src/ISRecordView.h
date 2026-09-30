@@ -180,15 +180,21 @@ public:
      * parent reader's mmap'd region; do not dereference after the reader is destroyed or
      * moved-from.
      *
-     * @warning **`second` is NOT the record's length, and can exceed it.** `ISLogReader::viewAt`
-     *          computes it as `recordEndOffset(i) - offset(i)` — the NEXT record's offset minus
-     *          this one's — so it is the record PLUS any bytes that follow it before the next
-     *          record begins. On an undamaged stream those coincide; where the parser walked past
-     *          unparsable bytes they do not. Take a packet's true extent from the parser
+     * @warning **For a `.raw` view, `second` is NOT the record's length, and can exceed it.**
+     *          `ISLogReader::viewAt` computes it as `recordEndOffset(i) - offset(i)`, and for
+     *          `.raw`, `recordEndOffset()` infers the end from the NEXT DISTINCT record's offset
+     *          — so it is the record PLUS any bytes that follow it before the next record begins.
+     *          On an undamaged stream those coincide; where the parser walked past unparsable
+     *          bytes they do not. Take a `.raw` packet's true extent from the parser
      *          (`rxPkt.size`), never from this arithmetic — that is D0117, and it is why a
      *          firmware-written sidecar has been observed yielding a 1-byte span starting
      *          mid-packet. `first` points at the record's START (see the class note), not its
      *          payload.
+     *
+     *          **For a `.dat` view, `second` IS the exact record length.** `recordEndOffset()`
+     *          re-reads the on-disk `p_data_hdr_t` at this record's own offset and returns
+     *          `offset + sizeof(p_data_hdr_t) + hdr.size` directly — self-delimiting, with no
+     *          inference from neighboring records. The upper-bound caveat above does not apply.
      *
      * @return  `{ data, size }`. `data` is `nullptr` and `size` is
      *          0 for an empty / sentinel view.

@@ -163,8 +163,12 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     // the count advanced past it.
     if (rawFileBase == 0) {
         // Fresh .raw file: offsets restart at 0 for the next byte the parser finishes with,
-        // whatever it still holds buffered from the previous segment.
+        // whatever it still holds buffered from the previous segment. Those buffered bytes were
+        // fed to the parser (and physically flushed to the PREVIOUS file) before this rotation --
+        // record how many there are so a packet completed from them is not indexed as if its
+        // preamble lived in this file too (PR #1333 review; see m_rawSegmentCarryoverBytes).
         m_rawFedBytes = static_cast<uint64_t>(m_comm.rxBuf.tail - m_comm.rxBuf.head);
+        m_rawSegmentCarryoverBytes = m_rawFedBytes;
     }
 
     int remaining = dataSize;
@@ -225,9 +229,29 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                     // position in the file, so a reader can seek there and parse the preamble
                     // immediately with no bytes in front of it. Derived from the parser's buffer
                     // position (see the note above the feed loop), NOT from the byte just fed.
-                    m_lastIndexOffset =
-                        consumedEnd - static_cast<uint64_t>(m_comm.rxPkt.size);
-                    addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                    {
+                        const uint64_t pktStart = consumedEnd - static_cast<uint64_t>(m_comm.rxPkt.size);
+                        // PR #1333 review: a packet straddling the previous segment's rotation is
+                        // completed from bytes counted as if they started at this segment's byte
+                        // 0 (see m_rawSegmentCarryoverBytes), but its preamble physically lives in
+                        // the PREVIOUS file. Indexing it against THIS file would point a reader at
+                        // the packet's continuation, not its start, so it is skipped entirely --
+                        // its bytes are still written to disk (split across both segments) exactly
+                        // as before; this only withholds the one misleading .idx entry.
+                        //
+                        // Every packet AFTER the straddler must also be corrected, not just gated:
+                        // the counting scheme's position `m_rawSegmentCarryoverBytes` is where THIS
+                        // file's true byte 0 actually is (that is what the reset rebased to), so
+                        // every physical offset in this file is `pktStart` shifted left by that
+                        // same carryover amount -- proven empirically
+                        // (ScanOffsets.LiveWriterSkipsIndexingAPacketThatStraddlesSegmentRotation
+                        // failed with every post-straddler record short by exactly the carryover
+                        // until this subtraction was added).
+                        if (pktStart >= m_rawSegmentCarryoverBytes) {
+                            m_lastIndexOffset = pktStart - m_rawSegmentCarryoverBytes;
+                            addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                        }
+                    }
 
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;

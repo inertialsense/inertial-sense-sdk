@@ -150,17 +150,17 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
             m_logStats.CacheDiagnosticData(dataHdr->id, dataBuf, dataHdr->size, timestamp);
         }
 
-        // D-01 / SN-7879: pass the parsed header + buffer through so
-        // the v2 index record carries the actual DID + payload-derived
-        // timestamp + ToW flag.
-        addIndexRecord(dataHdr, dataBuf);
-        // SN-8765: the payload-summing bump that used to live here is GONE. It was dead — both
-        // concrete writers assign `m_lastIndexOffset` a true physical file offset immediately
-        // before calling into this base (`cDeviceLogRaw::SaveData`, `cDeviceLogSerial::SaveData`),
-        // so the accumulated value was overwritten before it was ever read again. Worse, it
-        // summed PAYLOAD bytes only, with no header or framing, which left the impression that an
-        // `.idx` offset is a payload-byte running total. It is not: it is the record's start
-        // position in the segment file, such that a reader can seek there and parse immediately.
+        // SN-8765 / PR #1333: this base method does NOT call addIndexRecord() -- indexing is
+        // opt-in per format, not automatic here. `.idx` offsets must be the record's true
+        // physical start position in a seekable segment file, and this base class has no way to
+        // know that position for an arbitrary subclass. cDeviceLogSerial (.dat) stamps
+        // `m_lastIndexOffset` and calls addIndexRecord() itself, immediately before calling into
+        // this base, because it tracks a real on-disk offset. cDeviceLogRaw (.raw) does the same
+        // from its own SaveData(int, ...) overload, which never reaches this method at all.
+        // cDeviceLogCSV/JSON/KML call only this base method and track no such offset -- they
+        // correctly get no `.idx` sidecar. (The payload-summing bump that used to run
+        // unconditionally here is gone for the same reason: it summed PAYLOAD bytes only, with no
+        // header or framing, so it was never a valid physical offset for anything that used it.)
     }
 
     return true;
