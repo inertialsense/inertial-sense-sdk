@@ -177,6 +177,7 @@ public:
 
         hdwId = src.hdwId;
         devInfo = src.devInfo;
+        devInfoConfirmedMs = src.devInfoConfirmedMs;
         imxFlashCfg = src.imxFlashCfg;
         gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;
@@ -227,6 +228,7 @@ public:
         port = src.port;
         hdwId = src.hdwId;
         devInfo = src.devInfo;
+        devInfoConfirmedMs = src.devInfoConfirmedMs;
         imxFlashCfg = src.imxFlashCfg;
         gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;

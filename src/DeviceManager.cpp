@@ -208,10 +208,12 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                             std::bind(&DeviceManager::deviceHandler, this,
                                 std::placeholders::_1, std::placeholders::_2,
                                 std::placeholders::_3, options);
+                        bool registered = false;
                         if (cb(pp.winner, pp.devInfo, pp.port)) {
                             log_debug(IS_LOG_DEVICE_MANAGER, "deviceHandler accepted %s on port '%s'. DeviceCount=%zu",
                                 ISDevice::getIdAsString(pp.devInfo).c_str(), portName(pp.port), size());
                             result = true;
+                            registered = true;
                         } else {
                             // The winning factory's deviceHandler rejected — try remaining factories
                             bool handled = false;
@@ -223,6 +225,7 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                                         ISDevice::getIdAsString(pp.devInfo).c_str(), portName(pp.port), size());
                                     result = true;
                                     handled = true;
+                                    registered = true;
                                     break;
                                 }
                             }
@@ -237,6 +240,18 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
                                 if (options & (DISCOVERY__CLOSE_PORT_ON_FAILURE | DISCOVERY__CLOSE_PORT_ON_COMPLETION))
                                     portClose(pp.port);
                             }
+                        }
+
+                        // deviceHandler() only takes the plain dev_info_t, so a device that just answered
+                        // a real probe during this validation pass is registered with devInfoConfirmedMs
+                        // still at 0 -- the probe ISDevice (slot.ctx->device)'s own confirmation never
+                        // reaches the managed device callers get back from getDevice(). Propagate it here,
+                        // once the port has resolved to its managed device, rather than through dev_info_t
+                        // (a wire-format struct shared with firmware) or deviceHandler() itself, which is
+                        // also reached by the hint-seed path (seedDeviceHint()) that must stay unconfirmed.
+                        if (registered && slot.ctx->device && slot.ctx->device->hasConfirmedDeviceInfo()) {
+                            if (auto managed = getDevice(pp.port))
+                                managed->markDevInfoConfirmed();
                         }
                     } else {
                         // Factory validated but rejected the device — eliminate and try others

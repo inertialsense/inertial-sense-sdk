@@ -33,12 +33,20 @@
 
 namespace {
 
-//! The literal 15-byte version query queryDeviceInfoISbl() emits (ISDevice.cpp).
+//! The literal 15-byte version query queryDeviceInfoISbl() emits (ISDevice.cpp). Decodes as a valid
+//! Intel-HEX "Extended Linear Address" record (":02 0000 04 1000 EA" -- byte count 2, address 0x0000,
+//! record type 04, data 0x1000, checksum EA): that record type only latches an address for later data
+//! records, with no flash side effect, which is exactly why it's safe to send standalone as a probe.
+//! The ISbl bootloader answers any well-formed hex record with its 0xAA55-prefixed version frame
+//! (see the response handling right after this is sent), which is what makes it usable as a query.
 constexpr char ISBL_QUERY[] = ":020000041000EA";
 
 //! The NMEA device-info query validateAsync() emits (NMEA_CMD_QUERY_DEVICE_INFO), without its checksum.
 constexpr char NMEA_INFO_QUERY[] = "$INFO";
 
+//! Serial number shared by both the relay hint (makeRelayHint()) and the simulated real device's
+//! response (buildIsblReply()), so a test can assert the two are the same device rather than two
+//! devices that happen to coexist.
 constexpr uint32_t HINT_SERIAL = 60246;
 
 /**
@@ -266,4 +274,50 @@ TEST(devinfo_confirmation, bootloader_hint_leads_with_the_isbl_query) {
     EXPECT_EQ(state, ISDevice::ASYNC_STATE__SUCCESS) << "got " << state;
     EXPECT_EQ(device->devInfo.hdwRunState, HDW_STATE_BOOTLOADER);
     EXPECT_TRUE(device->hasConfirmedDeviceInfo()) << "the ISbl reply is a real response";
+}
+
+/**
+ * The hand-written copy constructor and copy-assignment operator copy devInfo field-by-field rather
+ * than via a defaulted member-wise copy, so a new field added there is silently left at its own default
+ * unless it is also added to both of these (PR #1330 review). hasConfirmedDeviceInfo() must mean the
+ * same thing before and after a copy.
+ */
+TEST(devinfo_confirmation, copy_and_assignment_preserve_confirmed_state) {
+    // A real (non-null) port, not exercised otherwise: both the copy constructor and
+    // copy-assignment operator unconditionally reach into src.port's COMM callbacks, so a
+    // default-constructed ISDevice(devInfo) with no port would crash here for reasons unrelated
+    // to what this test is pinning.
+    initTestPorts();
+    port_handle_t port = (port_handle_t)TEST0_PORT;
+    ASSERT_TRUE(portIsOpened(port)) << "loopback TEST0 should be VALID|OPENED after initTestPorts()";
+
+    dev_info_t info = {};
+    info.hardwareType = IS_HARDWARE_TYPE_IMX;
+    info.hardwareVer[0] = 5;
+    info.serialNumber = HINT_SERIAL;
+    info.hdwRunState = HDW_STATE_APP;
+    info.protocolVer[0] = PROTOCOL_VERSION_CHAR0;
+    info.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
+    info.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
+    info.protocolVer[3] = PROTOCOL_VERSION_CHAR3;
+
+    ISDevice confirmed(info, port);
+    confirmed.markDevInfoConfirmed();
+    ASSERT_TRUE(confirmed.hasConfirmedDeviceInfo()) << "precondition";
+
+    ISDevice copyConstructed(confirmed);
+    EXPECT_TRUE(copyConstructed.hasConfirmedDeviceInfo())
+        << "copy constructor did not carry devInfoConfirmedMs over from src";
+
+    ISDevice assigned(info, port);
+    ASSERT_FALSE(assigned.hasConfirmedDeviceInfo()) << "precondition";
+    assigned = confirmed;
+    EXPECT_TRUE(assigned.hasConfirmedDeviceInfo())
+        << "copy-assignment did not carry devInfoConfirmedMs over from src";
+
+    ISDevice unconfirmed(info, port);
+    ASSERT_FALSE(unconfirmed.hasConfirmedDeviceInfo()) << "precondition";
+    ISDevice copyOfUnconfirmed(unconfirmed);
+    EXPECT_FALSE(copyOfUnconfirmed.hasConfirmedDeviceInfo())
+        << "copy constructor must not manufacture a confirmation that was never there";
 }

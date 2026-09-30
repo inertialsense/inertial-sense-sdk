@@ -53,7 +53,16 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
     // Phase 3: complete validation
     dev_info_t devInfo;
     if (completeValidation(*ctx, devInfo)) {
-        return deviceCallback(this, devInfo, port);
+        if (!deviceCallback(this, devInfo, port))
+            return false;
+
+        // See the matching comment in DeviceManager::discoverDevices(): the callback only takes
+        // dev_info_t, so propagate the probe's confirmation to the managed device separately.
+        if (ctx->device && ctx->device->hasConfirmedDeviceInfo()) {
+            if (auto managed = DeviceManager::getInstance().getDevice(port))
+                managed->markDevInfoConfirmed();
+        }
+        return true;
     }
     return false;
 }
