@@ -251,7 +251,12 @@ int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 int nmea_dev_info(char a[], const int aSize, dev_info_t &info);
 
 /**
- * @brief Encode a $ASCE (auto-start configuration enable) sentence.
+ * @brief Encode a $ASCE (ASCII Broadcast Enable) sentence.
+ *
+ * "ASC" is a truncation of ASCII, as in the retired $ASCB ("ASCII broadcast"), following the same
+ * two-token form as $BLEN (BootLoader ENable). The expansion is reconstructed from the 2017-2023
+ * history rather than recorded by the original author.
+ *
  * @param a    Output buffer.
  * @param aSize Capacity of @p a.
  * @param portIdx Zero-based index of the port this response describes. Field 1 is emitted as a

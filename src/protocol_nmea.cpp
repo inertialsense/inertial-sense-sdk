@@ -818,7 +818,7 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 }
 
 /**
- * @brief Builds a $ASCE (Ask/Set Communications Enable) response NMEA message listing the currently enabled NMEA messages and their broadcast periods.
+ * @brief Builds a $ASCE (ASCII Broadcast Enable) response NMEA message listing the currently enabled NMEA messages and their broadcast periods.
  *
  * @param a[] - output buffer
  * @param aSize - size of output buffer
@@ -3143,7 +3143,7 @@ int parseASCE_GSV(int inId, int period)
 }
 
 /**
- * @brief Parses a $ASCE (Ask/Set Communications Enable) message, enabling/disabling the requested NMEA messages at the requested periods on the requested port(s) of an rmci_t configuration vector.
+ * @brief Parses a $ASCE (ASCII Broadcast Enable) message, enabling/disabling the requested NMEA messages at the requested periods on the requested port(s) of an rmci_t configuration vector.
  *
  * @param port - port the message was received on (used only when options select RMC_OPTIONS_PORT_CURRENT); if NULL, parsing is aborted
  * @param a[] - incoming NMEA sentence buffer
@@ -3303,7 +3303,7 @@ inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint
 }
 
 /**
- * @brief Parses a $ASCE (Ask/Set Communications Enable) message and applies it to a GPX GRMC (device-to-device) broadcast configuration vector rather than the standard rmci_t vector (see nmea_parse_asce()).
+ * @brief Parses a $ASCE (ASCII Broadcast Enable) message and applies it to a GPX GRMC (device-to-device) broadcast configuration vector rather than the standard rmci_t vector (see nmea_parse_asce()).
  *
  * @param port port_handle_t the msg was Rxd on; if NULL, parsing is aborted
  * @param a const char[] incoming msg
