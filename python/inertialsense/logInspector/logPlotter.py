@@ -863,17 +863,24 @@ class logPlot:
         # [first, last] GPS time of week (s) reported by the GNSS receivers, or None.
         #
         # A receiver reports local time in 'timeOfWeekMs' until it has GPS time, and a receiver
-        # that never got GPS time (no fix) stays entirely in local time.  Only samples with a
-        # nonzero GPS week are in the GPS time of week domain.  Timestamp magnitude cannot tell
-        # the two apart: early in the GPS week the local time since boot can exceed the time
-        # of week.
+        # that never got GPS time (no fix) stays entirely in local time.  Timestamp magnitude
+        # cannot tell the two apart: early in the GPS week the local time since boot can exceed
+        # the time of week.  Samples with a nonzero GPS week are in the GPS time of week domain.
+        # Some receivers never populate the week (e.g. GNSS data injected by ArduPilot), and then
+        # the samples with a position fix are used, the fix implying GPS time.
         towRange = None
         for did in [DID_GNSS1_POS, DID_GNSS2_POS]:
             tow = np.asarray(self.getData(dev, did, 'timeOfWeekMs'), dtype=float) * 0.001
             week = np.asarray(self.getData(dev, did, 'week'))
-            if tow.size == 0 or week.size != tow.size:
+            status = np.asarray(self.getData(dev, did, 'status'), dtype=np.uint32)
+            if tow.size == 0 or week.size != tow.size or status.size != tow.size:
                 continue
-            tow = tow[(week != 0) & (tow > 0) & (tow < 604800.0)]
+            if np.any(week != 0):
+                hasGpsTime = week != 0
+            else:
+                fixType = (status & GNSS_STATUS_FIX_MASK) >> GNSS_STATUS_FIX_BIT_OFFSET
+                hasGpsTime = np.isin(fixType, GNSS_STATUS_FIX_POS_VALID)
+            tow = tow[hasGpsTime & (tow > 0) & (tow < 604800.0)]
             if tow.size == 0:
                 continue
             tow = tow[getValidTimeInd(tow)]
@@ -4573,7 +4580,7 @@ class logPlot:
             # -- diluting real per-sample jitter/glitches by ~1/self.d and throwing off each
             # plot's auto-scaled Y-axis whenever downsample != 1 (only correct by coincidence at
             # downsample=1).
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', downsample=False), True)
+            timeIns = getTimeFromGpsTow(self.alignTowToGnss(d, self.getData(d, DID_INS_2, 'timeOfWeek', downsample=False)))
             dtIns = np.diff(timeIns)[::self.d]
             xInsFull = timeIns[1::self.d]
 
