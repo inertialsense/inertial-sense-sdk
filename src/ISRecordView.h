@@ -180,15 +180,17 @@ public:
      * parent reader's mmap'd region; do not dereference after the reader is destroyed or
      * moved-from.
      *
-     * @warning **`second` is NOT the record's length, and can exceed it.** `ISLogReader::viewAt`
-     *          computes it as `recordEndOffset(i) - offset(i)` — the NEXT record's offset minus
-     *          this one's — so it is the record PLUS any bytes that follow it before the next
-     *          record begins. On an undamaged stream those coincide; where the parser walked past
-     *          unparsable bytes they do not. Take a packet's true extent from the parser
-     *          (`rxPkt.size`), never from this arithmetic — that is D0117, and it is why a
-     *          firmware-written sidecar has been observed yielding a 1-byte span starting
-     *          mid-packet. `first` points at the record's START (see the class note), not its
-     *          payload.
+     * @warning **For a `.raw` view, `second` is NOT the record's length, and can exceed it.**
+     *          For `.raw`, `ISLogReader::recordEndOffset` infers the end as the NEXT record's
+     *          offset minus this one's, so it is the record PLUS any bytes that follow it before
+     *          the next record begins. On an undamaged stream those coincide; where the parser
+     *          walked past unparsable bytes they do not. Take a `.raw` packet's true extent from
+     *          the parser (`rxPkt.size`), never from this arithmetic — that is D0117, and it is
+     *          why a firmware-written sidecar has been observed yielding a 1-byte span starting
+     *          mid-packet. This does NOT apply to a `.dat` view: there, `recordEndOffset` reads
+     *          the record's own `p_data_hdr_t` header rather than inferring from a neighbor, so
+     *          `second` is exact (header + payload) regardless of neighboring records. `first`
+     *          points at the record's START (see the class note), not its payload.
      *
      * @return  `{ data, size }`. `data` is `nullptr` and `size` is
      *          0 for an empty / sentinel view.

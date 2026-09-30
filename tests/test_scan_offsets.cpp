@@ -22,6 +22,7 @@
 
 #include "com_manager.h"  // must precede ISComm-pulling headers
 
+#include "DataChunk.h"     // DEFAULT_CHUNK_DATA_SIZE
 #include "ISComm.h"
 #include "ISDataMappings.h"
 #include "ISLogIndex.h"
@@ -595,6 +596,128 @@ TEST(ScanOffsets, LiveWriterSurvivesPacketsSplitAcrossLogDataCalls) {
             << "split-feed: record " << k << " offset " << rv.offsetInFile()
             << " is not a packet start";
     }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+/**
+ * @brief A packet split across a SEGMENT ROTATION, not just a `LogData` call, must not be
+ *        misattributed to the new file.
+ *
+ * `cDeviceLogRaw::CloseAllFiles()` resets `m_fileSize` but does NOT reset (and, after SN-8765,
+ * must not reset) the parser's `rxBuf` — whatever is buffered there when a segment closes was
+ * already physically written to the OLD file, via `m_chunk.PushBack()` inside the SaveData call
+ * that fed it. If that buffered remainder is the first half of a real packet, its completion
+ * (fed from the NEW segment) has a true start that lies in the OLD file, which the new segment
+ * cannot name with any offset of its own.
+ *
+ * Reproduced directly rather than inferred: `stream1` is padded with plain `DID_PIMU` packets to
+ * just under `DEFAULT_CHUNK_DATA_SIZE`, then the FIRST HALF of one more packet is appended. That
+ * packet's second half opens `stream2`, followed by a few ordinary packets. `maxFileSize` is set
+ * far below one chunk, so the flush the oversized `stream2` call forces (its bytes no longer fit
+ * the nearly-full chunk) immediately rotates — landing exactly while the split packet's first
+ * half sits unconsumed in `rxBuf`.
+ *
+ * **Before the fix, this test fails**: the old code rebased `m_rawFedBytes` to `tail - head` at
+ * the fresh-file check, which credits those carried-over bytes to the NEW file. The split
+ * packet's completion then computed a start at (or near) offset 0 of the new segment — a byte
+ * range that, in the new file, actually holds only the packet's second half, so it is not the
+ * packet's real start there. The fix tracks `m_rawFedBytes` as an absolute, never-reset count and
+ * skips indexing any packet whose absolute start precedes the segment's own start, rather than
+ * naming it with a wrong offset.
+ */
+TEST(ScanOffsets, LiveWriterSkipsRecordThatStraddlesSegmentRotation) {
+    const fs::path dir = makeTempDir("sn8765_straddle");
+    ISFileManager::DeleteDirectory(dir.string());
+
+    // Measure one filler packet's on-wire size so the padding loop's overshoot is bounded and
+    // known, rather than guessed.
+    std::vector<uint8_t> onePimu;
+    pimu_t probe{};
+    appendIsb(onePimu, DID_PIMU, sizeof(probe), &probe);
+    const std::size_t pimuPktSize = onePimu.size();
+    ASSERT_GT(pimuPktSize, 0u);
+
+    // Build the packet that will straddle the rotation, and split it in half, BEFORE sizing the
+    // padding -- the padding loop below reserves exactly this many bytes too.
+    std::vector<uint8_t> splitPkt;
+    ins_2_t splitIns{};
+    splitIns.timeOfWeek = 999000.0;
+    appendIsb(splitPkt, DID_INS_2, sizeof(splitIns), &splitIns);
+    ASSERT_GE(splitPkt.size(), 20u) << "test assumption: the split packet has enough bytes to "
+                                        "meaningfully straddle a call boundary";
+    const std::size_t splitAt = splitPkt.size() / 2;
+
+    // Pad with whole filler packets until fewer than one more (plus the split packet's first
+    // half) would fit. That leaves the chunk's remaining free space bounded above by
+    // `pimuPktSize` once the split-packet half is appended below -- comfortably smaller than
+    // `stream2` (one packet-half plus three more whole packets), which is what forces the flush
+    // (and, with `maxFileSize` tiny, the rotation) to happen at the very start of call 2.
+    std::vector<uint8_t> stream1;
+    pimu_t pimu{};
+    int fillerIdx = 0;
+    while (stream1.size() + pimuPktSize + splitAt < DEFAULT_CHUNK_DATA_SIZE) {
+        pimu.time = 1.0 + (fillerIdx++);
+        appendIsb(stream1, DID_PIMU, sizeof(pimu), &pimu);
+    }
+    stream1.insert(stream1.end(), splitPkt.begin(), splitPkt.begin() + static_cast<long>(splitAt));
+    ASSERT_LT(stream1.size(), static_cast<std::size_t>(DEFAULT_CHUNK_DATA_SIZE))
+        << "test assumption: call 1 must fit in one chunk without itself triggering a flush";
+
+    std::vector<uint8_t> stream2(splitPkt.begin() + static_cast<long>(splitAt), splitPkt.end());
+    pimu_t after{};
+    for (int i = 0; i < 3; ++i) {
+        after.time = 500.0 + i;
+        appendIsb(stream2, DID_PIMU, sizeof(after), &after);
+    }
+    ASSERT_GT(stream2.size(), static_cast<std::size_t>(DEFAULT_CHUNK_DATA_SIZE) - stream1.size())
+        << "test assumption: call 2 must not fit in the chunk's remaining free space, so it "
+           "forces the flush (and rotation) right at its own start";
+
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_RAW;
+    opts.useSubFolderTimestamp = false;
+    opts.maxFileSize           = 1024;  // far below one chunk: rotate as soon as ANY chunk flushes
+    ASSERT_TRUE(logger.InitSave(dir.string(), opts));
+    auto dev = logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), 777003u);
+    ASSERT_TRUE(dev);
+    logger.EnableLogging(true);
+
+    // Two calls, deliberately: the first fills the chunk to just under capacity and ends mid-
+    // packet; the second's bytes no longer fit, forcing the flush-and-rotate to happen with that
+    // half-packet still sitting unconsumed in the parser's buffer.
+    logger.LogData(dev, static_cast<int>(stream1.size()), stream1.data());
+    logger.LogData(dev, static_cast<int>(stream2.size()), stream2.data());
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> rawInfos;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.raw$", rawInfos);
+    std::vector<fs::path> raws;
+    for (const auto& r : rawInfos) raws.emplace_back(r.name);
+    std::sort(raws.begin(), raws.end());
+    ASSERT_EQ(raws.size(), 2u) << "expected the small maxFileSize to force a second segment";
+
+    // The second segment is the one under test: the parser carried the split packet's first
+    // half over the rotation. Every record its .idx DOES claim must be a genuine packet start
+    // IN THIS FILE — this file's bytes only ever held the packet's second half, so a record
+    // claiming to start at (or near) offset 0 here would not be one.
+    const auto seg2Bytes = readAll(raws[1]);
+    ASSERT_FALSE(seg2Bytes.empty());
+    auto reader2 = ISLogReader::openSegment(raws[1]);
+    ASSERT_TRUE(reader2.has_value());
+    ASSERT_TRUE(reader2->hadOnDiskIndex())
+        << "the reader rebuilt the index, so this would be testing the rebuild, not the writer";
+    for (std::size_t k = 0; k < reader2->recordCount(); ++k) {
+        const auto rv = reader2->recordAt(k);
+        EXPECT_EQ(didAtPacketStart(seg2Bytes.data(), seg2Bytes.size(), rv.offsetInFile()), rv.did())
+            << "segment 2: record " << k << " at offset " << rv.offsetInFile() << " is not a real "
+            << "packet start in this segment -- it likely straddled the rotation and was "
+            << "misattributed here instead of being skipped";
+    }
+    // The straddling packet itself must be skipped, not mis-indexed: strictly fewer records than
+    // (1 split + 3 filler) survive in segment 2.
+    EXPECT_LT(reader2->recordCount(), 4u);
 
     ISFileManager::DeleteDirectory(dir.string());
 }

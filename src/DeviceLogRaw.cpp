@@ -77,11 +77,15 @@ bool cDeviceLogRaw::CloseAllFiles()
     CloseISLogFile(m_pFile);
 
     // SN-8328 (rotation ordering): the current .raw segment is finalized. Reset
-    // the physical-offset accounting so the NEXT segment's records index from 0.
+    // m_fileSize so SaveData()'s `rawFileBase == 0` check recognizes the NEXT
+    // segment as fresh and snapshots `m_rawSegmentStartFedBytes` there.
     // (The base's lazy OpenNewSaveFile() also zeroes m_fileSize, but that fires
     // only at the next chunk flush — too late for records indexed in between.)
+    // NOTE: `m_rawFedBytes` is deliberately NOT reset here — SN-8765 made it an
+    // absolute, never-reset count of bytes ever fed to the parser, so that bytes
+    // still buffered in rxBuf across this rotation keep the attribution they
+    // already earned in the OLD file (see `m_rawSegmentStartFedBytes`).
     m_fileSize       = 0;
-    m_rawFedBytes = 0;
 
     return true;
 }
@@ -121,7 +125,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         }
         else if (m_fileSize >= m_maxFileSize)
         {
-            CloseAllFiles();   // rotate; resets m_fileSize + m_rawFedBytes for the new segment
+            CloseAllFiles();   // rotate; resets m_fileSize so the new segment is recognized as fresh below
         }
     }
 
@@ -133,8 +137,6 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     // (bytes buffered in the current chunk before this input). The flush above
     // has already run, so both terms reflect the segment this buffer lands in.
     const uint64_t rawFileBase = static_cast<uint64_t>(m_fileSize) + static_cast<uint64_t>(m_chunk.GetDataSize());
-    if (rawFileBase == 0) {
-    }
 
     // SN-8765: feed the parser in BULK and take each packet's start from the parser's own
     // buffer position, rather than one byte at a time assuming the packet ended at the byte just
@@ -157,14 +159,18 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     //
     // What IS exact and compaction-proof: the parser has finished with
     // `m_rawFedBytes - (tail - head)` bytes, because `tail` and `head` move together under
-    // compaction and `m_rawFedBytes` counts everything ever handed to it for this file. After an
+    // compaction and `m_rawFedBytes` counts everything ever handed to it, absolute across the
+    // whole object lifetime (not reset per file — see `m_rawSegmentStartFedBytes`). After an
     // emit, `head` sits just past the packet, so that quantity is the packet's END and the packet
     // occupies `[end - rxPkt.size, end)`. Junk needs no special case: `head` jumped over it, so
     // the count advanced past it.
     if (rawFileBase == 0) {
-        // Fresh .raw file: offsets restart at 0 for the next byte the parser finishes with,
-        // whatever it still holds buffered from the previous segment.
-        m_rawFedBytes = static_cast<uint64_t>(m_comm.rxBuf.tail - m_comm.rxBuf.head);
+        // Fresh .raw file: snapshot where this segment begins in `m_rawFedBytes`'s absolute,
+        // never-reset counting. `m_rawFedBytes` itself is NOT rebased to 0 here — whatever is
+        // still buffered in rxBuf from the previous segment was already physically written to
+        // that OLD file, so its bytes must stay attributed there, not be credited as belonging
+        // to byte 0 of this new one. See `m_rawSegmentStartFedBytes` for why.
+        m_rawSegmentStartFedBytes = m_rawFedBytes;
     }
 
     int remaining = dataSize;
@@ -225,9 +231,20 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                     // position in the file, so a reader can seek there and parse the preamble
                     // immediately with no bytes in front of it. Derived from the parser's buffer
                     // position (see the note above the feed loop), NOT from the byte just fed.
-                    m_lastIndexOffset =
+                    //
+                    // `packetStartAbsolute` is in `m_rawFedBytes`'s absolute, never-reset
+                    // numbering. A packet that straddles a segment rotation — its prefix was
+                    // still sitting unparsed in rxBuf when the previous file was closed — has
+                    // `packetStartAbsolute < m_rawSegmentStartFedBytes`: its true first byte
+                    // lives in the OLD file, so no offset into THIS file can name it. Skip
+                    // indexing such a packet rather than stamp a wrong (and misleadingly
+                    // plausible, e.g. 0) offset; it is still counted in log stats above/below.
+                    const uint64_t packetStartAbsolute =
                         consumedEnd - static_cast<uint64_t>(m_comm.rxPkt.size);
-                    addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                    if (packetStartAbsolute >= m_rawSegmentStartFedBytes) {
+                        m_lastIndexOffset = packetStartAbsolute - m_rawSegmentStartFedBytes;
+                        addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                    }
 
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;

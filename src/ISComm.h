@@ -978,9 +978,15 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 *
 *          Take a packet's length from `rxPkt.size`, and its position from `rxBuf.head` (which
 *          `setParserStart` moves to the packet's first byte and `validPacketReset` moves past its
-*          last) — never from a caller-side byte counter. If you need `rxBuf.head` as a stable
-*          file offset, feed the parser in BULK instead (see the quick-start above) and note that
-*          `is_comm_free` compacts the buffer, so only head DELTAS survive across it.
+*          last) — never from a caller-side byte counter. If you need a stable absolute file
+*          offset, do NOT read `rxBuf.head` directly or diff it across calls: `is_comm_free`
+*          compacts the buffer by shifting `head` (and `tail`/`scan`) down by the same amount, so
+*          an absolute head VALUE — or a delta of head taken across a call that compacted — is
+*          invalidated by that shift. What DOES survive compaction is the outstanding byte count
+*          `rxBuf.tail - rxBuf.head`, since both move together under it. Keep your own
+*          caller-side running total of bytes ever fed to the parser; `totalFed - (tail - head)`
+*          is then the absolute position the parser has finished with, compaction-proof (see the
+*          live .raw writer's `m_rawFedBytes` for a worked example).
 *
 *          Both in-tree callers got this wrong identically and wrote `.idx` offsets that were not
 *          packet starts — see SN-8765.

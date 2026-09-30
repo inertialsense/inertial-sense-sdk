@@ -154,13 +154,19 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
         // the v2 index record carries the actual DID + payload-derived
         // timestamp + ToW flag.
         addIndexRecord(dataHdr, dataBuf);
-        // SN-8765: the payload-summing bump that used to live here is GONE. It was dead — both
-        // concrete writers assign `m_lastIndexOffset` a true physical file offset immediately
-        // before calling into this base (`cDeviceLogRaw::SaveData`, `cDeviceLogSerial::SaveData`),
-        // so the accumulated value was overwritten before it was ever read again. Worse, it
-        // summed PAYLOAD bytes only, with no header or framing, which left the impression that an
-        // `.idx` offset is a payload-byte running total. It is not: it is the record's start
-        // position in the segment file, such that a reader can seek there and parse immediately.
+        // SN-8765: it is tempting to drop this bump — cDeviceLogRaw bypasses this overload
+        // entirely and cDeviceLogSerial::SaveData assigns `m_lastIndexOffset` a true physical
+        // offset immediately before calling into this base, overwriting whatever this adds before
+        // it's ever read. But cDeviceLogCSV/JSON/KML::SaveData all call straight into this base
+        // WITHOUT assigning `m_lastIndexOffset` themselves, so for them this bump is the only
+        // thing that keeps successive `.idx` records from being stamped at the same offset. Kept
+        // for those three formats; harmless for Raw/Serial since they overwrite it regardless.
+        // NOTE: this still only sums PAYLOAD bytes, with no header or framing, so it does not
+        // carry the "record start position in the segment file" meaning true for Raw/Serial's own
+        // offsets — it is a same-direction, monotonically increasing placeholder, not a seekable
+        // physical position. None of CSV/JSON/KML's segments have a single physical byte stream
+        // that a "true physical offset" could refer to in the first place.
+        m_lastIndexOffset += dataHdr->size;
     }
 
     return true;

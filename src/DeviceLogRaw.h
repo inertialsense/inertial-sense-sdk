@@ -117,9 +117,26 @@ private:
      * positions do not.
      *
      * Persists across `SaveData()` input buffers so a packet split across two `LogData()` calls
-     * still gets its true start. Re-based when a fresh `.raw` file begins.
+     * still gets its true start. Absolute across the whole life of this object — NOT reset when
+     * a `.raw` segment rotates — because bytes still buffered in `rxBuf` at rotation were already
+     * physically written to the OLD segment; rebasing this counter would credit them to the new
+     * one instead. See `m_rawSegmentStartFedBytes`, which is what actually converts this into a
+     * per-segment offset.
      */
     uint64_t m_rawFedBytes = 0;
+
+    /**
+     * @brief `m_rawFedBytes`'s value at the moment the current `.raw` segment began.
+     *
+     * A completed packet's absolute start (in `m_rawFedBytes` numbering) minus this value is its
+     * offset within the current file. If that absolute start is LESS than this value, the packet
+     * began before this segment did — its prefix was still sitting unparsed in `rxBuf` when the
+     * previous segment was closed and rotated out, went to the OLD file, and so has no valid
+     * offset in this one; such a record must be skipped rather than indexed (see `SaveData()`).
+     *
+     * Snapshotted in `SaveData()` when `rawFileBase == 0` signals a fresh segment.
+     */
+    uint64_t m_rawSegmentStartFedBytes = 0;
 };
 
 #endif // IS_SDK__DEVICE_LOG_RAW_H
