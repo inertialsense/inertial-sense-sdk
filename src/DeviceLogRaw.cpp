@@ -81,7 +81,7 @@ bool cDeviceLogRaw::CloseAllFiles()
     // (The base's lazy OpenNewSaveFile() also zeroes m_fileSize, but that fires
     // only at the next chunk flush — too late for records indexed in between.)
     m_fileSize       = 0;
-    m_rawIndexCursor = 0;
+    m_rawFedBytes = 0;
 
     return true;
 }
@@ -121,7 +121,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         }
         else if (m_fileSize >= m_maxFileSize)
         {
-            CloseAllFiles();   // rotate; resets m_fileSize + m_rawIndexCursor for the new segment
+            CloseAllFiles();   // rotate; resets m_fileSize + m_rawFedBytes for the new segment
         }
     }
 
@@ -134,15 +134,65 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     // has already run, so both terms reflect the segment this buffer lands in.
     const uint64_t rawFileBase = static_cast<uint64_t>(m_fileSize) + static_cast<uint64_t>(m_chunk.GetDataSize());
     if (rawFileBase == 0) {
-        m_rawIndexCursor = 0;   // a fresh .raw file -> per-file offsets restart at 0
     }
 
-    // Parse messages for statistics and DID_DEV_INFO
-    for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
+    // SN-8765: feed the parser in BULK and take each packet's start from the parser's own
+    // buffer position, rather than one byte at a time assuming the packet ended at the byte just
+    // fed.
+    //
+    // `is_comm_reset_parser` rewinds `rxBuf.scan` to `rxBuf.head` on a parse error, so buffered
+    // bytes are re-scanned and a later call can complete a whole packet out of the backlog
+    // without the new byte contributing anything. The old `m_rawIndexCursor = rawFileBase +
+    // (dPtr - dataBuf) + 1` therefore stamped those records with an offset that is not a packet
+    // start — measured on a 5 MB capture, one emit consumed 697 bytes while the next fourteen
+    // reported one byte each, each carrying a complete valid packet.
+    //
+    // `rxBuf.head` cannot be read as an absolute file position, because `is_comm_free` compacts
+    // the buffer (memmove to the front, adjusting head/tail/scan). Nor can head DELTAS be used
+    // per feed: during a long run of unparsable bytes `head` does not move at all — it only jumps
+    // forward when `setParserStart` locks onto a packet — so a junk run spanning several feeds
+    // would be silently dropped from the accounting. (That was this fix's own first cut, and
+    // `ScanOffsets.LiveWriterStampsPacketStarts` caught it: a record after a 512-byte junk run
+    // was stamped at the junk's start rather than the packet's.)
+    //
+    // What IS exact and compaction-proof: the parser has finished with
+    // `m_rawFedBytes - (tail - head)` bytes, because `tail` and `head` move together under
+    // compaction and `m_rawFedBytes` counts everything ever handed to it for this file. After an
+    // emit, `head` sits just past the packet, so that quantity is the packet's END and the packet
+    // occupies `[end - rxPkt.size, end)`. Junk needs no special case: `head` jumped over it, so
+    // the count advanced past it.
+    if (rawFileBase == 0) {
+        // Fresh .raw file: offsets restart at 0 for the next byte the parser finishes with,
+        // whatever it still holds buffered from the previous segment.
+        m_rawFedBytes = static_cast<uint64_t>(m_comm.rxBuf.tail - m_comm.rxBuf.head);
+    }
+
+    int remaining = dataSize;
+    const uint8_t* src = dataBuf;
+    while (remaining > 0)
     {
+        // is_comm_free() may compact, so re-anchor the head reference immediately after it.
+        int space = is_comm_free(&m_comm);
+        if (space <= 0)
+        {   // The parser cannot accept more without giving something back; drain and retry.
+            space = is_comm_free(&m_comm);
+            if (space <= 0) break;   // pathological; do not spin
+        }
+        const int take = (remaining < space) ? remaining : space;
+        memcpy(m_comm.rxBuf.tail, src, static_cast<size_t>(take));
+        m_comm.rxBuf.tail += take;
+        src       += take;
+        remaining -= take;
+
+        m_rawFedBytes += static_cast<uint64_t>(take);
+
         protocol_type_t ptype;
-        if ((ptype = is_comm_parse_byte(&m_comm, *dPtr)) != _PTYPE_NONE)
+        while ((ptype = is_comm_parse(&m_comm)) != _PTYPE_NONE)
         {
+            // Bytes the parser has finished with, as an absolute file offset.
+            const uint64_t consumedEnd = m_rawFedBytes
+                - static_cast<uint64_t>(m_comm.rxBuf.tail - m_comm.rxBuf.head);
+            {
             double timestamp = 0.0;
 
             switch (ptype)
@@ -171,13 +221,12 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                     // own DID + payload timestamp + ToW flag — which is
                     // exactly what per-DID time-range queries against the
                     // index need.
-                    // SN-8328: stamp this packet's PHYSICAL .raw byte offset (its
-                    // start position in the file) rather than a chunk-relative
-                    // one, so ISLogReader trusts the sidecar (no offset-driven
-                    // rebuild) and the v2.1 per-record deltas survive.
-                    // m_rawIndexCursor holds the start of the current packet,
-                    // tracked across input-buffer boundaries below.
-                    m_lastIndexOffset = m_rawIndexCursor;
+                    // SN-8328 / SN-8765: this packet's PHYSICAL .raw byte offset — its own START
+                    // position in the file, so a reader can seek there and parse the preamble
+                    // immediately with no bytes in front of it. Derived from the parser's buffer
+                    // position (see the note above the feed loop), NOT from the byte just fed.
+                    m_lastIndexOffset =
+                        consumedEnd - static_cast<uint64_t>(m_comm.rxPkt.size);
                     addIndexRecord(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     dev_info_t tmpInfo = {};
@@ -229,10 +278,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 m_logStats.CacheDiagnosticData(m_comm.rxPkt.dataHdr.id, m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size, timestamp, m_comm.rxPkt.dataHdr.offset);
             }
 
-            // SN-8328: this packet's bytes end at dPtr, so the NEXT packet starts
-            // at the following byte. Mirrors ISLogReader's scan cursor; persists
-            // across input buffers so a split packet keeps its true start.
-            m_rawIndexCursor = rawFileBase + static_cast<uint64_t>(dPtr - dataBuf) + 1;
+            }
         }
     }
 
@@ -243,9 +289,9 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         return false;   // unable to push the buffer into the chunk
     }
 
-    // SN-8328: m_lastIndexOffset is no longer a chunk-input accumulator — each
-    // .idx record now gets its true physical .raw offset from m_rawIndexCursor
-    // in the parse loop above, so there is no per-buffer bump here.
+    // SN-8328 / SN-8765: m_lastIndexOffset is no longer a chunk-input accumulator — each .idx
+    // record gets its true physical .raw offset from the parser's own buffer position in the feed
+    // loop above, so there is no per-buffer bump here.
 
     return true;
 }

@@ -100,13 +100,26 @@ private:
     is_comm_instance_t m_comm;              //!< multi-protocol packet parser (IS binary, NMEA, RTCM3, u-blox)
     protocol_type_t m_protocolType;         //!< unused
 
-    //! SN-8328: physical byte offset (within the current .raw file) at which the
-    //! NEXT parsed packet starts. Persists across SaveData() input buffers so a
-    //! packet split across two LogData() calls still gets its true start offset.
-    //! Reset to 0 when a fresh .raw file begins. Stamped into each .idx record so
-    //! ISLogReader trusts the sidecar instead of rebuilding (a rebuild would drop
-    //! the SN-8383 per-record log-start time-offsets).
-    uint64_t m_rawIndexCursor = 0;
+    /**
+     * @brief Absolute byte offset, within the current `.raw` file, of the first byte the parser
+     *        has NOT yet attributed to a packet or to a skipped run.
+     *
+     * SN-8328 established that the `.idx` must carry each record's physical `.raw` offset so
+     * `ISLogReader` trusts the sidecar instead of rebuilding (a rebuild drops the SN-8383
+     * per-record log-start time-offsets). SN-8765 corrected HOW that offset is derived: the
+     * parser has finished with `m_rawFedBytes - (rxBuf.tail - rxBuf.head)` bytes, so after an
+     * emit that quantity is the packet's END and its start is that minus `rxPkt.size`. Needed
+     * because the parser can drain a buffered backlog and complete a packet on a call whose input
+     * byte contributed nothing, making any caller-side byte counter wrong.
+     *
+     * Counted rather than read off a pointer because `is_comm_free` compacts the buffer; `tail`
+     * and `head` move together under compaction, so their difference stays valid while absolute
+     * positions do not.
+     *
+     * Persists across `SaveData()` input buffers so a packet split across two `LogData()` calls
+     * still gets its true start. Re-based when a fresh `.raw` file begins.
+     */
+    uint64_t m_rawFedBytes = 0;
 };
 
 #endif // IS_SDK__DEVICE_LOG_RAW_H

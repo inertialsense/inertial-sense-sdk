@@ -28,7 +28,15 @@ namespace inertial_sense {
 class OwnedRecord;  // forward — defined below.
 
 /**
- * @brief Non-owning view of a single record's metadata + payload bytes.
+ * @brief Non-owning view of a single record's metadata + on-disk bytes.
+ *
+ * **SN-8765 — what `bytes()` points at is the record's START IN THE FILE, not its payload.**
+ * These doc comments used to say "payload", and they were wrong: `ISLogReader::viewAt` passes
+ * `rawSource_->data() + record.offset`, and an `.idx` record's `offset` is the record's start
+ * position in the segment — the ISB **preamble** for a `.raw`, the `p_data_hdr_t` for a `.dat`.
+ * A caller who believed the old wording would read framing bytes as payload. To get at the
+ * payload, parse from `bytes().first` (`.raw`) or skip the header (`.dat`); D0089 covers why the
+ * two formats differ.
  *
  * Lifetime: valid as long as the parent `ISLogReader` is alive AND its
  * mmap'd region hasn't been moved out from under the view (the reader
@@ -57,11 +65,12 @@ public:
      *                      0 if not associated with a device.
      * @param offsetInFile  Byte offset of the record's bytes in the
      *                      backing `.raw` segment.
-     * @param data          Pointer to the first byte of the record's
-     *                      payload inside the mmap'd region. May be
-     *                      `nullptr` for the empty sentinel.
-     * @param size          Number of payload bytes addressable from
-     *                      `data`.
+     * @param data          Pointer to the record's FIRST BYTE in the mmap'd
+     *                      region — the packet preamble for `.raw`, the
+     *                      `p_data_hdr_t` for `.dat`. NOT the payload; see the
+     *                      class note. May be `nullptr` for the empty sentinel.
+     * @param size          Bytes addressable from `data`. See @ref bytes for
+     *                      why this can exceed the record itself.
      * @param flags         `IS_LOG_IDX_REC_FLAG_*` bitmask from the
      *                      source `.idx` record. Bit 0
      *                      (`HAS_TOW`) marks a sync-eligible record.
@@ -167,9 +176,19 @@ public:
     constexpr void setLogTimeOffsetMs(uint32_t ms) noexcept { logTimeOffsetMs_ = ms; }
 
     /**
-     * Returns the record's bytes as a (pointer, size) pair. The
-     * pointer aliases the parent reader's mmap'd region; do not
-     * dereference after the reader is destroyed or moved-from.
+     * Returns the record's on-disk bytes as a (pointer, size) pair. The pointer aliases the
+     * parent reader's mmap'd region; do not dereference after the reader is destroyed or
+     * moved-from.
+     *
+     * @warning **`second` is NOT the record's length, and can exceed it.** `ISLogReader::viewAt`
+     *          computes it as `recordEndOffset(i) - offset(i)` — the NEXT record's offset minus
+     *          this one's — so it is the record PLUS any bytes that follow it before the next
+     *          record begins. On an undamaged stream those coincide; where the parser walked past
+     *          unparsable bytes they do not. Take a packet's true extent from the parser
+     *          (`rxPkt.size`), never from this arithmetic — that is D0117, and it is why a
+     *          firmware-written sidecar has been observed yielding a 1-byte span starting
+     *          mid-packet. `first` points at the record's START (see the class note), not its
+     *          payload.
      *
      * @return  `{ data, size }`. `data` is `nullptr` and `size` is
      *          0 for an empty / sentinel view.

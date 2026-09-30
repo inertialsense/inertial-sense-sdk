@@ -25,9 +25,12 @@
 #include "ISComm.h"
 #include "ISDataMappings.h"
 #include "ISLogIndex.h"
+#include "ISFileManager.h"
+#include "ISLogger.h"
 #include "ISLogReader.h"
 #include "data_sets.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -78,13 +81,47 @@ void appendIsb(std::vector<uint8_t>& out, uint16_t did, uint16_t size, const voi
 }
 
 /**
- * @brief Appends a run of bytes the parser cannot frame.
+ * @brief Appends a run of bytes the parser cannot frame at all.
  *
- * This is what makes the parser report an error and rewind its scan pointer, which is the
- * precondition for the drain. `0x11` is not any enabled protocol's start byte.
+ * `0x11` is not any enabled protocol's start byte, so the parser reports `STREAM_UNPARSABLE` and
+ * walks past. Note this alone does **not** produce a drain — see @ref appendFalsePreamble.
  */
 void appendJunk(std::vector<uint8_t>& out, std::size_t bytes) {
     out.insert(out.end(), bytes, static_cast<uint8_t>(0x11));
+}
+
+/**
+ * @brief Appends a FALSE ISB header that declares a large payload — the shape that forces the
+ *        parser to drain.
+ *
+ * Establishing this took measurement, and the two obvious candidates do not work:
+ *
+ *  - a run of unframeable bytes does not drain. The parser never locks on, so
+ *    `is_comm_reset_parser` never rewinds `scan`, so no backlog accumulates.
+ *  - a single corrupted packet (valid preamble and header, mangled payload) does not drain
+ *    either. It fails, resyncs, and every following emit has `span == rxPkt.size`.
+ *
+ * What DOES drain: a real preamble and header declaring a payload far larger than what follows.
+ * The parser locks on and keeps consuming, swallowing the genuine packets behind it, then fails
+ * the checksum and `is_comm_reset_parser` rewinds `scan` all the way back to `head`. The packets
+ * it had already buffered then come out on consecutive calls. Measured with this exact fixture:
+ * `span=1  rxPkt.size=28` and `span=35  rxPkt.size=72` — complete packets emitted having consumed
+ * one and 35 bytes respectively.
+ *
+ * The bytes are copied from a genuine packet so the preamble and header shape stay valid; only
+ * the declared size is overwritten.
+ */
+void appendFalsePreamble(std::vector<uint8_t>& out) {
+    std::vector<uint8_t> tmpl;
+    ins_2_t              any{};
+    appendIsb(tmpl, DID_INS_2, sizeof(any), &any);
+    ASSERT_GE(tmpl.size(), 16u);
+    const std::size_t at = out.size();
+    out.insert(out.end(), tmpl.begin(), tmpl.begin() + 16);
+    // Overwrite the declared payload size with ~576 bytes, which is more than the packets that
+    // follow it, so they are consumed into the doomed packet and then replayed.
+    out[at + 6] = 0x40;
+    out[at + 7] = 0x02;
 }
 
 //! Writes @p bytes to `<dir>/LOG_SN<serial>_..._0001.raw`, with NO sidecar, so opening it forces
@@ -227,9 +264,12 @@ TEST(ScanOffsets, DrainAfterJunkStillYieldsRealPacketStarts) {
     ins.timeOfWeek = 100000.0;
     appendIsb(bytes, DID_INS_2, sizeof(ins), &ins);
 
-    // The junk run. Long enough that the parser walks a long way past before locking on, which is
-    // what makes the drained packets' bogus offsets visibly wrong.
+    // Two distinct hazards, because they are distinct bugs. The junk run exercises the SEMANTIC
+    // half — an offset must be the packet's start, not the byte after the previous emit, and those
+    // differ by exactly the junk. The false preamble exercises the DRAIN half — the parser
+    // replaying buffered packets on calls whose input byte contributed nothing.
     appendJunk(bytes, 700);
+    appendFalsePreamble(bytes);
 
     // Several back-to-back packets immediately after the junk. These are the ones the old code
     // mis-stamped: they complete out of the re-scanned backlog on consecutive calls.
@@ -385,4 +425,176 @@ TEST(ScanOffsets, TrailingPartialPacketIsStillTruncation) {
 
     std::error_code ec;
     fs::remove_all(dir, ec);
+}
+
+// =================================================================================================
+// The LIVE writer. Everything above rebuilds an index from a file; these write one on the wire.
+// =================================================================================================
+
+namespace {
+
+/**
+ * @brief Reads a whole file into a byte vector.
+ */
+std::vector<uint8_t> readAll(const fs::path& p) {
+    std::ifstream in(p, std::ios::binary);
+    return std::vector<uint8_t>{ std::istreambuf_iterator<char>(in),
+                                 std::istreambuf_iterator<char>() };
+}
+
+/**
+ * @brief Logs @p stream through `cISLogger` as raw bytes and returns the written segment paths.
+ *
+ * Goes through `LogData(dev, size, bytes)` — the raw-byte entry point a live capture uses — so the
+ * `.idx` under test is the one `cDeviceLogRaw::SaveData` wrote on the wire, not a reader-side
+ * rebuild. Fed in several chunks on purpose: a packet split across two `LogData` calls is exactly
+ * the case the offset bookkeeping has to survive.
+ */
+bool logRawStream(const fs::path& dir, const std::vector<uint8_t>& stream, std::size_t chunkBytes,
+                  std::vector<fs::path>& rawOut, std::vector<fs::path>& idxOut) {
+    cISLogger logger;
+    cISLogger::sSaveOptions opts;
+    opts.logType               = cISLogger::LOGTYPE_RAW;
+    opts.useSubFolderTimestamp = false;
+    if (!logger.InitSave(dir.string(), opts)) return false;
+    auto dev = logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), 777002u);
+    if (!dev) return false;
+    logger.EnableLogging(true);
+    for (std::size_t at = 0; at < stream.size(); at += chunkBytes) {
+        const std::size_t n = std::min(chunkBytes, stream.size() - at);
+        logger.LogData(dev, static_cast<int>(n), stream.data() + at);
+    }
+    logger.CloseAllFiles();
+
+    std::vector<ISFileManager::file_info_t> raws, idxs;
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.raw$", raws);
+    ISFileManager::GetAllFilesInDirectory(dir.string(), true, "\\.idx$", idxs);
+    for (const auto& r : raws) rawOut.emplace_back(r.name);
+    for (const auto& i : idxs) idxOut.emplace_back(i.name);
+    std::sort(rawOut.begin(), rawOut.end());
+    std::sort(idxOut.begin(), idxOut.end());
+    return !rawOut.empty();
+}
+
+} // namespace
+
+/**
+ * @brief THE LIVE-WRITER CONTROL — an `.idx` written on the wire must carry packet starts.
+ *
+ * `cDeviceLogRaw::SaveData` used to set `m_rawIndexCursor = rawFileBase + (dPtr - dataBuf) + 1`
+ * on the same false assumption as the rebuild, and its comment even noted it deliberately
+ * "Mirrors ISLogReader's scan cursor" — the two were made consistent with each other and both
+ * were wrong. This is the half that matters most in practice, because it corrupts sidecars as
+ * they are recorded rather than only when one is rebuilt later.
+ *
+ * The stream deliberately contains a junk run so the parser errors, rewinds and then drains, and
+ * it is fed in small chunks so packets also straddle `LogData` boundaries. **This test fails
+ * against the pre-SN-8765 writer.**
+ */
+TEST(ScanOffsets, LiveWriterStampsPacketStarts) {
+    const fs::path dir = makeTempDir("sn8765_live");
+    ISFileManager::DeleteDirectory(dir.string());
+
+    std::vector<uint8_t> stream;
+    pimu_t   pimu{};
+    ins_2_t  ins{};
+    sys_params_t sys{};
+    magnetometer_t mag{};
+
+    // Clean prologue.
+    for (int i = 0; i < 6; ++i) {
+        pimu.time = 1.0 + i;
+        appendIsb(stream, DID_PIMU, sizeof(pimu), &pimu);
+    }
+    // The shape that actually drains: a false header declaring a large payload, which swallows
+    // the packets behind it and then replays them. A plain junk run does NOT do this — see
+    // `appendFalsePreamble`. Verified by measurement, not assumed.
+    appendFalsePreamble(stream);
+    // Back-to-back packets that complete out of the backlog.
+    for (int i = 0; i < 10; ++i) {
+        mag.time = 2.0 + i;
+        appendIsb(stream, DID_MAGNETOMETER, sizeof(mag), &mag);
+        ins.timeOfWeek = 200000.0 + i;
+        appendIsb(stream, DID_INS_2, sizeof(ins), &ins);
+        sys.upTime = 2.0 + i;
+        appendIsb(stream, DID_SYS_PARAMS, sizeof(sys), &sys);
+    }
+
+    std::vector<fs::path> raws, idxs;
+    ASSERT_TRUE(logRawStream(dir, stream, /*chunkBytes=*/37, raws, idxs))
+        << "no .raw segment was written";
+    ASSERT_FALSE(idxs.empty()) << "the live writer produced no sidecar to check";
+
+    // Open with the sidecar in place. `hadOnDiskIndex()` is the guard that we are testing the
+    // WRITER's offsets and not a reader-side rebuild of them.
+    auto reader = ISLogReader::openSegment(raws.front());
+    ASSERT_TRUE(reader.has_value());
+    ASSERT_TRUE(reader->hadOnDiskIndex())
+        << "the reader rebuilt the index, so this would be testing the rebuild, not the writer";
+    ASSERT_GT(reader->recordCount(), 0u);
+
+    const auto bytes = readAll(raws.front());
+    ASSERT_FALSE(bytes.empty());
+
+    uint64_t prev = 0;
+    for (std::size_t k = 0; k < reader->recordCount(); ++k) {
+        const auto     rv  = reader->recordAt(k);
+        const uint64_t off = rv.offsetInFile();
+        if (k > 0) {
+            EXPECT_GE(off, prev + kMinIsbPacketBytes)
+                << "live: record " << k << " at " << off << " is closer than a minimum ISB "
+                << "packet to the previous record at " << prev;
+        }
+        prev = off;
+        EXPECT_EQ(didAtPacketStart(bytes.data(), bytes.size(), off), rv.did())
+            << "live: record " << k << " offset " << off << " is not the start of a DID "
+            << rv.did() << " packet";
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
+}
+
+/**
+ * @brief A clean live capture, fed in awkward chunks: the writer must still be exact.
+ *
+ * No junk here, so the parser never drains — this is the no-regression half for the writer, and it
+ * passes against the pre-SN-8765 writer too. Stated plainly so nobody reads it as proof: the test
+ * that discriminates is `LiveWriterStampsPacketStarts`, which stamps 224 and 225 for two packets
+ * whose true starts are 160 and 188 under the old writer (one byte apart — impossible for two
+ * packets) and the correct values under the fix.
+ *
+ * The chunk size is chosen not to divide any packet length, so packets straddle `LogData`
+ * boundaries throughout and the cross-call bookkeeping is exercised on every record.
+ */
+TEST(ScanOffsets, LiveWriterSurvivesPacketsSplitAcrossLogDataCalls) {
+    const fs::path dir = makeTempDir("sn8765_live_split");
+    ISFileManager::DeleteDirectory(dir.string());
+
+    std::vector<uint8_t> stream;
+    pimu_t  pimu{};
+    ins_2_t ins{};
+    for (int i = 0; i < 30; ++i) {
+        pimu.time = 1.0 + i;
+        appendIsb(stream, DID_PIMU, sizeof(pimu), &pimu);
+        ins.timeOfWeek = 300000.0 + i;
+        appendIsb(stream, DID_INS_2, sizeof(ins), &ins);
+    }
+
+    std::vector<fs::path> raws, idxs;
+    ASSERT_TRUE(logRawStream(dir, stream, /*chunkBytes=*/13, raws, idxs));
+    auto reader = ISLogReader::openSegment(raws.front());
+    ASSERT_TRUE(reader.has_value());
+    ASSERT_TRUE(reader->hadOnDiskIndex());
+    EXPECT_EQ(reader->recordCount(), 60u);
+
+    const auto bytes = readAll(raws.front());
+    EXPECT_EQ(reader->recordAt(0).offsetInFile(), 0u);
+    for (std::size_t k = 0; k < reader->recordCount(); ++k) {
+        const auto rv = reader->recordAt(k);
+        EXPECT_EQ(didAtPacketStart(bytes.data(), bytes.size(), rv.offsetInFile()), rv.did())
+            << "split-feed: record " << k << " offset " << rv.offsetInFile()
+            << " is not a packet start";
+    }
+
+    ISFileManager::DeleteDirectory(dir.string());
 }

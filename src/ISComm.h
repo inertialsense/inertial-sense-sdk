@@ -966,6 +966,25 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+*
+* @warning **The returned packet is NOT aligned to the byte you just fed, and its extent cannot
+*          be derived from bytes-since-the-previous-call.** This function appends one byte and
+*          then runs the buffered parser, which returns on the FIRST packet it finds and leaves
+*          any remainder unscanned. `is_comm_reset_parser` also rewinds `rxBuf.scan` back to
+*          `rxBuf.head` on a parse error, so buffered bytes get re-scanned — after which a call
+*          can complete an entire packet out of the backlog while the byte you passed in
+*          contributes nothing. Measured on a 5 MB capture: one call consumed 697 bytes, and the
+*          next fourteen each reported a complete valid packet having consumed one byte.
+*
+*          Take a packet's length from `rxPkt.size`, and its position from `rxBuf.head` (which
+*          `setParserStart` moves to the packet's first byte and `validPacketReset` moves past its
+*          last) — never from a caller-side byte counter. If you need `rxBuf.head` as a stable
+*          file offset, feed the parser in BULK instead (see the quick-start above) and note that
+*          `is_comm_free` compacts the buffer, so only head DELTAS survive across it.
+*
+*          Both in-tree callers got this wrong identically and wrote `.idx` offsets that were not
+*          packet starts — see SN-8765.
+*
 * @param instance the comm instance passed to is_comm_init
 * @param byte the byte to decode
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)

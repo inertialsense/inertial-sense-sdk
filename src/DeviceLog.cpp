@@ -154,7 +154,13 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
         // the v2 index record carries the actual DID + payload-derived
         // timestamp + ToW flag.
         addIndexRecord(dataHdr, dataBuf);
-        m_lastIndexOffset += dataHdr->size;
+        // SN-8765: the payload-summing bump that used to live here is GONE. It was dead — both
+        // concrete writers assign `m_lastIndexOffset` a true physical file offset immediately
+        // before calling into this base (`cDeviceLogRaw::SaveData`, `cDeviceLogSerial::SaveData`),
+        // so the accumulated value was overwritten before it was ever read again. Worse, it
+        // summed PAYLOAD bytes only, with no header or framing, which left the impression that an
+        // `.idx` offset is a payload-byte running total. It is not: it is the record's start
+        // position in the segment file, such that a reader can seek there and parse immediately.
     }
 
     return true;
