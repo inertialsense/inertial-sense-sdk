@@ -846,12 +846,6 @@ class logPlot:
         except:
             return np.array([])
 
-    def getGpsTowOffset(self, dev):
-        towOffset = self.getData(dev, DID_GNSS1_POS, 'towOffset')
-        if len(towOffset) == 0:
-            towOffset = self.getData(dev, DID_GNSS2_POS, 'towOffset')
-        return towOffset
-
     def getGpsTowOffsetValue(self, dev):
         # Single representative towOffset (GPS time of week minus local time since boot).
         # Zero entries are logged before the GPS PPS time sync is established and are ignored.
@@ -2119,9 +2113,7 @@ class logPlot:
 
                 fig.suptitle(title + os.path.basename(os.path.normpath(self.log.directory)))
 
-                towOffset = self.getGpsTowOffset(d)
-                if len(towOffset) > 0:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time = getTimeFromGpsTow(time + self.getSysTimeToGpsTowOffset(d))
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
                 labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
@@ -3619,9 +3611,7 @@ class logPlot:
                         imuCount = self.log.c_log.numImuDevices
 
         if self.log.serials[device] != 'Ref INS':
-            towOffset = self.getGpsTowOffset(device)
-            if len(towOffset):
-                time = getTimeFromGpsTow(time + np.mean(towOffset))
+            time = getTimeFromGpsTow(time + self.getSysTimeToGpsTowOffset(device))
         # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
         #     tmp = np.copy(imu1)   
         #     tmp *= 125.0 
@@ -4371,10 +4361,7 @@ class logPlot:
         fig.suptitle('Barometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             if 1:
-                time = self.getData(d, DID_BAROMETER, 'time')
-                towOffset = self.getGpsTowOffset(d)
-                if np.shape(towOffset)[0] != 0:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time = self.getSensorTime(d, DID_BAROMETER)
                 mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
                 barTemp = self.getData(d, DID_BAROMETER, 'barTemp')
                 humidity = self.getData(d, DID_BAROMETER, 'humidity')
@@ -4398,10 +4385,7 @@ class logPlot:
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             if 1:
-                time = self.getData(d, DID_MAGNETOMETER, 'time')
-                towOffset = self.getGpsTowOffset(d)
-                if np.shape(towOffset)[0] != 0:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time = self.getSensorTime(d, DID_MAGNETOMETER)
                 mag = self.getData(d, DID_MAGNETOMETER, 'mag')
                 magX = mag[:,0]
                 magY = mag[:,1]
@@ -4443,16 +4427,13 @@ class logPlot:
             self.configureSubplot(ax[2], 'MCU Temperature (C)')
 
             for d in self.active_devs:
-                time = getTimeFromGpsTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'), True)
+                # Like the INS time of week, this is local time until the GPS time sync is valid
+                tow = np.asarray(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'), dtype=float) * 0.001
+                time = getTimeFromGpsTow(self.alignTowToGnss(d, tow))
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
                 tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
-                towOffset = self.getGpsTowOffset(d)
-                if np.shape(towOffset)[0] != 0:
-                    tempImu = getTimeFromGpsTow(tempImu + np.mean(towOffset))
-                    tempBar = getTimeFromGpsTow(tempBar + np.mean(towOffset))
-                    tempMcu = getTimeFromGpsTow(tempMcu + np.mean(towOffset))
-                
+
                 ax[0].plot(time, tempImu, label=self.log.serials[d])
                 ax[1].plot(time, tempBar)
                 ax[2].plot(time, tempMcu)
@@ -4608,11 +4589,7 @@ class logPlot:
             dtGnss2 = np.diff(timeGnss2)[::self.d]
             xGnss2Full = timeGnss2[1::self.d]
 
-            towOffset = self.getGpsTowOffset(d)
-            if np.size(towOffset) > 0:
-                towOffset = towOffset[-1]
-            else:
-                towOffset = 0
+            towOffset = self.getSysTimeToGpsTowOffset(d)
 
             # Initialized here (rather than only inside the branches below) so a device that lacks
             # PIMU/IMU or IMUS_RAW data doesn't hit an UnboundLocalError building xImus/xImu below,
@@ -4688,11 +4665,7 @@ class logPlot:
                 # towOffset must be recomputed for this device -- the towOffset left over from the
                 # earlier active_devs_no_ref loop belongs to whichever device that loop last
                 # processed, not necessarily this one.
-                towOffset = self.getGpsTowOffset(d)
-                if np.size(towOffset) > 0:
-                    towOffset = towOffset[-1]
-                else:
-                    towOffset = 0
+                towOffset = self.getSysTimeToGpsTowOffset(d)
                 timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time', downsample=False)
                 if np.any(timeRef):
                     # Same fix as above: diff full-resolution time, decimate the result, and slice
