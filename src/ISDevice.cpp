@@ -122,7 +122,7 @@ bool ISDevice::step() {
     if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
         fn.mark("Parsed messages.");
-        if (!hasDeviceInfo()) {
+        if (!hasConfirmedDeviceInfo()) {
             validateAsync(250);
             fn.mark("Validating device.");
         } else {
@@ -446,6 +446,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                 devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
                 devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
                 memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
+                markDevInfoConfirmed();     // a full version frame is a real answer from the bootloader
                 return true;
             }
         }
@@ -456,6 +457,10 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     return false;
 }
 
+
+void ISDevice::markDevInfoConfirmed() {
+    devInfoConfirmedMs = std::max<uint32_t>(current_timeMs(), 1);    // 0 is reserved for "never confirmed"
+}
 
 bool ISDevice::validate(uint32_t timeout) {
     // validate() is its own blocking implementation rather than a wrapper around validateAsync(), so
@@ -488,6 +493,7 @@ bool ISDevice::validate(uint32_t timeout) {
     is_hardware_t oldHdwId = hdwId;
     dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
+    clearDevInfoConfirmed();                    // and nothing below may report success on the old value
 
     bool hasDevInfo = hasDeviceInfo();
     queryType nextQueryType = (hint && hint->hdwRunState == HDW_STATE_BOOTLOADER)
@@ -555,6 +561,10 @@ bool ISDevice::validate(uint32_t timeout) {
         hasDevInfo = hasDeviceInfo();
     } while (!hasDevInfo);
 
+    // The loop above only exits when hasDeviceInfo() became true, and inside validate() that can only
+    // have come from a parsed response -- devInfo was zeroed on entry.
+    markDevInfoConfirmed();
+
     fn.mark("Finished validating.");
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Validation finished: %s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout, hasDevInfo ? "SUCCESS" : "FAILURE");
 
@@ -594,7 +604,12 @@ int ISDevice::validateAsync(uint32_t timeout) {
 
     uint32_t now = current_timeMs();
     FnProfiler fn("ISDevice::validateAsync() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    if (hasDeviceInfo()) {
+    // A complete devInfo is not evidence that the device answered: DeviceFactory::beginValidation()
+    // seeds devInfo from a discovery hint, and RelayPortFactory's hint carries hdwRunState and
+    // protocolVer -- every field hasDeviceInfo() inspects. Success therefore also requires a
+    // confirmation from an actual response, so that an unresponsive port cannot validate and a cached
+    // run state cannot stand in for a live one.
+    if (hasConfirmedDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         // log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs);
         validationStartMs = 0;
@@ -1649,6 +1664,152 @@ bool ISDevice::manufacturingInfo(manufacturing_info_t& info, uint32_t timeoutMs)
     return false;
 }
 
+namespace {
+    constexpr int REFRESH_REQUEST_PERIOD_MS = 100;      //!< (ms) interval between repeated requests while waiting for a reply
+    constexpr int PLATFORM_BIT_TIMEOUT_MS   = 2000;     //!< (ms) time allowed for a basic BIT to report the detected hardware id
+}
+
+bool ISDevice::refreshManufacturingInfo(manufacturing_info_t& info, uint32_t timeoutMs) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (!isConnected())
+        return false;
+
+    uint32_t rxCount = manfInfoRxCount;
+    int startTime = current_timeMs();
+    int requestTime = startTime - REFRESH_REQUEST_PERIOD_MS;
+    while ((int)current_timeMs() - startTime < (int)timeoutMs) {
+        if (manfInfoRxCount != rxCount) {
+            info = manfInfo;
+            return true;
+        }
+        if ((int)current_timeMs() - requestTime >= REFRESH_REQUEST_PERIOD_MS) {
+            GetDataPreserveStream(DID_MANUFACTURING_INFO);
+            requestTime = current_timeMs();
+        }
+        SLEEP_MS(5);
+        step();
+    }
+    return false;
+}
+
+bool ISDevice::refreshBit(bit_t& bitInfo, uint32_t timeoutMs) {
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (!isConnected())
+        return false;
+
+    uint32_t rxCount = imxBitRxCount;
+    int startTime = current_timeMs();
+    int requestTime = startTime - REFRESH_REQUEST_PERIOD_MS;
+    while ((int)current_timeMs() - startTime < (int)timeoutMs) {
+        if (imxBitRxCount != rxCount) {
+            bitInfo = imxBit;
+            return true;
+        }
+        if ((int)current_timeMs() - requestTime >= REFRESH_REQUEST_PERIOD_MS) {
+            GetDataPreserveStream(DID_BIT);
+            requestTime = current_timeMs();
+        }
+        SLEEP_MS(5);
+        step();
+    }
+    return false;
+}
+
+ISDevice::ManfPlatformResult ISDevice::setManufacturingPlatformType(int32_t platformType, uint32_t unlockKey, bool preflightOnly, uint32_t timeoutMs) {
+    static_assert(offsetof(manufacturing_info_t, platformType) == offsetof(manufacturing_info_t, key) + sizeof(uint32_t),
+                  "the platform-type write sends key and platformType as one contiguous 8-byte block");
+
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (!isConnected() || (devInfo.hdwRunState == HDW_STATE_BOOTLOADER))
+        return MANF_PLATFORM__NOT_CONNECTED;
+
+    if ((platformType < 0) || (platformType >= PLATFORM_CFG_TYPE_COUNT))
+        return MANF_PLATFORM__INVALID_PLATFORM;
+
+    const std::string desc = getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO);
+
+    manufacturing_info_t before = {};
+    if (!refreshManufacturingInfo(before))
+        return MANF_PLATFORM__NO_MANF_INFO;
+
+    if (before.platformType == platformType)
+        return MANF_PLATFORM__ALREADY_SET;
+
+    // The firmware merges this write into its current record, so these are the fields it will validate.
+    if (!manufacturing_info_checkRequirementsToWrite(&before))
+        return MANF_PLATFORM__REQUIREMENTS_NOT_MET;
+
+    // The firmware only accepts the write when the hardware id detected by its most recent BIT matches the one in OTP.
+    // The id is zero until a BIT has run, and is cleared by BIT_CMD_OFF and the IMU fault-rejection tests.
+    bit_t bitInfo = {};
+    if (!refreshBit(bitInfo))
+        return MANF_PLATFORM__NO_BIT;
+
+    if (bitInfo.detectedHardwareId != before.hardwareId) {
+        log_info(IS_LOG_ISDEVICE, "[%s] BIT hardware id 0x%04X does not match OTP hardware id 0x%04X, running basic BIT",
+                 desc.c_str(), bitInfo.detectedHardwareId, before.hardwareId);
+
+        uint8_t bitCommand = BIT_CMD_BASIC_MOVING;
+        SendData(DID_BIT, &bitCommand, sizeof(bitCommand), offsetof(bit_t, command));
+
+        int startTime = current_timeMs();
+        while (((int)current_timeMs() - startTime < PLATFORM_BIT_TIMEOUT_MS) &&
+               (!refreshBit(bitInfo) || (bitInfo.lastCommand != BIT_CMD_BASIC_MOVING) || (bitInfo.detectedHardwareId != before.hardwareId))) {
+        }
+
+        if (bitInfo.detectedHardwareId != before.hardwareId)
+            return MANF_PLATFORM__HARDWARE_ID_MISMATCH;
+    }
+
+    if (preflightOnly)
+        return MANF_PLATFORM__PREFLIGHT_OK;
+
+    log_info(IS_LOG_ISDEVICE, "[%s] Writing platform type %d to OTP (write count %u)", desc.c_str(), platformType, before.key);
+
+    manufacturing_info_t request = {};
+    request.key = unlockKey;
+    request.platformType = platformType;
+    SendData(DID_MANUFACTURING_INFO, &request.key, sizeof(request.key) + sizeof(request.platformType), offsetof(manufacturing_info_t, key));
+
+    // The device acknowledges the write whether or not it accepts it; only the record read back shows the outcome.
+    // A reply to a request made before the write can still be in flight, so one unchanged reply proves nothing;
+    // the write is only called rejected once the device has answered repeatedly without the write count changing.
+    manufacturing_info_t after = before;
+    int replies = 0;
+    int startTime = current_timeMs();
+    while (((int)current_timeMs() - startTime < (int)timeoutMs) && (after.key == before.key)) {
+        if (refreshManufacturingInfo(after))
+            replies++;
+    }
+    manfInfo = after;
+
+    if (after.key == before.key)
+        return (replies > 1) ? MANF_PLATFORM__REJECTED : MANF_PLATFORM__UNCONFIRMED;
+
+    if ((after.key != before.key + 1) || (after.platformType != platformType))
+        return MANF_PLATFORM__READBACK_MISMATCH;
+
+    return MANF_PLATFORM__WRITTEN;
+}
+
+const char* ISDevice::manfPlatformResultString(ManfPlatformResult result) {
+    switch (result) {
+        case MANF_PLATFORM__WRITTEN:                return "platform type written to OTP and confirmed by read-back";
+        case MANF_PLATFORM__ALREADY_SET:            return "OTP already holds this platform type; nothing written";
+        case MANF_PLATFORM__PREFLIGHT_OK:           return "all preconditions met; nothing written (preflight)";
+        case MANF_PLATFORM__NOT_CONNECTED:          return "device not connected, or in bootloader mode";
+        case MANF_PLATFORM__INVALID_PLATFORM:       return "platform type out of range";
+        case MANF_PLATFORM__NO_MANF_INFO:           return "no reply to DID_MANUFACTURING_INFO request";
+        case MANF_PLATFORM__REQUIREMENTS_NOT_MET:   return "OTP lot number, hardware id or date is invalid; device would reject the write";
+        case MANF_PLATFORM__NO_BIT:                 return "no reply to DID_BIT request";
+        case MANF_PLATFORM__HARDWARE_ID_MISMATCH:   return "BIT-detected hardware id does not match OTP hardware id; device would reject the write";
+        case MANF_PLATFORM__REJECTED:               return "device reports the OTP write count unchanged; reset it and read DID_MANUFACTURING_INFO before retrying";
+        case MANF_PLATFORM__READBACK_MISMATCH:      return "OTP slot consumed, but read-back does not match the requested platform type";
+        case MANF_PLATFORM__UNCONFIRMED:            return "no reply after the write; reset the device and read DID_MANUFACTURING_INFO to see whether it was written";
+    }
+    return "unknown result";
+}
+
 int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
     if ((data->hdr.size==0) || (data->ptr==NULL))
@@ -1669,6 +1830,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
+            markDevInfoConfirmed();
             break;
         case DID_GPX_DEV_INFO:
             gpxDevInfo = *(dev_info_t*)data->ptr;
@@ -1705,6 +1867,11 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_MANUFACTURING_INFO:
             copyDataPToStructP(&manfInfo, data, sizeof(manufacturing_info_t));
+            manfInfoRxCount++;
+            break;
+        case DID_BIT:
+            copyDataPToStructP(&imxBit, data, sizeof(bit_t));
+            imxBitRxCount++;
             break;
 
         case DID_FIRMWARE_UPDATE:
@@ -1752,6 +1919,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
             {
             case IS_HARDWARE_TYPE_IMX:
                 devInfo = info;
+                markDevInfoConfirmed();
                 break;
 
             case IS_HARDWARE_TYPE_GPX:
@@ -1759,6 +1927,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
                     devInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
                 {   // Populate if device info is not set or GPX
                     devInfo = info;
+                    markDevInfoConfirmed();     // only when devInfo itself was populated, not gpxDevInfo alone
                 }
                 gpxDevInfo = info;
                 break;
@@ -1849,8 +2018,10 @@ bool ISDevice::connect(bool revalidate, uint32_t openTimeoutMs) {
     imxFlashCfgUploadChecksum = 0;
     gpxFlashCfgUploadChecksum = 0;
 
-    if (revalidate)
+    if (revalidate) {
         devInfo.hdwRunState = HDW_STATE_UNKNOWN; // this will further reinforce a validation
+        clearDevInfoConfirmed();                 // a caller asking to revalidate is telling us the old answer is suspect
+    }
 
     bool alreadyOpened = portIsOpened(port);
     if (!alreadyOpened) {

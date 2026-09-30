@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
     QTableWidget, QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
 from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
+from PyQt6.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem, QShortcut, QKeySequence
 from PyQt6.QtCore import pyqtSignal, QItemSelectionModel, Qt
 
 import matplotlib
@@ -107,7 +107,30 @@ def setDataInformationDirectory(path, startMode=START_MODE_HOT):
             json.dump(data, f, indent=4)
 
 def verArrayToString(array):
-    return str(array[0]) + '.' + str(array[1]) + '.' + str(array[2]) + '.' + str(array[3])
+    # Version arrays vary in length (e.g. hardwareVer is [major, minor, pcb_rev] -- 3 elements --
+    # while firmwareVer/protocolVer are 4), so join however many elements are actually present
+    # rather than assuming 4.
+    return '.'.join(str(x) for x in array)
+
+def hardwareVerString(devInfo):
+    # hardwareVariant (IMU population/variant id) is a separate DID_DEV_INFO field, not part of the
+    # hardwareVer array -- appended as e.g. "6.1.0-7" to match how it's commonly referenced.
+    return verArrayToString(devInfo['hardwareVer']) + '-' + str(devInfo['hardwareVariant'])
+
+def copyTableSelectionToClipboard(table):
+    """Copies a QTableWidget's selected cells to the clipboard as tab/newline-separated text,
+    pastable directly into a spreadsheet. Non-contiguous selections are copied as the bounding
+    rectangle of rows/columns touched."""
+    ranges = table.selectedRanges()
+    if not ranges:
+        return
+    rows = sorted(set(r for rng in ranges for r in range(rng.topRow(), rng.bottomRow() + 1)))
+    cols = sorted(set(c for rng in ranges for c in range(rng.leftColumn(), rng.rightColumn() + 1)))
+    lines = []
+    for r in rows:
+        item_text = lambda c: (table.item(r, c).text() if table.item(r, c) is not None else '')
+        lines.append('\t'.join(item_text(c) for c in cols))
+    QApplication.clipboard().setText('\n'.join(lines))
 
 def dateTimeArrayToString(info):
     year   = info['buildYear']
@@ -135,6 +158,10 @@ class DeviceInfoDialog(QDialog):
 
         self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels(['Serial#','Hardware','Firmware','Build','Protocol','Repo','Build Date','Manufacturer','AddInfo'])
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        copyShortcut = QShortcut(QKeySequence.StandardKey.Copy, self.table)
+        copyShortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        copyShortcut.activated.connect(lambda: copyTableSelectionToClipboard(self.table))
 
         row = 0
         for dev in log.data:
@@ -145,7 +172,7 @@ class DeviceInfoDialog(QDialog):
             devInfo = dev[DID_DEV_INFO][0]
             self.table.setRowCount(row+1)
             self.table.setItem(row, 0, QTableWidgetItem(str(devInfo['serialNumber'])))
-            self.table.setItem(row, 1, QTableWidgetItem(verArrayToString(devInfo['hardwareVer'])))
+            self.table.setItem(row, 1, QTableWidgetItem(hardwareVerString(devInfo)))
             self.table.setItem(row, 2, QTableWidgetItem(verArrayToString(devInfo['firmwareVer'])))
             self.table.setItem(row, 3, QTableWidgetItem(str(devInfo['buildNumber'])))
             self.table.setItem(row, 4, QTableWidgetItem(verArrayToString(devInfo['protocolVer'])))
@@ -339,7 +366,7 @@ class LogInspectorWindow(QMainWindow):
         if len(dev_info) == 0:
             return ''
         info = dev_info[0]
-        return 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
+        return 'SN' + str(info['serialNumber']) + ', H:' + hardwareVerString(info) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
 
     def updateWindowTitle(self):
         try:

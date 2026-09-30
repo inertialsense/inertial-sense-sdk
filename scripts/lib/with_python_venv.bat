@@ -7,7 +7,7 @@ REM Get the directory of this script
 for %%I in ("%~dp0") do set "LIB_DIR=%%~fI"
 
 REM Activate the Python virtual environment  
-call "%LIB_DIR%activate_python_venv.bat"
+call "%LIB_DIR%activate_python_venv.bat" || exit /b
 
 REM Run the provided command with all arguments
 %*
