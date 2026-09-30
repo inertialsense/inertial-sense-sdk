@@ -177,6 +177,7 @@ public:
 
         hdwId = src.hdwId;
         devInfo = src.devInfo;
+        devInfoConfirmedMs = src.devInfoConfirmedMs;
         imxFlashCfg = src.imxFlashCfg;
         gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;
@@ -227,6 +228,7 @@ public:
         port = src.port;
         hdwId = src.hdwId;
         devInfo = src.devInfo;
+        devInfoConfirmedMs = src.devInfoConfirmedMs;
         imxFlashCfg = src.imxFlashCfg;
         gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;
@@ -380,6 +382,32 @@ public:
     bool hasDeviceInfo() const {
         return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0) && (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0);
     }
+
+    /**
+     * @return the time (ms uptime) at which devInfo was last populated by an actual response from the
+     *   device, or 0 if it never has been.
+     *
+     * hasDeviceInfo() asks whether devInfo is complete, which is not the same question. A discovery
+     * hint (see DeviceFactory::beginValidation()) can fill devInfo completely enough to satisfy it
+     * without a byte having been exchanged, so a caller that needs to know what the device IS -- rather
+     * than what it was last announced to be -- must consult this as well (see hasConfirmedDeviceInfo()).
+     */
+    uint32_t devInfoConfirmedAt() const { return devInfoConfirmedMs; }
+
+    /**
+     * @return true if devInfo is complete (hasDeviceInfo()) AND came from an actual device response, rather
+     *   than only from a discovery hint. This is the test for "this device has been identified".
+     */
+    bool hasConfirmedDeviceInfo() const { return hasDeviceInfo() && (devInfoConfirmedMs != 0); }
+
+    /** @brief Records that devInfo now reflects an actual response from the device. */
+    void markDevInfoConfirmed();
+
+    /**
+     * @brief Marks devInfo as holding nothing better than an unverified claim -- a discovery hint, or a
+     * snapshot taken before an event (a reset) that may have changed what it describes.
+     */
+    void clearDevInfoConfirmed() { devInfoConfirmedMs = 0; }
 
     /**
      * Specifies a handler for protocol messages, which will be called when any message is successfully parsed. This 
@@ -1022,6 +1050,7 @@ private:
     bool                        was_connected = false;               //!< true, if this device's port was opened during the previous call to step()
 
     uint32_t                    validationStartMs = 0;               //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
+    uint32_t                    devInfoConfirmedMs = 0;              //!< time (ms uptime) devInfo was last populated by a real device response; 0 = never, so devInfo holds at best an unverified claim. See devInfoConfirmedAt().
     uint32_t                    nextValidationMs = 0;                //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
     bool                        doNotValidate = false;               //!< never attempt validation on this device; see disableValidation()

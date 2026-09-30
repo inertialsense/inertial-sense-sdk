@@ -53,7 +53,16 @@ bool DeviceFactory::locateDevice(std::function<bool(DeviceFactory*, const dev_in
     // Phase 3: complete validation
     dev_info_t devInfo;
     if (completeValidation(*ctx, devInfo)) {
-        return deviceCallback(this, devInfo, port);
+        if (!deviceCallback(this, devInfo, port))
+            return false;
+
+        // See the matching comment in DeviceManager::discoverDevices(): the callback only takes
+        // dev_info_t, so propagate the probe's confirmation to the managed device separately.
+        if (ctx->device && ctx->device->hasConfirmedDeviceInfo()) {
+            if (auto managed = DeviceManager::getInstance().getDevice(port))
+                managed->markDevInfoConfirmed();
+        }
+        return true;
     }
     return false;
 }
@@ -115,6 +124,11 @@ std::unique_ptr<DeviceFactory::ValidationContext> DeviceFactory::beginValidation
     if (hint && hint->serialNumber != 0 && hint->hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
         ctx->device->devInfo = *hint;
         ctx->device->hdwId = ENCODE_DEV_INFO_TO_HDW_ID((*hint));
+        // A hint is not a confirmation, so keep it out of that bookkeeping. This matters most when
+        // sharedDevice is an EXISTING device: the copy above replaces a devInfo that a real probe may
+        // have confirmed, so the confirmation must go with it -- otherwise the device keeps vouching
+        // for whatever the hint claims.
+        ctx->device->clearDevInfoConfirmed();
         // DEBUG, not INFO: DeviceManager::discoverDevices() calls beginValidation() once per
         // registered device factory for every port, so this emits (ports x factories) lines on every
         // discovery pass -- e.g. 28 lines per sweep on a 14-device testbed with two factories
