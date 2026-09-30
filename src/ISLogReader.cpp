@@ -36,6 +36,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 #include <fstream>
 #include <iomanip>
 #include <optional>
@@ -1434,88 +1435,155 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
     const uint8_t* base   = rawSource_->data();
     const std::size_t total = rawSource_->size();
 
-    // is_comm_init wants a scratch buffer to hold the in-progress packet. PKT_BUF_SIZE is the SDK's max-packet bound.
-    // Keep it on the stack — it's small (a few KB).
-    is_comm_instance_t comm{};
-    uint8_t commBuf[PKT_BUF_SIZE];
-    is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
-    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
-    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
-    is_comm_enable_protocol(&comm, _PTYPE_RTCM3);
-    is_comm_enable_protocol(&comm, _PTYPE_UBLOX);
+    // SN-8765: the scan is BUFFER-at-a-time, not byte-at-a-time, and a record's offset is the
+    // packet's own START position in the file.
+    //
+    // The previous form fed `is_comm_parse_byte` one byte at a time and assumed that a packet
+    // emitted while feeding byte `i` therefore ended at `i` and began wherever the last emit
+    // ended. Both halves are false. `is_comm_reset_parser` REWINDS `rxBuf.scan` to `rxBuf.head`
+    // on a parse error, so every buffered byte from there is re-scanned; subsequent one-byte calls
+    // then have a large scan window and can complete whole packets out of already-buffered bytes
+    // without the new byte contributing anything. Measured on a 5 MB segment with 2,058 parse
+    // errors: one emit reported 697 bytes consumed, and the next FOURTEEN reported one byte each
+    // while every one of them carried a complete valid packet. The offsets written for those
+    // records were not packet starts — 2,037 of 58,499 consecutive offset gaps came out shorter
+    // than a minimum ISB packet, which is arithmetically impossible for real packet starts.
+    //
+    // Instead, hand the parser a window of the file AS ITS OWN receive buffer and read its own
+    // bookkeeping: `setParserStart` moves `rxBuf.head` to a packet's first byte and
+    // `validPacketReset` moves it past the last, so after a successful parse the packet occupied
+    // `[head - rxPkt.size, head)` and anything between the previous head and that start is a run
+    // the parser walked past. `is_comm_free` is deliberately never called on this buffer: it
+    // compacts by moving bytes to the front, which would silently invalidate the pointer→offset
+    // mapping. Windows are bounded rather than the whole file so a multi-MB segment does not cost
+    // its own size in scratch memory.
+    //
+    // The offset written is now the packet START, which is also what the live writer documents
+    // (`cDeviceLogRaw::SaveData`: "this packet's PHYSICAL .raw byte offset ... its start position
+    // in the file"). On a clean contiguous stream the two definitions coincide, so nothing changes
+    // for an undamaged log; they differ only where unparsed bytes intervene, and there the packet
+    // start is the correct answer.
+    constexpr std::size_t kMinScanWindow = 2u * PKT_BUF_SIZE;   // a max-size packet can never span a whole window
+    const std::size_t scanWindow = std::max<std::size_t>(kMinScanWindow, 256u * 1024u);
 
-    // Track the file offset of the byte immediately after the last successful packet emit. When a packet emits at byte
-    // index `i`, the packet started at `lastEmitEnd` and ended at `i`, so the .idx record offset is `lastEmitEnd`.
-    // After the emit we set lastEmitEnd = i + 1.
+    std::vector<uint8_t> window(std::min<std::size_t>(scanWindow, total));
+    is_comm_instance_t comm{};
+
+    // Absolute byte just past the last successfully emitted packet, of any protocol. Anything
+    // after it at end-of-file is an incomplete trailing packet — the truncation signal, with the
+    // same meaning it had before.
     std::size_t lastEmitEnd = 0;
 
-    for (std::size_t i = 0; i < total; ++i) {
-        protocol_type_t ptype = is_comm_parse_byte(&comm, base[i]);
-        if (ptype == _PTYPE_NONE) continue;
+    for (std::size_t windowStart = 0; windowStart < total; ) {
+        const std::size_t have = std::min<std::size_t>(window.size(), total - windowStart);
 
-        if (ptype == _PTYPE_INERTIAL_SENSE_DATA ||
-            ptype == _PTYPE_INERTIAL_SENSE_CMD) {
-            // ISB packet — record into the index.
-            const auto& dataHdr = comm.rxPkt.dataHdr;
-            // D-112 / SN-7999 follow-up: use Timestamp(), NOT TimestampOrCurrentTime(). The legacy "OrCurrentTime"
-            // fallback returns the *host wall-clock* (1.7e9 sec since Unix epoch as of 2026) when a record has no
-            // internal timestamp. That value gets baked into the .idx and then mixed with valid GPS-ToW values from
-            // sibling records, producing chart fold-back rendering and broken `spanStart()`/`spanEnd()` extents.
-            // `Timestamp()` returns 0 for records without an internal time field — a clean sentinel downstream
-            // consumers (RawSeriesBuilder, ISDeviceLog::spanStart) can skip cleanly.
-            const double tsSec = cISDataMappings::Timestamp(&dataHdr, comm.rxPkt.data.ptr);
-            const uint64_t tsMs = static_cast<uint64_t>(tsSec * 1000.0);
+        // init FIRST (it memsets the buffer), then fill it.
+        is_comm_init(&comm, window.data(), static_cast<int>(window.size()), nullptr);
+        is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+        is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+        is_comm_enable_protocol(&comm, _PTYPE_RTCM3);
+        is_comm_enable_protocol(&comm, _PTYPE_UBLOX);
+        memcpy(window.data(), base + windowStart, have);
+        comm.rxBuf.tail = window.data() + have;
 
-            idx::is_log_idx_record_v2_t rec{};
-            rec.timestamp = tsMs;
-            rec.offset    = static_cast<uint64_t>(lastEmitEnd);
-            rec.did       = dataHdr.id;
-            // SN-8629: mark WHICH time domain this record's timestamp came from. Before this,
-            // the rebuild hardcoded flags = 0, so HAS_TOW was clear on every record it ever
-            // produced -- including records whose timestamp demonstrably IS a GPS time-of-week.
-            // That matters because a rebuilt sidecar is persisted and then trusted on the next
-            // open, making the loss permanent for that log, and because ISLogWriter derives
-            // sync_point_count from this bit (so a baked derivative reported zero sync points).
-            //
-            // The bit's documented meaning is specifically "carried a real GPS time-of-week
-            // field ... can be used as a sync anchor by ISTimeResolver", so it is gated on the
-            // DID's timestamp DOMAIN, not merely on having a timestamp. The live writer
-            // (DeviceLog.cpp) sets it whenever Timestamp() > 0, which over-claims for
-            // uptime-domain DIDs like DID_PIMU -- do not copy that here.
-            const bool towDomain =
-                cISDataMappings::TimestampDomain(dataHdr.id)
-                    == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW;
-            // Copilot review, #1316: derived from the DOMAIN alone. The old `tsMs != 0 &&`
-            // dropped the bit exactly at GPS week zero -- a legal timestamp -- and contradicted
-            // the rule stated four lines below for HAS_TIMESTAMP, that a DID which has a time
-            // field can legitimately read 0. Presence is HAS_TIMESTAMP's job; this bit answers
-            // only "which domain".
-            rec.flags     = towDomain ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
-            // D0096: say explicitly whether `timestamp` is a value or a null. The DID's
-            // declared domain is the authority -- a DID with no timestamp field can never
-            // have one, and a DID that has one can legitimately read 0 (ToW 0 is Sunday
-            // midnight; uptime 0 is the first ms after boot). Testing `tsMs != 0` instead
-            // would mislabel those as absent, which is the ambiguity this bit removes.
-            if (cISDataMappings::TimestampDomain(dataHdr.id)
-                    != cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE) {
-                rec.flags |= idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
+        const uint8_t* const wbase = window.data();
+        protocol_type_t ptype;
+        while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE) {
+            const std::size_t headPos = static_cast<std::size_t>(comm.rxBuf.head - wbase);
+
+            // The parser's own verdict on bytes it could not read. The index records only ISB
+            // packets, so an unparsable run needs no entry — just don't mistake it for one.
+            if (ptype == _PTYPE_PARSE_ERROR) continue;
+            const std::size_t declared = static_cast<std::size_t>(comm.rxPkt.size);
+            if (declared == 0 || declared > headPos) {
+                // Defensive: measured as never happening across the corpus, but a silently wrong
+                // offset is worse than a skipped record.
+                continue;
             }
-            rec.reserved  = 0;
-            // log_time_offset_ms stays 0: receipt time exists ONLY in the .idx (the .raw chunk
-            // header carries no time field), so a rebuild genuinely cannot recover it. The
-            // header's HAS_LOG_TIME_OFFSET flag is left clear to say so honestly -- see
-            // finalizeScanHeader().
-            records_.push_back(rec);
+            const std::size_t pktStart = headPos - declared;
 
-            if (collectAnchor) {
-                collector.consume(dataHdr.id, static_cast<uint16_t>(dataHdr.offset),
-                                  static_cast<const uint8_t*>(comm.rxPkt.data.ptr),
-                                  dataHdr.size, tsMs);
+            if (ptype == _PTYPE_INERTIAL_SENSE_DATA ||
+                ptype == _PTYPE_INERTIAL_SENSE_CMD) {
+                // ISB packet — record into the index.
+                const auto& dataHdr = comm.rxPkt.dataHdr;
+                // D-112 / SN-7999 follow-up: use Timestamp(), NOT TimestampOrCurrentTime(). The legacy "OrCurrentTime"
+                // fallback returns the *host wall-clock* (1.7e9 sec since Unix epoch as of 2026) when a record has no
+                // internal timestamp. That value gets baked into the .idx and then mixed with valid GPS-ToW values from
+                // sibling records, producing chart fold-back rendering and broken `spanStart()`/`spanEnd()` extents.
+                // `Timestamp()` returns 0 for records without an internal time field — a clean sentinel downstream
+                // consumers (RawSeriesBuilder, ISDeviceLog::spanStart) can skip cleanly.
+                const double tsSec = cISDataMappings::Timestamp(&dataHdr, comm.rxPkt.data.ptr);
+                const uint64_t tsMs = static_cast<uint64_t>(tsSec * 1000.0);
+
+                idx::is_log_idx_record_v2_t rec{};
+                rec.timestamp = tsMs;
+                // SN-8765: the packet's own START position in the file, taken from the parser's
+                // buffer bookkeeping. Previously `lastEmitEnd`, i.e. the byte after the previous
+                // emit, which is a different quantity whenever unparsed bytes intervene and is not
+                // a packet start at all once the parser has drained a backlog.
+                rec.offset    = static_cast<uint64_t>(windowStart + pktStart);
+                rec.did       = dataHdr.id;
+                // SN-8629: mark WHICH time domain this record's timestamp came from. Before this,
+                // the rebuild hardcoded flags = 0, so HAS_TOW was clear on every record it ever
+                // produced -- including records whose timestamp demonstrably IS a GPS time-of-week.
+                // That matters because a rebuilt sidecar is persisted and then trusted on the next
+                // open, making the loss permanent for that log, and because ISLogWriter derives
+                // sync_point_count from this bit (so a baked derivative reported zero sync points).
+                //
+                // The bit's documented meaning is specifically "carried a real GPS time-of-week
+                // field ... can be used as a sync anchor by ISTimeResolver", so it is gated on the
+                // DID's timestamp DOMAIN, not merely on having a timestamp. The live writer
+                // (DeviceLog.cpp) sets it whenever Timestamp() > 0, which over-claims for
+                // uptime-domain DIDs like DID_PIMU -- do not copy that here.
+                const bool towDomain =
+                    cISDataMappings::TimestampDomain(dataHdr.id)
+                        == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW;
+                // Copilot review, #1316: derived from the DOMAIN alone. The old `tsMs != 0 &&`
+                // dropped the bit exactly at GPS week zero -- a legal timestamp -- and contradicted
+                // the rule stated four lines below for HAS_TIMESTAMP, that a DID which has a time
+                // field can legitimately read 0. Presence is HAS_TIMESTAMP's job; this bit answers
+                // only "which domain".
+                rec.flags     = towDomain ? idx::IS_LOG_IDX_REC_FLAG_HAS_TOW : 0;
+                // D0096: say explicitly whether `timestamp` is a value or a null. The DID's
+                // declared domain is the authority -- a DID with no timestamp field can never
+                // have one, and a DID that has one can legitimately read 0 (ToW 0 is Sunday
+                // midnight; uptime 0 is the first ms after boot). Testing `tsMs != 0` instead
+                // would mislabel those as absent, which is the ambiguity this bit removes.
+                if (cISDataMappings::TimestampDomain(dataHdr.id)
+                        != cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_NONE) {
+                    rec.flags |= idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP;
+                }
+                rec.reserved  = 0;
+                // log_time_offset_ms stays 0: receipt time exists ONLY in the .idx (the .raw chunk
+                // header carries no time field), so a rebuild genuinely cannot recover it. The
+                // header's HAS_LOG_TIME_OFFSET flag is left clear to say so honestly -- see
+                // finalizeScanHeader().
+                records_.push_back(rec);
+
+                if (collectAnchor) {
+                    collector.consume(dataHdr.id, static_cast<uint16_t>(dataHdr.offset),
+                                      static_cast<const uint8_t*>(comm.rxPkt.data.ptr),
+                                      dataHdr.size, tsMs);
+                }
             }
+            // Whether or not we recorded this packet (NMEA/RTCM/UBX skipped), its bytes are
+            // accounted for; advance the post-emit cursor.
+            lastEmitEnd = windowStart + headPos;
         }
-        // Whether or not we recorded this packet (NMEA/RTCM/UBX skipped), its bytes are consumed; advance the post-emit
-        // cursor.
-        lastEmitEnd = i + 1;
+
+        // Resume where the PARSER stopped, not at the window end. When it is mid-packet at the
+        // boundary, `head` sits at that packet's first byte, so the next window re-parses it from
+        // its own start rather than losing it between two windows.
+        std::size_t consumed = static_cast<std::size_t>(comm.rxBuf.head - window.data());
+        if (consumed == 0) {
+            // `head` never moved, so the parser never locked onto a packet start anywhere in this
+            // window and emitted nothing — the whole window is bytes it walked past. Advance
+            // anyway or the scan cannot terminate, keeping a max-packet overlap so a packet
+            // straddling the boundary is still found from its start. No records were emitted
+            // here, so re-scanning the overlap cannot duplicate one.
+            consumed = (have > PKT_BUF_SIZE) ? (have - PKT_BUF_SIZE) : have;
+        }
+        windowStart += consumed;
     }
 
     // After the scan, any bytes the parser consumed-but-didn't-emit since lastEmitEnd are an incomplete trailing packet
