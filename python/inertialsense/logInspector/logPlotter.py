@@ -856,7 +856,10 @@ class logPlot:
         # Single representative towOffset (GPS time of week minus local time since boot).
         # Zero entries are logged before the GPS PPS time sync is established and are ignored.
         # Returns 0.0 when no time sync ever happened.
-        towOffset = np.asarray(self.getGpsTowOffset(dev), dtype=float)
+        towOffset = np.concatenate([
+            np.asarray(self.getData(dev, did, 'towOffset'), dtype=float).ravel()
+            for did in (DID_GNSS1_POS, DID_GNSS2_POS)
+        ])
         towOffset = towOffset[towOffset != 0]
         if towOffset.size == 0:
             return 0.0
