@@ -868,22 +868,27 @@ class logPlot:
     def getGnssTowRange(self, dev):
         # [first, last] GPS time of week (s) reported by the GNSS receivers, or None.
         #
-        # A receiver reports local time in 'timeOfWeekMs' until it has GPS time, so the leading
-        # local timestamps are rejected as being from the wrong time domain, and a receiver
-        # that never got GPS time (no fix) stays entirely in local time.  The receiver with the
-        # largest time of week is therefore the one to trust: the offset from local time to GPS
-        # time of week is never negative.
+        # A receiver reports local time in 'timeOfWeekMs' until it has GPS time, and a receiver
+        # that never got GPS time (no fix) stays entirely in local time.  Only samples with a
+        # nonzero GPS week are in the GPS time of week domain.  Timestamp magnitude cannot tell
+        # the two apart: early in the GPS week the local time since boot can exceed the time
+        # of week.
         towRange = None
         for did in [DID_GNSS1_POS, DID_GNSS2_POS]:
             tow = np.asarray(self.getData(dev, did, 'timeOfWeekMs'), dtype=float) * 0.001
-            tow = tow[(tow > 0) & (tow < 604800.0)]
+            week = np.asarray(self.getData(dev, did, 'week'))
+            if tow.size == 0 or week.size != tow.size:
+                continue
+            tow = tow[(week != 0) & (tow > 0) & (tow < 604800.0)]
             if tow.size == 0:
                 continue
             tow = tow[getValidTimeInd(tow)]
             if tow.size == 0:
                 continue
-            if towRange is None or float(np.max(tow)) > towRange[1]:
+            if towRange is None:
                 towRange = [float(np.min(tow)), float(np.max(tow))]
+            else:
+                towRange = [min(towRange[0], float(np.min(tow))), max(towRange[1], float(np.max(tow)))]
         return towRange
 
     def getTowStepOffset(self, tow, towGnss):
@@ -959,9 +964,10 @@ class logPlot:
 
         towGnss = self.getGnssTowRange(dev)
         towOffset = self.getSysTimeToGpsTowOffset(dev)
-        if towGnss is None or towOffset <= 1.0:
+        if towGnss is None or abs(towOffset) <= 1.0:
             # No GPS time of week to align to, or the two time domains are indistinguishable
-            # (the offset is the time since boot at the first sync, always well over a second)
+            # (the offset is the time since boot at the first sync, always well over a second).
+            # The offset is negative after a GPS week rollover if the device booted before it.
             return tow
 
         towGnssMid = 0.5 * (towGnss[0] + towGnss[1])
@@ -1436,14 +1442,14 @@ class logPlot:
                     refLla = lla2[-1]
 
             [gnssTime, gnssNed] = self.getGnssPosNED(d, DID_GNSS1_POS, refLla)
-            if self.isEmpty(gnssNed):
-                # No GNSS1 position with a valid fix
-                continue
-            gnssNedNorm = np.linalg.norm(gnssNed, axis=1)
-            ax[0,0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
-            ax[1,0].plot(gnssTime, gnssNed[:, 1])
-            ax[2,0].plot(gnssTime, gnssNed[:, 2])
-            ax[3,0].plot(gnssTime, gnssNedNorm)
+            # GNSS1 may have no position with a valid fix while GNSS2 does
+            hasGnss1 = not self.isEmpty(gnssNed)
+            if hasGnss1:
+                gnssNedNorm = np.linalg.norm(gnssNed, axis=1)
+                ax[0,0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
+                ax[1,0].plot(gnssTime, gnssNed[:, 1])
+                ax[2,0].plot(gnssTime, gnssNed[:, 2])
+                ax[3,0].plot(gnssTime, gnssNedNorm)
 
             if (np.shape(self.active_devs)[0]==1) or self.showGnss2:
                 [gnss2Time, gnss2Ned] = self.getGnssPosNED(d, DID_GNSS2_POS, refLla)
@@ -1454,7 +1460,7 @@ class logPlot:
                     ax[2,0].plot(gnss2Time, gnss2Ned[:, 2])
                     ax[3,0].plot(gnss2Time, gnss2NedNorm)
 
-            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+            if hasGnss1 and self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
                 intNed = np.empty_like(refNed)
                 for i in range(3):
                     intNed[:,i] = np.interp(refTime, gnssTime, gnssNed[:,i], right=np.nan, left=np.nan)
