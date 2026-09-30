@@ -57,3 +57,7 @@ ExampleProjects/IS_SPI_Dev_Example/IS_SPI_Dev_Example_local
 docs/html/
 docs/latex/
 
+# Generated runtime log, accidentally committed by a scan/debug run (PR #1333) -- ignore it
+# wherever it lands, not just at the root.
+**/inertial_sense.log
+

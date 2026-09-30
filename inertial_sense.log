@@ -1,6 +1,0 @@
-[18:33:59.726769] WARN   (IS_LOG_ISLOG) :: LOG_SN520487_20260729_003722_0001.raw: truncated, stopped at offset 5371642 (file size 5371725)
-[18:33:59.729283] WARN   (IS_LOG_ISLOG) :: LOG_SN520487_20260729_003722_0001.raw: sidecar rebuilt from .raw scan (reason: missing)
-[18:33:59.772033] WARN   (IS_LOG_ISLOG) :: LOG_SN520487_20260729_003722_0002.raw: truncated, stopped at offset 5371740 (file size 5371825)
-[18:33:59.773704] WARN   (IS_LOG_ISLOG) :: LOG_SN520487_20260729_003722_0002.raw: sidecar rebuilt from .raw scan (reason: missing)
-[18:33:59.834967] WARN   (IS_LOG_ISLOG) :: LOG_SN123412_20260916_191758_0063.raw: sidecar rebuilt from .raw scan (reason: missing)
-[18:33:59.852183] WARN   (IS_LOG_ISLOG) :: LOG_SN12345_20260429_063659_0001.raw: sidecar rebuilt from .raw scan (reason: missing)
