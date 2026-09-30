@@ -138,6 +138,14 @@ static int serialPortDrainPlatform(port_handle_t port);
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, unsigned int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
+#if PLATFORM_IS_WINDOWS
+// Forward-declared: serialPortReadTimeoutPlatform() (above, used well before its own definition)
+// calls this, but its definition lives with the other win32-error-classification helpers much
+// later in the file. Without this, the call at line ~1059 precedes any declaration in this
+// translation unit (PR #1331 review).
+static int win32ErrorIndicatesDeviceLost(DWORD err);
+#endif
+
 
 // #define DEBUG_COMMS   // Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
 #ifdef DEBUG_COMMS
@@ -1147,20 +1155,37 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 #if PLATFORM_IS_WINDOWS
 /**
- * @brief Whether a Win32 error code indicates the underlying serial device is gone (SN-8697).
+ * @brief Whether a Win32 error code indicates the underlying serial device/handle no longer exists
+ * (SN-8697, revised SN-8650).
  *
- * A rebooting IMX-6/GPX-1 (during an ISv2/FPKG firmware update) does not re-enumerate on Windows --
- * the COM port's OS node persists throughout the reboot (see the "OS node persists" comment in
- * ISFirmwareUpdater.cpp) -- so PortManager::discoverPorts()'s name-based validatePort() check never
- * observes the port disappearing. The only signal that the device actually went away is a live I/O
- * operation failing while the device is mid-reboot. Before this fix, only ERROR_NOT_SAME_DEVICE
- * (WriteFile) and the undocumented 433 (GetOverlappedResult) were treated as "device gone" --
- * self-acknowledged as an incomplete list ("this should probably be expanded to include other
- * likely errors, but..."). This is that expansion: every code here is a standard, documented Win32
- * error associated with a USB-serial device being removed, reset, or otherwise no longer reachable.
- * ERROR_OPERATION_ABORTED is safe to include here: at every call site that checks this, it is
- * examined before this code's own CancelIo() runs, so it can only reflect an OS-initiated abort
- * (the device going away), not a benign cancellation we ourselves triggered a moment earlier.
+ * A read/write failure is never a general indicator of an invalid port -- often it is, but not
+ * always, and it depends entirely on the nature of the failure. The test that matters is whether the
+ * code's own documented meaning asserts that the object (device/handle) no longer exists -- the Win32
+ * analogue of POSIX ENOENT/EBADF -- versus merely that this one I/O attempt could not complete for
+ * some local or transient reason (a full buffer, a timeout, a cancelled operation). Only the former
+ * belongs here; the latter should be reported back to the caller as an ordinary failed attempt; a
+ * caller that wants to retry (contention, or any other recoverable cause) remains free to.
+ *
+ * Kept (explicit "does not exist" semantics, confirmed against Win32/driver documentation):
+ *  - ERROR_NOT_SAME_DEVICE, 433 (undocumented STATUS_NO_SUCH_DEVICE) -- pre-existing checks.
+ *  - ERROR_DEVICE_NOT_CONNECTED -- returned specifically when a device disappears mid-transfer.
+ *  - ERROR_INVALID_HANDLE -- the handle itself, which only this code owns the lifecycle of, is no
+ *    longer valid; not explained by contention or a busy peer.
+ *
+ * Removed (SN-8650; do not re-add without re-litigating this comment):
+ *  - ERROR_SEM_TIMEOUT -- "the semaphore timeout period has expired": a wait-didn't-complete-in-time
+ *    signal, not a device-existence signal. Fires on a still-present device that's simply slow to
+ *    answer (field case: many devices sharing one USB hub/testbed under write contention). This is
+ *    true regardless of transport or of whether the target happens to be rebooting -- a write
+ *    timing out during contention is not evidence about the port at all, on any transport.
+ *  - ERROR_GEN_FAILURE -- "a device attached to the system is not functioning": commonly reported for
+ *    a blocked/stalled USB-CDC link (a driver-level hiccup), not confirmed device absence; widely
+ *    documented as clearing on its own or via replug without the device having actually left.
+ *  - ERROR_OPERATION_ABORTED -- Microsoft's own documentation: "this is not usually a hardware
+ *    failure" and is the expected, routine result of ANY CancelIo(), for reasons unrelated to device
+ *    removal (a thread exiting, a handle closing, or the OS aborting a pending op for its own
+ *    unrelated reasons) -- not exclusively an OS-initiated abort due to the device going away, contra
+ *    the reasoning this code carried before.
  */
 static int win32ErrorIndicatesDeviceLost(DWORD err)
 {
@@ -1168,11 +1193,8 @@ static int win32ErrorIndicatesDeviceLost(DWORD err)
     {
     case ERROR_NOT_SAME_DEVICE:        // pre-existing check
     case 433:                          // undocumented STATUS_NO_SUCH_DEVICE, pre-existing check
-    case ERROR_GEN_FAILURE:            // "A device attached to the system is not functioning."
     case ERROR_DEVICE_NOT_CONNECTED:
-    case ERROR_OPERATION_ABORTED:      // OS-initiated abort due to device removal (see doc comment)
-    case ERROR_SEM_TIMEOUT:            // commonly returned when a USB device stops responding
-    case ERROR_INVALID_HANDLE:         // handle invalidated by the underlying device node going away
+    case ERROR_INVALID_HANDLE:
         return 1;
     default:
         return 0;
