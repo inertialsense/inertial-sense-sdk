@@ -901,7 +901,11 @@ class logPlot:
         span = towGnss[1] - towGnss[0]
         if tow[i] > 0.5 * towGnss[0] or abs(tow[i+1] - towGnss[0]) > span + 1.0:
             return 0.0
-        return float(dt[i] - np.median(dt[dt > 0]))
+        nominalDt = np.delete(dt, i)
+        nominalDt = nominalDt[nominalDt > 0]
+        if nominalDt.size == 0:
+            return 0.0
+        return float(dt[i] - np.median(nominalDt))
 
     def getSysTimeToGpsTowOffset(self, dev):
         # Offset to add to local time since boot to get GPS time of week.
