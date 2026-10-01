@@ -153,14 +153,55 @@ static inline eLogLevel static_get_log_level() { return log_level; }
 static inline void static_set_log_level(eLogLevel new_level) { log_level = new_level; }
 
 #if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
-    extern FILE* log_file;    //!< destination stream for log output; set via IS_LOG_OUTPUT()
+    extern FILE* log_file;    //!< destination stream for log output; set via IS_LOG_OUTPUT() or IS_LOG_SET_OUTPUT_PATH()
+
+    /** Log file opened when no output has been configured before the first message. */
+    #define IS_LOG_DEFAULT_OUTPUT_PATH          "inertial_sense.log"
 
     /**
-     * Redirects log output to the given stream.
+     * Redirects log output to the given stream. The caller retains ownership of out; a file
+     * previously opened by IS_LOG_SET_OUTPUT_PATH() is closed.
      * @param out destination stream that log messages will be written to
      */
     #define IS_LOG_OUTPUT(out)                  static_log_output(out)
-    static inline void static_log_output(FILE* out) { log_file = out; }
+
+    /**
+     * Redirects log output to a file path, or to "STDOUT" / "STDERR" (case-insensitive).
+     * The new file is opened before the switch; on failure the current output is left unchanged.
+     * The previous output is closed if it was opened by the logger. Safe to call while other
+     * threads are logging.
+     * @param path   file path, "STDOUT" or "STDERR"; NULL or "" selects IS_LOG_DEFAULT_OUTPUT_PATH
+     * @param append non-zero to append to an existing file, zero to truncate it
+     * @return 0 on success, -1 if the file could not be opened
+     */
+    #define IS_LOG_SET_OUTPUT_PATH(path, append)    static_log_set_output_path(path, append)
+
+    /**
+     * Returns the current log output: a file path, "STDOUT" or "STDERR". Before any output is
+     * configured or opened this is IS_LOG_DEFAULT_OUTPUT_PATH; for a stream set with IS_LOG_OUTPUT()
+     * that is neither stdout nor stderr it is "".
+     */
+    #define IS_LOG_GET_OUTPUT_PATH()            static_log_get_output_path()
+
+    /**
+     * Redirects log output to the given stream; see IS_LOG_OUTPUT().
+     * @param out destination stream that log messages will be written to
+     */
+    void static_log_output(FILE* out);
+
+    /**
+     * Redirects log output to a file path; see IS_LOG_SET_OUTPUT_PATH().
+     * @param path   file path, "STDOUT" or "STDERR"; NULL or "" selects IS_LOG_DEFAULT_OUTPUT_PATH
+     * @param append non-zero to append to an existing file, zero to truncate it
+     * @return 0 on success, -1 if the file could not be opened
+     */
+    int static_log_set_output_path(const char* path, int append);
+
+    /**
+     * Returns the current log output; see IS_LOG_GET_OUTPUT_PATH().
+     * @return the current output path, "STDOUT", "STDERR", or "" for a caller-supplied stream
+     */
+    const char* static_log_get_output_path(void);
 #endif
 
 /**

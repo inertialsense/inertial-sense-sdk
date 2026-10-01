@@ -28,6 +28,8 @@ void static_log_buffer(const char* prefix, const unsigned char* buffer, int len)
 #else // defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)
 
 FILE* log_file = NULL;
+static int log_file_owned = 0;                      //!< non-zero when log_file was opened by the logger and must be closed by it
+static char log_file_path[1024] = IS_LOG_DEFAULT_OUTPUT_PATH;  //!< path of log_file, "STDOUT"/"STDERR", or "" for a caller-supplied stream
 
 #if defined(PLATFORM_IS_WINDOWS)
 static CRITICAL_SECTION log_mutex;
@@ -37,16 +39,18 @@ static pthread_mutex_t log_mutex;
 static pthread_once_t log_init_once = PTHREAD_ONCE_INIT;
 #endif
 
+static void lock_mutex();
+static void unlock_mutex();
+
+/**
+ * Flushes the log at process exit. The output and mutex are deliberately left open: static destructors that run
+ * after this handler still log, and every message is already flushed, so the OS closing the file loses nothing.
+ */
 static void static_log_end(void) {
-#if defined(PLATFORM_IS_WINDOWS)
-    DeleteCriticalSection(&log_mutex);
-#else
-    pthread_mutex_destroy(&log_mutex);
-#endif
-    if (log_file && log_file != stdout && log_file != stderr) {
-        fclose(log_file);
-        log_file = NULL;
-    }
+    lock_mutex();
+    if (log_file)
+        fflush(log_file);
+    unlock_mutex();
 }
 
 #if defined(PLATFORM_IS_WINDOWS)
@@ -89,6 +93,88 @@ static void unlock_mutex() {
 #endif
 }
 
+/** Closes log_file if the logger opened it. Caller must hold log_mutex. */
+static void close_owned_output_locked(void) {
+    if (log_file_owned && log_file && log_file != stdout && log_file != stderr) {
+        fclose(log_file);
+    }
+    log_file_owned = 0;
+}
+
+/** Opens the default log file if no output is configured yet, falling back to stdout. Caller must hold log_mutex. */
+static void ensure_output_locked(void) {
+    if (log_file != NULL)
+        return;
+
+    log_file = fopen(IS_LOG_DEFAULT_OUTPUT_PATH, "a+");
+    if (log_file != NULL) {
+        log_file_owned = 1;
+        snprintf(log_file_path, sizeof(log_file_path), "%s", IS_LOG_DEFAULT_OUTPUT_PATH);
+    } else {
+        log_file = stdout;
+        log_file_owned = 0;
+        snprintf(log_file_path, sizeof(log_file_path), "STDOUT");
+    }
+}
+
+/** Case-insensitive ASCII string equality. */
+static int str_equals_nocase(const char* a, const char* b) {
+    for (; *a && *b; a++, b++) {
+        char ca = (*a >= 'a' && *a <= 'z') ? (char)(*a - 32) : *a;
+        char cb = (*b >= 'a' && *b <= 'z') ? (char)(*b - 32) : *b;
+        if (ca != cb)
+            return 0;
+    }
+    return (*a == *b);
+}
+
+void static_log_output(FILE* out) {
+    lock_mutex();
+    if (out != log_file)
+        close_owned_output_locked();
+    log_file = out;
+    log_file_owned = 0;
+    if (out == stdout)          snprintf(log_file_path, sizeof(log_file_path), "STDOUT");
+    else if (out == stderr)     snprintf(log_file_path, sizeof(log_file_path), "STDERR");
+    else if (out == NULL)       snprintf(log_file_path, sizeof(log_file_path), "%s", IS_LOG_DEFAULT_OUTPUT_PATH);
+    else                        log_file_path[0] = '\0';
+    unlock_mutex();
+}
+
+int static_log_set_output_path(const char* path, int append) {
+    if (path == NULL || path[0] == '\0')
+        path = IS_LOG_DEFAULT_OUTPUT_PATH;
+
+    FILE* out = NULL;
+    int owned = 0;
+    if (str_equals_nocase(path, "STDOUT")) {
+        out = stdout;
+        path = "STDOUT";
+    } else if (str_equals_nocase(path, "STDERR")) {
+        out = stderr;
+        path = "STDERR";
+    } else {
+        // Open before taking the lock so a slow or failing open never stalls logging threads.
+        out = fopen(path, append ? "a+" : "w");
+        if (out == NULL)
+            return -1;
+        owned = 1;
+    }
+
+    lock_mutex();
+    if (out != log_file)
+        close_owned_output_locked();
+    log_file = out;
+    log_file_owned = owned;
+    snprintf(log_file_path, sizeof(log_file_path), "%s", path);
+    unlock_mutex();
+    return 0;
+}
+
+const char* static_log_get_output_path(void) {
+    return log_file_path;
+}
+
 static inline void static_log_timestamp(FILE* log_file, const char* prefix) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
@@ -107,12 +193,7 @@ void static_log_msg(int facility_code, int msg_log_level, const char *facility_n
 
     lock_mutex();
 
-    if (log_file == NULL) {
-        log_file = fopen("inertial_sense.log", "a+");
-        if (log_file == NULL) {
-            log_file = stdout;
-        }
-    }
+    ensure_output_locked();
 
     static const char* log_level_names[] = { "NONE", "ERROR", "WARN", "INFO", "INFO+", "DEBUG", "DEBUG+", "CRAZY" };
     static_log_timestamp(log_file, NULL);
@@ -140,12 +221,7 @@ void static_log_buffer(const char* prefix, const unsigned char* buffer, int len)
 
     lock_mutex();
 
-    if (log_file == NULL) {
-        log_file = fopen("inertial_sense.log", "a+");
-        if (log_file == NULL) {
-            log_file = stdout;
-        }
-    }
+    ensure_output_locked();
 
     static_log_timestamp(log_file, prefix);
 
