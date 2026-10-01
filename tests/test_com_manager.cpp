@@ -115,7 +115,7 @@ static int msgHandlerBinaryData(void* ctx, p_data_t* msg, port_handle_t port)
 static int msgHandlerNmea(void* ctx, const uint8_t* msg, int msgSize, port_handle_t port)
 {
     if (msgSize == 10)
-    {   // 4 character commands (i.e. "$STPB*14\r\n")
+    {   // 4 character commands (i.e. "$STPB*15\r\n")
         switch (getNmeaMsgId(msg, msgSize))
         {
             case NMEA_MSG_ID_ASCE:    // query NMEA message broadcast rates
