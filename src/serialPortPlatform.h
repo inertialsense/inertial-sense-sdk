@@ -22,10 +22,55 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define __IS_SERIALPORT_PLATFORM_H
 
 #include "serialPort.h"
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * SN-8650: per-port state for the duplicate-error log-suppression gate below. Opaque to callers
+ * other than serialPortErrorDedupGate() itself; zero-initialize to start (NULL `action` means no
+ * run is open).
+ */
+typedef struct
+{
+    const char* action;
+    int errorCode;
+    uint32_t count;
+    uint64_t firstMs;
+    uint64_t deadlineMs;
+} serial_port_error_dedup_t;
+
+enum
+{
+    SERIAL_PORT_DEDUP_SUPPRESSED = 0,          //!< duplicate; caller should log nothing
+    SERIAL_PORT_DEDUP_IMMEDIATE,               //!< no run was pending; caller should log this error immediately
+    SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE,  //!< caller should log the (now-filled) summary, then this error
+    SERIAL_PORT_DEDUP_SUMMARY_FOLDED,          //!< this duplicate closed an expired run; caller should log only the summary
+};
+
+/**
+ * SN-8650: decision logic for collapsing a burst of identical port errors (same action, same
+ * code, same port) into one immediate report plus at most one trailing summary, instead of one
+ * log line per occurrence. Pure state transition -- no I/O, no OS time calls -- so it can be
+ * driven directly by unit tests with synthetic timestamps. See serialPortPlatform.c's
+ * serialPortReportError() for how real call sites use it, and its own doc comment for the full
+ * state-machine description. Exposed (non-static) for unit testing.
+ *
+ * @param state the port's dedup state; persists for the life of the handle it's embedded in.
+ * @param action a stable (e.g. string-literal) description of the failed operation, compared by
+ *   pointer -- reuse the same literal for the same operation every call.
+ * @param errorCode the platform error code for this occurrence.
+ * @param nowMs current time in milliseconds, supplied by the caller.
+ * @param windowMs the one-shot duration: the max gap between duplicates before the run is closed.
+ * @param summaryOut buffer to receive the formatted summary text when a run is flushed; untouched
+ *   otherwise. May be NULL to skip formatting.
+ * @param summaryOutLen size of summaryOut in bytes.
+ * @return one of the SERIAL_PORT_DEDUP_* values, describing what the caller should log.
+ */
+int serialPortErrorDedupGate(serial_port_error_dedup_t* state, const char* action, int errorCode, uint64_t nowMs, uint32_t windowMs, char* summaryOut, size_t summaryOutLen);
 
 /**
  * Zeros the serial_port_t struct then assigns the function-pointer table for the current
