@@ -9,27 +9,51 @@ except ImportError:
 import subprocess
 import sys, os, signal, ctypes, yaml
 from PyQt6 import QtCore
-from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
+from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox, \
+    QTableWidget, QTableWidgetItem, QAbstractItemView
 from PyQt6.QtCore import Qt
 
+from inertialsense.tools.data_sets import DID_DEV_INFO
+
 # import logInspector as logInspector
+
+DEVICE_TABLE_COL_CHECKBOX  = 0
+DEVICE_TABLE_COL_HARDWARE  = 1
+DEVICE_TABLE_COL_FIRMWARE  = 2
+DEVICE_TABLE_COL_BUILD     = 3
+DEVICE_TABLE_COL_PROTOCOL  = 4
+DEVICE_TABLE_COL_COMMIT    = 5
+DEVICE_TABLE_COL_BUILDDATE = 6
+DEVICE_TABLE_MORE_INFO_COLS = (DEVICE_TABLE_COL_HARDWARE, DEVICE_TABLE_COL_FIRMWARE, DEVICE_TABLE_COL_BUILD,
+                                DEVICE_TABLE_COL_PROTOCOL, DEVICE_TABLE_COL_COMMIT, DEVICE_TABLE_COL_BUILDDATE)
+
+DEVICE_TABLE_AUTO_FIT_ROWS = 30
 
 class ChooseDevsDialog(QDialog):
     def __init__(self, parent):
         super(ChooseDevsDialog, self).__init__(parent)
-        self.setWindowTitle("Choose Devices")
+        self.setWindowTitle("Devices")
         self.parent = parent
         self.mainLayout = QVBoxLayout()
 
         self.selectAllButton = QPushButton()
         self.selectAllButton.setText("Select All")
         self.selectAllButton.clicked.connect(self.selectAll)
-        self.mainLayout.addWidget(self.selectAllButton)
+        self.mainLayout.addWidget(self.selectAllButton, 0, Qt.AlignmentFlag.AlignLeft)
 
         self.selectNoneButton = QPushButton()
         self.selectNoneButton.setText("Select None")
         self.selectNoneButton.clicked.connect(self.selectNone)
-        self.mainLayout.addWidget(self.selectNoneButton)
+        self.mainLayout.addWidget(self.selectNoneButton, 0, Qt.AlignmentFlag.AlignLeft)
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(7)
+        self.table.setHorizontalHeaderLabels(['Serial#', 'Hardware', 'Firmware', 'Build', 'Protocol', 'Commit', 'Build Date'])
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.table.setRowCount(parent.log.numDev)
 
         self.checkboxes = []
         for i in range(parent.log.numDev):
@@ -37,20 +61,116 @@ class ChooseDevsDialog(QDialog):
             checkbox.setText(str(parent.log.serials[i]))
             checkbox.setChecked(i in parent.mplots[0].plotter.active_devs)
             self.checkboxes.append(checkbox)
-            self.mainLayout.addWidget(checkbox)
+            self.table.setCellWidget(i, DEVICE_TABLE_COL_CHECKBOX, checkbox)
+
+            hardwareStr, firmwareStr, buildStr, protocolStr, commitStr, buildDateStr = self.deviceInfoStrings(i)
+            self.table.setItem(i, DEVICE_TABLE_COL_HARDWARE, self.readOnlyItem(hardwareStr))
+            self.table.setItem(i, DEVICE_TABLE_COL_FIRMWARE, self.readOnlyItem(firmwareStr))
+            self.table.setItem(i, DEVICE_TABLE_COL_BUILD, self.readOnlyItem(buildStr))
+            self.table.setItem(i, DEVICE_TABLE_COL_PROTOCOL, self.readOnlyItem(protocolStr))
+            self.table.setItem(i, DEVICE_TABLE_COL_COMMIT, self.readOnlyItem(commitStr))
+            self.table.setItem(i, DEVICE_TABLE_COL_BUILDDATE, self.readOnlyItem(buildDateStr))
+
+        self.table.resizeColumnsToContents()
+        for col in DEVICE_TABLE_MORE_INFO_COLS:
+            self.table.setColumnHidden(col, True)
+        self.fitTableWidth()
+        self.mainLayout.addWidget(self.table)
+
+        self.moreInfoCheckbox = QCheckBox()
+        self.moreInfoCheckbox.setText("More info")
+        self.moreInfoCheckbox.setChecked(False)
+        self.moreInfoCheckbox.stateChanged.connect(self.toggleMoreInfo)
+        self.mainLayout.addWidget(self.moreInfoCheckbox)
 
         self.applyButton = QPushButton()
         self.applyButton.setText("Apply")
         self.applyButton.clicked.connect(self.updatePlot)
-        self.mainLayout.addWidget(self.applyButton)
+        self.mainLayout.addWidget(self.applyButton, 0, Qt.AlignmentFlag.AlignLeft)
 
         self.okbutton = QPushButton()
         self.okbutton.setText("OK")
         self.okbutton.clicked.connect(self.clickedOk)
-        self.mainLayout.addWidget(self.okbutton)
+        self.mainLayout.addWidget(self.okbutton, 0, Qt.AlignmentFlag.AlignLeft)
 
+        buttonWidth = max(b.sizeHint().width() for b in
+                           (self.selectAllButton, self.selectNoneButton, self.applyButton, self.okbutton))
+        for b in (self.selectAllButton, self.selectNoneButton, self.applyButton, self.okbutton):
+            b.setFixedWidth(buttonWidth)
 
         self.setLayout(self.mainLayout)
+        self.fitDialogWidth()
+        self.fitDialogHeight()
+
+    @staticmethod
+    def readOnlyItem(text):
+        item = QTableWidgetItem(text)
+        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        return item
+
+    def deviceInfoStrings(self, devIdx):
+        devInfoArray = self.parent.log.data[devIdx, DID_DEV_INFO]
+        if len(devInfoArray) == 0:
+            return '', '', '', '', '', ''
+        devInfo = devInfoArray[0]
+        hv = devInfo['hardwareVer']
+        fv = devInfo['firmwareVer']
+        pv = devInfo['protocolVer']
+        buildNumber = int(devInfo['buildNumber'])
+        hardwareStr = 'IMX-%d.%d.%d' % (hv[0], hv[1], hv[2])
+        firmwareStr = '%d.%d.%d' % (fv[0], fv[1], fv[2])
+        buildStr = '%05X.%d' % ((buildNumber >> 12) & 0xFFFFF, buildNumber & 0xFFF)
+        protocolStr = '%d.%d.%d' % (pv[0], pv[1], pv[2])
+        commitStr = '%08X' % int(devInfo['repoRevision'])
+        buildDateStr = '%04d-%02d-%02d' % (2000 + int(devInfo['buildYear']), devInfo['buildMonth'], devInfo['buildDay'])
+        return hardwareStr, firmwareStr, buildStr, protocolStr, commitStr, buildDateStr
+
+    def toggleMoreInfo(self):
+        showMoreInfo = self.moreInfoCheckbox.isChecked()
+        for col in DEVICE_TABLE_MORE_INFO_COLS:
+            self.table.setColumnHidden(col, not showMoreInfo)
+        self.table.resizeColumnsToContents()
+        self.fitDialogWidth()
+
+    def fitDialogWidth(self):
+        self.fitTableWidth()
+        self.setFixedWidth(self.sizeHint().width())
+
+    def fitDialogHeight(self):
+        numDev = len(self.checkboxes)
+        rowsToShow = min(numDev, DEVICE_TABLE_AUTO_FIT_ROWS)
+        rowHeight = self.table.rowHeight(0) if numDev > 0 else self.table.verticalHeader().defaultSectionSize()
+        headerHeight = self.table.horizontalHeader().sizeHint().height()
+        tableFitHeight = headerHeight + rowsToShow * rowHeight + self.table.frameWidth() * 2 + 2
+
+        # Temporarily pin the table to its up-to-N-row height so the dialog's
+        # sizeHint (and adjustSize) reflect that, not the full row count.
+        self.table.setFixedHeight(tableFitHeight)
+        self.adjustSize()
+
+        screen = QApplication.primaryScreen()
+        if screen is not None:
+            maxHeight = screen.availableGeometry().height()
+            if self.height() > maxHeight:
+                self.resize(self.width(), maxHeight)
+            self.setMaximumHeight(maxHeight)
+
+        fittedHeight = self.height()
+
+        # Release the table's height so it can grow/shrink again when the
+        # user manually resizes the dialog (e.g. for >30 devices).
+        self.table.setMinimumHeight(0)
+        self.table.setMaximumHeight(16777215)
+        self.resize(self.width(), fittedHeight)
+
+    def fitTableWidth(self):
+        width = self.table.frameWidth() * 2
+        if self.table.verticalHeader().isVisible():
+            width += self.table.verticalHeader().width()
+        for col in range(self.table.columnCount()):
+            if not self.table.isColumnHidden(col):
+                width += self.table.columnWidth(col)
+        self.table.setFixedWidth(width + 4)
 
     def updatePlot(self):
         active_serials = []
