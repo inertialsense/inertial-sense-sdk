@@ -62,7 +62,10 @@ def getTimeFromGpsTowMs(ms, fixTimeBeforeGnss=False, week=None):
     else:   
         # GPS time is NOT available
         if fixTimeBeforeGnss:
-            # Backpropagate first available GNSS time to convert time since start to GNSS time
+            # Backpropagate first available GNSS time to convert time since start to GNSS time.
+            # Work on a float copy: the caller passes a view of the log data, which must not be
+            # modified, and the unsigned integer timestamps underflow when written back.
+            ms = np.array(ms, dtype=float)
             dms = np.diff(ms)
             ind = np.flatnonzero(abs(dms - dms[-1]) > 0.1)
             if len(ind) > 0:
@@ -86,7 +89,9 @@ def getTimeFromGpsTow(s, fixTimeBeforeGnss=False, week=None):
         gpsTime = [WEEK_TIME + datetime.timedelta(seconds=float(i)) for i in s]
     else:
         if fixTimeBeforeGnss:
-            # Back propagate first available GNSS time to convert time since start to GNSS time
+            # Back propagate first available GNSS time to convert time since start to GNSS time.
+            # Work on a copy: the caller passes a view of the log data, which must not be modified.
+            s = np.array(s, dtype=float)
             ds = np.diff(s)
             ind = np.flatnonzero(abs(ds - ds[-1]) > 10) # jump in time stamp due to GNSS ToW offset
             if len(ind) > 0:

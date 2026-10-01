@@ -39,6 +39,15 @@ DEG2RAD = 3.14159 / 180.0
 RTHR2RTS = 60       # sqrt(hr) to sqrt(sec)
 MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 
+# GNSS status field, see eGnssStatus in data_sets.h
+GNSS_STATUS_FIX_MASK        = 0x00001F00
+GNSS_STATUS_FIX_BIT_OFFSET  = 8
+GNSS_STATUS_FLAGS_FIX_OK    = 0x00010000
+# Fix types that carry a usable 3D position: 3D, GNSS + dead reckoning, reference LLA, DGPS,
+# SBAS and RTK single/float/fix.  Excluded are no fix, dead reckoning only (no GNSS position),
+# 2D (no reliable altitude) and time only (no position).
+GNSS_STATUS_FIX_POS_VALID   = (3, 4, 6, 8, 9, 10, 11, 12)
+
 try:
     # 'fork' (Linux/Mac): a worker process inherits the parent's already-loaded memory -- including
     # a fully-loaded Log -- via copy-on-write at the moment it's forked, so _allanDeviationWorker()
@@ -532,6 +541,7 @@ class logPlot:
         self.showReference = False
         self.showUcal = False
         self.gnssVelFilterMode = 0
+        self.gnssFixFilter = True   # Plot only GNSS samples with a valid 3D position fix
         self.utcTime = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
@@ -669,10 +679,13 @@ class logPlot:
 
         for idx, d in enumerate(included_devs):
             hdw_data = self.getData(d, DID_DEV_INFO, 'hardwareVer')
-            if len(hdw_data) <= d:
+            variant_data = self.getData(d, DID_DEV_INFO, 'hardwareVariant')
+            if len(hdw_data) == 0 or len(variant_data) == 0:
                 continue
-            hdw_version = [int(x) for x in hdw_data[d]]
-            hdw_variant = hdw_version[3]
+            # hardwareVer is only [major, minor, pcb_rev] (3 elements) -- the IMU population/variant
+            # id is a separate DID_DEV_INFO field, hardwareVariant, not a 4th hardwareVer entry.
+            hdw_version = [int(x) for x in hdw_data[-1]]
+            hdw_variant = int(variant_data[-1])
             imu_type = imuTypesForHdwVariant(hdw_variant, n_slots)
 
             device_node = data.setdefault(str(int(self.log.serials[d])), {})
@@ -836,11 +849,176 @@ class logPlot:
         except:
             return np.array([])
 
-    def getGpsTowOffset(self, dev):
-        towOffset = self.getData(dev, DID_GNSS1_POS, 'towOffset')
-        if len(towOffset) == 0:
-            towOffset = self.getData(dev, DID_GNSS2_POS, 'towOffset')
-        return towOffset
+    def getGpsTowOffsetValue(self, dev):
+        # Single representative towOffset (GPS time of week minus local time since boot).
+        # Zero entries are logged before the GPS PPS time sync is established and are ignored.
+        # Returns 0.0 when no time sync ever happened.
+        towOffset = np.concatenate([
+            np.asarray(self.getData(dev, did, 'towOffset'), dtype=float).ravel()
+            for did in (DID_GNSS1_POS, DID_GNSS2_POS)
+        ])
+        towOffset = towOffset[towOffset != 0]
+        if towOffset.size == 0:
+            return 0.0
+        return float(np.median(towOffset))
+
+    def getGnssTowRange(self, dev):
+        # [first, last] GPS time of week (s) reported by the GNSS receivers, or None.
+        #
+        # A receiver reports local time in 'timeOfWeekMs' until it has GPS time, and a receiver
+        # that never got GPS time (no fix) stays entirely in local time.  Timestamp magnitude
+        # cannot tell the two apart: early in the GPS week the local time since boot can exceed
+        # the time of week.  Samples with a nonzero GPS week are in the GPS time of week domain.
+        # Some receivers never populate the week (e.g. GNSS data injected by ArduPilot), and then
+        # the samples with a position fix are used, the fix implying GPS time.
+        towRange = None
+        for did in [DID_GNSS1_POS, DID_GNSS2_POS]:
+            tow = np.asarray(self.getData(dev, did, 'timeOfWeekMs'), dtype=float) * 0.001
+            week = np.asarray(self.getData(dev, did, 'week'))
+            status = np.asarray(self.getData(dev, did, 'status'), dtype=np.uint32)
+            if tow.size == 0 or week.size != tow.size or status.size != tow.size:
+                continue
+            if np.any(week != 0):
+                hasGpsTime = week != 0
+            else:
+                fixType = (status & GNSS_STATUS_FIX_MASK) >> GNSS_STATUS_FIX_BIT_OFFSET
+                hasGpsTime = np.isin(fixType, GNSS_STATUS_FIX_POS_VALID)
+            tow = tow[hasGpsTime & (tow > 0) & (tow < 604800.0)]
+            if tow.size == 0:
+                continue
+            tow = tow[getValidTimeInd(tow)]
+            if tow.size == 0:
+                continue
+            if towRange is None:
+                towRange = [float(np.min(tow)), float(np.max(tow))]
+            else:
+                towRange = [min(towRange[0], float(np.min(tow))), max(towRange[1], float(np.max(tow)))]
+        return towRange
+
+    def getTowStepOffset(self, tow, towGnss):
+        # Offset recovered from the step in INS time of week at the moment the GPS time sync
+        # became valid.  Time of week = local time + towOffset, so the size of the step is the
+        # offset.  Returns 0.0 when no step out of the local time domain is found.
+        if towGnss is None or tow.size < 3:
+            return 0.0
+        dt = np.diff(tow)
+        if not np.any(dt > 0):
+            return 0.0
+        i = int(np.argmax(dt))
+        # The step has to start in the local time domain and land in the GNSS time of week; a
+        # plain gap in the logged data stays within one domain and must not be mistaken for it.
+        span = towGnss[1] - towGnss[0]
+        if tow[i] > 0.5 * towGnss[0] or abs(tow[i+1] - towGnss[0]) > span + 1.0:
+            return 0.0
+        nominalDt = np.delete(dt, i)
+        nominalDt = nominalDt[nominalDt > 0]
+        if nominalDt.size == 0:
+            return 0.0
+        return float(dt[i] - np.median(nominalDt))
+
+    def getSysTimeToGpsTowOffset(self, dev):
+        # Offset to add to local time since boot to get GPS time of week.
+        #
+        # The PPS derived towOffset is exact and is used whenever it is available.  Some logs
+        # never establish the PPS time sync, leaving towOffset at zero while the GNSS receiver
+        # still reports true GPS time of week in its own messages.  Then the offset comes from
+        # the step in INS time of week if the log contains one, and otherwise from aligning the
+        # end of the INS (local time) and GNSS (time of week) data, which is accurate to about
+        # one GNSS sample period.  Returns 0.0 when there is no GPS time of week to align to.
+        towOffset = self.getGpsTowOffsetValue(dev)
+        if towOffset != 0.0:
+            return towOffset
+
+        towGnss = self.getGnssTowRange(dev)
+        if towGnss is None:
+            return 0.0
+
+        sysTime = np.asarray(self.getData(dev, DID_INS_2, 'timeOfWeek'), dtype=float)
+        sysTime = sysTime[sysTime > 0]
+        if sysTime.size == 0:
+            return 0.0
+
+        towOffset = self.getTowStepOffset(sysTime, towGnss)
+        if towOffset != 0.0:
+            return towOffset
+
+        # Keep only the samples that are local time, being more than the length of the log
+        # below the GNSS time of week.  Nothing is left when the INS is already reporting time
+        # of week, and then there is nothing to shift.
+        span = towGnss[1] - towGnss[0]
+        sysTime = sysTime[sysTime < towGnss[0] - span]
+        if sysTime.size == 0:
+            return 0.0
+
+        # Aligning on the last sample avoids the GNSS time to first fix, which delays the
+        # start of the GNSS data but not the end of it.
+        towOffset = towGnss[1] - float(np.max(sysTime))
+        return towOffset if towOffset > 1.0 else 0.0
+
+    def alignTowToGnss(self, dev, tow):
+        # Put a timestamp array into the same GPS time of week domain as the GNSS plots.
+        #
+        # DID_INS_2 'timeOfWeek' is local time since boot until the GPS time sync is valid
+        # (HDW_STATUS_GNSS_TIME_OF_WEEK_VALID), so a log can be entirely local time, entirely
+        # GPS time of week, or switch from one to the other part way through.  Each sample is
+        # assigned to whichever of the two domains puts it closest to the GNSS time of week.
+        tow = np.array(tow, dtype=float)    # copy: never modify the log data in place
+        if tow.size == 0:
+            return tow
+
+        towGnss = self.getGnssTowRange(dev)
+        towOffset = self.getSysTimeToGpsTowOffset(dev)
+        if towGnss is None or abs(towOffset) <= 1.0:
+            # No GPS time of week to align to, or the two time domains are indistinguishable
+            # (the offset is the time since boot at the first sync, always well over a second).
+            # The offset is negative after a GPS week rollover if the device booted before it.
+            return tow
+
+        towGnssMid = 0.5 * (towGnss[0] + towGnss[1])
+        isSysTime = np.abs(tow + towOffset - towGnssMid) < np.abs(tow - towGnssMid)
+        tow[isSysTime] += towOffset
+        return tow
+
+    def getInsTime(self, dev, removeLeadingZeros=0):
+        # INS time of week, aligned with the GNSS time of week and converted to UTC if enabled
+        tow = self.getData(dev, DID_INS_2, 'timeOfWeek', removeLeadingZeros)
+        return getTimeFromGpsTow(self.alignTowToGnss(dev, tow))
+
+    def getSensorTime(self, dev, did, field='time'):
+        # Sensor timestamps are local time since boot: shift them into the GPS time of week
+        time = np.asarray(self.getData(dev, did, field), dtype=float)
+        if time.size == 0:
+            return time
+        return getTimeFromGpsTow(time + self.getSysTimeToGpsTowOffset(dev))
+
+    def getGnssValidInd(self, dev, did, n=None):
+        # Index of the samples holding a usable GNSS solution: a fix type that includes a 3D
+        # position, and the receiver's own FIX_OK flag (the solution is within its DOP and
+        # accuracy limits).
+        #
+        # While the solution is still converging a receiver reports a nonzero position that can
+        # be hundreds of metres out, which a 'lla != 0' test does not reject.  Set
+        # self.gnssFixFilter = False to plot those samples anyway.
+        status = np.asarray(self.getData(dev, did, 'status'), dtype=np.uint32)
+        if not self.gnssFixFilter:
+            return np.ones(status.size if n is None else n, dtype=bool)
+        if status.size == 0:
+            return np.zeros(0 if n is None else n, dtype=bool)
+        fixType = (status & GNSS_STATUS_FIX_MASK) >> GNSS_STATUS_FIX_BIT_OFFSET
+        ind = np.isin(fixType, GNSS_STATUS_FIX_POS_VALID)
+
+        # The FIX_OK flag is only used when the receiver populates it.  The GPX GNSS firmware
+        # reports a good solution (3D fix, low DOP, small accuracy estimates) without ever
+        # setting the flag, and requiring it there would discard every position in the log.
+        statusAll = np.asarray(self.getData(dev, did, 'status', downsample=False), dtype=np.uint32)
+        if np.any(statusAll & GNSS_STATUS_FLAGS_FIX_OK):
+            ind &= (status & GNSS_STATUS_FLAGS_FIX_OK) != 0
+
+        if n is not None and ind.size != n:
+            # 'status' is logged in the same message as the data, so a length mismatch means
+            # the arrays came from different reads.  Leave the data alone rather than guess.
+            return np.ones(n, dtype=bool)
+        return ind
 
     def setPlotYSpanMin(self, ax, limit):
         ylim = ax.get_ylim()
@@ -903,7 +1081,7 @@ class logPlot:
                     if len(refLla) == 0:
                         # No position data: AHRS?
                         continue
-                    refTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
+                    refTime = self.getInsTime(d, True)
                     refLla = refLla[0]
                     continue
             # If 'Ref INS' is not available, use GNSS as reference
@@ -913,9 +1091,12 @@ class logPlot:
                     if len(lla) == 0:
                         # No position data: AHRS?
                         continue
-                    refLla = lla[0]
                     refTime = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs', True))
-                    ind = getValidTimeInd(refTime) & (lla[:,0] != 0)
+                    ind = getValidTimeInd(refTime) & (lla[:,0] != 0) & \
+                          self.getGnssValidInd(d, DID_GNSS1_POS, len(lla))
+                    if not np.any(ind):
+                        continue
+                    refLla = lla[ind][0]    # NED origin: the first position with a valid fix
                     refNed = lla2ned(refLla, lla[ind])
                     refTime = refTime[ind]
                     continue
@@ -927,13 +1108,11 @@ class logPlot:
                 continue
             if refLla is None:
                 refLla = lla[0]
-            ned = lla2ned(refLla, lla)
-            dist = np.sqrt(np.sum((ned - ned[0,:])**2, axis = 1))
-            tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
-            time = getTimeFromGpsTow(tow, True)
+            time = self.getInsTime(d, True)
             ind = getValidTimeInd(time) & (lla[:,0] != 0)
             ned = lla2ned(refLla, lla[ind,:])
             time = time[ind]
+            dist = np.sqrt(np.sum((ned - ned[0,:])**2, axis = 1))
 
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
@@ -945,7 +1124,8 @@ class logPlot:
                 gnss1Lla = self.getData(d, DID_GNSS1_POS, 'lla', True)
 
                 if not self.isEmpty(timeGNSS) and not self.isEmpty(gnss1Lla):
-                    ind = getValidTimeInd(timeGNSS) & (gnss1Lla[:,0] != 0)
+                    ind = getValidTimeInd(timeGNSS) & (gnss1Lla[:,0] != 0) & \
+                          self.getGnssValidInd(d, DID_GNSS1_POS, len(gnss1Lla))
                     timeGNSS = timeGNSS[ind]
                     nedGnss1 = lla2ned(refLla, gnss1Lla[ind])
                     ax[0,0].plot(timeGNSS, nedGnss1[:, 0], label=("%s GNSS1" % (self.log.serials[d])))
@@ -956,7 +1136,8 @@ class logPlot:
                 timeGNSS = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs', True))
                 gnss2Lla = self.getData(d, DID_GNSS2_POS, 'lla', True)
                 if not self.isEmpty(timeGNSS) and not self.isEmpty(gnss2Lla):
-                    ind = getValidTimeInd(timeGNSS) & (gnss2Lla[:,0] != 0)
+                    ind = getValidTimeInd(timeGNSS) & (gnss2Lla[:,0] != 0) & \
+                          self.getGnssValidInd(d, DID_GNSS2_POS, len(gnss2Lla))
                     timeGNSS = timeGNSS[ind]
                     nedGnss2 = lla2ned(refLla, gnss2Lla[ind])
                     ax[0,0].plot(timeGNSS, nedGnss2[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
@@ -1074,7 +1255,8 @@ class logPlot:
             time = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
             lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
             if len(lla1):
-                ind = getValidTimeInd(time) & (lla1[:,0] != 0)
+                ind = getValidTimeInd(time) & (lla1[:,0] != 0) & \
+                      self.getGnssValidInd(d, DID_GNSS1_POS, len(lla1))
                 nedGnss1 = lla2ned(refLla, lla1[ind])
                 ax.plot(nedGnss1[:, 1], nedGnss1[:, 0], label=("%s" % (self.log.serials[d])))
 
@@ -1091,7 +1273,8 @@ class logPlot:
                 gnss2Lla = self.getData(d, DID_GNSS2_POS, 'lla')
                 if not self.isEmpty(gnss2Lla):
                     time = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs'))
-                    ind = getValidTimeInd(time) & (lla1[:,0] != 0)
+                    ind = getValidTimeInd(time) & (gnss2Lla[:,0] != 0) & \
+                          self.getGnssValidInd(d, DID_GNSS2_POS, len(gnss2Lla))
                     nedGnss2 = lla2ned(refLla, gnss2Lla[ind])
                     ax.plot(nedGnss2[:, 1], nedGnss2[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
 
@@ -1111,7 +1294,7 @@ class logPlot:
         self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            time = self.getInsTime(d)
             lla = self.getData(d, DID_INS_2, 'lla', True)
             if len(lla) == 0 or len(time) == 0 or len(lla) != len(time):
                 continue
@@ -1120,12 +1303,11 @@ class logPlot:
             ax[2].plot(time, lla[:,2])
 
             if (np.shape(self.active_devs)[0]==1):
-                towOffset = 0
                 timeGNSS1 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
                 if len(timeGNSS1):
-                    towOffset = self.getGpsTowOffset(d)[-1]
                     lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
-                    ind = getValidTimeInd(timeGNSS1) & (lla1[:,0] != 0)
+                    ind = getValidTimeInd(timeGNSS1) & (lla1[:,0] != 0) & \
+                          self.getGnssValidInd(d, DID_GNSS1_POS, len(lla1))
                     ax[0].plot(timeGNSS1[ind], lla1[ind, 0], label='GNSS1')
                     ax[1].plot(timeGNSS1[ind], lla1[ind, 1])
                     ax[2].plot(timeGNSS1[ind], lla1[ind, 2], label='GNSS1')
@@ -1133,14 +1315,13 @@ class logPlot:
                 timeGNSS2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs'))
                 if len(timeGNSS2):
                     lla2 = self.getData(d, DID_GNSS2_POS, 'lla')
-                    ind = getValidTimeInd(timeGNSS2) & (lla2[:,0] != 0)
-                    if towOffset == 0:
-                        towOffset = self.getData(d, DID_GNSS2_POS, 'towOffset')[-1]
+                    ind = getValidTimeInd(timeGNSS2) & (lla2[:,0] != 0) & \
+                          self.getGnssValidInd(d, DID_GNSS2_POS, len(lla2))
                     ax[0].plot(timeGNSS2[ind], lla2[ind, 0], label='GNSS2')
                     ax[1].plot(timeGNSS2[ind], lla2[ind, 1])
                     ax[2].plot(timeGNSS2[ind], lla2[ind, 2], label='GNSS2')
 
-                timeBaro = getTimeFromGpsTow(self.getData(d, DID_BAROMETER, 'time')+ towOffset)
+                timeBaro = self.getSensorTime(d, DID_BAROMETER)
                 ax[2].plot(timeBaro, self.getData(d, DID_BAROMETER, 'mslBar'), label='Baro')
 
         self.legends_add(ax[0].legend(ncol=2))
@@ -1163,7 +1344,8 @@ class logPlot:
             time1 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
             if len(time1):
                 lla1 = self.getData(d, DID_GNSS1_POS, 'lla')
-                ind = getValidTimeInd(time1) & (lla1[:,0] != 0)
+                ind = getValidTimeInd(time1) & (lla1[:,0] != 0) & \
+                      self.getGnssValidInd(d, DID_GNSS1_POS, len(lla1))
                 ax[0].plot(time1[ind], lla1[ind,0], label=('%s GNSS1' % self.log.serials[d]))
                 ax[1].plot(time1[ind], lla1[ind,1])
                 ax[2].plot(time1[ind], lla1[ind,2])
@@ -1171,7 +1353,8 @@ class logPlot:
             time2 = getTimeFromGpsTowMs(self.getData(d, DID_GNSS2_POS, 'timeOfWeekMs'))
             if (len(time2) and (self.showGnss2 or len(time1) == 0)):
                 lla2 = self.getData(d, DID_GNSS2_POS, 'lla')
-                ind = getValidTimeInd(time2) & (lla2[:,0] != 0)
+                ind = getValidTimeInd(time2) & (lla2[:,0] != 0) & \
+                      self.getGnssValidInd(d, DID_GNSS2_POS, len(lla2))
                 ax[0].plot(time2[ind], lla2[ind,0], label=('%s GNSS2' % self.log.serials[d]))
                 ax[1].plot(time2[ind], lla2[ind,1])
                 ax[2].plot(time2[ind], lla2[ind,2])
@@ -1186,9 +1369,10 @@ class logPlot:
     def getGnssPosNED(self, device, did, refLla):
         gnssTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
         gnssLla = self.getData(device, did, 'lla')
-        ind = getValidTimeInd(gnssTime) & (gnssLla[:,0] != 0)
         if self.isEmpty(gnssLla):
             return [[], []]
+        ind = getValidTimeInd(gnssTime) & (gnssLla[:,0] != 0) & \
+              self.getGnssValidInd(device, did, len(gnssLla))
         gnssNed = lla2ned(refLla, gnssLla)
         return [gnssTime[ind], gnssNed[ind]]
 
@@ -1262,21 +1446,25 @@ class logPlot:
                     refLla = lla2[-1]
 
             [gnssTime, gnssNed] = self.getGnssPosNED(d, DID_GNSS1_POS, refLla)
-            gnssNedNorm = np.linalg.norm(gnssNed, axis=1)
-            ax[0,0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
-            ax[1,0].plot(gnssTime, gnssNed[:, 1])
-            ax[2,0].plot(gnssTime, gnssNed[:, 2])
-            ax[3,0].plot(gnssTime, gnssNedNorm)
+            # GNSS1 may have no position with a valid fix while GNSS2 does
+            hasGnss1 = not self.isEmpty(gnssNed)
+            if hasGnss1:
+                gnssNedNorm = np.linalg.norm(gnssNed, axis=1)
+                ax[0,0].plot(gnssTime, gnssNed[:, 0], label=self.log.serials[d])
+                ax[1,0].plot(gnssTime, gnssNed[:, 1])
+                ax[2,0].plot(gnssTime, gnssNed[:, 2])
+                ax[3,0].plot(gnssTime, gnssNedNorm)
 
             if (np.shape(self.active_devs)[0]==1) or self.showGnss2:
                 [gnss2Time, gnss2Ned] = self.getGnssPosNED(d, DID_GNSS2_POS, refLla)
-                gnss2NedNorm = np.linalg.norm(gnss2Ned, axis=1)
-                ax[0,0].plot(gnss2Time, gnss2Ned[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
-                ax[1,0].plot(gnss2Time, gnss2Ned[:, 1])
-                ax[2,0].plot(gnss2Time, gnss2Ned[:, 2])
-                ax[3,0].plot(gnss2Time, gnss2NedNorm)
+                if not self.isEmpty(gnss2Ned):
+                    gnss2NedNorm = np.linalg.norm(gnss2Ned, axis=1)
+                    ax[0,0].plot(gnss2Time, gnss2Ned[:, 0], label=("%s GNSS2" % (self.log.serials[d])))
+                    ax[1,0].plot(gnss2Time, gnss2Ned[:, 1])
+                    ax[2,0].plot(gnss2Time, gnss2Ned[:, 2])
+                    ax[3,0].plot(gnss2Time, gnss2NedNorm)
 
-            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
+            if hasGnss1 and self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS':
                 intNed = np.empty_like(refNed)
                 for i in range(3):
                     intNed[:,i] = np.interp(refTime, gnssTime, gnssNed[:,i], right=np.nan, left=np.nan)
@@ -1303,7 +1491,7 @@ class logPlot:
         gnssTime = getTimeFromGpsTowMs(self.getData(device, did, 'timeOfWeekMs'))
         if len(gnssTime) == 0:
             return [[], []]
-        ind = getValidTimeInd(gnssTime)
+        ind = getValidTimeInd(gnssTime) & self.getGnssValidInd(device, did, len(gnssTime))
         status = self.getData(device, did, 'status')[0]
         gnssVelNed = None
         if (status & 0x00008000):
@@ -1462,9 +1650,8 @@ class logPlot:
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
-                    refTime = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+                    refTime = self.getInsTime(d)
                     refLla = self.getData(d, DID_INS_2, 'lla')[0]
-                    refTime = self.getData(d, DID_INS_2, 'timeOfWeek')
                     uvw = self.getData(d, DID_INS_2, 'uvw')
                     qn2b = self.getData(d, DID_INS_2, 'qn2b')
                     refVelNed = quatRot(qn2b, uvw)
@@ -1483,7 +1670,7 @@ class logPlot:
         for d in self.active_devs:
             if refLla is None:
                 refLla = self.getData(d, DID_INS_2, 'lla')[-1]
-            time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            time = self.getInsTime(d)
             uvw = self.getData(d, DID_INS_2, 'uvw')
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
             if len(uvw) == 0 or len(qn2b) == 0:
@@ -1936,9 +2123,7 @@ class logPlot:
 
                 fig.suptitle(title + os.path.basename(os.path.normpath(self.log.directory)))
 
-                towOffset = self.getGpsTowOffset(d)
-                if len(towOffset) > 0:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time = getTimeFromGpsTow(time + self.getSysTimeToGpsTowOffset(d))
 
                 ax.plot(time, -cnt * 1.5 + ((status & 0x00000001) != 0))
                 labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
@@ -3436,9 +3621,7 @@ class logPlot:
                         imuCount = self.log.c_log.numImuDevices
 
         if self.log.serials[device] != 'Ref INS':
-            towOffset = self.getGpsTowOffset(device)
-            if len(towOffset):
-                time = getTimeFromGpsTow(time + np.mean(towOffset))
+            time = getTimeFromGpsTow(time + self.getSysTimeToGpsTowOffset(device))
         # else: # HACK: to correct for improper SPAN INS direction and gyro scalar
         #     tmp = np.copy(imu1)   
         #     tmp *= 125.0 
@@ -4097,24 +4280,22 @@ class logPlot:
         fig.suptitle('Altitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
-            timeBar = self.getData(d, DID_BAROMETER, 'time')
-            towOffset = self.getGpsTowOffset(d)
+            timeBar = self.getSensorTime(d, DID_BAROMETER)
             timeGnss = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
             llaGnss = self.getData(d, DID_GNSS1_POS, 'lla')
             if len(llaGnss) > 0:
-                ind = getValidTimeInd(timeGnss)
+                ind = getValidTimeInd(timeGnss) & (llaGnss[:,0] != 0) & \
+                      self.getGnssValidInd(d, DID_GNSS1_POS, len(llaGnss))
                 timeGnss = timeGnss[ind]
                 altGnss = llaGnss[ind, 2]
             else:
                 altGnss = []
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            timeIns = self.getInsTime(d)
             lla = self.getData(d, DID_INS_2, 'lla', True)
             if len(lla) > 0:
                 altIns = lla[:, 2]
             else:
                 altIns = []
-            if np.shape(towOffset)[0] != 0:
-                timeBar = timeBar + towOffset[-1]
             mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
 
             ax[0].plot(timeBar, mslBar, label=self.log.serials[d])
@@ -4147,7 +4328,7 @@ class logPlot:
         self.configureSubplot(ax[2], 'Climb Rate: INS', 'm/s')
         fig.suptitle('Climb Rate: ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            timeBar = self.getData(d, DID_BAROMETER, 'time')
+            timeBar = self.getSensorTime(d, DID_BAROMETER)
             mslBar  = self.getData(d, DID_BAROMETER, 'mslBar')
             timeGnss = getTimeFromGpsTowMs(self.getData(d, DID_GNSS1_POS, 'timeOfWeekMs'))
             llaGnss = self.getData(d, DID_GNSS1_POS, 'lla')
@@ -4155,22 +4336,21 @@ class logPlot:
                 altGnss = llaGnss[:, 2]
             else:
                 altGnss = []
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            timeIns = self.getInsTime(d)
             llaIns = self.getData(d, DID_INS_2, 'lla', True)
             if len(llaIns) > 0:
                 altIns = llaIns[:, 2]
             else:
                 altIns = []
-            towOffset = self.getGpsTowOffset(d)
-            if len(towOffset) > 0:
-                timeBar = timeBar + towOffset[-1]
             if len(timeBar) > 2:
                 climbBar = np.gradient(mslBar, timeBar)
                 ax[0].plot(timeBar, climbBar, label=self.log.serials[d])
             if len(timeGnss) > 2 and len(altGnss) == len(timeGnss):
-                ind = getValidTimeInd(timeGnss)
-                climbGnss = np.gradient(altGnss[ind], timeGnss[ind])
-                ax[1].plot(timeGnss[ind], climbGnss)
+                ind = getValidTimeInd(timeGnss) & (llaGnss[:,0] != 0) & \
+                      self.getGnssValidInd(d, DID_GNSS1_POS, len(llaGnss))
+                if np.count_nonzero(ind) > 1:
+                    climbGnss = np.gradient(altGnss[ind], timeGnss[ind])
+                    ax[1].plot(timeGnss[ind], climbGnss)
             if len(timeIns) > 2 and len(altIns) == len(timeIns):
                 climbIns = np.gradient(altIns, timeIns)
                 ax[2].plot(timeIns, climbIns)
@@ -4191,10 +4371,7 @@ class logPlot:
         fig.suptitle('Barometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             if 1:
-                time = self.getData(d, DID_BAROMETER, 'time')
-                towOffset = self.getGpsTowOffset(d)
-                if np.shape(towOffset)[0] != 0:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time = self.getSensorTime(d, DID_BAROMETER)
                 mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
                 barTemp = self.getData(d, DID_BAROMETER, 'barTemp')
                 humidity = self.getData(d, DID_BAROMETER, 'humidity')
@@ -4218,10 +4395,7 @@ class logPlot:
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             if 1:
-                time = self.getData(d, DID_MAGNETOMETER, 'time')
-                towOffset = self.getGpsTowOffset(d)
-                if np.shape(towOffset)[0] != 0:
-                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+                time = self.getSensorTime(d, DID_MAGNETOMETER)
                 mag = self.getData(d, DID_MAGNETOMETER, 'mag')
                 magX = mag[:,0]
                 magY = mag[:,1]
@@ -4263,16 +4437,13 @@ class logPlot:
             self.configureSubplot(ax[2], 'MCU Temperature (C)')
 
             for d in self.active_devs:
-                time = getTimeFromGpsTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'), True)
+                # Like the INS time of week, this is local time until the GPS time sync is valid
+                tow = np.asarray(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'), dtype=float) * 0.001
+                time = getTimeFromGpsTow(self.alignTowToGnss(d, tow))
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
                 tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
-                towOffset = self.getGpsTowOffset(d)
-                if np.shape(towOffset)[0] != 0:
-                    tempImu = getTimeFromGpsTow(tempImu + np.mean(towOffset))
-                    tempBar = getTimeFromGpsTow(tempBar + np.mean(towOffset))
-                    tempMcu = getTimeFromGpsTow(tempMcu + np.mean(towOffset))
-                
+
                 ax[0].plot(time, tempImu, label=self.log.serials[d])
                 ax[1].plot(time, tempBar)
                 ax[2].plot(time, tempMcu)
@@ -4412,7 +4583,7 @@ class logPlot:
             # -- diluting real per-sample jitter/glitches by ~1/self.d and throwing off each
             # plot's auto-scaled Y-axis whenever downsample != 1 (only correct by coincidence at
             # downsample=1).
-            timeIns = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek', downsample=False), True)
+            timeIns = getTimeFromGpsTow(self.alignTowToGnss(d, self.getData(d, DID_INS_2, 'timeOfWeek', downsample=False)))
             dtIns = np.diff(timeIns)[::self.d]
             xInsFull = timeIns[1::self.d]
 
@@ -4428,11 +4599,7 @@ class logPlot:
             dtGnss2 = np.diff(timeGnss2)[::self.d]
             xGnss2Full = timeGnss2[1::self.d]
 
-            towOffset = self.getGpsTowOffset(d)
-            if np.size(towOffset) > 0:
-                towOffset = towOffset[-1]
-            else:
-                towOffset = 0
+            towOffset = self.getSysTimeToGpsTowOffset(d)
 
             # Initialized here (rather than only inside the branches below) so a device that lacks
             # PIMU/IMU or IMUS_RAW data doesn't hit an UnboundLocalError building xImus/xImu below,
@@ -4508,11 +4675,7 @@ class logPlot:
                 # towOffset must be recomputed for this device -- the towOffset left over from the
                 # earlier active_devs_no_ref loop belongs to whichever device that loop last
                 # processed, not necessarily this one.
-                towOffset = self.getGpsTowOffset(d)
-                if np.size(towOffset) > 0:
-                    towOffset = towOffset[-1]
-                else:
-                    towOffset = 0
+                towOffset = self.getSysTimeToGpsTowOffset(d)
                 timeRef = self.getData(d, DID_REFERENCE_PIMU, 'time', downsample=False)
                 if np.any(timeRef):
                     # Same fix as above: diff full-resolution time, decimate the result, and slice
