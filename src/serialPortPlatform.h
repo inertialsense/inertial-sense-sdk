@@ -41,6 +41,9 @@ typedef struct
     uint32_t count;
     uint64_t firstMs;
     uint64_t deadlineMs;
+    int pending;    //!< cheap flag: 1 while a run is open, so activity-path callers (see
+                    //!< serialPortErrorDedupCheckStale()) can bail out with a single int compare
+                    //!< on the (overwhelmingly common) case where nothing is pending.
 } serial_port_error_dedup_t;
 
 enum
@@ -64,13 +67,37 @@ enum
  *   pointer -- reuse the same literal for the same operation every call.
  * @param errorCode the platform error code for this occurrence.
  * @param nowMs current time in milliseconds, supplied by the caller.
- * @param windowMs the one-shot duration: the max gap between duplicates before the run is closed.
+ * @param windowMs the one-shot duration: the max gap before a run (or a lone immediate report
+ *   waiting for a first duplicate) is considered closed -- a later recurrence of the same
+ *   action+code arriving after this gap is treated as a fresh error, not a duplicate.
  * @param summaryOut buffer to receive the formatted summary text when a run is flushed; untouched
  *   otherwise. May be NULL to skip formatting.
  * @param summaryOutLen size of summaryOut in bytes.
  * @return one of the SERIAL_PORT_DEDUP_* values, describing what the caller should log.
  */
 int serialPortErrorDedupGate(serial_port_error_dedup_t* state, const char* action, int errorCode, uint64_t nowMs, uint32_t windowMs, char* summaryOut, size_t summaryOutLen);
+
+/**
+ * SN-8650: opportunistic flush for a pending dedup run, driven by *any* port activity rather than
+ * only by the next error. serialPortErrorDedupGate() alone only ever re-checks a run's deadline
+ * when another error of some kind arrives on that port -- fine for a dense burst (the next
+ * duplicate arrives well inside the burst), but a small trailing run on an otherwise-healthy port
+ * would sit open, with no deadline check ever happening, until the port's next unrelated error
+ * (which might be minutes away, or might never come). Call this at the top of every port
+ * operation (open/close/read/write/flush/drain/...) so a stale run gets flushed on the very next
+ * successful operation, not just the next failure.
+ *
+ * `state->pending` makes the common case (no run open) a single int compare -- this is meant to
+ * be cheap enough to call unconditionally on every operation, not just on errors.
+ *
+ * @param state the port's dedup state.
+ * @param nowMs current time in milliseconds, supplied by the caller.
+ * @param summaryOut buffer to receive the formatted summary text if a stale run is flushed;
+ *   untouched otherwise. May be NULL to skip formatting.
+ * @param summaryOutLen size of summaryOut in bytes.
+ * @return 1 if a stale run was flushed (summaryOut is filled), 0 otherwise (nothing to do).
+ */
+int serialPortErrorDedupCheckStale(serial_port_error_dedup_t* state, uint64_t nowMs, char* summaryOut, size_t summaryOutLen);
 
 /**
  * Zeros the serial_port_t struct then assigns the function-pointer table for the current

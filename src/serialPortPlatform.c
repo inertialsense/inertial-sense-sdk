@@ -106,15 +106,18 @@ static void serialPortFormatDedupSummary(char* buf, size_t len, const serial_por
  * no OS calls, just state transitions, so it can be exercised directly by unit tests with
  * synthetic timestamps. See serialPortReportError() for the logging wrapper real call sites use.
  *
- * The first report of any error (or of an error that differs from the one currently pending) is
- * always reported immediately, exactly as before this change. Each subsequent duplicate (same
- * action pointer and same error code) is counted and pushes `deadlineMs` back out instead of
- * being reported. The run is closed out -- as a single summary describing the count and the
- * elapsed time since the first suppressed duplicate -- as soon as either a different error
- * arrives, or a duplicate arrives after the deadline has already passed (i.e. the gap since the
- * previous duplicate exceeded windowMs). A closed run's identity is forgotten, so the very next
+ * The first report of any error (or of an error that differs from the one currently tracked) is
+ * always reported immediately, exactly as before this change, and arms a windowMs-wide "watch
+ * period" during which a matching duplicate will be suppressed. Each subsequent duplicate that
+ * actually arrives inside that window is counted and pushes the window back out instead of being
+ * reported. The run is closed out -- as a single summary describing the count and the elapsed
+ * time since the first suppressed duplicate -- as soon as either a different error arrives, or
+ * a matching occurrence arrives after the window has already lapsed (whether or not any
+ * duplicate was ever actually counted). A closed run's identity is forgotten, so the very next
  * occurrence (even an identical one) is always reported immediately rather than silently
- * resuming suppression.
+ * resuming suppression -- this applies equally to a lone immediate report that never gained a
+ * duplicate before its watch period lapsed, so a sparse, isolated recurrence of the same error
+ * (e.g. hours apart) is never silently absorbed as "just another duplicate" of a long-past one.
  *
  * @param state the port's dedup state (one instance per serialPortHandle; persists for the life
  *   of the handle, so it naturally resets whenever the port is reopened).
@@ -134,36 +137,41 @@ static void serialPortFormatDedupSummary(char* buf, size_t len, const serial_por
  */
 int serialPortErrorDedupGate(serial_port_error_dedup_t* state, const char* action, int errorCode, uint64_t nowMs, uint32_t windowMs, char* summaryOut, size_t summaryOutLen)
 {
-    int isSamePending = (state->action != 0) && (action == state->action) && (errorCode == state->errorCode);
+    int isSameTracked = (state->action != 0) && (action == state->action) && (errorCode == state->errorCode);
 
-    if (isSamePending)
+    // `deadlineMs` does double duty: while count==0 it's "how long this single immediate report
+    // stays eligible to gain a first duplicate"; once count>0 it's the usual sliding dup window.
+    // Without this, a later, isolated recurrence of the same action+code -- arriving long after
+    // a lone immediate report that never got a duplicate -- would match isSameTracked forever
+    // and be silently absorbed as "duplicate #1" instead of getting its own fresh report.
+    if (isSameTracked && nowMs < state->deadlineMs)
     {
         if (state->count == 0)
         {
-            // first duplicate since the last immediate report -- open the suppression window
             state->firstMs = nowMs;
-            state->count = 1;
-            state->deadlineMs = nowMs + windowMs;
-            return SERIAL_PORT_DEDUP_SUPPRESSED;
+            state->pending = 1;
         }
+        state->count++;
+        state->deadlineMs = nowMs + windowMs;
+        return SERIAL_PORT_DEDUP_SUPPRESSED;
+    }
 
-        if (nowMs < state->deadlineMs)
-        {
-            state->count++;
-            state->deadlineMs = nowMs + windowMs;
-            return SERIAL_PORT_DEDUP_SUPPRESSED;
-        }
-
-        // the gap since the previous duplicate exceeded windowMs -- fold this one in and close the run
+    if (isSameTracked && state->count > 0)
+    {
+        // same error, but the gap since the previous duplicate exceeded windowMs -- fold this
+        // one in and close the run
         state->count++;
         if (summaryOut)
             serialPortFormatDedupSummary(summaryOut, summaryOutLen, state, nowMs);
         state->action = 0;
         state->count = 0;
+        state->pending = 0;
         return SERIAL_PORT_DEDUP_SUMMARY_FOLDED;
     }
 
-    // a different error than whatever was pending -- flush it first, if a run was actually open
+    // either a different error, or the same one arriving too late to count as a duplicate of an
+    // untouched lone immediate report -- flush whatever run was actually open (if any), then
+    // report this occurrence immediately and start tracking it fresh
     int hadPendingRun = (state->action != 0) && (state->count > 0);
     if (hadPendingRun && summaryOut)
         serialPortFormatDedupSummary(summaryOut, summaryOutLen, state, nowMs);
@@ -171,8 +179,31 @@ int serialPortErrorDedupGate(serial_port_error_dedup_t* state, const char* actio
     state->action = action;
     state->errorCode = errorCode;
     state->count = 0;
+    state->pending = 0;
+    state->deadlineMs = nowMs + windowMs;   // arm the window for a potential first duplicate
 
     return hadPendingRun ? SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE : SERIAL_PORT_DEDUP_IMMEDIATE;
+}
+
+/**
+ * @brief SN-8650: opportunistic, activity-driven staleness check -- see the doc comment in
+ * serialPortPlatform.h. Pure (no I/O), like serialPortErrorDedupGate(), so it's unit-testable
+ * with synthetic timestamps.
+ */
+int serialPortErrorDedupCheckStale(serial_port_error_dedup_t* state, uint64_t nowMs, char* summaryOut, size_t summaryOutLen)
+{
+    if (!state->pending)
+        return 0;   // cheap bail-out: the common case on a healthy, or even a bursty-but-still-within-window, port
+
+    if (nowMs < state->deadlineMs)
+        return 0;   // run is still within its window; nothing to do yet
+
+    if (summaryOut)
+        serialPortFormatDedupSummary(summaryOut, summaryOutLen, state, nowMs);
+    state->action = 0;
+    state->count = 0;
+    state->pending = 0;
+    return 1;
 }
 
 /**
@@ -226,6 +257,21 @@ static void serialPortFlushPendingErrorDedup(port_handle_t port, serial_port_err
     log_more_info(IS_LOG_PORT, "[%s] %s", portName(port), summary);
     dedup->action = 0;
     dedup->count = 0;
+    dedup->pending = 0;
+}
+
+/**
+ * @brief Opportunistic, activity-driven flush: call at the top of every port operation (open,
+ * close, read, write, flush, drain, byte-count queries, ...) so a run that's still pending gets
+ * flushed on the very next successful operation, not just the next failure (SN-8650). The common
+ * case -- nothing pending -- is a single int compare inside serialPortErrorDedupCheckStale(), so
+ * this is cheap enough to call unconditionally.
+ */
+static void serialPortCheckActivity(port_handle_t port, serial_port_error_dedup_t* dedup)
+{
+    char summary[192];
+    if (serialPortErrorDedupCheckStale(dedup, serialPortNowMs(), summary, sizeof(summary)))
+        log_more_info(IS_LOG_PORT, "[%s] %s", portName(port), summary);
 }
 
 typedef struct
@@ -838,6 +884,10 @@ static int serialPortIsOpenPlatform(port_handle_t port)
     if (!serialPort->handle)
         return 0;
 
+    // SN-8650: opportunistic flush, driven by this (very frequently polled) activity rather
+    // than waiting for the port's next error.
+    serialPortCheckActivity(port, &((serialPortHandle*)serialPort->handle)->errDedup);
+
     log_more_debug(IS_LOG_PORT, "[%s] serialPortIsOpenPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
@@ -958,6 +1008,8 @@ static int serialPortFlushPlatform(port_handle_t port)
         return 0;
     }
 
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
+
     log_more_debug(IS_LOG_PORT, "[%s] serialPortFlushPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
@@ -1005,6 +1057,8 @@ static int serialPortDrainPlatform(port_handle_t port)
         // not open, no close needed
         return 0;
     }
+
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
 
     log_more_debug(IS_LOG_PORT, "[%s] serialPortDrainPlatform() called.", portName(port));
 
@@ -1226,6 +1280,8 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         return PORT_ERROR__NOT_CONNECTED;
     }
 
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
+
     if (timeoutMs < 0)
     {
         timeoutMs = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
@@ -1301,6 +1357,8 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
         serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
+
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
 
 #if PLATFORM_IS_WINDOWS
 
@@ -1402,6 +1460,11 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
+
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush -- this is
+                                                         // the dominant call site in practice, since
+                                                         // writes happen every comm tick regardless
+                                                         // of whether the previous one failed.
 
 #if PLATFORM_IS_WINDOWS
 
@@ -1539,6 +1602,8 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
         serialPort->error = "Internal port handle is NULL; Port is closed.";
         return PORT_ERROR__NOT_CONNECTED;
     }
+
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
 
 #if PLATFORM_IS_WINDOWS
 

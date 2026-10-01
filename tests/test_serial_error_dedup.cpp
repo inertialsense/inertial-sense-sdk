@@ -39,6 +39,7 @@ TEST(SerialPortErrorDedup, FirstDuplicate_IsSuppressed_AndOpensWindow) {
     EXPECT_EQ(SERIAL_PORT_DEDUP_SUPPRESSED, mode);
     EXPECT_EQ(1u, state.count);
     EXPECT_EQ(1010u, state.firstMs);
+    EXPECT_TRUE(state.pending);   // serialPortErrorDedupCheckStale()'s cheap-bailout flag
 }
 
 TEST(SerialPortErrorDedup, DenseBurst_WithinWindow_StaysSuppressedAndSlides) {
@@ -118,6 +119,35 @@ TEST(SerialPortErrorDedup, DifferentAction_SameCode_IsTreatedAsADifferentError) 
     EXPECT_EQ(ACTION_B, state.action);
 }
 
+TEST(SerialPortErrorDedup, SparseIsolatedRecurrence_AfterLoneReport_IsFreshNotADuplicate) {
+    // A lone immediate report that never gained a duplicate used to leave its identity latched
+    // forever -- so a much later, independent recurrence of the identical action+code (e.g. the
+    // real field log's two GetOverlappedResult(433) events, 24 minutes apart with nothing else
+    // in between) would be silently swallowed as "duplicate #1" instead of getting its own
+    // report. windowMs now also bounds how long a lone report stays eligible to gain one.
+    serial_port_error_dedup_t state = freshState();
+    int first = serialPortErrorDedupGate(&state, ACTION_B, 433, 0, 500, nullptr, 0);
+    ASSERT_EQ(SERIAL_PORT_DEDUP_IMMEDIATE, first);
+
+    // Same action+code, but long after the 500ms window -- must be fresh, not a suppressed dup.
+    int mode = serialPortErrorDedupGate(&state, ACTION_B, 433, 1'440'000, 500, nullptr, 0); // 24 min later
+    EXPECT_EQ(SERIAL_PORT_DEDUP_IMMEDIATE, mode);
+    EXPECT_FALSE(state.pending);
+    EXPECT_EQ(0u, state.count);
+}
+
+TEST(SerialPortErrorDedup, RecurrenceWithinWindow_AfterLoneReport_IsStillTreatedAsADuplicate) {
+    // The flip side: arriving *within* the window, a second occurrence of the same error is
+    // still the normal, intended duplicate-suppression case.
+    serial_port_error_dedup_t state = freshState();
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);
+
+    int mode = serialPortErrorDedupGate(&state, ACTION_A, 22, 200, 500, nullptr, 0);
+    EXPECT_EQ(SERIAL_PORT_DEDUP_SUPPRESSED, mode);
+    EXPECT_EQ(1u, state.count);
+    EXPECT_TRUE(state.pending);
+}
+
 TEST(SerialPortErrorDedup, NoPendingRun_DifferentError_IsJustImmediate_NoSpuriousSummary) {
     serial_port_error_dedup_t state = freshState();
     serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);  // immediate; no duplicate followed
@@ -140,4 +170,60 @@ TEST(SerialPortErrorDedup, NullSummaryBuffer_DoesNotCrash_OnFoldOrFlush) {
     serialPortErrorDedupGate(&state2, ACTION_A, 22, 100, 500, nullptr, 0);
     // Code-change flush path with summaryOut == nullptr.
     EXPECT_EQ(SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE, serialPortErrorDedupGate(&state2, ACTION_B, 5, 150, 500, nullptr, 0));
+}
+
+// --- serialPortErrorDedupCheckStale(): the activity-driven path, independent of the next error ---
+
+TEST(SerialPortErrorDedupCheckStale, NothingPending_ReturnsZero_EvenLongAfter) {
+    serial_port_error_dedup_t state = freshState();
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);   // immediate; no duplicate ever followed
+
+    EXPECT_EQ(0, serialPortErrorDedupCheckStale(&state, 10'000'000, nullptr, 0));
+}
+
+TEST(SerialPortErrorDedupCheckStale, PendingButWithinWindow_ReturnsZero) {
+    serial_port_error_dedup_t state = freshState();
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 100, 500, nullptr, 0);   // opens run, deadline=600
+
+    EXPECT_EQ(0, serialPortErrorDedupCheckStale(&state, 400, nullptr, 0));
+    EXPECT_TRUE(state.pending);   // untouched -- still within the window
+}
+
+TEST(SerialPortErrorDedupCheckStale, PendingAndExpired_FlushesWithoutAnyNewError) {
+    // This is exactly the real-world gap that motivated this function: a small trailing run on
+    // an otherwise-quiet port used to sit open until the *next error* (which, in the field log,
+    // was 8+ minutes later) -- now any routine activity (a successful read/write/etc.) on the
+    // port flushes it promptly instead.
+    serial_port_error_dedup_t state = freshState();
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);       // immediate @ t=0
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 100, 500, nullptr, 0);     // dup #1 @ t=100 (deadline=600)
+
+    char summary[256] = {0};
+    // No further errors at all -- just a routine successful operation, long after the deadline.
+    int flushed = serialPortErrorDedupCheckStale(&state, 60000, summary, sizeof(summary));
+
+    EXPECT_EQ(1, flushed);
+    EXPECT_NE(nullptr, strstr(summary, "duplicated 1 time(s)"));
+    EXPECT_NE(nullptr, strstr(summary, "over the last 59900ms"));   // 60000 - firstMs(100)
+    EXPECT_EQ(nullptr, state.action);
+    EXPECT_EQ(0u, state.count);
+    EXPECT_FALSE(state.pending);
+}
+
+TEST(SerialPortErrorDedupCheckStale, AfterStaleFlush_NextIdenticalError_IsReportedFresh) {
+    serial_port_error_dedup_t state = freshState();
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 100, 500, nullptr, 0);
+    serialPortErrorDedupCheckStale(&state, 60000, nullptr, 0);   // flush via activity, no new error involved
+
+    int mode = serialPortErrorDedupGate(&state, ACTION_A, 22, 60050, 500, nullptr, 0);
+    EXPECT_EQ(SERIAL_PORT_DEDUP_IMMEDIATE, mode);   // not silently resumed suppression
+}
+
+TEST(SerialPortErrorDedupCheckStale, NullSummaryBuffer_DoesNotCrash) {
+    serial_port_error_dedup_t state = freshState();
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 0, 500, nullptr, 0);
+    serialPortErrorDedupGate(&state, ACTION_A, 22, 100, 500, nullptr, 0);
+    EXPECT_EQ(1, serialPortErrorDedupCheckStale(&state, 60000, nullptr, 0));
 }
