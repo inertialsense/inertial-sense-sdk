@@ -85,7 +85,7 @@ static std::deque<data_holder_t> g_testTxDeque;
 int msgHandlerNmea2(port_handle_t port, const uint8_t* msg, int msgSize)
 {
     if (msgSize == 10)
-    {   // 4 character commands (i.e. "$STPB*14\r\n")
+    {   // 4 character commands (i.e. "$STPB*15\r\n")
         switch (getNmeaMsgId(msg, msgSize))
         {
         case NMEA_MSG_ID_ASCE:    // query NMEA message broadcast rates
