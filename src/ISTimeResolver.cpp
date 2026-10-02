@@ -49,6 +49,21 @@ constexpr std::array<uint32_t, 6> kToWBearingDids = {
 //!
 //! @note SN-8107 / D0066.
 constexpr uint64_t kGpsEpochUnixMs = 315'964'800'000ULL;
+
+/**
+ * @brief Lowest GPS week number that can belong to a real recording.
+ *
+ * Week 1043 is 2000-01-01. A device that never achieved a fix still emits a week field, and it
+ * emits a SMALL one — the customer log `20260916_232611` reports `gpsWeek = 1` across 69,940 sync
+ * points, which places every record on 1980-01-13 while the log's own filename anchor says
+ * 2026-09-16. Treating such a week as authoritative is how a log acquires a confidently-stated
+ * time that is 46 years wrong.
+ *
+ * A week below this is therefore not evidence of anything and must not out-rank the anchor
+ * cascade. (Kyle, 2026-10-02: the record time must be ONE deterministic best guess, derived from
+ * the log's anchor, the index and the payload together — not whatever the payload happens to say.)
+ */
+constexpr uint32_t kMinPlausibleGpsWeek = 1043;
 constexpr uint64_t kGpsWeekMs      = 604'800'000ULL;  //!< 7 days in ms
 //! SN-8323: how far before the durable fix period a ToW-domain record may fall
 //! and still be treated as a (backward-extrapolated) part of the timeline.
@@ -693,7 +708,10 @@ uint32_t chooseAnchorWeek(const std::vector<ISSyncPoint>& syncs) {
     struct Agg { uint64_t minTow; uint64_t maxTow; uint32_t count; };
     std::map<uint32_t, Agg> byWeek;   // week -> coverage (ordered ascending)
     for (const auto& sp : syncs) {
-        if (sp.gpsWeek == 0) continue;
+        // Zero means "no week yet"; anything below the plausibility floor means the device
+        // reported a week it cannot really have had. Both are non-evidence — see
+        // `kMinPlausibleGpsWeek`.
+        if (sp.gpsWeek < kMinPlausibleGpsWeek) continue;
         auto it = byWeek.find(sp.gpsWeek);
         if (it == byWeek.end()) {
             byWeek.emplace(sp.gpsWeek, Agg{ sp.payloadToWMs, sp.payloadToWMs, 1 });
@@ -1007,7 +1025,17 @@ ISTimeResolver::build(const ISDeviceLog& log, double threshold) {
     // those outright).
     uint64_t fileAnchorMs  = 0;
     bool     haveFileAnchor = false;
-    if (syncs.empty()) {
+    // Gated on having no USABLE anchor week, not on having no sync points at all.
+    //
+    // That distinction is the whole defect. `20260916_232611` carries 69,940 sync points, so the
+    // old `syncs.empty()` gate skipped this fallback entirely — while every one of those syncs
+    // reported `gpsWeek = 1`, so `chooseAnchorWeek` had nothing usable either. The log therefore
+    // had a perfectly good filename anchor (tier=FilenameAnchor, offset 1789601170131 ms, already
+    // persisted into its index) and resolved every record to 1980 regardless.
+    //
+    // Kyle, 2026-10-02: "these should be inferred a relative time and a wall-clock time from an
+    // anchor derived later in the file, or else from the log filename. Neither was done."
+    if (anchorWeek == 0) {
         if (auto anchor = deriveFileAnchorMs(log)) {
             fileAnchorMs   = *anchor;
             haveFileAnchor = true;
@@ -1197,8 +1225,29 @@ TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
     const ISSyncPoint& firstSync = syncPoints_.front();
     const uint32_t anchorWeek = anchorWeek_;
     const bool     epochAnchor = (anchorWeek != 0);
+
+    // When there is no usable GPS week, a ToW is still a perfectly good RELATIVE ruler — it just
+    // has no epoch. If the log carries a file/filename anchor, express the ToW frame against THAT
+    // instead of returning a bare ToW, which otherwise surfaces as 1970 (the raw ms read as a Unix
+    // instant).
+    //
+    // The ToW list is sorted ascending, so `front()` is the frame's origin: mapping it onto the
+    // anchor makes the log's earliest timed record land exactly on the anchor and everything else
+    // offset from it. That is what "re-anchor from the log filename" means, and it makes
+    // `resolve()` agree with `ISDeviceLog::spanStart()`, which already uses the same anchor —
+    // the two disagreed by 46 years on the customer log `20260916_232611` (review D101).
+    const bool     fileAnchorFrame = (!epochAnchor && haveFileAnchor_);
+    const uint64_t towFrameOrigin  = firstSync.payloadToWMs;
     auto unixOrToW = [&](uint64_t towMs) -> uint64_t {
-        return epochAnchor ? gpsToUnixMs(anchorWeek, towMs) : towMs;
+        if (epochAnchor) return gpsToUnixMs(anchorWeek, towMs);
+        if (fileAnchorFrame) {
+            // Signed, because a record may legitimately precede the frame origin.
+            const int64_t delta = static_cast<int64_t>(towMs) -
+                                  static_cast<int64_t>(towFrameOrigin);
+            const int64_t abs   = static_cast<int64_t>(fileAnchorMs_) + delta;
+            return abs < 0 ? 0u : static_cast<uint64_t>(abs);
+        }
+        return towMs;
     };
 
     // SN-8323 (uptime unification): authoritative uptime->ToW bridge. When a
