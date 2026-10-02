@@ -44,6 +44,13 @@ typedef struct
     int pending;    //!< cheap flag: 1 while a run is open, so activity-path callers (see
                     //!< serialPortErrorDedupCheckStale()) can bail out with a single int compare
                     //!< on the (overwhelmingly common) case where nothing is pending.
+    char detail[96];    //!< SN-8650 (review follow-up): optional display-only text for the
+                         //!< tracked run (e.g. a POSIX strerror() string), copied in by
+                         //!< serialPortReportError() in serialPortPlatform.c -- *not* part of the
+                         //!< dedup key (serialPortErrorDedupGate() never reads or writes this
+                         //!< field; `action`+`errorCode` alone still decide what's a duplicate).
+                         //!< Empty when the caller has nothing to add (e.g. Windows call sites,
+                         //!< whose `action` string is already self-descriptive).
 } serial_port_error_dedup_t;
 
 enum

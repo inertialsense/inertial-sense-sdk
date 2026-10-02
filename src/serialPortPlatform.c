@@ -97,8 +97,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  */
 static void serialPortFormatDedupSummary(char* buf, size_t len, const serial_port_error_dedup_t* state, uint64_t nowMs)
 {
-    snprintf(buf, len, "%s (%d) - message duplicated %u time(s) over the last %llums.",
-        state->action, state->errorCode, (unsigned)state->count, (unsigned long long)(nowMs - state->firstMs));
+    if (state->detail[0] != '\0')
+        snprintf(buf, len, "%s: %s (%d) - message duplicated %u time(s) over the last %llums.",
+            state->action, state->detail, state->errorCode, (unsigned)state->count, (unsigned long long)(nowMs - state->firstMs));
+    else
+        snprintf(buf, len, "%s (%d) - message duplicated %u time(s) over the last %llums.",
+            state->action, state->errorCode, (unsigned)state->count, (unsigned long long)(nowMs - state->firstMs));
 }
 
 /**
@@ -230,16 +234,35 @@ static uint64_t serialPortNowMs(void)
  * @param action a stable, static description of the failed operation -- see
  *   serialPortErrorDedupGate()'s `action` parameter.
  * @param errorCode the platform error code to report.
+ * @param detail optional display-only text to accompany `action` in the log output (e.g. a POSIX
+ *   `strerror(errorCode)` string). `action` alone remains the stable dedup key -- passed straight
+ *   through to serialPortErrorDedupGate() unchanged -- so callers that don't have extra text
+ *   (e.g. Windows call sites, whose `action` is already self-descriptive, such as "WriteFile()
+ *   failed") can simply pass NULL. (Review follow-up on SN-8650: the original common logger
+ *   dropped the POSIX strerror() text that call sites used to log directly.)
  */
-static void serialPortReportError(port_handle_t port, serial_port_error_dedup_t* dedup, const char* action, int errorCode)
+static void serialPortReportError(port_handle_t port, serial_port_error_dedup_t* dedup, const char* action, int errorCode, const char* detail)
 {
     char summary[192];
     int mode = serialPortErrorDedupGate(dedup, action, errorCode, serialPortNowMs(), SERIAL_PORT_ERROR_DEDUP_WINDOW_MS, summary, sizeof(summary));
 
+    // A fresh run (no fold/suppress) starts being tracked by this call -- stash its display
+    // detail now so a later fold/flush of *this* run (serialPortFormatDedupSummary(), above) can
+    // still include it. Must happen after the gate call: for SUMMARY_THEN_IMMEDIATE the summary
+    // just formatted describes the *previous* (different) run, so overwriting detail beforehand
+    // would corrupt that summary with this occurrence's text instead.
+    if (mode == SERIAL_PORT_DEDUP_IMMEDIATE || mode == SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE)
+        snprintf(dedup->detail, sizeof(dedup->detail), "%s", detail ? detail : "");
+
     if (mode == SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE || mode == SERIAL_PORT_DEDUP_SUMMARY_FOLDED)
         log_more_info(IS_LOG_PORT, "[%s] %s", portName(port), summary);
     if (mode == SERIAL_PORT_DEDUP_IMMEDIATE || mode == SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE)
-        log_error(IS_LOG_PORT, "[%s] %s (%d)", portName(port), action, errorCode);
+    {
+        if (detail && detail[0] != '\0')
+            log_error(IS_LOG_PORT, "[%s] %s: %s (%d)", portName(port), action, detail, errorCode);
+        else
+            log_error(IS_LOG_PORT, "[%s] %s (%d)", portName(port), action, errorCode);
+    }
 }
 
 /**
@@ -1022,7 +1045,7 @@ static int serialPortFlushPlatform(port_handle_t port)
         // serialPortReportError() so a burst of these collapses to one line instead of one per call.
         serialPort->errorCode = (int)GetLastError();
         serialPort->error = "PurgeComm() failed";
-        serialPortReportError(port, &handle->errDedup, "serialPortFlushPlatform():: Error flushing: PurgeComm() failed", serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortFlushPlatform():: Error flushing: PurgeComm() failed", serialPort->errorCode, NULL);
         return 0;
     }
 
@@ -1031,7 +1054,7 @@ static int serialPortFlushPlatform(port_handle_t port)
     if (tcflush(handle->fd, TCIOFLUSH) < 0) {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
-        serialPortReportError(port, &handle->errDedup, "serialPortFlushPlatform():: Error flushing: tcflush() failed", serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortFlushPlatform():: Error flushing: tcflush() failed", serialPort->errorCode, serialPort->error);
     }
 
 #endif
@@ -1071,7 +1094,7 @@ static int serialPortDrainPlatform(port_handle_t port)
         // serialPortOpenPlatform()'s CreateFileA() comment for the same mistake.
         serialPort->errorCode = (int)GetLastError();
         serialPort->error = "PurgeComm() failed";
-        serialPortReportError(port, &handle->errDedup, "serialPortDrainPlatform():: Error draining: PurgeComm() failed", serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortDrainPlatform():: Error draining: PurgeComm() failed", serialPort->errorCode, NULL);
         return 0;
     }
 
@@ -1080,7 +1103,7 @@ static int serialPortDrainPlatform(port_handle_t port)
     if (tcdrain(handle->fd) < 0) {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
-        serialPortReportError(port, &handle->errDedup, "serialPortDrainPlatform():: Error draining: tcdrain() failed", serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortDrainPlatform():: Error draining: tcdrain() failed", serialPort->errorCode, serialPort->error);
     }
 
 #endif
@@ -1141,7 +1164,7 @@ static int serialPortReadTimeoutPlatformWindows(serial_port_t* serialPort, unsig
                             DWORD result = GetLastError();
                             serialPort->errorCode = (int)result;
                             serialPort->error = "GetOverlappedResult() failed";
-                            serialPortReportError((port_handle_t)serialPort, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error fetching 'overlapped result': GetOverlappedResult() failed", serialPort->errorCode);
+                            serialPortReportError((port_handle_t)serialPort, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error fetching 'overlapped result': GetOverlappedResult() failed", serialPort->errorCode, NULL);
                             CancelIo(handle->platformHandle);
                             return -1;
                         }
@@ -1161,7 +1184,7 @@ static int serialPortReadTimeoutPlatformWindows(serial_port_t* serialPort, unsig
                 // discarded silently the same way -- see the comment above.
                 serialPort->errorCode = (int)dwRes;
                 serialPort->error = "ReadFile() failed";
-                serialPortReportError((port_handle_t)serialPort, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error reading: ReadFile() failed", serialPort->errorCode);
+                serialPortReportError((port_handle_t)serialPort, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error reading: ReadFile() failed", serialPort->errorCode, NULL);
                 CancelIo(handle->platformHandle);
                 return -1;
             }
@@ -1224,9 +1247,16 @@ static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigne
 
         if ((n = read(handle->fd, buffer + totalRead, readCount - totalRead)) < 0) {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+                // SN-8650 (review follow-up): record the error, but don't log it here. The only
+                // caller, serialPortReadTimeoutPlatform(), re-derives the same errno/strerror()
+                // immediately after this returns and reports it through serialPortReportError()
+                // -- the single SN-8650 dedup gate. Logging unconditionally here as well meant
+                // every repeated read failure was reported twice: once ungated (right here, on
+                // every single occurrence) and once through the gate (suppressed after the
+                // first), so the read path was never actually deduplicated -- the ungated line
+                // flooded regardless.
                 serialPort->errorCode = errno;
                 serialPort->error = strerror(errno);
-                log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", serialPort->portName, handle->fd, serialPort->error, serialPort->errorCode);
             }
             return PORT_ERROR__TIMEOUT;
         } else if (n > 0) {
@@ -1310,7 +1340,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(serialPort->errorCode);
-        serialPortReportError(port, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error reading", serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error reading", serialPort->errorCode, serialPort->error);
     } else {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
@@ -1483,7 +1513,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // contention (one failure per comm tick, per port, for as long as the contention
             // lasts) -- route through serialPortReportError() to collapse a burst into one
             // ERROR line plus a trailing summary instead of one ERROR line per occurrence.
-            serialPortReportError(port, &handle->errDedup, "serialPortWrite():: Error writing: WriteFile() failed", serialPort->errorCode);
+            serialPortReportError(port, &handle->errDedup, "serialPortWrite():: Error writing: WriteFile() failed", serialPort->errorCode, NULL);
             CancelIo(handle->platformHandle);
             if (win32ErrorIndicatesDeviceLost(result)) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
@@ -1501,7 +1531,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             DWORD result = GetLastError();  // read this before we call CancelIo
             serialPort->errorCode = (int)result;   // SN-8697: real Win32 error, not errno -- see above
             serialPort->error = "GetOverlappedResult() failed";
-            serialPortReportError(port, &handle->errDedup, "serialPortWrite():: Error fetching 'overlapped result': GetOverlappedResult() failed", serialPort->errorCode);
+            serialPortReportError(port, &handle->errDedup, "serialPortWrite():: Error fetching 'overlapped result': GetOverlappedResult() failed", serialPort->errorCode, NULL);
             CancelIo(handle->platformHandle);
             if (win32ErrorIndicatesDeviceLost(result)) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
@@ -1548,7 +1578,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            serialPortReportError(port, &handle->errDedup, "serialPortWritePlatform():: Error writing", serialPort->errorCode);
+            serialPortReportError(port, &handle->errDedup, "serialPortWritePlatform():: Error writing", serialPort->errorCode, serialPort->error);
             if ((errno == ENOENT) || (errno == ENODEV) || (errno ==  EIO)) {
                 // these errors indicate the underlying OS port is bad, and needs to be closed/invalidated - there is usually no other recovery from here.
                 portClose(port);
