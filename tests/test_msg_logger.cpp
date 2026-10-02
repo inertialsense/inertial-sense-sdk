@@ -62,7 +62,14 @@ protected:
         savedPath = IS_LOG_GET_OUTPUT_PATH();
         savedLevel = IS_GET_LOG_LEVEL();
         IS_SET_LOG_LEVEL(IS_LOG_LEVEL_INFO);
-        dir = fs::temp_directory_path() / ("is_msg_logger_" + std::to_string(::testing::UnitTest::GetInstance()->random_seed()) + "_" +
+        // Deliberately not keyed on UnitTest::random_seed(): in GoogleTest >= 1.14, that seed is
+        // derived from the current time in milliseconds even when --gtest_shuffle is off (earlier
+        // than 1.14 it was a constant 0 unless shuffling), so it is NOT guaranteed to match between
+        // this (parent) process and the freshly re-exec'd child of a "threadsafe"-style death test
+        // below -- which would make the parent and child compute two different directories for the
+        // same logical test. The test name alone is stable across processes and is already unique
+        // within a single run, which is all that's needed here.
+        dir = fs::temp_directory_path() / (std::string("is_msg_logger_") +
                                            ::testing::UnitTest::GetInstance()->current_test_info()->name());
         fs::remove_all(dir);
         fs::create_directories(dir);
