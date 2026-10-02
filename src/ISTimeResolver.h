@@ -67,6 +67,33 @@ enum class AbsTimeMechanism : uint8_t {
 const char* absTimeMechanismName(AbsTimeMechanism m) noexcept;
 
 /**
+ * @brief Where the absolute reference came from, independent of how the record was mapped onto it.
+ *
+ * Ordered strongest to weakest. `None` is an EXPECTED, first-class outcome, not a failure: a log
+ * may legitimately have no means to anchor to any clock source (Kyle, 2026-10-02), and when that
+ * happens the record still gets a relative clock — see `AbsTimeResult::relativeOnly`.
+ */
+enum class AbsAnchorSource : uint8_t {
+    None = 0,          //!< No clock source of any kind. Relative time only, and that is fine.
+    PayloadWeek,       //!< A GPS week from the log's own payloads, at or above the fix threshold.
+    IdxCaptureEpoch,   //!< `.idx` header `capture_epoch_ms` — the host's wall-clock at log-open.
+    Filename,          //!< The `YYYYMMDD_HHMMSS` in the segment filename. Last resort.
+};
+
+/** @brief Names an @ref AbsAnchorSource. @param a The source. @return Its name. */
+const char* absAnchorSourceName(AbsAnchorSource a) noexcept;
+
+/**
+ * @brief The GPS week at or above which a log is taken to have achieved a GNSS fix.
+ *
+ * Kyle, 2026-10-02: *"any log which never achieves a week >= 1500 is a reasonable assertion that
+ * the log never achieves a GNSS fix."* Week 1500 is late 2008, comfortably before any IMX existed,
+ * so a smaller week is a device reporting that it does not know rather than a date. Week 1 is the
+ * value the customer corpus actually carries, and week 1 is 1980-01-13.
+ */
+inline constexpr uint32_t kGnssFixWeekThreshold = 1500;
+
+/**
  * @brief One record's probable absolute time, with the full shape of how it was determined.
  *
  * SN-8784. The point of returning provenance alongside the answer is that a timestamp nobody can
@@ -76,7 +103,17 @@ const char* absTimeMechanismName(AbsTimeMechanism m) noexcept;
 struct AbsTimeResult {
     //! The answer, in Unix epoch milliseconds. Meaningful only when @ref valid.
     uint64_t         absoluteMs = 0;
+    //! `true` when @ref absoluteMs is meaningful. `false` is an expected outcome, not an error.
     bool             valid      = false;
+    /**
+     * @brief `true` when no absolute anchor existed, but the relative fields ARE meaningful.
+     *
+     * The deliberate middle state. A log with no clock source still has a basis for a relative
+     * clock, and saying so is more useful than reporting nothing — provided the caller cannot
+     * mistake it for an absolute. Mutually exclusive with @ref valid.
+     */
+    bool             relativeOnly = false;
+    AbsAnchorSource  anchorSource = AbsAnchorSource::None;
     AbsTimeMechanism mechanism  = AbsTimeMechanism::Unresolved;
     TimeSource       source     = TimeSource::SessionOnly;
     TimeConfidence   confidence = TimeConfidence::Unknown;

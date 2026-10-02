@@ -1425,6 +1425,16 @@ const char* absTimeMechanismName(AbsTimeMechanism m) noexcept {
     return "?";
 }
 
+const char* absAnchorSourceName(AbsAnchorSource a) noexcept {
+    switch (a) {
+        case AbsAnchorSource::None:            return "None";
+        case AbsAnchorSource::PayloadWeek:     return "PayloadWeek";
+        case AbsAnchorSource::IdxCaptureEpoch: return "IdxCaptureEpoch";
+        case AbsAnchorSource::Filename:        return "Filename";
+    }
+    return "?";
+}
+
 const char* positionExactnessName(PositionExactness e) noexcept {
     switch (e) {
         case PositionExactness::NotInLog:          return "NotInLog";
@@ -1441,7 +1451,8 @@ namespace {
 //! Weeks below this cannot be a real capture. GPS week 1043 is 2000-01-01; a device with no fix
 //! reports a small week (week 1 is routine on the customer corpus) and week 1 is 1980-01-13, so a
 //! value in that range is a device saying "I do not know" rather than a date.
-constexpr uint32_t kMinPlausibleWeek = 1043;
+//! Kyle's fix threshold, 2026-10-02. See `kGnssFixWeekThreshold` for the reasoning.
+constexpr uint32_t kMinPlausibleWeek = kGnssFixWeekThreshold;
 
 //! 2000-01-01, the floor below which a value cannot be a plausible Unix capture time.
 constexpr uint64_t kUnixPlausibleFloorMs = 946684800000ULL;
@@ -1460,6 +1471,38 @@ uint32_t weekOfUnixMs(uint64_t unixMs) {
     constexpr uint64_t kMsPerWeek      = 604800000ULL;
     if (unixMs < kGpsEpochUnixMs) return 0;
     return static_cast<uint32_t>((unixMs - kGpsEpochUnixMs) / kMsPerWeek);
+}
+
+/**
+ * @brief Downgrades a result to relative-only: no absolute, but a usable relative clock.
+ *
+ * Kyle, 2026-10-02: a log may legitimately have no means to anchor to any clock source, and that
+ * is an EXPECTED result — but it must still have a basis for a relative clock. The cascade already
+ * computes the log's uptime zero for exactly this purpose ("subtracting this zero turns any
+ * record's uptime into elapsed-time-into-the-log"), so that is what is used.
+ *
+ * @param out     The partially-filled result; its hints are preserved.
+ * @param anchor  The owning segment's anchor analysis.
+ * @param rawMs   The record's raw timestamp.
+ * @return        @p out with `valid == false`, `relativeOnly` set when a relative clock exists.
+ */
+AbsTimeResult relativeOnlyResult(AbsTimeResult out, const AnchorAnalysis& anchor, uint64_t rawMs) {
+    out.valid      = false;
+    out.absoluteMs = 0;
+    out.source     = TimeSource::SessionOnly;
+    out.confidence = TimeConfidence::Unknown;
+    if (anchor.logStartUptimeMs != 0 && rawMs >= anchor.logStartUptimeMs) {
+        out.relativeToLogMs = rawMs - anchor.logStartUptimeMs;
+        out.relativeOnly    = true;
+    }
+    if (anchor.uptimeMinMs != 0 && rawMs >= anchor.uptimeMinMs) {
+        out.relativeToSegmentMs = rawMs - anchor.uptimeMinMs;
+        out.relativeOnly        = true;
+    }
+    if (!out.relativeOnly) {
+        out.hints.emplace_back("no relative origin either: this segment reports no uptime extrema");
+    }
+    return out;
 }
 
 } // namespace
@@ -1521,7 +1564,7 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
     const bool towDomain = (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW);
     if (!towDomain && anchor.tier == AnchorTier::None) {
         out.hints.emplace_back("uptime-domain record in a segment with no anchor at all");
-        return out;
+        return relativeOnlyResult(out, anchor, out.sidecarRawMs);
     }
 
     const int64_t mapped = towDomain ? static_cast<int64_t>(out.sidecarRawMs)
@@ -1539,6 +1582,7 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
         out.mechanism  = AbsTimeMechanism::UptimeProjected;
         out.towMs      = out.absoluteMs % 604800000ULL;
         out.gpsWeek    = weekOfUnixMs(out.absoluteMs);
+        out.anchorSource = AbsAnchorSource::Filename;   // refined below if a better one applies
         out.hints.emplace_back("segment offset maps directly to absolute time; no week applied");
     } else {
         // ---- Step 3: the value is in the GPS time-of-week frame, so it needs a week. This is the
@@ -1554,24 +1598,43 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
         uint32_t week            = 0;
         bool     weekFromPayload = false;
         if (anchorWeek_ >= kMinPlausibleWeek) {
-            week            = anchorWeek_;
-            weekFromPayload = true;
+            week             = anchorWeek_;
+            weekFromPayload  = true;
+            out.anchorSource = AbsAnchorSource::PayloadWeek;
         } else {
             if (anchorWeek_ != 0) {
                 out.hints.emplace_back("payload week " + std::to_string(anchorWeek_) +
                                        " is implausible (< " + std::to_string(kMinPlausibleWeek) +
                                        "); it was not used");
             }
+            // No usable week, so an EXTERNAL anchor is required. Kyle's order, 2026-10-02: the
+            // host-recorded timestamp in the `.idx` first, the filename only as a worst case.
+            // The `.idx` one is a measurement the host actually took at log-open; the filename is
+            // a string that merely looks like a date.
             uint64_t anchorUnixMs = 0;
-            if (haveFileAnchor_ && fileAnchorMs_ >= kUnixPlausibleFloorMs) {
-                anchorUnixMs = fileAnchorMs_;
+            const auto& hdr = seg.header();
+            if ((hdr.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH) != 0
+                && hdr.capture_epoch_ms >= kUnixPlausibleFloorMs) {
+                anchorUnixMs     = hdr.capture_epoch_ms;
+                out.anchorSource = AbsAnchorSource::IdxCaptureEpoch;
+                out.hints.emplace_back("anchored from the .idx capture epoch (host wall-clock at "
+                                       "log-open); this log never achieved a GNSS fix");
+            } else if (haveFileAnchor_ && fileAnchorMs_ >= kUnixPlausibleFloorMs) {
+                anchorUnixMs     = fileAnchorMs_;
+                out.anchorSource = AbsAnchorSource::Filename;
+                out.hints.emplace_back("anchored from the log FILENAME - no GNSS fix and no "
+                                       "capture epoch in the .idx; the weakest anchor available");
             } else if (anchor.anchoredStartMs >= kUnixPlausibleFloorMs) {
-                anchorUnixMs = anchor.anchoredStartMs;
+                anchorUnixMs     = anchor.anchoredStartMs;
+                out.anchorSource = AbsAnchorSource::Filename;
+                out.hints.emplace_back("anchored from the segment cascade's absolute start");
             }
             if (anchorUnixMs == 0) {
-                out.hints.emplace_back(
-                    "no plausible week and no absolute anchor; cannot place this record");
-                return out;
+                // EXPECTED outcome, not a failure: this log has no clock source at all. Fall
+                // through to a relative-only answer below rather than returning nothing.
+                out.hints.emplace_back("no GNSS fix, no .idx capture epoch and no filename "
+                                       "timestamp; this log cannot be placed on any clock");
+                return relativeOnlyResult(out, anchor, out.sidecarRawMs);
             }
             week          = weekOfUnixMs(anchorUnixMs);
             out.mechanism = AbsTimeMechanism::FileAnchor;
@@ -1584,7 +1647,7 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
         out.valid           = out.absoluteMs >= kUnixPlausibleFloorMs;
         if (!out.valid) {
             out.hints.emplace_back("composed time is not a plausible capture date");
-            return out;
+            return relativeOnlyResult(out, anchor, out.sidecarRawMs);
         }
     }
 
