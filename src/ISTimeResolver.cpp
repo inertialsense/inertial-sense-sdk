@@ -1408,4 +1408,338 @@ ISTimeResolver::Stats ISTimeResolver::computeStats(const ISDeviceLog& log) const
     return s;
 }
 
+
+// ============================================================================================
+// SN-8784 — one mechanism for a record's probable absolute time, plus its inverse.
+// ============================================================================================
+
+const char* absTimeMechanismName(AbsTimeMechanism m) noexcept {
+    switch (m) {
+        case AbsTimeMechanism::Unresolved:      return "Unresolved";
+        case AbsTimeMechanism::PayloadEpoch:    return "PayloadEpoch";
+        case AbsTimeMechanism::CarriedWeek:     return "CarriedWeek";
+        case AbsTimeMechanism::SyncMatched:     return "SyncMatched";
+        case AbsTimeMechanism::UptimeProjected: return "UptimeProjected";
+        case AbsTimeMechanism::FileAnchor:      return "FileAnchor";
+    }
+    return "?";
+}
+
+const char* positionExactnessName(PositionExactness e) noexcept {
+    switch (e) {
+        case PositionExactness::NotInLog:          return "NotInLog";
+        case PositionExactness::Exact:             return "Exact";
+        case PositionExactness::FirstOfStalledRun: return "FirstOfStalledRun";
+        case PositionExactness::Before:            return "Before";
+        case PositionExactness::After:             return "After";
+    }
+    return "?";
+}
+
+namespace {
+
+//! Weeks below this cannot be a real capture. GPS week 1043 is 2000-01-01; a device with no fix
+//! reports a small week (week 1 is routine on the customer corpus) and week 1 is 1980-01-13, so a
+//! value in that range is a device saying "I do not know" rather than a date.
+constexpr uint32_t kMinPlausibleWeek = 1043;
+
+//! 2000-01-01, the floor below which a value cannot be a plausible Unix capture time.
+constexpr uint64_t kUnixPlausibleFloorMs = 946684800000ULL;
+
+/**
+ * @brief The GPS week implied by an absolute instant.
+ *
+ * Used to recover a week from the filename anchor when no payload in the log supplies a plausible
+ * one — the last resort, and tagged as such by the caller.
+ *
+ * @param unixMs  Absolute instant.
+ * @return        The GPS week containing it, or 0 when @p unixMs predates the GPS epoch.
+ */
+uint32_t weekOfUnixMs(uint64_t unixMs) {
+    constexpr uint64_t kGpsEpochUnixMs = 315964800000ULL;
+    constexpr uint64_t kMsPerWeek      = 604800000ULL;
+    if (unixMs < kGpsEpochUnixMs) return 0;
+    return static_cast<uint32_t>((unixMs - kGpsEpochUnixMs) / kMsPerWeek);
+}
+
+} // namespace
+
+AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
+                                                 std::size_t segmentIndex,
+                                                 std::size_t recordIndex) const {
+    AbsTimeResult out;
+    if (segmentIndex >= log.segmentCount()) {
+        out.hints.emplace_back("segment index out of range");
+        return out;
+    }
+    const ISLogReader& seg = log.segment(segmentIndex);
+    if (recordIndex >= seg.recordCount()) {
+        out.hints.emplace_back("record index out of range for this segment");
+        return out;
+    }
+    out.segmentIndex = segmentIndex;
+
+    const ISRecordView rec = seg.recordAt(recordIndex);
+    out.sidecarRawMs       = rec.timestamp().value;
+    const AnchorAnalysis& anchor = seg.anchorAnalysis();
+    out.anchorTier = anchor.tier;
+    out.offsetMs   = anchor.offsetMs;
+    out.anchorMs   = anchor.anchoredStartMs;
+
+    // ---- Step 1: what domain is the raw value in? The DID's DECLARED domain decides, never the
+    // value's magnitude — the same rule `ISAnchorAnalysis` follows, and for the same reason: a
+    // legal zero (ToW 0 is Sunday midnight, uptime 0 the first ms after boot) is indistinguishable
+    // from "absent" by magnitude alone.
+    using TsDomain = cISDataMappings::eTimestampDomain;
+    const TsDomain domain = cISDataMappings::TimestampDomain(rec.did());
+    if (domain == TsDomain::TIMESTAMP_DOMAIN_NONE) {
+        out.hints.emplace_back("this DID declares no timestamp field");
+        return out;
+    }
+    if (out.sidecarRawMs == 0 && domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW) {
+        // A genuine ToW of zero is legal, so this is not an early return on magnitude; it is only
+        // noted, because a run of zeros is also what a device with no time at all writes.
+        out.hints.emplace_back("time of week is zero; legal, but also what an untimed device writes");
+    }
+
+    // ---- Step 2: apply the segment anchor's offset, and work out WHICH FRAME it lands in.
+    //
+    // The cascade's `offsetMs` does not target a consistent frame: on a filename-anchored segment
+    // it maps a raw uptime straight to Unix (this log: offset 1,789,601,170,131, so raw 869 ->
+    // 2026-09-16 23:26:11.000), while on a ToW-tier segment it maps uptime into the GPS
+    // time-of-week frame instead. Measured 2026-10-02 across 75 corpus logs / 709 segments:
+    //
+    //     tier                unix-like   ToW-like
+    //     FilenameAnchor             21         24
+    //     PayloadToWBridge            0        613
+    //     PayloadToWSingle            0         48
+    //     None                        0          3
+    //
+    // Note the FilenameAnchor split: the frame is NOT a function of the tier, so it cannot be
+    // inferred from one. It is determined here by trying the Unix reading and checking whether the
+    // result is a plausible capture date — self-checking, and it reports which branch fired.
+    const bool towDomain = (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW);
+    if (!towDomain && anchor.tier == AnchorTier::None) {
+        out.hints.emplace_back("uptime-domain record in a segment with no anchor at all");
+        return out;
+    }
+
+    const int64_t mapped = towDomain ? static_cast<int64_t>(out.sidecarRawMs)
+                                     : static_cast<int64_t>(out.sidecarRawMs) + anchor.offsetMs;
+    if (mapped < 0) {
+        out.hints.emplace_back("segment offset drives this record's time below zero");
+        return out;
+    }
+
+    if (!towDomain && static_cast<uint64_t>(mapped) >= kUnixPlausibleFloorMs) {
+        // The offset already targets Unix. Applying a week on top would double-count the epoch —
+        // which is precisely the 46.68-year error this whole exercise started from.
+        out.absoluteMs = static_cast<uint64_t>(mapped);
+        out.valid      = true;
+        out.mechanism  = AbsTimeMechanism::UptimeProjected;
+        out.towMs      = out.absoluteMs % 604800000ULL;
+        out.gpsWeek    = weekOfUnixMs(out.absoluteMs);
+        out.hints.emplace_back("segment offset maps directly to absolute time; no week applied");
+    } else {
+        // ---- Step 3: the value is in the GPS time-of-week frame, so it needs a week. This is the
+        // step nothing else in the codebase performs, and why 661 of 709 segments report a span in
+        // the ToW frame.
+        out.towMs     = static_cast<uint64_t>(mapped);
+        out.mechanism = towDomain ? AbsTimeMechanism::PayloadEpoch
+                                  : (anchor.tier == AnchorTier::PayloadToWBridge ||
+                                     anchor.tier == AnchorTier::PayloadToWSingle)
+                                        ? AbsTimeMechanism::SyncMatched
+                                        : AbsTimeMechanism::UptimeProjected;
+
+        uint32_t week            = 0;
+        bool     weekFromPayload = false;
+        if (anchorWeek_ >= kMinPlausibleWeek) {
+            week            = anchorWeek_;
+            weekFromPayload = true;
+        } else {
+            if (anchorWeek_ != 0) {
+                out.hints.emplace_back("payload week " + std::to_string(anchorWeek_) +
+                                       " is implausible (< " + std::to_string(kMinPlausibleWeek) +
+                                       "); it was not used");
+            }
+            uint64_t anchorUnixMs = 0;
+            if (haveFileAnchor_ && fileAnchorMs_ >= kUnixPlausibleFloorMs) {
+                anchorUnixMs = fileAnchorMs_;
+            } else if (anchor.anchoredStartMs >= kUnixPlausibleFloorMs) {
+                anchorUnixMs = anchor.anchoredStartMs;
+            }
+            if (anchorUnixMs == 0) {
+                out.hints.emplace_back(
+                    "no plausible week and no absolute anchor; cannot place this record");
+                return out;
+            }
+            week          = weekOfUnixMs(anchorUnixMs);
+            out.mechanism = AbsTimeMechanism::FileAnchor;
+            out.hints.emplace_back("week " + std::to_string(week) +
+                                   " derived from the log's anchor, not from any payload");
+        }
+        out.gpsWeek         = week;
+        out.weekFromPayload = weekFromPayload;
+        out.absoluteMs      = gpsToUnixMs(week, out.towMs);
+        out.valid           = out.absoluteMs >= kUnixPlausibleFloorMs;
+        if (!out.valid) {
+            out.hints.emplace_back("composed time is not a plausible capture date");
+            return out;
+        }
+    }
+
+    // ---- Step 4: provenance tags, and relative time as a SUBTRACTION rather than a mechanism.
+    out.source = (out.mechanism == AbsTimeMechanism::PayloadEpoch) ? TimeSource::PayloadToW
+                                                                   : TimeSource::ResolvedViaSync;
+    // Certainty follows the WEAKEST link in the chain, never the strongest. A record whose week
+    // had to be inferred from a filename is not Exact however exact its time of week was — that
+    // conflation is what produced a full certainty dial beside a 1980 date (review B102).
+    out.confidence = (out.mechanism == AbsTimeMechanism::PayloadEpoch && out.weekFromPayload)
+                         ? TimeConfidence::Exact
+                     : (out.mechanism == AbsTimeMechanism::FileAnchor)
+                         ? TimeConfidence::ExtrapolatedForward
+                         : TimeConfidence::Interpolated;
+
+    return out;
+}
+
+AbsTimeResult ISTimeResolver::resolveAbsTime(const ISDeviceLog& log,
+                                             std::size_t segmentIndex,
+                                             std::size_t recordIndex) const {
+    AbsTimeResult out = resolveAbsTimeCore(log, segmentIndex, recordIndex);
+    if (!out.valid) return out;
+
+    // Relative time is a SUBTRACTION from an origin, never its own derivation — the whole point of
+    // SN-8784. The origins come from `resolveAbsTimeCore`, so they cannot be on a different frame
+    // from the value being subtracted from them.
+    //
+    // Split from the core for two reasons: the core must not recurse (the origin is itself found
+    // by resolving records), and the origins are memoised per log, without which placing one
+    // record would cost a scan of the whole log.
+    ensureOrigins(log);
+    if (originsLog_ == &log) {
+        if (logOriginMs_ != 0 && out.absoluteMs >= logOriginMs_) {
+            out.relativeToLogMs = out.absoluteMs - logOriginMs_;
+        }
+        if (out.segmentIndex < segmentOriginMs_.size()) {
+            const uint64_t segOrigin = segmentOriginMs_[out.segmentIndex];
+            if (segOrigin != 0 && out.absoluteMs >= segOrigin) {
+                out.relativeToSegmentMs = out.absoluteMs - segOrigin;
+            }
+        }
+    }
+    return out;
+}
+
+void ISTimeResolver::ensureOrigins(const ISDeviceLog& log) const {
+    if (originsLog_ == &log) return;
+    originsLog_  = &log;
+    logOriginMs_ = 0;
+    segmentOriginMs_.assign(log.segmentCount(), 0);
+
+    // One forward pass per segment, stopping at that segment's first placeable record. The log
+    // origin is the first segment's that yields anything, scanning forward — NOT a minimum over
+    // every record, because a minimum lets a single mis-framed record redefine the origin
+    // (`anchoredSpanStart` does exactly that, and is dragged into 1970 on 6 of 13 corpus logs).
+    for (std::size_t i = 0; i < log.segmentCount(); ++i) {
+        const ISLogReader& seg = log.segment(i);
+        const std::size_t  n   = seg.recordCount();
+        for (std::size_t k = 0; k < n; ++k) {
+            const AbsTimeResult r = resolveAbsTimeCore(log, i, k);
+            if (!r.valid) continue;
+            segmentOriginMs_[i] = r.absoluteMs;
+            if (logOriginMs_ == 0) logOriginMs_ = r.absoluteMs;
+            break;
+        }
+    }
+}
+
+AbsTimeResult ISTimeResolver::firstResolvableIn(const ISDeviceLog& log,
+                                                std::size_t fromSegment) const {
+    // Scans forward from `fromSegment` for the first record this function can place. Forward, not
+    // a minimum over everything: the origin of relative time has to be the FIRST record, and a
+    // minimum lets one mis-framed record anywhere in the log redefine the origin.
+    for (std::size_t i = fromSegment; i < log.segmentCount(); ++i) {
+        const ISLogReader& seg = log.segment(i);
+        const std::size_t  n   = seg.recordCount();
+        for (std::size_t k = 0; k < n; ++k) {
+            const AbsTimeResult r = resolveAbsTimeCore(log, i, k);
+            if (r.valid) return r;
+        }
+        if (fromSegment != 0) break;   // segment-scoped request: do not spill into the next one
+    }
+    return {};
+}
+
+SegmentOffset ISTimeResolver::resolveTimeToSegmentOffset(const ISDeviceLog& log,
+                                                         uint64_t absoluteMs) const {
+    SegmentOffset out;
+
+    // Deliberately over `resolveAbsTime`, never over the raw `.idx` values: if the two directions
+    // read different inputs they can drift, and the round trip being provable is the objective.
+    bool        sawAny     = false;
+    uint64_t    firstMs    = 0, lastMs = 0;
+    std::size_t bestSeg    = 0, bestIdx = 0;
+    uint64_t    bestMs     = 0;
+    bool        haveBest   = false;
+
+    uint64_t arrivalBase = 0;
+    for (std::size_t i = 0; i < log.segmentCount(); ++i) {
+        const ISLogReader& seg = log.segment(i);
+        const std::size_t  n   = seg.recordCount();
+        for (std::size_t k = 0; k < n; ++k) {
+            const AbsTimeResult r = resolveAbsTimeCore(log, i, k);
+            if (!r.valid) continue;
+            if (!sawAny) { firstMs = r.absoluteMs; sawAny = true; }
+            lastMs = r.absoluteMs;
+            // At-or-before, and keeping the FIRST of an equal run: a stalled clock parks many
+            // records on one instant, and "the first of them" is the only stable choice — it is
+            // what makes a second round trip a fixed point instead of drifting along the run.
+            if (r.absoluteMs <= absoluteMs && (!haveBest || r.absoluteMs > bestMs)) {
+                bestMs   = r.absoluteMs;
+                bestSeg  = i;
+                bestIdx  = k;
+                haveBest = true;
+            }
+        }
+        arrivalBase += static_cast<uint64_t>(n);
+    }
+
+    if (!sawAny) return out;                     // nothing in the log can be placed
+
+    if (!haveBest) {
+        // Earlier than every record: clamp to the first placeable one rather than failing, and say
+        // so, because a marker before the log start is an ordinary UI state.
+        const SegmentOffset clamped = resolveTimeToSegmentOffset(log, firstMs);
+        out = clamped;
+        out.exactness = PositionExactness::Before;
+        return out;
+    }
+
+    const ISLogReader& seg = log.segment(bestSeg);
+    uint64_t base = 0;
+    for (std::size_t i = 0; i < bestSeg; ++i) base += static_cast<uint64_t>(log.segment(i).recordCount());
+
+    // Walk back to the FIRST record bearing this instant, so the mapping is a fixed point.
+    std::size_t firstOfRun = bestIdx;
+    while (firstOfRun > 0) {
+        const AbsTimeResult prev = resolveAbsTimeCore(log, bestSeg, firstOfRun - 1);
+        if (!prev.valid || prev.absoluteMs != bestMs) break;
+        --firstOfRun;
+    }
+
+    out.valid        = true;
+    out.segmentIndex = bestSeg;
+    out.recordIndex  = firstOfRun;
+    out.segmentPath  = seg.path();
+    out.segment      = &seg;
+    out.byteOffset   = seg.recordAt(firstOfRun).offsetInFile();
+    out.arrivalIndex = base + static_cast<uint64_t>(firstOfRun);
+    out.exactness    = (firstOfRun != bestIdx)   ? PositionExactness::FirstOfStalledRun
+                     : (bestMs == absoluteMs)    ? PositionExactness::Exact
+                     : (absoluteMs > lastMs)     ? PositionExactness::After
+                                                 : PositionExactness::Exact;
+    return out;
+}
+
 } // namespace inertial_sense

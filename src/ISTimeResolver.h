@@ -42,9 +42,95 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <filesystem>
+#include <string>
 #include <vector>
 
 namespace inertial_sense {
+
+/**
+ * @brief Which mechanism produced an @ref AbsTimeResult.
+ *
+ * Ordered strongest first. Returned rather than kept internal so a caller can see WHY a time is
+ * what it is — the thing that was impossible with `resolve()` alone.
+ */
+enum class AbsTimeMechanism : uint8_t {
+    Unresolved = 0,    //!< The record carries no time, or nothing could place it.
+    PayloadEpoch,      //!< The record's own payload carried a plausible week AND a time of week.
+    CarriedWeek,       //!< This record's time of week, with a week from an earlier record.
+    SyncMatched,       //!< Uptime mapped to the ToW frame via a sync point, then weeked.
+    UptimeProjected,   //!< Uptime mapped via the segment anchor's offset, then weeked.
+    FileAnchor,        //!< No usable week anywhere; placed from the segment filename.
+};
+
+/** @brief Names an @ref AbsTimeMechanism. @param m The mechanism. @return Its name. */
+const char* absTimeMechanismName(AbsTimeMechanism m) noexcept;
+
+/**
+ * @brief One record's probable absolute time, with the full shape of how it was determined.
+ *
+ * SN-8784. The point of returning provenance alongside the answer is that a timestamp nobody can
+ * explain is a timestamp nobody can trust: the `hints` and the tier/week/offset fields are what
+ * let a reader — or a test — say which mechanism fired and what it was given.
+ */
+struct AbsTimeResult {
+    //! The answer, in Unix epoch milliseconds. Meaningful only when @ref valid.
+    uint64_t         absoluteMs = 0;
+    bool             valid      = false;
+    AbsTimeMechanism mechanism  = AbsTimeMechanism::Unresolved;
+    TimeSource       source     = TimeSource::SessionOnly;
+    TimeConfidence   confidence = TimeConfidence::Unknown;
+
+    // ---- how it got there -------------------------------------------------------------------
+    std::size_t segmentIndex = 0;          //!< Index into `ISDeviceLog::segment(i)`.
+    AnchorTier  anchorTier   = AnchorTier::None;
+    uint64_t    anchorMs     = 0;          //!< The segment anchor used, in the ToW frame.
+    int64_t     offsetMs     = 0;          //!< Cascade offset applied to a raw uptime value.
+    uint32_t    gpsWeek      = 0;          //!< The week used to leave the ToW frame.
+    bool        weekFromPayload = false;   //!< `false` when the week was carried or derived.
+    uint64_t    towMs        = 0;          //!< The record's instant within the GPS week.
+    uint64_t    sidecarRawMs = 0;          //!< What the `.idx` said, before any mapping.
+
+    //! Absolute minus the log's / segment's own anchored start. Relative time is a SUBTRACTION,
+    //! never its own mechanism — which is the point of the exercise.
+    uint64_t relativeToLogMs     = 0;
+    uint64_t relativeToSegmentMs = 0;
+
+    //! Human-readable notes on anything irregular: an implausible week, a cleared ToW-valid bit,
+    //! a sidecar that disagrees with the payload. Empty is the ordinary case.
+    std::vector<std::string> hints;
+};
+
+/** @brief How exactly a time mapped back onto a record position. */
+enum class PositionExactness : uint8_t {
+    NotInLog = 0,       //!< Outside every segment's span.
+    Exact,              //!< A record bears this instant and it is unambiguous.
+    FirstOfStalledRun,  //!< Several records share the instant; this is the first of them.
+    Before,             //!< Earlier than the first record; clamped to it.
+    After,              //!< Later than the last record; clamped to it.
+};
+
+/** @brief Names a @ref PositionExactness. @param e The value. @return Its name. */
+const char* positionExactnessName(PositionExactness e) noexcept;
+
+/**
+ * @brief A time mapped back to a place in the log.
+ *
+ * Carries index AND path AND handle deliberately: the handle is the convenient form, but
+ * `ISDeviceLog::segments_` is a vector, so index plus path is the pair that stays meaningful
+ * across a reload or in a serialised test expectation.
+ */
+struct SegmentOffset {
+    bool                  valid        = false;
+    std::size_t           segmentIndex = 0;
+    std::filesystem::path segmentPath;
+    const ISLogReader*    segment      = nullptr;   //!< Valid while the log lives.
+    uint64_t              byteOffset   = 0;
+    std::size_t           recordIndex  = 0;   //!< Index within that segment; pairs with
+                                              //!< `segmentIndex` for `resolveAbsTime`.
+    uint64_t              arrivalIndex = 0;   //!< Log-wide, for callers that need it.
+    PositionExactness     exactness    = PositionExactness::NotInLog;
+};
 
 class ISTimeResolver {
 public:
@@ -299,6 +385,92 @@ public:
      *          boundary, which looks like a lone ~16-minute backward jump. Count with a
      *          post-increment over `allRecords()` in composition order.
      */
+    /**
+     * @brief One record's probable absolute time, from every mechanism available (SN-8784).
+     *
+     * Sits ALONGSIDE @ref resolve rather than replacing it, deliberately and temporarily: the two
+     * are expected to DISAGREE where `resolve` is wrong, and the migration is gated on that
+     * difference set being enumerated rather than on the two agreeing.
+     *
+     * What it does that `resolve` cannot: `resolve` returns a value in whichever frame the sync
+     * points happened to be in, and the anchor cascade's `anchoredStartMs` is in the GPS
+     * time-of-week frame on every ToW-tier segment — measured 2026-10-02 across 75 corpus logs,
+     * 661 of 709 segments land in the ToW frame with no week ever applied. This function composes
+     * the two: the cascade's offset maps a raw value onto the segment's ToW frame, and then a week
+     * — from the payload, carried from an earlier record, or derived from the filename anchor —
+     * takes it to Unix. That second step is the one nothing else performs.
+     *
+     * Addressed by `(segment, record)` rather than by an `ISRecordView`, because a view obtained
+     * from `ISLogReader::recordAt` carries `arrivalIndex() == UINT64_MAX` — arrival indices are
+     * only populated when iterating `ISDeviceLog::allRecords()` (measured 2026-10-02 on a
+     * 3-segment log: every per-segment view reports -1). The pair is also what
+     * @ref resolveTimeToSegmentOffset returns, which makes the round trip symmetrical.
+     *
+     * @param log           The owning device log; the resolver holds no reference to one.
+     * @param segmentIndex  Segment, `0 <= i < log.segmentCount()`.
+     * @param recordIndex   Record within that segment.
+     * @return              The answer and its provenance. `valid == false` for a record with no
+     *                      time, or an out-of-range address.
+     */
+    AbsTimeResult resolveAbsTime(const ISDeviceLog& log,
+                                 std::size_t segmentIndex,
+                                 std::size_t recordIndex) const;
+
+    /**
+     * @brief The inverse: where in the log does a given absolute instant sit? (SN-8784)
+     *
+     * Deliberately implemented over @ref resolveAbsTime rather than over the `.idx` timestamps, so
+     * the two directions cannot drift apart — that round trip being provable is the whole point.
+     *
+     * @param log         The owning device log.
+     * @param absoluteMs  Target instant, Unix epoch ms.
+     * @return            Segment index, path, handle, byte offset and arrival index of the record
+     *                    at or before @p absoluteMs, with how exactly it matched.
+     */
+    SegmentOffset resolveTimeToSegmentOffset(const ISDeviceLog& log, uint64_t absoluteMs) const;
+
+    /**
+     * @brief The first record at or after @p fromSegment that @ref resolveAbsTime can place.
+     *
+     * The origin for relative time. Forward-scanning rather than a minimum over every record: a
+     * minimum lets one mis-framed record anywhere in the log redefine the origin, which is a
+     * failure already observed (`anchoredSpanStart` is a minimum, and on 6 of 13 corpus
+     * device-logs it is dragged into 1970 by a single record).
+     *
+     * @param log          The device log.
+     * @param fromSegment  Segment to start at. Zero scans the whole log; any other value is
+     *                     scoped to that one segment.
+     * @return             The first placeable record's result, or an invalid result.
+     */
+    AbsTimeResult firstResolvableIn(const ISDeviceLog& log, std::size_t fromSegment) const;
+
+private:
+    /**
+     * @brief @ref resolveAbsTime without the relative-time fields.
+     *
+     * Exists so the public function can compute relative time from an origin that is itself found
+     * by resolving records, without recursing into itself.
+     *
+     * @param log           The device log.
+     * @param segmentIndex  Segment.
+     * @param recordIndex   Record within that segment.
+     * @return              Absolute time and provenance; `relativeTo*Ms` are left zero.
+     */
+    AbsTimeResult resolveAbsTimeCore(const ISDeviceLog& log,
+                                     std::size_t segmentIndex,
+                                     std::size_t recordIndex) const;
+
+    /** @brief Fills the memoised per-log and per-segment origins. @param log The device log. */
+    void ensureOrigins(const ISDeviceLog& log) const;
+
+    //! Memoised relative-time origins, keyed on the log they were computed for. Mutable because
+    //! resolving is logically const; a different log invalidates them wholesale.
+    mutable const ISDeviceLog*  originsLog_  = nullptr;
+    mutable uint64_t            logOriginMs_ = 0;
+    mutable std::vector<uint64_t> segmentOriginMs_;
+
+public:
+
     TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId,
                       uint64_t arrivalIndex) const;
 
