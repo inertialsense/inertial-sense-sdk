@@ -179,7 +179,9 @@ static inline void static_set_log_level(eLogLevel new_level) { log_level = new_l
     /**
      * Returns the current log output: a file path, "STDOUT" or "STDERR". Before any output is
      * configured or opened this is IS_LOG_DEFAULT_OUTPUT_PATH; for a stream set with IS_LOG_OUTPUT()
-     * that is neither stdout nor stderr it is "".
+     * that is neither stdout nor stderr it is "". The returned pointer is a thread-local snapshot
+     * taken under the logger's lock (see static_log_get_output_path()); it is valid until this
+     * thread's next call to IS_LOG_GET_OUTPUT_PATH(), and is never mutated by another thread.
      */
     #define IS_LOG_GET_OUTPUT_PATH()            static_log_get_output_path()
 
@@ -199,7 +201,10 @@ static inline void static_set_log_level(eLogLevel new_level) { log_level = new_l
 
     /**
      * Returns the current log output; see IS_LOG_GET_OUTPUT_PATH().
-     * @return the current output path, "STDOUT", "STDERR", or "" for a caller-supplied stream
+     * @return a thread-local snapshot of the current output path, "STDOUT", "STDERR", or "" for
+     *         a caller-supplied stream. The snapshot is copied under the logger's lock, so it is
+     *         never torn by a concurrent IS_LOG_SET_OUTPUT_PATH()/IS_LOG_OUTPUT() call, and it is
+     *         exclusive to the calling thread.
      */
     const char* static_log_get_output_path(void);
 #endif

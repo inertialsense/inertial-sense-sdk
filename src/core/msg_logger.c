@@ -34,9 +34,11 @@ static char log_file_path[1024] = IS_LOG_DEFAULT_OUTPUT_PATH;  //!< path of log_
 #if defined(PLATFORM_IS_WINDOWS)
 static CRITICAL_SECTION log_mutex;
 static INIT_ONCE log_init_once = INIT_ONCE_STATIC_INIT;
+#define IS_THREAD_LOCAL __declspec(thread)
 #else
 static pthread_mutex_t log_mutex;
 static pthread_once_t log_init_once = PTHREAD_ONCE_INIT;
+#define IS_THREAD_LOCAL _Thread_local
 #endif
 
 static void lock_mutex();
@@ -153,26 +155,61 @@ int static_log_set_output_path(const char* path, int append) {
     } else if (str_equals_nocase(path, "STDERR")) {
         out = stderr;
         path = "STDERR";
-    } else {
-        // Open before taking the lock so a slow or failing open never stalls logging threads.
-        out = fopen(path, append ? "a+" : "w");
+    } else if (append) {
+        // Non-destructive open: "a+" never truncates, so it cannot race with a writer
+        // using the current output. Safe to do before the lock so a slow or failing
+        // open never stalls other logging threads.
+        out = fopen(path, "a+");
         if (out == NULL)
             return -1;
         owned = 1;
     }
+    // else: a destructive ("w") open is deferred until the lock is held below -- see there.
+
+    // Snapshot the caller's path into our own non-overlapping storage *before* touching
+    // log_file_path. `path` may itself be the pointer previously returned by
+    // static_log_get_output_path() (i.e. point into log_file_path), so writing through it
+    // after log_file_path has been mutated would be an overlapping-copy. Copying it now,
+    // while log_file_path is still untouched, is always safe regardless of aliasing.
+    char path_copy[sizeof(log_file_path)];
+    snprintf(path_copy, sizeof(path_copy), "%s", path);
 
     lock_mutex();
+    if (out == NULL) {
+        // Destructive open: fopen(path, "w") truncates the file at the filesystem level,
+        // independent of any FILE* another thread already has open on that same path.
+        // Performing it while holding log_mutex serializes the truncation against
+        // static_log_msg()/static_log_buffer(), which hold the same lock for their entire
+        // write+flush, so a same-path switch can never truncate out from under a write
+        // that's in progress (or land mid-record).
+        out = fopen(path_copy, "w");
+        if (out == NULL) {
+            unlock_mutex();
+            return -1;
+        }
+        owned = 1;
+    }
     if (out != log_file)
         close_owned_output_locked();
     log_file = out;
     log_file_owned = owned;
-    snprintf(log_file_path, sizeof(log_file_path), "%s", path);
+    snprintf(log_file_path, sizeof(log_file_path), "%s", path_copy);
     unlock_mutex();
     return 0;
 }
 
 const char* static_log_get_output_path(void) {
-    return log_file_path;
+    // Snapshot into a thread-local buffer, taken under log_mutex, rather than returning
+    // log_file_path directly: both setters above rewrite log_file_path under the same lock,
+    // so returning the shared buffer itself would let a concurrent setter mutate it out from
+    // under the caller (a data race, and a possibly-torn read) even though this function also
+    // locks -- the race would simply move to after unlock. A thread-local destination means no
+    // two threads ever contend over the returned storage either.
+    static IS_THREAD_LOCAL char path_snapshot[sizeof(log_file_path)];
+    lock_mutex();
+    snprintf(path_snapshot, sizeof(path_snapshot), "%s", log_file_path);
+    unlock_mutex();
+    return path_snapshot;
 }
 
 static inline void static_log_timestamp(FILE* log_file, const char* prefix) {

@@ -193,6 +193,50 @@ TEST_F(MsgLoggerOutputTest, SwitchingWhileOtherThreadsLog_LosesAndSplitsNoLines)
     EXPECT_EQ(static_cast<size_t>(kThreads * kMessagesPerThread), total);
 }
 
+TEST_F(MsgLoggerOutputTest, SwitchingToSamePathDestructively_WhileOtherThreadsLog_LosesAndSplitsNoLines) {
+    const fs::path a = dir / "a.log";
+    ASSERT_EQ(0, IS_LOG_SET_OUTPUT_PATH(a.string().c_str(), 1));
+
+    constexpr int kThreads = 4;
+    constexpr int kMessagesPerThread = 2000;
+    std::atomic<bool> go{false};
+    std::vector<std::thread> writers;
+    for (int t = 0; t < kThreads; t++) {
+        writers.emplace_back([&go, t] {
+            while (!go.load()) {}
+            for (int i = 0; i < kMessagesPerThread; i++)
+                log_info(IS_LOG_FACILITY_NONE, "concurrent t=%d i=%d end", t, i);
+        });
+    }
+
+    go = true;
+    // Repeatedly re-truncate the SAME path the writers are actively logging to. Before the fix,
+    // the destructive fopen(path, "w") happened before log_mutex was taken, so this truncation
+    // could land while another thread was mid-record on the old stream (same underlying file),
+    // losing a prefix or leaving a stale-offset gap. With the fix, the open is deferred until
+    // log_mutex is held, serializing it against every write+flush (which also hold the lock for
+    // their full duration), so a same-path switch can never tear a record in progress.
+    for (int s = 0; s < 200; s++)
+        ASSERT_EQ(0, IS_LOG_SET_OUTPUT_PATH(a.string().c_str(), 0));
+    for (auto& w : writers)
+        w.join();
+    IS_LOG_SET_OUTPUT_PATH("STDOUT", 1);
+
+    // Repeated same-path truncation is expected to discard most prior content -- that's the
+    // intended behavior of a destructive switch -- so unlike the cross-file test above we can't
+    // assert a total count. We can and do assert that whatever lines survive are intact (never
+    // split or corrupted by a truncation landing mid-write), and that at least some logging
+    // actually interleaved with the truncations so the race window was genuinely exercised.
+    size_t total = 0;
+    for (const auto& line : readLines(a)) {
+        if (line.find("concurrent") == std::string::npos)
+            continue;
+        total++;
+        EXPECT_EQ(line.size() - 3, line.rfind("end")) << "split or truncated-mid-record line: " << line;
+    }
+    EXPECT_GT(total, 0u);
+}
+
 #if !defined(_WIN32)
 /** Logs from an atexit handler that runs after the logger's own exit handler, as a static destructor would. */
 static void logFromLateExitHandler() {
@@ -203,6 +247,23 @@ TEST_F(MsgLoggerOutputTest, MessagesLoggedDuringExit_GoToConfiguredOutput) {
     const fs::path a = dir / "a.log";
     const fs::path cwd = dir / "cwd";
     fs::create_directories(cwd);
+
+    // Force the "threadsafe" (re-exec) death-test style for this test only. The default POSIX
+    // "fast" style forks the current process, which -- by the time this test runs -- has already
+    // completed the logger's pthread_once init and registered its atexit handler in earlier
+    // fixture tests above. A forked child inherits that already-done once-state, so its own
+    // std::atexit(logFromLateExitHandler) call below would be the *last* registration in the
+    // child's inherited list, making it run BEFORE the logger's exit handler (LIFO) instead of
+    // after -- the opposite of what this test means to exercise, and not a configuration that
+    // would catch a regression in the ordering this test is for. "threadsafe" re-execs a brand
+    // new process instead, so the logger genuinely has not been initialized yet when the lambda
+    // below runs, matching the comment just below.
+    const std::string savedDeathTestStyle = ::testing::GTEST_FLAG(death_test_style);
+    ::testing::GTEST_FLAG(death_test_style) = "threadsafe";
+    struct RestoreDeathTestStyle {
+        const std::string& saved;
+        ~RestoreDeathTestStyle() { ::testing::GTEST_FLAG(death_test_style) = saved; }
+    } restoreDeathTestStyle{savedDeathTestStyle};
 
     // atexit handlers run in reverse order of registration, so registering before the logger initializes
     // (on its first use in the child) makes this handler run after the logger's exit handler.
