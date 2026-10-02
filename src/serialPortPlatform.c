@@ -76,9 +76,235 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+/**
+ * @brief Tunable: the maximum gap, in milliseconds, between two occurrences of the identical
+ * port error (same port, same action, same code) before the run is force-flushed as a single
+ * INFO+ summary. Each duplicate that arrives before this elapses pushes the deadline back out,
+ * so a dense burst (e.g. a shared-USB-hub contention event producing one failure per comm tick)
+ * collapses into one ERROR line plus one trailing summary regardless of how long the burst runs;
+ * a gap at least this wide, or a change in error, closes the run (SN-8650).
+ */
+#ifndef SERIAL_PORT_ERROR_DEDUP_WINDOW_MS
+#define SERIAL_PORT_ERROR_DEDUP_WINDOW_MS   1000
+#endif
+
+// serial_port_error_dedup_t and the SERIAL_PORT_DEDUP_* enum are declared in serialPortPlatform.h
+// (exposed there, non-static, for unit testing -- see serialPortErrorDedupGate()'s doc comment).
+
+/**
+ * @brief Formats the trailing summary line for a dedup run: the action/code it was tracking, how
+ * many duplicates it absorbed, and how long (from the first suppressed duplicate to now) it ran.
+ */
+static void serialPortFormatDedupSummary(char* buf, size_t len, const serial_port_error_dedup_t* state, uint64_t nowMs)
+{
+    if (state->detail[0] != '\0')
+        snprintf(buf, len, "%s: %s (%d) - message duplicated %u time(s) over the last %llums.",
+            state->action, state->detail, state->errorCode, (unsigned)state->count, (unsigned long long)(nowMs - state->firstMs));
+    else
+        snprintf(buf, len, "%s (%d) - message duplicated %u time(s) over the last %llums.",
+            state->action, state->errorCode, (unsigned)state->count, (unsigned long long)(nowMs - state->firstMs));
+}
+
+/**
+ * @brief Pure decision logic for SN-8650 duplicate-error log suppression -- no I/O, no logging,
+ * no OS calls, just state transitions, so it can be exercised directly by unit tests with
+ * synthetic timestamps. See serialPortReportError() for the logging wrapper real call sites use.
+ *
+ * The first report of any error (or of an error that differs from the one currently tracked) is
+ * always reported immediately, exactly as before this change, and arms a windowMs-wide "watch
+ * period" during which a matching duplicate will be suppressed. Each subsequent duplicate that
+ * actually arrives inside that window is counted and pushes the window back out instead of being
+ * reported. The run is closed out -- as a single summary describing the count and the elapsed
+ * time since the first suppressed duplicate -- as soon as either a different error arrives, or
+ * a matching occurrence arrives after the window has already lapsed (whether or not any
+ * duplicate was ever actually counted). A closed run's identity is forgotten, so the very next
+ * occurrence (even an identical one) is always reported immediately rather than silently
+ * resuming suppression -- this applies equally to a lone immediate report that never gained a
+ * duplicate before its watch period lapsed, so a sparse, isolated recurrence of the same error
+ * (e.g. hours apart) is never silently absorbed as "just another duplicate" of a long-past one.
+ *
+ * @param state the port's dedup state (one instance per serialPortHandle; persists for the life
+ *   of the handle, so it naturally resets whenever the port is reopened).
+ * @param action a *stable* (e.g. string-literal) description of the operation that failed;
+ *   compared by pointer, not content, so callers must reuse the same literal for the same
+ *   operation every time, not re-format it.
+ * @param errorCode the platform error code for this occurrence (Win32 GetLastError() value or
+ *   errno, matching whatever the caller already logs).
+ * @param nowMs current time in milliseconds (caller-supplied so this function has no clock
+ *   dependency -- see serialPortNowMs()).
+ * @param windowMs the tunable one-shot duration; see SERIAL_PORT_ERROR_DEDUP_WINDOW_MS.
+ * @param summaryOut buffer to receive the formatted summary text when a run is flushed (either
+ *   SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE or SERIAL_PORT_DEDUP_SUMMARY_FOLDED); untouched
+ *   otherwise. May be NULL to skip formatting (the caller must then ignore the summary).
+ * @param summaryOutLen size of summaryOut in bytes.
+ * @return one of the SERIAL_PORT_DEDUP_* values above, describing what the caller should log.
+ */
+int serialPortErrorDedupGate(serial_port_error_dedup_t* state, const char* action, int errorCode, uint64_t nowMs, uint32_t windowMs, char* summaryOut, size_t summaryOutLen)
+{
+    int isSameTracked = (state->action != 0) && (action == state->action) && (errorCode == state->errorCode);
+
+    // `deadlineMs` does double duty: while count==0 it's "how long this single immediate report
+    // stays eligible to gain a first duplicate"; once count>0 it's the usual sliding dup window.
+    // Without this, a later, isolated recurrence of the same action+code -- arriving long after
+    // a lone immediate report that never got a duplicate -- would match isSameTracked forever
+    // and be silently absorbed as "duplicate #1" instead of getting its own fresh report.
+    if (isSameTracked && nowMs < state->deadlineMs)
+    {
+        if (state->count == 0)
+        {
+            state->firstMs = nowMs;
+            state->pending = 1;
+        }
+        state->count++;
+        state->deadlineMs = nowMs + windowMs;
+        return SERIAL_PORT_DEDUP_SUPPRESSED;
+    }
+
+    if (isSameTracked && state->count > 0)
+    {
+        // same error, but the gap since the previous duplicate exceeded windowMs -- fold this
+        // one in and close the run
+        state->count++;
+        if (summaryOut)
+            serialPortFormatDedupSummary(summaryOut, summaryOutLen, state, nowMs);
+        state->action = 0;
+        state->count = 0;
+        state->pending = 0;
+        return SERIAL_PORT_DEDUP_SUMMARY_FOLDED;
+    }
+
+    // either a different error, or the same one arriving too late to count as a duplicate of an
+    // untouched lone immediate report -- flush whatever run was actually open (if any), then
+    // report this occurrence immediately and start tracking it fresh
+    int hadPendingRun = (state->action != 0) && (state->count > 0);
+    if (hadPendingRun && summaryOut)
+        serialPortFormatDedupSummary(summaryOut, summaryOutLen, state, nowMs);
+
+    state->action = action;
+    state->errorCode = errorCode;
+    state->count = 0;
+    state->pending = 0;
+    state->deadlineMs = nowMs + windowMs;   // arm the window for a potential first duplicate
+
+    return hadPendingRun ? SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE : SERIAL_PORT_DEDUP_IMMEDIATE;
+}
+
+/**
+ * @brief SN-8650: opportunistic, activity-driven staleness check -- see the doc comment in
+ * serialPortPlatform.h. Pure (no I/O), like serialPortErrorDedupGate(), so it's unit-testable
+ * with synthetic timestamps.
+ */
+int serialPortErrorDedupCheckStale(serial_port_error_dedup_t* state, uint64_t nowMs, char* summaryOut, size_t summaryOutLen)
+{
+    if (!state->pending)
+        return 0;   // cheap bail-out: the common case on a healthy, or even a bursty-but-still-within-window, port
+
+    if (nowMs < state->deadlineMs)
+        return 0;   // run is still within its window; nothing to do yet
+
+    if (summaryOut)
+        serialPortFormatDedupSummary(summaryOut, summaryOutLen, state, nowMs);
+    state->action = 0;
+    state->count = 0;
+    state->pending = 0;
+    return 1;
+}
+
+/**
+ * @brief Current monotonic time in milliseconds, for serialPortErrorDedupGate()'s nowMs.
+ */
+static uint64_t serialPortNowMs(void)
+{
+#if PLATFORM_IS_WINDOWS
+    return (uint64_t)GetTickCount64();
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+#endif
+}
+
+/**
+ * @brief Report a port error, running it through serialPortErrorDedupGate() first so a burst of
+ * identical failures on the same port collapses into one ERROR line plus (at most) one trailing
+ * INFO+ summary instead of one ERROR line per occurrence (SN-8650).
+ *
+ * @param port the port, for portName() in the log line(s).
+ * @param dedup the handle's dedup state (serialPortHandle::errDedup).
+ * @param action a stable, static description of the failed operation -- see
+ *   serialPortErrorDedupGate()'s `action` parameter.
+ * @param errorCode the platform error code to report.
+ * @param detail optional display-only text to accompany `action` in the log output (e.g. a POSIX
+ *   `strerror(errorCode)` string). `action` alone remains the stable dedup key -- passed straight
+ *   through to serialPortErrorDedupGate() unchanged -- so callers that don't have extra text
+ *   (e.g. Windows call sites, whose `action` is already self-descriptive, such as "WriteFile()
+ *   failed") can simply pass NULL. (Review follow-up on SN-8650: the original common logger
+ *   dropped the POSIX strerror() text that call sites used to log directly.)
+ */
+static void serialPortReportError(port_handle_t port, serial_port_error_dedup_t* dedup, const char* action, int errorCode, const char* detail)
+{
+    char summary[192];
+    int mode = serialPortErrorDedupGate(dedup, action, errorCode, serialPortNowMs(), SERIAL_PORT_ERROR_DEDUP_WINDOW_MS, summary, sizeof(summary));
+
+    // A fresh run (no fold/suppress) starts being tracked by this call -- stash its display
+    // detail now so a later fold/flush of *this* run (serialPortFormatDedupSummary(), above) can
+    // still include it. Must happen after the gate call: for SUMMARY_THEN_IMMEDIATE the summary
+    // just formatted describes the *previous* (different) run, so overwriting detail beforehand
+    // would corrupt that summary with this occurrence's text instead.
+    if (mode == SERIAL_PORT_DEDUP_IMMEDIATE || mode == SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE)
+        snprintf(dedup->detail, sizeof(dedup->detail), "%s", detail ? detail : "");
+
+    if (mode == SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE || mode == SERIAL_PORT_DEDUP_SUMMARY_FOLDED)
+        log_more_info(IS_LOG_PORT, "[%s] %s", portName(port), summary);
+    if (mode == SERIAL_PORT_DEDUP_IMMEDIATE || mode == SERIAL_PORT_DEDUP_SUMMARY_THEN_IMMEDIATE)
+    {
+        if (detail && detail[0] != '\0')
+            log_error(IS_LOG_PORT, "[%s] %s: %s (%d)", portName(port), action, detail, errorCode);
+        else
+            log_error(IS_LOG_PORT, "[%s] %s (%d)", portName(port), action, errorCode);
+    }
+}
+
+/**
+ * @brief Flush (log) a pending SN-8650 duplicate-error run for a port, without waiting for a
+ * change in error or the one-shot window to lapse. Called at close so a run that was still
+ * accumulating when the port was closed isn't silently dropped along with the handle.
+ */
+static void serialPortFlushPendingErrorDedup(port_handle_t port, serial_port_error_dedup_t* dedup)
+{
+    if (dedup->action == 0 || dedup->count == 0)
+        return;
+
+    char summary[192];
+    serialPortFormatDedupSummary(summary, sizeof(summary), dedup, serialPortNowMs());
+    log_more_info(IS_LOG_PORT, "[%s] %s", portName(port), summary);
+    dedup->action = 0;
+    dedup->count = 0;
+    dedup->pending = 0;
+}
+
+/**
+ * @brief Opportunistic, activity-driven flush: call at the top of every port operation (open,
+ * close, read, write, flush, drain, byte-count queries, ...) so a run that's still pending gets
+ * flushed on the very next successful operation, not just the next failure (SN-8650). The common
+ * case -- nothing pending -- is a single int compare inside serialPortErrorDedupCheckStale(), so
+ * this is cheap enough to call unconditionally.
+ */
+static void serialPortCheckActivity(port_handle_t port, serial_port_error_dedup_t* dedup)
+{
+    char summary[192];
+    if (serialPortErrorDedupCheckStale(dedup, serialPortNowMs(), summary, sizeof(summary)))
+        log_more_info(IS_LOG_PORT, "[%s] %s", portName(port), summary);
+}
+
 typedef struct
 {
     int blocking;
+
+    // SN-8650: duplicate-error log suppression state (see serialPortErrorDedupGate() /
+    // serialPortReportError()). One run per handle; naturally resets whenever the port is
+    // reopened, since a fresh handle is calloc'd on each successful open.
+    serial_port_error_dedup_t errDedup;
 
 #if PLATFORM_IS_WINDOWS
 
@@ -490,8 +716,12 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, !blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
         if (platformHandle == INVALID_HANDLE_VALUE)
         {
-            serialPort->errorCode = errno;
-            serialPort->error = strerror(errno);
+            // SN-8650: CreateFileA() is a Win32 API; its error is GetLastError(), not errno (an
+            // unrelated CRT global -- see the SN-8697 comment on the write path for the same
+            // mistake). Must re-fetch here: the errorCode stashed after the *first* CreateFileA()
+            // attempt, above, is stale by the time this second attempt fails.
+            serialPort->errorCode = (int)GetLastError();
+            serialPort->error = "CreateFileA() failed";
             log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to open port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             return 0;
         }
@@ -532,8 +762,13 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialParams.fRtsControl = RTS_CONTROL_ENABLE;
         if (!SetCommState(platformHandle, &serialParams))
         {
-            serialPort->errorCode = errno;
-            serialPort->error = strerror(errno);
+            // SN-8650: SetCommState() is a Win32 API -- GetLastError(), not errno (see the
+            // CreateFileA() comment above for the same mistake, and the SN-8697 comment on the
+            // write path where this was first fixed). This is what produced the nonsensical
+            // "No error (0)" / "File exists (17)" ERROR lines in the field log: errno just held
+            // whatever unrelated CRT call last touched it, not SetCommState()'s actual failure.
+            serialPort->errorCode = (int)GetLastError();
+            serialPort->error = "SetCommState() failed";
             log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to set COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
             CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
             return 0;
@@ -541,8 +776,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     }
     else
     {
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(errno);
+        // SN-8650: GetCommState() is a Win32 API -- GetLastError(), not errno; see above.
+        serialPort->errorCode = (int)GetLastError();
+        serialPort->error = "GetCommState() failed";
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retreive COMM port parameters: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
@@ -551,8 +787,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     COMMTIMEOUTS timeouts;
     if (!GetCommTimeouts(platformHandle, &timeouts))
     {
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(errno);
+        // SN-8650: GetCommTimeouts() is a Win32 API -- GetLastError(), not errno; see above.
+        serialPort->errorCode = (int)GetLastError();
+        serialPort->error = "GetCommTimeouts() failed";
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to retrieve COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
@@ -583,8 +820,9 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
 
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(errno);
+        // SN-8650: SetCommTimeouts() is a Win32 API -- GetLastError(), not errno; see above.
+        serialPort->errorCode = (int)GetLastError();
+        serialPort->error = "SetCommTimeouts() failed";
         log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform() failed to configure COMM port timeouts: %s (%d)", portName, serialPort->error, serialPort->errorCode);
         CloseHandle(platformHandle);  // serialPort->handle not yet assigned; close raw handle directly
         return 0;
@@ -669,6 +907,10 @@ static int serialPortIsOpenPlatform(port_handle_t port)
     if (!serialPort->handle)
         return 0;
 
+    // SN-8650: opportunistic flush, driven by this (very frequently polled) activity rather
+    // than waiting for the port's next error.
+    serialPortCheckActivity(port, &((serialPortHandle*)serialPort->handle)->errDedup);
+
     log_more_debug(IS_LOG_PORT, "[%s] serialPortIsOpenPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
@@ -711,6 +953,10 @@ static int serialPortClosePlatform(port_handle_t port)
     }
 
     log_debug(IS_LOG_PORT, "[%s] serialPortClosePlatform() called.", portName(port));
+
+    // SN-8650: flush any still-accumulating duplicate-error run before the handle (and its
+    // dedup state) is freed below, so the last burst on this handle isn't silently dropped.
+    serialPortFlushPendingErrorDedup(port, &handle->errDedup);
 
     #if PLATFORM_IS_WINDOWS
 
@@ -785,6 +1031,8 @@ static int serialPortFlushPlatform(port_handle_t port)
         return 0;
     }
 
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
+
     log_more_debug(IS_LOG_PORT, "[%s] serialPortFlushPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
@@ -792,9 +1040,12 @@ static int serialPortFlushPlatform(port_handle_t port)
     // Use PurgeComm to clear receive (RX) buffer.
     if (!PurgeComm(handle->platformHandle, PURGE_RXCLEAR))
     {
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(errno);
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        // SN-8650: PurgeComm() is a Win32 API -- GetLastError(), not errno; see the CreateFileA()
+        // comment in serialPortOpenPlatform() for the same mistake. Routed through
+        // serialPortReportError() so a burst of these collapses to one line instead of one per call.
+        serialPort->errorCode = (int)GetLastError();
+        serialPort->error = "PurgeComm() failed";
+        serialPortReportError(port, &handle->errDedup, "serialPortFlushPlatform():: Error flushing: PurgeComm() failed", serialPort->errorCode, NULL);
         return 0;
     }
 
@@ -803,7 +1054,7 @@ static int serialPortFlushPlatform(port_handle_t port)
     if (tcflush(handle->fd, TCIOFLUSH) < 0) {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortFlushPlatform():: Error flushing: tcflush() failed", serialPort->errorCode, serialPort->error);
     }
 
 #endif
@@ -830,6 +1081,8 @@ static int serialPortDrainPlatform(port_handle_t port)
         return 0;
     }
 
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
+
     log_more_debug(IS_LOG_PORT, "[%s] serialPortDrainPlatform() called.", portName(port));
 
 #if PLATFORM_IS_WINDOWS
@@ -837,9 +1090,11 @@ static int serialPortDrainPlatform(port_handle_t port)
     // Use PurgeComm to clear transmit (TX) buffer.
     if (!PurgeComm(handle->platformHandle, PURGE_TXCLEAR))
     {
-        serialPort->errorCode = errno;
-        serialPort->error = strerror(errno);
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        // SN-8650: PurgeComm() is a Win32 API -- GetLastError(), not errno; see
+        // serialPortOpenPlatform()'s CreateFileA() comment for the same mistake.
+        serialPort->errorCode = (int)GetLastError();
+        serialPort->error = "PurgeComm() failed";
+        serialPortReportError(port, &handle->errDedup, "serialPortDrainPlatform():: Error draining: PurgeComm() failed", serialPort->errorCode, NULL);
         return 0;
     }
 
@@ -848,7 +1103,7 @@ static int serialPortDrainPlatform(port_handle_t port)
     if (tcdrain(handle->fd) < 0) {
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
-        log_error(IS_LOG_PORT, "[%s] serialPortDrainPlatform():: Error draining: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortDrainPlatform():: Error draining: tcdrain() failed", serialPort->errorCode, serialPort->error);
     }
 
 #endif
@@ -909,7 +1164,7 @@ static int serialPortReadTimeoutPlatformWindows(serial_port_t* serialPort, unsig
                             DWORD result = GetLastError();
                             serialPort->errorCode = (int)result;
                             serialPort->error = "GetOverlappedResult() failed";
-                            log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error fetching 'overlapped result': %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
+                            serialPortReportError((port_handle_t)serialPort, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error fetching 'overlapped result': GetOverlappedResult() failed", serialPort->errorCode, NULL);
                             CancelIo(handle->platformHandle);
                             return -1;
                         }
@@ -929,7 +1184,7 @@ static int serialPortReadTimeoutPlatformWindows(serial_port_t* serialPort, unsig
                 // discarded silently the same way -- see the comment above.
                 serialPort->errorCode = (int)dwRes;
                 serialPort->error = "ReadFile() failed";
-                log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
+                serialPortReportError((port_handle_t)serialPort, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error reading: ReadFile() failed", serialPort->errorCode, NULL);
                 CancelIo(handle->platformHandle);
                 return -1;
             }
@@ -992,9 +1247,16 @@ static int serialPortReadTimeoutPlatformLinux(serial_port_t* serialPort, unsigne
 
         if ((n = read(handle->fd, buffer + totalRead, readCount - totalRead)) < 0) {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+                // SN-8650 (review follow-up): record the error, but don't log it here. The only
+                // caller, serialPortReadTimeoutPlatform(), re-derives the same errno/strerror()
+                // immediately after this returns and reports it through serialPortReportError()
+                // -- the single SN-8650 dedup gate. Logging unconditionally here as well meant
+                // every repeated read failure was reported twice: once ungated (right here, on
+                // every single occurrence) and once through the gate (suppressed after the
+                // first), so the read path was never actually deduplicated -- the ungated line
+                // flooded regardless.
                 serialPort->errorCode = errno;
                 serialPort->error = strerror(errno);
-                log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error reading from file %d : %s (%d)", serialPort->portName, handle->fd, serialPort->error, serialPort->errorCode);
             }
             return PORT_ERROR__TIMEOUT;
         } else if (n > 0) {
@@ -1048,6 +1310,8 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         return PORT_ERROR__NOT_CONNECTED;
     }
 
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
+
     if (timeoutMs < 0)
     {
         timeoutMs = (handle->blocking ? SERIAL_PORT_DEFAULT_TIMEOUT : 0);
@@ -1076,7 +1340,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(serialPort->errorCode);
-        log_error(IS_LOG_PORT, "[%s] serialPortReadTimeoutPlatform():: Error reading: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+        serialPortReportError(port, &handle->errDedup, "serialPortReadTimeoutPlatform():: Error reading", serialPort->errorCode, serialPort->error);
     } else {
         serialPort->errorCode = 0; // clear any previous errorcode
         serialPort->error = NULL;
@@ -1123,6 +1387,8 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
         serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
+
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
 
 #if PLATFORM_IS_WINDOWS
 
@@ -1225,6 +1491,11 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         return -1;
     }
 
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush -- this is
+                                                         // the dominant call site in practice, since
+                                                         // writes happen every comm tick regardless
+                                                         // of whether the previous one failed.
+
 #if PLATFORM_IS_WINDOWS
 
     DWORD dwWritten;
@@ -1238,7 +1509,11 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // at, not this WriteFile()'s failure.
             serialPort->errorCode = (int)result;
             serialPort->error = "WriteFile() failed";
-            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error writing: %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+            // SN-8650: this is the dominant source of log noise under multi-device USB-hub
+            // contention (one failure per comm tick, per port, for as long as the contention
+            // lasts) -- route through serialPortReportError() to collapse a burst into one
+            // ERROR line plus a trailing summary instead of one ERROR line per occurrence.
+            serialPortReportError(port, &handle->errDedup, "serialPortWrite():: Error writing: WriteFile() failed", serialPort->errorCode, NULL);
             CancelIo(handle->platformHandle);
             if (win32ErrorIndicatesDeviceLost(result)) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
@@ -1256,7 +1531,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             DWORD result = GetLastError();  // read this before we call CancelIo
             serialPort->errorCode = (int)result;   // SN-8697: real Win32 error, not errno -- see above
             serialPort->error = "GetOverlappedResult() failed";
-            log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
+            serialPortReportError(port, &handle->errDedup, "serialPortWrite():: Error fetching 'overlapped result': GetOverlappedResult() failed", serialPort->errorCode, NULL);
             CancelIo(handle->platformHandle);
             if (win32ErrorIndicatesDeviceLost(result)) {
                 // this indicates the handle is invalid. The port should be closed and invalidated.
@@ -1303,7 +1578,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             // Other errors
             serialPort->errorCode = errno;
             serialPort->error = strerror(serialPort->errorCode);
-            log_error(IS_LOG_PORT, "[%s] serialPortWritePlatform():: Error writing: %s (%d)", serialPort->portName, serialPort->error, serialPort->errorCode);
+            serialPortReportError(port, &handle->errDedup, "serialPortWritePlatform():: Error writing", serialPort->errorCode, serialPort->error);
             if ((errno == ENOENT) || (errno == ENODEV) || (errno ==  EIO)) {
                 // these errors indicate the underlying OS port is bad, and needs to be closed/invalidated - there is usually no other recovery from here.
                 portClose(port);
@@ -1357,6 +1632,8 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
         serialPort->error = "Internal port handle is NULL; Port is closed.";
         return PORT_ERROR__NOT_CONNECTED;
     }
+
+    serialPortCheckActivity(port, &handle->errDedup);   // SN-8650: opportunistic flush
 
 #if PLATFORM_IS_WINDOWS
 
