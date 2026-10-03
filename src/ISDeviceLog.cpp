@@ -31,9 +31,10 @@ ISDeviceLog::ISDeviceLog(ISDeviceLog&&) noexcept           = default;
 ISDeviceLog& ISDeviceLog::operator=(ISDeviceLog&&) noexcept = default;
 
 ISExpected<ISDeviceLog>
-    ISDeviceLog::fromSegments(std::vector<fs::path> segmentPaths) {
-    log_debug(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: %zu segment(s)",
-              segmentPaths.size());
+    ISDeviceLog::fromSegments(std::vector<fs::path> segmentPaths,
+                              const ISLogReader::OpenOptions& opts) {
+    log_debug(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: %zu segment(s) (ignoreOnDiskIndex=%d)",
+              segmentPaths.size(), static_cast<int>(opts.ignoreOnDiskIndex));
     if (segmentPaths.empty()) {
         log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: empty segment list");
         return fail(ISErrorCode::InvalidArgument,
@@ -49,7 +50,7 @@ ISExpected<ISDeviceLog>
     std::vector<ISLogReader> readers;
     readers.reserve(segmentPaths.size());
     for (const auto& path : segmentPaths) {
-        auto r = ISLogReader::openSegment(path);
+        auto r = ISLogReader::openSegment(path, opts);
         if (!r) {
             log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
                       path.string().c_str(), r.error().message.c_str());

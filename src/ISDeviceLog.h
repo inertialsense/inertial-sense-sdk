@@ -61,6 +61,9 @@ public:
      * @param segmentPaths  `.raw` files to compose. Must all have
      *                      the same device id; order doesn't matter
      *                      (the constructor sorts).
+     * @param opts          Sidecar handling, forwarded verbatim to every segment's
+     *                      `ISLogReader::openSegment` (SN-8784). Defaults are today's
+     *                      behaviour: trust a good `.idx`, persist a rebuilt one.
      * @return              An `ISDeviceLog` on success; on failure,
      *                      an `ISError` with one of:
      *                      - `InvalidArgument` — empty input.
@@ -72,7 +75,8 @@ public:
      *                        ids.
      */
     static ISExpected<ISDeviceLog>
-        fromSegments(std::vector<std::filesystem::path> segmentPaths);
+        fromSegments(std::vector<std::filesystem::path> segmentPaths,
+                     const ISLogReader::OpenOptions& opts = {});
 
     /**
      * @brief Compose from segments that are ALREADY OPEN, without re-opening them.

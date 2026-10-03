@@ -408,17 +408,21 @@ ISLogReader::~ISLogReader() = default;
 ISLogReader::ISLogReader(ISLogReader&&) noexcept = default;
 ISLogReader& ISLogReader::operator=(ISLogReader&&) noexcept = default;
 
-ISExpected<ISLogReader> ISLogReader::openSegment(const fs::path& raw) {
-    log_debug(IS_LOG_ISLOG, "ISLogReader::openSegment: %s", raw.c_str());
+ISExpected<ISLogReader> ISLogReader::openSegment(const fs::path& raw, const OpenOptions& opts) {
+    log_debug(IS_LOG_ISLOG, "ISLogReader::openSegment: %s (ignoreOnDiskIndex=%d persistRebuilt=%d)",
+              raw.c_str(), static_cast<int>(opts.ignoreOnDiskIndex),
+              static_cast<int>(opts.persistRebuiltIndex));
     auto src = ISFileSource::open(raw);
     if (!src) {
         log_error(IS_LOG_ISLOG, "ISFileSource::open failed for %s: %s", raw.c_str(), src.error().message.c_str());
         return tl::unexpected<ISError>{ src.error() };
     }
-    return construct(std::move(*src), raw);
+    return construct(std::move(*src), raw, opts);
 }
 
-ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawSource, const fs::path& rawPath) {
+ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawSource,
+                                               const fs::path& rawPath,
+                                               const OpenOptions& opts) {
     ISLogReader r;
     r.rawSource_ = std::move(rawSource);
     r.rawPath_   = rawPath;
@@ -445,7 +449,11 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     // Try the on-disk sidecar first. If it parses cleanly AND its counters are consistent with the .raw, use it.
     // Otherwise fall through to the scan-rebuild path (D-04).
     // -----------------------------------------------------------------
-    enum class RebuildReason { None, Missing, V1, Corrupted, Stale, ReadError };
+    // SN-8784: `Forced` is the caller asking for a rebuild rather than a defect being detected.
+    // It is distinct from the detection reasons on purpose — a rebuild the mechanism CHOSE and a
+    // rebuild a bad sidecar FORCED are different events, and the self-healing ladder has to be
+    // able to tell them apart in a diagnostic.
+    enum class RebuildReason { None, Missing, V1, Corrupted, Stale, ReadError, Forced };
     RebuildReason rebuildReason = RebuildReason::Missing;
 
     // D0096 path 3: a legacy sidecar is PARSED and kept here, not discarded. Its per-record
@@ -459,7 +467,17 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
     std::optional<idx::is_log_idx_header_t> priorHeader;
 
     std::error_code ec;
-    if (fs::exists(idxPath, ec)) {
+    // SN-8784: when the caller asks for the sidecar to be ignored, it is not read AT ALL — not
+    // trusted, not adopted from (the v1 observed-receipt-time path), and its header's log-level
+    // fields are not carried forward. Anything less would leave the scan below partly informed by
+    // the file it is meant to be independent of, which is the whole point of the option: the
+    // ladder's second rung has to decide whether a disagreement is the mechanism's fault or the
+    // sidecar's, and it cannot do that from a half-independent answer.
+    if (opts.ignoreOnDiskIndex) {
+        rebuildReason = RebuildReason::Forced;
+        log_debug(IS_LOG_ISLOG, "%s: on-disk index IGNORED by request; rebuilding from the bytes",
+                  rawPath.filename().c_str());
+    } else if (fs::exists(idxPath, ec)) {
         auto idxSrc = ISFileSource::open(idxPath);
         if (!idxSrc) {
             rebuildReason = RebuildReason::ReadError;
@@ -642,11 +660,20 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
             case RebuildReason::Stale:      reasonStr = "stale";      break;
             case RebuildReason::Corrupted:  reasonStr = "corrupted";  break;
             case RebuildReason::ReadError:  reasonStr = "read-error"; break;
+            case RebuildReason::Forced:     reasonStr = "forced";     break;
             case RebuildReason::None:       reasonStr = "n/a";        break;
         }
         const char* segKind = (r.format_ == SegmentFormat::Dat) ? ".dat" : ".raw";
         r.warnings_.push_back(std::string{"sidecar: rebuilt from "} + segKind + " scan (reason: " + reasonStr + ")");
-        log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)", rawPath.filename().c_str(), segKind, reasonStr);
+        // A rebuild the caller ASKED for is not a warning-level event; one the sidecar forced is.
+        // Both still reach `warnings()`, which is the caller's diagnostic record either way.
+        if (rebuildReason == RebuildReason::Forced) {
+            log_debug(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)",
+                      rawPath.filename().c_str(), segKind, reasonStr);
+        } else {
+            log_warn(IS_LOG_ISLOG, "%s: sidecar rebuilt from %s scan (reason: %s)",
+                     rawPath.filename().c_str(), segKind, reasonStr);
+        }
 
         // D0096 path 3, the automatic half of upgradeIndex(). The scan above supplied the DIDs,
         // byte offsets and payload timestamps -- a v1 sidecar has no DID at all and its byte
@@ -675,9 +702,14 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
         }
 
         // Persist the rebuilt sidecar. Suppressed when the build flips IS_LOG_READER_NO_PERSIST_INDEX (e.g. tests,
-        // customers who don't want surprise writes to log dirs) or when the .raw sits on read-only media.
+        // customers who don't want surprise writes to log dirs), when the caller passes
+        // `persistRebuiltIndex = false` (SN-8784 — the same choice per call rather than per build),
+        // or when the .raw sits on read-only media.
 #if !defined(IS_LOG_READER_NO_PERSIST_INDEX)
-        if (!r.persistIndex()) {
+        if (!opts.persistRebuiltIndex) {
+            log_debug(IS_LOG_ISLOG, "%s: rebuilt sidecar NOT persisted by request",
+                      rawPath.filename().c_str());
+        } else if (!r.persistIndex()) {
             r.warnings_.push_back("sidecar: persist failed (read-only filesystem?)");
             log_warn(IS_LOG_ISLOG, "%s: sidecar persist failed (read-only filesystem?)", rawPath.filename().c_str());
         }
