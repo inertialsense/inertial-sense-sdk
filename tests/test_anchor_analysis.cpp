@@ -1914,11 +1914,9 @@ TEST(AnchorBridgeParity, AGpxOnlyLogResolvesAsWellAsItAnchors) {
     // it actually carries, which for a culled log can be days out. This assertion therefore holds
     // both before and after the fix and is NOT the discriminating one; `syncPoints()` above is.
     std::size_t sessionOnly = 0, anchored = 0;
-    for (auto v : log->segment(0).allRecords()) {
-        const uint64_t raw = v.timestamp().value;
-        if (raw == 0) continue;
-        const TimeStamp r = resolver->resolve(raw, log->deviceId(), v.arrivalIndex());
-        if (r.source == TimeSource::SessionOnly) ++sessionOnly; else ++anchored;
+    for (std::size_t k = 0, nk = log->segment(0).recordCount(); k < nk; ++k) {
+        const AbsTimeResult r = resolver->resolve(*log, 0, k);
+        if (!r.valid) ++sessionOnly; else ++anchored;
     }
     std::printf("[measured] resolved: %zu anchored, %zu SessionOnly\n", anchored, sessionOnly);
     EXPECT_GT(anchored, 0u) << "records resolved to nothing usable at all";

@@ -76,6 +76,43 @@ template <class T>           class  TypedRange;
 class ISDeviceLog;
 class ISTimeResolver;
 
+/**
+ * @brief How a segment open should treat the on-disk `.idx` sidecar (SN-8784).
+ *
+ * The defaults are today's behaviour exactly: trust a good sidecar, and write a rebuilt one
+ * back. Both flags exist for the self-healing ladder, whose second rung has to re-derive a
+ * log from its bytes ALONE in order to decide whether a disagreement is the mechanism's fault
+ * or the sidecar's.
+ */
+struct OpenOptions {
+    /**
+     * @brief Rebuild from a full `.raw` scan even when the sidecar is present and good.
+     *
+     * The sidecar is then not read AT ALL — not trusted, not adopted from (the v1
+     * `host_uptime_ms` path), and its header's log-level fields are not carried forward.
+     * Anything less would leave the scan partly informed by the file it is supposed to be
+     * independent of, and the rung would prove nothing.
+     *
+     * Observable through @ref hadOnDiskIndex, which is how a test tells a genuinely forced
+     * rebuild from an option that was silently ignored.
+     */
+    bool ignoreOnDiskIndex = false;
+
+    /**
+     * @brief Write the rebuilt sidecar back to the log directory.
+     *
+     * `false` guarantees the open does not mutate the directory, which the compile-time
+     * `IS_LOG_READER_NO_PERSIST_INDEX` previously made an all-or-nothing build decision.
+     *
+     * @warning Combining `ignoreOnDiskIndex` with this leaves a sidecar REBUILT WITHOUT the
+     *          log-level header fields that only the previous sidecar held and a byte scan
+     *          cannot re-derive (see `carryForwardLogLevelHeaderFields`), and without the v1
+     *          observed receipt times (D0096 path 3). Rebuild-and-keep therefore belongs on a
+     *          TEMP COPY of the log, never on the original.
+     */
+    bool persistRebuiltIndex = true;
+};
+
 class ISLogReader {
 public:
     using did_t = uint32_t;
@@ -169,6 +206,14 @@ public:
     // Lifecycle
     // -----------------------------------------------------------------
 
+    //! @brief Namespace-scope @ref inertial_sense::OpenOptions, spelled `ISLogReader::OpenOptions`.
+    //!
+    //! The struct lives at namespace scope because a nested class's default member initializers
+    //! are only usable once the ENCLOSING class is complete, so `openSegment(..., const
+    //! OpenOptions& = {})` does not compile while `ISLogReader` is still being defined. The alias
+    //! keeps the qualified spelling that reads correctly at the call site.
+    using OpenOptions = inertial_sense::OpenOptions;
+
     /**
      * @brief Open a single segment.
      *
@@ -178,12 +223,14 @@ public:
      * `LOG_..._0001.dat` → `LOG_..._0001.idx`) — matches the writer
      * convention (cf. `cDeviceLog::OpenNewSaveFile`).
      *
-     * @param raw  Path to the segment file (`.raw` or `.dat`).
-     * @return     Reader on success; `ISErrorCode` on failure:
-     *             `NotFound`, `PermissionDenied`, `Corrupted`, `Io`,
-     *             `Unsupported` (unrecognized extension).
+     * @param raw   Path to the segment file (`.raw` or `.dat`).
+     * @param opts  Sidecar handling. Defaults are today's behaviour.
+     * @return      Reader on success; `ISErrorCode` on failure:
+     *              `NotFound`, `PermissionDenied`, `Corrupted`, `Io`,
+     *              `Unsupported` (unrecognized extension).
      */
-    static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw);
+    static ISExpected<ISLogReader> openSegment(const std::filesystem::path& raw,
+                                               const OpenOptions& opts = {});
 
     /**
      * @brief Determine a segment's absolute start/end time and how trustworthy that is, WITHOUT
@@ -978,7 +1025,8 @@ private:
      */
     static ISExpected<ISLogReader>
         construct(std::unique_ptr<ISLogSource> raw,
-                  const std::filesystem::path& rawPath);
+                  const std::filesystem::path& rawPath,
+                  const OpenOptions& opts);
 
     /**
      * Builds the in-memory index from an already-parsed `.idx`

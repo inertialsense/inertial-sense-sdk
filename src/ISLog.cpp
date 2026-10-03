@@ -46,8 +46,11 @@ bool isSupportedSegmentExtension(const fs::path& p) {
 
 } // namespace
 
-ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
-    log_info(IS_LOG_ISLOG, "ISLog::openDirectory: %s", logDir.string().c_str());
+ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir,
+                                       const ISLogReader::OpenOptions& opts) {
+    log_info(IS_LOG_ISLOG, "ISLog::openDirectory: %s (ignoreOnDiskIndex=%d persistRebuilt=%d)",
+             logDir.string().c_str(), static_cast<int>(opts.ignoreOnDiskIndex),
+             static_cast<int>(opts.persistRebuiltIndex));
 
     std::error_code ec;
     if (!fs::exists(logDir, ec)) {
@@ -102,7 +105,7 @@ ISExpected<ISLog> ISLog::openDirectory(const fs::path& logDir) {
     // and grouping preserves that order, which is the filename order `fromReaders` requires.
     std::map<uint64_t, std::vector<ISLogReader>> byDevice;
     for (const auto& path : segmentFiles) {
-        auto r = ISLogReader::openSegment(path);
+        auto r = ISLogReader::openSegment(path, opts);
         if (!r) {
             log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
                       path.string().c_str(), r.error().message.c_str());

@@ -23,7 +23,10 @@
 
 #include "DeviceLog.h"
 #include "ISFileManager.h"
+#include "ISDataMappings.h"
 #include "ISLogIndex.h"
+#include "ISDeviceLog.h"
+#include "ISLog.h"
 #include "ISLogReader.h"
 #include "ISLogger.h"
 #include "data_sets.h"
@@ -598,4 +601,211 @@ TEST(LogReaderLayout, ISRecordViewDefaultIsEmpty) {
     EXPECT_EQ(v.bytes().first, nullptr);
     EXPECT_EQ(v.bytes().second, 0u);
     EXPECT_EQ(v.offsetInFile(), 0u);
+}
+
+// ============================================================
+// OpenOptions — SN-8784. The self-healing ladder's second rung has to re-derive a log from its
+// BYTES ALONE, so that a disagreement with the fast path can be attributed: either the mechanism
+// is wrong, or the sidecar is lying. These tests exist because an option that is accepted and
+// then quietly ignored would make that rung prove nothing at all.
+// ============================================================
+
+/**
+ * @brief `ignoreOnDiskIndex` genuinely takes the scan path, and lands on the same records.
+ *
+ * `hadOnDiskIndex()` is the discriminator: the fixture's sidecar is good, so the default open
+ * TRUSTS it and reports `true`. A forced open must report `false` — that is the observable
+ * difference between the two rungs, and asserting it is what distinguishes a real rebuild from an
+ * ignored flag.
+ *
+ * The record-by-record comparison is the other half: the point of the ladder is that the two paths
+ * AGREE on a healthy log, so a difference here would mean the scan and the sidecar disagree on a
+ * file with nothing wrong with it.
+ */
+TEST_F(LogReaderTest, IgnoreOnDiskIndexForcesAScanThatAgreesWithTheSidecar) {
+    auto fast = ISLogReader::openSegment(f_.rawFile);
+    ASSERT_TRUE(fast.has_value()) << fast.error().message;
+    ASSERT_TRUE(fast->hadOnDiskIndex())
+        << "fixture's sidecar was not trusted, so this test cannot tell the two paths apart";
+
+    ISLogReader::OpenOptions opts;
+    opts.ignoreOnDiskIndex   = true;
+    opts.persistRebuiltIndex = false;          // never rewrite the fixture mid-comparison
+    auto forced = ISLogReader::openSegment(f_.rawFile, opts);
+    ASSERT_TRUE(forced.has_value()) << forced.error().message;
+
+    EXPECT_FALSE(forced->hadOnDiskIndex())
+        << "the option was accepted but the sidecar was still used -- a silently-ignored option "
+           "would make the ladder's second rung prove nothing";
+
+    // The rebuild says so, in the channel a caller actually reads.
+    const auto& warns = forced->warnings();
+    EXPECT_TRUE(std::any_of(warns.begin(), warns.end(), [](const std::string& w) {
+        return w.find("rebuilt from") != std::string::npos && w.find("forced") != std::string::npos;
+    })) << "no warning naming the forced rebuild; warnings=" << warns.size();
+
+    // ... and the two paths agree on everything the bytes can settle.
+    //
+    // DIDs and byte offsets must match EXACTLY: both are properties of the stream, so a difference
+    // there means one of the two readings of the file is simply wrong.
+    //
+    // Timestamps are not in that category, and expecting them to match was wrong. A record whose
+    // DID carries no payload time gets the host's RECEIPT time stamped into the sidecar at write
+    // time, and a byte scan can never recover that (D0099 / D0096 path 3) -- so the scan declines
+    // and writes 0 rather than inventing one. Measured on this fixture: exactly one such record,
+    // index 0, `DID_PIMU`, sidecar 5 ms vs scan 0.
+    //
+    // The invariant that DOES hold, and the one the ladder needs, is that the scan never
+    // CONTRADICTS the sidecar -- it only declines. Two non-zero values that differ would mean the
+    // sidecar and the bytes disagree about when something happened, which is the signal rung 3
+    // acts on, and it must not be firing on a healthy log.
+    ASSERT_EQ(forced->recordCount(), fast->recordCount()) << "scan and sidecar disagree on count";
+    std::size_t didMismatch = 0, offsetMismatch = 0, scanDeclined = 0, contradictions = 0;
+    for (std::size_t i = 0; i < fast->recordCount(); ++i) {
+        const ISRecordView a = fast->recordAt(i);
+        const ISRecordView b = forced->recordAt(i);
+        if (a.did() != b.did())                   ++didMismatch;
+        if (a.offsetInFile() != b.offsetInFile())  ++offsetMismatch;
+        const uint64_t sidecarTs = a.timestamp().value;
+        const uint64_t scanTs    = b.timestamp().value;
+        if (sidecarTs == scanTs) continue;
+        if (scanTs == 0) { ++scanDeclined; continue; }
+        ++contradictions;
+        if (contradictions <= 5) {
+            std::fprintf(stderr,
+                "[contradiction] i=%zu did=%u(%s) sidecar=%llu scan=%llu\n", i, a.did(),
+                cISDataMappings::DataName(a.did()),
+                static_cast<unsigned long long>(sidecarTs),
+                static_cast<unsigned long long>(scanTs));
+        }
+    }
+    EXPECT_EQ(didMismatch, 0u)    << "DIDs differ between the sidecar and the scan";
+    EXPECT_EQ(offsetMismatch, 0u) << "byte offsets differ between the sidecar and the scan";
+    EXPECT_EQ(contradictions, 0u)
+        << "the scan and the sidecar give DIFFERENT non-zero times for the same record on a "
+           "healthy log; that is the signal the ladder's third rung acts on";
+    // Not asserted as zero: see above. Reported so a change in the count is visible.
+    std::fprintf(stderr, "[openoptions] records=%zu scan-declined timestamps=%zu\n",
+                 fast->recordCount(), scanDeclined);
+}
+
+/**
+ * @brief The default is unchanged: no options means trust the sidecar.
+ *
+ * Guards the one thing that would be worst about adding an option — changing behaviour for every
+ * existing caller that passes nothing.
+ */
+TEST_F(LogReaderTest, DefaultOpenOptionsStillTrustTheSidecar) {
+    ISLogReader::OpenOptions defaults;
+    EXPECT_FALSE(defaults.ignoreOnDiskIndex);
+    EXPECT_TRUE(defaults.persistRebuiltIndex);
+
+    auto implicit = ISLogReader::openSegment(f_.rawFile);
+    auto explicitly = ISLogReader::openSegment(f_.rawFile, defaults);
+    ASSERT_TRUE(implicit.has_value());
+    ASSERT_TRUE(explicitly.has_value());
+    EXPECT_TRUE(implicit->hadOnDiskIndex());
+    EXPECT_EQ(implicit->hadOnDiskIndex(), explicitly->hadOnDiskIndex());
+    EXPECT_EQ(implicit->recordCount(), explicitly->recordCount());
+}
+
+/**
+ * @brief `persistRebuiltIndex = false` leaves the log directory untouched.
+ *
+ * Asserted by removing the sidecar and watching whether one reappears — the only honest test,
+ * since the whole claim is about a side effect on disk. The positive control runs second: the same
+ * open WITH persistence enabled must recreate it, otherwise this test would pass just as well on a
+ * build where persistence is compiled out entirely
+ * (`IS_LOG_READER_PERSIST_INDEX=OFF` -> `IS_LOG_READER_NO_PERSIST_INDEX`).
+ */
+TEST_F(LogReaderTest, PersistRebuiltIndexFalseWritesNoSidecar) {
+    std::error_code ec;
+    fs::remove(f_.idxFile, ec);
+    ASSERT_FALSE(fs::exists(f_.idxFile)) << "could not remove the fixture's sidecar";
+
+    ISLogReader::OpenOptions noWrite;
+    noWrite.persistRebuiltIndex = false;
+    {
+        auto r = ISLogReader::openSegment(f_.rawFile, noWrite);
+        ASSERT_TRUE(r.has_value()) << r.error().message;
+        EXPECT_FALSE(r->hadOnDiskIndex());
+        EXPECT_GT(r->recordCount(), 0u) << "the scan produced nothing, so nothing was proved";
+    }
+    EXPECT_FALSE(fs::exists(f_.idxFile))
+        << "a sidecar was written despite persistRebuiltIndex = false";
+
+    // Positive control: the same open, persisting, DOES recreate it. Without this the assertion
+    // above would also pass on a build with persistence compiled out.
+    {
+        auto r = ISLogReader::openSegment(f_.rawFile);
+        ASSERT_TRUE(r.has_value()) << r.error().message;
+        EXPECT_FALSE(r->hadOnDiskIndex());
+    }
+    EXPECT_TRUE(fs::exists(f_.idxFile))
+        << "persistence is disabled in this build, so the no-write assertion above proves nothing";
+}
+
+/**
+ * @brief The option reaches every segment through both composition entry points.
+ *
+ * `ISLogReader::openSegment` honouring the flag is not enough: the ladder drives a whole log, so
+ * the option has to survive `ISDeviceLog::fromSegments` and `ISLog::openDirectory`. Both forward
+ * it verbatim, and both are asserted here through the same `hadOnDiskIndex()` discriminator,
+ * per segment — a composition that dropped the options on the floor would otherwise look fine,
+ * because it would still return a perfectly valid log built the wrong way.
+ */
+TEST_F(LogReaderTest, OpenOptionsReachEverySegmentThroughFromSegmentsAndOpenDirectory) {
+    ISLogReader::OpenOptions forced;
+    forced.ignoreOnDiskIndex   = true;
+    forced.persistRebuiltIndex = false;
+
+    // ---- ISDeviceLog::fromSegments
+    {
+        auto trusted = ISDeviceLog::fromSegments({ f_.rawFile });
+        ASSERT_TRUE(trusted.has_value()) << trusted.error().message;
+        ASSERT_GT(trusted->segmentCount(), 0u);
+        for (std::size_t i = 0; i < trusted->segmentCount(); ++i) {
+            EXPECT_TRUE(trusted->segment(i).hadOnDiskIndex())
+                << "fromSegments default: segment " << i << " did not trust its sidecar, so this "
+                   "test cannot tell the paths apart";
+        }
+
+        auto scanned = ISDeviceLog::fromSegments({ f_.rawFile }, forced);
+        ASSERT_TRUE(scanned.has_value()) << scanned.error().message;
+        ASSERT_EQ(scanned->segmentCount(), trusted->segmentCount());
+        for (std::size_t i = 0; i < scanned->segmentCount(); ++i) {
+            EXPECT_FALSE(scanned->segment(i).hadOnDiskIndex())
+                << "fromSegments dropped the options before segment " << i;
+            EXPECT_EQ(scanned->segment(i).recordCount(), trusted->segment(i).recordCount())
+                << "segment " << i << " record count changed with the scan";
+        }
+    }
+
+    // ---- ISLog::openDirectory
+    {
+        auto trusted = ISLog::openDirectory(f_.directory);
+        ASSERT_TRUE(trusted.has_value()) << trusted.error().message;
+        auto scanned = ISLog::openDirectory(f_.directory, forced);
+        ASSERT_TRUE(scanned.has_value()) << scanned.error().message;
+
+        ASSERT_FALSE(trusted->deviceIds().empty());
+        ASSERT_EQ(trusted->deviceIds().size(), scanned->deviceIds().size());
+        std::size_t segmentsChecked = 0;
+        for (uint64_t devId : trusted->deviceIds()) {
+            const ISDeviceLog& t = trusted->device(devId);
+            const ISDeviceLog& s = scanned->device(devId);
+            ASSERT_EQ(t.segmentCount(), s.segmentCount()) << "device " << devId;
+            for (std::size_t i = 0; i < t.segmentCount(); ++i) {
+                EXPECT_TRUE(t.segment(i).hadOnDiskIndex())  << "device " << devId << " seg " << i;
+                EXPECT_FALSE(s.segment(i).hadOnDiskIndex())
+                    << "openDirectory dropped the options before device " << devId
+                    << " segment " << i;
+                ++segmentsChecked;
+            }
+        }
+        EXPECT_GT(segmentsChecked, 0u) << "no segment was actually compared";
+    }
+
+    // The forced opens asked not to persist, so the fixture's sidecar is still the original.
+    EXPECT_TRUE(fs::exists(f_.idxFile));
 }

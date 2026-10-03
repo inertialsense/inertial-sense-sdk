@@ -45,8 +45,12 @@ public:
      *                - `Corrupted` / `Io` — at least one segment
      *                                       failed to open
      *                                       cleanly.
+     *
+     * @param opts    Sidecar handling, forwarded verbatim to every segment
+     *                (SN-8784). Defaults are today's behaviour.
      */
-    static ISExpected<ISLog> openDirectory(const std::filesystem::path& logDir);
+    static ISExpected<ISLog> openDirectory(const std::filesystem::path& logDir,
+                                           const ISLogReader::OpenOptions& opts = {});
 
     ~ISLog();
     ISLog(const ISLog&)            = delete;
