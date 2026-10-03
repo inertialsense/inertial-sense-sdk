@@ -2213,3 +2213,107 @@ TEST_F(TimeResolverTest, TimelessDidsReportNoTimeFieldRatherThanUnresolved) {
     EXPECT_EQ(unresolved, 0u)   << "a record was reported as a failure to place a time when its "
                                    "DID has no time field at all";
 }
+
+/**
+ * @brief Enumerate where `resolve()` and `resolveAbsTime()` DISAGREE on real logs.
+ *
+ * SN-8784 keeps the new mechanism alongside the old one deliberately: the two are expected to
+ * disagree where `resolve()` is wrong, and the migration of consumers is gated on that difference
+ * set being ENUMERATED rather than on the two agreeing. This is that enumeration.
+ *
+ * `resolve(rawTimestamp, deviceId, arrivalIndex)` is what Logalyzer's Record Inspector displays
+ * today (`src/sdk/RecordWalker.cpp`, the `resolver->resolve(...)` call), so the right-hand column
+ * here is literally what a user sees and the left-hand column is what this PR would show instead.
+ *
+ * Set `IS_SDK_COMPARE_DIRS` to a colon-separated list of log directories; it skips otherwise. The
+ * arrival index is computed exactly as `RecordWalker` computes it — prior segments' record counts
+ * plus the cursor — so the old path is called the way the real consumer calls it.
+ */
+TEST(AbsTimeCompare, EnumerateResolveVersusResolveAbsTime) {
+    const char* dirsEnv = std::getenv("IS_SDK_COMPARE_DIRS");
+    if (dirsEnv == nullptr) GTEST_SKIP() << "set IS_SDK_COMPARE_DIRS to colon-separated log dirs";
+
+    std::vector<std::string> dirs;
+    {
+        std::string all{dirsEnv}, one;
+        std::size_t pos = 0;
+        while ((pos = all.find(':')) != std::string::npos) {
+            one = all.substr(0, pos);
+            if (!one.empty()) dirs.push_back(one);
+            all.erase(0, pos + 1);
+        }
+        if (!all.empty()) dirs.push_back(all);
+    }
+    ASSERT_FALSE(dirs.empty());
+
+    for (const std::string& d : dirs) {
+        ISLogReader::OpenOptions ro;
+        ro.persistRebuiltIndex = false;             // never mutate a corpus log
+        auto log = ISLog::openDirectory(fs::path{d}, ro);
+        if (!log) { std::fprintf(stderr, "[compare] %s: could not open\n", d.c_str()); continue; }
+
+        for (uint64_t devId : log->deviceIds()) {
+            const ISDeviceLog& dl = log->device(devId);
+            auto built = ISTimeResolver::build(dl);
+            if (!built) continue;
+
+            std::size_t compared = 0, same = 0, differ = 0, newOnly = 0, oldOnly = 0, neither = 0;
+            uint64_t    worstDiff = 0;
+            std::string worstWhere;
+            std::map<std::string, std::size_t> byMechanism;   // mechanism of the NEW answer
+            std::vector<uint64_t> diffs;
+
+            uint64_t arrivalBase = 0;
+            for (std::size_t s = 0; s < dl.segmentCount(); ++s) {
+                const std::size_t n = dl.segment(s).recordCount();
+                for (std::size_t k = 0; k < n; ++k) {
+                    const ISRecordView rv = dl.segment(s).recordAt(k);
+                    const uint64_t raw = rv.timestamp().value;
+                    if (raw == 0) continue;                  // the walker skips these too
+                    const TimeStamp     oldT = built->resolve(raw, devId, arrivalBase + k);
+                    const AbsTimeResult newT = built->resolveAbsTime(dl, s, k);
+                    ++compared;
+                    const bool haveOld = oldT.value != 0;
+                    if (!haveOld && !newT.valid) { ++neither; continue; }
+                    if (!haveOld &&  newT.valid) { ++newOnly; continue; }
+                    if ( haveOld && !newT.valid) { ++oldOnly; continue; }
+                    if (oldT.value == newT.absoluteMs) { ++same; continue; }
+                    ++differ;
+                    byMechanism[absTimeMechanismName(newT.mechanism)]++;
+                    const uint64_t delta = oldT.value > newT.absoluteMs
+                                         ? oldT.value - newT.absoluteMs
+                                         : newT.absoluteMs - oldT.value;
+                    diffs.push_back(delta);
+                    if (delta > worstDiff) {
+                        worstDiff  = delta;
+                        worstWhere = "seg " + std::to_string(s) + " rec " + std::to_string(k)
+                                   + " did " + std::to_string(rv.did())
+                                   + "(" + cISDataMappings::DataName(rv.did()) + ")"
+                                   + " old=" + std::to_string(oldT.value)
+                                   + " new=" + std::to_string(newT.absoluteMs);
+                    }
+                }
+                arrivalBase += static_cast<uint64_t>(n);
+            }
+
+            std::sort(diffs.begin(), diffs.end());
+            const uint64_t median = diffs.empty() ? 0 : diffs[diffs.size() / 2];
+            std::fprintf(stderr,
+                "[compare] %s dev=%llu compared=%zu same=%zu differ=%zu newOnly=%zu oldOnly=%zu "
+                "neither=%zu\n",
+                fs::path{d}.filename().string().c_str(),
+                static_cast<unsigned long long>(devId),
+                compared, same, differ, newOnly, oldOnly, neither);
+            if (differ > 0) {
+                std::fprintf(stderr, "            median |diff|=%llu ms  worst=%llu ms (%.3f days)\n"
+                                     "            worst at %s\n",
+                             static_cast<unsigned long long>(median),
+                             static_cast<unsigned long long>(worstDiff),
+                             static_cast<double>(worstDiff) / 86400000.0, worstWhere.c_str());
+                for (const auto& [mech, cnt] : byMechanism) {
+                    std::fprintf(stderr, "            new mechanism %-28s %zu\n", mech.c_str(), cnt);
+                }
+            }
+        }
+    }
+}
