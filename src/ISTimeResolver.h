@@ -84,6 +84,21 @@ enum class AbsTimeMechanism : uint8_t {
     InterpolatedFromNeighbours,
     //! A frozen-field record with no live record either side of it, so nothing bounded it.
     FrozenAndUnbounded,
+    /**
+     * @brief The record's time of week PREDATES the device's GNSS fix, so it is not a time of week.
+     *
+     * Kyle, driving dev.32 on `20260903_133830`: a `DID_INS_2` record reporting `week: 1` and a
+     * time of week of 9.665 s. The log DOES acquire a fix later (week 2434), so the log-level fix
+     * test passed and the durable week was borrowed onto that 9.665 s - landing the record on the
+     * week-2434 boundary, 2026-08-30, which is 4.8 days before the log's own data and dragged the
+     * chart extent with it.
+     *
+     * You cannot trust half of a `(week, time-of-week)` pair: if the device says week 1 it has no
+     * GPS time, so its time-of-week field is an internal counter rather than a time of week.
+     * Such a record is placed from its arrival neighbours instead - which on that log is exactly
+     * right, because the uptime-domain records beside it are correct.
+     */
+    PreFixToW,
 };
 
 /** @brief Names an @ref AbsTimeMechanism. @param m The mechanism. @return Its name. */
@@ -667,6 +682,24 @@ private:
 
     //! Per-segment smallest non-zero raw sidecar value. Populated by `ensureOrigins`.
     mutable std::vector<uint64_t> segmentRawFloorMs_;
+
+    /**
+     * @brief Did ANY sync point report a week below the fix threshold?
+     *
+     * The discriminator for the pre-fix gate. Only a log that actually has a pre-fix phase gets
+     * gated at all, so a healthy log's behaviour is untouched - including the legitimate case of a
+     * GNSS record stamped a few hundred ms before the first-arriving record.
+     */
+    mutable bool havePreFixWeek_ = false;
+
+    /**
+     * @brief Smallest time of week reported by any sync point whose week IS valid.
+     *
+     * A real boundary read out of the log rather than an invented threshold: it is the earliest
+     * instant the device reported while it knew what week it was. A time of week below it was
+     * emitted before the fix. Zero when unknown.
+     */
+    mutable uint64_t preFixToWFloorMs_ = 0;
 
     //! DIDs whose sidecar timestamp never varies across the log. Populated by `ensureOrigins`.
     mutable std::set<uint32_t> frozenDids_;

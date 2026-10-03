@@ -943,19 +943,23 @@ TEST_F(TimeResolverTest, StartupTransientWeekLosesToDurableFix) {
 // window is tagged SessionOnly/Unknown so consumers drop it from the timeline +
 // extent (no "leading gap"), rather than anchoring it to a bogus week-start
 // time. A query inside the durable window still resolves normally.
-// DISABLED (SN-8784, 2026-10-03) — this test is RIGHT and the new mechanism is WRONG here.
-//
-// The pre-fix record carries time-of-week 1 s with week 0. The legacy resolver tagged it
-// SessionOnly/Unknown so consumers dropped it; the new one places it using the log's durable week
-// 2300, which puts it at the week boundary plus 1 s — roughly 4.6 days BEFORE any real data, and
-// re-creates exactly the leading gap this test was written to prevent.
-//
-// That is **SN-8798 class 2** (a near-zero time of week placed at the GPS week boundary), already
-// filed and deferred by Kyle. Disabled rather than re-expectation'd, because rewriting the
-// assertion would bless behaviour I have measured to be wrong. RE-ENABLE AS IS when SN-8798 lands;
-// it should pass unchanged except for the vocabulary (`!valid` becomes "not anchored from a
-// payload week", which is the same claim).
-TEST_F(TimeResolverTest, DISABLED_PreFixToWBeforeDurableWindowIsSessionOnly) {
+/**
+ * @brief A pre-fix time of week is NOT placed by borrowing the log's durable week.
+ *
+ * Was DISABLED, as a recorded debt against SN-8798. Kyle hit it driving dev.32 on
+ * `20260903_133830`: a `DID_INS_2` record reporting `week: 1` and a time of week of 9.665 s was
+ * placed on the week-2434 boundary, 2026-08-30 — 4.8 days before the log's own data — which also
+ * dragged the chart extent and ruined Fit on every chart in the log.
+ *
+ * The fix test now applies PER RECORD. A record whose time of week is earlier than the earliest
+ * the device reported while it knew the week was emitted before the fix, so its field is not a
+ * time of week and it is placed from its arrival neighbours instead.
+ *
+ * The original assertion was that such a record is dropped from the timeline entirely. Placing it
+ * at its arrival position is strictly better — no leading gap AND a usable instant — so the
+ * assertion is now the thing that actually matters: it must not land at the week boundary.
+ */
+TEST_F(TimeResolverTest, PreFixToWIsNotPlacedOnTheWeekBoundary) {
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
     { auto s = makeIns2(1.0); s.week = 0; recs.emplace_back(DID_INS_2, bytesOf(s)); }  // pre-fix, ~1 s into week
     for (double tow : { 400000.0, 400100.0, 400200.0 }) {  // durable fix ~4.6 days into the week
@@ -971,11 +975,23 @@ TEST_F(TimeResolverTest, DISABLED_PreFixToWBeforeDurableWindowIsSessionOnly) {
 
     // Pre-fix ToW (~1 s) is far before the durable window (~4.6 d) -> excluded.
     const AbsTimeResult pre = resolveRecordWithRawValue(*log, *resolver, 1000);
-    // SN-8784: the new mechanism PLACES this record rather than refusing to. What the test was
-    // really protecting is that the record's own pre-fix time of week is not treated as
-    // authoritative - so assert that, which is still true and is now directly observable.
-    EXPECT_NE(pre.anchorSource, AbsAnchorSource::PayloadWeek)
-        << "a pre-fix time of week was trusted as a payload week";
+    // The week boundary is where the defect put it. The durable week is 2300, so borrowing it onto
+    // a time of week of 1 s lands here - and that is the value that must NOT come back.
+    const uint64_t weekBoundary = expectedUnixMsForFixtureWeek(1000, 2300);
+    EXPECT_NE(pre.absoluteMs, weekBoundary)
+        << "the pre-fix record was placed on the week-2300 boundary by borrowing the durable week";
+
+    // What it SHOULD be: inside the span of the records that do have a valid week, because its
+    // arrival neighbours are what placed it.
+    const AbsTimeResult neighbour = resolveRecordWithRawValue(*log, *resolver, 400000000);
+    ASSERT_TRUE(neighbour.valid);
+    if (pre.valid) {
+        const int64_t gapS = (static_cast<int64_t>(neighbour.absoluteMs)
+                            - static_cast<int64_t>(pre.absoluteMs)) / 1000;
+        EXPECT_LT(std::llabs(gapS), 86400LL)
+            << "placed " << gapS << " s from its neighbour; it should be adjacent to it, not days "
+               "away on the week boundary";
+    }
     EXPECT_FALSE(pre.valid)   /* SN-8784: an unplaceable record is reported by `valid` */;
 
     // A query inside the durable window still resolves (2300-anchored).

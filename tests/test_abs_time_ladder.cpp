@@ -979,3 +979,99 @@ TEST(AbsTimeLadderCorpus, NoCorpusLogConvictsTheMechanism) {
     EXPECT_EQ(notHealed, 0u)  << "a corpus device disagrees across the two read paths and a "
                                  "rebuilt sidecar did not resolve it";
 }
+
+//! DIAGNOSTIC: dump the first N records of a segment with full provenance.
+//! `IS_SDK_DIAG_LOG_DIR=<dir>`, optional `IS_SDK_DIAG_N=<count>`.
+TEST(AbsTimeLadderCorpus, DumpFirstRecordsWithProvenance) {
+    const char* d = std::getenv("IS_SDK_DIAG_LOG_DIR");
+    if (d == nullptr) GTEST_SKIP() << "set IS_SDK_DIAG_LOG_DIR";
+    const std::size_t N = std::getenv("IS_SDK_DIAG_N")
+                        ? static_cast<std::size_t>(std::atoi(std::getenv("IS_SDK_DIAG_N"))) : 24;
+    ISLogReader::OpenOptions ro; ro.persistRebuiltIndex = false;
+    auto log = ISLog::openDirectory(fs::path{d}, ro);
+    ASSERT_TRUE(static_cast<bool>(log));
+    ASSERT_FALSE(log->deviceIds().empty());
+    const ISDeviceLog& dl = log->device(log->deviceIds().front());
+    auto R = ISTimeResolver::build(dl);
+    ASSERT_TRUE(R.has_value());
+
+    // The relative-time ORIGIN the UI uses: first record in ARRIVAL order that resolves.
+    const auto origin = R->firstResolvableIn(dl, 0);
+    std::fprintf(stderr, "[origin] abs=%llu mech=%s anchor=%s\n",
+                 (unsigned long long)origin.absoluteMs,
+                 absTimeMechanismName(origin.mechanism),
+                 absAnchorSourceName(origin.anchorSource));
+
+    for (std::size_t k = 0; k < N && k < dl.segment(0).recordCount(); ++k) {
+        const ISRecordView rv = dl.segment(0).recordAt(k);
+        const AbsTimeResult r = R->resolve(dl, 0, k);
+        const int64_t rel = static_cast<int64_t>(r.absoluteMs)
+                          - static_cast<int64_t>(origin.absoluteMs);
+        std::fprintf(stderr,
+            "k=%-3zu did=%-3u %-26s raw=%-12llu abs=%llu rel=%+.3fs mech=%-18s anchor=%-16s "
+            "week=%u towMs=%llu wkFromPayload=%d\n",
+            k, rv.did(), cISDataMappings::DataName(rv.did()),
+            (unsigned long long)r.sidecarRawMs, (unsigned long long)r.absoluteMs,
+            static_cast<double>(rel)/1000.0,
+            absTimeMechanismName(r.mechanism), absAnchorSourceName(r.anchorSource),
+            r.gpsWeek, (unsigned long long)r.towMs, (int)r.weekFromPayload);
+        for (const std::string& h : r.hints) std::fprintf(stderr, "        hint: %s\n", h.c_str());
+    }
+}
+
+//! DIAGNOSTIC: what does the ISB parser actually REPORT for Kyle's checksum-failed packet?
+//! Mirrors RecordWalker's setup exactly: the window IS the parser's rxBuf.
+TEST(AbsTimeLadderCorpus, DiagnoseChecksumFailedPacketReporting) {
+    static const uint8_t kPkt[] = {
+        0xEF,0x49,0x04,0x30,0x60,0x00, 0xB1,0x38,0x89,0x09,0x46,0xD5,0x28,0x40,
+        0x1C,0xDD,0x01,0x3E,0x51,0xDD,0x13,0xBF,0xE1,0xAB,0x34,0xBF,0x47,0xC2,0xC7,0xBE,
+        0,0,0,0,0,0,0,0,0,0,0,0,
+        0xDB,0xB1,0xB5,0xFA,0xA8,0x70,0x3B,0xC1, 0xF6,0x15,0x58,0x08,0x2F,0x4D,0x51,0xC1,
+        0x98,0xAF,0x2D,0x89,0xC8,0x40,0x4F,0x41,
+        0x60,0xB6,0xEC,0x3A, 0xE6,0xB6,0xD5,0xB9, 0x33,0x03,0xD5,0xBA,
+        0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,
+        0x28,0x02 };
+
+    // Realistic framing: a VALID packet, then the bad one, then another valid one - which is how
+    // it sits in the log (between DEBUG_ARRAY and INL2_MAG_OBS_INFO). A lone packet with nothing
+    // after it cannot be told apart from "stream ended mid-packet".
+    uint8_t good[256];
+    is_comm_instance_t wcomm{};
+    uint8_t wbuf[512];
+    is_comm_init(&wcomm, wbuf, sizeof(wbuf), nullptr);
+    imu_t payload{};
+    payload.time = 1.5;
+    const int goodLen = is_comm_data_to_buf(good, sizeof(good), &wcomm, DID_IMU,
+                                            sizeof(imu_t), 0, &payload);
+    ASSERT_GT(goodLen, 0);
+
+    std::vector<uint8_t> window;
+    window.insert(window.end(), good, good + goodLen);
+    const std::size_t badAt = window.size();
+    window.insert(window.end(), kPkt, kPkt + sizeof(kPkt));
+    window.insert(window.end(), good, good + goodLen);
+    std::vector<uint8_t> buf(window.size());
+    is_comm_instance_t comm{};
+    is_comm_init(&comm, buf.data(), static_cast<int>(buf.size()), nullptr);
+    std::memcpy(buf.data(), window.data(), window.size());
+    std::fprintf(stderr, "[parse] good=%d bytes, bad packet at +%zu, total %zu\n",
+                 goodLen, badAt, window.size());
+    is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
+    is_comm_enable_protocol(&comm, _PTYPE_NMEA);
+    is_comm_enable_protocol(&comm, _PTYPE_RTCM3);
+    is_comm_enable_protocol(&comm, _PTYPE_UBLOX);
+    // Exactly what RecordWalker does: declare the whole window available by setting tail ONLY,
+    // and leave head/scan as is_comm_init left them. is_comm_free is deliberately not called.
+    comm.rxBuf.tail = buf.data() + buf.size();
+
+    for (int i = 0; i < 8; ++i) {
+        const protocol_type_t pt = is_comm_parse(&comm);
+        std::fprintf(stderr,
+            "[parse] iter=%d ptype=%d rxErrorType=%d head=+%ld pktSize=%u did=%u\n",
+            i, (int)pt, (int)comm.rxErrorType,
+            (long)(comm.rxBuf.head - buf.data()), comm.rxPkt.size,
+            (unsigned)comm.rxPkt.hdr.id);
+        if (pt == _PTYPE_NONE) break;
+    }
+    std::fprintf(stderr, "[parse] EPARSE_INVALID_CHKSUM = %d\n", (int)EPARSE_INVALID_CHKSUM);
+}

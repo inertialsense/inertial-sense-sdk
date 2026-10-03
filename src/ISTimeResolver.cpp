@@ -1423,6 +1423,7 @@ const char* absTimeMechanismName(AbsTimeMechanism m) noexcept {
         case AbsTimeMechanism::Unresolved:      return "Unresolved";
         case AbsTimeMechanism::NoTimeField:     return "NoTimeField";
         case AbsTimeMechanism::FrozenAndUnbounded: return "FrozenAndUnbounded";
+        case AbsTimeMechanism::PreFixToW:       return "PreFixToW";
         case AbsTimeMechanism::PayloadEpoch:    return "PayloadEpoch";
         case AbsTimeMechanism::CarriedWeek:     return "CarriedWeek";
         case AbsTimeMechanism::SyncMatched:     return "SyncMatched";
@@ -1624,6 +1625,26 @@ AbsTimeResult ISTimeResolver::resolveCore(const ISDeviceLog& log,
     // So with no fix, every record goes through the anchor offset, whatever its DID declares.
     const bool logHasFix = anchorWeek_ >= kGnssFixWeekThreshold;
     const bool towDomain = (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW) && logHasFix;
+
+    // The fix test has to apply PER RECORD, not just per log. A log that acquires a fix part-way
+    // through still contains records emitted before it, and those carry a time-of-week field that
+    // is not a time of week. Borrowing the log's durable week onto one of them places it on the
+    // week boundary - measured on `20260903_133830`: week 1, time of week 9.665 s, placed at
+    // 2026-08-30 00:00:09, which is 4.8 days before the log's own data.
+    //
+    // Gated on the log having pre-fix evidence at all, so a healthy log is untouched - notably the
+    // legitimate case of a GNSS record stamped a few hundred ms before the first-arriving record,
+    // which must NOT be rejected.
+    if (towDomain && havePreFixWeek_ && preFixToWFloorMs_ != 0
+        && out.sidecarRawMs < preFixToWFloorMs_) {
+        out.mechanism = AbsTimeMechanism::PreFixToW;
+        out.hints.emplace_back(
+            "this record's time of week (" + std::to_string(out.sidecarRawMs) + " ms) is earlier "
+            "than the earliest the device reported while it knew the week ("
+            + std::to_string(preFixToWFloorMs_) + " ms), so it was emitted BEFORE the fix and is "
+            "not a time of week; placing it from its arrival neighbours instead");
+        return out;
+    }
     if (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW && !logHasFix) {
         out.hints.emplace_back("this DID declares a GPS time of week, but the log never reached "
                                "week " + std::to_string(kGnssFixWeekThreshold) +
@@ -1638,12 +1659,11 @@ AbsTimeResult ISTimeResolver::resolveCore(const ISDeviceLog& log,
         // whose name carries no timestamp has tier `None`, so this early return fired and the
         // file's own ctime - which the resolver had already discovered - was never applied. The
         // record came back unplaced with `anchorSource == None`.
-        const auto&    hdr0 = seg.header();
-        const uint64_t floor0 = segmentRawFloorMs(segmentIndex);
-        const uint64_t within0 =
-            (floor0 != 0 && out.sidecarRawMs >= floor0) ? out.sidecarRawMs - floor0
-                                                        : out.sidecarRawMs;
-        uint64_t externalMs = 0;
+        const auto& hdr0 = seg.header();
+        uint64_t    externalMs = 0;
+        // Whether the chosen anchor describes THIS segment or the whole log. It decides which
+        // floor the record's offset is measured from, below.
+        bool anchorIsLogWide = false;
         if ((hdr0.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH) != 0
             && hdr0.capture_epoch_ms >= kUnixPlausibleFloorMs) {
             externalMs       = hdr0.capture_epoch_ms;
@@ -1652,9 +1672,38 @@ AbsTimeResult ISTimeResolver::resolveCore(const ISDeviceLog& log,
         } else if (haveFileAnchor_ && fileAnchorMs_ >= kUnixPlausibleFloorMs) {
             externalMs       = fileAnchorMs_;
             out.anchorSource = AbsAnchorSource::Filename;
+            anchorIsLogWide  = true;
             out.hints.emplace_back("no cascade anchor and no .idx capture epoch; placed from the "
                                    "segment file's own timestamp - the weakest anchor there is");
         }
+
+        // The anchor's SCOPE and the offset's scope have to MATCH.
+        //
+        // PROVEN 2026-10-03 on `bake_multiSegmentSourceMergesIntoOneFile`, which resolved its
+        // 3-segment log to: s1 r0 (raw 3000) -> 1791058174278 and s2 r0 (raw 5000) ->
+        // 1791058174278. The SAME instant, 2000 ms apart in raw terms, because the offset was
+        // always `sidecarRawMs - segmentRawFloorMs(segmentIndex)` - each segment's own floor -
+        // while `fileAnchorMs_` is derived ONCE for the log, from segment 0's path
+        // (`deriveFileAnchorMs`). A log-wide anchor plus a segment-local offset restarts every
+        // segment at the same instant, so segments STACK instead of following one another. The
+        // trim window the test builds from two such records was empty, and 0 of 20 records
+        // survived the bake.
+        //
+        // The `.idx` capture epoch is per-segment (it comes off this segment's own header), so it
+        // correctly pairs with this segment's floor. The filename / last-write anchor is log-wide
+        // and pairs with the FIRST segment's floor. Per-segment filename parsing is not the
+        // alternative fix: Inertial Sense segment names share one date-time prefix and differ only
+        // in the trailing counter, so it would hand back the same instant for every segment - the
+        // defect again, by another route.
+        const uint64_t floorForAnchor =
+            anchorIsLogWide ? segmentRawFloorMs(0) : segmentRawFloorMs(segmentIndex);
+        // The `>=` guard also covers an uptime reset across a reboot, where a later segment's raw
+        // value can fall BELOW the first segment's floor; that record keeps its raw value rather
+        // than underflowing. Multi-boot logs are placed by the per-session path further down.
+        const uint64_t within0 = (floorForAnchor != 0 && out.sidecarRawMs >= floorForAnchor)
+                                     ? out.sidecarRawMs - floorForAnchor
+                                     : out.sidecarRawMs;
+        const uint64_t floor0 = segmentRawFloorMs(segmentIndex);   // relative-only fallback below
         if (externalMs != 0) {
             out.absoluteMs = externalMs + within0;
             out.valid      = true;
@@ -1860,9 +1909,12 @@ AbsTimeResult ISTimeResolver::resolve(const ISDeviceLog& log,
     // and arrival order bounds it just as tightly as it bounds a stalled one. Refusing to say so
     // is not caution, it is throwing away an answer the stream already gave us.
     const bool needsNeighbours =
-        out.frozenField || out.mechanism == AbsTimeMechanism::NoTimeField;
+        out.frozenField
+        || out.mechanism == AbsTimeMechanism::NoTimeField
+        || out.mechanism == AbsTimeMechanism::PreFixToW;
     if (needsNeighbours) {
         const bool noFieldAtAll = (out.mechanism == AbsTimeMechanism::NoTimeField);
+        const auto whyUnplaced  = out.mechanism;
         const AbsTimeResult before = lastLiveBefore(log, segmentIndex, recordIndex);
         const AbsTimeResult after  = firstLiveAfter(log, segmentIndex, recordIndex);
         if (before.valid && after.valid && after.absoluteMs >= before.absoluteMs) {
@@ -1896,7 +1948,9 @@ AbsTimeResult ISTimeResolver::resolve(const ISDeviceLog& log,
             // Nothing bounded it. `NoTimeField` stays the mechanism when the DID never had a
             // field, so the two causes remain distinguishable in the unplaceable case - which is
             // the whole point of having split the bucket.
-            out.mechanism = noFieldAtAll ? AbsTimeMechanism::NoTimeField
+            out.mechanism = (whyUnplaced == AbsTimeMechanism::PreFixToW)
+                                ? AbsTimeMechanism::PreFixToW
+                          : noFieldAtAll ? AbsTimeMechanism::NoTimeField
                                          : AbsTimeMechanism::FrozenAndUnbounded;
             out.hints.emplace_back("no live record either side; this record cannot be placed");
             return out;
@@ -1941,6 +1995,26 @@ void ISTimeResolver::ensureOrigins(const ISDeviceLog& log) const {
     segmentOriginMs_.assign(log.segmentCount(), 0);
     segmentRawFloorMs_.assign(log.segmentCount(), 0);
     frozenDids_.clear();
+
+    // ---- Pre-fix evidence, read off the sync points the build already collected.
+    //
+    // `havePreFixWeek_` says the device emitted time-of-week values BEFORE it knew the week;
+    // `preFixToWFloorMs_` is the earliest time of week it reported once it DID. Together they
+    // separate "a real time of week" from "an internal counter the device had not yet set".
+    havePreFixWeek_   = false;
+    preFixToWFloorMs_ = 0;
+    {
+        uint64_t floorMs = UINT64_MAX;
+        for (const ISSyncPoint& sp : syncPoints_) {
+            if (sp.gpsWeek < kGnssFixWeekThreshold) {
+                // Week 0 counts: "no week yet" is the clearest no-fix statement there is.
+                havePreFixWeek_ = true;
+                continue;
+            }
+            floorMs = std::min(floorMs, sp.payloadToWMs);
+        }
+        if (floorMs != UINT64_MAX) preFixToWFloorMs_ = floorMs;
+    }
 
     // ---- Stuck-field detection, by VARIANCE rather than range.
     //
