@@ -2476,16 +2476,21 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
         uint64_t  recIdx = 0;
 
         // Per-domain raw extrema and the arrival index each was seen at, for the fast path.
-        struct RawExtremum { bool seen = false; uint64_t raw = 0; uint64_t arrival = 0; };
+        // SN-8784: the record INDEX is carried now, not its arrival index, because the new
+        // `resolve` is addressed by `(segment, record)`. The shortcut itself still holds: an
+        // interpolated record (timeless DID, or a stalled clock) is placed strictly BETWEEN its
+        // arrival neighbours, so it can never fall outside the extrema of the records that do
+        // carry a time, and a stalled run already forces `mayReorder` anyway.
+        struct RawExtremum { bool seen = false; uint64_t raw = 0; std::size_t rec = 0; };
         RawExtremum upLo, upHi, towLo, towHi;
         const auto note = [](RawExtremum& lower, RawExtremum& upper,
-                             uint64_t raw, uint64_t arrival) {
-            if (!lower.seen || raw < lower.raw) { lower = { true, raw, arrival }; }
-            if (!upper.seen || raw > upper.raw) { upper = { true, raw, arrival }; }
+                             uint64_t raw, std::size_t rec) {
+            if (!lower.seen || raw < lower.raw) { lower = { true, raw, rec }; }
+            if (!upper.seen || raw > upper.raw) { upper = { true, raw, rec }; }
         };
 
         for (auto v : log.segment(s).allRecords()) {
-            const uint64_t arrivalIndex = segArrivalBase + recIdx++;
+            const std::size_t thisRec = static_cast<std::size_t>(recIdx++);
             const uint64_t raw = v.timestamp().value;
             ++recordsSeen;
             if (raw == 0) continue;                       // metadata / sentinel
@@ -2493,16 +2498,17 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
                 // Defer: only the per-domain raw extrema can be the resolved extrema.
                 if (cISDataMappings::TimestampDomain(v.did())
                         == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW) {
-                    note(towLo, towHi, raw, arrivalIndex);
+                    note(towLo, towHi, raw, thisRec);
                 } else {
-                    note(upLo, upHi, raw, arrivalIndex);
+                    note(upLo, upHi, raw, thisRec);
                 }
                 continue;
             }
-            const TimeStamp r = resolver.resolve(raw, devId, arrivalIndex);
+            const AbsTimeResult a = resolver.resolve(log, s, thisRec);
             ++resolveCalls;
-            if (r.source == TimeSource::SessionOnly) continue;  // no wall-clock anchor
-            if (r.value == 0) continue;
+            if (!a.valid) continue;
+            const TimeStamp r =
+                TimeStamp::fromResolvedViaSync(a.absoluteMs, devId, a.confidence);
             if (!any || r.value < lo.value) lo = r;
             if (!any || r.value > hi.value) hi = r;
             any = true;
@@ -2511,9 +2517,11 @@ ISLogReader::detectGaps(const ISDeviceLog& log, const ISTimeResolver& resolver,
         if (!mayReorder) {
             for (const RawExtremum* e : { &upLo, &upHi, &towLo, &towHi }) {
                 if (!e->seen) continue;
-                const TimeStamp r = resolver.resolve(e->raw, devId, e->arrival);
+                const AbsTimeResult a = resolver.resolve(log, s, e->rec);
                 ++resolveCalls;
-                if (r.source == TimeSource::SessionOnly || r.value == 0) continue;
+                if (!a.valid) continue;
+                const TimeStamp r =
+                    TimeStamp::fromResolvedViaSync(a.absoluteMs, devId, a.confidence);
                 if (!any || r.value < lo.value) lo = r;
                 if (!any || r.value > hi.value) hi = r;
                 any = true;

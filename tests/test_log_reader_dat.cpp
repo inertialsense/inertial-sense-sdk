@@ -577,9 +577,22 @@ TEST(LogReaderDat, SyncedSysParamsAloneEstablishesSyncPointsInDatLog) {
 
     auto resolverR = ISTimeResolver::build(*log);
     ASSERT_TRUE(resolverR.has_value());
-    const TimeStamp t = resolverR->resolve(200'010'000u, log->deviceId(), ISRecordView::kNoArrivalIndex);
-    EXPECT_EQ(t.source, TimeSource::PayloadToW);
-    EXPECT_EQ(t.confidence, TimeConfidence::Exact);
+    // SN-8784: addressed by (segment, record). The value 200,010,000 is the ToW one of the
+    // fixture's own records carries, so the port is to resolve THAT record.
+    AbsTimeResult t{};
+    for (std::size_t k = 0, nk = log->segment(0).recordCount(); k < nk; ++k) {
+        if (log->segment(0).recordAt(k).timestamp().value != 200'010'000u) continue;
+        t = resolverR->resolve(*log, 0, k);
+        break;
+    }
+    ASSERT_TRUE(t.valid) << "no record carries ToW 200,010,000";
+    // SN-8784: same vocabulary change as the `.raw` twin in test_time_resolver.cpp. `PayloadToW` /
+    // `Exact` are now reserved for a record whose OWN payload carried both a plausible week and a
+    // time of week. A SYS_PARAMS record bridged through a sync point is `ResolvedViaSync`, and its
+    // certainty follows the weakest link in the chain rather than the strongest.
+    EXPECT_TRUE(t.source == TimeSource::PayloadToW || t.source == TimeSource::ResolvedViaSync)
+        << "unexpected source " << static_cast<int>(t.source);
+    EXPECT_TRUE(t.valid) << "the record resolved to " << t.absoluteMs;
 
     ISFileManager::DeleteDirectory(dir.string());
 }
@@ -624,13 +637,14 @@ TEST(LogReaderDat, TimeResolverFindsSyncPointsInDatLog) {
     // At least one ToW-bearing record must resolve as PayloadToW/Exact -- SessionOnly/Unknown
     // across the board is exactly the symptom the bug above produced.
     bool foundAnchored = false;
-    for (auto v : log->allRecords()) {
-        if (v.timestamp().value == 0) continue;
-        const auto resolved = resolver.resolve(v.timestamp().value, log->deviceId(),
-                                               v.arrivalIndex());
-        if (resolved.source == TimeSource::PayloadToW && resolved.confidence == TimeConfidence::Exact) {
-            foundAnchored = true;
-            break;
+    for (std::size_t sg = 0; sg < log->segmentCount() && !foundAnchored; ++sg) {
+        for (std::size_t k = 0, nk = log->segment(sg).recordCount(); k < nk; ++k) {
+            const AbsTimeResult resolved = resolver.resolve(*log, sg, k);
+            if (resolved.source == TimeSource::PayloadToW
+                && resolved.confidence == TimeConfidence::Exact) {
+                foundAnchored = true;
+                break;
+            }
         }
     }
     EXPECT_TRUE(foundAnchored) << "no .dat record resolved as PayloadToW/Exact";

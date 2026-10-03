@@ -215,7 +215,7 @@ struct SegmentOffset {
     const ISLogReader*    segment      = nullptr;   //!< Valid while the log lives.
     uint64_t              byteOffset   = 0;
     std::size_t           recordIndex  = 0;   //!< Index within that segment; pairs with
-                                              //!< `segmentIndex` for `resolveAbsTime`.
+                                              //!< `segmentIndex` for `resolve`.
     uint64_t              arrivalIndex = 0;   //!< Log-wide, for callers that need it.
     PositionExactness     exactness    = PositionExactness::NotInLog;
     /**
@@ -512,14 +512,14 @@ public:
      * @return              The answer and its provenance. `valid == false` for a record with no
      *                      time, or an out-of-range address.
      */
-    AbsTimeResult resolveAbsTime(const ISDeviceLog& log,
-                                 std::size_t segmentIndex,
-                                 std::size_t recordIndex) const;
+    AbsTimeResult resolve(const ISDeviceLog& log,
+                          std::size_t segmentIndex,
+                          std::size_t recordIndex) const;
 
     /**
      * @brief The inverse: where in the log does a given absolute instant sit? (SN-8784)
      *
-     * Deliberately implemented over @ref resolveAbsTime rather than over the `.idx` timestamps, so
+     * Deliberately implemented over @ref resolve rather than over the `.idx` timestamps, so
      * the two directions cannot drift apart — that round trip being provable is the whole point.
      *
      * @param log         The owning device log.
@@ -530,7 +530,7 @@ public:
     SegmentOffset resolveTimeToSegmentOffset(const ISDeviceLog& log, uint64_t absoluteMs) const;
 
     /**
-     * @brief The first record at or after @p fromSegment that @ref resolveAbsTime can place.
+     * @brief The first record at or after @p fromSegment that @ref resolve can place.
      *
      * The origin for relative time. Forward-scanning rather than a minimum over every record: a
      * minimum lets one mis-framed record anywhere in the log redefine the origin, which is a
@@ -557,7 +557,7 @@ public:
 
 private:
     /**
-     * @brief @ref resolveAbsTime without the relative-time fields.
+     * @brief @ref resolve without the relative-time fields.
      *
      * Exists so the public function can compute relative time from an origin that is itself found
      * by resolving records, without recursing into itself.
@@ -567,9 +567,9 @@ private:
      * @param recordIndex   Record within that segment.
      * @return              Absolute time and provenance; `relativeTo*Ms` are left zero.
      */
-    AbsTimeResult resolveAbsTimeCore(const ISDeviceLog& log,
-                                     std::size_t segmentIndex,
-                                     std::size_t recordIndex) const;
+    AbsTimeResult resolveCore(const ISDeviceLog& log,
+                              std::size_t segmentIndex,
+                              std::size_t recordIndex) const;
 
     /**
      * @brief Fills the memoised per-log caches: relative-time origins and stuck-field DIDs.
@@ -610,7 +610,7 @@ private:
 
     //! One placeable record, as @ref AbsIndexCache holds it.
     struct AbsIndexEntry {
-        uint64_t absoluteMs;     //!< Where @ref resolveAbsTimeCore placed this record.
+        uint64_t absoluteMs;     //!< Where @ref resolveCore placed this record.
         //! 32-bit deliberately: the index is one entry per record of the log, so halving the
         //! entry matters, and neither count can approach 2^32 (a segment that large would not
         //! fit on a filesystem, and `segmentCount` is a handful).
@@ -679,8 +679,30 @@ private:
 
 public:
 
-    TimeStamp resolve(uint64_t hostTimeMs, uint64_t deviceId,
-                      uint64_t arrivalIndex) const;
+    /**
+     * @brief DEPRECATED. The pre-SN-8784 resolver, kept only so its behaviour stays inspectable.
+     *
+     * Renamed from `resolve` on 2026-10-03 (Kyle's instruction) so that `resolve` could become the
+     * NEW mechanism and every existing call site move onto it. Nothing in the SDK or in Logalyzer
+     * calls this any more.
+     *
+     * Why it had to go: it is handed a RAW sidecar value and must guess which domain that value is
+     * in. On a log that never achieved a GNSS fix it guesses wrong, and the error is 46 years -
+     * measured across four logs on 2026-10-03, this function placed every record on 1980-01-13
+     * (GPS week 1) while the log's own filename said 2026. It also cannot see the record's DID, its
+     * segment, or the segment's anchor, so it has nothing to cross-check the guess against.
+     *
+     * @param hostTimeMs    Raw `.idx` timestamp, domain unknown to this function.
+     * @param deviceId      Device the value came from.
+     * @param arrivalIndex  Log-wide arrival index; disambiguates a stalled run.
+     * @return              Best-effort stamp.
+     *
+     * @deprecated Use @ref resolve, which takes the record's ADDRESS instead of a bare value.
+     */
+    [[deprecated("SN-8784: use resolve(log, segmentIndex, recordIndex) - this guesses the raw "
+                 "value's domain and is 46 years wrong on a log with no GNSS fix")]]
+    TimeStamp resolveLegacy(uint64_t hostTimeMs, uint64_t deviceId,
+                            uint64_t arrivalIndex) const;
 
     /**
      * @return  Per-power-on sessions detected during build (SN-8339), in

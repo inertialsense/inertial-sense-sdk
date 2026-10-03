@@ -216,14 +216,14 @@ CycleResult cycleHolds(const ISDeviceLog& dl, const ISTimeResolver& R, std::stri
         if (n == 0) continue;
         const std::size_t step = n > kPerSegment ? n / kPerSegment : 1;
         for (std::size_t k = 0; k < n; k += step) {
-            const AbsTimeResult t0 = R.resolveAbsTime(dl, s, k);
+            const AbsTimeResult t0 = R.resolve(dl, s, k);
             if (!t0.valid) continue;
             const SegmentOffset p0 = R.resolveTimeToSegmentOffset(dl, t0.absoluteMs);
             if (!p0.valid) {
                 why = "a borne instant did not map back to any record";
                 return CycleResult::Violated;
             }
-            const AbsTimeResult t1 = R.resolveAbsTime(dl, p0.segmentIndex, p0.recordIndex);
+            const AbsTimeResult t1 = R.resolve(dl, p0.segmentIndex, p0.recordIndex);
             if (!t1.valid) {
                 why = "a position the inverse returned did not resolve forward";
                 return CycleResult::Violated;
@@ -234,7 +234,7 @@ CycleResult cycleHolds(const ISDeviceLog& dl, const ISTimeResolver& R, std::stri
                 why = "position is not a fixed point";
                 return CycleResult::Violated;
             }
-            const AbsTimeResult t2 = R.resolveAbsTime(dl, p1.segmentIndex, p1.recordIndex);
+            const AbsTimeResult t2 = R.resolve(dl, p1.segmentIndex, p1.recordIndex);
             if (!t2.valid || t2.absoluteMs != t1.absoluteMs) {
                 why = "time is not a fixed point";
                 return CycleResult::Violated;
@@ -327,8 +327,8 @@ Agreement agreementBetween(const ISDeviceLog& a, const ISTimeResolver& ra,
                 ++g.timeIncomparable;
                 continue;
             }
-            const AbsTimeResult ta = ra.resolveAbsTime(a, s, k);
-            const AbsTimeResult tb = rb.resolveAbsTime(b, s, k);
+            const AbsTimeResult ta = ra.resolve(a, s, k);
+            const AbsTimeResult tb = rb.resolve(b, s, k);
             if (ta.valid != tb.valid || (ta.valid && ta.absoluteMs != tb.absoluteMs)) {
                 ++g.timeDiffers;
                 if (g.firstDetail.empty()) {
@@ -906,7 +906,7 @@ TEST(AbsTimeLadderCorpus, DescribeDevicePlaceabilityForOneLog) {
             for (std::size_t s = 0; s < dl.segmentCount(); ++s) {
                 for (std::size_t k = 0; k < dl.segment(s).recordCount(); ++k) {
                     ++total;
-                    if (R->resolveAbsTime(dl, s, k).valid) ++placed;
+                    if (R->resolve(dl, s, k).valid) ++placed;
                 }
             }
         }
