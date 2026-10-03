@@ -43,6 +43,7 @@
 #include <cstdint>
 #include <utility>
 #include <filesystem>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -55,12 +56,34 @@ namespace inertial_sense {
  * what it is — the thing that was impossible with `resolve()` alone.
  */
 enum class AbsTimeMechanism : uint8_t {
-    Unresolved = 0,    //!< The record carries no time, or nothing could place it.
+    /**
+     * @brief The record HAS a time, and nothing available could place it on a clock.
+     *
+     * The honest "we failed" value. Distinct from @ref NoTimeField since 2026-10-03: the two were
+     * one bucket, which made the failure count unreadable — a log full of DIDs that simply do not
+     * carry a time looked identical to a log whose timed records could not be anchored, and only
+     * the second is a problem anyone can act on.
+     */
+    Unresolved = 0,
+    /**
+     * @brief The record's DID declares no timestamp field at all, so there was never a time to place.
+     *
+     * Not a failure, and not actionable: `DID_DEV_INFO` and `DID_FLASH_CONFIG` are supposed to have
+     * no time. Counting these as unresolved inflated the figure on every real log — 7,105 of
+     * 130,253 records on `ppd_LogQAQW713/20260716_000102`, spread over 15 DIDs, none of them a
+     * defect.
+     */
+    NoTimeField,
     PayloadEpoch,      //!< The record's own payload carried a plausible week AND a time of week.
     CarriedWeek,       //!< This record's time of week, with a week from an earlier record.
     SyncMatched,       //!< Uptime mapped to the ToW frame via a sync point, then weeked.
     UptimeProjected,   //!< Uptime mapped via the segment anchor's offset, then weeked.
     FileAnchor,        //!< No usable week anywhere; placed from the segment filename.
+    //! The record's own time field is DEAD (constant across every record of its DID), so the
+    //! instant was interpolated from the nearest live records either side of it in arrival order.
+    InterpolatedFromNeighbours,
+    //! A frozen-field record with no live record either side of it, so nothing bounded it.
+    FrozenAndUnbounded,
 };
 
 /** @brief Names an @ref AbsTimeMechanism. @param m The mechanism. @return Its name. */
@@ -127,6 +150,18 @@ struct AbsTimeResult {
     bool        weekFromPayload = false;   //!< `false` when the week was carried or derived.
     uint64_t    towMs        = 0;          //!< The record's instant within the GPS week.
     uint64_t    sidecarRawMs = 0;          //!< What the `.idx` said, before any mapping.
+    /**
+     * @brief `true` when this record's DID has a STUCK time field.
+     *
+     * Detected by variance, not range: a value constant across every record of its DID carries no
+     * time information, whatever its magnitude. Measured on `20260916_232611` — the known stuck-GPX
+     * log — where all 1,539 `DID_GPX_*` records report an identical 342,615,500 while the IMX
+     * clock beside them advances over 699.6 s.
+     *
+     * Range would be the wrong test: a genuine second-device uptime (one device rebooted, the
+     * other did not) also sits far outside its sibling's range and IS valid (Kyle, 2026-10-02).
+     */
+    bool        frozenField = false;
 
     //! Absolute minus the log's / segment's own anchored start. Relative time is a SUBTRACTION,
     //! never its own mechanism — which is the point of the exercise.
@@ -138,13 +173,29 @@ struct AbsTimeResult {
     std::vector<std::string> hints;
 };
 
-/** @brief How exactly a time mapped back onto a record position. */
+/**
+ * @brief How exactly a time mapped back onto a record position.
+ *
+ * Answers one question — how does the target relate to the instant of the record that came back —
+ * so the values are mutually exclusive. The separate question of whether that instant is shared by
+ * several records is `SegmentOffset::runLength`, because it is orthogonal: a target can be inexact
+ * AND land on a stalled run, and folding both into this enum loses one of them.
+ */
 enum class PositionExactness : uint8_t {
-    NotInLog = 0,       //!< Outside every segment's span.
-    Exact,              //!< A record bears this instant and it is unambiguous.
-    FirstOfStalledRun,  //!< Several records share the instant; this is the first of them.
-    Before,             //!< Earlier than the first record; clamped to it.
-    After,              //!< Later than the last record; clamped to it.
+    NotInLog = 0,       //!< Nothing in the log can be placed, so there is no position to return.
+    Exact,              //!< A record bears exactly this instant.
+    FirstOfStalledRun,  //!< A record bears exactly this instant, and others share it.
+    /**
+     * @brief No record bears this instant; this is the nearest one BEFORE it.
+     *
+     * The ordinary case for an arbitrary time — a scrub position, a marker, a midpoint — which
+     * falls between two records. Added 2026-10-03: before it existed the inexact landing was
+     * reported as `Exact`, which is false, and the caller had no way to tell a hit from a
+     * round-back. `absoluteMs - resolveAbsTime(returned position)` is the amount rounded off.
+     */
+    Preceding,
+    Before,             //!< Earlier than the EARLIEST record; clamped to it.
+    After,              //!< Later than the LATEST record; clamped to it.
 };
 
 /** @brief Names a @ref PositionExactness. @param e The value. @return Its name. */
@@ -167,6 +218,18 @@ struct SegmentOffset {
                                               //!< `segmentIndex` for `resolveAbsTime`.
     uint64_t              arrivalIndex = 0;   //!< Log-wide, for callers that need it.
     PositionExactness     exactness    = PositionExactness::NotInLog;
+    /**
+     * @brief How many records share the instant this position landed on. `1` is the ordinary case.
+     *
+     * Orthogonal to @ref exactness, and separate from it for that reason: a stalled clock parks
+     * many records on one instant, and a caller needs to know that whether or not the target hit
+     * the instant exactly. The returned position is always the FIRST of the run, so a caller
+     * wanting the rest reads `recordIndex .. recordIndex + runLength - 1` only when the run lies
+     * within one segment — it need not, so iterate forward and compare instants instead.
+     *
+     * Zero when @ref valid is `false`.
+     */
+    std::size_t           runLength    = 0;
 };
 
 class ISTimeResolver {
@@ -481,6 +544,17 @@ public:
      */
     AbsTimeResult firstResolvableIn(const ISDeviceLog& log, std::size_t fromSegment) const;
 
+    /**
+     * @brief Diagnostic: how many records the memoised absolute-time index currently holds.
+     *
+     * Zero means cold — either nothing has asked for a reverse lookup yet, or this resolver is a
+     * copy. Exposed so a test can prove the memoisation and the cold-on-copy rule actually hold;
+     * the answers alone cannot distinguish a carried cache from a rebuilt one.
+     *
+     * @return  Entry count, or zero when the index is not built.
+     */
+    std::size_t absIndexSize() const noexcept { return absIndex_.entries.size(); }
+
 private:
     /**
      * @brief @ref resolveAbsTime without the relative-time fields.
@@ -497,8 +571,105 @@ private:
                                      std::size_t segmentIndex,
                                      std::size_t recordIndex) const;
 
-    /** @brief Fills the memoised per-log and per-segment origins. @param log The device log. */
+    /**
+     * @brief Fills the memoised per-log caches: relative-time origins and stuck-field DIDs.
+     *
+     * One pass over every record, memoised against the log pointer. Costs what a sidecar scan
+     * costs and is paid once; without it a single record lookup would scan the whole log.
+     *
+     * @param log  The device log.
+     */
     void ensureOrigins(const ISDeviceLog& log) const;
+
+    /**
+     * @brief Is this DID's time field stuck — the same value on every record it appears in?
+     *
+     * @param did  The DID.
+     * @return     `true` when the field never varies and so carries no time.
+     */
+    bool didFieldIsFrozen(uint32_t did) const;
+
+    /** @brief Nearest live record BEFORE this one in arrival order. @return Its result, or invalid. */
+    AbsTimeResult lastLiveBefore(const ISDeviceLog& log, std::size_t segmentIndex,
+                                 std::size_t recordIndex) const;
+
+    /** @brief Nearest live record AFTER this one in arrival order. @return Its result, or invalid. */
+    AbsTimeResult firstLiveAfter(const ISDeviceLog& log, std::size_t segmentIndex,
+                                 std::size_t recordIndex) const;
+
+    /**
+     * @brief Builds the sorted absolute-time index for @p log, unless it is already built.
+     *
+     * One resolving pass over every record, then a sort. Paid once per log; without it every
+     * @ref resolveTimeToSegmentOffset call scans the whole log, which measured 953 s for the
+     * 6,793-cycle corpus round-trip test (2026-10-02).
+     *
+     * @param log  The device log.
+     */
+    void ensureAbsIndex(const ISDeviceLog& log) const;
+
+    //! One placeable record, as @ref AbsIndexCache holds it.
+    struct AbsIndexEntry {
+        uint64_t absoluteMs;     //!< Where @ref resolveAbsTimeCore placed this record.
+        //! 32-bit deliberately: the index is one entry per record of the log, so halving the
+        //! entry matters, and neither count can approach 2^32 (a segment that large would not
+        //! fit on a filesystem, and `segmentCount` is a handful).
+        uint32_t segmentIndex;
+        uint32_t recordIndex;
+    };
+
+    /**
+     * @brief The memoised sorted absolute-time index. Deliberately does NOT survive a copy.
+     *
+     * Validity is keyed on the log's ADDRESS, which is only sound while that log is alive — and a
+     * resolver outlives the call that built it (`ISTimeResolver` holds no reference to a log and is
+     * moved into a memoised optional by the Logalyzer adapter). A copy therefore starts COLD rather
+     * than inheriting a key it cannot re-validate, which also keeps the copy from carrying a
+     * multi-megabyte vector it may never read.
+     *
+     * The user-declared copy operations suppress the implicit move ones, so a MOVED resolver starts
+     * cold as well — intended, and cheap, since the reset allocates nothing.
+     */
+    struct AbsIndexCache {
+        const ISDeviceLog*         log = nullptr;
+        /**
+         * @brief Sorted by `(absoluteMs, segmentIndex, recordIndex)`.
+         *
+         * The tie-break on the indices is what makes "the first record of a stalled run" a single
+         * stable answer. Being sorted by instant is also what lets the span ends be read off
+         * `front()` and `back()` — the two clamps are about the EARLIEST and LATEST records, and
+         * reading them from arrival order instead was wrong on half the corpus.
+         */
+        std::vector<AbsIndexEntry> entries;
+
+        AbsIndexCache() = default;
+        AbsIndexCache(const AbsIndexCache&) noexcept {}
+        AbsIndexCache& operator=(const AbsIndexCache&) noexcept {
+            log = nullptr;
+            entries.clear();
+            entries.shrink_to_fit();
+            return *this;
+        }
+    };
+    mutable AbsIndexCache absIndex_;
+
+    /**
+     * @brief The smallest non-zero raw sidecar value in a segment, or 0 if it has none.
+     *
+     * The last-resort origin for relative time on a segment whose cascade reports no uptime extrema
+     * at all — which is every segment built entirely from declared-time-of-week DIDs. Populated by
+     * `ensureOrigins` during the pass it already makes over every record, so it costs nothing extra.
+     *
+     * @param segmentIndex  Segment.
+     * @return              The floor, or 0 when unknown.
+     */
+    uint64_t segmentRawFloorMs(std::size_t segmentIndex) const;
+
+    //! Per-segment smallest non-zero raw sidecar value. Populated by `ensureOrigins`.
+    mutable std::vector<uint64_t> segmentRawFloorMs_;
+
+    //! DIDs whose sidecar timestamp never varies across the log. Populated by `ensureOrigins`.
+    mutable std::set<uint32_t> frozenDids_;
 
     //! Memoised relative-time origins, keyed on the log they were computed for. Mutable because
     //! resolving is logically const; a different log invalidates them wholesale.

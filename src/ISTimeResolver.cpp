@@ -1416,11 +1416,14 @@ ISTimeResolver::Stats ISTimeResolver::computeStats(const ISDeviceLog& log) const
 const char* absTimeMechanismName(AbsTimeMechanism m) noexcept {
     switch (m) {
         case AbsTimeMechanism::Unresolved:      return "Unresolved";
+        case AbsTimeMechanism::NoTimeField:     return "NoTimeField";
+        case AbsTimeMechanism::FrozenAndUnbounded: return "FrozenAndUnbounded";
         case AbsTimeMechanism::PayloadEpoch:    return "PayloadEpoch";
         case AbsTimeMechanism::CarriedWeek:     return "CarriedWeek";
         case AbsTimeMechanism::SyncMatched:     return "SyncMatched";
         case AbsTimeMechanism::UptimeProjected: return "UptimeProjected";
         case AbsTimeMechanism::FileAnchor:      return "FileAnchor";
+        case AbsTimeMechanism::InterpolatedFromNeighbours: return "InterpolatedFromNeighbours";
     }
     return "?";
 }
@@ -1440,6 +1443,7 @@ const char* positionExactnessName(PositionExactness e) noexcept {
         case PositionExactness::NotInLog:          return "NotInLog";
         case PositionExactness::Exact:             return "Exact";
         case PositionExactness::FirstOfStalledRun: return "FirstOfStalledRun";
+        case PositionExactness::Preceding:         return "Preceding";
         case PositionExactness::Before:            return "Before";
         case PositionExactness::After:             return "After";
     }
@@ -1486,7 +1490,28 @@ uint32_t weekOfUnixMs(uint64_t unixMs) {
  * @param rawMs   The record's raw timestamp.
  * @return        @p out with `valid == false`, `relativeOnly` set when a relative clock exists.
  */
-AbsTimeResult relativeOnlyResult(AbsTimeResult out, const AnchorAnalysis& anchor, uint64_t rawMs) {
+/**
+ * @brief The relative-only answer for a record nothing could place absolutely.
+ *
+ * @param out        Partially-filled result.
+ * @param anchor     The segment's cascade analysis.
+ * @param rawMs      The record's raw sidecar value.
+ * @param floorRawMs Last-resort origin: the smallest raw value seen in this segment, or 0 if
+ *                   unknown. Used only when the cascade reports no uptime extrema of its own.
+ *
+ * Kyle's ruling, 2026-10-02: *"A log may legitimately have NO clock source. That is an EXPECTED
+ * result and must still yield a relative clock."* The cascade's `uptimeMinMs` / `logStartUptimeMs`
+ * are both zero on a segment whose every record is a declared-time-of-week DID, because the
+ * collector never gathered an uptime extreme from one — so a log of nothing but week-1 `DID_INS_2`
+ * records produced NO clock at all, absolute or relative. Measured 2026-10-03 on exactly that
+ * fixture: `valid=0 relativeOnly=0`, three hints, and no usable time of any kind.
+ *
+ * The raw values are themselves a monotonic series, which is all a relative clock needs, so the
+ * segment's own raw floor is the honest last-resort origin. It is explicitly LAST: a real uptime
+ * extreme from the cascade is better evidence and keeps precedence.
+ */
+AbsTimeResult relativeOnlyResult(AbsTimeResult out, const AnchorAnalysis& anchor, uint64_t rawMs,
+                                 uint64_t floorRawMs = 0) {
     out.valid      = false;
     out.absoluteMs = 0;
     out.source     = TimeSource::SessionOnly;
@@ -1499,8 +1524,15 @@ AbsTimeResult relativeOnlyResult(AbsTimeResult out, const AnchorAnalysis& anchor
         out.relativeToSegmentMs = rawMs - anchor.uptimeMinMs;
         out.relativeOnly        = true;
     }
+    if (!out.relativeOnly && floorRawMs != 0 && rawMs >= floorRawMs) {
+        out.relativeToSegmentMs = rawMs - floorRawMs;
+        out.relativeOnly        = true;
+        out.hints.emplace_back("no uptime extrema on this segment; relative time is measured from "
+                               "its smallest raw value instead");
+    }
     if (!out.relativeOnly) {
-        out.hints.emplace_back("no relative origin either: this segment reports no uptime extrema");
+        out.hints.emplace_back("no relative origin either: this segment reports no uptime extrema "
+                               "and no usable raw floor");
     }
     return out;
 }
@@ -1535,7 +1567,20 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
     // from "absent" by magnitude alone.
     using TsDomain = cISDataMappings::eTimestampDomain;
     const TsDomain domain = cISDataMappings::TimestampDomain(rec.did());
+
+    // A stuck field is refused outright. `resolveAbsTime` interpolates these from the nearest live
+    // records either side in arrival order; the core must not try, or it would recurse.
+    ensureOrigins(log);
+    if (didFieldIsFrozen(rec.did())) {
+        out.frozenField = true;
+        out.hints.emplace_back("this DID's time field is STUCK - identical on every record of this "
+                               "DID across the log - so it carries no time of its own");
+        return out;
+    }
     if (domain == TsDomain::TIMESTAMP_DOMAIN_NONE) {
+        // Not a failure to place a time — there was no time to place. Its own mechanism value so
+        // that a caller counting failures is not counting `DID_DEV_INFO`.
+        out.mechanism = AbsTimeMechanism::NoTimeField;
         out.hints.emplace_back("this DID declares no timestamp field");
         return out;
     }
@@ -1561,10 +1606,28 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
     // Note the FilenameAnchor split: the frame is NOT a function of the tier, so it cannot be
     // inferred from one. It is determined here by trying the Unix reading and checking whether the
     // result is a plausible capture date — self-checking, and it reports which branch fired.
-    const bool towDomain = (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW);
+    // A DECLARED time-of-week field is only a real time of week if the log ever got a fix.
+    //
+    // Kyle's rule, 2026-10-02: a log that never reaches week >= 1500 never achieved a GNSS fix.
+    // That verdict governs the FIELD as well as the week. Measured on
+    // `goldenlogs/imx/imx6/AHRS/20260521_113715`, whose payload week is 1: record 59640 declares
+    // `GPS_TOW` and carries 296,725 — which is plainly uptime (296.7 s), sitting beside record 0's
+    // 115,902 — and trusting it as a time of week placed that record on 2026-05-17, four days
+    // before record 0's correct 2026-05-21 11:37:15. Two records, one segment, one anchor, four
+    // days apart, purely because they took different branches here.
+    //
+    // So with no fix, every record goes through the anchor offset, whatever its DID declares.
+    const bool logHasFix = anchorWeek_ >= kGnssFixWeekThreshold;
+    const bool towDomain = (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW) && logHasFix;
+    if (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW && !logHasFix) {
+        out.hints.emplace_back("this DID declares a GPS time of week, but the log never reached "
+                               "week " + std::to_string(kGnssFixWeekThreshold) +
+                               " so the field is not a real time of week; treated as uptime");
+    }
     if (!towDomain && anchor.tier == AnchorTier::None) {
         out.hints.emplace_back("uptime-domain record in a segment with no anchor at all");
-        return relativeOnlyResult(out, anchor, out.sidecarRawMs);
+        return relativeOnlyResult(out, anchor, out.sidecarRawMs,
+                                  segmentRawFloorMs(segmentIndex));
     }
 
     const int64_t mapped = towDomain ? static_cast<int64_t>(out.sidecarRawMs)
@@ -1574,7 +1637,40 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
         return out;
     }
 
-    if (!towDomain && static_cast<uint64_t>(mapped) >= kUnixPlausibleFloorMs) {
+    // Kyle's external-anchor ORDER, 2026-10-02: with no usable payload week, the `.idx`
+    // `capture_epoch_ms` comes FIRST and the filename is the worst case — the former is a
+    // measurement the host actually took at log-open, the latter a string that merely looks like a
+    // date. The direct-mapping branch below used to short-circuit that order entirely: on a
+    // filename-anchored segment the cascade's own offset already maps a raw uptime straight to
+    // Unix, so the function returned before the order was ever consulted, and a sidecar carrying a
+    // perfectly good capture epoch went unused. Measured 2026-10-03 on a no-fix fixture whose
+    // filename said 2020-06-15 and whose `.idx` capture epoch said 2023-03-01: the answer came back
+    // 2020-06-15, anchored `Filename`, with the epoch present and visible in the header.
+    //
+    // So when the cascade's mapping is only as good as the filename, and the sidecar has an epoch,
+    // the epoch wins. A payload-anchored tier is NOT overridden — it is stronger than both.
+    const bool cascadeIsFilenameGrade = (anchor.tier == AnchorTier::FilenameAnchor
+                                      || anchor.tier == AnchorTier::None);
+    const auto& segHdr = seg.header();
+    const bool haveCaptureEpoch =
+        (segHdr.flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_CAPTURE_EPOCH) != 0
+        && segHdr.capture_epoch_ms >= kUnixPlausibleFloorMs;
+
+    if (!towDomain && !logHasFix && cascadeIsFilenameGrade && haveCaptureEpoch) {
+        // The raw value is an uptime; the epoch is the log-open wall clock. Offsetting the uptime
+        // from the segment's own uptime floor keeps the records in order and rooted at the epoch.
+        const uint64_t within = (anchor.uptimeMinMs != 0 && out.sidecarRawMs >= anchor.uptimeMinMs)
+                              ? out.sidecarRawMs - anchor.uptimeMinMs
+                              : out.sidecarRawMs;
+        out.absoluteMs   = segHdr.capture_epoch_ms + within;
+        out.valid        = true;
+        out.mechanism    = AbsTimeMechanism::UptimeProjected;
+        out.towMs        = out.absoluteMs % 604800000ULL;
+        out.gpsWeek      = weekOfUnixMs(out.absoluteMs);
+        out.anchorSource = AbsAnchorSource::IdxCaptureEpoch;
+        out.hints.emplace_back("anchored from the .idx capture epoch (host wall-clock at log-open), "
+                               "which outranks the filename; this log never achieved a GNSS fix");
+    } else if (!towDomain && static_cast<uint64_t>(mapped) >= kUnixPlausibleFloorMs) {
         // The offset already targets Unix. Applying a week on top would double-count the epoch —
         // which is precisely the 46.68-year error this whole exercise started from.
         out.absoluteMs = static_cast<uint64_t>(mapped);
@@ -1634,7 +1730,8 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
                 // through to a relative-only answer below rather than returning nothing.
                 out.hints.emplace_back("no GNSS fix, no .idx capture epoch and no filename "
                                        "timestamp; this log cannot be placed on any clock");
-                return relativeOnlyResult(out, anchor, out.sidecarRawMs);
+                return relativeOnlyResult(out, anchor, out.sidecarRawMs,
+                                          segmentRawFloorMs(segmentIndex));
             }
             week          = weekOfUnixMs(anchorUnixMs);
             out.mechanism = AbsTimeMechanism::FileAnchor;
@@ -1647,7 +1744,8 @@ AbsTimeResult ISTimeResolver::resolveAbsTimeCore(const ISDeviceLog& log,
         out.valid           = out.absoluteMs >= kUnixPlausibleFloorMs;
         if (!out.valid) {
             out.hints.emplace_back("composed time is not a plausible capture date");
-            return relativeOnlyResult(out, anchor, out.sidecarRawMs);
+            return relativeOnlyResult(out, anchor, out.sidecarRawMs,
+                                      segmentRawFloorMs(segmentIndex));
         }
     }
 
@@ -1670,6 +1768,48 @@ AbsTimeResult ISTimeResolver::resolveAbsTime(const ISDeviceLog& log,
                                              std::size_t segmentIndex,
                                              std::size_t recordIndex) const {
     AbsTimeResult out = resolveAbsTimeCore(log, segmentIndex, recordIndex);
+
+    // A record whose own time field is dead is placed from its NEIGHBOURS instead. Kyle's
+    // principle, 2026-10-01: "bytes that arrive in a stream after other bytes MUST, BY
+    // DEFINITION, come LATER in TIME" — so arrival order bounds this record between the last live
+    // record before it and the first live one after, and anything inside that interval is
+    // defensible. Interpolating by position within the interval is the obvious choice inside it.
+    //
+    // Cheap in practice: on the stuck-GPX log the dead records are 1,539 of 193,218, so a live
+    // neighbour is a record or two away. The neighbours cannot themselves be frozen-interpolated,
+    // so this cannot recurse.
+    if (out.frozenField) {
+        const AbsTimeResult before = lastLiveBefore(log, segmentIndex, recordIndex);
+        const AbsTimeResult after  = firstLiveAfter(log, segmentIndex, recordIndex);
+        if (before.valid && after.valid && after.absoluteMs >= before.absoluteMs) {
+            // Midpoint of the bracket. A position-weighted split would need the record counts
+            // between the three points and buys nothing a reader would notice at these gaps.
+            out.absoluteMs = before.absoluteMs + (after.absoluteMs - before.absoluteMs) / 2;
+            out.valid      = true;
+            out.mechanism  = AbsTimeMechanism::InterpolatedFromNeighbours;
+            out.source     = TimeSource::ResolvedViaSync;
+            out.confidence = TimeConfidence::Interpolated;
+            out.anchorSource = before.anchorSource;
+            out.segmentIndex = segmentIndex;
+            out.hints.emplace_back("placed between the live records either side of it in arrival "
+                                   "order: " + std::to_string(before.absoluteMs) + " .. " +
+                                   std::to_string(after.absoluteMs) + " ms");
+        } else if (before.valid) {
+            // At the tail with nothing live after it: the lower bound is still a real constraint.
+            out.absoluteMs   = before.absoluteMs;
+            out.valid        = true;
+            out.mechanism    = AbsTimeMechanism::InterpolatedFromNeighbours;
+            out.source       = TimeSource::ResolvedViaSync;
+            out.confidence   = TimeConfidence::ExtrapolatedForward;
+            out.anchorSource = before.anchorSource;
+            out.segmentIndex = segmentIndex;
+            out.hints.emplace_back("no live record after it; pinned to the last live one before");
+        } else {
+            out.mechanism = AbsTimeMechanism::FrozenAndUnbounded;
+            out.hints.emplace_back("no live record either side; this record cannot be placed");
+            return out;
+        }
+    }
     if (!out.valid) return out;
 
     // Relative time is a SUBTRACTION from an origin, never its own derivation — the whole point of
@@ -1694,11 +1834,58 @@ AbsTimeResult ISTimeResolver::resolveAbsTime(const ISDeviceLog& log,
     return out;
 }
 
+uint64_t ISTimeResolver::segmentRawFloorMs(std::size_t segmentIndex) const {
+    return (segmentIndex < segmentRawFloorMs_.size()) ? segmentRawFloorMs_[segmentIndex] : 0;
+}
+
+bool ISTimeResolver::didFieldIsFrozen(uint32_t did) const {
+    return frozenDids_.count(did) != 0;
+}
+
 void ISTimeResolver::ensureOrigins(const ISDeviceLog& log) const {
     if (originsLog_ == &log) return;
     originsLog_  = &log;
     logOriginMs_ = 0;
     segmentOriginMs_.assign(log.segmentCount(), 0);
+    segmentRawFloorMs_.assign(log.segmentCount(), 0);
+    frozenDids_.clear();
+
+    // ---- Stuck-field detection, by VARIANCE rather than range.
+    //
+    // A DID whose sidecar timestamp is identical on every record it appears in carries no time
+    // information at all, whatever the magnitude looks like. On the known stuck-GPX log
+    // `20260916_232611` every one of 1,539 `DID_GPX_*` records reports 342,615,500 while the IMX
+    // records beside them advance over 699.6 s.
+    //
+    // Range would be the WRONG test and would reject valid data: if one device reboots and the
+    // other does not, the second device's uptime also sits far outside its sibling's range and is
+    // entirely real (Kyle, 2026-10-02). Variance separates a dead clock from an offset one.
+    {
+        struct Extent { uint64_t lo = 0, hi = 0; std::size_t n = 0; };
+        std::map<uint32_t, Extent> byDid;
+        for (std::size_t i = 0; i < log.segmentCount(); ++i) {
+            const ISLogReader& seg = log.segment(i);
+            const std::size_t  n   = seg.recordCount();
+            for (std::size_t k = 0; k < n; ++k) {
+                const ISRecordView rv  = seg.recordAt(k);
+                const uint64_t     raw = rv.timestamp().value;
+                if (raw == 0) continue;
+                // Same pass: the segment's raw floor, the last-resort relative origin.
+                uint64_t& floor = segmentRawFloorMs_[i];
+                if (floor == 0 || raw < floor) floor = raw;
+                Extent& e = byDid[rv.did()];
+                if (e.n == 0) { e.lo = e.hi = raw; }
+                else { if (raw < e.lo) e.lo = raw; if (raw > e.hi) e.hi = raw; }
+                ++e.n;
+            }
+        }
+        // A handful of identical values proves nothing — a 2 Hz DID in a short log can legitimately
+        // repeat. The floor keeps the detector off low-rate DIDs where it would be guessing.
+        constexpr std::size_t kMinRecordsToCallItFrozen = 32;
+        for (const auto& [did, e] : byDid) {
+            if (e.n >= kMinRecordsToCallItFrozen && e.lo == e.hi) frozenDids_.insert(did);
+        }
+    }
 
     // One forward pass per segment, stopping at that segment's first placeable record. The log
     // origin is the first segment's that yields anything, scanning forward — NOT a minimum over
@@ -1715,6 +1902,42 @@ void ISTimeResolver::ensureOrigins(const ISDeviceLog& log) const {
             break;
         }
     }
+}
+
+AbsTimeResult ISTimeResolver::lastLiveBefore(const ISDeviceLog& log,
+                                             std::size_t segmentIndex,
+                                             std::size_t recordIndex) const {
+    // Walks back in arrival order: within the segment, then into the previous ones. Bounded by
+    // `kNeighbourSearchLimit` so a log that is mostly dead records cannot turn one lookup into a
+    // full scan.
+    constexpr std::size_t kNeighbourSearchLimit = 4096;
+    std::size_t searched = 0;
+    for (std::size_t s = segmentIndex + 1; s-- > 0;) {
+        std::size_t k = (s == segmentIndex) ? recordIndex : log.segment(s).recordCount();
+        while (k-- > 0) {
+            if (++searched > kNeighbourSearchLimit) return {};
+            const AbsTimeResult r = resolveAbsTimeCore(log, s, k);
+            if (r.valid) return r;
+        }
+    }
+    return {};
+}
+
+AbsTimeResult ISTimeResolver::firstLiveAfter(const ISDeviceLog& log,
+                                             std::size_t segmentIndex,
+                                             std::size_t recordIndex) const {
+    constexpr std::size_t kNeighbourSearchLimit = 4096;
+    std::size_t searched = 0;
+    for (std::size_t s = segmentIndex; s < log.segmentCount(); ++s) {
+        const std::size_t start = (s == segmentIndex) ? recordIndex + 1 : 0;
+        const std::size_t n     = log.segment(s).recordCount();
+        for (std::size_t k = start; k < n; ++k) {
+            if (++searched > kNeighbourSearchLimit) return {};
+            const AbsTimeResult r = resolveAbsTimeCore(log, s, k);
+            if (r.valid) return r;
+        }
+    }
+    return {};
 }
 
 AbsTimeResult ISTimeResolver::firstResolvableIn(const ISDeviceLog& log,
@@ -1734,74 +1957,117 @@ AbsTimeResult ISTimeResolver::firstResolvableIn(const ISDeviceLog& log,
     return {};
 }
 
+void ISTimeResolver::ensureAbsIndex(const ISDeviceLog& log) const {
+    if (absIndex_.log == &log) return;
+    absIndex_ = AbsIndexCache{};                 // the reset is the cache's own copy assignment
+    absIndex_.log = &log;
+
+    // Deliberately built from `resolveAbsTimeCore`, never from the raw `.idx` values: the index is
+    // the inverse direction's only input, so reading anything else would let the two directions
+    // drift apart, and the round trip being provable is the objective. It also cannot reuse the
+    // `.idx` order — that is arrival-ordered and mixed-domain, which is exactly why
+    // `ISLogReader::seek()` is raw-domain-only and returns `end()` for a resolved absolute.
+    std::size_t total = 0;
+    for (std::size_t i = 0; i < log.segmentCount(); ++i) total += log.segment(i).recordCount();
+    absIndex_.entries.reserve(total);
+
+    for (std::size_t i = 0; i < log.segmentCount(); ++i) {
+        const std::size_t n = log.segment(i).recordCount();
+        for (std::size_t k = 0; k < n; ++k) {
+            const AbsTimeResult r = resolveAbsTimeCore(log, i, k);
+            if (!r.valid) continue;
+            absIndex_.entries.push_back({ r.absoluteMs,
+                                          static_cast<uint32_t>(i),
+                                          static_cast<uint32_t>(k) });
+        }
+    }
+
+    // Sorting on the indices as well as the instant is load-bearing, not tidiness: a stalled clock
+    // parks many records on one instant, and the tie-break is what makes "the first of them" a
+    // single stable answer. Without it the lookup could land anywhere in the run and the second
+    // round trip would walk along it instead of being a fixed point.
+    std::sort(absIndex_.entries.begin(), absIndex_.entries.end(),
+              [](const AbsIndexEntry& a, const AbsIndexEntry& b) {
+                  if (a.absoluteMs   != b.absoluteMs)   return a.absoluteMs   < b.absoluteMs;
+                  if (a.segmentIndex != b.segmentIndex) return a.segmentIndex < b.segmentIndex;
+                  return a.recordIndex < b.recordIndex;
+              });
+}
+
 SegmentOffset ISTimeResolver::resolveTimeToSegmentOffset(const ISDeviceLog& log,
                                                          uint64_t absoluteMs) const {
     SegmentOffset out;
 
-    // Deliberately over `resolveAbsTime`, never over the raw `.idx` values: if the two directions
-    // read different inputs they can drift, and the round trip being provable is the objective.
-    bool        sawAny     = false;
-    uint64_t    firstMs    = 0, lastMs = 0;
-    std::size_t bestSeg    = 0, bestIdx = 0;
-    uint64_t    bestMs     = 0;
-    bool        haveBest   = false;
+    ensureAbsIndex(log);
+    const std::vector<AbsIndexEntry>& idx = absIndex_.entries;
+    if (idx.empty()) return out;                 // nothing in the log can be placed
 
-    uint64_t arrivalBase = 0;
-    for (std::size_t i = 0; i < log.segmentCount(); ++i) {
-        const ISLogReader& seg = log.segment(i);
-        const std::size_t  n   = seg.recordCount();
-        for (std::size_t k = 0; k < n; ++k) {
-            const AbsTimeResult r = resolveAbsTimeCore(log, i, k);
-            if (!r.valid) continue;
-            if (!sawAny) { firstMs = r.absoluteMs; sawAny = true; }
-            lastMs = r.absoluteMs;
-            // At-or-before, and keeping the FIRST of an equal run: a stalled clock parks many
-            // records on one instant, and "the first of them" is the only stable choice — it is
-            // what makes a second round trip a fixed point instead of drifting along the run.
-            if (r.absoluteMs <= absoluteMs && (!haveBest || r.absoluteMs > bestMs)) {
-                bestMs   = r.absoluteMs;
-                bestSeg  = i;
-                bestIdx  = k;
-                haveBest = true;
-            }
-        }
-        arrivalBase += static_cast<uint64_t>(n);
-    }
+    // The last entry at or before the target. `upper_bound` then stepping back is the at-or-before
+    // query; on an exact hit it lands past the whole equal run, so the step back gives its LAST
+    // element and the walk below gives its first.
+    auto it = std::upper_bound(idx.begin(), idx.end(), absoluteMs,
+                               [](uint64_t t, const AbsIndexEntry& e) { return t < e.absoluteMs; });
 
-    if (!sawAny) return out;                     // nothing in the log can be placed
+    // Earlier than every record: clamp to the EARLIEST one rather than failing, and say so, because
+    // a marker before the log start is an ordinary UI state. `idx.front()` is that record — the
+    // sort's index tie-break makes it the earliest-arrival of the minimum instant.
+    //
+    // This used to clamp via the first placeable record in ARRIVAL order, which is a different
+    // record whenever arrival order is not monotonic in resolved time. Measured over the corpus
+    // 2026-10-03: the two differ on 60 of 119 device-logs, and on all 60 the clamp returned a
+    // record that was NOT the earliest — on `goldenlogs/.../20260729_003722` it landed 3.27 days
+    // after the log's earliest record.
+    const bool before = (it == idx.begin());
 
-    if (!haveBest) {
-        // Earlier than every record: clamp to the first placeable one rather than failing, and say
-        // so, because a marker before the log start is an ordinary UI state.
-        const SegmentOffset clamped = resolveTimeToSegmentOffset(log, firstMs);
-        out = clamped;
-        out.exactness = PositionExactness::Before;
-        return out;
-    }
+    const auto lastOfRun = before ? idx.begin() : it - 1;
+    const uint64_t bestMs = lastOfRun->absoluteMs;
 
-    const ISLogReader& seg = log.segment(bestSeg);
+    // Walk the equal run both ways. Backwards finds the record to RETURN; forwards is only needed
+    // for the count, and only ever moves in the `before` clamp, where `lastOfRun` is the run's
+    // first rather than its last. `upper_bound` guarantees it is the last in every other case.
+    auto firstOfRun = lastOfRun;
+    while (firstOfRun != idx.begin() && (firstOfRun - 1)->absoluteMs == bestMs) --firstOfRun;
+    auto endOfRun = lastOfRun + 1;
+    while (endOfRun != idx.end() && endOfRun->absoluteMs == bestMs) ++endOfRun;
+    const std::size_t runLength = static_cast<std::size_t>(endOfRun - firstOfRun);
+
+    const std::size_t  segIdx = firstOfRun->segmentIndex;
+    const std::size_t  recIdx = firstOfRun->recordIndex;
+    const ISLogReader& seg    = log.segment(segIdx);
+
     uint64_t base = 0;
-    for (std::size_t i = 0; i < bestSeg; ++i) base += static_cast<uint64_t>(log.segment(i).recordCount());
-
-    // Walk back to the FIRST record bearing this instant, so the mapping is a fixed point.
-    std::size_t firstOfRun = bestIdx;
-    while (firstOfRun > 0) {
-        const AbsTimeResult prev = resolveAbsTimeCore(log, bestSeg, firstOfRun - 1);
-        if (!prev.valid || prev.absoluteMs != bestMs) break;
-        --firstOfRun;
-    }
+    for (std::size_t i = 0; i < segIdx; ++i) base += static_cast<uint64_t>(log.segment(i).recordCount());
 
     out.valid        = true;
-    out.segmentIndex = bestSeg;
-    out.recordIndex  = firstOfRun;
+    out.segmentIndex = segIdx;
+    out.recordIndex  = recIdx;
     out.segmentPath  = seg.path();
     out.segment      = &seg;
-    out.byteOffset   = seg.recordAt(firstOfRun).offsetInFile();
-    out.arrivalIndex = base + static_cast<uint64_t>(firstOfRun);
-    out.exactness    = (firstOfRun != bestIdx)   ? PositionExactness::FirstOfStalledRun
-                     : (bestMs == absoluteMs)    ? PositionExactness::Exact
-                     : (absoluteMs > lastMs)     ? PositionExactness::After
-                                                 : PositionExactness::Exact;
+    out.byteOffset   = seg.recordAt(recIdx).offsetInFile();
+    out.arrivalIndex = base + static_cast<uint64_t>(recIdx);
+    out.runLength    = runLength;
+
+    // One question, mutually exclusive answers: how does the target relate to the instant that came
+    // back? Whether that instant is SHARED is `runLength`, reported independently — a target can be
+    // inexact and land on a stalled run at the same time.
+    //
+    // Three things here were wrong before the index, all measured rather than reasoned about:
+    //
+    //  - `Preceding` did not exist, so a target falling between two records was reported `Exact`.
+    //    Every midpoint seed in the corpus cycle test takes this branch.
+    //  - `FirstOfStalledRun` was unreachable. The old code tested whether a backward walk had
+    //    MOVED, but its forward scan already kept the earliest-arrival record of the equal run, so
+    //    the walk was always a no-op. A fixture of 5 instants x 6 records reported `Exact` five
+    //    times on the pre-index binary.
+    //  - `After` was tested against the last placeable record in ARRIVAL order, so on a log whose
+    //    arrival order is not monotonic in resolved time a target INSIDE the span was reported as
+    //    past the end of it. 19 of 119 corpus device-logs are non-monotonic and 8 mislabelled such
+    //    a target; it is now tested against `idx.back()`, the LATEST instant.
+    out.exactness    = before                               ? PositionExactness::Before
+                     : (absoluteMs > idx.back().absoluteMs) ? PositionExactness::After
+                     : (bestMs != absoluteMs)               ? PositionExactness::Preceding
+                     : (runLength > 1)                      ? PositionExactness::FirstOfStalledRun
+                                                            : PositionExactness::Exact;
     return out;
 }
 
