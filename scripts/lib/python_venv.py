@@ -1,5 +1,6 @@
 # python_venv.py
 import glob
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -43,6 +44,11 @@ def _bootstrap_pip(path: str) -> None:
             return
 
     ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+    if importlib.util.find_spec('pip') or attempts[:-1]:
+        # A pip ran but failed (e.g. offline, proxy, or index error), so pip itself isn't what's missing
+        raise RuntimeError(f"Could not install pip into the virtual environment (Python module 'ensurepip' is missing). "
+                           f"See the pip errors above and check network/proxy access, "
+                           f"or on Debian/Ubuntu run: sudo apt install python{ver}-venv")
     raise RuntimeError(f"Could not install pip into the virtual environment: Python module 'ensurepip' is missing and "
                        f"pip is not available. On Debian/Ubuntu run: sudo apt install python{ver}-venv (or python3-pip)")
 
