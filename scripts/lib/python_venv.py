@@ -1,6 +1,9 @@
 # python_venv.py
+import glob
+import importlib.util
 import os
 import shutil
+import subprocess
 import sys
 import venv
 from typing import Optional
@@ -9,12 +12,45 @@ def is_virtual_environment(path: str) -> bool:
     # pyvenv.cfg guards against a directory that only has a stale activate script
     if not os.path.isfile(os.path.join(path, 'pyvenv.cfg')):
         return False
+    # pip is checked too: activate is written before pip is installed, so an interrupted setup has activate but no pip
     if os.name == 'nt':  # Windows
         scripts_path = os.path.join(path, 'Scripts')
-        return os.path.isdir(scripts_path) and os.path.isfile(os.path.join(scripts_path, 'activate.bat'))
+        return os.path.isfile(os.path.join(scripts_path, 'activate.bat')) and os.path.isfile(os.path.join(scripts_path, 'pip.exe'))
     else:  # Unix-like
         bin_path = os.path.join(path, 'bin')
-        return os.path.isdir(bin_path) and os.path.isfile(os.path.join(bin_path, 'activate'))
+        return os.path.isfile(os.path.join(bin_path, 'activate')) and os.path.isfile(os.path.join(bin_path, 'pip'))
+
+def _venv_python(path: str) -> str:
+    if os.name == 'nt':
+        return os.path.join(path, 'Scripts', 'python.exe')
+    return os.path.join(path, 'bin', 'python')
+
+def _bootstrap_pip(path: str) -> None:
+    """
+    Install pip into a venv created without it. Tries the distro's bundled pip wheel first (offline),
+    then the system pip targeting the venv. Output goes to stderr: callers read the venv path from stdout.
+    """
+    venv_python = _venv_python(path)
+    attempts = []
+    # Debian/Ubuntu python3-pip-whl; a pip wheel can run itself to install itself
+    for wheel in sorted(glob.glob('/usr/share/python-wheels/pip-*.whl'), reverse=True):
+        attempts.append(("bundled pip wheel", [venv_python, os.path.join(wheel, 'pip'), 'install', '--no-index', '--quiet', wheel]))
+    # System pip (python3-pip) installing into the venv's interpreter; PEP 668 doesn't apply to the venv
+    attempts.append(("system pip", [sys.executable, '-m', 'pip', '--python', venv_python, 'install', '--quiet', 'pip']))
+
+    for name, cmd in attempts:
+        print(f"Installing pip into virtual environment using {name}...", file=sys.stderr)
+        if subprocess.run(cmd, stdout=sys.stderr).returncode == 0:
+            return
+
+    ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+    if importlib.util.find_spec('pip') or attempts[:-1]:
+        # A pip ran but failed (e.g. offline, proxy, or index error), so pip itself isn't what's missing
+        raise RuntimeError(f"Could not install pip into the virtual environment (Python module 'ensurepip' is missing). "
+                           f"See the pip errors above and check network/proxy access, "
+                           f"or on Debian/Ubuntu run: sudo apt install python{ver}-venv")
+    raise RuntimeError(f"Could not install pip into the virtual environment: Python module 'ensurepip' is missing and "
+                       f"pip is not available. On Debian/Ubuntu run: sudo apt install python{ver}-venv (or python3-pip)")
 
 def create_virtual_environment(path: str) -> str:
     if is_virtual_environment(path):
@@ -28,12 +64,14 @@ def create_virtual_environment(path: str) -> str:
         shutil.rmtree(path)
     try:
         import ensurepip  # noqa: F401
+        has_ensurepip = True
     except ImportError:
-        ver = f"{sys.version_info.major}.{sys.version_info.minor}"
-        raise RuntimeError(f"Python module 'ensurepip' is missing, so a virtual environment with pip cannot be created. "
-                           f"On Debian/Ubuntu run: sudo apt install python{ver}-venv")
+        # Debian/Ubuntu ship ensurepip separately (python3-venv); create without pip and add it ourselves
+        has_ensurepip = False
     try:
-        venv.create(path, with_pip=True)
+        venv.create(path, with_pip=has_ensurepip)
+        if not has_ensurepip:
+            _bootstrap_pip(path)
     except Exception:
         shutil.rmtree(path, ignore_errors=True)
         raise
