@@ -143,8 +143,6 @@ typedef enum
 
 /** @deprecated Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
 #define PKT_BUF_SIZE            MAX_MSG_SIZE
-/** @deprecated Use MAX_MSG_SIZE_NMEA. */
-#define MAX_MSG_LENGTH_NMEA     MAX_MSG_SIZE_NMEA
 
 /** The maximum time between received data that will reset in the parser */
 #define MAX_PARSER_GAP_TIME_MS  100
@@ -264,16 +262,6 @@ typedef struct
     /** Number of bytes in ptr */
     uint32_t            size;
 } bufPtr_t;
-
-/** @deprecated Use bufPtr_t, which points to bytes owned elsewhere instead of holding a copy. */
-typedef struct
-{
-    /** Number of bytes - for partial data requests, this will be less than the size of the data structure */
-    uint32_t            size;
-
-    /** Buffer to hold the bytes */
-    uint8_t             buf[MAX_MSG_SIZE];
-} buffer_t;
 
 /** Represents both a send and receive buffer */
 typedef struct
