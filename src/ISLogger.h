@@ -58,8 +58,8 @@ public:
     /** @brief Selects which `cDeviceLog` subclass (and on-disk format) new devices are logged with. */
     enum eLogType
     {
-        LOGTYPE_DAT = 0,    //!< raw serial byte stream, unparsed (cDeviceLogSerial, `.dat`)
-        LOGTYPE_RAW,        //!< packetized serial stream; supports multiple packet types (cDeviceLogRaw, `.raw`)
+        LOGTYPE_DAT = 0,    //!< already-parsed data sets (p_data_hdr_t + payload), chunk-header-framed (cDeviceLogSerial, `.dat`)
+        LOGTYPE_RAW,        //!< undecoded, multi-protocol serial byte stream (cDeviceLogRaw, `.raw`)
         LOGTYPE_CSV,        //!< one CSV file per data set (cDeviceLogCSV, `.csv`)
         LOGTYPE_KML,        //!< KML flight-path visualization, write-only (cDeviceLogKML, `.kml`)
         LOGTYPE_JSON,       //!< one JSON-lines file per data set (cDeviceLogJSON, `.json`)

@@ -15,6 +15,8 @@
 #if PLATFORM_IS_LINUX
 #   include <dirent.h>
 #   include <sys/stat.h>
+#   include <stdlib.h>      // realpath()
+#   include <limits.h>      // PATH_MAX
 #endif
 
 // #define REMOTE_SOCAT_PORTS      // only does anything on linux
@@ -86,7 +88,54 @@ bool SerialPortFactory::validatePort(const std::string& pName, uint16_t pType) {
 #endif
 }
 
+std::string SerialPortFactory::resolvePortName(const std::string& pName) {
+#if !PLATFORM_IS_LINUX
+    // Windows: COM-port aliasing goes through QueryDosDevice, not the filesystem, so there is
+    // nothing here to resolve. Every other platform (Apple, embedded) falls through to the same
+    // no-op -- symlink resolution is only wired up for Linux, which is where SN-8575 was reported
+    // and the only host platform this is verified on. Note this is deliberately NOT "#if WINDOWS /
+    // #else": the POSIX branch below needs headers that are only included for Linux, so treating
+    // "not Windows" as "has a filesystem" would break the build everywhere else.
+    return pName;
+#else
+    // Resolve only something that is actually a symlink on disk. Callers reach here with regex
+    // PATTERNS as well as literal device paths ("*", "(.+)", "/dev/tty(ACM|USB)[0-9]+"); none of
+    // those name a file, so lstat() fails and they take this early return untouched. Gating on the
+    // filesystem rather than on the shape of the string is what keeps pattern matching unaffected.
+    struct stat st = {};
+    if (lstat(pName.c_str(), &st) != 0 || !S_ISLNK(st.st_mode))
+        return pName;
+
+    // realpath() rather than readlink(): udev writes a RELATIVE target (a SYMLINK+="imx5" rule
+    // produces /dev/imx5 -> ttyACM0, not -> /dev/ttyACM0), so readlink() alone yields a bare name
+    // needing a "/dev/" prefix guessed back onto it -- which then breaks on any alias that IS
+    // absolute, producing "/dev//dev/ttyACM0". realpath() also collapses multi-hop chains and
+    // always returns an absolute path, which is the form /sys/class/tty enumeration produces and
+    // therefore the form we need to match against.
+    char resolved[PATH_MAX] = {};
+    if (realpath(pName.c_str(), resolved) == nullptr)
+        return pName;   // dangling link; leave it for the caller's own existence checks to reject
+
+    return std::string(resolved);
+#endif
+}
+
 void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, std::string)> portCallback, const std::string& pattern, uint16_t pType) {
+    // A caller-supplied path may be a udev alias (/dev/imx5 -> ttyACM0) while getComPorts() below
+    // enumerates canonical /sys/class/tty names only, so an unresolved alias matches nothing no
+    // matter how the regex is written. Resolve before matching. Non-symlinks, patterns included,
+    // pass through untouched. (SN-8575)
+    //
+    // KNOWN LIMITATION: two conventions reach this function. OpenPorts() forwards the caller's
+    // string verbatim (the path SN-8575 reports, and the one this handles), but cltool's -ufpkg
+    // re-discovery loop passes it through utils::globToRegex() first, which escapes regex
+    // metacharacters. An alias containing one -- "/dev/imx5.0" arriving here as "/dev/imx5\.0" --
+    // is no longer a real path, so the lstat() gate above declines to resolve it. Un-escaping a
+    // regex back into a path would be guesswork; the underlying problem is that the two paths
+    // disagree about whether a port specifier is a literal or a pattern, which wants fixing on its
+    // own terms rather than being papered over here.
+    const std::string resolvedPattern = resolvePortName(pattern);
+
     // An unusable pattern must not abort a port scan by throwing out of it. std::regex's constructor
     // throws std::regex_error on any invalid expression, and callers reach this with strings they think
     // of as port SPECIFIERS rather than regexes -- cltool's default "*" (its all-ports token) is a valid
@@ -96,7 +145,7 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     // so loudly enough to be fixed at the call site.
     std::regex matchPattern;
     try {
-        matchPattern.assign(pattern);
+        matchPattern.assign(resolvedPattern);
     } catch (const std::regex_error& e) {
         log_error(IS_LOG_PORT_FACTORY, "locatePorts(): pattern '%s' is not a valid regular expression (%s); "
                                        "matching all ports instead.", pattern.c_str(), e.what());
@@ -302,10 +351,18 @@ bool SerialPortFactory::validate_port__linux(uint16_t pType, const std::string& 
         return true;
 #endif
 
+    // The /sys/class/tty lookup below is keyed on the device's canonical kernel name, so an alias
+    // has to be resolved first: basename("/dev/imx5") is "imx5", and /sys/class/tty/imx5 does not
+    // exist even though the link resolves to a perfectly good device. Note the stat() above already
+    // succeeded for the alias, because stat() follows symlinks -- it is only this sysfs lookup that
+    // needs the canonical name. Reached with an alias via bindPort(), which never goes through
+    // locatePorts(). (SN-8575)
+    const std::string canonical = resolvePortName(pName);
+
     // Resolve the real hardware driver (walks past the kernel >= 6.8 "serial-base"
     // port/ctrl layers). An empty/"port" result means there is no genuine backing
     // driver, so the port is not valid.
-    std::string driver = get_driver__linux(utils::string_format("/sys/class/tty/%s", basename(pName.c_str())));
+    std::string driver = get_driver__linux(utils::string_format("/sys/class/tty/%s", basename(canonical.c_str())));
     if (driver.empty() || driver == "port")
         return false;   // these are not valid ports
 

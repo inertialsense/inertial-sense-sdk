@@ -3,12 +3,12 @@
 // multi-rate DID traffic that INCLUDES a timeless DID (DID_PORT_MONITOR), then
 // verify:
 //   1. the .idx is v2.1 (32-byte records + HAS_LOCAL_DELTA) and carries
-//      per-record host-uptime deltas that grow with the log's real elapsed time
+//      per-record log-start time-offsets that grow with the log's real elapsed time
 //      (i.e. reflect each DID's logging periodicity),
 //   2. ISLogReader parses the resulting pair, and
 //   3. ISTimeResolver, built from the log, resolves the timeless PORT_MONITOR
 //      records (which have NO payload timestamp) to the correct wall-clock times
-//      by bridging their per-record uptime delta through the SYS_PARAMS
+//      by bridging their per-record log-start time-offset through the SYS_PARAMS
 //      uptime->ToW offset.
 //
 // This runs in REAL TIME on purpose: the per-record delta is stamped from the
@@ -103,7 +103,7 @@ imu_t makeImu(uint32_t elapsedMs) {
 }
 
 // The timeless subject: DID_PORT_MONITOR has no payload timestamp field, so its
-// .idx timestamp is the host-uptime delta and HAS_TOW is clear.
+// .idx timestamp is the log-start time-offset and HAS_TOW is clear.
 port_monitor_t makePortMon() {
     port_monitor_t s{};
     s.activePorts = 2;
@@ -198,16 +198,16 @@ TEST(V21EndToEnd, PseudoRandomMultiDidWithTimelessPortMonitor) {
     ASSERT_TRUE(reader.hadOnDiskIndex()) << "cISLogger's v2.1 sidecar should be trusted, not rebuilt";
 
     EXPECT_EQ(reader.header().record_size, idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
-    EXPECT_NE(0, reader.header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA);
+    EXPECT_NE(0, reader.header().flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET);
 
     // PORT_MONITOR records: timeless (HAS_TOW clear); .idx timestamp == the
-    // host-uptime delta, which must climb across the run reflecting the 4 Hz
+    // log-start time-offset, which must climb across the run reflecting the 4 Hz
     // periodicity — not collapse to ~0.
     std::vector<uint64_t> pmDeltas;
     std::vector<std::size_t> pmSpans;   // physical byte span of each record via the trusted offsets
     for (auto v : reader.records(DID_PORT_MONITOR)) {
         EXPECT_EQ(0, v.flags() & idx::IS_LOG_IDX_REC_FLAG_HAS_TOW) << "PORT_MONITOR must be timeless";
-        pmDeltas.push_back(v.timestamp().value);      // .idx timestamp == local delta for a timeless record
+        pmDeltas.push_back(v.timestamp().value);      // .idx timestamp == log time offset for a timeless record
         pmSpans.push_back(v.bytes().second);          // bytes sliced from the .raw at rec.offset
     }
     ASSERT_GT(pmDeltas.size(), minPortMon);
@@ -241,7 +241,7 @@ TEST(V21EndToEnd, PseudoRandomMultiDidWithTimelessPortMonitor) {
     // (kStartTowMs + delta) — i.e. the moment it was actually logged.
     uint64_t prevResolved = 0;
     for (const uint64_t d : pmDeltas) {
-        const TimeStamp r = resolverR->resolve(d, kSerial);
+        const TimeStamp r = resolverR->resolve(d, kSerial, ISRecordView::kNoArrivalIndex);
         EXPECT_EQ(r.source, TimeSource::ResolvedViaSync) << "timeless record must bridge via sync, at delta " << d;
         const uint64_t want = expectedUnixMs(kStartTowMs + d);
         EXPECT_NEAR(static_cast<double>(r.value), static_cast<double>(want), 100.0)

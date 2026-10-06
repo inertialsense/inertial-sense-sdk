@@ -354,6 +354,20 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
         case fwUpdate::ERR_FLASH_INVALID:       // indicates that the image, after writing to flash failed to validate (invalid signature, couldn't decrypt, etc).
             return false;
 
+        case fwUpdate::ERR_INVALID_TARGET:    // indicates the target index doesn't exist, or that the target + target_flags are unsupported
+            // Name both ends of the disagreement. A device rejects a target either because it does not
+            // implement it at all, or because it cannot accept it in the state it is currently in -- and
+            // the response carries no field for what it WOULD have accepted, so the target we asked for
+            // and the target that answered are the only two facts available. Reporting both separates a
+            // host that resolved the wrong target (the two disagree, or ours is TARGET_UNKNOWN) from a
+            // device refusing a well-formed request (they agree); those are fixed in different places.
+            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR,
+                                "Invalid Target: device rejected %s (0x%04X) slot %d flags 0x%02X; response came from %s (0x%04X)",
+                                fwUpdate_getTargetName(session_target), (unsigned int)session_target,
+                                (int)session_image_slot, (unsigned int)session_image_flags,
+                                fwUpdate_getTargetName(msg.hdr.target_device), (unsigned int)msg.hdr.target_device);
+            return true;
+
         case fwUpdate::READY:
             next_chunk_id = 0;
             // fall through
@@ -501,7 +515,15 @@ bool ISFirmwareUpdater::fwUpdate_isDone() {
     // std::lock_guard<std::recursive_mutex> lock(mutex);
 
     bool cmdsPending = hasPendingCommands();
-    bool in_progress = ((session_id == 0) && (fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
+    // SN-8579: session_id != 0 means "a session is active" everywhere else in this class --
+    // fwUpdate_requestUpdate() assigns a fresh non-zero id when a session starts, and
+    // fwUpdate_handleDone() clears it to 0 when one ends. This used to check == 0, which is
+    // backwards, and was masked in the common case by cmdsPending staying true for nearly the
+    // whole duration of a single-target update; it only bit multi-target/back-to-back updates,
+    // where a stale non-zero session_id (never cleared, because the device never sent
+    // MSG_UPDATE_DONE) combined with a leftover mid-flight status could report "in progress" when
+    // it shouldn't, or vice versa once corrected.
+    bool in_progress = ((session_id != 0) && (fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
     bool is_done = !(cmdsPending || in_progress);
     return is_done;
 }

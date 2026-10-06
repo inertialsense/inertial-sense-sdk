@@ -40,7 +40,15 @@ int portOpenRetry(port_handle_t port, unsigned int timeoutMs, unsigned int retry
         SLEEP_MS(retryDelayMs);
     } while (current_timeMs() < timeout);
     // Final check: the last portOpen() above may have completed the handshake just before we timed out.
-    return portIsOpened(port) ? PORT_ERROR__NONE : lastResult;
+    if (portIsOpened(port))
+        return PORT_ERROR__NONE;
+    // SN-8571: never actually opened. A pending async connect (e.g. tcpPort's non-blocking connect())
+    // can report PORT_ERROR__NONE on every single poll without ever completing within our deadline --
+    // lastResult is then ALSO PORT_ERROR__NONE, which is not "success", it's "still not open after
+    // timeoutMs elapsed". Returning that NONE here would silently tell every caller (including the
+    // fixed call sites in DeviceFactory.cpp/DeviceManager.cpp/.h) that the port opened when it didn't.
+    // Report a genuine timeout instead of echoing back the misleading NONE.
+    return (lastResult != PORT_ERROR__NONE) ? lastResult : PORT_ERROR__TIMEOUT;
 }
 
 /**

@@ -49,24 +49,25 @@
 class cDeviceLog {
 public:
     /**
-     * @brief Legacy v1 `.idx` record layout (host-uptime ms + record counter, 16 bytes).
+     * @brief Legacy v1 `.idx` record layout (16 bytes), for back-compat readers per D-01
+     *        (SN-7879). Writers emit v2 exclusively (see `index_record_t`).
      *
-     * Kept for back-compat readers per D-01 (SN-7879). Writers emit v2 exclusively (see
-     * `index_record_t`); this layout exists only so legacy-aware reader code can deserialize old
-     * `.idx` files produced by SDK <= 2.x.
+     * Aliases the canonical definition in `ISLogIndex.h`, which is where the format lives
+     * alongside v2. **The field names changed on 2026-09-20:** this struct used to declare
+     * `{ time, offset, msg_id, reserved }`, and `msg_id` ("data ID of the record") was simply
+     * wrong — measured across all 17 v1 sidecars in the corpus, field 3 is a log-wide monotonic
+     * RECORD COUNTER, not a DID. A reader that trusted the old label would mislabel the DID of
+     * every record it touched. Field 2's byte offset is also not trustworthy. See
+     * @ref inertial_sense::idx::is_log_idx_record_v1_t for the measurements.
      */
-    typedef struct index_record_v1_s {
-        uint32_t time;      //!< host-uptime milliseconds at the time this record was written
-        uint32_t offset;    //!< byte offset into the corresponding `.raw`/`.dat` segment
-        uint32_t msg_id;    //!< data ID of the record
-        uint32_t reserved;  //!< unused
-    } index_record_v1_t;
+    using index_record_v1_s = inertial_sense::idx::is_log_idx_record_v1_t;
+    using index_record_v1_t = inertial_sense::idx::is_log_idx_record_v1_t;
 
     /**
      * @brief Current (v2) `.idx` record type. Both spellings alias `is_log_idx_record_v2_t`.
      *
      * New code uses the v2 fields: `timestamp` is payload-derived milliseconds (falling back to
-     * host-uptime delta when the payload carries none), `did` is the data ID (0 for the
+     * host-clock offset from log start when the payload carries none), `did` is the data ID (0 for the
      * streaming-only path), `flags` bit 0 signals a real ToW, and `offset` is a 64-bit byte offset.
      */
     using index_record_s = inertial_sense::idx::is_log_idx_record_v2_t;
@@ -306,6 +307,37 @@ protected:
     bool OpenNewSaveFile();
 
     /**
+     * @brief Whether this log format wants a one-time ".dvi" device-info sidecar written
+     * alongside each new segment (see WriteDeviceInfoSidecar()).
+     *
+     * Default false. Raw-ISB-wire formats (cDeviceLogRaw, cDeviceLogSerial) override this to
+     * return true; CSV/JSON/KML don't, since a raw-ISB-encoded DID_DEV_INFO/FLASH_CONFIG record
+     * wouldn't mean anything alongside those formats' own on-disk encodings.
+     *
+     * @return true if OpenNewSaveFile() should call WriteDeviceInfoSidecar() for this segment.
+     */
+    virtual bool WantsDeviceInfoSidecar() const { return false; }
+
+    /**
+     * @brief Writes a one-time ".dvi" sidecar (same base name as m_fileName) so a reader that
+     * opens ONLY this segment can still identify the device and its configuration even if this
+     * segment never itself streamed a DID_DEV_INFO/FLASH_CONFIG record (e.g. a mid-session
+     * rollover, or a device that was already configured before logging started).
+     *
+     * Contains, in raw ISB wire format (the same encoding live device data records use): one
+     * DID_DEV_INFO record snapshotting device->devInfo, then one DID_FLASH_CONFIG or
+     * DID_GPX_FLASH_CFG record (whichever matches devInfo.hardwareType) snapshotting
+     * device->imxFlashCfg / device->gpxFlashCfg. Best-effort and non-blocking: reads whatever the
+     * bound device has cached at this instant rather than waiting on flash-config sync, so a
+     * session's very first segment can carry a zeroed flash config if sync hasn't completed yet;
+     * later segments (rotations) will have had time to catch up.
+     *
+     * @return true on success; false (silently) if there's no bound device, no file name has
+     * been set yet, encoding produced nothing, or the `.dvi` file couldn't be created.
+     */
+    bool WriteDeviceInfoSidecar();
+
+    /**
      * @brief Close any currently open read file and open the next one discovered by SetupReadInfo().
      * @return true if a next file was opened; false if every discovered file has already been consumed, or the open failed.
      */
@@ -354,8 +386,9 @@ protected:
     // and rewrites the header on close.
     bool     m_idxHeaderWritten = false;            //!< true once the v2 header has been emitted (first writeIndexChunk call)
     uint64_t m_idxTotalRecords  = 0;                //!< running count of records written to the .idx file
-    uint64_t m_idxFirstTimestampMs = 0;             //!< timestamp of the first record (set on first record)
-    uint64_t m_idxLastTimestampMs  = 0;             //!< timestamp of the most recent record
+    uint64_t m_idxFirstTimestampMs = 0;             //!< transcription of the first WRITTEN record that declares a timestamp
+    uint64_t m_idxLastTimestampMs  = 0;             //!< transcription of the last WRITTEN record that declares a timestamp
+    bool     m_idxFirstTimestampSet = false;        //!< whether m_idxFirstTimestampMs has been taken (0 is a legal timestamp, so this cannot be a `== 0` test)
 
 };
 

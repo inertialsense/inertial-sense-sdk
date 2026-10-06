@@ -122,7 +122,7 @@ bool ISDevice::step() {
     if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
         fn.mark("Parsed messages.");
-        if (!hasDeviceInfo()) {
+        if (!hasConfirmedDeviceInfo()) {
             validateAsync(250);
             fn.mark("Validating device.");
         } else {
@@ -446,6 +446,7 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
                 devInfo.protocolVer[1] = PROTOCOL_VERSION_CHAR1;
                 devInfo.protocolVer[2] = PROTOCOL_VERSION_CHAR2;
                 memcpy(&devInfo.serialNumber, &buf[7], sizeof(uint32_t));
+                markDevInfoConfirmed();     // a full version frame is a real answer from the bootloader
                 return true;
             }
         }
@@ -456,6 +457,10 @@ bool ISDevice::queryDeviceInfoISbl(uint32_t timeout) {
     return false;
 }
 
+
+void ISDevice::markDevInfoConfirmed() {
+    devInfoConfirmedMs = std::max<uint32_t>(current_timeMs(), 1);    // 0 is reserved for "never confirmed"
+}
 
 bool ISDevice::validate(uint32_t timeout) {
     // validate() is its own blocking implementation rather than a wrapper around validateAsync(), so
@@ -488,6 +493,7 @@ bool ISDevice::validate(uint32_t timeout) {
     is_hardware_t oldHdwId = hdwId;
     dev_info_t oldDevInfo = devInfo;
     hdwId = IS_HARDWARE_NONE,  devInfo = {};    // force a fresh check, don't just take previous values.
+    clearDevInfoConfirmed();                    // and nothing below may report success on the old value
 
     bool hasDevInfo = hasDeviceInfo();
     queryType nextQueryType = (hint && hint->hdwRunState == HDW_STATE_BOOTLOADER)
@@ -555,6 +561,10 @@ bool ISDevice::validate(uint32_t timeout) {
         hasDevInfo = hasDeviceInfo();
     } while (!hasDevInfo);
 
+    // The loop above only exits when hasDeviceInfo() became true, and inside validate() that can only
+    // have come from a parsed response -- devInfo was zeroed on entry.
+    markDevInfoConfirmed();
+
     fn.mark("Finished validating.");
     log_more_debug(IS_LOG_ISDEVICE, "[%s] ISDevice::validate(%d) : Validation finished: %s", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), timeout, hasDevInfo ? "SUCCESS" : "FAILURE");
 
@@ -594,7 +604,12 @@ int ISDevice::validateAsync(uint32_t timeout) {
 
     uint32_t now = current_timeMs();
     FnProfiler fn("ISDevice::validateAsync() [" + getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO) + "]", timeout / 2 * 1000);    // this shouldn't really ever take longer than 50ms to execute
-    if (hasDeviceInfo()) {
+    // A complete devInfo is not evidence that the device answered: DeviceFactory::beginValidation()
+    // seeds devInfo from a discovery hint, and RelayPortFactory's hint carries hdwRunState and
+    // protocolVer -- every field hasDeviceInfo() inspects. Success therefore also requires a
+    // confirmation from an actual response, so that an unresponsive port cannot validate and a cached
+    // run state cannot stand in for a live one.
+    if (hasConfirmedDeviceInfo()) {
         // we got out Device Info, so reset our timer (stop trying) and return true
         // log_debug(IS_LOG_ISDEVICE, "[%s] validateAsync() finished after %dms.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), current_timeMs() - validationStartMs);
         validationStartMs = 0;
@@ -790,7 +805,17 @@ std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
 }
 
 std::string ISDevice::getName(int flags) const {
-    return getName(devInfo, flags);
+    std::string out = getName(devInfo, flags);
+
+    // The carrier board belongs with the hardware it qualifies, so it goes inside the same parens.
+    // Only an instance can render it: the platform is held in flash config, not devInfo, and an
+    // unsynchronized flash config has not been read from the device and so describes nothing.
+    if ((flags & SHOW_PLATFORM) && (imxFlashCfg.checksum != 0xFFFFFFFF)) {
+        std::string platform = utils::platformDescription(imxFlashCfg.platformConfig, flags);
+        if (!platform.empty() && !out.empty() && (out.back() == ')'))
+            out.insert(out.size() - 1, ", " + platform);
+    }
+    return out;
 }
 
 /**
@@ -821,6 +846,15 @@ std::string ISDevice::getFirmwareInfo(int flags) const {
     return getFirmwareInfo(devInfo, flags);
 }
 
+std::string ISDevice::getDescription(const dev_info_t& devInfo, int flags) {
+    // No port, platform or io configuration here: a dev_info_t carries none of them, so this is the
+    // name and firmware only. The instance overload adds the rest.
+    std::string desc = getName(devInfo, flags);
+    if (!(flags & OMIT_FIRMWARE_VERSION))
+        desc += " " + getFirmwareInfo(devInfo, flags);
+    return desc;
+}
+
 std::string ISDevice::getDescription(int flags) const {
     std::string desc = getName(flags);
     if (!(flags & OMIT_FIRMWARE_VERSION)) {
@@ -828,6 +862,16 @@ std::string ISDevice::getDescription(int flags) const {
     }
     if (!(flags & OMIT_PORT_NAME) && portIsValid(port))
         desc += ", " + getPortName() + (isConnected() ? "" : " (Closed)");
+
+    // After the port, so the port and its connection state stay adjacent. Renders nothing unless
+    // the configuration differs from what this device's platform implies, which keeps it absent on
+    // a device configured as its carrier intends. A GPX has no ioConfig, and its imxFlashCfg is
+    // never synchronized, so the checksum gate covers that too.
+    if ((flags & SHOW_IO_CONFIG) && (imxFlashCfg.checksum != 0xFFFFFFFF)) {
+        std::string io = utils::ioConfigDescription(imxFlashCfg.ioConfig, imxFlashCfg.ioConfig2, imxFlashCfg.platformConfig, flags);
+        if (!io.empty())
+            desc += " [" + io + "]";
+    }
     return desc;
 }
 
@@ -1244,8 +1288,27 @@ bool ISDevice::WaitForImxFlashCfgSynced(bool forceSync, uint32_t timeoutMs)
 
         int elaspedMs = (int)(current_timeMs() - startMs);
         if (elaspedMs > (int)timeoutMs)
-        {   // Timeout waiting for IMX flash config
-            log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync! (%d ms elapsed, 0x%08x (FlashCfg) != 0x%08x (SysParams)", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs, imxFlashCfg.checksum, sysParams.flashCfgChecksum);
+        {   // Timeout waiting for IMX flash config. Name the condition that actually failed, and
+            // claim only what is known. ImxFlashConfigSynced() requires a VALID flash-config checksum
+            // as well as a matching one, and 0xFFFFFFFF is the invalid sentinel -- one this function
+            // writes itself when forcing a re-sync. Reporting the two values as "0x... != 0x..."
+            // printed identical numbers either side of a "!=" whenever no valid checksum had been
+            // obtained, which reads as a comparison bug and sends the reader looking for one instead
+            // of at the device. Note the sentinel does not establish that a DID never arrived, only
+            // that no valid checksum came from it, so the message says that much and no more.
+            const bool haveFlashCfg = ValidFlashCfgCksum(imxFlashCfg.checksum);
+            const bool haveSysParams = ValidFlashCfgCksum(sysParams.flashCfgChecksum);
+            if (!haveFlashCfg || !haveSysParams) {
+                log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync after %d ms: no valid checksum obtained from %s%s%s.",
+                         getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs,
+                         haveFlashCfg ? "" : "DID_FLASH_CONFIG",
+                         (!haveFlashCfg && !haveSysParams) ? " or " : "",
+                         haveSysParams ? "" : "DID_SYS_PARAMS");
+            } else {
+                log_warn(IS_LOG_ISDEVICE, "[%s] Timeout waiting for DID_FLASH_CONFIG to sync after %d ms: checksum mismatch, 0x%08x (FlashCfg) != 0x%08x (SysParams).",
+                         getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), elaspedMs,
+                         imxFlashCfg.checksum, sysParams.flashCfgChecksum);
+            }
             return false;
         }
         else if (sysParams.flashCfgChecksum != lastSeenChecksum)
@@ -1767,6 +1830,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
             if (devInfo.hdwRunState == HDW_STATE_UNKNOWN)   // this value should be passed from the device, but if not...
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
+            markDevInfoConfirmed();
             break;
         case DID_GPX_DEV_INFO:
             gpxDevInfo = *(dev_info_t*)data->ptr;
@@ -1855,6 +1919,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
             {
             case IS_HARDWARE_TYPE_IMX:
                 devInfo = info;
+                markDevInfoConfirmed();
                 break;
 
             case IS_HARDWARE_TYPE_GPX:
@@ -1862,6 +1927,7 @@ int ISDevice::onNmeaHandler(const unsigned char* msg, int msgSize, port_handle_t
                     devInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
                 {   // Populate if device info is not set or GPX
                     devInfo = info;
+                    markDevInfoConfirmed();     // only when devInfo itself was populated, not gpxDevInfo alone
                 }
                 gpxDevInfo = info;
                 break;
@@ -1952,8 +2018,10 @@ bool ISDevice::connect(bool revalidate, uint32_t openTimeoutMs) {
     imxFlashCfgUploadChecksum = 0;
     gpxFlashCfgUploadChecksum = 0;
 
-    if (revalidate)
+    if (revalidate) {
         devInfo.hdwRunState = HDW_STATE_UNKNOWN; // this will further reinforce a validation
+        clearDevInfoConfirmed();                 // a caller asking to revalidate is telling us the old answer is suspect
+    }
 
     bool alreadyOpened = portIsOpened(port);
     if (!alreadyOpened) {

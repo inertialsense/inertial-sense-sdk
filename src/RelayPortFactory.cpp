@@ -19,8 +19,15 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <set>
 #include <thread>
+
+#if !defined(_WIN32)
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif
 
 // cpp-httplib and nlohmann/json — used only in this .cpp, not exposed via the header.
 #include "httplib.h"
@@ -231,7 +238,101 @@ bool parseDeviceJson(const json& dev, RelayPortFactory::DeviceRecord& out, const
     // bridgeboard that omits the field is treated as offering the slot, matching prior behaviour.
     out.hasTcpClient = dev.value("has_tcp_client", false);
     out.listening = dev.value("listening", true);
+
+    // Holder and operator reservation. A relay without connection control omits both.
+    auto str = [](const json& o, const char* key) {
+        auto it = o.find(key);
+        return (it != o.end() && it->is_string()) ? it->get<std::string>() : std::string();
+    };
+    auto num = [](const json& o, const char* key) -> int64_t {
+        auto it = o.find(key);
+        return (it != o.end() && it->is_number()) ? it->get<int64_t>() : 0;
+    };
+    out.client = {};
+    auto c = dev.find("client");
+    if (c != dev.end() && c->is_object()) {
+        out.client.present       = true;
+        out.client.peer          = str(*c, "peer");
+        out.client.sinceUnixMs   = num(*c, "since_unix_ms");
+        out.client.idleMs        = num(*c, "idle_ms");
+        out.client.sentBytes     = static_cast<uint64_t>(num(*c, "sent_bytes"));
+        out.client.receivedBytes = static_cast<uint64_t>(num(*c, "received_bytes"));
+        out.client.priority      = str(*c, "priority");
+        out.client.name          = str(*c, "name");
+        out.client.purpose       = str(*c, "purpose");
+        out.client.link          = str(*c, "link");
+    }
+    out.hold = {};
+    auto h = dev.find("hold");
+    if (h != dev.end() && h->is_object()) {
+        out.hold.present     = true;
+        out.hold.mode        = str(*h, "mode");
+        out.hold.host        = str(*h, "host");
+        out.hold.untilUnixMs = num(*h, "until_unix_ms");
+        out.hold.reason      = str(*h, "reason");
+        out.hold.by          = str(*h, "by");
+    }
     return true;
+}
+
+/** HTTP timeouts for annotatePort(), which runs on the caller's thread. */
+static constexpr int ANNOTATE_CONNECT_TIMEOUT_MS = 500;
+static constexpr int ANNOTATE_READ_TIMEOUT_MS    = 1000;
+
+/** Field limits the relay enforces on an annotation. */
+static constexpr size_t ANNOTATE_NAME_MAX    = 64;
+static constexpr size_t ANNOTATE_PURPOSE_MAX = 256;
+static constexpr size_t ANNOTATE_LINK_MAX    = 512;
+
+/** @return the running executable's file name without directory or extension, or "is-sdk" if unknown. */
+std::string executableBaseName() {
+    std::string path;
+#if defined(_WIN32)
+    char buf[MAX_PATH] = {};
+    DWORD n = GetModuleFileNameA(nullptr, buf, sizeof(buf));
+    if (n > 0 && n < sizeof(buf)) path.assign(buf, n);
+#elif defined(__linux__)
+    char buf[4096] = {};
+    ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+    if (n > 0) path.assign(buf, static_cast<size_t>(n));
+#endif
+    size_t slash = path.find_last_of("/\\");
+    std::string base = (slash == std::string::npos) ? path : path.substr(slash + 1);
+    size_t dot = base.rfind('.');
+    if (dot != std::string::npos && dot > 0) base.erase(dot);
+    return base.empty() ? std::string("is-sdk") : base;
+}
+
+/** @return @p s truncated to at most @p max bytes, never splitting a UTF-8 sequence. */
+std::string truncateUtf8(const std::string& s, size_t max) {
+    if (s.size() <= max) return s;
+    size_t n = max;
+    while (n > 0 && (static_cast<unsigned char>(s[n]) & 0xC0) == 0x80) n--;
+    return s.substr(0, n);
+}
+
+/** @return the local port @p socket is bound to, or 0 if it has none. */
+int socketLocalPort(int socket) {
+    sockaddr_storage addr = {};
+    socklen_t len = sizeof(addr);
+    if (getsockname(socket, reinterpret_cast<sockaddr*>(&addr), &len) != 0) return 0;
+    if (addr.ss_family == AF_INET)  return ntohs(reinterpret_cast<sockaddr_in*>(&addr)->sin_port);
+    if (addr.ss_family == AF_INET6) return ntohs(reinterpret_cast<sockaddr_in6*>(&addr)->sin6_port);
+    return 0;
+}
+
+/** @return a Unix-epoch millisecond time as local "HH:MM:SS". */
+std::string formatUnixMs(int64_t ms) {
+    time_t t = static_cast<time_t>(ms / 1000);
+    struct tm tmv = {};
+#if defined(_WIN32)
+    localtime_s(&tmv, &t);
+#else
+    localtime_r(&t, &tmv);
+#endif
+    char buf[16];
+    std::strftime(buf, sizeof(buf), "%H:%M:%S", &tmv);
+    return buf;
 }
 
 /**
@@ -437,9 +538,154 @@ std::vector<RelayPortFactory::RelayDeviceStatus> RelayPortFactory::getRelayDevic
             st.hint = device.hint;
             st.hasTcpClient = device.hasTcpClient;
             st.listening = device.listening;
+            st.client = device.client;
+            st.hold = device.hold;
             result.push_back(st);
         }
     }
+    return result;
+}
+
+bool RelayPortFactory::getRelayDevice(const std::string& portUrl, RelayDeviceStatus& out) const {
+    for (auto& dev : getRelayDevices()) {
+        if (dev.portUrl == portUrl) {
+            out = std::move(dev);
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string RelayPortFactory::describeHolder(const RelayDeviceStatus& dev) {
+    if (dev.hold.present) {
+        std::string s = "held by an operator";
+        if (!dev.hold.by.empty()) s += " (" + dev.hold.by + ")";
+        if (!dev.hold.reason.empty()) s += ": " + dev.hold.reason;
+        if (dev.hold.untilUnixMs) s += ", until " + formatUnixMs(dev.hold.untilUnixMs);
+        return s;
+    }
+    if (!dev.client.present && !dev.hasTcpClient)
+        return {};
+
+    std::string s = "held by ";
+    if (!dev.client.name.empty()) {
+        s += dev.client.name;
+        if (!dev.client.purpose.empty()) s += " (" + dev.client.purpose + ")";
+    } else {
+        s += dev.client.peer.empty() ? std::string("another client") : dev.client.peer;
+    }
+    if (dev.client.sinceUnixMs) s += " since " + formatUnixMs(dev.client.sinceUnixMs);
+    if (!dev.client.link.empty()) s += " -- " + dev.client.link;
+    return s;
+}
+
+const char* RelayPortFactory::toString(AnnotateResult result) {
+    switch (result) {
+        case AnnotateResult::Ok:            return "ok";
+        case AnnotateResult::NotARelayPort: return "not a relay port";
+        case AnnotateResult::NotOpen:       return "port not open";
+        case AnnotateResult::NoRoute:       return "relay does not support annotation";
+        case AnnotateResult::NoDevice:      return "no such device on the relay";
+        case AnnotateResult::Refused:       return "refused: not the attached client";
+        case AnnotateResult::Error:         return "error";
+    }
+    return "unknown";
+}
+
+bool RelayPortFactory::parsePriority(const std::string& s, ClientPriority& out) {
+    std::string lc(s);
+    std::transform(lc.begin(), lc.end(), lc.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    if (lc == "low")      { out = ClientPriority::Low;      return true; }
+    if (lc == "normal")   { out = ClientPriority::Normal;   return true; }
+    if (lc == "high")     { out = ClientPriority::High;     return true; }
+    if (lc == "critical") { out = ClientPriority::Critical; return true; }
+    return false;
+}
+
+std::string RelayPortFactory::relayUrlForPort(const std::string& portUrl) const {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    for (const auto& [url, hostPtr] : relayHosts_) {
+        if (hostPtr->enabled && hostPtr->knownPortUrls.count(portUrl))
+            return hostPtr->url;
+    }
+    return {};
+}
+
+RelayPortFactory::AnnotateResult RelayPortFactory::annotatePort(port_handle_t port, const std::string& name,
+        const std::string& purpose, ClientPriority priority, const std::string& link) {
+    if (!port || !(portType(port) & PORT_TYPE__TCP))
+        return AnnotateResult::NotARelayPort;
+
+    const std::string portUrl = portName(port);
+    const std::string relayUrl = relayUrlForPort(portUrl);
+    if (relayUrl.empty())
+        return AnnotateResult::NotARelayPort;
+
+    // A socket whose non-blocking connect is still in flight already has a local port, but the relay has
+    // not accepted it yet and would answer 409, so wait for the port to report open.
+    const int sock = TCP_PORT(port)->socket;
+    const int localPort = (sock >= 0) ? socketLocalPort(sock) : 0;
+    if (!portIsOpened(port) || localPort == 0)
+        return AnnotateResult::NotOpen;
+
+    return sendAnnotation(relayUrl, portUrl, localPort, name, purpose, priority, link);
+}
+
+RelayPortFactory::AnnotateResult RelayPortFactory::annotatePort(const std::string& portUrl, const std::string& name,
+        const std::string& purpose, ClientPriority priority, const std::string& link, int clientPort) {
+    const std::string relayUrl = relayUrlForPort(portUrl);
+    if (relayUrl.empty())
+        return AnnotateResult::NotARelayPort;
+    return sendAnnotation(relayUrl, portUrl, clientPort, name, purpose, priority, link);
+}
+
+int RelayPortFactory::connectionId(port_handle_t port) {
+    if (!port || !(portType(port) & PORT_TYPE__TCP) || !portIsOpened(port))
+        return 0;
+    const int sock = TCP_PORT(port)->socket;
+    return (sock >= 0) ? socketLocalPort(sock) : 0;
+}
+
+RelayPortFactory::AnnotateResult RelayPortFactory::sendAnnotation(const std::string& relayUrl, const std::string& portUrl,
+        int localPort, const std::string& name, const std::string& purpose, ClientPriority priority, const std::string& link) {
+    static const char* priorityNames[] = { "low", "normal", "high", "critical" };
+    json body = {
+        { "tcp_port",    utils::parseUri(portUrl).port },
+        { "name",        truncateUtf8(name.empty() ? executableBaseName() : name, ANNOTATE_NAME_MAX) },
+        { "priority",    priorityNames[static_cast<int>(priority) & 3] },
+    };
+    if (localPort)        body["client_port"] = localPort;
+    if (!purpose.empty()) body["purpose"] = truncateUtf8(purpose, ANNOTATE_PURPOSE_MAX);
+    if (!link.empty())    body["link"]    = truncateUtf8(link, ANNOTATE_LINK_MAX);
+
+    auto [hostname, httpPort] = splitBaseUrl(relayUrl, DEFAULT_HTTP_PORT);
+    httplib::Client client(hostname, httpPort);
+    client.set_connection_timeout(std::chrono::milliseconds(ANNOTATE_CONNECT_TIMEOUT_MS));
+    client.set_read_timeout(std::chrono::milliseconds(ANNOTATE_READ_TIMEOUT_MS));
+    client.set_write_timeout(std::chrono::milliseconds(ANNOTATE_READ_TIMEOUT_MS));
+
+    auto res = client.Put("/api/relay/connection", body.dump(), "application/json");
+    if (!res) {
+        log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: annotate '%s' failed: %s",
+                  portUrl.c_str(), httplib::to_string(res.error()).c_str());
+        return AnnotateResult::Error;
+    }
+
+    AnnotateResult result;
+    switch (res->status) {
+        case 200: result = AnnotateResult::Ok; break;
+        case 409: result = AnnotateResult::Refused; break;
+        case 404: {
+            // The route answers an unknown device with a JSON error; a relay without the route has no body to parse.
+            json err = json::parse(res->body, nullptr, false);
+            result = (err.is_object() && err.contains("error")) ? AnnotateResult::NoDevice : AnnotateResult::NoRoute;
+            break;
+        }
+        default:  result = AnnotateResult::Error; break;
+    }
+    log_debug(IS_LOG_PORT_FACTORY, "RelayPortFactory: annotate '%s' (local port %d, %s): HTTP %d %s -> %s",
+              portUrl.c_str(), localPort, body["priority"].get<std::string>().c_str(),
+              res->status, res->body.c_str(), toString(result));
     return result;
 }
 

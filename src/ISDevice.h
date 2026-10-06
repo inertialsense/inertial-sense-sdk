@@ -111,6 +111,11 @@ public:
         COMPACT_HARDWARE_VER     = 0x0004,      //!< forces hiding digits 3 & 4 of the hardware version number, digits 1 & 2 are always shown
         COMPACT_SERIALNO         = 0x0008,      //!< disables zero-padding of the serial number
         COMPACT_BUILD_TYPE       = utils::FWI_COMPACT_BUILD_TYPE, //!< formats the build-type (when the firmware version is show) as a single character
+        SHOW_PLATFORM            = 0x0020,      //!< renders the carrier board, from flash config, inside the hardware parens: "SN60246 (IMX-5.0.4, RUG4-X20)". Instance methods only -- see the note on the static overloads
+        SHOW_IO_CONFIG           = 0x0040,      //!< renders the IMX io configuration after the port, bracketed, showing only what deviates from the platform's own configuration. Instance methods only
+
+        // Config Options -- aliases of the utils bits, so the two definitions cannot drift
+        CONFIG_VERBOSE           = utils::CFGI_VERBOSE,           //!< with SHOW_PLATFORM/SHOW_IO_CONFIG, renders every field rather than only deviations, and includes the pin-level detail
 
         // Version Options -- aliases of the utils bits, so the two definitions cannot drift
         OMIT_COMMIT_HASH         = utils::FWI_OMIT_COMMIT_HASH,   //!< suppresses the output of the commit hash/dirty status
@@ -127,9 +132,17 @@ public:
 
     /** @return the formatted unique-identifier string (see getIdAsString()) for the given devInfo, without requiring an ISDevice instance. */
     static std::string getIdAsString(const dev_info_t& devInfo);
-    /** @brief Formats the device-name string (see getName()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted name string */
+    /**
+     * @brief Formats the device-name string (see getName()) for the given devInfo, without requiring an ISDevice instance.
+     * SHOW_PLATFORM has no effect here: the platform is held in flash config, which a dev_info_t does not carry.
+     * @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted name string
+     */
     static std::string getName(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER));
-    /** @brief Formats the device-description string (see getDescription()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted description string */
+    /**
+     * @brief Formats the device-description string (see getDescription()) for the given devInfo, without requiring an ISDevice instance.
+     * SHOW_PLATFORM and SHOW_IO_CONFIG have no effect here: both are held in flash config, which a dev_info_t does not carry.
+     * @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted description string
+     */
     static std::string getDescription(const dev_info_t& devInfo, int flags = (COMPACT_SERIALNO | COMPACT_HARDWARE_VER | ESSENTIAL_FIRMWARE_INFO));
     /** @brief Formats the firmware-info string (see getFirmwareInfo()) for the given devInfo, without requiring an ISDevice instance. @param devInfo the device info to format @param flags a DevInfoFormatFlags bitmask @return the formatted firmware-info string */
     static std::string getFirmwareInfo(const dev_info_t &devInfo, int flags = 0);
@@ -164,6 +177,7 @@ public:
 
         hdwId = src.hdwId;
         devInfo = src.devInfo;
+        devInfoConfirmedMs = src.devInfoConfirmedMs;
         imxFlashCfg = src.imxFlashCfg;
         gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;
@@ -214,6 +228,7 @@ public:
         port = src.port;
         hdwId = src.hdwId;
         devInfo = src.devInfo;
+        devInfoConfirmedMs = src.devInfoConfirmedMs;
         imxFlashCfg = src.imxFlashCfg;
         gpxFlashCfg = src.gpxFlashCfg;
         sysParams = src.sysParams;
@@ -367,6 +382,32 @@ public:
     bool hasDeviceInfo() const {
         return (hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (hdwId != IS_HARDWARE_ANY) && (devInfo.hdwRunState != HDW_STATE_UNKNOWN) && (devInfo.serialNumber != 0) && (devInfo.hardwareType != 0) && (devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0);
     }
+
+    /**
+     * @return the time (ms uptime) at which devInfo was last populated by an actual response from the
+     *   device, or 0 if it never has been.
+     *
+     * hasDeviceInfo() asks whether devInfo is complete, which is not the same question. A discovery
+     * hint (see DeviceFactory::beginValidation()) can fill devInfo completely enough to satisfy it
+     * without a byte having been exchanged, so a caller that needs to know what the device IS -- rather
+     * than what it was last announced to be -- must consult this as well (see hasConfirmedDeviceInfo()).
+     */
+    uint32_t devInfoConfirmedAt() const { return devInfoConfirmedMs; }
+
+    /**
+     * @return true if devInfo is complete (hasDeviceInfo()) AND came from an actual device response, rather
+     *   than only from a discovery hint. This is the test for "this device has been identified".
+     */
+    bool hasConfirmedDeviceInfo() const { return hasDeviceInfo() && (devInfoConfirmedMs != 0); }
+
+    /** @brief Records that devInfo now reflects an actual response from the device. */
+    void markDevInfoConfirmed();
+
+    /**
+     * @brief Marks devInfo as holding nothing better than an unverified claim -- a discovery hint, or a
+     * snapshot taken before an event (a reset) that may have changed what it describes.
+     */
+    void clearDevInfoConfirmed() { devInfoConfirmedMs = 0; }
 
     /**
      * Specifies a handler for protocol messages, which will be called when any message is successfully parsed. This 
@@ -1009,6 +1050,7 @@ private:
     bool                        was_connected = false;               //!< true, if this device's port was opened during the previous call to step()
 
     uint32_t                    validationStartMs = 0;               //!< If non-zero, the time in Epoch Ms at which validation was started; if zero, validation has finished (use hasDeviceInfo() to determine device status)
+    uint32_t                    devInfoConfirmedMs = 0;              //!< time (ms uptime) devInfo was last populated by a real device response; 0 = never, so devInfo holds at best an unverified claim. See devInfoConfirmedAt().
     uint32_t                    nextValidationMs = 0;                //!< if current_timeMs() > than this time, we'll perform the next validation query, otherwise we wait to see if the previous responds.
     queryType                   nextValidationType = QUERYTYPE_NMEA; //!< we cycle through different types of device queries looking for the first response (0 = NMEA, 1 = ISbinary, 2 = ISbootloader, 3 = MCUboot/SMP)
     bool                        doNotValidate = false;               //!< never attempt validation on this device; see disableValidation()

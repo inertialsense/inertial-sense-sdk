@@ -528,6 +528,14 @@ public:
      */
     bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
 
+#ifdef SDK_UNIT_TEST
+    // White-box access for the host unit tests (tests/test_ISFirmwareUpdater_isDone.cpp), so
+    // fwUpdate_isDone()'s formula can be exercised across its session_id/session_status state space
+    // without a real port, device, or firmware image. Compiled only in the unit-test build
+    // (SDK_UNIT_TEST); absent from the shipped SDK -- adds no member, so it does not affect the
+    // class layout the prebuilt library was compiled against.
+    friend class FwUpdateIsDoneTest;
+#endif
 
 private:
 

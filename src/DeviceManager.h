@@ -129,6 +129,7 @@ public:
                         // Invalidate the device, which will force a rediscovery, without losing the identity of the device itself.
                         d->devInfo.hdwRunState = HDW_STATE_UNKNOWN;
                         memset(d->devInfo.firmwareVer, 0, sizeof(d->devInfo.firmwareVer));
+                        d->clearDevInfoConfirmed();     // a forced revalidation must not be satisfiable by the previous answer
                     } else {
                         if (options & DISCOVERY__CLOSE_PORT_ON_COMPLETION)
                             portClose(port);
@@ -140,9 +141,13 @@ public:
             factoriesSnapshot = factories;
         }
 
-        // open the port, if needed - if we can't open it, fail.
+        // Open the port if needed - if we can't open it, fail. portOpenRetry(), not a bare
+        // portOpen(): an asynchronous transport returns PORT_ERROR__NONE with the connect still in
+        // flight and PORT_FLAG__OPENED clear, and locateDevice() below assumes an actually-open port
+        // (SN-8571).
+        const uint32_t effectiveTimeout = (timeoutMs > 0) ? timeoutMs : DISCOVERY__DEFAULT_TIMEOUT;
         if ( (!portIsOpened(port) && (options & DISCOVERY__IGNORE_CLOSED_PORTS)) ||
-             (portOpen(port) != PORT_ERROR__NONE) )
+             (portOpenRetry(port, effectiveTimeout / 4, 10) != PORT_ERROR__NONE) )
             return false;
 
 

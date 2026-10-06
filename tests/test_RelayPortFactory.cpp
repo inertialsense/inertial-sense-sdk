@@ -23,8 +23,15 @@
 #include "httplib.h"
 #include "json.hpp"
 #include "RelayPortFactory.h"
+#include "TcpPortFactory.h"
 #include "PortManager.h"
 #include "DeviceManager.h"
+
+#ifndef _WIN32
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif
 
 using json = nlohmann::json;
 using namespace std::chrono_literals;
@@ -114,6 +121,14 @@ public:
                 });
         });
 
+        server_.Put("/api/relay/connection", [this](const httplib::Request& req, httplib::Response& res) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            annotations_.push_back(json::parse(req.body, nullptr, false));
+            res.status = annotateStatus_;
+            if (!annotateBody_.empty())
+                res.set_content(annotateBody_, "application/json");
+        });
+
         listenThread_ = std::thread([this] { server_.listen_after_bind(); });
         // cpp-httplib needs a moment to actually start accepting connections.
         while (!server_.is_running()) std::this_thread::sleep_for(5ms);
@@ -186,6 +201,17 @@ public:
             cv_.notify_all();
         }
     }
+
+    /// Sets the answer to PUT /api/relay/connection. An empty body emulates a relay without the route when
+    /// paired with 404.
+    void setAnnotateResponse(int status, const std::string& body) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        annotateStatus_ = status;
+        annotateBody_ = body;
+    }
+
+    /// @return every PUT /api/relay/connection body received, oldest first.
+    std::vector<json> annotations() const { std::lock_guard<std::mutex> lock(mutex_); return annotations_; }
 
     int port() const { return port_; }
     std::string instanceId() const { std::lock_guard<std::mutex> lock(mutex_); return instanceId_; }
@@ -290,7 +316,58 @@ private:
     std::atomic<bool> failSse_{false};
     std::atomic<bool> offline_{false};
     std::atomic<bool> stopping_{false};
+    int annotateStatus_ = 200;
+    std::string annotateBody_ = "{\"ok\":true}";
+    std::vector<json> annotations_;
 };
+
+#ifndef _WIN32
+/// A loopback TCP listener standing in for a relay device slot: accepts connections and holds them open.
+class FakeSlot {
+public:
+    FakeSlot() {
+        fd_ = socket(AF_INET, SOCK_STREAM, 0);
+        sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        bind(fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+        socklen_t len = sizeof(addr);
+        getsockname(fd_, reinterpret_cast<sockaddr*>(&addr), &len);
+        port_ = ntohs(addr.sin_port);
+        listen(fd_, 4);
+        thread_ = std::thread([this] {
+            while (true) {
+                int c = accept(fd_, nullptr, nullptr);
+                if (c < 0) break;
+                std::lock_guard<std::mutex> lock(mutex_);
+                clients_.push_back(c);
+            }
+        });
+    }
+    ~FakeSlot() {
+        shutdown(fd_, SHUT_RDWR);
+        close(fd_);
+        if (thread_.joinable()) thread_.join();
+        for (int c : clients_) close(c);
+    }
+    int port() const { return port_; }
+
+private:
+    int fd_ = -1;
+    int port_ = 0;
+    std::thread thread_;
+    std::mutex mutex_;
+    std::vector<int> clients_;
+};
+
+/// @return the local port of a TCP port's socket.
+int localPortOf(port_handle_t port) {
+    sockaddr_in addr = {};
+    socklen_t len = sizeof(addr);
+    getsockname(TCP_PORT(port)->socket, reinterpret_cast<sockaddr*>(&addr), &len);
+    return ntohs(addr.sin_port);
+}
+#endif
 
 /// Reset the RelayPortFactory singleton's state between tests. The factory is a
 /// process-wide singleton, so we have to scrub everything it tracks.
@@ -812,3 +889,171 @@ TEST(test_RelayPortFactory, reconnectBackoff_escalatesAfterEviction) {
     fake.setOffline(false);
     fake.stop();
 }
+
+// ============================================================
+// Holder visibility and connection annotation
+// ============================================================
+
+/// Waits until the relay host at @p url has reported @p count devices.
+static bool waitForDevices(const std::string& url, size_t count) {
+    auto& rpf = RelayPortFactory::getInstance();
+    return waitFor([&]() {
+        for (const auto& h : rpf.getRelayHosts())
+            if (h.url == url && h.deviceCount == count) return true;
+        return false;
+    }, 2s);
+}
+
+TEST(test_RelayPortFactory, clientAndHold_parsedAndDescribed) {
+    FakeBridgeboard fake;
+    json held = makeDevice(1, 0, "tcp://127.0.0.1:56000", 1001);
+    held["has_tcp_client"] = true;
+    held["client"] = { {"peer", "::ffff:10.0.0.5:40000"}, {"since_unix_ms", 1790000000000LL}, {"idle_ms", 250},
+                       {"sent_bytes", 10}, {"received_bytes", 20}, {"priority", "high"},
+                       {"name", "ci-hdw"}, {"purpose", "firmware_tests.fw_update"}, {"link", "https://example/run/1"} };
+    json anonymous = makeDevice(1, 1, "tcp://127.0.0.1:56001", 1002);
+    anonymous["has_tcp_client"] = true;
+    anonymous["client"] = { {"peer", "::ffff:10.0.0.6:40001"}, {"priority", "anonymous"} };
+    json reserved = makeDevice(1, 2, "tcp://127.0.0.1:56002", 1003);
+    reserved["hold"] = { {"mode", "all"}, {"until_unix_ms", 1790000060000LL}, {"reason", "bench rework"}, {"by", "10.0.0.9"} };
+    json freeSlot = makeDevice(1, 3, "tcp://127.0.0.1:56003", 1004);
+    for (auto* d : { &held, &anonymous, &reserved, &freeSlot })
+        fake.emitAdded(*d);
+    ASSERT_GT(fake.start(), 0);
+
+    auto& rpf = RelayPortFactory::getInstance();
+    resetFactory();
+    std::string url = "http://127.0.0.1:" + std::to_string(fake.port());
+    rpf.addRelayHost(url);
+    rpf.setRelayHostEnabled(url, true);
+    ASSERT_TRUE(waitForDevices(url, 4));
+
+    RelayPortFactory::RelayDeviceStatus dev;
+    ASSERT_TRUE(rpf.getRelayDevice("tcp://127.0.0.1:56000", dev));
+    EXPECT_TRUE(dev.client.present);
+    EXPECT_EQ(dev.client.name, "ci-hdw");
+    EXPECT_EQ(dev.client.priority, "high");
+    EXPECT_EQ(dev.client.receivedBytes, 20u);
+    EXPECT_FALSE(dev.hold.present);
+    std::string s = RelayPortFactory::describeHolder(dev);
+    EXPECT_NE(s.find("held by ci-hdw (firmware_tests.fw_update) since"), std::string::npos) << s;
+    EXPECT_NE(s.find("https://example/run/1"), std::string::npos) << s;
+
+    ASSERT_TRUE(rpf.getRelayDevice("tcp://127.0.0.1:56001", dev));
+    EXPECT_NE(RelayPortFactory::describeHolder(dev).find("held by ::ffff:10.0.0.6:40001"), std::string::npos);
+
+    ASSERT_TRUE(rpf.getRelayDevice("tcp://127.0.0.1:56002", dev));
+    EXPECT_TRUE(dev.hold.present);
+    EXPECT_EQ(dev.hold.reason, "bench rework");
+    EXPECT_NE(RelayPortFactory::describeHolder(dev).find("held by an operator (10.0.0.9): bench rework, until"), std::string::npos);
+
+    ASSERT_TRUE(rpf.getRelayDevice("tcp://127.0.0.1:56003", dev));
+    EXPECT_FALSE(dev.client.present);
+    EXPECT_TRUE(RelayPortFactory::describeHolder(dev).empty());
+
+    EXPECT_FALSE(rpf.getRelayDevice("tcp://127.0.0.1:1", dev));
+
+    resetFactory();
+    fake.stop();
+}
+
+TEST(test_RelayPortFactory, parsePriority) {
+    RelayPortFactory::ClientPriority p = RelayPortFactory::ClientPriority::Normal;
+    EXPECT_TRUE(RelayPortFactory::parsePriority("HIGH", p));
+    EXPECT_EQ(p, RelayPortFactory::ClientPriority::High);
+    EXPECT_TRUE(RelayPortFactory::parsePriority("critical", p));
+    EXPECT_EQ(p, RelayPortFactory::ClientPriority::Critical);
+    EXPECT_FALSE(RelayPortFactory::parsePriority("anonymous", p));
+    EXPECT_EQ(p, RelayPortFactory::ClientPriority::Critical);
+}
+
+#ifndef _WIN32
+TEST(test_RelayPortFactory, annotatePort_sendsConnectionIdentityAndMapsResults) {
+    FakeSlot slot;
+    const std::string portUrl = "tcp://127.0.0.1:" + std::to_string(slot.port());
+    FakeBridgeboard fake;
+    fake.emitAdded(makeDevice(1, 0, portUrl, 2001));
+    ASSERT_GT(fake.start(), 0);
+
+    auto& rpf = RelayPortFactory::getInstance();
+    resetFactory();
+    std::string url = "http://127.0.0.1:" + std::to_string(fake.port());
+    rpf.addRelayHost(url);
+    rpf.setRelayHostEnabled(url, true);
+    ASSERT_TRUE(waitForDevices(url, 1));
+
+    port_handle_t port = rpf.bindPort(portUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
+    ASSERT_NE(port, nullptr);
+
+    // Not open yet: nothing is sent.
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::NotOpen);
+    EXPECT_TRUE(fake.annotations().empty());
+
+    ASSERT_EQ(portOpenRetry(port, 1000, 10), PORT_ERROR__NONE);
+
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw", "firmware_tests.fw_update", RelayPortFactory::ClientPriority::High,
+                               "https://example/run/1"), RelayPortFactory::AnnotateResult::Ok);
+    auto sent = fake.annotations();
+    ASSERT_EQ(sent.size(), 1u);
+    EXPECT_EQ(sent[0].value("tcp_port", 0), slot.port());
+    EXPECT_EQ(sent[0].value("client_port", 0), localPortOf(port));
+    EXPECT_EQ(sent[0].value("name", ""), "ci-hdw");
+    EXPECT_EQ(sent[0].value("purpose", ""), "firmware_tests.fw_update");
+    EXPECT_EQ(sent[0].value("priority", ""), "high");
+    EXPECT_EQ(sent[0].value("link", ""), "https://example/run/1");
+
+    // Defaults: an empty name becomes the executable's name; empty purpose/link are omitted; priority normal.
+    EXPECT_EQ(rpf.annotatePort(port), RelayPortFactory::AnnotateResult::Ok);
+    sent = fake.annotations();
+    ASSERT_EQ(sent.size(), 2u);
+    EXPECT_FALSE(sent[1].value("name", "").empty());
+    EXPECT_FALSE(sent[1].contains("purpose"));
+    EXPECT_FALSE(sent[1].contains("link"));
+    EXPECT_EQ(sent[1].value("priority", ""), "normal");
+
+    // Over-long values are truncated to the relay's limits.
+    EXPECT_EQ(rpf.annotatePort(port, std::string(100, 'n'), std::string(300, 'p')), RelayPortFactory::AnnotateResult::Ok);
+    sent = fake.annotations();
+    EXPECT_EQ(sent.back().value("name", "").size(), 64u);
+    EXPECT_EQ(sent.back().value("purpose", "").size(), 256u);
+
+    // By slot URL, for a caller without the port handle: the connection is identified by host alone.
+    EXPECT_EQ(rpf.annotatePort(portUrl, "cltool", "-uf", RelayPortFactory::ClientPriority::High),
+              RelayPortFactory::AnnotateResult::Ok);
+    sent = fake.annotations();
+    EXPECT_EQ(sent.back().value("tcp_port", 0), slot.port());
+    EXPECT_FALSE(sent.back().contains("client_port"));
+    EXPECT_EQ(sent.back().value("priority", ""), "high");
+    EXPECT_EQ(rpf.annotatePort(std::string("tcp://127.0.0.1:1"), "cltool"), RelayPortFactory::AnnotateResult::NotARelayPort);
+
+    fake.setAnnotateResponse(409, "{\"error\":\"the connected client is not the caller\"}");
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::Refused);
+    fake.setAnnotateResponse(404, "{\"error\":\"no device matches that selection\"}");
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::NoDevice);
+    fake.setAnnotateResponse(404, "");
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::NoRoute);
+    fake.setAnnotateResponse(400, "{\"error\":\"bad\"}");
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::Error);
+
+    portClose(port);
+    EXPECT_EQ(rpf.annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::NotOpen);
+    rpf.releasePort(port);
+
+    resetFactory();
+    fake.stop();
+}
+
+TEST(test_RelayPortFactory, annotatePort_rejectsPortsNoRelayKnows) {
+    FakeSlot slot;
+    const std::string portUrl = "tcp://127.0.0.1:" + std::to_string(slot.port());
+    resetFactory();
+
+    port_handle_t port = TcpPortFactory::getInstance().bindPort(portUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
+    ASSERT_NE(port, nullptr);
+    ASSERT_EQ(portOpenRetry(port, 1000, 10), PORT_ERROR__NONE);
+    EXPECT_EQ(RelayPortFactory::getInstance().annotatePort(port, "ci-hdw"), RelayPortFactory::AnnotateResult::NotARelayPort);
+    EXPECT_EQ(RelayPortFactory::getInstance().annotatePort(nullptr, "ci-hdw"), RelayPortFactory::AnnotateResult::NotARelayPort);
+    portClose(port);
+    TcpPortFactory::getInstance().releasePort(port);
+}
+#endif

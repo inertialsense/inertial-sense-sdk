@@ -743,7 +743,9 @@ namespace ISFileManager {
         if (pos == std::string::npos)
             return false;
 
-        parent = std::string(path, 0, pos);
+        // Indexed against realPath, which is what pos was measured on -- a relative input was
+        // absolutised above, so the two strings do not share offsets.
+        parent = std::string(realPath, 0, pos);
         return true;
     }
 

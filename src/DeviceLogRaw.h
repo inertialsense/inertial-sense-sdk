@@ -74,6 +74,10 @@ public:
 
     cDataChunk m_chunk;     //!< staging buffer for not-yet-flushed raw bytes; written/read with no chunk header (see the file-level documentation)
 
+protected:
+    /** @brief The `.raw` on-disk stream IS raw ISB wire bytes, so a `.dvi` sidecar in that same encoding is meaningful here. */
+    bool WantsDeviceInfoSidecar() const OVERRIDE { return true; }
+
 private:
     /** @brief Initialize `m_comm` and enable the recognized protocols (IS binary data, NMEA, RTCM3, u-blox). */
     void initCommInstance();
@@ -96,13 +100,40 @@ private:
     is_comm_instance_t m_comm;              //!< multi-protocol packet parser (IS binary, NMEA, RTCM3, u-blox)
     protocol_type_t m_protocolType;         //!< unused
 
-    //! SN-8328: physical byte offset (within the current .raw file) at which the
-    //! NEXT parsed packet starts. Persists across SaveData() input buffers so a
-    //! packet split across two LogData() calls still gets its true start offset.
-    //! Reset to 0 when a fresh .raw file begins. Stamped into each .idx record so
-    //! ISLogReader trusts the sidecar instead of rebuilding (a rebuild would drop
-    //! the SN-8383 per-record host-uptime deltas).
-    uint64_t m_rawIndexCursor = 0;
+    /**
+     * @brief Absolute byte offset, within the current `.raw` file, of the first byte the parser
+     *        has NOT yet attributed to a packet or to a skipped run.
+     *
+     * SN-8328 established that the `.idx` must carry each record's physical `.raw` offset so
+     * `ISLogReader` trusts the sidecar instead of rebuilding (a rebuild drops the SN-8383
+     * per-record log-start time-offsets). SN-8765 corrected HOW that offset is derived: the
+     * parser has finished with `m_rawFedBytes - (rxBuf.tail - rxBuf.head)` bytes, so after an
+     * emit that quantity is the packet's END and its start is that minus `rxPkt.size`. Needed
+     * because the parser can drain a buffered backlog and complete a packet on a call whose input
+     * byte contributed nothing, making any caller-side byte counter wrong.
+     *
+     * Counted rather than read off a pointer because `is_comm_free` compacts the buffer; `tail`
+     * and `head` move together under compaction, so their difference stays valid while absolute
+     * positions do not.
+     *
+     * Persists across `SaveData()` input buffers so a packet split across two `LogData()` calls
+     * still gets its true start. Re-based when a fresh `.raw` file begins.
+     */
+    uint64_t m_rawFedBytes = 0;
+
+    /**
+     * @brief How many bytes at the start of the current `m_rawFedBytes` counting scheme are
+     *        actually carried-over, already-parsed-elsewhere bytes from the PREVIOUS `.raw`
+     *        segment, rather than bytes physically present in the current file (PR #1333 review).
+     *
+     * Set once per segment, at the same rebase point that resets `m_rawFedBytes` to
+     * `rxBuf.tail - rxBuf.head` when a fresh file begins: that rebase treats whatever the parser
+     * still has buffered as if it started at this segment's byte 0, but those bytes were fed to
+     * the parser during the PREVIOUS segment and their preamble was already flushed to the
+     * PREVIOUS file. A packet whose computed start falls below this threshold therefore has its
+     * preamble in the previous segment, not this one, and must not be indexed against this file.
+     */
+    uint64_t m_rawSegmentCarryoverBytes = 0;
 };
 
 #endif // IS_SDK__DEVICE_LOG_RAW_H

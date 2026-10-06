@@ -966,6 +966,31 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+*
+* @warning **The returned packet is NOT aligned to the byte you just fed, and its extent cannot
+*          be derived from bytes-since-the-previous-call.** This function appends one byte and
+*          then runs the buffered parser, which returns on the FIRST packet it finds and leaves
+*          any remainder unscanned. `is_comm_reset_parser` also rewinds `rxBuf.scan` back to
+*          `rxBuf.head` on a parse error, so buffered bytes get re-scanned — after which a call
+*          can complete an entire packet out of the backlog while the byte you passed in
+*          contributes nothing. Measured on a 5 MB capture: one call consumed 697 bytes, and the
+*          next fourteen each reported a complete valid packet having consumed one byte.
+*
+*          Take a packet's length from `rxPkt.size`. Do NOT use `rxBuf.head` itself as a stable
+*          file offset, and do NOT use a delta between two `head` readings either: `is_comm_free`'s
+*          compaction resets `head` to a fixed `buf->start` and shifts `tail`/`scan` by the same
+*          amount, so `head`'s own absolute value (and any delta against a prior reading of it)
+*          carries no relationship to bytes actually consumed — it is pure compaction-shift noise.
+*          What DOES survive compaction is the outstanding byte count `tail - head` (both operands
+*          shift together, so the difference is invariant). Feed the parser in BULK (see the
+*          quick-start above) and keep your own running "total bytes ever fed" counter; the
+*          parser's absolute consumed position is then `totalFed - (tail - head)`, and a packet's
+*          start is that minus `rxPkt.size` — exactly what the live `.raw` writer does
+*          (`cDeviceLogRaw::SaveData`, `m_rawFedBytes`/`consumedEnd`).
+*
+*          Both in-tree callers got this wrong identically and wrote `.idx` offsets that were not
+*          packet starts — see SN-8765.
+*
 * @param instance the comm instance passed to is_comm_init
 * @param byte the byte to decode
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
