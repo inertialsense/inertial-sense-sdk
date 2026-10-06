@@ -139,7 +139,9 @@ typedef enum
 #define MAX_MSG_SIZE_RTCM       1023    // RTCM3 standard messages
 #define MAX_MSG_SIZE_UBX        1024    // uBlox binary messages
 #define MAX_MSG_SIZE_SONY       4090    // Sony binary messages
-#define MAX_MSG_SIZE            4096    // = max(MAX_MSG_SIZE_ISB, MAX_MSG_SIZE_SBF, MAX_MSG_SIZE_NMEA, MAX_MSG_SIZE_RTCM, MAX_MSG_SIZE_UBX, MAX_MSG_SIZE_SONY)
+#define MAX_MSG_SIZE            4096    // Receive buffer size: the largest of the limits above
+STATIC_ASSERT(MAX_MSG_SIZE >= MAX_MSG_SIZE_ISB  && MAX_MSG_SIZE >= MAX_MSG_SIZE_SBF  && MAX_MSG_SIZE >= MAX_MSG_SIZE_NMEA &&
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_RTCM && MAX_MSG_SIZE >= MAX_MSG_SIZE_UBX  && MAX_MSG_SIZE >= MAX_MSG_SIZE_SONY);
 
 /** @deprecated Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
 #define PKT_BUF_SIZE            MAX_MSG_SIZE
