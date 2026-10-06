@@ -1,4 +1,5 @@
 #include <deque>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -1816,3 +1817,83 @@ TEST(ISComm, BufferParse)
 
 
 
+
+namespace
+{
+
+/** Build an SBF block of blockSize bytes (header included) with a valid CRC. */
+std::vector<uint8_t> buildSbfBlock(uint16_t blockSize, uint16_t msgId)
+{
+    std::vector<uint8_t> block(blockSize, 0);
+    for (int i = (int)sizeof(sept_pkt_hdr_t); i < blockSize; i++)
+        block[i] = (uint8_t)i;
+
+    sept_pkt_hdr_t* hdr = (sept_pkt_hdr_t*)block.data();
+    hdr->syncChar1   = SEPT_PROTO_START_BYTE;
+    hdr->syncChar2   = SEPT_SBF_PREAMBLE_BYTE2;
+    hdr->msgID       = msgId;
+    hdr->payloadSize = blockSize;
+    hdr->crc         = crc_ccitt((uint8_t*)&hdr->msgID, blockSize - 4);
+    return block;
+}
+
+/** SBF-only parser with a receive buffer sized as a comm port's is. */
+struct SbfParser
+{
+    is_comm_instance_t comm;
+    uint8_t buf[MAX_MSG_SIZE];
+
+    SbfParser()
+    {
+        is_comm_init(&comm, buf, sizeof(buf), NULL);
+        is_comm_set_protocol_mask(&comm, ENABLE_PROTOCOL_SBF);
+    }
+
+    // comm points into buf, so a copy would point into the original.
+    SbfParser(const SbfParser&) = delete;
+    SbfParser& operator=(const SbfParser&) = delete;
+
+    /** Feed block one byte at a time; returns the sizes of the SBF packets found. */
+    std::vector<uint32_t> parse(const std::vector<uint8_t>& block)
+    {
+        std::vector<uint32_t> sizes;
+        for (uint8_t byte : block)
+        {
+            if (is_comm_parse_byte(&comm, byte) == _PTYPE_SEPTENTRIO_SBF)
+                sizes.push_back(comm.rxPkt.size);
+        }
+        return sizes;
+    }
+};
+
+}  // namespace
+
+TEST(ISComm, SbfBlockLargerThanIsbLimitParses)
+{
+    auto block = buildSbfBlock(3000, 4027);
+    ASSERT_GT(block.size(), (size_t)MAX_MSG_SIZE_ISB);
+
+    SbfParser p;
+    EXPECT_EQ(p.parse(block), std::vector<uint32_t>{3000});
+    EXPECT_EQ(p.comm.rxPkt.id, 4027);
+}
+
+TEST(ISComm, SbfBlockAtMaxSizeParses)
+{
+    SbfParser p;
+    EXPECT_EQ(p.parse(buildSbfBlock(MAX_MSG_SIZE_SBF, 4027)), std::vector<uint32_t>{MAX_MSG_SIZE_SBF});
+}
+
+TEST(ISComm, SbfBlockOverMaxSizeRejected)
+{
+    SbfParser p;
+
+    // Parse errors are only counted once a valid packet has been seen.
+    ASSERT_EQ(p.parse(buildSbfBlock(100, 4027)), std::vector<uint32_t>{100});
+
+    EXPECT_TRUE(p.parse(buildSbfBlock(MAX_MSG_SIZE_SBF + 4, 4027)).empty());
+    EXPECT_EQ(p.comm.rxErrorTypeCount[EPARSE_INVALID_SIZE], 1u);
+
+    // The parser recovers for the next valid block.
+    EXPECT_EQ(p.parse(buildSbfBlock(100, 4027)), std::vector<uint32_t>{100});
+}

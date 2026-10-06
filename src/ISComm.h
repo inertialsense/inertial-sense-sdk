@@ -141,6 +141,11 @@ typedef enum
 #define MAX_MSG_SIZE_SONY       4090    // Sony binary messages
 #define MAX_MSG_SIZE            4096    // = max(MAX_MSG_SIZE_ISB, MAX_MSG_SIZE_SBF, MAX_MSG_SIZE_NMEA, MAX_MSG_SIZE_RTCM, MAX_MSG_SIZE_UBX, MAX_MSG_SIZE_SONY)
 
+/** @deprecated Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
+#define PKT_BUF_SIZE            MAX_MSG_SIZE
+/** @deprecated Use MAX_MSG_SIZE_NMEA. */
+#define MAX_MSG_LENGTH_NMEA     MAX_MSG_SIZE_NMEA
+
 /** The maximum time between received data that will reset in the parser */
 #define MAX_PARSER_GAP_TIME_MS  100
 
@@ -163,7 +168,6 @@ typedef enum
 
 #define UBLOX_HEADER_SIZE           6   //!< Byte size of the u-blox binary packet header
 #define RTCM3_HEADER_SIZE           3   //!< Byte size of the RTCM3 packet header
-#define MAX_MSG_SIZE_NMEA         200 //!< Maximum byte length of a single NMEA sentence
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
@@ -260,6 +264,16 @@ typedef struct
     /** Number of bytes in ptr */
     uint32_t            size;
 } bufPtr_t;
+
+/** @deprecated Use bufPtr_t, which points to bytes owned elsewhere instead of holding a copy. */
+typedef struct
+{
+    /** Number of bytes - for partial data requests, this will be less than the size of the data structure */
+    uint32_t            size;
+
+    /** Buffer to hold the bytes */
+    uint8_t             buf[MAX_MSG_SIZE];
+} buffer_t;
 
 /** Represents both a send and receive buffer */
 typedef struct
@@ -416,6 +430,13 @@ typedef struct
  *  Note: for packets with ISB_FLAGS_PAYLOAD_W_OFFSET set, pkt->data.size already excludes the 2-byte offset.
  *  This limit intentionally bounds pkt->data.size (dataset bytes), not on-wire payloadSize. */
 #define ISB_MAX_DATASET_SIZE            ISB_MAX_PKT_BODY_SIZE
+
+/** @deprecated Use the ISB_-prefixed names above. */
+#define PKT_OVERHEAD_SIZE               ISB_OVERHEAD_SIZE
+#define MAX_PKT_OVERHEAD_SIZE           ISB_MAX_OVERHEAD_SIZE
+#define MAX_PKT_BODY_SIZE               ISB_MAX_PKT_BODY_SIZE
+#define MAX_P_DATA_BODY_SIZE            ISB_MAX_P_DATA_BODY_SIZE
+#define MAX_DATASET_SIZE                ISB_MAX_DATASET_SIZE
 
 /** Represents a packet header and body */
 typedef struct
