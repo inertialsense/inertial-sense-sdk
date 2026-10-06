@@ -114,7 +114,7 @@ bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
     if (hdr != NULL)
     {   // if any case is true this is corrupt
         isCorrupt = (hdr->size == 0 ||
-            hdr->offset + hdr->size > MAX_DATASET_SIZE ||
+            hdr->offset + hdr->size > ISB_MAX_DATASET_SIZE ||
             hdr->id == 0 ||
             hdr->offset % 4 != 0);
     }
@@ -839,7 +839,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
     }
 
     is_comm_instance_t comm;
-    uint8_t commBuf[PKT_BUF_SIZE];
+    uint8_t commBuf[MAX_MSG_SIZE];
     is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     EnableLogging(true);

@@ -33,7 +33,7 @@ class DeviceRuntimeTests
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
             msgSize = msgSize_;
-            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
+            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_SIZE_NMEA));
         }
         sMsgHistory(gnss_pos_t *gps, uint8_t *msg_ = NULL, int msgSize_ = 0)
         {
@@ -41,7 +41,7 @@ class DeviceRuntimeTests
             gpsTowMs = gps->timeOfWeekMs;
             gpsWeek = gps->week;
             msgSize = msgSize_;
-            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
+            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_SIZE_NMEA));
         }
         sMsgHistory(uint32_t gpsTowMs_, uint32_t gpsWeek_, p_data_hdr_t &dataHdr_, const uint8_t *dataBuf_)
         {
@@ -49,7 +49,7 @@ class DeviceRuntimeTests
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
             dataHdr = dataHdr_;
-            memcpy(msg, dataBuf_, _MIN(dataHdr.size, MAX_MSG_LENGTH_NMEA));
+            memcpy(msg, dataBuf_, _MIN(dataHdr.size, MAX_MSG_SIZE_NMEA));
         }
 
         system_time_t   localTime = { };
@@ -57,7 +57,7 @@ class DeviceRuntimeTests
         utc_time_t      time = { };
         uint32_t        gpsTowMs = 0;
         uint32_t        gpsWeek = 0;
-        uint8_t         msg[MAX_MSG_LENGTH_NMEA] = { };
+        uint8_t         msg[MAX_MSG_SIZE_NMEA] = { };
         int             msgSize = 0;
         p_data_hdr_t    dataHdr = { };
         bool            timeIrregular = false;    // used to prevent redundant error logging

@@ -95,7 +95,7 @@ private:
     /** @brief Write `m_chunk`'s buffered bytes to the current file with no chunk header (opening a new file first if needed), then clear the chunk. @return true on success; false if there's nothing to write or the file couldn't be opened/written. */
     bool WriteChunkToFile();
 
-    uint8_t m_commBuf[PKT_BUF_SIZE];       //!< working buffer owned by `m_comm` for in-progress packet assembly
+    uint8_t m_commBuf[MAX_MSG_SIZE];  //!< working buffer owned by `m_comm` for in-progress packet assembly
     p_data_buf_t m_pData;                   //!< scratch buffer for the most recently read data set
     is_comm_instance_t m_comm;              //!< multi-protocol packet parser (IS binary, NMEA, RTCM3, u-blox)
     protocol_type_t m_protocolType;         //!< unused

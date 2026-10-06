@@ -381,7 +381,7 @@ public:
      * @brief Check whether a data header's fields are self-consistent.
      * @param hdr header to validate; a null header is always considered corrupt.
      * @return true if @p hdr is null, has a zero size, a zero id, an offset that isn't a multiple
-     *         of 4, or an offset+size that exceeds MAX_DATASET_SIZE; false otherwise.
+     *         of 4, or an offset+size that exceeds ISB_MAX_DATASET_SIZE; false otherwise.
      */
     static bool isHeaderCorrupt(const p_data_hdr_t* hdr);
 

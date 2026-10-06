@@ -1303,7 +1303,7 @@ void ISLogReader::analyzeFromRecords(const AnchorAnalysis* prev) {
     const bool needsReframe = (format_ != SegmentFormat::Dat);
 
     is_comm_instance_t comm{};
-    uint8_t           commBuf[PKT_BUF_SIZE];
+    uint8_t           commBuf[MAX_MSG_SIZE];
     if (needsReframe) {
         is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
         is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
@@ -1463,7 +1463,7 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
     // in the file"). On a clean contiguous stream the two definitions coincide, so nothing changes
     // for an undamaged log; they differ only where unparsed bytes intervene, and there the packet
     // start is the correct answer.
-    constexpr std::size_t kMinScanWindow = 2u * PKT_BUF_SIZE;   // a max-size packet can never span a whole window
+    constexpr std::size_t kMinScanWindow = 2u * MAX_MSG_SIZE;   // a max-size packet can never span a whole window
     const std::size_t scanWindow = std::max<std::size_t>(kMinScanWindow, 256u * 1024u);
 
     std::vector<uint8_t> window(std::min<std::size_t>(scanWindow, total));
@@ -1581,7 +1581,7 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
             // anyway or the scan cannot terminate, keeping a max-packet overlap so a packet
             // straddling the boundary is still found from its start. No records were emitted
             // here, so re-scanning the overlap cannot duplicate one.
-            consumed = (have > PKT_BUF_SIZE) ? (have - PKT_BUF_SIZE) : have;
+            consumed = (have > MAX_MSG_SIZE) ? (have - MAX_MSG_SIZE) : have;
         }
         windowStart += consumed;
     }
@@ -1968,7 +1968,7 @@ void ISLogReader::deriveDeviceId(const fs::path& rawPath) {
     //    scanned to the end — the same single linear pass the no-dev_info case has always cost.
     if (rawSource_ && rawSource_->size() > 0) {
         is_comm_instance_t comm{};
-        uint8_t commBuf[PKT_BUF_SIZE];
+        uint8_t commBuf[MAX_MSG_SIZE];
         is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
         is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
 

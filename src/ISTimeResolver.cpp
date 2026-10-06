@@ -523,7 +523,7 @@ void scanSegmentForSyncs(const ISLogReader& reader,
     if (!bytes.first || bytes.second == 0) return;
 
     is_comm_instance_t comm{};
-    uint8_t commBuf[PKT_BUF_SIZE];
+    uint8_t commBuf[MAX_MSG_SIZE];
     is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
 

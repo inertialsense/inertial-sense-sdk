@@ -66,9 +66,9 @@ public:
         std::string                         field;                 //!< text currently being typed for the selected field's new value
         uint32_t                            did;                   //!< data set ID being edited
         bool                                uploadNeeded;           //!< true once an edited value is ready to be uploaded to the device
-        uint8_t                             data[MAX_DATASET_SIZE]; //!< last-received copy of the dataset being edited
+        uint8_t                             data[ISB_MAX_DATASET_SIZE]; //!< last-received copy of the dataset being edited
         data_info_t                         info;                   //!< data mapping info for the currently selected field
-        uint8_t                             pDataBuf[MAX_DATASET_SIZE]; //!< backing buffer for pData
+        uint8_t                             pDataBuf[ISB_MAX_DATASET_SIZE]; //!< backing buffer for pData
         p_data_t                            pData = {{}, pDataBuf};     //!< packet data descriptor wrapping pDataBuf, used to stage an upload
     } edit_data_t;
 

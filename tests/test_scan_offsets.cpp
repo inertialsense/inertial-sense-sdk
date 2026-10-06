@@ -71,9 +71,9 @@ fs::path makeTempDir(const std::string& prefix) {
  */
 void appendIsb(std::vector<uint8_t>& out, uint16_t did, uint16_t size, const void* payload) {
     is_comm_instance_t comm{};
-    uint8_t            commBuf[PKT_BUF_SIZE];
+    uint8_t            commBuf[MAX_MSG_SIZE];
     is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
-    uint8_t   pkt[PKT_BUF_SIZE];
+    uint8_t   pkt[MAX_MSG_SIZE];
     const int n = is_comm_data_to_buf(pkt, sizeof(pkt), &comm, did, size, 0,
                                       const_cast<void*>(payload));
     ASSERT_GT(n, 0);
