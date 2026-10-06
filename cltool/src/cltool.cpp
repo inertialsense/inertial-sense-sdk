@@ -22,6 +22,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+// Log replay (-rp) and event extraction (-evo) still read through the legacy cISLogger API,
+// which is [[deprecated]] (SN-7901) in favour of ISLog / ISDeviceLog. That stack reads only
+// .raw and .dat, so migrating would drop -lt=csv/json replay. Bracket those two functions to
+// keep the build quiet without hiding new uses of the legacy reader elsewhere in this file.
+#if defined(__GNUC__) || defined(__clang__)
+#define IS_LEGACY_READER_USE_BEGIN \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#define IS_LEGACY_READER_USE_END _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#define IS_LEGACY_READER_USE_BEGIN __pragma(warning(push)) __pragma(warning(disable: 4996))
+#define IS_LEGACY_READER_USE_END   __pragma(warning(pop))
+#else
+#define IS_LEGACY_READER_USE_BEGIN
+#define IS_LEGACY_READER_USE_END
+#endif
+
 cmd_options_t g_commandLineOptions = {};
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
@@ -1049,6 +1066,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     return true;
 }
 
+IS_LEGACY_READER_USE_BEGIN
 bool cltool_replayDataLog()
 {
     if (g_commandLineOptions.logPath.length() == 0)
@@ -1150,6 +1168,7 @@ bool cltool_replayDataLog()
     }
     return true;
 }
+IS_LEGACY_READER_USE_END
 
 void event_outputEvToFile(string fileName, uint8_t* data, int len)
 {
@@ -1160,6 +1179,7 @@ void event_outputEvToFile(string fileName, uint8_t* data, int len)
     outfile.close();
 }
 
+IS_LEGACY_READER_USE_BEGIN
 bool cltool_extractEventData()
 {
     is_comm_instance_t c;
@@ -1306,6 +1326,7 @@ bool cltool_extractEventData()
     cout << "Done parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
     return true;
 }
+IS_LEGACY_READER_USE_END
 
 void cltool_outputUsage()
 {
