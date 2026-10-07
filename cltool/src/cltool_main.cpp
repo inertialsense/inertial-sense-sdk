@@ -67,7 +67,7 @@ InertialSense *g_inertialSenseInterface = NULL;
 shared_ptr<CorrectionService> g_correctionInput = NULL;
 shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
-static void sendNmea(serial_port_t &port, string nmeaMsg);
+static void sendNmea(port_handle_t port, string nmeaMsg);
 
 /// The command line cltool was started with, excluding the executable; the default relay annotation purpose.
 static std::string g_commandLineText;
@@ -1720,6 +1720,52 @@ static void sendNmea(port_handle_t port, string nmeaMsg)
 }
 
 /**
+ * Handles the -nmea and -nmea=[s] options.  Opens the serial port directly (no InertialSense instance), optionally
+ * sends $STPB followed by the user's NMEA message, then displays received ASCII lines until 'q', -dur, or ctrl+c.
+ */
+static int cltool_nmeaMode()
+{
+    const string& portName = g_commandLineOptions.comPort;
+    if (portName.empty() || portName.find_first_of("*,") != string::npos)
+    {
+        cout << "option -nmea requires a single serial port, i.e. \"-c /dev/ttyACM0\" or \"-c COM5\"" << endl;
+        return EXIT_CODE_INVALID_COMMAND_LINE;
+    }
+
+    serial_port_t serialPort = {};
+    port_handle_t port = (port_handle_t)&serialPort;
+    serialPortInit(port, 0, PORT_TYPE__UART | PORT_TYPE__COMM, 0);
+    if (serialPortOpen(port, portName.c_str(), g_commandLineOptions.baudRate, 0) != PORT_ERROR__NONE)
+    {
+        cout << "Failed to open port: " << portName << endl;
+        return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
+    }
+
+    if (!g_commandLineOptions.nmeaMessage.empty())
+    {   // Listen-only mode (-nmea) does not stop broadcasts
+        sendNmea(port, "STPB");
+        sendNmea(port, g_commandLineOptions.nmeaMessage);
+    }
+
+    unsigned char line[512];
+    unsigned char* asciiData;
+    uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDurationMs;
+    while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
+    {
+        if (portReadAsciiTimeout(port, line, sizeof(line), 10, &asciiData) > 0)
+        {
+            printf("%s\r\n", (char*)asciiData);
+        }
+
+        // Scan for "q" press to exit program
+        g_inertialSenseDisplay.GetKeyboardInput();
+    }
+
+    serialPortClose(port);
+    return EXIT_CODE_SUCCESS;
+}
+
+/**
  * Discovers all available devices and resolves the target device ID to a port name.
  * On success, sets g_commandLineOptions.comPort to the resolved port and returns true.
  */
@@ -1845,25 +1891,7 @@ static int inertialSenseMain()
     }
     else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
-        for (auto port : InertialSense::getLastInstance()->portManager) {
-            if ( portValidate(port) && portOpen(port) ) {
-                sendNmea(port, "STPB");
-                sendNmea(port, g_commandLineOptions.nmeaMessage);
-            }
-
-            unsigned char line[512];
-            unsigned char* asciiData;
-            while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
-            {
-                if (portReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData) > 0)
-                {
-                    printf("%s\r\n", (char*)asciiData);
-                }
-
-                // Scan for "q" press to exit program
-                g_inertialSenseDisplay.GetKeyboardInput();
-            }
-        }
+        return cltool_nmeaMode();
     }
     else
     {   // open the device, start streaming data and logging if needed
