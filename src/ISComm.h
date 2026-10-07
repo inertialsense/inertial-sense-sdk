@@ -132,16 +132,35 @@ typedef enum
 /** Default protocol enable mask used by is_comm_init() when no explicit mask is set. */
 #define DEFAULT_PROTO_MASK (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
-/** Maximum packet length for different protocol types */
+/**
+ * Maximum message size, in bytes, that the parser accepts for each protocol.
+ *
+ * Each parser compares a frame's length against its limit as soon as the length is known, and the
+ * length-prefixed binary parsers (SBF, UBX, RTCM3, SPARTN, Sony) also against the receive buffer in use.
+ * A frame over either is rejected as a parse error and the parser goes back to looking for a preamble.
+ * This matters because preamble bytes occur by chance inside other traffic: without the check, a false
+ * preamble followed by a garbage length would hold up every protocol on the port until that many bytes
+ * arrived, or, once the length exceeded the buffer, flush it along with the valid packets it held.
+ *
+ * Set each limit to the largest message actually received, not the protocol's theoretical maximum; a
+ * looser limit only lets a false preamble stall the stream for longer. MAX_MSG_SIZE sizes receive buffers
+ * and must be at least every per-protocol limit.
+ */
 #define MAX_MSG_SIZE_ISB        2048    // Inertial Sense Binary messages
 #define MAX_MSG_SIZE_SBF        4096    // Septentrio Binary Format messages
 #define MAX_MSG_SIZE_NMEA       200     // NMEA (National Marine Electronics Association) messages
 #define MAX_MSG_SIZE_RTCM       1023    // RTCM3 standard messages
-#define MAX_MSG_SIZE_UBX        1024    // uBlox binary messages
+#define MAX_MSG_SIZE_UBX        4096    // uBlox binary messages: practical limit (protocol allows 65543); RXM-RAWX, NAV-SIG exceed 1024
+#define MAX_MSG_SIZE_SPARTN     1103    // SPARTN messages: 12-byte header + 1023 payload + 64 authentication + 4 CRC
 #define MAX_MSG_SIZE_SONY       4090    // Sony binary messages
 #define MAX_MSG_SIZE            4096    // Receive buffer size: the largest of the limits above
-STATIC_ASSERT(MAX_MSG_SIZE >= MAX_MSG_SIZE_ISB  && MAX_MSG_SIZE >= MAX_MSG_SIZE_SBF  && MAX_MSG_SIZE >= MAX_MSG_SIZE_NMEA &&
-              MAX_MSG_SIZE >= MAX_MSG_SIZE_RTCM && MAX_MSG_SIZE >= MAX_MSG_SIZE_UBX  && MAX_MSG_SIZE >= MAX_MSG_SIZE_SONY);
+STATIC_ASSERT(MAX_MSG_SIZE >= MAX_MSG_SIZE_ISB  && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_SBF  && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_NMEA &&
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_RTCM && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_UBX  && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_SONY &&
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_SPARTN);
 
 /** @deprecated Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
 #define PKT_BUF_SIZE            MAX_MSG_SIZE

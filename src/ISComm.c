@@ -727,8 +727,8 @@ static protocol_type_t processSeptentrioSBFPkt(void* v)
         // Parse header
         sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
         p->size = sepPkt->payloadSize;
-        if (p->size > MAX_MSG_SIZE_SBF || p->size < 4)
-        {	// Invalid size
+        if (p->size > MAX_MSG_SIZE_SBF || p->size > c->rxBuf.size || p->size < 4 || (p->size & 0x3))
+        {	// Invalid size: SBF block lengths are always a multiple of 4
             return parseErrorResetState(c, EPARSE_INVALID_SIZE);
         }
         return _PTYPE_NONE;
@@ -853,6 +853,10 @@ static protocol_type_t processUbloxPkt(void* v)
         // Parse header
         ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(c->rxBuf.head);
         p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;        // Header + payload + footer (checksum)
+        if (p->size > MAX_MSG_SIZE_UBX || p->size > c->rxBuf.size)
+        {   // Invalid size
+            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+        }
         p->state++;
         return _PTYPE_NONE;
 
@@ -1074,6 +1078,22 @@ static protocol_type_t processSonyByte(void* v)
     return _PTYPE_SONY;
 }
 
+/**
+ * Called once the SPARTN header has been read and the remaining length is known: rejects a frame
+ * larger than MAX_MSG_SIZE_SPARTN or the receive buffer, otherwise counts down the remaining payloadLen bytes.
+ */
+static protocol_type_t startSpartnPayload(is_comm_instance_t* c, uint16_t payloadLen)
+{
+    int headerLen = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+    if (headerLen + payloadLen > MAX_MSG_SIZE_SPARTN || headerLen + payloadLen > c->rxBuf.size)
+    {   // Invalid size
+        return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+    }
+
+    c->parser.state = -((int32_t)payloadLen);
+    return _PTYPE_NONE;
+}
+
 static protocol_type_t processSpartnByte(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
@@ -1129,8 +1149,7 @@ static protocol_type_t processSpartnByte(void* v)
             {   // Timestamp is 32 bit
                 if (!encrypt && p->state == 9)
                 {   // Encryption is disabled, we are ready to go to payload bytes
-                    p->state = -((int32_t)payloadLen);
-                    break;
+                    return startSpartnPayload(c, payloadLen);
                 }
                 else if (encrypt && p->state == 11)
                 {   // Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
@@ -1147,8 +1166,7 @@ static protocol_type_t processSpartnByte(void* v)
             {   // Timestamp is 16 bit
                 if (!encrypt && p->state == 7)
                 {   // Encryption is disabled, we are ready to go to payload bytes
-                    p->state = -((int32_t)payloadLen);
-                    break;
+                    return startSpartnPayload(c, payloadLen);
                 }
                 else if (encrypt && p->state == 9)
                 {   // Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
@@ -1183,9 +1201,8 @@ static protocol_type_t processSpartnByte(void* v)
                 return parseErrorResetState(c, EPARSE_INVALID_PAYLOAD);
             }
 
-            p->state = -((int32_t)payloadLen);
-
-        } break;
+            return startSpartnPayload(c, payloadLen);
+        }
 
 
         default:

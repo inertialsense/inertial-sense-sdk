@@ -1837,34 +1837,66 @@ std::vector<uint8_t> buildSbfBlock(uint16_t blockSize, uint16_t msgId)
     return block;
 }
 
-/** SBF-only parser with a receive buffer sized as a comm port's is. */
-struct SbfParser
+/** Build a UBX frame with payloadSize payload bytes and a valid checksum. */
+std::vector<uint8_t> buildUbxFrame(uint16_t payloadSize)
+{
+    std::vector<uint8_t> frame(sizeof(ubx_pkt_hdr_t) + payloadSize + 2, 0);
+    for (size_t i = sizeof(ubx_pkt_hdr_t); i < frame.size() - 2; i++)
+        frame[i] = (uint8_t)i;
+
+    ubx_pkt_hdr_t* hdr = (ubx_pkt_hdr_t*)frame.data();
+    frame[0]         = UBLOX_START_BYTE1;
+    frame[1]         = UBLOX_START_BYTE2;
+    hdr->classId     = 0x02;    // RXM
+    hdr->id          = 0x15;    // RAWX
+    hdr->payloadSize = payloadSize;
+    uint16_t cksum   = is_comm_fletcher16(0, &frame[2], (uint32_t)(frame.size() - 4));
+    memcpy(&frame[frame.size() - 2], &cksum, 2);
+    return frame;
+}
+
+/** Parser for a single protocol with a receive buffer of bufSize bytes. */
+struct ProtocolParser
 {
     is_comm_instance_t comm;
-    uint8_t buf[MAX_MSG_SIZE];
+    std::vector<uint8_t> buf;
+    protocol_type_t ptype;
 
-    SbfParser()
+    ProtocolParser(protocol_type_t ptype, int bufSize = MAX_MSG_SIZE) : buf(bufSize), ptype(ptype)
     {
-        is_comm_init(&comm, buf, sizeof(buf), NULL);
-        is_comm_set_protocol_mask(&comm, ENABLE_PROTOCOL_SBF);
+        is_comm_init(&comm, buf.data(), (int)buf.size(), NULL);
+        is_comm_set_protocol_mask(&comm, 0x00000001 << ptype);
     }
 
     // comm points into buf, so a copy would point into the original.
-    SbfParser(const SbfParser&) = delete;
-    SbfParser& operator=(const SbfParser&) = delete;
+    ProtocolParser(const ProtocolParser&) = delete;
+    ProtocolParser& operator=(const ProtocolParser&) = delete;
 
-    /** Feed block one byte at a time; returns the sizes of the SBF packets found. */
-    std::vector<uint32_t> parse(const std::vector<uint8_t>& block)
+    /** Feed bytes one at a time; returns the sizes of the packets of ptype found. */
+    std::vector<uint32_t> parse(const std::vector<uint8_t>& bytes)
     {
         std::vector<uint32_t> sizes;
-        for (uint8_t byte : block)
+        for (uint8_t byte : bytes)
         {
-            if (is_comm_parse_byte(&comm, byte) == _PTYPE_SEPTENTRIO_SBF)
+            if (is_comm_parse_byte(&comm, byte) == ptype)
                 sizes.push_back(comm.rxPkt.size);
         }
         return sizes;
     }
 };
+
+/**
+ * Parse a valid packet so parse errors are counted (they are suppressed until the first valid packet),
+ * then bad, then good again. Expects bad to be rejected as EPARSE_INVALID_SIZE and good to parse after it.
+ */
+void expectRejectedAsInvalidSize(ProtocolParser& p, const std::vector<uint8_t>& good, const std::vector<uint8_t>& bad)
+{
+    ASSERT_EQ(p.parse(good), std::vector<uint32_t>{(uint32_t)good.size()});
+    EXPECT_TRUE(p.parse(bad).empty());
+    EXPECT_EQ(p.comm.rxErrorTypeCount[EPARSE_INVALID_SIZE], 1u);
+    EXPECT_EQ(p.comm.rxErrorTypeCount[EPARSE_RXBUFFER_FLUSHED], 0u);
+    EXPECT_EQ(p.parse(good), std::vector<uint32_t>{(uint32_t)good.size()});
+}
 
 }  // namespace
 
@@ -1873,27 +1905,58 @@ TEST(ISComm, SbfBlockLargerThanIsbLimitParses)
     auto block = buildSbfBlock(3000, 4027);
     ASSERT_GT(block.size(), (size_t)MAX_MSG_SIZE_ISB);
 
-    SbfParser p;
+    ProtocolParser p(_PTYPE_SEPTENTRIO_SBF);
     EXPECT_EQ(p.parse(block), std::vector<uint32_t>{3000});
     EXPECT_EQ(p.comm.rxPkt.id, 4027);
 }
 
 TEST(ISComm, SbfBlockAtMaxSizeParses)
 {
-    SbfParser p;
+    ProtocolParser p(_PTYPE_SEPTENTRIO_SBF);
     EXPECT_EQ(p.parse(buildSbfBlock(MAX_MSG_SIZE_SBF, 4027)), std::vector<uint32_t>{MAX_MSG_SIZE_SBF});
 }
 
 TEST(ISComm, SbfBlockOverMaxSizeRejected)
 {
-    SbfParser p;
+    ProtocolParser p(_PTYPE_SEPTENTRIO_SBF);
+    expectRejectedAsInvalidSize(p, buildSbfBlock(100, 4027), buildSbfBlock(MAX_MSG_SIZE_SBF + 4, 4027));
+}
 
-    // Parse errors are only counted once a valid packet has been seen.
-    ASSERT_EQ(p.parse(buildSbfBlock(100, 4027)), std::vector<uint32_t>{100});
+TEST(ISComm, SbfBlockLengthNotMultipleOf4Rejected)
+{
+    ProtocolParser p(_PTYPE_SEPTENTRIO_SBF);
+    expectRejectedAsInvalidSize(p, buildSbfBlock(100, 4027), buildSbfBlock(102, 4027));
+}
 
-    EXPECT_TRUE(p.parse(buildSbfBlock(MAX_MSG_SIZE_SBF + 4, 4027)).empty());
-    EXPECT_EQ(p.comm.rxErrorTypeCount[EPARSE_INVALID_SIZE], 1u);
+TEST(ISComm, SbfBlockLargerThanRxBufferRejectedWithoutFlush)
+{
+    ProtocolParser p(_PTYPE_SEPTENTRIO_SBF, 2048);
+    expectRejectedAsInvalidSize(p, buildSbfBlock(100, 4027), buildSbfBlock(3000, 4027));
+}
 
-    // The parser recovers for the next valid block.
-    EXPECT_EQ(p.parse(buildSbfBlock(100, 4027)), std::vector<uint32_t>{100});
+TEST(ISComm, UbxFrameLargerThan1024Parses)
+{
+    auto frame = buildUbxFrame(3000);
+    ProtocolParser p(_PTYPE_UBLOX);
+    EXPECT_EQ(p.parse(frame), std::vector<uint32_t>{(uint32_t)frame.size()});
+}
+
+TEST(ISComm, UbxFrameAtMaxSizeParses)
+{
+    auto frame = buildUbxFrame(MAX_MSG_SIZE_UBX - sizeof(ubx_pkt_hdr_t) - 2);
+    ASSERT_EQ(frame.size(), (size_t)MAX_MSG_SIZE_UBX);
+    ProtocolParser p(_PTYPE_UBLOX);
+    EXPECT_EQ(p.parse(frame), std::vector<uint32_t>{MAX_MSG_SIZE_UBX});
+}
+
+TEST(ISComm, UbxFrameOverMaxSizeRejected)
+{
+    ProtocolParser p(_PTYPE_UBLOX);
+    expectRejectedAsInvalidSize(p, buildUbxFrame(100), buildUbxFrame(MAX_MSG_SIZE_UBX));
+}
+
+TEST(ISComm, UbxFrameLargerThanRxBufferRejectedWithoutFlush)
+{
+    ProtocolParser p(_PTYPE_UBLOX, 2048);
+    expectRejectedAsInvalidSize(p, buildUbxFrame(100), buildUbxFrame(3000));
 }
