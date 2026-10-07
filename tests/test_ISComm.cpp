@@ -1898,6 +1898,65 @@ void expectRejectedAsInvalidSize(ProtocolParser& p, const std::vector<uint8_t>& 
     EXPECT_EQ(p.parse(good), std::vector<uint32_t>{(uint32_t)good.size()});
 }
 
+/** Build an ISB data packet carrying size bytes of DID_INS_1. */
+std::vector<uint8_t> buildIsbPacket(uint16_t size = sizeof(ins_1_t))
+{
+    is_comm_instance_t comm;
+    uint8_t commBuf[MAX_MSG_SIZE];
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
+
+    ins_1_t ins1 = {};
+    std::vector<uint8_t> pkt(MAX_MSG_SIZE_ISB);
+    int n = is_comm_data_to_buf(pkt.data(), (uint32_t)pkt.size(), &comm, DID_INS_1, size, 0, &ins1);
+    pkt.resize(n > 0 ? n : 0);
+    return pkt;
+}
+
+/** An ISB or UBX header (the first sizeof(header) bytes) declaring a 65535-byte payload, plus filler. */
+std::vector<uint8_t> buildMaxPayloadHeader(uint8_t preamble1, uint8_t preamble2, size_t headerSize)
+{
+    std::vector<uint8_t> bytes(headerSize + 16, 0);
+    bytes[0] = preamble1;
+    bytes[1] = preamble2;
+    bytes[headerSize - 2] = 0xFF;   // payloadSize is the last two bytes of both headers
+    bytes[headerSize - 1] = 0xFF;
+    return bytes;
+}
+
+/**
+ * Build an unencrypted SPARTN frame with a 16-bit timestamp, payloadLen payload bytes and a 4-byte
+ * message CRC. The parser checks only the header CRC-4, which is found by trying each value.
+ */
+std::vector<uint8_t> buildSpartnFrame(uint16_t payloadLen)
+{
+    const int headerLen = 8;
+    const int crcLen = 4;
+    std::vector<uint8_t> frame(headerLen + payloadLen + crcLen, 0);
+    for (size_t i = headerLen; i < frame.size(); i++)
+        frame[i] = (uint8_t)i;
+
+    frame[0] = SPARTN_START_BYTE;
+    frame[1] = (uint8_t)((1 << 1) | ((payloadLen >> 9) & 0x01));    // message type 1, payload length bit 9
+    frame[2] = (uint8_t)(payloadLen >> 1);                           // payload length bits 8-1
+    frame[3] = (uint8_t)(((payloadLen & 0x01) << 7) | (0x3 << 4));    // payload length bit 0, CRC type 3 (4 bytes)
+    frame[4] = 0;                                                    // 16-bit timestamp
+
+    for (uint8_t crc4 = 0; crc4 < 16; crc4++)
+    {
+        frame[3] = (uint8_t)((frame[3] & 0xF0) | crc4);
+        is_comm_instance_t comm;
+        uint8_t buf[16];
+        is_comm_init(&comm, buf, sizeof(buf), NULL);
+        is_comm_set_protocol_mask(&comm, ENABLE_PROTOCOL_SPARTN);
+        for (int i = 0; i < 4; i++)
+            is_comm_parse_byte(&comm, frame[i]);
+        if (comm.parser.state == 4)     // header CRC accepted
+            return frame;
+    }
+    ADD_FAILURE() << "no SPARTN header CRC-4 value was accepted";
+    return frame;
+}
+
 }  // namespace
 
 TEST(ISComm, SbfBlockLargerThanIsbLimitParses)
@@ -1959,4 +2018,42 @@ TEST(ISComm, UbxFrameLargerThanRxBufferRejectedWithoutFlush)
 {
     ProtocolParser p(_PTYPE_UBLOX, 2048);
     expectRejectedAsInvalidSize(p, buildUbxFrame(100), buildUbxFrame(3000));
+}
+
+TEST(ISComm, UbxFrameDeclaringMaxPayloadRejected)
+{
+    // 6 + 65535 + 2 does not fit the parser's 16-bit size; the check must run before it is narrowed.
+    ProtocolParser p(_PTYPE_UBLOX);
+    expectRejectedAsInvalidSize(p, buildUbxFrame(100), buildMaxPayloadHeader(UBLOX_START_BYTE1, UBLOX_START_BYTE2, sizeof(ubx_pkt_hdr_t)));
+}
+
+TEST(ISComm, IsbPacketDeclaringMaxPayloadRejected)
+{
+    auto good = buildIsbPacket();
+    ASSERT_FALSE(good.empty());
+
+    ProtocolParser p(_PTYPE_INERTIAL_SENSE_DATA);
+    expectRejectedAsInvalidSize(p, good, buildMaxPayloadHeader(PSC_ISB_PREAMBLE_BYTE1, PSC_ISB_PREAMBLE_BYTE2, sizeof(packet_hdr_t)));
+}
+
+TEST(ISComm, SpartnFrameParses)
+{
+    auto frame = buildSpartnFrame(1000);
+    ProtocolParser p(_PTYPE_SPARTN);
+    EXPECT_EQ(p.parse(frame), std::vector<uint32_t>{(uint32_t)frame.size()});
+}
+
+TEST(ISComm, SpartnFrameAtMaxPayloadParses)
+{
+    // Largest unencrypted frame: 8-byte header + 1023 payload + 4 CRC.
+    auto frame = buildSpartnFrame(1023);
+    ASSERT_LE(frame.size(), (size_t)MAX_MSG_SIZE_SPARTN);
+    ProtocolParser p(_PTYPE_SPARTN);
+    EXPECT_EQ(p.parse(frame), std::vector<uint32_t>{(uint32_t)frame.size()});
+}
+
+TEST(ISComm, SpartnFrameLargerThanRxBufferRejectedWithoutFlush)
+{
+    ProtocolParser p(_PTYPE_SPARTN, 512);
+    expectRejectedAsInvalidSize(p, buildSpartnFrame(100), buildSpartnFrame(1000));
 }

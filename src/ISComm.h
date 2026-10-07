@@ -162,7 +162,7 @@ STATIC_ASSERT(MAX_MSG_SIZE >= MAX_MSG_SIZE_ISB  &&
               MAX_MSG_SIZE >= MAX_MSG_SIZE_SONY &&
               MAX_MSG_SIZE >= MAX_MSG_SIZE_SPARTN);
 
-/** @deprecated Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
+/** @deprecated Equal to MAX_MSG_SIZE, the receive buffer size, not the ISB packet limit. Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
 #define PKT_BUF_SIZE            MAX_MSG_SIZE
 
 /** The maximum time between received data that will reset in the parser */

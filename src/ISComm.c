@@ -434,11 +434,12 @@ static protocol_type_t processIsbPkt(void* v)
 
             // Parse header
             packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
-            p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;        // Header + payload + footer (checksum)
-            if (p->size > MAX_MSG_SIZE_ISB)
+            uint32_t frameSize = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;    // Header + payload + footer (checksum); checked before narrowing into p->size
+            if (frameSize > MAX_MSG_SIZE_ISB)
             {   // Invalid size
                 return parseErrorResetState(c, EPARSE_INVALID_SIZE);
             }
+            p->size = (uint16_t)frameSize;
             return _PTYPE_NONE;
 
         default:    // Wait for entire packet
@@ -852,11 +853,12 @@ static protocol_type_t processUbloxPkt(void* v)
 
         // Parse header
         ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(c->rxBuf.head);
-        p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;        // Header + payload + footer (checksum)
-        if (p->size > MAX_MSG_SIZE_UBX || p->size > c->rxBuf.size)
+        uint32_t frameSize = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;    // Header + payload + footer (checksum); checked before narrowing into p->size
+        if (frameSize > MAX_MSG_SIZE_UBX || frameSize > (uint32_t)c->rxBuf.size)
         {   // Invalid size
             return parseErrorResetState(c, EPARSE_INVALID_SIZE);
         }
+        p->size = (uint16_t)frameSize;
         p->state++;
         return _PTYPE_NONE;
 
