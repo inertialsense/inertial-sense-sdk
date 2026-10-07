@@ -31,9 +31,10 @@ ISDeviceLog::ISDeviceLog(ISDeviceLog&&) noexcept           = default;
 ISDeviceLog& ISDeviceLog::operator=(ISDeviceLog&&) noexcept = default;
 
 ISExpected<ISDeviceLog>
-    ISDeviceLog::fromSegments(std::vector<fs::path> segmentPaths) {
-    log_debug(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: %zu segment(s)",
-              segmentPaths.size());
+    ISDeviceLog::fromSegments(std::vector<fs::path> segmentPaths,
+                              const ISLogReader::OpenOptions& opts) {
+    log_debug(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: %zu segment(s) (ignoreOnDiskIndex=%d)",
+              segmentPaths.size(), static_cast<int>(opts.ignoreOnDiskIndex));
     if (segmentPaths.empty()) {
         log_error(IS_LOG_ISLOG, "ISDeviceLog::fromSegments: empty segment list");
         return fail(ISErrorCode::InvalidArgument,
@@ -49,7 +50,7 @@ ISExpected<ISDeviceLog>
     std::vector<ISLogReader> readers;
     readers.reserve(segmentPaths.size());
     for (const auto& path : segmentPaths) {
-        auto r = ISLogReader::openSegment(path);
+        auto r = ISLogReader::openSegment(path, opts);
         if (!r) {
             log_error(IS_LOG_ISLOG, "openSegment failed for %s: %s",
                       path.string().c_str(), r.error().message.c_str());
@@ -386,19 +387,19 @@ struct AnchoredFold {
 AnchoredFold foldAnchoredSpan(const ISDeviceLog& log,
                               const ISTimeResolver& resolver) {
     AnchoredFold f;
-    const uint64_t deviceId = log.deviceId();
-    for (ISRecordView v : log.allRecords()) {
-        const uint64_t raw = v.timestamp().value;
-        if (raw == 0) continue;
-        const TimeStamp r = resolver.resolve(raw, deviceId, v.arrivalIndex());
-        if (r.source == TimeSource::SessionOnly &&
-            r.confidence == TimeConfidence::Unknown) {
-            continue;
+    // SN-8784: segment-walked, because the new `resolve` takes a record's ADDRESS rather than a raw
+    // value whose domain it would have to guess. The `raw == 0` and SessionOnly/Unknown guards are
+    // gone with it - `AbsTimeResult::valid` is the single authority on whether a record was placed,
+    // and a time of week of zero is a legal instant rather than an absent one.
+    for (std::size_t seg = 0; seg < log.segmentCount(); ++seg) {
+        const std::size_t n = log.segment(seg).recordCount();
+        for (std::size_t k = 0; k < n; ++k) {
+            const AbsTimeResult a = resolver.resolve(log, seg, k);
+            if (!a.valid) continue;
+            if (!f.any || a.absoluteMs < f.minMs) f.minMs = a.absoluteMs;
+            if (!f.any || a.absoluteMs > f.maxMs) f.maxMs = a.absoluteMs;
+            f.any = true;
         }
-        if (r.value == 0) continue;
-        if (!f.any || r.value < f.minMs) f.minMs = r.value;
-        if (!f.any || r.value > f.maxMs) f.maxMs = r.value;
-        f.any = true;
     }
     return f;
 }
