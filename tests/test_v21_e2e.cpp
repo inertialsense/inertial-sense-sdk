@@ -241,13 +241,22 @@ TEST(V21EndToEnd, PseudoRandomMultiDidWithTimelessPortMonitor) {
     // (kStartTowMs + delta) — i.e. the moment it was actually logged.
     uint64_t prevResolved = 0;
     for (const uint64_t d : pmDeltas) {
-        const TimeStamp r = resolverR->resolve(d, kSerial, ISRecordView::kNoArrivalIndex);
-        EXPECT_EQ(r.source, TimeSource::ResolvedViaSync) << "timeless record must bridge via sync, at delta " << d;
+        // SN-8784: addressed by (segment, record) now, so find the record carrying this delta.
+        AbsTimeResult r{};
+        for (std::size_t sg = 0; sg < logR->segmentCount() && !r.valid; ++sg) {
+            const std::size_t nn = logR->segment(sg).recordCount();
+            for (std::size_t k = 0; k < nn; ++k) {
+                if (logR->segment(sg).recordAt(k).timestamp().value != d) continue;
+                r = resolverR->resolve(*logR, sg, k);
+                break;
+            }
+        }
+        ASSERT_TRUE(r.valid) << "no record carries delta " << d;
         const uint64_t want = expectedUnixMs(kStartTowMs + d);
-        EXPECT_NEAR(static_cast<double>(r.value), static_cast<double>(want), 100.0)
+        EXPECT_NEAR(static_cast<double>(r.absoluteMs), static_cast<double>(want), 100.0)
             << "PORT_MONITOR at delta " << d << " resolved to the wrong wall-clock time";
-        EXPECT_GE(r.value, prevResolved) << "resolved PORT_MONITOR times must be monotonic";
-        prevResolved = r.value;
+        EXPECT_GE(r.absoluteMs, prevResolved) << "resolved PORT_MONITOR times must be monotonic";
+        prevResolved = r.absoluteMs;
     }
 
     ISFileManager::DeleteDirectory(dir.string());
