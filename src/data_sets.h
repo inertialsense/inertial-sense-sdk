@@ -1814,7 +1814,7 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_SER2                   0x00000004
 #define RMC_OPTIONS_PORT_USB                    0x00000008
 #define RMC_OPTIONS_PRESERVE_CTRL               0x00000100                  // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Stage the selected port(s) RMC as the startup configuration used after reboot.  Not written to flash until the next save (SYS_CMD_SAVE_FLASH, SYS_CMD_SAVE_PERSISTENT_MESSAGES / $PERS, or software reset); lost if power is removed first.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Stage port RMC as the startup config used after reboot; requires a flash save (e.g. SYS_CMD_SAVE_FLASH) to persist.
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00                  // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10                          // Bit offset for NMEA speed filter options
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1                           // NMEA speed filtering: Enable
