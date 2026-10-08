@@ -1086,8 +1086,8 @@ static protocol_type_t processSonyByte(void* v)
  */
 static protocol_type_t startSpartnPayload(is_comm_instance_t* c, uint16_t payloadLen)
 {
-    int headerLen = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-    if (headerLen + payloadLen > MAX_MSG_SIZE_SPARTN || headerLen + payloadLen > c->rxBuf.size)
+    uint32_t frameSize = (uint32_t)(c->rxBuf.scan - c->rxBuf.head) + 1 + payloadLen;    // Header read so far + remaining payload
+    if (frameSize > MAX_MSG_SIZE_SPARTN || frameSize > c->rxBuf.size)
     {   // Invalid size
         return parseErrorResetState(c, EPARSE_INVALID_SIZE);
     }
