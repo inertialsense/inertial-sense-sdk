@@ -281,10 +281,10 @@ bool cDeviceLog::WriteDeviceInfoSidecar()
     const dev_info_t devInfo = device->devInfo;
 
     is_comm_instance_t comm = {};
-    uint8_t commBuf[PKT_BUF_SIZE];
+    uint8_t commBuf[MAX_MSG_SIZE_ISB];
     is_comm_init(&comm, commBuf, sizeof(commBuf), NULLPTR);
 
-    uint8_t pktBuf[PKT_BUF_SIZE];
+    uint8_t pktBuf[MAX_MSG_SIZE_ISB];
     std::vector<uint8_t> out;
 
     int n = is_comm_data_to_buf(pktBuf, sizeof(pktBuf), &comm, DID_DEV_INFO, sizeof(dev_info_t), 0,

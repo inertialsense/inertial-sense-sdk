@@ -183,7 +183,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
             columnData = string(start + foundQuotes, i - foundQuotes);
             start = i + 1;
             const data_info_t& info = columnHeaders[index++];
-            if (info.offset < MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, info, 0, false, false))
+            if (info.offset < ISB_MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, info, 0, false, false))
             {
                 return false;
             }
@@ -210,7 +210,7 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
     }
     char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
     const uint8_t* bufPtr = buf;
-    uint8_t tmpBuffer[MAX_DATASET_SIZE];
+    uint8_t tmpBuffer[ISB_MAX_DATASET_SIZE];
     uint32_t size = cISDataMappings::DataSize(hdr.id);
     if (size > hdr.size)
     {   // copy into temp buffer, zeroing out bytes that are not part of this packet
