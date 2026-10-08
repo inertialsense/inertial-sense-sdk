@@ -322,8 +322,8 @@ std::vector<DviRecord> parseDviFile(const fs::path& path) {
     std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 
     is_comm_instance_t comm{};
-    uint8_t commBuf[PKT_BUF_SIZE];
-    is_comm_init(&comm, commBuf, sizeof(commBuf), NULLPTR);
+    uint8_t commBuf[MAX_MSG_SIZE];
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     for (uint8_t b : bytes) {
         protocol_type_t p = is_comm_parse_byte(&comm, b);

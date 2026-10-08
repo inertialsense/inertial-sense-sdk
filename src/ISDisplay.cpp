@@ -648,7 +648,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 
     if (m_editData.did == data->hdr.id)
     {   // Copy data
-        copyDataPToDataP(&m_editData.pData, data, MAX_DATASET_SIZE);
+        copyDataPToDataP(&m_editData.pData, data, ISB_MAX_DATASET_SIZE);
     }
 
     // Save data to be displayed from PrintData()
@@ -2760,7 +2760,7 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
     p_data_t data = {};
     data.hdr.id = did;
     data.hdr.size = cISDataMappings::DataSize(did);
-    uint8_t buf[PKT_BUF_SIZE] = {0};
+    uint8_t buf[MAX_MSG_SIZE] = {0};
     data.ptr = buf;
     ProcessData(&data);
 #endif
