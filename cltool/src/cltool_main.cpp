@@ -67,7 +67,10 @@ InertialSense *g_inertialSenseInterface = NULL;
 shared_ptr<CorrectionService> g_correctionInput = NULL;
 shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
 
-static void sendNmea(port_handle_t port, string nmeaMsg);
+#define NMEA_TX_BUF_SIZE    1024
+#define NMEA_MSG_MAX_LEN    (NMEA_TX_BUF_SIZE - 7)  // room for added '$', "*XX\r\n" footer, and null terminator
+
+static bool sendNmea(port_handle_t port, string nmeaMsg);
 
 /// The command line cltool was started with, excluding the executable; the default relay annotation purpose.
 static std::string g_commandLineText;
@@ -1704,10 +1707,15 @@ static void sigint_cb(int sig)
 
 // Create and send full NMEA message with terminator w/ checksum trailer
 //TODO - deprecate this.  There should be functions in ISDevice and InertialSense class to do the same thing...
-static void sendNmea(port_handle_t port, string nmeaMsg)
+static bool sendNmea(port_handle_t port, string nmeaMsg)
 {
-    char buf[1024] = {0};
+    char buf[NMEA_TX_BUF_SIZE] = {0};
     int n = 0;
+    if (nmeaMsg.size() > NMEA_MSG_MAX_LEN)
+    {
+        printf("NMEA message too long (%zu chars, max %d)\n", nmeaMsg.size(), NMEA_MSG_MAX_LEN);
+        return false;
+    }
     if (nmeaMsg[0] != '$')
     {   // Append header
         nmeaMsg = "$" + nmeaMsg;
@@ -1717,6 +1725,7 @@ static void sendNmea(port_handle_t port, string nmeaMsg)
     nmea_sprint_footer(buf, sizeof(buf), n);
     printf("Sending: %.*s\\r\\n\n", n-2, buf);
     portWrite(port, (unsigned char*)buf, n);
+    return true;
 }
 
 /**
@@ -1729,6 +1738,11 @@ static int cltool_nmeaMode()
     if (portName.empty() || portName.find_first_of("*,") != string::npos)
     {
         cout << "option -nmea requires a single serial port, i.e. \"-c /dev/ttyACM0\" or \"-c COM5\"" << endl;
+        return EXIT_CODE_INVALID_COMMAND_LINE;
+    }
+    if (g_commandLineOptions.nmeaMessage.size() > NMEA_MSG_MAX_LEN)
+    {
+        cout << "option -nmea=[s] message too long (" << g_commandLineOptions.nmeaMessage.size() << " chars, max " << NMEA_MSG_MAX_LEN << ")" << endl;
         return EXIT_CODE_INVALID_COMMAND_LINE;
     }
 
@@ -1749,8 +1763,8 @@ static int cltool_nmeaMode()
 
     unsigned char line[512];
     unsigned char* asciiData;
-    uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDurationMs;
-    while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
+    uint32_t startTimeMs = current_uptimeMs();     // monotonic and wrap-safe, unlike current_timeMs()
+    while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || ((current_uptimeMs() - startTimeMs) < g_commandLineOptions.runDurationMs)))
     {
         if (portReadAsciiTimeout(port, line, sizeof(line), 10, &asciiData) > 0)
         {
