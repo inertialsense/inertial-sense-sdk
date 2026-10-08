@@ -8,7 +8,7 @@ echo.
 for %%i in ("%~dp0..\..") do SET SDK_DIR="%%~fi"
 
 :: Activate the venv (ok if this is a no-op)
-call %SDK_DIR%\scripts\lib\activate_python_venv.bat
+call %SDK_DIR%\scripts\lib\activate_python_venv.bat || exit /b
 
 :: Build SDK C++ (needed by LogInspector)
 call %SDK_DIR%\scripts\windows\build_is_sdk.bat %*

@@ -437,6 +437,7 @@ enum eSysStatusFlags
 
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004,  //!< 0 = GNSS1 is the primary NMEA GNSS source, 1 = GNSS2 is the primary NMEA GNSS source
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,                //!< Bit offset of SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2 within sysStatus
+    SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH           = (int)0x00000008,  //!< GNSS1 and GNSS2 report different firmware versions (see DID_GNSS1_VERSION, DID_GNSS2_VERSION). Only where both are configured with a comparable receiver type; not latched.
 };
 
 // Used to validate GNSS position (and velocity)
@@ -753,7 +754,7 @@ typedef struct PACKED
 
     uint32_t    key;           //!< Key - write: unlock manufacturing info, read: number of times OTP has been set, 15 max
 
-    int32_t     platformType;  //!< Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK). Only valid if greater than zero.
+    int32_t     platformType;  //!< Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK). Only valid if greater than zero. Write: a negative value in a full-struct write keeps the current platform type.
 
     int32_t     reserved;      //!< Reserved
 
@@ -1367,7 +1368,7 @@ typedef struct PACKED
     int             accel_motion;   //!< Non-zero when accelerometer-sensed motion is detected
     int             rot_motion;     //!< Non-zero when rotational motion is detected
     int             zero_vel;       //!< Non-zero when zero-velocity condition is detected
-    int             ahrs_gnss_cnt;  //!< Counter of sequential valid GNSS data (for switching from AHRS to navigation)
+    int             reserved;
     float           hdg_err;        //!< Estimated heading error, in radians
     int             hdg_coarse;     //!< Flag whether a coarse (uncertain) initial heading has been established
     int             hdg_aligned;    //!< Flag whether initial attitude error has converged (heading alignment complete)
@@ -1514,6 +1515,7 @@ enum eGenFaultCodes
     GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS reciever ceneral fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
     GFC_EKF_INPUT_INVALID_IMU   = 0x10000000,  //!< Fault: Invalid IMU input rejected by EKF
     GFC_GNSS_RTOS_ERROR         = 0x20000000,  //!< Fault: GNSS RTOS error
+    GFC_EKF_BIAS_SATURATED      = 0x40000000,  //!< Fault: EKF bias saturated
 
     GFC_GPX_STATUS_COMMON_MASK  = GFC_GNSS1_INIT | GFC_GNSS2_INIT | GFC_GNSS_TX_LIMITED | GFC_GNSS_RX_OVERRUN | GFC_GNSS_CRITICAL_FAULT | GFC_GNSS_RECEIVER_TIME | GFC_GNSS_GENERAL_FAULT,  //!< IMX GFC flags that relate to GPX status flags
 };
@@ -3686,48 +3688,50 @@ typedef struct PACKED
 {
     gtime_t     time;                   //!< GPS time of debug snapshot
 
-    uint8_t     rtkd_unused8_1;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_1;         //!< Reserved/unused (padding)
     uint8_t     code_outlier;           //!< Code residual in float solution too large
     uint8_t     phase_outlier;          //!< Phase residual in float solution too large
-    uint8_t     rtkd_unused8_2;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_2;         //!< Reserved/unused (padding)
 
-    uint8_t     rtkd_unused8_3;          //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_4;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_3;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_4;         //!< Reserved/unused (padding)
     uint8_t     bad_baseline_holdamb;   //!< Bad baseline during hold ambiguity (may not be needed, consider removing)
-    uint8_t     rtkd_unused8_5;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_5;         //!< Reserved/unused (padding)
 
     uint8_t     outc_ovfl;              //!< Observation/reject outage counter
-    uint8_t     rtkd_unused8_6;          //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_7;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_6;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_7;         //!< Reserved/unused (padding)
     uint8_t     large_v2b;              //!< Vector to base distance too large
 
     uint8_t     base_position_update;   //!< Received position of base correction counter
     uint8_t     rover_position_error;   //!< Rover position error counter
     uint8_t     reset_bias;             //!< Satellite bias reset counter
-    uint8_t     rtkd_unused8_8;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_8;         //!< Reserved/unused (padding)
 
     float       pos_variance;           //!< position variance
 
     uint8_t     diff_age_error;         //!< Difference age too large
-    uint8_t     rtkd_unused8_9;          //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_9;         //!< Reserved/unused (padding)
     uint8_t     rover_packet_age_ms;    //!< Age of last received rover packet  (TODO) convert to int16_t
     uint8_t     base_packet_age_ms;     //!< Age of last received base packet  (TODO) convert to int16_t
 
-    uint32_t    rtkd_unused32_1;         //!< Reserved/unused (padding)
+    uint16_t    rtkPositionRuntimeMs;   //!< (ms) RTK position solution runtime
+    uint16_t    rtkCompassRuntimeMs;    //!< (ms) RTK compass solution runtime
 
     uint32_t    cycle_slips;            //!< Accumulation of total cycle slips
 
     float       rtk_to_rcvr_pos_error;  //!< RTK position Error with respect to GNSS receiver
 
-    uint8_t     rtkd_unused8_10;         //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_11;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_10;        //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_11;        //!< Reserved/unused (padding)
     uint8_t     error_count;            //!< Pre-filtered observations error count
     uint8_t     error_code;             //!< Pre-filtered observations error code
 
-    uint32_t    rtkd_unused32_2;         //!< Reserved/unused (padding)
+    uint16_t    rtkPositionRuntimeMaxMs;     //!< (ms) RTK position solution maximum runtime
+    uint16_t    rtkCompassRuntimeMaxMs; //!< (ms) RTK compass solution maximum runtime
 
-    uint8_t     rtkd_unused8_12;         //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_13;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_12;        //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_13;        //!< Reserved/unused (padding)
     uint8_t     warning_count;          //!< Pre-filtered observations warning count
     uint8_t     warning_code;           //!< Pre-filtered observations warning code
 
@@ -3737,9 +3741,9 @@ typedef struct PACKED
     uint8_t     obs_base_unfiltered;    //!< Number of base observations from the receiver (before filtering)
     uint8_t     obs_rover_unfiltered;   //!< Number of rovr observations from the receiver (before filtering)
 
-    uint8_t     rtkd_unused8_14;         //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_15;         //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_16;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_14;        //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_15;        //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_16;        //!< Reserved/unused (padding)
     uint8_t     obs_unhealthy;          //!< number of sats marked as "unhealthy" by GNSS receiver (nonzero terms in svh)
 
     uint8_t     obs_rover_relpos;       //!< nu - number of observations input to relpos() before selsat(), rover
@@ -3750,15 +3754,15 @@ typedef struct PACKED
     uint8_t     obs_eph_relpos;         //!< number of sats with ephemeris available (min is 0, max is nu)
     uint8_t     obs_low_snr_rover;      //!< number of sats with low snr at rover and exclude from solution
     uint8_t     obs_low_snr_base;       //!< number of sats with low snr at base and exclude from solution
-    uint8_t     rtkd_unused8_17;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_17;        //!< Reserved/unused (padding)
 
     uint8_t     obs_zero_L1_rover;      //!< number of sats with zero L1 pseudorange or phase at rover
     uint8_t     obs_zero_L1_base;       //!< number of sats with zero L1 pseudorange or phase at base
     uint8_t     obs_low_elev;           //!< number of sats with low elevation
-    uint8_t     rtkd_unused8_18;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_18;        //!< Reserved/unused (padding)
 
-    uint8_t     rtkd_unused8_19;         //!< Reserved/unused (padding)
-    uint8_t     rtkd_unused8_20;         //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_19;        //!< Reserved/unused (padding)
+    uint8_t     rtkd_unused8_20;        //!< Reserved/unused (padding)
     uint8_t     reserved[2];            //!< Reserved/unused (padding)
 } rtk_debug_t;
 

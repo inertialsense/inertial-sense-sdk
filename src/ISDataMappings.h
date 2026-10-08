@@ -1011,6 +1011,36 @@ public:
     static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
     /**
+    * Which time domain a DID's `Timestamp()` value is expressed in.
+    *
+    * `Timestamp()` reads whichever named field a DID declares, searching
+    * `{"time", "timeOfWeek", "timeOfWeekMs", "seconds"}` in that order — and the
+    * name that wins IS the domain. So a record's time domain is a KNOWN FACT
+    * about its DID, not something to infer from the value's magnitude.
+    *
+    * @note SN-8629. Callers previously guessed, e.g. `value >= 100'000'000 ?
+    *       GPS-ToW : uptime`. That is wrong for any time-of-week inside the first
+    *       ~27.8 hours of the GPS week, and measurably so: across a 542-segment
+    *       corpus such a test misfiles 451,040 records. No threshold can work,
+    *       because time-of-week spans 0..604,800,000 ms and overlaps uptime
+    *       entirely. Use this instead of re-deriving the answer, and instead of
+    *       hand-maintaining a list of ToW-bearing DIDs.
+    */
+    enum class eTimestampDomain : uint8_t
+    {
+        TIMESTAMP_DOMAIN_NONE = 0,      //!< DID declares no timestamp field; records carry no internal time.
+        TIMESTAMP_DOMAIN_UPTIME,        //!< Device uptime since boot (field `time` or `seconds`).
+        TIMESTAMP_DOMAIN_GPS_TOW,       //!< GPS time-of-week (field `timeOfWeek` or `timeOfWeekMs`).
+    };
+
+    /**
+    * Get the time domain of a DID's `Timestamp()` value.
+    * @param did the data id
+    * @return the domain, or TIMESTAMP_DOMAIN_NONE if the DID carries no timestamp field
+    */
+    static eTimestampDomain TimestampDomain(uint32_t did);
+
+    /**
     * Get a timestamp from data if available.  If not, use the current local time.
     * @param hdr data header
     * @param buf data buffer

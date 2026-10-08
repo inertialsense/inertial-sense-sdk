@@ -153,6 +153,7 @@ std::string legacyRenderSysStatusReference(uint32_t sysStatus)
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
     BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
     BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
+    BIT_MSG(sysStatus, SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH    , "0x00000008 - GNSS1 and GNSS2 report different firmware versions.");
 #undef BIT_MSG
     return buff.str();
 }
@@ -190,6 +191,8 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     BIT_MSG(genFault, GFC_GNSS_RECEIVER_TIME        , "0x04000000 - Fault: GNSS receiver time fault.");
     BIT_MSG(genFault, GFC_GNSS_GENERAL_FAULT        , "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags).");
     BIT_MSG(genFault, GFC_EKF_INPUT_INVALID_IMU     , "0x10000000 - Fault: Invalid IMU input rejected by EKF.");
+    BIT_MSG(genFault, GFC_GNSS_RTOS_ERROR           , "0x20000000 - Fault: GNSS RTOS error.");
+    BIT_MSG(genFault, GFC_EKF_BIAS_SATURATED        , "0x40000000 - Fault: EKF bias saturated.");
 #undef BIT_MSG
     return buff.str();
 }
@@ -711,7 +714,7 @@ TEST(ISStatusDecode, SysStatus_RoundTrip)
         const uint32_t v = (1u << b);
         EXPECT_EQ(RenderStatusFromDecode(*dec, v), legacyRenderSysStatusReference(v)) << "bit " << b;
     }
-    EXPECT_EQ(dec->errorMask, 0u);   // sysStatus has no error states
+    EXPECT_EQ(dec->errorMask, (uint32_t)SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH);   // the one error state
 }
 
 TEST(ISStatusDecode, GenFaultCode_RoundTrip_EverySingleBit)

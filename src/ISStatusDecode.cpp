@@ -277,16 +277,20 @@ status_field_decode_t buildHdwStatusDecode()
     return d;
 }
 
-/** @brief sysStatus decode table (eSysStatusFlags). Two informational bits; no error states. */
+/**
+ * @brief sysStatus decode table (eSysStatusFlags). Two informational bits and one error state.
+ */
 status_field_decode_t buildSysStatusDecode()
 {
     status_field_decode_t d;
     d.fieldName = "sysStatus";
-    d.errorMask = 0;
+    d.errorMask = SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH;
     d.subfields.push_back(bitField("Testbed-3 LEDs enabled", SYS_STATUS_TBED3_LEDS_ENABLED, false,
         "0x00000001 - IMX to drive Testbed-3 status LEDs."));
     d.subfields.push_back(bitField("Primary GNSS source is GNSS2", SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2, false,
         "0x00000004 - NMEA source is GNSS2."));
+    d.subfields.push_back(bitField("Dual GNSS version mismatch", SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH, true,
+        "0x00000008 - GNSS1 and GNSS2 report different firmware versions."));
     return d;
 }
 
@@ -356,6 +360,10 @@ status_field_decode_t buildGenFaultCodeDecode()
         "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags)."));
     d.subfields.push_back(bitField("EKF invalid IMU input", GFC_EKF_INPUT_INVALID_IMU, true,
         "0x10000000 - Fault: Invalid IMU input rejected by EKF."));
+    d.subfields.push_back(bitField("GNSS RTOS error", GFC_GNSS_RTOS_ERROR, true,
+        "0x20000000 - Fault: GNSS RTOS error."));
+    d.subfields.push_back(bitField("EKF bias saturated", GFC_EKF_BIAS_SATURATED, true,
+        "0x40000000 - Fault: EKF bias saturated."));
 
     // No single error-mask symbol exists; every defined bit is a fault, so the roll-up is their OR.
     d.errorMask = 0;

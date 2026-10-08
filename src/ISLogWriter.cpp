@@ -89,14 +89,19 @@ ISExpected<ISLogWriter> ISLogWriter::create(Options opts) {
     w.sourceDeviceId_ = opts.sourceDeviceId;
     w.lineageNote_    = std::move(opts.lineageNote);
     w.header_         = idx::makeDefaultHeader(kProducerVersion,
-                                               opts.tsUnits,
+                                               opts.tsAnchor,
                                                opts.tsSource);
     // SN-8383: the SDK always writes the current .idx version (v2.1); it never
     // emits an older format. ISLogWriter carries each source record's
-    // per-record host-uptime delta through via ISRecordView::localUptimeMs()
-    // (see append()), so it declares HAS_LOCAL_DELTA. `record_size` stays at
+    // per-record log-start time-offset through via ISRecordView::logTimeOffsetMs()
+    // (see append()), so it declares HAS_LOG_TIME_OFFSET. `record_size` stays at
     // makeDefaultHeader's 32.
-    w.header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA;
+    // NOT declared here (audit A5 / D0096). This flag asserts CONTENT -- "these records carry
+    // a real time-offset" -- and at create() time no record has been appended, so there is
+    // nothing to assert. Declaring it up front meant a source with no offsets produced an
+    // output that claimed them over all-zero values, which satisfies ISTimeResolver's
+    // zero-refusing guard with nothing behind it. writeFinalHeader() sets it iff a non-zero
+    // offset was actually written. `record_size` already tells a reader the FIELD is present.
 
     w.rawStream_.open(rawTmp,
                       std::ios::binary | std::ios::out | std::ios::trunc);
@@ -248,7 +253,8 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     rec.did             = view.did();
     rec.flags           = view.flags();
     rec.reserved        = 0;
-    rec.local_uptime_ms = view.localUptimeMs();   // SN-8383: carry the source's per-record delta through
+    rec.log_time_offset_ms = view.logTimeOffsetMs();
+    if (rec.log_time_offset_ms != 0) sawLogTimeOffset_ = true;   // SN-8383: carry the source's per-record delta through
 
     // Always write the full v2.1 (32-byte) record — the SDK never emits an
     // older .idx version. The per-record delta is preserved from the source
@@ -263,10 +269,20 @@ ISExpected<void> ISLogWriter::append(const ISRecordView& view) {
     }
 
     // Stats.
-    if (recordCount_ == 0) {
-        firstTimestamp_ = rec.timestamp;
+    //
+    // Copilot review, #1316: the transcription must skip a record that declares NO timestamp.
+    // For a timeless DID the `timestamp` field deliberately carries the log-time offset instead
+    // (DeviceLog.cpp), so taking it here wrote an elapsed-time offset into the header's
+    // first/last transcription -- reintroducing audit A2 in every baked derivative whose
+    // boundary record happens to be timeless. The same rule the reader and the live writer now
+    // follow; this path was missed.
+    if ((rec.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP) != 0) {
+        if (!sawTimestamp_) {
+            firstTimestamp_ = rec.timestamp;
+            sawTimestamp_   = true;
+        }
+        lastTimestamp_ = rec.timestamp;
     }
-    lastTimestamp_ = rec.timestamp;
     if ((rec.flags & idx::IS_LOG_IDX_REC_FLAG_HAS_TOW) != 0) {
         ++syncPointCount_;
     }
@@ -282,12 +298,22 @@ ISExpected<void> ISLogWriter::writeFinalHeader() {
     header_.last_timestamp_ms  = lastTimestamp_;
     header_.sync_point_count   = syncPointCount_;
     header_.flags             |= idx::IS_LOG_IDX_HDR_FLAG_FINALIZED;
+    // Copilot review, #1316: declare that this file's records carry HAS_TIMESTAMP. The writer
+    // preserves the per-record bit (`rec.flags = view.flags()`) but never said so, and a reader
+    // that finds this header flag clear falls back to the historical `timestamp != 0` heuristic
+    // -- so a baked log silently lost the distinction between a null timestamp and a valid zero,
+    // which is the whole point of the bit.
+    header_.flags             |= idx::IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY;
+    // D0096: honest content declaration -- see the note in create().
+    if (sawLogTimeOffset_) {
+        header_.flags |= idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET;
+    }
 
-    // SN-8629: override the caller's ts_units (informational, opts.tsUnits)
+    // SN-8629: override the caller's ts_anchor (informational, opts.tsAnchor)
     // when first/last prove it can't be a single domain -- see
     // timestampsLookMixedDomain().
     if (idx::timestampsLookMixedDomain(header_.first_timestamp_ms, header_.last_timestamp_ms)) {
-        header_.ts_units = static_cast<uint8_t>(idx::TimestampUnits::Mixed);
+        header_.ts_anchor = static_cast<uint8_t>(idx::TimestampAnchor::Mixed);
     }
 
     idxStream_.flush();

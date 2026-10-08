@@ -3879,6 +3879,44 @@ int cISDataMappings::ExtractArrayIndex(std::string& str)
 }
 
 
+cISDataMappings::eTimestampDomain cISDataMappings::TimestampDomain(uint32_t did)
+{
+    // Built once, then a flat lookup: callers hit this once per RECORD on a log scan
+    // (millions of times), so it must not do a string compare per call.
+    static const std::vector<eTimestampDomain> domains = []
+    {
+        std::vector<eTimestampDomain> t(DID_COUNT, eTimestampDomain::TIMESTAMP_DOMAIN_NONE);
+        for (uint32_t d = 0; d < DID_COUNT; d++)
+        {
+            data_set_t* ds = DataSet(d);
+            if (ds == NULLPTR || ds->timestampFields == NULLPTR)
+            {
+                continue;
+            }
+            const std::string& name = ds->timestampFields->name;
+            t[d] = (name == "timeOfWeek" || name == "timeOfWeekMs")
+                       ? eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW
+                       : eTimestampDomain::TIMESTAMP_DOMAIN_UPTIME;
+        }
+        return t;
+    }();
+
+    if (did >= domains.size())
+    {
+        return eTimestampDomain::TIMESTAMP_DOMAIN_NONE;
+    }
+
+    // Timestamp() deliberately returns 0 for the raw-passthrough DIDs (gnss_raw_t carries an
+    // absolute observation time in a different domain entirely), so they have no usable
+    // timestamp domain either -- see the note in Timestamp().
+    if (did == DID_GNSS1_RAW || did == DID_GNSS2_RAW || did == DID_GNSS_BASE_RAW)
+    {
+        return eTimestampDomain::TIMESTAMP_DOMAIN_NONE;
+    }
+
+    return domains[did];
+}
+
 double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 {
     if (hdr == NULL || buf == NULL || hdr->id == 0 || hdr->id >= DID_COUNT || hdr->size == 0)

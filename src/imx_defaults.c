@@ -108,10 +108,12 @@ void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
     switch (type)
     {
         case PLATFORM_CFG_TYPE_RUGn_G0:
+            SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
+            SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break;
-        case PLATFORM_CFG_TYPE_RUG3_G1: 
+        case PLATFORM_CFG_TYPE_RUG3_G1:
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_UBLOX);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break ;
@@ -197,6 +199,8 @@ void imxPlatformConfigToRug4FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platfo
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_GPX);
             break;
         case PLATFORM_CFG_TYPE_RUGn_G0:
+            SET_IO_CFG_GNSS1_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
+            SET_IO_CFG_GNSS2_SOURCE(*ioConfig, IO_CONFIG_GNSS_SOURCE_DISABLE);
             SET_IO_CFG_GNSS1_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             SET_IO_CFG_GNSS2_TYPE(*ioConfig, IO_CONFIG_GNSS_TYPE_NONE);
             break;

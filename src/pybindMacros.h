@@ -68,7 +68,7 @@ PYBIND11_NUMPY_DTYPE(sys_sensors_adc_t, time, imu, mag, bar, barTemp, humidity, 
 PYBIND11_NUMPY_DTYPE(rtos_info_t, freeHeapSize, mallocSize, freeSize, task);
 PYBIND11_NUMPY_DTYPE(is_timepulse_t, week, timeOfWeekMs, status, syncCnt, reserved);
 PYBIND11_NUMPY_DTYPE(inl2_states_t, timeOfWeek, qe2b, ve, ecef, biasPqr, biasAcc, biasBaro, magDec, magInc);
-PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, ahrs_gnss_cnt, hdg_err, hdg_coarse, hdg_aligned, hdg_aligning, ekf_init_done, mag_cal_good, mag_cal_done, stat_magfield);
+PYBIND11_NUMPY_DTYPE(inl2_status_t, ahrs, zero_accel, zero_angrate, accel_motion, rot_motion, zero_vel, hdg_err, hdg_coarse, hdg_aligned, hdg_aligning, ekf_init_done, mag_cal_good, mag_cal_done, stat_magfield);
 PYBIND11_NUMPY_DTYPE(magnetometer_t, time, mag);
 PYBIND11_NUMPY_DTYPE(barometer_t, time, bar, mslBar, barTemp, humidity);
 PYBIND11_NUMPY_DTYPE(imu_t, time, status, I);
@@ -108,24 +108,23 @@ PYBIND11_NUMPY_DTYPE(gpx_bit_t, results, command, port, testMode, state, detecte
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);
 PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id);
 PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);                    
-PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rtkd_unused8_1, code_outlier, phase_outlier, rtkd_unused8_2, 
-                        rtkd_unused8_3, rtkd_unused8_4, bad_baseline_holdamb, rtkd_unused8_5, 
-                        outc_ovfl, rtkd_unused8_6, rtkd_unused8_7, large_v2b, 
-                        base_position_update, rover_position_error, reset_bias, rtkd_unused8_8, 
+PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rtkd_unused8_1, code_outlier, phase_outlier, rtkd_unused8_2,
+                        rtkd_unused8_3, rtkd_unused8_4, bad_baseline_holdamb, rtkd_unused8_5,
+                        outc_ovfl, rtkd_unused8_6, rtkd_unused8_7, large_v2b,
+                        base_position_update, rover_position_error, reset_bias, rtkd_unused8_8,
                         pos_variance,
-                        diff_age_error, rtkd_unused8_9, rover_packet_age_ms, base_packet_age_ms, 
-                        rtkd_unused32_1,
-                        cycle_slips, 
-                        rtk_to_rcvr_pos_error, 
-                        rtkd_unused8_10, rtkd_unused8_11, error_count, error_code, 
-                        rtkd_unused32_2,
-                        rtkd_unused8_12, rtkd_unused8_13, warning_count, warning_code, 
-                        double_debug, 
-                        debug, obs_base_unfiltered, obs_rover_unfiltered, 
-                        rtkd_unused8_14, rtkd_unused8_15, rtkd_unused8_16, 
-                        obs_unhealthy, obs_rover_relpos, obs_base_relpos, obs_pairs_used_float, obs_pairs_used_fixed, 
-                        obs_eph_relpos, obs_low_snr_rover, obs_low_snr_base, rtkd_unused8_17, 
-                        obs_zero_L1_rover, obs_zero_L1_base, obs_low_elev, rtkd_unused8_18, 
+                        diff_age_error, rtkd_unused8_9, rover_packet_age_ms, base_packet_age_ms,
+                        rtkPositionRuntimeMs, rtkCompassRuntimeMs, rtkPositionRuntimeMaxMs, rtkCompassRuntimeMaxMs,
+                        rtk_to_rcvr_pos_error,
+                        rtkd_unused8_10, rtkd_unused8_11, error_count, error_code,
+                        cycle_slips,
+                        rtkd_unused8_12, rtkd_unused8_13, warning_count, warning_code,
+                        double_debug,
+                        debug, obs_base_unfiltered, obs_rover_unfiltered,
+                        rtkd_unused8_14, rtkd_unused8_15, rtkd_unused8_16,
+                        obs_unhealthy, obs_rover_relpos, obs_base_relpos, obs_pairs_used_float, obs_pairs_used_fixed,
+                        obs_eph_relpos, obs_low_snr_rover, obs_low_snr_base, rtkd_unused8_17,
+                        obs_zero_L1_rover, obs_zero_L1_base, obs_low_elev, rtkd_unused8_18,
                         rtkd_unused8_19, rtkd_unused8_20, reserved
                     );
 PYBIND11_NUMPY_DTYPE(obsd_t, time, sat, rcv, SNR, LLI, code, qualL, qualP, reserved, L, P, D);

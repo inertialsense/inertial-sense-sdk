@@ -54,7 +54,7 @@ public:
      *
      * Default-constructed values match the most-conservative behavior
      * (fail if output exists, host uptime ms timestamps). Callers
-     * generally only override `overwrite`, `tsUnits`, and `tsSource`
+     * generally only override `overwrite`, `tsAnchor`, and `tsSource`
      * when they have a reason to.
      */
     struct Options {
@@ -80,9 +80,9 @@ public:
         /// already exists. With `true`, the tempfile rename overwrites.
         bool overwrite = false;
 
-        /// Header `ts_units` (informational; doesn't transform the
+        /// Header `ts_anchor` (informational; doesn't transform the
         /// record timestamps written to the `.idx`).
-        idx::TimestampUnits tsUnits = idx::TimestampUnits::HostUptimeMs;
+        idx::TimestampAnchor tsAnchor = idx::TimestampAnchor::UptimeMs;
 
         /// Header `ts_source` (informational).
         idx::HeaderTimeSource tsSource = idx::HeaderTimeSource::PayloadToW;
@@ -279,7 +279,7 @@ private:
     std::ofstream rawStream_;
     std::ofstream idxStream_;
 
-    // Header template — `producer_version`, `ts_units`, `ts_source`
+    // Header template — `producer_version`, `ts_anchor`, `ts_source`
     // are seeded at create time and stays put. `total_records`,
     // `first_timestamp_ms`, `last_timestamp_ms`, `sync_point_count`,
     // `flags` are patched at finalize().
@@ -292,6 +292,14 @@ private:
     uint64_t                   lastTimestamp_   = 0;
     uint32_t                   syncPointCount_  = 0;
     uint64_t                   rawOffset_       = 0;
+    //! D0096: true once a non-zero `log_time_offset_ms` has actually been written, which is
+    //! what licenses declaring `HAS_LOG_TIME_OFFSET` in the final header (audit A5).
+    bool                       sawLogTimeOffset_ = false;
+    //! Copilot review, #1316: whether any record declaring HAS_TIMESTAMP has been appended, so
+    //! the header's first/last transcription skips timeless records rather than taking the
+    //! log-time offset they park in that field. Cannot be a `firstTimestamp_ == 0` test: 0 is a
+    //! legal timestamp, which is what HAS_TIMESTAMP exists to express.
+    bool                       sawTimestamp_ = false;
     bool                       initialized_     = false;
     bool                       finalized_       = false;
 };

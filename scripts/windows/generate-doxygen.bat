@@ -5,7 +5,7 @@ setlocal
 for %%i in ("%~dp0..\..") do set "SDK_DIR=%%~fi"
 
 :: Activate the venv (no-op if already active)
-call "%SDK_DIR%\scripts\lib\activate_python_venv.bat"
+call "%SDK_DIR%\scripts\lib\activate_python_venv.bat" || exit /b
 
 :: Delegate to the Python implementation
 python "%SDK_DIR%\scripts\generate_doxygen.py" %*

@@ -175,10 +175,10 @@ TEST_F(LogWriterTest, RoundTripBitIdentical) {
 
 // ---------------------------------------------------------------------------
 // SN-8383: the writer always emits the current .idx version (v2.1) and carries
-// the source's per-record host-uptime delta through, declaring HAS_LOCAL_DELTA.
+// the source's per-record log-start time-offset through, declaring HAS_LOG_TIME_OFFSET.
 // Guards against the writer emitting an older format or zeroing the delta.
 // ---------------------------------------------------------------------------
-TEST_F(LogWriterTest, PreservesLocalUptimeDeltaAndAlwaysWritesV21) {
+TEST_F(LogWriterTest, PreservesLogTimeOffsetAndAlwaysWritesV21) {
     fixture = buildFixture("delta");   // only needed for a scratch directory
     ASSERT_FALSE(fixture.directory.empty());
 
@@ -202,7 +202,7 @@ TEST_F(LogWriterTest, PreservesLocalUptimeDeltaAndAlwaysWritesV21) {
         for (const auto& r : src) {
             ISRecordView v{ r.did, r.ts, devId, /*offset*/ 0u,
                             r.payload.data(), r.payload.size(), r.flags };
-            v.setLocalUptimeMs(r.delta);
+            v.setLogTimeOffsetMs(r.delta);
             ASSERT_TRUE(writer.append(v).has_value());
         }
         ASSERT_TRUE(writer.finalize().has_value());
@@ -226,7 +226,7 @@ TEST_F(LogWriterTest, PreservesLocalUptimeDeltaAndAlwaysWritesV21) {
 
     // Always v2.1: 32-byte stride + HAS_LOCAL_DELTA declared (never a downgrade).
     EXPECT_EQ(hdr->record_size, idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
-    EXPECT_NE(0, hdr->flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOCAL_DELTA);
+    EXPECT_NE(0, hdr->flags & idx::IS_LOG_IDX_HDR_FLAG_HAS_LOG_TIME_OFFSET);
     EXPECT_EQ(hdr->total_records, src.size());
 
     // Each record, in write order, carries its source delta verbatim.
@@ -235,7 +235,7 @@ TEST_F(LogWriterTest, PreservesLocalUptimeDeltaAndAlwaysWritesV21) {
             bytes.data() + idx::IS_LOG_IDX_HEADER_SIZE + i * idx::IS_LOG_IDX_RECORD_V2_1_SIZE,
             idx::IS_LOG_IDX_RECORD_V2_1_SIZE);
         EXPECT_EQ(rec.timestamp,       src[i].ts)    << "ts mismatch at record " << i;
-        EXPECT_EQ(rec.local_uptime_ms, src[i].delta) << "delta mismatch at record " << i;
+        EXPECT_EQ(rec.log_time_offset_ms, src[i].delta) << "delta mismatch at record " << i;
     }
 }
 

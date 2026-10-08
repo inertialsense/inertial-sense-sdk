@@ -25,6 +25,15 @@ find_package(GTest REQUIRED)
 
 file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
+if(APPLE)
+    # SN-8777: msg_logger.h only declares static_log_output()/static_log_set_output_path()/
+    # static_log_get_output_path() under `#if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)`,
+    # and msg_logger.c only implements the real backend under that same condition -- Apple builds
+    # get the stub backend instead (see msg_logger.c's PLATFORM_IS_APPLE branch), which doesn't
+    # declare or define these APIs at all. Exclude this test file on Apple to match, rather than
+    # leave the supported Apple unit-test target unable to compile.
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_msg_logger.cpp")
+endif()
 if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_conversion.cpp")
     # POSIX-only tests: use ::getpid(), /tmp/ paths, or other POSIX APIs
@@ -34,11 +43,13 @@ if(WIN32)   # These do not run in Windows
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_did_traits.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_index.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_index_upgrade.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_reader.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_log_writer.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISHttpRequest.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_resolver.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_abs_time_ladder.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_v21_e2e.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_truncated_log.cpp")
     # NOTE (SN-8328): only *some* of this PR's tests are POSIX-only and excluded

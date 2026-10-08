@@ -154,11 +154,11 @@ void teardown(FixturePaths& f) {
 //! records the resolver can't place (SessionOnly/Unknown). {0,0} if none.
 std::pair<uint64_t, uint64_t> resolvedSpan(const ISDeviceLog& log, const ISTimeResolver& r) {
     uint64_t lo = UINT64_MAX, hi = 0; bool any = false;
-    const uint64_t dev = log.deviceId();
-    for (auto rv : log.allRecords()) {
-        const TimeStamp t = r.resolve(rv.timestamp().value, dev);
-        if (t.source == TimeSource::SessionOnly && t.confidence == TimeConfidence::Unknown) continue;
-        lo = std::min(lo, t.value); hi = std::max(hi, t.value); any = true;
+    for (std::size_t sg = 0; sg < log.segmentCount(); ++sg)
+    for (std::size_t k = 0, nk = log.segment(sg).recordCount(); k < nk; ++k) {
+        const AbsTimeResult t = r.resolve(log, sg, k);
+        if (!t.valid) continue;
+        lo = std::min(lo, t.absoluteMs); hi = std::max(hi, t.absoluteMs); any = true;
     }
     return any ? std::make_pair(lo, hi) : std::pair<uint64_t, uint64_t>{0, 0};
 }
@@ -167,11 +167,12 @@ std::pair<uint64_t, uint64_t> resolvedSpan(const ISDeviceLog& log, const ISTimeR
 std::pair<uint64_t, uint64_t> resolvedDidSpan(const ISDeviceLog& log, const ISTimeResolver& r,
                                               uint32_t did) {
     uint64_t lo = UINT64_MAX, hi = 0; bool any = false;
-    const uint64_t dev = log.deviceId();
-    for (auto rv : log.records(did)) {
-        const TimeStamp t = r.resolve(rv.timestamp().value, dev);
-        if (t.source == TimeSource::SessionOnly && t.confidence == TimeConfidence::Unknown) continue;
-        lo = std::min(lo, t.value); hi = std::max(hi, t.value); any = true;
+    for (std::size_t sg = 0; sg < log.segmentCount(); ++sg)
+    for (std::size_t k = 0, nk = log.segment(sg).recordCount(); k < nk; ++k) {
+        if (log.segment(sg).recordAt(k).did() != did) continue;
+        const AbsTimeResult t = r.resolve(log, sg, k);
+        if (!t.valid) continue;
+        lo = std::min(lo, t.absoluteMs); hi = std::max(hi, t.absoluteMs); any = true;
     }
     return any ? std::make_pair(lo, hi) : std::pair<uint64_t, uint64_t>{0, 0};
 }

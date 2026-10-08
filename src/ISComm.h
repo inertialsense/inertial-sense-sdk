@@ -23,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * ### Quick-start (byte-by-byte parsing)
  * @code
  * is_comm_instance_t comm;
- * uint8_t buffer[PKT_BUF_SIZE];
+ * uint8_t buffer[MAX_MSG_SIZE];
  * is_comm_init(&comm, buffer, sizeof(buffer), NULL);
  *
  * uint8_t c;
@@ -132,16 +132,44 @@ typedef enum
 /** Default protocol enable mask used by is_comm_init() when no explicit mask is set. */
 #define DEFAULT_PROTO_MASK (ENABLE_PROTOCOL_ISB | ENABLE_PROTOCOL_NMEA | ENABLE_PROTOCOL_UBLOX | ENABLE_PROTOCOL_RTCM3)
 
-/** The maximum buffer space that is used for sending and receiving packets */
-#ifndef PKT_BUF_SIZE
-#define PKT_BUF_SIZE            2048
-#endif
+/**
+ * Maximum message size, in bytes, that the parser accepts for each protocol.
+ *
+ * Each parser compares a frame's length against its limit as soon as the length is known, and the
+ * length-prefixed binary parsers (SBF, UBX, RTCM3, SPARTN, Sony) also against the receive buffer in use.
+ * A frame over either is rejected as a parse error and the parser goes back to looking for a preamble.
+ * This matters because preamble bytes occur by chance inside other traffic: without the check, a false
+ * preamble followed by a garbage length would hold up every protocol on the port until that many bytes
+ * arrived, or, once the length exceeded the buffer, flush it along with the valid packets it held.
+ *
+ * Set each limit to the largest message actually received, not the protocol's theoretical maximum; a
+ * looser limit only lets a false preamble stall the stream for longer. MAX_MSG_SIZE sizes receive buffers
+ * and must be at least every per-protocol limit.
+ */
+#define MAX_MSG_SIZE_ISB        2048    // Inertial Sense Binary messages
+#define MAX_MSG_SIZE_SBF        4096    // Septentrio Binary Format messages
+#define MAX_MSG_SIZE_NMEA       200     // NMEA (National Marine Electronics Association) messages
+#define MAX_MSG_SIZE_RTCM       1023    // RTCM3 standard messages
+#define MAX_MSG_SIZE_UBX        4096    // uBlox binary messages: practical limit (protocol allows 65543); RXM-RAWX, NAV-SIG exceed 1024
+#define MAX_MSG_SIZE_SPARTN     1103    // SPARTN messages: 12-byte header + 1023 payload + 64 authentication + 4 CRC
+#define MAX_MSG_SIZE_SONY       4090    // Sony binary messages
+#define MAX_MSG_SIZE            4096    // Receive buffer size: the largest of the limits above
+STATIC_ASSERT(MAX_MSG_SIZE >= MAX_MSG_SIZE_ISB  && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_SBF  && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_NMEA &&
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_RTCM && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_UBX  && 
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_SONY &&
+              MAX_MSG_SIZE >= MAX_MSG_SIZE_SPARTN);
+
+/** @deprecated Equal to MAX_MSG_SIZE, the receive buffer size, not the ISB packet limit. Use MAX_MSG_SIZE to size a receive buffer, or MAX_MSG_SIZE_ISB for the ISB packet limit. */
+#define PKT_BUF_SIZE            MAX_MSG_SIZE
 
 /** The maximum time between received data that will reset in the parser */
 #define MAX_PARSER_GAP_TIME_MS  100
 
-// MAX_DATASET_SIZE, PKT_OVERHEAD_SIZE, MAX_PKT_OVERHEAD_SIZE, MAX_PKT_BODY_SIZE, and
-// MAX_P_DATA_BODY_SIZE are defined below, once packet_hdr_t and p_data_hdr_t exist, since they're
+// ISB_MAX_DATASET_SIZE, ISB_OVERHEAD_SIZE, ISB_MAX_OVERHEAD_SIZE, ISB_MAX_PKT_BODY_SIZE, and
+// ISB_MAX_P_DATA_BODY_SIZE are defined below, once packet_hdr_t and p_data_hdr_t exist, since they're
 // computed from sizeof() those structs. MAX_P_ACK_BODY_SIZE is defined further below, after p_ack_hdr_t.
 
 /** Binary checksum start value */
@@ -159,7 +187,6 @@ typedef enum
 
 #define UBLOX_HEADER_SIZE           6   //!< Byte size of the u-blox binary packet header
 #define RTCM3_HEADER_SIZE           3   //!< Byte size of the RTCM3 packet header
-#define MAX_MSG_LENGTH_NMEA         200 //!< Maximum byte length of a single NMEA sentence
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
@@ -246,16 +273,6 @@ typedef enum
     ISB_FLAGS_EXTENDED_PAYLOAD              = 0x10, //!< Payload exceeds 2048 bytes and continues in the next packet
     ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x20, //!< First two bytes of the payload contain the data-set byte offset
 } eISBPacketFlags;
-
-/** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
-typedef struct
-{
-    /** Number of bytes - for partial data requests, this will be less than the size of the data structure */
-    uint32_t            size;
-
-    /** Buffer to hold the bytes */
-    uint8_t             buf[PKT_BUF_SIZE];
-} buffer_t;
 
 /** Represents size number of bytes in memory, pointing to a BYTE pointer that is owned elsewhere */
 typedef struct
@@ -404,24 +421,31 @@ typedef struct
 
 /** The overhead involved in sending a packet: @ref packet_hdr_t header + 2-byte checksum footer.
  *  Same computation as @ref ISB_MIN_PACKET_SIZE (a packet with zero-length payload is pure overhead). */
-#define PKT_OVERHEAD_SIZE       ISB_MIN_PACKET_SIZE
+#define ISB_OVERHEAD_SIZE               ISB_MIN_PACKET_SIZE
 
-/** The maximum overhead size in sending a packet. Equal to @ref PKT_OVERHEAD_SIZE: protocol 2.x
+/** The maximum overhead size in sending a packet. Equal to @ref ISB_OVERHEAD_SIZE: protocol 2.x
  *  (see PROTOCOL_VERSION_CHAR0) is a length-prefixed binary format with no byte-stuffing/escaping,
  *  so unlike the old v1 protocol's PSC_RESERVED_KEY escaping, there is no worst-case encoding growth
  *  to account for here. */
-#define MAX_PKT_OVERHEAD_SIZE   PKT_OVERHEAD_SIZE
+#define ISB_MAX_OVERHEAD_SIZE           ISB_OVERHEAD_SIZE
 
 /** The maximum size of a decoded packet body: full buffer minus header/footer overhead, rounded down to an even number. */
-#define MAX_PKT_BODY_SIZE       ((PKT_BUF_SIZE - MAX_PKT_OVERHEAD_SIZE) & 0xFFFFFFFE)
+#define ISB_MAX_PKT_BODY_SIZE           ((MAX_MSG_SIZE_ISB - ISB_MAX_OVERHEAD_SIZE) & 0xFFFFFFFE)
 
 /** The maximum size of decoded data in a packet body */
-#define MAX_P_DATA_BODY_SIZE    (MAX_PKT_BODY_SIZE-sizeof(p_data_hdr_t))    // Data size limit
+#define ISB_MAX_P_DATA_BODY_SIZE        (ISB_MAX_PKT_BODY_SIZE-sizeof(p_data_hdr_t))    // Data size limit
 
 /** The maximum allowable dataset size: tied directly to the maximum packet payload capacity.
  *  Note: for packets with ISB_FLAGS_PAYLOAD_W_OFFSET set, pkt->data.size already excludes the 2-byte offset.
  *  This limit intentionally bounds pkt->data.size (dataset bytes), not on-wire payloadSize. */
-#define MAX_DATASET_SIZE        MAX_PKT_BODY_SIZE
+#define ISB_MAX_DATASET_SIZE            ISB_MAX_PKT_BODY_SIZE
+
+/** @deprecated Use the ISB_-prefixed names above. */
+#define PKT_OVERHEAD_SIZE               ISB_OVERHEAD_SIZE
+#define MAX_PKT_OVERHEAD_SIZE           ISB_MAX_OVERHEAD_SIZE
+#define MAX_PKT_BODY_SIZE               ISB_MAX_PKT_BODY_SIZE
+#define MAX_P_DATA_BODY_SIZE            ISB_MAX_P_DATA_BODY_SIZE
+#define MAX_DATASET_SIZE                ISB_MAX_DATASET_SIZE
 
 /** Represents a packet header and body */
 typedef struct
@@ -490,14 +514,14 @@ typedef struct
     uint8_t             *ptr;
 } p_data_t;
 
-/** ISB data packet: buffer form — header plus an inline payload buffer up to @ref MAX_DATASET_SIZE bytes. */
+/** ISB data packet: buffer form — header plus an inline payload buffer up to @ref ISB_MAX_DATASET_SIZE bytes. */
 typedef struct
 {
     /** Header with id, size and offset */
     p_data_hdr_t        hdr;
 
     /** Data buffer */
-    uint8_t             buf[MAX_DATASET_SIZE];
+    uint8_t             buf[ISB_MAX_DATASET_SIZE];
 } p_data_buf_t;
 
 /**
@@ -591,7 +615,7 @@ typedef struct
 } p_ack_hdr_t;
 
 /** The maximum size of a decoded ACK message */
-#define MAX_P_ACK_BODY_SIZE     (MAX_PKT_BODY_SIZE-sizeof(p_ack_hdr_t))     // Ack data size
+#define MAX_P_ACK_BODY_SIZE     (ISB_MAX_PKT_BODY_SIZE-sizeof(p_ack_hdr_t))     // Ack data size
 
 /** Represents the entire body of an ACK or NACK packet */
 typedef struct
@@ -817,7 +841,7 @@ typedef struct {
     uint8_t buffer[GPX_COM_BUFFER_SIZE];    //!< Comm instance data buffer
     uint8_t flags;                          //!< COMM_PORT flags (ie, EXPLICIT, etc)
 #else
-    uint8_t buffer[PKT_BUF_SIZE];           //!< Comm instance data buffer
+    uint8_t buffer[MAX_MSG_SIZE];       //!< Comm instance data buffer
     uint8_t flags;                          //!< COMM_PORT flags (ie, EXPLICIT, etc)
 #endif
 } comm_port_t;
@@ -831,7 +855,7 @@ POP_PACK
  * @brief Initialize an is_comm_instance_t. Call this before using any other is_comm_* functions.
  * @param instance   ISComm instance to initialize.
  * @param buffer     Caller-provided receive buffer; must remain valid for the lifetime of @p instance.
- * @param bufferSize Size of @p buffer in bytes; should be at least @ref PKT_BUF_SIZE.
+ * @param bufferSize Size of @p buffer in bytes; should be at least @ref MAX_MSG_SIZE.
  * @param pktHandler Optional: called for every fully parsed packet; may be NULL.
  */
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler);
@@ -966,6 +990,31 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+*
+* @warning **The returned packet is NOT aligned to the byte you just fed, and its extent cannot
+*          be derived from bytes-since-the-previous-call.** This function appends one byte and
+*          then runs the buffered parser, which returns on the FIRST packet it finds and leaves
+*          any remainder unscanned. `is_comm_reset_parser` also rewinds `rxBuf.scan` back to
+*          `rxBuf.head` on a parse error, so buffered bytes get re-scanned — after which a call
+*          can complete an entire packet out of the backlog while the byte you passed in
+*          contributes nothing. Measured on a 5 MB capture: one call consumed 697 bytes, and the
+*          next fourteen each reported a complete valid packet having consumed one byte.
+*
+*          Take a packet's length from `rxPkt.size`. Do NOT use `rxBuf.head` itself as a stable
+*          file offset, and do NOT use a delta between two `head` readings either: `is_comm_free`'s
+*          compaction resets `head` to a fixed `buf->start` and shifts `tail`/`scan` by the same
+*          amount, so `head`'s own absolute value (and any delta against a prior reading of it)
+*          carries no relationship to bytes actually consumed — it is pure compaction-shift noise.
+*          What DOES survive compaction is the outstanding byte count `tail - head` (both operands
+*          shift together, so the difference is invariant). Feed the parser in BULK (see the
+*          quick-start above) and keep your own running "total bytes ever fed" counter; the
+*          parser's absolute consumed position is then `totalFed - (tail - head)`, and a packet's
+*          start is that minus `rxPkt.size` — exactly what the live `.raw` writer does
+*          (`cDeviceLogRaw::SaveData`, `m_rawFedBytes`/`consumedEnd`).
+*
+*          Both in-tree callers got this wrong identically and wrote `.idx` offsets that were not
+*          packet starts — see SN-8765.
+*
 * @param instance the comm instance passed to is_comm_init
 * @param byte the byte to decode
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
