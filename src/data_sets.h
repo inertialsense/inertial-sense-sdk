@@ -2309,6 +2309,8 @@ enum GRMC_BIT_POS{
                                         | GRMC_BITS_GNSS1_SIG \
                                         | GRMC_BITS_GNSS1_VERSION \
                                         /*| GRMC_BITS_GNSS1_RTK_POS*/ \
+                                        | GRMC_BITS_GNSS1_RTK_POS_REL \
+                                        | GRMC_BITS_GNSS1_RTK_POS_MISC \
                                         | GRMC_BITS_GNSS1_RAW)
 
 #define GRMC_PRESET_GPX_GNSS2   (GRMC_BITS_GNSS2_POS \
