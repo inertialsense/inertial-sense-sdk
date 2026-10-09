@@ -1412,10 +1412,10 @@ int nmea_gga(char a[], const int aSize, gnss_pos_t &pos)
     {
     default:
     case GNSS_STATUS_FIX_NONE:                   fixQuality = 0;    break;
-    case GNSS_STATUS_FIX_SBAS:
     case GNSS_STATUS_FIX_2D:
     case GNSS_STATUS_FIX_RTK_SINGLE:
     case GNSS_STATUS_FIX_3D:                     fixQuality = 1;    break;
+    case GNSS_STATUS_FIX_SBAS:                   // NMEA 0183: 2 = DGPS/SBAS
     case GNSS_STATUS_FIX_DGPS:                   fixQuality = 2;    break;
     case GNSS_STATUS_FIX_TIME_ONLY:              fixQuality = 3;    break;   
     case GNSS_STATUS_FIX_RTK_FIX:                fixQuality = 4;    break;
@@ -1811,6 +1811,7 @@ int nmea_vtg(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel, float 
     case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY:
         nmea_sprint(a, aSize, n, ",E");
         break;
+    case GNSS_STATUS_FIX_SBAS:      // NMEA 0183: D = differential, including SBAS
     case GNSS_STATUS_FIX_DGPS:
     case GNSS_STATUS_FIX_RTK_SINGLE:
     case GNSS_STATUS_FIX_RTK_FLOAT:
