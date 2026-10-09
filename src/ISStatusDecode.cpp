@@ -1096,7 +1096,7 @@ status_field_decode_t buildRmcOptionsDecode()
     d.subfields.push_back(bitField("Preserve control", RMC_OPTIONS_PRESERVE_CTRL, false,
         "0x00000100 - Preserve current message bits (OR new bits in, don't replace)"));
     d.subfields.push_back(bitField("Persistent", RMC_OPTIONS_PERSISTENT, false,
-        "0x00000200 - Save current port RMC to flash; persists across reboot"));
+        "0x00000200 - Stage port RMC as startup config; persists across reboot once flash is saved"));
 
     {
         const uint32_t mask  = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK;
