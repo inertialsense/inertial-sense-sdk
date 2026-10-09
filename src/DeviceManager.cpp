@@ -403,12 +403,16 @@ bool DeviceManager::releaseDevice(device_handle_t device, bool closePort, bool d
     erase(deviceIter); // erase only remove the device_handle_t from the list, but doesn't release/free the instance itself
     device->port = NULL;
 
-    // also remove from knownDevices
+    // also remove from knownDevices. Matched by device instance when one is recorded: several devices can
+    // share a unique id (unserialized modules all report the same serial number), and matching by id alone
+    // would also drop the others' entries and hand one of THEIR instances to the factory to free.
     uint64_t devId = ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo);
     device_entry_t deviceEntry(nullptr, devId, nullptr);
-    auto knownIter = std::remove_if(knownDevices.begin(), knownDevices.end(), [&deviceEntry](const device_entry_t& e) {
-        if (e.hdwId == deviceEntry.hdwId) {
-            // if we found the matching ID, populate the missing entry fields
+    bool byInstance = std::any_of(knownDevices.begin(), knownDevices.end(),
+                                  [&device](const device_entry_t& e) { return e.device == device; });
+    auto knownIter = std::remove_if(knownDevices.begin(), knownDevices.end(), [&deviceEntry, &device, byInstance](const device_entry_t& e) {
+        if (byInstance ? (e.device == device) : (e.hdwId == deviceEntry.hdwId)) {
+            // if we found the matching entry, populate the missing entry fields
             deviceEntry.factory = e.factory;
             deviceEntry.device = e.device;
             return true;
@@ -491,11 +495,21 @@ bool DeviceManager::deviceHandler(DeviceFactory *factory, const dev_info_t &devI
                 // We've re-discovered an old device, but we don't know the status of its port... we should try and figure that out, before we just blindly return...
                 log_debug(IS_LOG_DEVICE_MANAGER, "Rediscovered previously known device [%s] on serial port '%s'.", ISDevice::getIdAsString(devInfo).c_str(), portName(port));
                 device = getDevice(port);
-                if (!device) {
-                    // If we weren't able to locate the Device by its port (perhaps because its not valid anymore, check by its device info instead)
-                    device = getDevice(devInfo.serialNumber, ENCODE_DEV_INFO_TO_HDW_ID(devInfo));
-                }
                 known = true;
+                if (!device) {
+                    // Not found by port, so match by identity -- but only to a device that could be the one
+                    // returning. A device whose port is open and is not this port is still running somewhere
+                    // else, and identity alone cannot tell two modules apart when they share it: unserialized
+                    // modules all report the same serial number. Rebinding to such a device moves a live
+                    // module's device object onto another module's port. When every identity match is alive
+                    // elsewhere, this port is a different physical device and gets its own.
+                    device = getReturningDevice(devInfo, port);
+                    if (!device && hasLiveDeviceWithId(devId, port)) {
+                        log_info(IS_LOG_DEVICE_MANAGER, "Device [%s] on '%s' shares its identity with a device still open on another port; treating it as a separate device.",
+                                 ISDevice::getIdAsString(devInfo).c_str(), portName(port));
+                        known = false;
+                    }
+                }
                 break;
             }
         }
@@ -718,6 +732,35 @@ device_handle_t DeviceManager::getDevice(const std::string& deviceId) {
             return device;
     }
     return NULL;
+}
+
+/**
+ * A managed device that devInfo could be returning as on `port`: same identity, and not open on any
+ * other port. A device open elsewhere is still running there, so it cannot be the one that came back.
+ * Caller holds mutex.
+ */
+device_handle_t DeviceManager::getReturningDevice(const dev_info_t& devInfo, port_handle_t port) {
+    uint64_t uid = ENCODE_DEV_INFO_TO_UNIQUE_ID(devInfo);
+    for (const auto& device : *this) {
+        if (!device || (ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo) != uid))
+            continue;
+        if ((device->port != port) && portIsOpened(device->port))
+            continue;
+        return device;
+    }
+    return NULL;
+}
+
+/**
+ * True when a managed device with unique id `uid` is open on a port other than `port`. Caller holds mutex.
+ */
+bool DeviceManager::hasLiveDeviceWithId(uint64_t uid, port_handle_t port) {
+    for (const auto& device : *this) {
+        if (device && (ENCODE_DEV_INFO_TO_UNIQUE_ID(device->devInfo) == uid) &&
+            (device->port != port) && portIsOpened(device->port))
+            return true;
+    }
+    return false;
 }
 
 /**
