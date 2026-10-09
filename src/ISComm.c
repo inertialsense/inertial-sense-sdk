@@ -17,11 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISComm.h"
 
-#define MAX_MSG_LENGTH_ISB          PKT_BUF_SIZE
-#define MAX_MSG_LENGTH_NMEA         200
-#define MAX_MSG_LENGTH_RTCM         1023  // RTCM3 standard
-#define MAX_MSG_LENGTH_UBX          1024
-#define MAX_MSG_LENGTH_SONY         4090
 #define PKT_PARSER_TIMEOUT_MS       100   // Set to 0 to disable timeout
 
 // #define DEBUG_PARSE_MSG             (!PLATFORM_IS_EMBEDDED)
@@ -439,11 +434,12 @@ static protocol_type_t processIsbPkt(void* v)
 
             // Parse header
             packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
-            p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;        // Header + payload + footer (checksum)
-            if (p->size > MAX_MSG_LENGTH_ISB)
+            uint32_t frameSize = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;    // Header + payload + footer (checksum); checked before narrowing into p->size
+            if (frameSize > MAX_MSG_SIZE_ISB)
             {   // Invalid size
                 return parseErrorResetState(c, EPARSE_INVALID_SIZE);
             }
+            p->size = (uint16_t)frameSize;
             return _PTYPE_NONE;
 
         default:    // Wait for entire packet
@@ -461,10 +457,10 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Validate checksum
     packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
-    if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)
+    if (isbPkt->hdr.payloadSize > MAX_MSG_SIZE_ISB)
         return parseErrorResetState(c, EPARSE_INVALID_SIZE);
     if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
-        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB))
+        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_SIZE_ISB))
         return parseErrorResetState(c, EPARSE_INVALID_HEADER);
 
     uint16_t payloadSize = isbPkt->hdr.payloadSize;
@@ -516,7 +512,7 @@ static protocol_type_t processIsbPkt(void* v)
     case PKT_TYPE_SET_DATA:
     case PKT_TYPE_DATA:
         // Validate data size
-        if (pkt->data.size <= MAX_DATASET_SIZE)
+        if (pkt->data.size <= ISB_MAX_DATASET_SIZE)
         {
             if (ptype==PKT_TYPE_SET_DATA)
             {   // acknowledge valid data received
@@ -535,7 +531,7 @@ static protocol_type_t processIsbPkt(void* v)
         {
             p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
             // Validate data size
-            if (get->size <= MAX_DATASET_SIZE)
+            if (get->size <= ISB_MAX_DATASET_SIZE)
             {   // Update data pointer
                 return _PTYPE_INERTIAL_SENSE_CMD;
             }
@@ -578,7 +574,7 @@ static protocol_type_t processNmeaPkt(void* v)
             else
             {
                 numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
-                if (numBytes > MAX_MSG_LENGTH_NMEA)
+                if (numBytes > MAX_MSG_SIZE_NMEA)
                 {   // Exceeds max length
                     return parseErrorResetState(c, EPARSE_INVALID_SIZE);
                 }
@@ -655,7 +651,7 @@ static protocol_type_t processSeptentrioReplyPkt(void* v)
         else
         {
             numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
-            if (numBytes > MAX_MSG_LENGTH_NMEA)
+            if (numBytes > MAX_MSG_SIZE_NMEA)
             {	// Exceeds max length
                 return parseErrorResetState(c, EPARSE_INVALID_SIZE);
             }
@@ -732,8 +728,8 @@ static protocol_type_t processSeptentrioSBFPkt(void* v)
         // Parse header
         sept_pkt_hdr_t *sepPkt = (sept_pkt_hdr_t*)(c->rxBuf.head);
         p->size = sepPkt->payloadSize;
-        if (p->size > MAX_MSG_LENGTH_ISB || p->size < 4)
-        {	// Invalid size
+        if (p->size > MAX_MSG_SIZE_SBF || p->size > c->rxBuf.size || p->size < 4 || (p->size & 0x3))
+        {	// Invalid size: SBF block lengths are always a multiple of 4
             return parseErrorResetState(c, EPARSE_INVALID_SIZE);
         }
         return _PTYPE_NONE;
@@ -857,7 +853,12 @@ static protocol_type_t processUbloxPkt(void* v)
 
         // Parse header
         ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(c->rxBuf.head);
-        p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;        // Header + payload + footer (checksum)
+        uint32_t frameSize = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;    // Header + payload + footer (checksum); checked before narrowing into p->size
+        if (frameSize > MAX_MSG_SIZE_UBX || frameSize > (uint32_t)c->rxBuf.size)
+        {   // Invalid size
+            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+        }
+        p->size = (uint16_t)frameSize;
         p->state++;
         return _PTYPE_NONE;
 
@@ -917,7 +918,7 @@ static protocol_type_t processRtcm3Pkt(void* v)
             p->state++;
 
             // Validate packet length
-            if (p->size > MAX_MSG_LENGTH_RTCM || p->size > c->rxBuf.size - 6)
+            if (p->size > MAX_MSG_SIZE_RTCM || p->size > c->rxBuf.size - 6)
             {   // Corrupt data
                 return parseErrorResetState(c, EPARSE_INCOMPLETE_PACKET);
             }
@@ -1035,7 +1036,7 @@ static protocol_type_t processSonyByte(void* v)
             {
                 checksum += c->rxBuf.head[i];
             }
-            if (checksum != hdr->fcsh || hdr->dataSize > MAX_MSG_LENGTH_SONY || hdr->dataSize > c->rxBuf.size)
+            if (checksum != hdr->fcsh || hdr->dataSize > MAX_MSG_SIZE_SONY || hdr->dataSize > c->rxBuf.size)
             {   // Invalid header - Reset state
                 return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
             }
@@ -1077,6 +1078,22 @@ static protocol_type_t processSonyByte(void* v)
     validPacketFound(c, numBytes, p->size, c->rxBuf.head[3]);
 
     return _PTYPE_SONY;
+}
+
+/**
+ * Called once the SPARTN header has been read and the remaining length is known: rejects a frame
+ * larger than MAX_MSG_SIZE_SPARTN or the receive buffer, otherwise counts down the remaining payloadLen bytes.
+ */
+static protocol_type_t startSpartnPayload(is_comm_instance_t* c, uint16_t payloadLen)
+{
+    uint32_t frameSize = (uint32_t)(c->rxBuf.scan - c->rxBuf.head) + 1 + payloadLen;    // Header read so far + remaining payload
+    if (frameSize > MAX_MSG_SIZE_SPARTN || frameSize > c->rxBuf.size)
+    {   // Invalid size
+        return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+    }
+
+    c->parser.state = -((int32_t)payloadLen);
+    return _PTYPE_NONE;
 }
 
 static protocol_type_t processSpartnByte(void* v)
@@ -1134,8 +1151,7 @@ static protocol_type_t processSpartnByte(void* v)
             {   // Timestamp is 32 bit
                 if (!encrypt && p->state == 9)
                 {   // Encryption is disabled, we are ready to go to payload bytes
-                    p->state = -((int32_t)payloadLen);
-                    break;
+                    return startSpartnPayload(c, payloadLen);
                 }
                 else if (encrypt && p->state == 11)
                 {   // Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
@@ -1152,8 +1168,7 @@ static protocol_type_t processSpartnByte(void* v)
             {   // Timestamp is 16 bit
                 if (!encrypt && p->state == 7)
                 {   // Encryption is disabled, we are ready to go to payload bytes
-                    p->state = -((int32_t)payloadLen);
-                    break;
+                    return startSpartnPayload(c, payloadLen);
                 }
                 else if (encrypt && p->state == 9)
                 {   // Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
@@ -1188,9 +1203,8 @@ static protocol_type_t processSpartnByte(void* v)
                 return parseErrorResetState(c, EPARSE_INVALID_PAYLOAD);
             }
 
-            p->state = -((int32_t)payloadLen);
-
-        } break;
+            return startSpartnPayload(c, payloadLen);
+        }
 
 
         default:
@@ -1578,7 +1592,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
         return -1;
     }
 
-    if (pkt->data.size + sizeof(packet_hdr_t) + 4 > PKT_BUF_SIZE)
+    if (pkt->data.size + sizeof(packet_hdr_t) + 4 > MAX_MSG_SIZE_ISB)
     {   // Packet size + offset + payload + footer is too large
         return -1;
     }
@@ -1604,7 +1618,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                // Footer (checksum)
 #else
     // Write packet to port in a single write call.  Reentrant function that prevents severed packets written to the port if this function gets interrupted and data written the same port.
-    uint8_t buf[PKT_BUF_SIZE];
+    uint8_t buf[MAX_MSG_SIZE_ISB];
     uint8_t *ptr = buf;
 
     // Set checksum using precomputed header checksum and Write packet to buffer
