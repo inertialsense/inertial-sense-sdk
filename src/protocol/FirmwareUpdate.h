@@ -121,8 +121,8 @@ namespace fwUpdate {
 
 
 #define FWUPDATE__MAX_CHUNK_SIZE   512                                  //!< maximum number of firmware-image bytes carried in a single UPDATE_CHUNK message.
-//   The transport would allow 1024 -- this plus 92 bytes of overhead has to fit MAX_PKT_BODY_SIZE
-//   (PKT_BUF_SIZE 2048, less packet overhead) -- and the negotiation degrades safely, since a
+//   The transport would allow 1024 -- this plus 92 bytes of overhead has to fit ISB_MAX_PKT_BODY_SIZE
+//   (MAX_MSG_SIZE_ISB 2048, less packet overhead) -- and the negotiation degrades safely, since a
 //   device built against a smaller value answers REQ_UPDATE with ERR_MAX_CHUNK_SIZE and the host
 //   halves and retries. 512 is not a protocol limit but a measured one: at 1024 the resulting
 //   1116-byte payloads are dropped often enough on the host-to-IMX-to-GPX path (8 lost chunks in

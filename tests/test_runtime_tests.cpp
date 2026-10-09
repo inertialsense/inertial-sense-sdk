@@ -9,11 +9,11 @@
 using namespace std;
 
 static is_comm_instance_t s_comm;
-static uint8_t s_comBuf[PKT_BUF_SIZE];
+static uint8_t s_comBuf[MAX_MSG_SIZE];
 
 void run_realtime_test(DeviceRuntimeTests &RuntimeTest, uint8_t *stream, int streamSize)
 {
-    init_test_comm_instance(&s_comm, s_comBuf, PKT_BUF_SIZE);
+    init_test_comm_instance(&s_comm, s_comBuf, sizeof(s_comBuf));
 
     const int chunkSize = 100;
     for (int i=0; i<streamSize;)

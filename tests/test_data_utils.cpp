@@ -528,8 +528,8 @@ void GenerateDataLogFiles(int numDevices, const std::string& directory, cISLogge
     logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
 
     test_message_t msg = {};
-    uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks??
+    uint8_t comBuf[MAX_MSG_SIZE];
+    is_comm_init(&msg.comm, comBuf, sizeof(comBuf), NULL); // TODO: Use callbacks??
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
@@ -582,8 +582,8 @@ uint32_t GenerateRawLogData(std::list<std::vector<uint8_t>*>& msgs, float logSiz
 {
     uint32_t runningSize = 0;
     test_message_t msg = {};
-    uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks??
+    uint8_t comBuf[MAX_MSG_SIZE];
+    is_comm_init(&msg.comm, comBuf, sizeof(comBuf), NULL); // TODO: Use callbacks??
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
@@ -637,8 +637,8 @@ bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *
 int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions options)
 {
     test_message_t msg = {};
-    uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks?
+    uint8_t comBuf[MAX_MSG_SIZE];
+    is_comm_init(&msg.comm, comBuf, sizeof(comBuf), NULL); // TODO: Use callbacks?
     int streamSize = 0;
     static int pktCount = 0;
 

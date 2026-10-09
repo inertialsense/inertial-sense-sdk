@@ -144,7 +144,7 @@ bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, st
     }
     char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
     const uint8_t* bufPtr = buf;
-    uint8_t tmpBuffer[MAX_DATASET_SIZE];
+    uint8_t tmpBuffer[ISB_MAX_DATASET_SIZE];
     uint32_t size = cISDataMappings::DataSize(hdr.id);
     if (size > hdr.size)
     {

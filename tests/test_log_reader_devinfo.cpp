@@ -67,10 +67,10 @@ dev_info_t makeDevInfo(uint32_t serial, uint8_t hwType, uint8_t major, uint8_t m
  */
 std::vector<uint8_t> framedPacket(uint16_t did, const dev_info_t& info) {
     is_comm_instance_t comm{};
-    uint8_t commBuf[PKT_BUF_SIZE];
+    uint8_t commBuf[MAX_MSG_SIZE];
     is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
 
-    uint8_t pkt[PKT_BUF_SIZE];
+    uint8_t pkt[MAX_MSG_SIZE];
     dev_info_t payload = info;
     const int n = is_comm_data_to_buf(pkt, sizeof(pkt), &comm, did,
                                       static_cast<uint16_t>(sizeof(payload)), 0, &payload);

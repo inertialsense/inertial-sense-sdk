@@ -260,11 +260,11 @@ int CorrectionService::onRtcm3Handler(const unsigned char* msg, int msgSize, por
 
 int CorrectionService::onRawDataHandler(const unsigned char* msg, int msgSize, port_handle_t port) {
     (void)port;
-    uint8_t bufferA[PKT_BUF_SIZE] = {0};
-    uint8_t bufferB[PKT_BUF_SIZE] = {0};
+    uint8_t bufferA[MAX_MSG_SIZE] = {0};
+    uint8_t bufferB[MAX_MSG_SIZE] = {0};
 
-    uint32_t bytesRead = packetTransformer(msg, msgSize, bufferA, PKT_BUF_SIZE);
-    rtcm3PacketsProcessed += finalPacketFilter(bufferA, bytesRead, bufferB, PKT_BUF_SIZE, &bytesRead);
+    uint32_t bytesRead = packetTransformer(msg, msgSize, bufferA, MAX_MSG_SIZE);
+    rtcm3PacketsProcessed += finalPacketFilter(bufferA, bytesRead, bufferB, MAX_MSG_SIZE, &bytesRead);
     sendData(bufferB, bytesRead);
     return 0;
 }
