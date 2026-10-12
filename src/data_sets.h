@@ -1512,7 +1512,7 @@ enum eGenFaultCodes
     GFC_CHIP_ERASE_INVALID      = 0x01000000,  //!< Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.
     GFC_EKF_GNSS_TIME_FAULT     = 0x02000000,  //!< Fault: EKF GNSS time fault
     GFC_GNSS_RECEIVER_TIME      = 0x04000000,  //!< Fault: GNSS receiver time fault
-    GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS reciever ceneral fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
+    GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS reciever general fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
     GFC_EKF_INPUT_INVALID_IMU   = 0x10000000,  //!< Fault: Invalid IMU input rejected by EKF
     GFC_GNSS_RTOS_ERROR         = 0x20000000,  //!< Fault: GNSS RTOS error
     GFC_EKF_BIAS_SATURATED      = 0x40000000,  //!< Fault: EKF bias saturated

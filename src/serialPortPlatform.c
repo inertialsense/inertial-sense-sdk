@@ -625,6 +625,10 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         return 0;
     }
 
+    // Assert DTR explicitly; a non-blocking open does not guarantee it, and close drops it (see serialPortClosePlatform())
+    int dtr = TIOCM_DTR;
+    ioctl(fd, TIOCMBIS, &dtr);
+
     ioctl(fd, TIOCEXCL);            // Exclusive Access Mode: prevent other processes from opening the port while its open
     flock(fd, LOCK_EX | LOCK_NB);   // Exclusive & Non-Blocking Lock: prevent other process read/write of the fd file
 
@@ -718,6 +722,8 @@ static int serialPortClosePlatform(port_handle_t port)
     //DWORD error = 0;
 
     CancelIo(handle->platformHandle);
+    // Drop DTR before closing so a USB CDC-ACM device knows the host closed the port (see the POSIX path below)
+    EscapeCommFunction(handle->platformHandle, CLRDTR);
     //GetOverlappedResult(handle->platformHandle, &handle->ovRead, &dwRead, 1);
     /*if ((error = GetLastError()) != ERROR_SUCCESS)
     {
@@ -745,15 +751,11 @@ static int serialPortClosePlatform(port_handle_t port)
         }
     }
 
-    // Clear HUPCL so the kernel doesn't drop DTR on close. USB CDC-ACM
-    // devices (IMX-5, GPX-1) treat a DTR transition as a reset, which
-    // used to force a 500 ms settling wait before the port could be
-    // reopened. Preserving DTR across close removes that need.
-    struct termios tty;
-    if (tcgetattr(handle->fd, &tty) == 0) {
-        tty.c_cflag &= ~HUPCL;
-        tcsetattr(handle->fd, TCSANOW, &tty);
-    }
+    // Drop DTR before closing. A USB CDC-ACM device has no other way to learn that the host closed
+    // the port: it keeps its endpoints, so without this it keeps queuing output that nothing reads.
+    // Done explicitly rather than through HUPCL, which persists on the device node between opens.
+    int dtr = TIOCM_DTR;
+    ioctl(handle->fd, TIOCMBIC, &dtr);
 
     close(handle->fd);
     handle->fd = -1;
