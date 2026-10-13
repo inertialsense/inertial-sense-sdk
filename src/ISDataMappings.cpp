@@ -1630,7 +1630,8 @@ static void PopulateMapMagCalCoverage(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("ringPct", &mag_cal_coverage_t::ringPct, DATA_TYPE_UINT8, "%", "Share of this pose's ring already covered", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("gravDir", &mag_cal_coverage_t::gravDir, DATA_TYPE_INT8, 3, {""}, {"Direction of the floor in the sensor frame (unit vector x127)"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("inclSin", &mag_cal_coverage_t::inclSin, DATA_TYPE_INT8, "", "sin(inclination) x127: the firmware estimate of field . floor", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("reserved3", &mag_cal_coverage_t::reserved3, DATA_TYPE_UINT8, 2, {""}, {"Reserved"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("qualityWhy", &mag_cal_coverage_t::qualityWhy, DATA_TYPE_UINT8, "", "Why the quality is not GOOD (eMagCalQualityWhy)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("normErrPct", &mag_cal_coverage_t::normErrPct, DATA_TYPE_UINT8, "%", "Calibrated field magnitude error vs 1.0", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("required", &mag_cal_coverage_t::required, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 8, {""}, {"Required-cell bit mask (1 bit per cell, LSB first)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("cells", &mag_cal_coverage_t::cells, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 2, {""}, {"4-bit saturating sample count per cell (even cell = low nibble)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }

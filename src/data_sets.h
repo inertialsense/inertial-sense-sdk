@@ -2412,6 +2412,15 @@ enum eMagCalQuality
     MAG_CAL_QUALITY_UNKNOWN     = 255,  //!< Not yet evaluated (e.g. just booted and buffers still filling)
 };
 
+/** @brief mag_cal_coverage_t.qualityWhy: the term of the quality metric (Tcal = max(static-field variance, 20 x field-magnitude error)) that keeps the verdict from being GOOD */
+enum eMagCalQualityWhy
+{
+    MAG_CAL_WHY_NONE            = 0,    //!< Nothing wrong (or no verdict yet)
+    MAG_CAL_WHY_FIELD_VARIES    = 1,    //!< The buffered field vectors disagree after rotating them into the current frame: interference that is changing, or motion/gyro error
+    MAG_CAL_WHY_NORM_OFF        = 2,    //!< The calibrated field magnitude differs from 1.0 enough to matter: the calibration does not fit the field here (see normErrPct)
+    MAG_CAL_WHY_NORM_INVALID    = 3,    //!< The calibrated field magnitude is more than 15% off: the calibration is not valid for this field at all (different place, nearby magnet or steel)
+};
+
 /** @brief mag_cal_coverage_t.flags */
 enum eMagCalCoverageFlags
 {
@@ -2456,7 +2465,8 @@ typedef struct PACKED
     uint8_t                     ringPct;        //!< (%) Share of the field-direction ring that this pose sweeps which is already covered (0..100). Reaches 100 when the turn is complete
     int8_t                      gravDir[3];     //!< Direction of the FLOOR in the sensor frame (unit vector x127), from the accelerometer. A host can draw it as the arrow that should line up with poseDir
     int8_t                      inclSin;        //!< sin(inclination) x127: the firmware's own running estimate of field . floor, which sizes the pose ring. Valid when MAG_CAL_FLAG_INCL_VALID is set
-    uint8_t                     reserved3[2];
+    uint8_t                     qualityWhy;     //!< Why the quality verdict is not GOOD (eMagCalQualityWhy). MAG_CAL_WHY_NONE while good, and while no verdict has been computed yet
+    uint8_t                     normErrPct;     //!< (%) How far the calibrated field magnitude is from the expected 1.0 in the last verdict (0..255)
     uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
 } mag_cal_coverage_t;

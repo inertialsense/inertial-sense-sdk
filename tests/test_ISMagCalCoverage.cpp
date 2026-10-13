@@ -37,6 +37,8 @@ TEST(MagCalCoverage, WireLayoutIsStable)
     EXPECT_EQ(offsetof(mag_cal_coverage_t, ringPct), 29u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, gravDir), 30u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, inclSin), 33u);
+    EXPECT_EQ(offsetof(mag_cal_coverage_t, qualityWhy), 34u);
+    EXPECT_EQ(offsetof(mag_cal_coverage_t, normErrPct), 35u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, required), 36u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, cells), 52u);
     EXPECT_EQ((int)DID_MAG_CAL_COVERAGE, 113);
@@ -400,6 +402,13 @@ TEST(MagCalCoverage, RingUsesTheFirmwareInclinationWhenItIsReported)
     mag_cal_coverage_t empty = m; for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&empty, i, 0);
     auto starsEmpty = [&](int8_t incl) { mag_cal_coverage_t c = empty; c.inclSin = incl; cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY); std::string o = d.DataToStringMagCalCoverage(c, hdr); return (int)std::count(o.begin(), o.end(), '*'); };
     EXPECT_NE(starsEmpty(0), starsEmpty(100)) << "inclination 0 (ring at the equator) vs 52 deg (a small circle) fill different cells";
+}
+
+TEST(MagCalCoverage, QualityWhyHasPlainWordsForEveryReason)
+{
+    EXPECT_STREQ(magCalQualityWhyText(MAG_CAL_WHY_NONE), "");
+    for (unsigned w = MAG_CAL_WHY_FIELD_VARIES; w <= MAG_CAL_WHY_NORM_INVALID; w++) EXPECT_GT(strlen(magCalQualityWhyText(w)), 20u) << w;
+    EXPECT_STREQ(magCalQualityWhyText(200), "") << "unknown values from a newer firmware say nothing rather than something wrong";
 }
 
 } // namespace

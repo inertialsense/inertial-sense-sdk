@@ -264,6 +264,18 @@ static inline int magCalSinI(const mag_cal_coverage_t *c, float *sinI)
     return 0;
 }
 
+/** Plain-words reason the quality is not GOOD (empty when there is none). */
+static inline const char *magCalQualityWhyText(unsigned why)
+{
+    switch (why)
+    {
+    case MAG_CAL_WHY_FIELD_VARIES: return "the magnetic field is not steady: interference nearby, or the device was moving";
+    case MAG_CAL_WHY_NORM_OFF:     return "the field strength here differs from where it was calibrated";
+    case MAG_CAL_WHY_NORM_INVALID: return "the field strength is far from the calibration (more than 15%): different place, or a magnet or steel nearby";
+    default:                       return "";
+    }
+}
+
 /** Why the calibration is not advancing, as a short phrase (empty when there is nothing to say). */
 static inline const char *magCalReasonText(unsigned reason)
 {
