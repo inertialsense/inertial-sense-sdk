@@ -1386,6 +1386,8 @@ void cltool_outputUsage()
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
     cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
+    cout << boldOff << "                    -nmea options require a single direct serial port (-c PORT or -sn) and use -baud and -dur." << endlbOn;
+    cout << boldOff << "                    Discovery and relay options (-c *, -device, -use-mdns, -use-relay) do not apply." << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
     cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
