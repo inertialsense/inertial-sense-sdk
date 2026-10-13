@@ -1536,8 +1536,10 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
         cov.lifecycle < 7 ? lifecycle[cov.lifecycle] : "?",
         cov.mode == MAG_CAL_STATE_MULTI_AXIS ? " multi-axis" : (cov.mode == MAG_CAL_STATE_SINGLE_AXIS ? " single-axis" : ""),
         cov.progressPct);
-    char detail[80];
-    SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s  Tcal %.1f  samples %u", cov.coveragePct, qualityStr, cov.fitQuality, cov.sampleCount);
+    static const char *fitStageName[] = { "", "few samples", "r2<=0", "no +eigenvalue", "bad eigenvector", "not ellipsoid", "not pos-def", "sphere failed", "norm tolerance", "1-axis fit" };
+    char detail[96];
+    SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s  Tcal %.1f  samples %u%s%s", cov.coveragePct, qualityStr, cov.fitQuality, cov.sampleCount,
+        (cov.fitStage && cov.fitStage < 10 && cov.lifecycle == MAG_CAL_LC_FITTING) ? "  fit: " : "", (cov.fitStage && cov.fitStage < 10 && cov.lifecycle == MAG_CAL_LC_FITTING) ? fitStageName[cov.fitStage] : "");
 
     // Instruction text, built with a clamped append (snprintf returns the length it WOULD have written, not what fit)
     char instr[160] = "";
@@ -1574,7 +1576,7 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
 
     if (m_displayMode == DMODE_PRETTY)
     {   // Map: rows = latitude band (top = +Z in the sensor frame), columns = longitude sector (atan2(y,x), -180 to +180 deg)
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  %-76s\n", detail);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  %-78s\n", detail);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  > %-74s\n", instr);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  . missing  : thin  o ok  O good  # full  - n/a   @ field now   * target\n");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  lon:      -180             0            +180\n");

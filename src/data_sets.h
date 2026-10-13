@@ -2440,7 +2440,7 @@ typedef struct PACKED
     int8_t                      guideRot[3];    //!< Rotation to apply to the DEVICE to reach the target, as roll/pitch/yaw degrees about the body X/Y/Z axes (right-hand rule), MAG_CAL_GUIDE_DEG_PER_LSB degrees per LSB. All zero when there is no target. Shrinks to zero as the target is approached
     uint8_t                     targetCell;     //!< Current target as CELL INDEX + 1 (1..MAG_CAL_CELL_COUNT): the sensor-frame field direction to bring the field to. MAG_CAL_GUIDE_NONE (0) when there is none, so a zeroed packet means no target
     int8_t                      fieldDir[3];    //!< Current measured field direction in the sensor frame (unit vector x127), i.e. where the "now" marker sits on the map
-    uint8_t                     reserved;
+    uint8_t                     fitStage;       //!< Diagnostic: which check rejected the most recent calibration fit, 0 = none (1 too few samples, 2 r2<=0, 3 no positive eigenvalue, 4 bad eigenvector, 5 not an ellipsoid, 6 not positive definite, 7 sphere conversion failed, 8 per-sample norm tolerance, 9 single-axis fit)
     uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
 } mag_cal_coverage_t;

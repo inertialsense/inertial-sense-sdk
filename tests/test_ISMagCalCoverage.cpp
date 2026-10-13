@@ -32,7 +32,7 @@ TEST(MagCalCoverage, WireLayoutIsStable)
     EXPECT_EQ(offsetof(mag_cal_coverage_t, guideRot), 20u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, targetCell), 23u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, fieldDir), 24u);
-    EXPECT_EQ(offsetof(mag_cal_coverage_t, reserved), 27u);
+    EXPECT_EQ(offsetof(mag_cal_coverage_t, fitStage), 27u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, required), 28u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, cells), 44u);
     EXPECT_EQ((int)DID_MAG_CAL_COVERAGE, 113);
