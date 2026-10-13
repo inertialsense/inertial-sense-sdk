@@ -617,6 +617,7 @@ std::size_t corruptSidecarTimestamps(const fs::path& idxPath, std::size_t everyN
     auto h = idx::parseHeader(head.data());
     if (!h) return 0;
     const std::size_t stride = h->record_size ? h->record_size : idx::IS_LOG_IDX_RECORD_V2_SIZE;
+    if (stride < sizeof(uint64_t)) return 0;                // too small to hold the timestamp
 
     io.seekg(0, std::ios::end);
     const auto total = static_cast<std::size_t>(io.tellg());
