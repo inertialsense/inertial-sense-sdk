@@ -2419,6 +2419,16 @@ enum eMagCalCoverageFlags
     MAG_CAL_FLAG_REQUIRED_VALID = 0x02, //!< required[] is meaningful; if clear, treat every cell as required
     MAG_CAL_FLAG_AUTO_RECAL     = 0x04, //!< Recalibration was started automatically rather than by the host
     MAG_CAL_FLAG_FIELD_STEADY   = 0x08, //!< Field currently passes the stationary-field test
+    MAG_CAL_FLAG_QUALITY_HELD   = 0x10, //!< The quality verdict is being held: the device is turning too fast for it to be evaluated reliably
+    MAG_CAL_FLAG_GRAVITY_VALID  = 0x20, //!< gravDir is meaningful (the accelerometer reads about 1 g)
+};
+
+/** @brief mag_cal_coverage_t.guidePhase */
+enum eMagCalGuidePhase
+{
+    MAG_CAL_PHASE_NONE = 0,     //!< No guidance
+    MAG_CAL_PHASE_AIM  = 1,     //!< Tilt the device until poseDir points at the floor (poseErrDeg to go)
+    MAG_CAL_PHASE_TURN = 2,     //!< Keep poseDir pointed at the floor and turn slowly all the way round about the vertical (ringPct done)
 };
 
 /** @brief (DID_MAG_CAL_COVERAGE) Magnetometer calibration status and sample coverage. Read-only.
@@ -2437,18 +2447,25 @@ typedef struct PACKED
     uint8_t                     flags;          //!< (eMagCalCoverageFlags)
     float                       fitQuality;     //!< Calibration quality metric Tcal (lower is better); compare with DID_FLASH_CONFIG.magCalibrationQualityThreshold
     uint32_t                    sampleCount;    //!< Samples in the least-squares accumulator
-    int8_t                      guideRot[3];    //!< Rotation to apply to the DEVICE to reach the target, as roll/pitch/yaw degrees about the body X/Y/Z axes (right-hand rule), MAG_CAL_GUIDE_DEG_PER_LSB degrees per LSB. All zero when there is no target. Shrinks to zero as the target is approached
-    uint8_t                     targetCell;     //!< Current target as CELL INDEX + 1 (1..MAG_CAL_CELL_COUNT): the sensor-frame field direction to bring the field to. MAG_CAL_GUIDE_NONE (0) when there is none, so a zeroed packet means no target
+    int8_t                      poseDir[3];     //!< Guidance pose: the part of the device that should point at the FLOOR, as a body-frame unit vector x127 (e.g. +Z axis = 0,0,127; an edge = two components at 90). All zero when there is no guidance
+    uint8_t                     guidePhase;     //!< (eMagCalGuidePhase) AIM at the floor with poseDir, then TURN slowly about the vertical. MAG_CAL_GUIDE_NONE (0) = no guidance, so a zeroed packet means none
     int8_t                      fieldDir[3];    //!< Current measured field direction in the sensor frame (unit vector x127), i.e. where the "now" marker sits on the map
     uint8_t                     fitStage;       //!< Diagnostic: which check rejected the most recent calibration fit, 0 = none (1 too few samples, 2 r2<=0, 3 no positive eigenvalue, 4 bad eigenvector, 5 not an ellipsoid, 6 not positive definite, 7 sphere conversion failed, 8 per-sample norm tolerance, 9 single-axis fit)
+    uint8_t                     poseErrDeg;     //!< (deg) Angle between the floor direction and poseDir: how far still to tilt (0..180)
+    uint8_t                     ringPct;        //!< (%) Share of the field-direction ring that this pose sweeps which is already covered (0..100). Reaches 100 when the turn is complete
+    int8_t                      gravDir[3];     //!< Direction of the FLOOR in the sensor frame (unit vector x127), from the accelerometer. A host can draw it as the arrow that should line up with poseDir
+    uint8_t                     reserved2;
+    uint8_t                     reserved3[2];
     uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
 } mag_cal_coverage_t;
 #define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
-#define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.targetCell: no target (otherwise cell index + 1)
-#define MAG_CAL_GUIDE_DEG_PER_LSB   2       //!< mag_cal_coverage_t.guideRot resolution (degrees per LSB, so +-254 deg range)
-#define MAG_CAL_GUIDE_REACHED_DEG   20      //!< A target counts as reached when the field is within this angle of the cell centre (or the cell is covered). Hand-held orientation is not that precise
-#define MAG_CAL_GUIDE_TIMEOUT_MS    8000    //!< A target that has not been reached after this long is replaced (the user may not be able to get there from where they are)
+#define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.guidePhase: no guidance
+#define MAG_CAL_POSE_COUNT          26      //!< Guidance poses: the 6 faces, 12 edges and 8 corners of the device, each pointed at the floor
+#define MAG_CAL_POSE_AIM_DEG        20      //!< AIM becomes TURN once the pose is within this angle of pointing at the floor
+#define MAG_CAL_POSE_LOSE_DEG       35      //!< TURN falls back to AIM if the pose drifts beyond this angle (hysteresis)
+#define MAG_CAL_POSE_RING_HALF_DEG  14      //!< Half width of the ring of field directions a pose is credited with sweeping
+#define MAG_CAL_POSE_TIMEOUT_MS     40000   //!< A pose that is not finished after this long is dropped (the user may not be able to do it where they are)
 
 /** @brief (DID_INL2_MAG_OBS_INFO) INL2 magnetometer observer diagnostic/calibration info. Reports the internal state of the online magnetometer bias/cross-axis calibration and heading-innovation gating used by the INL2 EKF to accept or reject magnetometer updates. */
 typedef struct PACKED

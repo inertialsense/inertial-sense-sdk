@@ -48,14 +48,15 @@ static inline int magCalCellIndexOfVector(const float v[3], unsigned *index)
     return 1;
 }
 
-/** Unit vector (sensor frame) at the centre of a cell. */
+/** Unit vector (sensor frame) at the centre of a cell. Table driven (no libm): this runs for every cell, for every candidate pose. */
 static inline void magCalCellCenter(unsigned index, float out[3])
 {
+    static const float lonCos[MAG_CAL_CELL_LON_SECTORS] = { -0.98078528f, -0.83146961f, -0.55557023f, -0.19509032f, 0.19509032f, 0.55557023f, 0.83146961f, 0.98078528f, 0.98078528f, 0.83146961f, 0.55557023f, 0.19509032f, -0.19509032f, -0.55557023f, -0.83146961f, -0.98078528f };
+    static const float lonSin[MAG_CAL_CELL_LON_SECTORS] = { -0.19509032f, -0.55557023f, -0.83146961f, -0.98078528f, -0.98078528f, -0.83146961f, -0.55557023f, -0.19509032f, 0.19509032f, 0.55557023f, 0.83146961f, 0.98078528f, 0.98078528f, 0.83146961f, 0.55557023f, 0.19509032f };
     unsigned iz = index / MAG_CAL_CELL_LON_SECTORS, il = index % MAG_CAL_CELL_LON_SECTORS;
     float z = ((iz + 0.5f) * (2.0f / MAG_CAL_CELL_Z_BANDS)) - 1.0f;
-    float lon = ((il + 0.5f) * (MAG_CAL_COV_TWO_PI / MAG_CAL_CELL_LON_SECTORS)) - MAG_CAL_COV_PI;
     float r = sqrtf(fmaxf(0.0f, 1.0f - z * z));
-    out[0] = r * cosf(lon); out[1] = r * sinf(lon); out[2] = z;
+    out[0] = r * lonCos[il]; out[1] = r * lonSin[il]; out[2] = z;
 }
 
 /** Raw 4-bit cell accessors on a MAG_CAL_CELL_COUNT/2 byte array (firmware keeps just the cells, not a whole mag_cal_coverage_t). */
@@ -133,22 +134,6 @@ static inline uint8_t magCalProgressPct(const mag_cal_cov_stats_t *s)
     return s->requiredCells ? (uint8_t)((100u * s->requiredCovered) / s->requiredCells) : 0;
 }
 
-/** Number of missing required cells in the 3x3 neighbourhood of a cell (itself included; longitude wraps). The "gain" of aiming there. */
-static inline int magCalGapScore(const mag_cal_coverage_t *m, int cell)
-{
-    int iz = cell / MAG_CAL_CELL_LON_SECTORS, il = cell % MAG_CAL_CELL_LON_SECTORS, score = 0;
-    for (int dz = -1; dz <= 1; dz++)
-    {
-        int z = iz + dz; if (z < 0 || z >= MAG_CAL_CELL_Z_BANDS) continue;
-        for (int dl = -1; dl <= 1; dl++)
-        {
-            unsigned n = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + ((il + dl + MAG_CAL_CELL_LON_SECTORS) % MAG_CAL_CELL_LON_SECTORS));
-            if (magCalCellRequired(m, n) && magCalCellGet(m, n) < MAG_CAL_COVERAGE_MIN_COUNT) score++;
-        }
-    }
-    return score;
-}
-
 /** Angle (degrees) between two unit vectors. */
 static inline float magCalAngleDeg(const float a[3], const float b[3])
 {
@@ -157,87 +142,100 @@ static inline float magCalAngleDeg(const float a[3], const float b[3])
     return acosf(c) * (180.0f / MAG_CAL_COV_PI);
 }
 
-/**
- * Choose the next target cell: the place where one move closes the most gaps.
- *  - Keep the previous target until it is reached (the cell is covered, or the field is within MAG_CAL_GUIDE_REACHED_DEG of its centre
- *    and it will be covered momentarily) so the target does not flip while the user is moving toward it.
- *  - Otherwise pick, among missing required cells whose gap score is within 25% of the best, the one nearest to the current field
- *    direction (largest gain first, shortest move as the tie-break).
- * @param cur   current field direction, unit vector in the sensor frame (NULL = unknown: nearest-ness is ignored)
- * @param prev  previous target cell or -1
- * @param avoid a cell that must not be chosen (e.g. a target that timed out), or -1
- * @return target cell, or -1 when nothing required is missing
- */
-static inline int magCalChooseTarget(const mag_cal_coverage_t *m, const float cur[3], int prev, int avoid)
-{
-    if (prev >= 0 && prev < MAG_CAL_CELL_COUNT && magCalCellRequired(m, (unsigned)prev) && magCalCellGet(m, (unsigned)prev) < MAG_CAL_COVERAGE_MIN_COUNT)
-    {
-        float c[3]; magCalCellCenter((unsigned)prev, c);
-        if (!cur || magCalAngleDeg(cur, c) > MAG_CAL_GUIDE_REACHED_DEG) return prev;     // still on its way
-    }
-    int best = 0, scores[MAG_CAL_CELL_COUNT];
-    for (int i = 0; i < MAG_CAL_CELL_COUNT; i++)
-    {
-        scores[i] = (i != avoid && magCalCellRequired(m, (unsigned)i) && magCalCellGet(m, (unsigned)i) < MAG_CAL_COVERAGE_MIN_COUNT) ? magCalGapScore(m, i) : 0;
-        if (scores[i] > best) best = scores[i];
-    }
-    if (best == 0) return -1;
-    int threshold = (3 * best + 3) / 4;     // ceil(0.75 * best)
-    int pick = -1; float pickAngle = 1.0e9f;
-    for (int i = 0; i < MAG_CAL_CELL_COUNT; i++)
-    {
-        if (scores[i] < threshold) continue;
-        float c[3]; magCalCellCenter((unsigned)i, c);
-        float ang = cur ? magCalAngleDeg(cur, c) : 0.0f;
-        if (ang < pickAngle) { pickAngle = ang; pick = i; }
-    }
-    return pick;
-}
-
-/**
- * Rotation to apply to the DEVICE so the field direction seen in the sensor frame moves from cur to target.
- * The field is fixed in the world, so rotating the body by R makes the sensor-frame direction u' = R^T u. The minimal rotation that
- * takes u to d has axis d x u (body frame) and angle acos(u.d). Returned as roll/pitch/yaw degrees about body X/Y/Z (right-hand rule).
- * @return total angle in degrees
- */
-static inline float magCalGuideRotationDeg(const float cur[3], const float target[3], float rotDeg[3])
-{
-    float ax = target[1] * cur[2] - target[2] * cur[1];
-    float ay = target[2] * cur[0] - target[0] * cur[2];
-    float az = target[0] * cur[1] - target[1] * cur[0];
-    float s = sqrtf(ax * ax + ay * ay + az * az), ang = magCalAngleDeg(cur, target);
-    if (s < 1.0e-6f)
-    {   // Same or opposite direction. Opposite: any axis perpendicular to cur works.
-        rotDeg[0] = rotDeg[1] = rotDeg[2] = 0.0f;
-        if (ang > 90.0f) { float t[3] = { 1, 0, 0 }; if (fabsf(cur[0]) > 0.9f) { t[0] = 0; t[1] = 1; }
-            float px = cur[1] * t[2] - cur[2] * t[1], py = cur[2] * t[0] - cur[0] * t[2], pz = cur[0] * t[1] - cur[1] * t[0];
-            float n = sqrtf(px * px + py * py + pz * pz); rotDeg[0] = ang * px / n; rotDeg[1] = ang * py / n; rotDeg[2] = ang * pz / n; }
-        return ang;
-    }
-    rotDeg[0] = ang * ax / s; rotDeg[1] = ang * ay / s; rotDeg[2] = ang * az / s;
-    return ang;
-}
-
-/** Exponential smoothing of the displayed rotation (state in degrees). A fresh state (reset=1) takes the first value as is. Keeps the numbers readable
- *  while the user is moving; the underlying target is unchanged. */
-static inline void magCalSmoothRot(float state[3], const float in[3], int reset, float alpha)
-{
-    for (int k = 0; k < 3; k++) state[k] = reset ? in[k] : state[k] + alpha * (in[k] - state[k]);
-}
-
-/** Wire encoding of the target: cell index + 1, 0 = none (so a zeroed packet carries no target). */
-static inline uint8_t magCalPackTarget(int cell) { return (cell >= 0 && cell < MAG_CAL_CELL_COUNT) ? (uint8_t)(cell + 1) : (uint8_t)MAG_CAL_GUIDE_NONE; }
-static inline int magCalUnpackTarget(uint8_t wire) { return (wire >= 1 && wire <= MAG_CAL_CELL_COUNT) ? (int)wire - 1 : -1; }
-
-/** Pack/unpack helpers for the wire fields. */
-static inline int8_t magCalPackRotDeg(float deg)
-{
-    float v = deg / MAG_CAL_GUIDE_DEG_PER_LSB; if (v > 127.0f) v = 127.0f; if (v < -127.0f) v = -127.0f;
-    return (int8_t)lroundf(v);
-}
+/** Pack a unit vector into three signed bytes (x127). */
 static inline void magCalPackUnit(const float u[3], int8_t out[3])
 {
     for (int k = 0; k < 3; k++) out[k] = (int8_t)lroundf(u[k] * 127.0f);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+ * Gravity-referenced guidance.
+ *
+ * A field that is fixed in the world, seen from a device that is rotated, moves on the sensor-frame sphere so that its angle to the
+ * direction of the floor stays constant: u . g = sin(inclination) for ANY orientation. So with part A of the device pointing at the floor
+ * (g = A), turning the device about the vertical sweeps the field direction around a ring at angle acos(sin(inclination)) from A,
+ * and the whole ring is covered by one slow turn. The floor is easy for a person to judge and the turn is a single rotation, so the
+ * instruction is "point <part> at the floor, then turn slowly all the way round".
+ * Poses are the 6 faces, 12 edges and 8 corners of the device, which can all be named on the case.
+ * ------------------------------------------------------------------------------------------------------------------- */
+
+/** Pose idx (0..MAG_CAL_POSE_COUNT-1) as a unit vector in the body frame. The poses are every non-zero (x,y,z) with x,y,z in {-1,0,1}, normalised. */
+static inline void magCalPoseDir(int idx, float out[3])
+{
+    int k = idx < 13 ? idx : idx + 1;               // skip (0,0,0), which is k = 13 in the enumeration below
+    int x = k / 9 - 1, y = (k / 3) % 3 - 1, z = k % 3 - 1;
+    float n = sqrtf((float)(x * x + y * y + z * z));
+    out[0] = x / n; out[1] = y / n; out[2] = z / n;
+}
+
+/** Human name of a pose given by its packed direction, e.g. "+Z axis", "+X/-Z edge", "+X/+Y/-Z corner". out needs >= 24 bytes. */
+static inline void magCalPoseName(const int8_t dir[3], char *out, int outSize)
+{
+    static const char letters[3] = { 'X', 'Y', 'Z' };
+    int n = 0, parts = 0;
+    for (int k = 0; k < 3; k++)
+    {
+        if (dir[k] > -30 && dir[k] < 30) continue;
+        if (parts++ && n < outSize - 1) out[n++] = '/';
+        if (n < outSize - 1) out[n++] = dir[k] > 0 ? '+' : '-';
+        if (n < outSize - 1) out[n++] = letters[k];
+    }
+    const char *suffix = parts == 1 ? " axis" : (parts == 2 ? " edge" : (parts == 3 ? " corner" : ""));
+    for (int i = 0; suffix[i] && n < outSize - 1; i++) out[n++] = suffix[i];
+    out[n] = 0;
+}
+
+/** Bounds on (cell centre . pose direction) for cells in the ring swept by a pose, whose angle from the pose direction is acos(sinI) +- halfDeg. */
+static inline void magCalRingBounds(float sinI, float halfDeg, float *lo, float *hi)
+{
+    float s = sinI > 1.0f ? 1.0f : (sinI < -1.0f ? -1.0f : sinI);
+    float th0 = acosf(s), half = halfDeg * (MAG_CAL_COV_PI / 180.0f);
+    *lo = cosf(th0 + half > MAG_CAL_COV_PI ? MAG_CAL_COV_PI : th0 + half);
+    *hi = cosf(th0 - half < 0.0f ? 0.0f : th0 - half);
+}
+
+static inline int magCalCellInRing(unsigned cell, const float a[3], float lo, float hi)
+{
+    float c[3]; magCalCellCenter(cell, c);
+    float d = c[0] * a[0] + c[1] * a[1] + c[2] * a[2];
+    return d >= lo && d <= hi;
+}
+
+/** Cells of the ring swept when pose direction a points at the floor and the field makes angle acos(sinI) with the floor. */
+typedef struct { int cells; int missing; } mag_cal_ring_t;
+static inline mag_cal_ring_t magCalPoseRing(const mag_cal_coverage_t *m, const float a[3], float sinI, float halfDeg)
+{
+    float lo, hi; magCalRingBounds(sinI, halfDeg, &lo, &hi);
+    mag_cal_ring_t r = { 0, 0 };
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++)
+    {
+        if (!magCalCellInRing(i, a, lo, hi)) continue;
+        r.cells++;
+        if (magCalCellRequired(m, i) && magCalCellGet(m, i) < MAG_CAL_COVERAGE_MIN_COUNT) r.missing++;
+    }
+    return r;
+}
+
+/**
+ * Choose the next pose: the one whose ring holds the most missing required cells (largest gain), discounted a little for a longer tilt.
+ * @param g      current direction of the floor in the body frame (unit)
+ * @param sinI   sin(inclination) = field . floor, estimated by the device
+ * @param avoid  a pose that must not be chosen (one that timed out), or -1
+ * @return pose index, or -1 when no pose would cover anything missing
+ */
+static inline int magCalChoosePose(const mag_cal_coverage_t *m, const float g[3], float sinI, int avoid)
+{
+    int best = -1; float bestScore = 0.0f;
+    for (int p = 0; p < MAG_CAL_POSE_COUNT; p++)
+    {
+        if (p == avoid) continue;
+        float a[3]; magCalPoseDir(p, a);
+        mag_cal_ring_t r = magCalPoseRing(m, a, sinI, (float)MAG_CAL_POSE_RING_HALF_DEG);
+        if (r.missing < 1) continue;
+        float score = (float)r.missing * (1.0f - 0.35f * magCalAngleDeg(g, a) / 180.0f);
+        if (score > bestScore) { bestScore = score; best = p; }
+    }
+    return best;
 }
 
 #ifdef __cplusplus
