@@ -1522,6 +1522,9 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
+    // Terminal bell: the instruction changed (move to the next face) or the calibration completed. BEL is non-printing, so the layout is unaffected.
+    for (int i = magCalChimeCount(m_lastMagCalCov, m_lastMagCalCovValid, cov); i > 0 && ptr < ptrEnd - 1; i--) *ptr++ = '\a';
+    m_lastMagCalCov = cov; m_lastMagCalCovValid = true;
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };

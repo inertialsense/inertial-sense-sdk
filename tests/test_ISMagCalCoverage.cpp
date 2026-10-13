@@ -339,4 +339,40 @@ TEST(MagCalCoverage, DisplayLineCountDoesNotDependOnTheContent)
     EXPECT_EQ(lines(quiet), lines(busy));
 }
 
+TEST(MagCalCoverage, ChimePolicyRingsOncePerNewInstructionAndThriceOnCompletion)
+{
+    mag_cal_coverage_t a = blank(), b = blank();
+    a.lifecycle = b.lifecycle = MAG_CAL_LC_COLLECTING;
+    a.guidePhase = MAG_CAL_PHASE_AIM; a.poseDir[1] = -127; b = a;
+    EXPECT_EQ(magCalChimeCount(a, false, b), 0) << "the first status seen never chimes";
+    EXPECT_EQ(magCalChimeCount(a, true, b), 0) << "an unchanged instruction does not chime";
+    b.poseErrDeg = 40; b.ringPct = 30;
+    EXPECT_EQ(magCalChimeCount(a, true, b), 0) << "progress numbers changing do not chime";
+    b.guidePhase = MAG_CAL_PHASE_TURN;
+    EXPECT_EQ(magCalChimeCount(a, true, b), 1) << "aim -> turn chimes";
+    mag_cal_coverage_t c = b; c.guidePhase = MAG_CAL_PHASE_AIM; c.poseDir[1] = 0; c.poseDir[0] = 127;
+    EXPECT_EQ(magCalChimeCount(b, true, c), 1) << "a new face chimes";
+    mag_cal_coverage_t none = c; none.guidePhase = MAG_CAL_PHASE_NONE;
+    EXPECT_EQ(magCalChimeCount(c, true, none), 0) << "guidance going away is silent";
+    mag_cal_coverage_t done = c; done.lifecycle = MAG_CAL_LC_COMPLETE; done.guidePhase = MAG_CAL_PHASE_NONE;
+    EXPECT_EQ(magCalChimeCount(c, true, done), 3);
+    EXPECT_EQ(magCalChimeCount(done, true, done), 0) << "completion chimes once";
+}
+
+TEST(MagCalCoverage, DisplayEmitsTheBellOnlyWhenTheInstructionChanges)
+{
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
+    m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.guidePhase = MAG_CAL_PHASE_AIM; m.poseDir[2] = 127;
+    auto bells = [&](const mag_cal_coverage_t &c) { std::string s = d.DataToStringMagCalCoverage(c, hdr); return (int)std::count(s.begin(), s.end(), '\a'); };
+    EXPECT_EQ(bells(m), 0);
+    EXPECT_EQ(bells(m), 0);
+    m.guidePhase = MAG_CAL_PHASE_TURN;
+    EXPECT_EQ(bells(m), 1);
+    EXPECT_EQ(bells(m), 0);
+    m.lifecycle = MAG_CAL_LC_COMPLETE; m.guidePhase = MAG_CAL_PHASE_NONE;
+    EXPECT_EQ(bells(m), 3);
+}
+
 } // namespace

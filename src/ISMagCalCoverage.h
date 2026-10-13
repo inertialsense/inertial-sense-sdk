@@ -237,6 +237,19 @@ static inline int magCalChoosePose(const mag_cal_coverage_t *m, const float g[3]
     return best;
 }
 
+// Terminal bell policy: one chime when the instruction changes to a new pose/phase (so a user fighting cabling knows to move on),
+// three when the calibration completes. 'prev' is the last status seen (prevValid=false on the first one: no chime).
+static inline int magCalChimeCount(const mag_cal_coverage_t &prev, bool prevValid, const mag_cal_coverage_t &cur)
+{
+    if (!prevValid) return 0;
+    const bool doneNow  = cur.lifecycle  == MAG_CAL_LC_COMPLETE || cur.lifecycle  == MAG_CAL_LC_CALIBRATED;
+    const bool donePrev = prev.lifecycle == MAG_CAL_LC_COMPLETE || prev.lifecycle == MAG_CAL_LC_CALIBRATED;
+    if (doneNow && !donePrev) return 3;
+    if (cur.guidePhase == MAG_CAL_PHASE_NONE) return 0;
+    const bool samePose = prev.poseDir[0] == cur.poseDir[0] && prev.poseDir[1] == cur.poseDir[1] && prev.poseDir[2] == cur.poseDir[2];
+    return (prev.guidePhase != cur.guidePhase || !samePose) ? 1 : 0;
+}
+
 #ifdef __cplusplus
 }
 #endif
