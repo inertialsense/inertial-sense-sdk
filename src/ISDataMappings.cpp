@@ -1622,7 +1622,9 @@ static void PopulateMapMagCalCoverage(data_set_t data_set[DID_COUNT], uint32_t d
     mapper.AddMember("flags", &mag_cal_coverage_t::flags, DATA_TYPE_UINT8, "", "0x1=coverage valid, 0x2=required valid, 0x4=auto recal, 0x8=field steady", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("fitQuality", &mag_cal_coverage_t::fitQuality, DATA_TYPE_F32, "", "Calibration quality metric Tcal (lower is better)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("sampleCount", &mag_cal_coverage_t::sampleCount, DATA_TYPE_UINT32, "", "Samples in the least-squares accumulator", DATA_FLAGS_READ_ONLY);
-    mapper.AddArray("suggestDir", &mag_cal_coverage_t::suggestDir, DATA_TYPE_INT8, 3, {""}, {"Body-frame unit vector x127 toward the largest missing required region"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("guideRot", &mag_cal_coverage_t::guideRot, DATA_TYPE_INT8, 3, {""}, {"Rotation to apply to the device to reach the target: roll/pitch/yaw degrees about body X/Y/Z, 2 deg per LSB"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("targetCell", &mag_cal_coverage_t::targetCell, DATA_TYPE_UINT8, "", "Target cell index + 1 (0 = none)", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("fieldDir", &mag_cal_coverage_t::fieldDir, DATA_TYPE_INT8, 3, {""}, {"Current field direction in the sensor frame (unit vector x127)"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved", &mag_cal_coverage_t::reserved, DATA_TYPE_UINT8, "", "Reserved", DATA_FLAGS_READ_ONLY);
     mapper.AddArray("required", &mag_cal_coverage_t::required, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 8, {""}, {"Required-cell bit mask (1 bit per cell, LSB first)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("cells", &mag_cal_coverage_t::cells, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 2, {""}, {"4-bit saturating sample count per cell (even cell = low nibble)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);

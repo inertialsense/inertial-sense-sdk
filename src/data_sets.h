@@ -2396,7 +2396,7 @@ enum eMagCalReason
     MAG_CAL_REASON_ROTATION_SLOW    = 1,    //!< Angular rate below the calibration minimum
     MAG_CAL_REASON_WRONG_AXIS       = 2,    //!< Single-axis: not rotating about the vertical axis
     MAG_CAL_REASON_FIELD_UNSTEADY   = 3,    //!< Interference or non-stationary field
-    MAG_CAL_REASON_REGION_FULL      = 4,    //!< Samples falling in already-saturated cells; rotate toward suggestDir
+    MAG_CAL_REASON_REGION_FULL      = 4,    //!< Samples falling in already-saturated cells; rotate toward the target (guideRot)
     MAG_CAL_REASON_FIT_REJECTED     = 5,    //!< Least-squares fit failed (singular, not an ellipsoid, or not converged)
     MAG_CAL_REASON_NORM_CHECK       = 6,    //!< Fit produced, but the calibrated field magnitude was out of tolerance
     MAG_CAL_REASON_MODE_UNSUPPORTED = 7,    //!< Requested recalibration mode is not supported
@@ -2437,12 +2437,17 @@ typedef struct PACKED
     uint8_t                     flags;          //!< (eMagCalCoverageFlags)
     float                       fitQuality;     //!< Calibration quality metric Tcal (lower is better); compare with DID_FLASH_CONFIG.magCalibrationQualityThreshold
     uint32_t                    sampleCount;    //!< Samples in the least-squares accumulator
-    int8_t                      suggestDir[3];  //!< Body-frame unit vector x127 toward the largest missing required region. 0,0,0 when none
+    int8_t                      guideRot[3];    //!< Rotation to apply to the DEVICE to reach the target, as roll/pitch/yaw degrees about the body X/Y/Z axes (right-hand rule), MAG_CAL_GUIDE_DEG_PER_LSB degrees per LSB. All zero when there is no target. Shrinks to zero as the target is approached
+    uint8_t                     targetCell;     //!< Current target as CELL INDEX + 1 (1..MAG_CAL_CELL_COUNT): the sensor-frame field direction to bring the field to. MAG_CAL_GUIDE_NONE (0) when there is none, so a zeroed packet means no target
+    int8_t                      fieldDir[3];    //!< Current measured field direction in the sensor frame (unit vector x127), i.e. where the "now" marker sits on the map
     uint8_t                     reserved;
     uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
 } mag_cal_coverage_t;
 #define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
+#define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.targetCell: no target (otherwise cell index + 1)
+#define MAG_CAL_GUIDE_DEG_PER_LSB   2       //!< mag_cal_coverage_t.guideRot resolution (degrees per LSB, so +-254 deg range)
+#define MAG_CAL_GUIDE_REACHED_DEG   12      //!< A target counts as reached when the field is within this angle of the cell centre (or the cell is covered)
 
 /** @brief (DID_INL2_MAG_OBS_INFO) INL2 magnetometer observer diagnostic/calibration info. Reports the internal state of the online magnetometer bias/cross-axis calibration and heading-innovation gating used by the INL2 EKF to accept or reject magnetometer updates. */
 typedef struct PACKED

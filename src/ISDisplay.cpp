@@ -1525,8 +1525,8 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
-    static const char *reason[]    = { "", "rotate faster", "rotate about the vertical axis", "field unsteady / interference", "area full: rotate toward the suggested direction",
-                                       "fit rejected - coverage complete, more rotation will not help", "norm check failed - coverage complete, more rotation will not help", "mode unsupported" };
+    static const char *reason[]    = { "", "rotate faster", "turn about the vertical axis", "field unsteady / interference", "area full",
+                                       "fit rejected - coverage complete, more rotation will not help", "norm check failed - more rotation will not help", "mode unsupported" };
     static const char *quality[]   = { "none", "poor", "degraded", "good" };
     const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
 
@@ -1550,17 +1550,29 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
         n = str ? SNPRINTF(instr + il, sizeof(instr) - il, fmt, str) : SNPRINTF(instr + il, sizeof(instr) - il, fmt, a, b, c);
         if (n > 0) il = std::min(sizeof(instr) - 1, il + (size_t)n);
     };
-    if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8) append("; ", "%s", 0, 0, 0, reason[cov.reason]);
-    if (cov.suggestDir[0] || cov.suggestDir[1] || cov.suggestDir[2])
-        append("; ", "aim field toward (%.2f, %.2f, %.2f)", cov.suggestDir[0] / 127.0f, cov.suggestDir[1] / 127.0f, cov.suggestDir[2] / 127.0f, nullptr);
+    const bool fitProblem = (cov.reason == MAG_CAL_REASON_FIT_REJECTED || cov.reason == MAG_CAL_REASON_NORM_CHECK);
+    if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8 && cov.reason != MAG_CAL_REASON_REGION_FULL)
+        append("; ", "%s", 0, 0, 0, reason[cov.reason]);
+    if (!fitProblem && magCalUnpackTarget(cov.targetCell) >= 0)
+    {   // Relative guidance: the rotation still needed to reach the target. These go to zero as the target is reached.
+        float r = (float)cov.guideRot[0] * MAG_CAL_GUIDE_DEG_PER_LSB, p = (float)cov.guideRot[1] * MAG_CAL_GUIDE_DEG_PER_LSB, y = (float)cov.guideRot[2] * MAG_CAL_GUIDE_DEG_PER_LSB;
+        char g[80]; SNPRINTF(g, sizeof(g), "turn: roll %+.0f  pitch %+.0f  yaw %+.0f deg  (%.0f to go)", r, p, y, sqrtf(r * r + p * p + y * y));
+        append("; ", "%s", 0, 0, 0, g);
+    }
+    else if (!fitProblem && cov.lifecycle == MAG_CAL_LC_COLLECTING && cov.mode == MAG_CAL_STATE_SINGLE_AXIS && cov.reason == MAG_CAL_REASON_NONE)
+        append("; ", "%s", 0, 0, 0, "keep turning about the vertical axis");
     if (!(cov.flags & MAG_CAL_FLAG_COVERAGE_VALID)) append("; ", "coverage map unknown", 0, 0, 0, nullptr);
     if (il > 74) { instr[74] = 0; il = 74; }   // never wider than the line it sits on
+
+    unsigned nowCell = 0xFFFF;      // where the field is pointing now (sensor frame), if known
+    if (cov.fieldDir[0] || cov.fieldDir[1] || cov.fieldDir[2])
+    {   float f[3] = { cov.fieldDir[0] / 127.0f, cov.fieldDir[1] / 127.0f, cov.fieldDir[2] / 127.0f }; unsigned c; if (magCalCellIndexOfVector(f, &c)) nowCell = c; }
 
     if (m_displayMode == DMODE_PRETTY)
     {   // Map: rows = latitude band (top = +Z in the sensor frame), columns = longitude sector (atan2(y,x), -180 to +180 deg)
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  %-76s\n", detail);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  > %-74s\n", instr);
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  . missing  : thin  o ok  O good  # full  - not needed   (sensor frame)\n");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  . missing  : thin  o ok  O good  # full  - n/a   @ field now   * target\n");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  lon:      -180             0            +180\n");
         for (int z = MAG_CAL_CELL_Z_BANDS - 1; z >= 0; z--)
         {
@@ -1568,7 +1580,8 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "   z %+5.2f  ", zc);
             for (int l = 0; l < MAG_CAL_CELL_LON_SECTORS && ptr < ptrEnd - 4; l++)
             {
-                *ptr++ = magCalCellGlyph(cov, z * MAG_CAL_CELL_LON_SECTORS + l);
+                unsigned cell = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + l);
+                *ptr++ = ((int)cell == magCalUnpackTarget(cov.targetCell)) ? '*' : (cell == nowCell ? '@' : magCalCellGlyph(cov, cell));
                 *ptr++ = ' ';
             }
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");

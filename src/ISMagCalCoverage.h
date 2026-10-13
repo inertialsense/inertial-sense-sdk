@@ -133,31 +133,103 @@ static inline uint8_t magCalProgressPct(const mag_cal_cov_stats_t *s)
     return s->requiredCells ? (uint8_t)((100u * s->requiredCovered) / s->requiredCells) : 0;
 }
 
-/**
- * Fill suggestDir with a body-frame unit vector (x127) toward the largest missing required region: the missing required
- * cell with the most missing required neighbours (8-neighbourhood, longitude wraps). Zero vector if nothing is missing.
- */
-static inline void magCalSuggestDirection(mag_cal_coverage_t *m)
+/** Number of missing required cells in the 3x3 neighbourhood of a cell (itself included; longitude wraps). The "gain" of aiming there. */
+static inline int magCalGapScore(const mag_cal_coverage_t *m, int cell)
 {
-    int best = -1, bestScore = -1;
+    int iz = cell / MAG_CAL_CELL_LON_SECTORS, il = cell % MAG_CAL_CELL_LON_SECTORS, score = 0;
+    for (int dz = -1; dz <= 1; dz++)
+    {
+        int z = iz + dz; if (z < 0 || z >= MAG_CAL_CELL_Z_BANDS) continue;
+        for (int dl = -1; dl <= 1; dl++)
+        {
+            unsigned n = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + ((il + dl + MAG_CAL_CELL_LON_SECTORS) % MAG_CAL_CELL_LON_SECTORS));
+            if (magCalCellRequired(m, n) && magCalCellGet(m, n) < MAG_CAL_COVERAGE_MIN_COUNT) score++;
+        }
+    }
+    return score;
+}
+
+/** Angle (degrees) between two unit vectors. */
+static inline float magCalAngleDeg(const float a[3], const float b[3])
+{
+    float c = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    if (c > 1.0f) c = 1.0f; else if (c < -1.0f) c = -1.0f;
+    return acosf(c) * (180.0f / MAG_CAL_COV_PI);
+}
+
+/**
+ * Choose the next target cell: the place where one move closes the most gaps.
+ *  - Keep the previous target until it is reached (the cell is covered, or the field is within MAG_CAL_GUIDE_REACHED_DEG of its centre
+ *    and it will be covered momentarily) so the target does not flip while the user is moving toward it.
+ *  - Otherwise pick, among missing required cells whose gap score is within 25% of the best, the one nearest to the current field
+ *    direction (largest gain first, shortest move as the tie-break).
+ * @param cur   current field direction, unit vector in the sensor frame (NULL = unknown: nearest-ness is ignored)
+ * @param prev  previous target cell or -1
+ * @return target cell, or -1 when nothing required is missing
+ */
+static inline int magCalChooseTarget(const mag_cal_coverage_t *m, const float cur[3], int prev)
+{
+    if (prev >= 0 && prev < MAG_CAL_CELL_COUNT && magCalCellRequired(m, (unsigned)prev) && magCalCellGet(m, (unsigned)prev) < MAG_CAL_COVERAGE_MIN_COUNT)
+    {
+        float c[3]; magCalCellCenter((unsigned)prev, c);
+        if (!cur || magCalAngleDeg(cur, c) > MAG_CAL_GUIDE_REACHED_DEG) return prev;     // still on its way
+    }
+    int best = 0, scores[MAG_CAL_CELL_COUNT];
     for (int i = 0; i < MAG_CAL_CELL_COUNT; i++)
     {
-        if (!magCalCellRequired(m, (unsigned)i) || magCalCellGet(m, (unsigned)i) >= MAG_CAL_COVERAGE_MIN_COUNT) continue;
-        int iz = i / MAG_CAL_CELL_LON_SECTORS, il = i % MAG_CAL_CELL_LON_SECTORS, score = 0;
-        for (int dz = -1; dz <= 1; dz++)
-        {
-            int z = iz + dz; if (z < 0 || z >= MAG_CAL_CELL_Z_BANDS) continue;
-            for (int dl = -1; dl <= 1; dl++)
-            {
-                unsigned n = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + ((il + dl + MAG_CAL_CELL_LON_SECTORS) % MAG_CAL_CELL_LON_SECTORS));
-                if (magCalCellRequired(m, n) && magCalCellGet(m, n) < MAG_CAL_COVERAGE_MIN_COUNT) score++;
-            }
-        }
-        if (score > bestScore) { bestScore = score; best = i; }
+        scores[i] = (magCalCellRequired(m, (unsigned)i) && magCalCellGet(m, (unsigned)i) < MAG_CAL_COVERAGE_MIN_COUNT) ? magCalGapScore(m, i) : 0;
+        if (scores[i] > best) best = scores[i];
     }
-    if (best < 0) { m->suggestDir[0] = m->suggestDir[1] = m->suggestDir[2] = 0; return; }
-    float c[3]; magCalCellCenter((unsigned)best, c);
-    for (int k = 0; k < 3; k++) m->suggestDir[k] = (int8_t)lroundf(c[k] * 127.0f);
+    if (best == 0) return -1;
+    int threshold = (3 * best + 3) / 4;     // ceil(0.75 * best)
+    int pick = -1; float pickAngle = 1.0e9f;
+    for (int i = 0; i < MAG_CAL_CELL_COUNT; i++)
+    {
+        if (scores[i] < threshold) continue;
+        float c[3]; magCalCellCenter((unsigned)i, c);
+        float ang = cur ? magCalAngleDeg(cur, c) : 0.0f;
+        if (ang < pickAngle) { pickAngle = ang; pick = i; }
+    }
+    return pick;
+}
+
+/**
+ * Rotation to apply to the DEVICE so the field direction seen in the sensor frame moves from cur to target.
+ * The field is fixed in the world, so rotating the body by R makes the sensor-frame direction u' = R^T u. The minimal rotation that
+ * takes u to d has axis d x u (body frame) and angle acos(u.d). Returned as roll/pitch/yaw degrees about body X/Y/Z (right-hand rule).
+ * @return total angle in degrees
+ */
+static inline float magCalGuideRotationDeg(const float cur[3], const float target[3], float rotDeg[3])
+{
+    float ax = target[1] * cur[2] - target[2] * cur[1];
+    float ay = target[2] * cur[0] - target[0] * cur[2];
+    float az = target[0] * cur[1] - target[1] * cur[0];
+    float s = sqrtf(ax * ax + ay * ay + az * az), ang = magCalAngleDeg(cur, target);
+    if (s < 1.0e-6f)
+    {   // Same or opposite direction. Opposite: any axis perpendicular to cur works.
+        rotDeg[0] = rotDeg[1] = rotDeg[2] = 0.0f;
+        if (ang > 90.0f) { float t[3] = { 1, 0, 0 }; if (fabsf(cur[0]) > 0.9f) { t[0] = 0; t[1] = 1; }
+            float px = cur[1] * t[2] - cur[2] * t[1], py = cur[2] * t[0] - cur[0] * t[2], pz = cur[0] * t[1] - cur[1] * t[0];
+            float n = sqrtf(px * px + py * py + pz * pz); rotDeg[0] = ang * px / n; rotDeg[1] = ang * py / n; rotDeg[2] = ang * pz / n; }
+        return ang;
+    }
+    rotDeg[0] = ang * ax / s; rotDeg[1] = ang * ay / s; rotDeg[2] = ang * az / s;
+    return ang;
+}
+
+/** Wire encoding of the target: cell index + 1, 0 = none (so a zeroed packet carries no target). */
+static inline uint8_t magCalPackTarget(int cell) { return (cell >= 0 && cell < MAG_CAL_CELL_COUNT) ? (uint8_t)(cell + 1) : (uint8_t)MAG_CAL_GUIDE_NONE; }
+static inline int magCalUnpackTarget(uint8_t wire) { return (wire >= 1 && wire <= MAG_CAL_CELL_COUNT) ? (int)wire - 1 : -1; }
+
+/** Pack/unpack helpers for the wire fields. */
+static inline int8_t magCalPackRotDeg(float deg)
+{
+    float v = deg / MAG_CAL_GUIDE_DEG_PER_LSB; if (v > 127.0f) v = 127.0f; if (v < -127.0f) v = -127.0f;
+    return (int8_t)lroundf(v);
+}
+static inline void magCalPackUnit(const float u[3], int8_t out[3])
+{
+    for (int k = 0; k < 3; k++) out[k] = (int8_t)lroundf(u[k] * 127.0f);
 }
 
 #ifdef __cplusplus
