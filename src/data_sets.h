@@ -43,6 +43,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define DATA_SETS_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
@@ -197,6 +198,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127   /**< (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_SYS_FAULT               (eDataIDs)128   /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
 #define DID_GPX_LAST                    128             /**< Last of GPX DIDs */
+
+#define DID_CBOR_CONFIG                 (eDataIDs)129   /**< (cbor_cfg_msg_t) Device configuration read and written as a CBOR map, for the receiving device or a device attached to it. Variable length; sent and requested at offset 0 only. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -5033,6 +5036,51 @@ typedef struct
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))  //!< Size of did_event_t excluding its trailing variable-length data payload byte
 
+/** @brief Message type of a DID_CBOR_CONFIG message (cbor_cfg_msg_t.msgType). */
+typedef enum
+{
+    CBOR_CFG_MSG_GET_ALL        = 1,    //!< Request every configuration field, starting at cursor. No data.
+    CBOR_CFG_MSG_GET_KEYS       = 2,    //!< Request the fields listed in data (CBOR array of keys), starting at cursor. Unknown keys are omitted from the reply.
+    CBOR_CFG_MSG_SET            = 3,    //!< Apply the fields in data (CBOR map of key to value) on top of the current configuration. Unknown keys are ignored; any invalid value rejects the whole message.
+    CBOR_CFG_MSG_REPLY          = 4,    //!< Response to a request. For GET_ALL/GET_KEYS, data holds the requested fields; for SET, the fields applied and their resulting values.
+} eCborCfgMsgType;
+
+/** @brief Result carried in a DID_CBOR_CONFIG reply (cbor_cfg_msg_t.status). Always CBOR_CFG_STATUS_OK in requests. */
+typedef enum
+{
+    CBOR_CFG_STATUS_OK          = 0,    //!< Request complete
+    CBOR_CFG_STATUS_PARTIAL     = 1,    //!< More fields remain; request again with cursor set to the reply's cursor
+    CBOR_CFG_STATUS_TOO_LARGE   = 2,    //!< The request lists too many keys, or a single field does not fit in one message; make a smaller request
+    CBOR_CFG_STATUS_BAD_REQUEST = 3,    //!< Malformed request, malformed CBOR, an invalid value, or a non-zero DID offset. Nothing was applied.
+    CBOR_CFG_STATUS_UNSUPPORTED = 4,    //!< Target hdwId, msgType or schema not supported by the responder
+    CBOR_CFG_STATUS_ERROR       = 5,    //!< Request was valid but could not be completed
+} eCborCfgStatus;
+
+/** @brief Key map used by a DID_CBOR_CONFIG message (cbor_cfg_msg_t.schema). */
+typedef enum
+{
+    CBOR_CFG_SCHEMA_DEVICE      = 1,    //!< Keys are specific to the target hardware type (see flash_cfg_cbor.h)
+} eCborCfgSchema;
+
+/** @brief (DID_CBOR_CONFIG) Configuration request or reply carrying a CBOR payload.
+ *  Requests are sent as SET_DATA and replies arrive as DATA; the reply is the only acknowledgement.
+ *  The wire size is CBOR_CFG_MSG_HEADER_SIZE + length. The message is always sent whole: a DID offset other than 0 is rejected. */
+typedef struct
+{
+    uint16_t        hdwId;          //!< Request: target hardware ID (is_hardware_t), 0 = the receiving device. Reply: the responder's hardware ID.
+    uint8_t         msgType;        //!< Message type (see eCborCfgMsgType)
+    uint8_t         status;         //!< Reply result (see eCborCfgStatus)
+    uint16_t        reqId;          //!< Chosen by the requester and echoed in the reply
+    uint16_t        cursor;         //!< Request: field position to start from (0 = first). PARTIAL reply: position to request next.
+    uint8_t         schema;         //!< Key map in use (see eCborCfgSchema)
+    uint8_t         reserved;       //!< Reserved, set to 0
+    uint16_t        length;         //!< Number of CBOR bytes in data
+    uint8_t         data[1];        //!< CBOR payload, length bytes
+} cbor_cfg_msg_t;
+
+#define CBOR_CFG_MSG_HEADER_SIZE        (offsetof(cbor_cfg_msg_t, data))                        //!< Size of cbor_cfg_msg_t excluding its variable-length payload
+#define CBOR_CFG_MSG_DATA_MAX           (ISB_MAX_DATASET_SIZE - CBOR_CFG_MSG_HEADER_SIZE)       //!< Largest CBOR payload one message can carry (requires ISComm.h)
+
 /** @brief Bitmask/value set for system_fault_t.status (DID_SYS_FAULT / DID_GPX_SYS_FAULT). Bits 0-23 are general, non-fatal status/error flags that may accumulate independently; bits 24-31 (SYS_FAULT_STATUS_CRITICAL_ERROR_MASK) instead encode a single small integer value (1-7) at SYS_FAULT_STATUS_CRITICAL_ERROR_pos identifying the specific critical fault that caused a reset, since only one critical fault can be active/reported at a time. */
 enum eSysFaultStatus
 {
@@ -5421,6 +5469,7 @@ typedef union PACKED
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
     is_timepulse_t                  ISBTimepulse;   //!< DID_TIMEPULSE
     did_event_t                     event;          //!< DID_EVENT
+    cbor_cfg_msg_t                  cborCfg;        //!< DID_CBOR_CONFIG
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT
 

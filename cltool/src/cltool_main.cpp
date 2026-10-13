@@ -884,6 +884,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         }
         g_cmdSuccessExitAppNow = true;
     }
+    if (g_commandLineOptions.cborCfgSet)
+    {
+        if (!cltool_cborConfig(inertialSenseInterface, g_commandLineOptions.cborCfg, g_commandLineOptions.cborCfgGpx))
+        {   // Exit cltool now and report error code
+            std::exit(-4);
+        }
+        g_cmdSuccessExitAppNow = true;
+    }
     if (g_commandLineOptions.imxCalUploadFile.size() > 0)
     {
         if (!inertialSenseInterface.UploadImxCalibrationFromFile(g_commandLineOptions.imxCalUploadFile))

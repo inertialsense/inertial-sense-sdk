@@ -14,6 +14,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 #include <math.h>
 
+// DID_CBOR_CONFIG header layout is part of the wire protocol
+STATIC_ASSERT(CBOR_CFG_MSG_HEADER_SIZE == 12);
+STATIC_ASSERT(offsetof(cbor_cfg_msg_t, length) == 10);
+
 const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT] = {"UNKNOWN", "uINS", "EVB", "IMX", "GPX"};
 const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT] = {"UBX", "CXD", "SEP", "STM"};
 
@@ -402,7 +406,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 126:
         0,                      // 127:
         0,                      // 128:
-        0,                      // 129:
+        0,                      // 129: DID_CBOR_CONFIG
         0,                      // 130:
         0                       // 131:
     };
@@ -592,7 +596,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 126:
         0,                      // 127:
         0,                      // 128:
-        0,                      // 129:
+        0,                      // 129: DID_CBOR_CONFIG
         0,                      // 130:
         0                       // 131:
     };

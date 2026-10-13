@@ -1828,6 +1828,23 @@ static void PopulateMapISEvent(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("Reserved 8 bit", &did_event_t::res8, DATA_TYPE_UINT8, "", "");
 }
 
+/**
+ * Maps DID_CBOR_CONFIG. The CBOR payload is mapped as raw bytes; decoding it is up to the caller.
+*/
+static void PopulateMapCborConfig(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<cbor_cfg_msg_t> mapper(data_set, did);
+    mapper.AddMember("hdwId", &cbor_cfg_msg_t::hdwId, DATA_TYPE_UINT16, "", "Request: target hardware ID, 0 = receiving device. Reply: responder hardware ID.", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("msgType", &cbor_cfg_msg_t::msgType, DATA_TYPE_UINT8, "", "1=GET_ALL, 2=GET_KEYS, 3=SET, 4=REPLY (see eCborCfgMsgType)");
+    mapper.AddMember("status", &cbor_cfg_msg_t::status, DATA_TYPE_UINT8, "", "0=OK, 1=PARTIAL, 2=TOO_LARGE, 3=BAD_REQUEST, 4=UNSUPPORTED, 5=ERROR (see eCborCfgStatus)");
+    mapper.AddMember("reqId", &cbor_cfg_msg_t::reqId, DATA_TYPE_UINT16, "", "Request ID, echoed in the reply");
+    mapper.AddMember("cursor", &cbor_cfg_msg_t::cursor, DATA_TYPE_UINT16, "", "Request: start position. PARTIAL reply: next position.");
+    mapper.AddMember("schema", &cbor_cfg_msg_t::schema, DATA_TYPE_UINT8, "", "Key map (see eCborCfgSchema)");
+    mapper.AddMember("reserved", &cbor_cfg_msg_t::reserved, DATA_TYPE_UINT8, "", "Reserved");
+    mapper.AddMember("length", &cbor_cfg_msg_t::length, DATA_TYPE_UINT16, "bytes", "CBOR payload size");
+    mapper.AddMember("data", &cbor_cfg_msg_t::data, DATA_TYPE_STRING, "", "CBOR payload", DATA_FLAGS_DISPLAY_HEX);
+}
+
 static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_flash_cfg_t> mapper(data_set, did);
@@ -2830,7 +2847,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
     "DID_GPX_SYS_FAULT",                // 128
-    "",                                 // 129
+    "DID_CBOR_CONFIG",                  // 129
     "",                                 // 130
     ""                                  // 131
 };
@@ -2846,6 +2863,7 @@ cISDataMappings::cISDataMappings()
     // CONFIG
     PopulateMapNvmFlashCfg(m_data_set, DID_FLASH_CONFIG);
     PopulateMapGpxFlashCfg(m_data_set, DID_GPX_FLASH_CFG);
+    PopulateMapCborConfig(m_data_set, DID_CBOR_CONFIG);
 
     // DEBUG
     PopulateMapDebugString(m_data_set, DID_DEBUG_STRING);

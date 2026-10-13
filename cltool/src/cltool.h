@@ -166,6 +166,9 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     bool gpxflashCfgSet;
     std::string imxFlashCfg;
     std::string gpxFlashCfg;
+    bool cborCfgSet;                        // -cborCfg / -gpxCborCfg given
+    bool cborCfgGpx;                        // -gpxCborCfg: address the GPX behind the connected device
+    std::string cborCfg;                    // field list (read) or assignments (write); empty = read all
     uint32_t timeoutFlushLoggerSeconds;
     std::vector<uint32_t> outputOnceDid;    
     std::vector<uint32_t> setAckDid;
@@ -220,6 +223,7 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
 void cltool_firmwareUpdateInfo(const std::any& obj, eLogLevel level, const char* str, ...);
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfgString);
+bool cltool_cborConfig(InertialSense& inertialSenseInterface, const std::string& spec, bool gpx);
 bool cltool_uploadImxCalibrationFile(InertialSense& inertialSenseInterface, std::string calFilePath);
 
 /**

@@ -16,6 +16,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <chrono>
 #include <ctime>
 #include <map>
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include "ISDataMappings.h"
 #include "ISmDnsPortFactory.h"
 #include "PortFactory.h"
@@ -653,6 +656,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-flashCfg") || startsWith(a, "-imxFlashCfg"))
         {
             g_commandLineOptions.imxflashCfgSet = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-cborCfg") || startsWith(a, "-gpxCborCfg"))
+        {
+            g_commandLineOptions.cborCfgGpx = startsWith(a, "-gpxCborCfg");
+            const char* eq = strchr(a, '=');
+            g_commandLineOptions.cborCfgSet = true;
+            g_commandLineOptions.cborCfg = eq ? eq + 1 : "";
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-gpxFlashCfg="))
@@ -1485,6 +1496,15 @@ void cltool_outputUsage()
 	cout << "    \"-imxFlashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "  # Set key / value pairs in IMX flash config. " << endlbOn;
 	cout << "    \"-gpxFlashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "  # Set key / value pairs in GPX flash config. " << endlbOn;
 	cout << "        " << boldOff <<   "                                        # Surround with \"quotes\" when using pipe operator." << endlbOn;
+	cout << "OPTIONS (CBOR configuration: DID_CBOR_CONFIG)" << endl;
+	cout << "    -cborCfg" << boldOff <<  "                                    # List every field of the connected device's configuration" << endlbOn;
+	cout << "    \"-cborCfg=[name]|[name]\"" << boldOff << "                    # List specific fields" << endlbOn;
+	cout << "    \"-cborCfg=[name]=[value]|[name]=[value]\"" << boldOff << "    # Set fields, then list the values the device applied" << endlbOn;
+	cout << "    -gpxCborCfg[=...]" << boldOff << "                           # The same, for the GPX behind the connected IMX" << endlbOn;
+	cout << "        " << boldOff << "                                        # Field names and value syntax match -imxFlashCfg / -gpxFlashCfg." << endlbOn;
+	cout << "        " << boldOff << "                                        # IMX also has CAN (can_setting, can_period_mult[i], ...) and" << endlbOn;
+	cout << "        " << boldOff << "                                        # startup RMC per port (rmc[port].bits, rmc[port].periodMultiple[did], ...)." << endlbOn;
+	cout << endl;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -imxFlashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " \"-imxFlashCfg=insOffset[1]=1.2|ser2BaudRate=115200\"  " << boldOff << "# Set multiple values" << endlbOn;
@@ -1588,6 +1608,129 @@ bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flas
         }
     }
 
+    return true;
+}
+
+/** Splits a -cborCfg list on '|' and ',' and drops empty items */
+static std::vector<std::string> cborCfgItems(const std::string& spec)
+{
+    std::vector<std::string> items;
+    std::string cur;
+    for (char c : spec + "|")
+    {
+        if (c == '|' || c == ',')
+        {
+            size_t b = cur.find_first_not_of(" \t"), e = cur.find_last_not_of(" \t");
+            if (b != std::string::npos)
+                items.push_back(cur.substr(b, e - b + 1));
+            cur.clear();
+        }
+        else
+            cur += c;
+    }
+    return items;
+}
+
+/** Prints fields as "key  name = value" lines (arrays one line per element) */
+static void cborCfgPrint(CborConfigImage& image, const CborConfigFields& fields)
+{
+    for (const CborConfigField& f : fields)
+    {
+        std::string lines = cborcfg::formatField(image, f.key);
+        if (lines.empty())
+        {   // a key this SDK doesn't know: show the raw CBOR
+            std::ostringstream hex;
+            for (uint8_t b : f.value)
+                hex << std::hex << std::setw(2) << std::setfill('0') << (int)b;
+            lines = "key" + std::to_string(f.key) + " = <cbor " + hex.str() + ">\n";
+        }
+        std::istringstream in(lines);
+        std::string line;
+        while (std::getline(in, line))
+            cout << std::setw(5) << f.key << "  " << line << endl;
+    }
+}
+
+/**
+ * Reads or writes the device's configuration with DID_CBOR_CONFIG.
+ * spec is empty (read every field), a list of field names (read those), or name=value assignments (write those, then
+ * print the values the device applied). Names and value syntax are those of -flashCfg / -gpxFlashCfg.
+ */
+bool cltool_cborConfig(InertialSense& inertialSenseInterface, const std::string& spec, bool gpx)
+{
+    auto& devices = inertialSenseInterface.getDevices();
+    if (devices.empty() || !devices.front())
+    {
+        cout << "No device connected." << endl;
+        return false;
+    }
+    device_handle_t device = devices.front();
+    uint16_t target = gpx ? IS_HARDWARE_GPX : 0;
+    uint16_t typeId = gpx ? IS_HARDWARE_GPX : (uint16_t)ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo);
+
+    std::vector<std::string> items = cborCfgItems(spec);
+    bool writing = std::any_of(items.begin(), items.end(), [](const std::string& i) { return i.find('=') != std::string::npos; });
+
+    std::vector<uint16_t> keys;
+    for (const std::string& item : items)
+    {
+        uint16_t key;
+        int index;
+        if (!cborcfg::parseFieldRef(typeId, item.substr(0, item.find('=')), key, index))
+        {
+            cout << "Unknown field: " << item << endl;
+            return false;
+        }
+        if (std::find(keys.begin(), keys.end(), key) == keys.end())
+            keys.push_back(key);
+    }
+
+    // Read the fields (all, or those named); a write starts from these so that setting one array element keeps the others
+    CborConfigResult current = keys.empty() ? device->cborConfigGetAllBlocking(target)
+                                            : device->cborConfigGetKeysBlocking(keys, target);
+    if (!current.ok())
+    {
+        cout << "DID_CBOR_CONFIG read failed: " << cborcfg::statusName(current.status) << endl;
+        return false;
+    }
+    CborConfigImage image(current.hdwId ? current.hdwId : typeId);
+    if (!image.apply(current.fields))
+    {
+        cout << "DID_CBOR_CONFIG reply has invalid values." << endl;
+        return false;
+    }
+
+    if (!writing)
+    {
+        cout << "DID_CBOR_CONFIG: " << g_isHardwareTypeNames[_MIN(DECODE_HDW_TYPE(image.hdwId), IS_HARDWARE_TYPE_COUNT - 1)]
+             << ", " << current.fields.size() << " fields" << endl;
+        cborCfgPrint(image, current.fields);
+        return true;
+    }
+
+    for (const std::string& item : items)
+    {
+        uint16_t key;
+        if (item.find('=') == std::string::npos || !cborcfg::parseAssignment(image, item, key))
+        {
+            cout << "Failed to parse: " << item << endl;
+            return false;
+        }
+    }
+
+    CborConfigResult applied = device->cborConfigSetBlocking(image.encode(keys), target);
+    if (!applied.ok())
+    {
+        cout << "DID_CBOR_CONFIG write failed: " << cborcfg::statusName(applied.status) << endl;
+        return false;
+    }
+    CborConfigImage result(applied.hdwId ? applied.hdwId : image.hdwId);
+    result.apply(applied.fields);
+    cout << "DID_CBOR_CONFIG: applied " << applied.fields.size() << " of " << keys.size() << " fields" << endl;
+    cborCfgPrint(result, applied.fields);
+    for (uint16_t key : keys)
+        if (std::none_of(applied.fields.begin(), applied.fields.end(), [&](const CborConfigField& f) { return f.key == key; }))
+            cout << "  not applied (unknown to the device): " << cborcfg::keyName(image.hdwId, key) << endl;
     return true;
 }
 

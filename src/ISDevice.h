@@ -20,6 +20,7 @@
 #include "core/msg_logger.h"
 #include "ChronoStat.h"
 #include "DeviceLog.h"
+#include "ISCborConfig.h"
 #include "ISDeviceCal.h"
 #include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
@@ -671,6 +672,39 @@ public:
     /** @brief Blocks (calling step() internally) until all pending IMX flash writes complete or timeoutMs elapses. @return true if all pending writes completed before the timeout. */
     bool waitForImxFlashWrite(uint32_t timeoutMs);
 
+    /**
+     * DID_CBOR_CONFIG: read or write the device's configuration as CBOR fields.
+     *
+     * One request runs per device at a time. Paging, splitting of large sets, request IDs, timeouts and retries are
+     * handled here and advanced by step() and the receive path; the callback runs once, on that thread, when the
+     * request completes, fails or times out.
+     *
+     * @param targetHdwId  0 for this device, or the hardware ID of a device attached to it (e.g. IS_HARDWARE_GPX for
+     *                     the GPX behind an IMX)
+     * @param timeoutMs    time allowed for each reply before the message is resent (twice) and then the request fails
+     * @return false if the request was not started (another is running, or the device is not connected)
+     */
+    bool cborConfigGetAll(CborConfigCallback callback, uint16_t targetHdwId = 0, uint32_t timeoutMs = CBOR_CFG_REPLY_TIMEOUT_MS);
+    /** @brief Reads the listed fields; keys unknown to the device are omitted from the result. @see cborConfigGetAll() */
+    bool cborConfigGetKeys(const std::vector<uint16_t>& keys, CborConfigCallback callback, uint16_t targetHdwId = 0, uint32_t timeoutMs = CBOR_CFG_REPLY_TIMEOUT_MS);
+    /**
+     * @brief Writes fields on top of the device's current configuration. Keys unknown to the device are ignored. Fields
+     * that do not fit one message are sent in several, each applied when it arrives; a rejected message stops the
+     * rest. The result lists the fields applied, with the values the device kept. @see cborConfigGetAll()
+     */
+    bool cborConfigSet(const CborConfigFields& fields, CborConfigCallback callback, uint16_t targetHdwId = 0, uint32_t timeoutMs = CBOR_CFG_REPLY_TIMEOUT_MS);
+    /** @return true while a DID_CBOR_CONFIG request is running */
+    bool cborConfigBusy() const { return cborCfg_.active; }
+
+    /** @brief Blocking cborConfigGetAll(): calls step() until the request finishes. */
+    CborConfigResult cborConfigGetAllBlocking(uint16_t targetHdwId = 0, uint32_t timeoutMs = CBOR_CFG_REPLY_TIMEOUT_MS);
+    /** @brief Blocking cborConfigGetKeys(): calls step() until the request finishes. */
+    CborConfigResult cborConfigGetKeysBlocking(const std::vector<uint16_t>& keys, uint16_t targetHdwId = 0, uint32_t timeoutMs = CBOR_CFG_REPLY_TIMEOUT_MS);
+    /** @brief Blocking cborConfigSet(): calls step() until the request finishes. */
+    CborConfigResult cborConfigSetBlocking(const CborConfigFields& fields, uint16_t targetHdwId = 0, uint32_t timeoutMs = CBOR_CFG_REPLY_TIMEOUT_MS);
+
+    static constexpr uint32_t CBOR_CFG_REPLY_TIMEOUT_MS = 1000;   //!< default time allowed for each DID_CBOR_CONFIG reply
+
     /** @brief Attempts to acquire portMutex without blocking. @return true if the lock was acquired. */
     bool lockPort() { return portMutex.try_lock(); }
     /** @brief Releases portMutex previously acquired via lockPort(). */
@@ -1067,6 +1101,34 @@ private:
     pfnIsCommHandler            packetHandler = nullptr;              //!< previously registered "all packets" handler, restored when this device is unbound/destroyed
     pfnIsCommHandler            externalAllHandler = nullptr;        //!< A user-implemented handler for all packet/message types
     pfnIsCommIsbDataHandler     defaultISBHandler = nullptr;          //!< previously registered ISB-data handler, restored when this device is unbound/destroyed
+
+    /** State of the running DID_CBOR_CONFIG request */
+    struct CborConfigRequest
+    {
+        bool active = false;
+        uint8_t msgType = 0;                        //!< eCborCfgMsgType of the message in flight
+        uint16_t targetHdwId = 0;
+        uint16_t reqId = 0;                         //!< ID of the message in flight
+        uint16_t cursor = 0;                        //!< cursor of the message in flight
+        std::vector<std::vector<uint16_t>> keyBatches;  //!< GET_KEYS: key lists still to request, front = in flight
+        std::vector<CborConfigFields> setChunks;    //!< SET: messages still to send, front = in flight
+        std::vector<uint16_t> followupKeys;         //!< SET: applied-value read-back after a truncated SET reply
+        size_t chunkReported = 0;                   //!< SET: fields already reported for the chunk in flight
+        uint32_t timeoutMs = 0;
+        uint32_t sentMs = 0;
+        int retries = 0;
+        CborConfigResult result;
+        CborConfigCallback callback;
+    };
+    CborConfigRequest           cborCfg_;                            //!< DID_CBOR_CONFIG request in progress, if active
+    uint16_t                    cborCfgNextReqId_ = 1;               //!< next DID_CBOR_CONFIG request ID (never 0)
+
+    bool cborConfigStart(CborConfigCallback callback, uint16_t targetHdwId, uint32_t timeoutMs);
+    void cborConfigSend();
+    void cborConfigStep();
+    void cborConfigOnReply(const p_data_t* data);
+    void cborConfigFinish(int status);
+    void cborConfigWait();
 
     int                         m_calUploadState = -1;               //!< step indicator for calibration uploads (-1 = idle, 0..7 = active step)
     std::unique_ptr<ISDeviceCal> m_calibration;                       //!< calibration object owned by the device while an async upload is in flight (nullptr otherwise)

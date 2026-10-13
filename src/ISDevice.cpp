@@ -6,6 +6,8 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include <algorithm>
+
 #include "core/msg_logger.h"
 #include "DeviceManager.h"
 #include "ISDevice.h"
@@ -153,6 +155,11 @@ bool ISDevice::step() {
     if (fwUpdater) {  // the fwUpdate MUST happen after is_comm_port_parse_messages
         fwUpdate();
         fn.mark("Handling fwUpdate().");
+        didStuff = true;
+    }
+
+    if (cborCfg_.active) {  // after is_comm_port_parse_messages, so a reply that just arrived isn't timed out
+        cborConfigStep();
         didStuff = true;
     }
 
@@ -1879,6 +1886,10 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
                 fwUpdater->processMessage(data);
             break;
 
+        case DID_CBOR_CONFIG:
+            cborConfigOnReply(data);
+            break;
+
         // FIXME:  Not sure what the following code is doing... It probably should not be here, and should go away.
         //  this seems to be for RTK RTCM3/NTrip Correction services, to republish the device's current position as NMEA GGA
         case DID_GNSS1_POS:
@@ -2210,4 +2221,247 @@ double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
         default:                    stat.sample();  break;
     }
     return stat.lastSampleTime();
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+// DID_CBOR_CONFIG requests
+
+namespace {
+constexpr int CBOR_CFG_RETRIES = 2;                     // resends of a message that got no reply
+constexpr size_t CBOR_CFG_KEYS_PER_REQUEST = 64;        // well under the device's per-request key limit
+constexpr uint32_t CBOR_CFG_BLOCKING_LIMIT_MS = 60000;  // backstop for the blocking calls if step() stops running
+}
+
+bool ISDevice::cborConfigStart(CborConfigCallback callback, uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    if (cborCfg_.active || !isConnected() || devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
+        return false;
+    cborCfg_ = CborConfigRequest();
+    cborCfg_.active = true;
+    cborCfg_.targetHdwId = targetHdwId;
+    cborCfg_.timeoutMs = timeoutMs;
+    cborCfg_.callback = std::move(callback);
+    return true;
+}
+
+bool ISDevice::cborConfigGetAll(CborConfigCallback callback, uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (!cborConfigStart(std::move(callback), targetHdwId, timeoutMs))
+        return false;
+    cborCfg_.msgType = CBOR_CFG_MSG_GET_ALL;
+    cborConfigSend();
+    return true;
+}
+
+bool ISDevice::cborConfigGetKeys(const std::vector<uint16_t>& keys, CborConfigCallback callback, uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (!cborConfigStart(std::move(callback), targetHdwId, timeoutMs))
+        return false;
+    for (size_t i = 0; i < keys.size(); i += CBOR_CFG_KEYS_PER_REQUEST)
+        cborCfg_.keyBatches.emplace_back(keys.begin() + i, keys.begin() + std::min(keys.size(), i + CBOR_CFG_KEYS_PER_REQUEST));
+    if (cborCfg_.keyBatches.empty())
+        cborCfg_.keyBatches.emplace_back();
+    cborCfg_.msgType = CBOR_CFG_MSG_GET_KEYS;
+    cborConfigSend();
+    return true;
+}
+
+bool ISDevice::cborConfigSet(const CborConfigFields& fields, CborConfigCallback callback, uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (!cborConfigStart(std::move(callback), targetHdwId, timeoutMs))
+        return false;
+    cborCfg_.setChunks = cborcfg::splitFields(fields, CBOR_CFG_MSG_DATA_MAX);
+    if (cborCfg_.setChunks.empty())
+        cborCfg_.setChunks.emplace_back();
+    cborCfg_.msgType = CBOR_CFG_MSG_SET;
+    cborConfigSend();
+    return true;
+}
+
+/** Sends the message in flight (msgType, cursor and the front key batch / SET chunk) with a new request ID */
+void ISDevice::cborConfigSend()
+{
+    std::vector<uint8_t> payload;
+    if (cborCfg_.msgType == CBOR_CFG_MSG_GET_KEYS)
+    {
+        const std::vector<uint16_t>& keys = cborCfg_.setChunks.empty() ? cborCfg_.keyBatches.front() : cborCfg_.followupKeys;
+        payload.resize(16 + 3 * keys.size());
+        int n = flash_cfg_cbor_encode_keys(keys.data(), keys.size(), payload.data(), payload.size());
+        payload.resize(n > 0 ? (size_t)n : 0);
+    }
+    else if (cborCfg_.msgType == CBOR_CFG_MSG_SET)
+    {
+        payload = cborcfg::encodeMap(cborCfg_.setChunks.front());
+    }
+
+    std::vector<uint8_t> msg(CBOR_CFG_MSG_HEADER_SIZE + payload.size());
+    cbor_cfg_msg_t* m = (cbor_cfg_msg_t*)msg.data();
+    if (cborCfgNextReqId_ == 0)
+        cborCfgNextReqId_ = 1;
+    cborCfg_.reqId = cborCfgNextReqId_++;
+    m->hdwId = cborCfg_.targetHdwId;
+    m->msgType = cborCfg_.msgType;
+    m->reqId = cborCfg_.reqId;
+    m->cursor = cborCfg_.cursor;
+    m->schema = CBOR_CFG_SCHEMA_DEVICE;
+    m->length = (uint16_t)payload.size();
+    if (!payload.empty())
+        memcpy(m->data, payload.data(), payload.size());
+
+    cborCfg_.sentMs = current_timeMs();
+    if (SendData(DID_CBOR_CONFIG, msg.data(), (uint32_t)msg.size(), 0) < 0)
+        cborConfigFinish(CBOR_CFG_RESULT_SEND_FAILED);
+}
+
+void ISDevice::cborConfigStep()
+{
+    if ((current_timeMs() - cborCfg_.sentMs) <= cborCfg_.timeoutMs)
+        return;
+    if (cborCfg_.retries >= CBOR_CFG_RETRIES)
+    {
+        log_warn(IS_LOG_ISDEVICE, "[%s] DID_CBOR_CONFIG request timed out.", getIdAsString().c_str());
+        cborConfigFinish(CBOR_CFG_RESULT_TIMEOUT);
+        return;
+    }
+    cborCfg_.retries++;
+    cborConfigSend();
+}
+
+void ISDevice::cborConfigOnReply(const p_data_t* data)
+{
+    if (!cborCfg_.active || data->hdr.offset != 0 || data->hdr.size < CBOR_CFG_MSG_HEADER_SIZE)
+        return;
+    const cbor_cfg_msg_t* rep = (const cbor_cfg_msg_t*)data->ptr;
+    if (rep->msgType != CBOR_CFG_MSG_REPLY || rep->reqId != cborCfg_.reqId)
+        return;     // not ours, or a late reply to a message already resent
+    if (CBOR_CFG_MSG_HEADER_SIZE + (size_t)rep->length > data->hdr.size)
+    {
+        cborConfigFinish(CBOR_CFG_RESULT_MALFORMED);
+        return;
+    }
+
+    cborCfg_.result.hdwId = rep->hdwId;
+    if (rep->status != CBOR_CFG_STATUS_OK && rep->status != CBOR_CFG_STATUS_PARTIAL)
+    {
+        cborConfigFinish(rep->status);
+        return;
+    }
+
+    CborConfigFields& fields = cborCfg_.result.fields;
+    if (!cborcfg::parseMap(rep->data, rep->length, fields))
+    {
+        cborConfigFinish(CBOR_CFG_RESULT_MALFORMED);
+        return;
+    }
+    cborCfg_.retries = 0;
+
+    bool setting = !cborCfg_.setChunks.empty();
+    if (rep->status == CBOR_CFG_STATUS_PARTIAL)
+    {
+        if (cborCfg_.msgType == CBOR_CFG_MSG_SET)
+        {   // Applied in full, but the reply was truncated: read back the chunk's remaining keys
+            const CborConfigFields& chunk = cborCfg_.setChunks.front();
+            cborCfg_.followupKeys.clear();
+            for (const CborConfigField& f : chunk)
+            {
+                bool reported = std::any_of(fields.begin() + cborCfg_.chunkReported, fields.end(),
+                                            [&](const CborConfigField& r) { return r.key == f.key; });
+                if (!reported)
+                    cborCfg_.followupKeys.push_back(f.key);
+            }
+            cborCfg_.msgType = CBOR_CFG_MSG_GET_KEYS;
+            cborCfg_.cursor = 0;
+        }
+        else
+        {
+            cborCfg_.cursor = rep->cursor;
+        }
+        cborConfigSend();
+        return;
+    }
+
+    // This message is complete; move to the next one
+    cborCfg_.cursor = 0;
+    if (setting)
+    {
+        cborCfg_.setChunks.erase(cborCfg_.setChunks.begin());
+        cborCfg_.followupKeys.clear();
+        cborCfg_.chunkReported = fields.size();
+        if (!cborCfg_.setChunks.empty())
+        {
+            cborCfg_.msgType = CBOR_CFG_MSG_SET;
+            cborConfigSend();
+            return;
+        }
+    }
+    else if (cborCfg_.msgType == CBOR_CFG_MSG_GET_KEYS)
+    {
+        cborCfg_.keyBatches.erase(cborCfg_.keyBatches.begin());
+        if (!cborCfg_.keyBatches.empty())
+        {
+            cborConfigSend();
+            return;
+        }
+    }
+    cborConfigFinish(CBOR_CFG_STATUS_OK);
+}
+
+void ISDevice::cborConfigFinish(int status)
+{
+    CborConfigResult result = std::move(cborCfg_.result);
+    CborConfigCallback callback = std::move(cborCfg_.callback);
+    cborCfg_ = CborConfigRequest();     // idle before the callback, so it may start another request
+    result.status = status;
+    if (callback)
+        callback(result);
+}
+
+/** Runs step() until the running request finishes (its callback reports the result) */
+void ISDevice::cborConfigWait()
+{
+    uint32_t startMs = current_timeMs();
+    while (cborCfg_.active)
+    {
+        step();
+        if (!cborCfg_.active)
+            break;
+        if ((current_timeMs() - startMs) > CBOR_CFG_BLOCKING_LIMIT_MS)
+        {
+            std::lock_guard<std::recursive_mutex> lock(portMutex);
+            cborConfigFinish(CBOR_CFG_RESULT_TIMEOUT);
+            break;
+        }
+        SLEEP_MS(2);
+    }
+}
+
+CborConfigResult ISDevice::cborConfigGetAllBlocking(uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    CborConfigResult result;
+    result.status = CBOR_CFG_RESULT_SEND_FAILED;
+    if (cborConfigGetAll([&](const CborConfigResult& r) { result = r; }, targetHdwId, timeoutMs))
+        cborConfigWait();
+    return result;
+}
+
+CborConfigResult ISDevice::cborConfigGetKeysBlocking(const std::vector<uint16_t>& keys, uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    CborConfigResult result;
+    result.status = CBOR_CFG_RESULT_SEND_FAILED;
+    if (cborConfigGetKeys(keys, [&](const CborConfigResult& r) { result = r; }, targetHdwId, timeoutMs))
+        cborConfigWait();
+    return result;
+}
+
+CborConfigResult ISDevice::cborConfigSetBlocking(const CborConfigFields& fields, uint16_t targetHdwId, uint32_t timeoutMs)
+{
+    CborConfigResult result;
+    result.status = CBOR_CFG_RESULT_SEND_FAILED;
+    if (cborConfigSet(fields, [&](const CborConfigResult& r) { result = r; }, targetHdwId, timeoutMs))
+        cborConfigWait();
+    return result;
 }
