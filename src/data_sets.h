@@ -2447,7 +2447,8 @@ typedef struct PACKED
 #define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
 #define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.targetCell: no target (otherwise cell index + 1)
 #define MAG_CAL_GUIDE_DEG_PER_LSB   2       //!< mag_cal_coverage_t.guideRot resolution (degrees per LSB, so +-254 deg range)
-#define MAG_CAL_GUIDE_REACHED_DEG   12      //!< A target counts as reached when the field is within this angle of the cell centre (or the cell is covered)
+#define MAG_CAL_GUIDE_REACHED_DEG   20      //!< A target counts as reached when the field is within this angle of the cell centre (or the cell is covered). Hand-held orientation is not that precise
+#define MAG_CAL_GUIDE_TIMEOUT_MS    8000    //!< A target that has not been reached after this long is replaced (the user may not be able to get there from where they are)
 
 /** @brief (DID_INL2_MAG_OBS_INFO) INL2 magnetometer observer diagnostic/calibration info. Reports the internal state of the online magnetometer bias/cross-axis calibration and heading-innovation gating used by the INL2 EKF to accept or reject magnetometer updates. */
 typedef struct PACKED

@@ -165,9 +165,10 @@ static inline float magCalAngleDeg(const float a[3], const float b[3])
  *    direction (largest gain first, shortest move as the tie-break).
  * @param cur   current field direction, unit vector in the sensor frame (NULL = unknown: nearest-ness is ignored)
  * @param prev  previous target cell or -1
+ * @param avoid a cell that must not be chosen (e.g. a target that timed out), or -1
  * @return target cell, or -1 when nothing required is missing
  */
-static inline int magCalChooseTarget(const mag_cal_coverage_t *m, const float cur[3], int prev)
+static inline int magCalChooseTarget(const mag_cal_coverage_t *m, const float cur[3], int prev, int avoid)
 {
     if (prev >= 0 && prev < MAG_CAL_CELL_COUNT && magCalCellRequired(m, (unsigned)prev) && magCalCellGet(m, (unsigned)prev) < MAG_CAL_COVERAGE_MIN_COUNT)
     {
@@ -177,7 +178,7 @@ static inline int magCalChooseTarget(const mag_cal_coverage_t *m, const float cu
     int best = 0, scores[MAG_CAL_CELL_COUNT];
     for (int i = 0; i < MAG_CAL_CELL_COUNT; i++)
     {
-        scores[i] = (magCalCellRequired(m, (unsigned)i) && magCalCellGet(m, (unsigned)i) < MAG_CAL_COVERAGE_MIN_COUNT) ? magCalGapScore(m, i) : 0;
+        scores[i] = (i != avoid && magCalCellRequired(m, (unsigned)i) && magCalCellGet(m, (unsigned)i) < MAG_CAL_COVERAGE_MIN_COUNT) ? magCalGapScore(m, i) : 0;
         if (scores[i] > best) best = scores[i];
     }
     if (best == 0) return -1;
@@ -215,6 +216,13 @@ static inline float magCalGuideRotationDeg(const float cur[3], const float targe
     }
     rotDeg[0] = ang * ax / s; rotDeg[1] = ang * ay / s; rotDeg[2] = ang * az / s;
     return ang;
+}
+
+/** Exponential smoothing of the displayed rotation (state in degrees). A fresh state (reset=1) takes the first value as is. Keeps the numbers readable
+ *  while the user is moving; the underlying target is unchanged. */
+static inline void magCalSmoothRot(float state[3], const float in[3], int reset, float alpha)
+{
+    for (int k = 0; k < 3; k++) state[k] = reset ? in[k] : state[k] + alpha * (in[k] - state[k]);
 }
 
 /** Wire encoding of the target: cell index + 1, 0 = none (so a zeroed packet carries no target). */

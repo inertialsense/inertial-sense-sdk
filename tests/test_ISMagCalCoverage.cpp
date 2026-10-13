@@ -120,44 +120,67 @@ void hole(mag_cal_coverage_t *m, int zc, int lc, int radius = 1)
 TEST(MagCalGuide, NoTargetWhenNothingRequiredIsMissing)
 {
     mag_cal_coverage_t m = full();
-    EXPECT_EQ(magCalChooseTarget(&m, nullptr, -1), -1);
+    EXPECT_EQ(magCalChooseTarget(&m, nullptr, -1, -1), -1);
     mag_cal_coverage_t none = blank();                               // nothing required at all
-    EXPECT_EQ(magCalChooseTarget(&none, nullptr, -1), -1);
+    EXPECT_EQ(magCalChooseTarget(&none, nullptr, -1, -1), -1);
 }
 
 TEST(MagCalGuide, PrefersTheLargestGapOverAnIsolatedMissingCell)
 {
     mag_cal_coverage_t m = full(); hole(&m, 2, 5); magCalCellSet(&m, 6 * 16 + 12, 0);
-    EXPECT_EQ(magCalChooseTarget(&m, nullptr, -1), 2 * 16 + 5) << "should aim at the middle of the 3x3 hole (gain 9), not the lone cell (gain 1)";
+    EXPECT_EQ(magCalChooseTarget(&m, nullptr, -1, -1), 2 * 16 + 5) << "should aim at the middle of the 3x3 hole (gain 9), not the lone cell (gain 1)";
 }
 
 TEST(MagCalGuide, LargestGainBeatsANearerSmallerGap)
 {
     mag_cal_coverage_t m = full(); hole(&m, 2, 5); magCalCellSet(&m, 6 * 16 + 12, 0);
     float near[3]; magCalCellCenter(6 * 16 + 12, near);               // the user is sitting on the lone cell
-    EXPECT_EQ(magCalChooseTarget(&m, near, -1), 2 * 16 + 5);
+    EXPECT_EQ(magCalChooseTarget(&m, near, -1, -1), 2 * 16 + 5);
 }
 
 TEST(MagCalGuide, AmongComparableGapsTheNearestWins)
 {
     mag_cal_coverage_t m = full(); hole(&m, 2, 2); hole(&m, 5, 10);   // two equal 3x3 holes
     float nearA[3], nearB[3]; magCalCellCenter(2 * 16 + 3, nearA); magCalCellCenter(5 * 16 + 9, nearB);
-    EXPECT_EQ(magCalChooseTarget(&m, nearA, -1), 2 * 16 + 2);
-    EXPECT_EQ(magCalChooseTarget(&m, nearB, -1), 5 * 16 + 10);
+    EXPECT_EQ(magCalChooseTarget(&m, nearA, -1, -1), 2 * 16 + 2);
+    EXPECT_EQ(magCalChooseTarget(&m, nearB, -1, -1), 5 * 16 + 10);
 }
 
 TEST(MagCalGuide, KeepsTheTargetWhileMovingToItAndMovesOnOnceCovered)
 {
     mag_cal_coverage_t m = full(); hole(&m, 2, 2); hole(&m, 5, 10);
     float start[3]; magCalCellCenter(2 * 16 + 3, start);
-    int t = magCalChooseTarget(&m, start, -1);
+    int t = magCalChooseTarget(&m, start, -1, -1);
     ASSERT_EQ(t, 2 * 16 + 2);
     // User wanders closer to the OTHER hole: the target must not flip while it is still missing and not yet reached
     float wander[3]; magCalCellCenter(4 * 16 + 9, wander);
-    EXPECT_EQ(magCalChooseTarget(&m, wander, t), t);
+    EXPECT_EQ(magCalChooseTarget(&m, wander, t, -1), t);
     // Once the target cell is covered, the next target is chosen
     for (int dz = -1; dz <= 1; dz++) for (int dl = -1; dl <= 1; dl++) magCalCellSet(&m, (2 + dz) * 16 + (2 + dl), 15);
-    EXPECT_EQ(magCalChooseTarget(&m, wander, t), 5 * 16 + 10);
+    EXPECT_EQ(magCalChooseTarget(&m, wander, t, -1), 5 * 16 + 10);
+}
+
+TEST(MagCalGuide, AStaleTargetCanBeExcludedSoItIsNotPickedAgain)
+{
+    mag_cal_coverage_t m = full(); hole(&m, 2, 2); hole(&m, 5, 10);
+    float start[3]; magCalCellCenter(2 * 16 + 3, start);
+    int first = magCalChooseTarget(&m, start, -1, -1);
+    ASSERT_EQ(first, 2 * 16 + 2);
+    int second = magCalChooseTarget(&m, start, -1, first);          // timed out: must move on even though it is still the best gap
+    EXPECT_NE(second, first);
+    EXPECT_GE(second, 0);
+}
+
+TEST(MagCalGuide, SmoothingDampsJumpsAndTakesTheFirstValueAsIs)
+{
+    float st[3] = { 0, 0, 0 }, in1[3] = { 100, -50, 20 };
+    magCalSmoothRot(st, in1, 1, 0.35f);
+    EXPECT_FLOAT_EQ(st[0], 100.f); EXPECT_FLOAT_EQ(st[1], -50.f);   // reset: no lag at the start of a new target
+    float jump[3] = { -100, 50, -20 };                                // the raw rotation flips sign (user rotated the device)
+    magCalSmoothRot(st, jump, 0, 0.35f);
+    EXPECT_NEAR(st[0], 100.f + 0.35f * (-200.f), 1e-3f);               // moved only part of the way
+    for (int i = 0; i < 40; i++) magCalSmoothRot(st, jump, 0, 0.35f);
+    EXPECT_NEAR(st[0], -100.f, 0.01f);                                  // and converges
 }
 
 TEST(MagCalGuide, OnlyRequiredCellsAreTargeted)
@@ -165,7 +188,7 @@ TEST(MagCalGuide, OnlyRequiredCellsAreTargeted)
     mag_cal_coverage_t m = blank();
     for (unsigned i = 3 * 16; i < 5 * 16; i++) { magCalCellSetRequired(&m, i, 1); magCalCellSet(&m, i, 15); }
     magCalCellSet(&m, 4 * 16 + 7, 0);                                  // the only required cell that is missing
-    EXPECT_EQ(magCalChooseTarget(&m, nullptr, -1), 4 * 16 + 7) << "empty cells outside the required region must be ignored";
+    EXPECT_EQ(magCalChooseTarget(&m, nullptr, -1, -1), 4 * 16 + 7) << "empty cells outside the required region must be ignored";
 }
 
 // ---- Rotation guidance -----------------------------------------------------------------------------------------------
@@ -261,8 +284,9 @@ TEST(MagCalCoverage, DisplayShowsLifecycleReasonAndMap)
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
     EXPECT_NE(s.find("FITTING"), std::string::npos);
     EXPECT_NE(s.find("multi-axis"), std::string::npos);
-    EXPECT_NE(s.find("fit rejected"), std::string::npos);
+    EXPECT_NE(s.find("fit not accepted yet"), std::string::npos);
     EXPECT_NE(s.find("99%"), std::string::npos);
+    EXPECT_NE(s.find("map 0%"), std::string::npos) << s;
     EXPECT_NE(s.find(": o O #"), std::string::npos) << s;           // cells 0..3 glyphs: thin, ok, good, full
     // Constant layout: status, instruction, legend, longitude header, then one row per latitude band
     const int expectedLines = 1 + 1 + 1 + 1 + 1 + MAG_CAL_CELL_Z_BANDS;   // status, detail, instruction, legend, lon header, rows
@@ -282,23 +306,57 @@ TEST(MagCalCoverage, DisplayShowsRelativeGuidanceAndMarkers)
     p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
     cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("roll +34"), std::string::npos) << s;
-    EXPECT_NE(s.find("pitch -20"), std::string::npos) << s;
-    EXPECT_NE(s.find("yaw +0"), std::string::npos) << s;
-    EXPECT_NE(s.find("(39 to go)"), std::string::npos) << s;
+    EXPECT_NE(s.find("roll  +34"), std::string::npos) << s;      // fixed-width fields: %+4.0f
+    EXPECT_NE(s.find("pitch  -20"), std::string::npos) << s;
+    EXPECT_NE(s.find("yaw   +0"), std::string::npos) << s;
+    EXPECT_NE(s.find("( 39 to go)"), std::string::npos) << s;
     EXPECT_EQ(std::count(s.begin(), s.end(), '*'), 1 + 1);        // one on the map plus one in the legend
     EXPECT_EQ(std::count(s.begin(), s.end(), '@'), 1 + 1);
 
-    // A rejected fit must not coach the user to keep rotating
+    // A fit that has not been accepted yet does not stop the guidance while gaps remain (covered in FitNotYetAcceptedStillShowsTheTarget...)
     m.lifecycle = MAG_CAL_LC_FITTING; m.reason = MAG_CAL_REASON_FIT_REJECTED;
     s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_EQ(s.find("turn:"), std::string::npos) << s;
-    EXPECT_NE(s.find("more rotation will not help"), std::string::npos) << s;
+    EXPECT_NE(s.find("turn:"), std::string::npos) << s;
+    EXPECT_NE(s.find("fit not accepted yet"), std::string::npos) << s;
 
     // Single axis: no target, plain instruction
     mag_cal_coverage_t sa = blank(); sa.lifecycle = MAG_CAL_LC_COLLECTING; sa.mode = MAG_CAL_STATE_SINGLE_AXIS; sa.targetCell = MAG_CAL_GUIDE_NONE; sa.flags = MAG_CAL_FLAG_COVERAGE_VALID;
     s = d.DataToStringMagCalCoverage(sa, hdr);
     EXPECT_NE(s.find("keep turning about the vertical axis"), std::string::npos) << s;
+}
+
+TEST(MagCalCoverage, FitNotYetAcceptedStillShowsTheTargetWhileGapsRemain)
+{   // Found on hardware: a rejected fit at PARTIAL coverage hid the target behind a wrong 'coverage complete' message.
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&m, i, 15);
+    for (int dl = -1; dl <= 1; dl++) magCalCellSet(&m, 2 * 16 + 5 + dl, 0);
+    m.lifecycle = MAG_CAL_LC_FITTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.reason = MAG_CAL_REASON_FIT_REJECTED; m.progressPct = 99; m.coveragePct = 97;
+    m.flags = MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID;
+    m.targetCell = magCalPackTarget(2 * 16 + 5); m.guideRot[0] = 10; m.guideRot[1] = -5; m.guideRot[2] = 3;
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    std::string s = d.DataToStringMagCalCoverage(m, hdr);
+    EXPECT_NE(s.find("turn: roll"), std::string::npos) << s;
+    EXPECT_NE(s.find("fit not accepted yet"), std::string::npos) << s;
+    EXPECT_EQ(s.find("will not help"), std::string::npos) << "gaps remain: more rotation DOES help\n" << s;
+    EXPECT_EQ(s.find("coverage complete"), std::string::npos) << s;
+    // Only when nothing is left to cover is it honest to say more rotation will not help
+    m.targetCell = MAG_CAL_GUIDE_NONE; m.coveragePct = 100; memset(m.guideRot, 0, 3);
+    s = d.DataToStringMagCalCoverage(m, hdr);
+    EXPECT_NE(s.find("the map is complete, more rotation will not help"), std::string::npos) << s;
+}
+
+TEST(MagCalCoverage, GuidanceNumbersHaveFixedWidthSoTheLineDoesNotShift)
+{
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    auto instrLine = [&](int8_t r, int8_t p, int8_t y) {
+        mag_cal_coverage_t m = blank(); magCalRequireAll(&m); m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.flags = MAG_CAL_FLAG_COVERAGE_VALID;
+        m.targetCell = magCalPackTarget(5); m.guideRot[0] = r; m.guideRot[1] = p; m.guideRot[2] = y;
+        std::string s = d.DataToStringMagCalCoverage(m, hdr); size_t a = s.find("turn:"); size_t b = s.find("to go)", a);
+        return s.substr(a, b - a + 6); };
+    EXPECT_EQ(instrLine(0, 0, 0).size(), instrLine(-127, 127, -127).size()) << instrLine(0, 0, 0) << " | " << instrLine(-127, 127, -127);
+    EXPECT_EQ(instrLine(3, -2, 1).size(), instrLine(60, -60, 60).size());
 }
 
 TEST(MagCalCoverage, DisplayLineCountDoesNotDependOnTheContent)

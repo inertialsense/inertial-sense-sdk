@@ -1526,18 +1526,18 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
     static const char *reason[]    = { "", "rotate faster", "turn about the vertical axis", "field unsteady / interference", "area full",
-                                       "fit rejected - coverage complete, more rotation will not help", "norm check failed - more rotation will not help", "mode unsupported" };
+                                       "fit not accepted yet", "norm check not passed yet", "mode unsupported" };
     static const char *quality[]   = { "none", "poor", "degraded", "good" };
     const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
 
     // Fixed three-line layout (status, detail, instruction). Every line is kept under 80 columns so none can wrap: a wrapped line
     // changes the line count and makes an in-place redraw jump.
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %s%s  progress %u%%  coverage %u%%",
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %s%s  progress %u%%",
         cov.lifecycle < 7 ? lifecycle[cov.lifecycle] : "?",
         cov.mode == MAG_CAL_STATE_MULTI_AXIS ? " multi-axis" : (cov.mode == MAG_CAL_STATE_SINGLE_AXIS ? " single-axis" : ""),
-        cov.progressPct, cov.coveragePct);
-    char detail[64];
-    SNPRINTF(detail, sizeof(detail), "quality %s  Tcal %.1f  samples %u", qualityStr, cov.fitQuality, cov.sampleCount);
+        cov.progressPct);
+    char detail[80];
+    SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s  Tcal %.1f  samples %u", cov.coveragePct, qualityStr, cov.fitQuality, cov.sampleCount);
 
     // Instruction text, built with a clamped append (snprintf returns the length it WOULD have written, not what fit)
     char instr[160] = "";
@@ -1551,12 +1551,16 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
         if (n > 0) il = std::min(sizeof(instr) - 1, il + (size_t)n);
     };
     const bool fitProblem = (cov.reason == MAG_CAL_REASON_FIT_REJECTED || cov.reason == MAG_CAL_REASON_NORM_CHECK);
+    const bool haveTarget = magCalUnpackTarget(cov.targetCell) >= 0;
     if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8 && cov.reason != MAG_CAL_REASON_REGION_FULL)
-        append("; ", "%s", 0, 0, 0, reason[cov.reason]);
-    if (!fitProblem && magCalUnpackTarget(cov.targetCell) >= 0)
-    {   // Relative guidance: the rotation still needed to reach the target. These go to zero as the target is reached.
+    {
+        if (fitProblem && !haveTarget) append("; ", "%s - the map is complete, more rotation will not help", 0, 0, 0, reason[cov.reason]);   // only when nothing is left to cover
+        else                           append("; ", "%s", 0, 0, 0, reason[cov.reason]);
+    }
+    if (haveTarget)
+    {   // Relative guidance: the rotation still needed to reach the target. Shown even while a fit is being retried: gaps still help.
         float r = (float)cov.guideRot[0] * MAG_CAL_GUIDE_DEG_PER_LSB, p = (float)cov.guideRot[1] * MAG_CAL_GUIDE_DEG_PER_LSB, y = (float)cov.guideRot[2] * MAG_CAL_GUIDE_DEG_PER_LSB;
-        char g[80]; SNPRINTF(g, sizeof(g), "turn: roll %+.0f  pitch %+.0f  yaw %+.0f deg  (%.0f to go)", r, p, y, sqrtf(r * r + p * p + y * y));
+        char g[80]; SNPRINTF(g, sizeof(g), "turn: roll %+4.0f  pitch %+4.0f  yaw %+4.0f deg  (%3.0f to go)", r, p, y, sqrtf(r * r + p * p + y * y));
         append("; ", "%s", 0, 0, 0, g);
     }
     else if (!fitProblem && cov.lifecycle == MAG_CAL_LC_COLLECTING && cov.mode == MAG_CAL_STATE_SINGLE_AXIS && cov.reason == MAG_CAL_REASON_NONE)
