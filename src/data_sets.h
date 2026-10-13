@@ -2461,9 +2461,10 @@ typedef struct PACKED
 } mag_cal_coverage_t;
 #define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
 #define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.guidePhase: no guidance
-#define MAG_CAL_POSE_COUNT          26      //!< Guidance poses: the 6 faces, 12 edges and 8 corners of the device, each pointed at the floor
-#define MAG_CAL_POSE_AIM_DEG        20      //!< AIM becomes TURN once the pose is within this angle of pointing at the floor
-#define MAG_CAL_POSE_LOSE_DEG       35      //!< TURN falls back to AIM if the pose drifts beyond this angle (hysteresis)
+#define MAG_CAL_POSE_COUNT          6       //!< Guidance poses: the 6 faces of the device (+X,-X,+Y,-Y,+Z,-Z), each pointed at the floor. Edges and corners were removed: they need two faces equally low, which nobody can judge by eye
+#define MAG_CAL_POSE_AIM_DEG        30      //!< AIM becomes TURN once the pose is within this angle of pointing at the floor (the ring follows the actual floor direction, so this need not be exact)
+#define MAG_CAL_POSE_LOSE_DEG       50      //!< TURN falls back to AIM if the pose drifts beyond this angle (wide hysteresis: hand wobble must not flip the instruction)
+#define MAG_CAL_POSE_MIN_DWELL_MS   2500    //!< An instruction (AIM or TURN) stays up at least this long before it can change, so the text never flutters
 #define MAG_CAL_POSE_RING_HALF_DEG  14      //!< Half width of the ring of field directions a pose is credited with sweeping
 #define MAG_CAL_POSE_TIMEOUT_MS     40000   //!< A pose that is not finished after this long is dropped (the user may not be able to do it where they are)
 

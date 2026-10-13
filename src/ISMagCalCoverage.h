@@ -156,32 +156,31 @@ static inline void magCalPackUnit(const float u[3], int8_t out[3])
  * (g = A), turning the device about the vertical sweeps the field direction around a ring at angle acos(sin(inclination)) from A,
  * and the whole ring is covered by one slow turn. The floor is easy for a person to judge and the turn is a single rotation, so the
  * instruction is "point <part> at the floor, then turn slowly all the way round".
- * Poses are the 6 faces, 12 edges and 8 corners of the device, which can all be named on the case.
+ * Poses are the 6 faces of the device (front/rear, right/left side, bottom/top): each can be named on the case and judged by eye.
  * ------------------------------------------------------------------------------------------------------------------- */
 
-/** Pose idx (0..MAG_CAL_POSE_COUNT-1) as a unit vector in the body frame. The poses are every non-zero (x,y,z) with x,y,z in {-1,0,1}, normalised. */
+/** Pose idx (0..MAG_CAL_POSE_COUNT-1) as a unit vector in the body frame: the six faces, in the order +X, -X, +Y, -Y, +Z, -Z. */
 static inline void magCalPoseDir(int idx, float out[3])
 {
-    int k = idx < 13 ? idx : idx + 1;               // skip (0,0,0), which is k = 13 in the enumeration below
-    int x = k / 9 - 1, y = (k / 3) % 3 - 1, z = k % 3 - 1;
-    float n = sqrtf((float)(x * x + y * y + z * z));
-    out[0] = x / n; out[1] = y / n; out[2] = z / n;
+    out[0] = out[1] = out[2] = 0.0f;
+    out[idx / 2] = (idx & 1) ? -1.0f : 1.0f;
 }
 
-/** Human name of a pose given by its packed direction, e.g. "+Z axis", "+X/-Z edge", "+X/+Y/-Z corner". out needs >= 24 bytes. */
+/** Name of a pose given by its packed direction, the way someone holding the unit would say it: "+Y face (right side)". out needs >= 24 bytes.
+ *  X is forward, Y right, Z down in the body frame, so the unit's -Z face is its top, +Z its bottom. */
 static inline void magCalPoseName(const int8_t dir[3], char *out, int outSize)
 {
     static const char letters[3] = { 'X', 'Y', 'Z' };
-    int n = 0, parts = 0;
-    for (int k = 0; k < 3; k++)
-    {
-        if (dir[k] > -30 && dir[k] < 30) continue;
-        if (parts++ && n < outSize - 1) out[n++] = '/';
-        if (n < outSize - 1) out[n++] = dir[k] > 0 ? '+' : '-';
-        if (n < outSize - 1) out[n++] = letters[k];
-    }
-    const char *suffix = parts == 1 ? " axis" : (parts == 2 ? " edge" : (parts == 3 ? " corner" : ""));
-    for (int i = 0; suffix[i] && n < outSize - 1; i++) out[n++] = suffix[i];
+    static const char *side[3][2] = { { "front", "rear" }, { "right side", "left side" }, { "bottom", "top" } };   // [axis][0 = positive face, 1 = negative face]
+    int n = 0, axis = -1, neg = 0;
+    for (int k = 0; k < 3; k++) if (dir[k] >= 30 || dir[k] <= -30) { axis = k; neg = dir[k] < 0; break; }
+    if (axis < 0) { if (outSize > 0) out[0] = 0; return; }
+    char text[32]; int t = 0;
+    text[t++] = neg ? '-' : '+'; text[t++] = letters[axis];
+    const char *tail = " face ("; for (int i = 0; tail[i]; i++) text[t++] = tail[i];
+    for (const char *p = side[axis][neg]; *p; p++) text[t++] = *p;
+    text[t++] = ')'; text[t] = 0;
+    for (int i = 0; text[i] && n < outSize - 1; i++) out[n++] = text[i];
     out[n] = 0;
 }
 

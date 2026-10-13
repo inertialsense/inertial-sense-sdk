@@ -1564,7 +1564,11 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
         char pose[24], g[80];
         magCalPoseName(cov.poseDir, pose, sizeof(pose));
         if (cov.guidePhase == MAG_CAL_PHASE_AIM) SNPRINTF(g, sizeof(g), "point the %s at the floor: %u deg to go", pose, cov.poseErrDeg);
-        else                                     SNPRINTF(g, sizeof(g), "keep the %s down, turn slowly all the way round (ring %u%%)", pose, cov.ringPct);
+        else
+        {   // second step: shorter name ("+Y face"), and a picture people already know
+            char shortName[16]; int n = 0; for (; pose[n] && pose[n] != '(' && n < 15; n++) shortName[n] = pose[n]; while (n > 0 && shortName[n - 1] == ' ') n--; shortName[n] = 0;
+            SNPRINTF(g, sizeof(g), "keep the %s down; turn slowly in place, like a turntable (ring %u%%)", shortName, cov.ringPct);
+        }
         append("; ", "%s", 0, 0, 0, g);
     }
     else if (!fitProblem && cov.lifecycle == MAG_CAL_LC_COLLECTING && cov.mode == MAG_CAL_STATE_SINGLE_AXIS && cov.reason == MAG_CAL_REASON_NONE)

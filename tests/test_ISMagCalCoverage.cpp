@@ -121,28 +121,28 @@ int poseIndexOf(float x, float y, float z)
     return -1;
 }
 
-TEST(MagCalPose, TwentySixDistinctUnitPoses_FacesEdgesAndCorners)
+TEST(MagCalPose, SixFacePosesAreDistinctUnitVectorsOnTheAxes)
 {
-    int faces = 0, edges = 0, corners = 0;
+    EXPECT_EQ(MAG_CAL_POSE_COUNT, 6);
     for (int p = 0; p < MAG_CAL_POSE_COUNT; p++)
     {
         float a[3]; magCalPoseDir(p, a);
-        EXPECT_NEAR(a[0]*a[0] + a[1]*a[1] + a[2]*a[2], 1.0f, 1e-5f);
+        EXPECT_NEAR(a[0]*a[0] + a[1]*a[1] + a[2]*a[2], 1.0f, 1e-6f);
         int nz = (std::fabs(a[0]) > 0.01f) + (std::fabs(a[1]) > 0.01f) + (std::fabs(a[2]) > 0.01f);
-        faces += nz == 1; edges += nz == 2; corners += nz == 3;
-        for (int q = p + 1; q < MAG_CAL_POSE_COUNT; q++) { float b[3]; magCalPoseDir(q, b); EXPECT_GT(magCalAngleDeg(a, b), 10.0f) << p << " and " << q << " coincide"; }
+        EXPECT_EQ(nz, 1) << "pose " << p << " must be a face (one axis), never an edge or corner: those need two faces equally low";
+        for (int q = p + 1; q < MAG_CAL_POSE_COUNT; q++) { float b[3]; magCalPoseDir(q, b); EXPECT_GT(magCalAngleDeg(a, b), 89.0f) << p << " and " << q; }   // faces are 90 or 180 deg apart
     }
-    EXPECT_EQ(faces, 6); EXPECT_EQ(edges, 12); EXPECT_EQ(corners, 8);
 }
 
-TEST(MagCalPose, PoseNamesAreWhatAPersonCanFindOnTheCase)
+TEST(MagCalPose, PoseNamesAreWhatAPersonHoldingTheUnitWouldSay)
 {
-    char n[32]; int8_t d[3];
-    float a[3];
-    magCalPoseDir(poseIndexOf(0, 0, 1), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+Z axis");
-    magCalPoseDir(poseIndexOf(-1, 0, 0), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-X axis");
-    magCalPoseDir(poseIndexOf(1, 0, -1), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+X/-Z edge");
-    magCalPoseDir(poseIndexOf(1, -1, 1), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+X/-Y/+Z corner");
+    char n[32]; int8_t d[3]; float a[3];
+    magCalPoseDir(poseIndexOf(0, 0, 1), a);  magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+Z face (bottom)");
+    magCalPoseDir(poseIndexOf(0, 0, -1), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-Z face (top)");
+    magCalPoseDir(poseIndexOf(1, 0, 0), a);  magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+X face (front)");
+    magCalPoseDir(poseIndexOf(-1, 0, 0), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-X face (rear)");
+    magCalPoseDir(poseIndexOf(0, 1, 0), a);  magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+Y face (right side)");
+    magCalPoseDir(poseIndexOf(0, -1, 0), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-Y face (left side)");
     int8_t zero[3] = { 0, 0, 0 }; magCalPoseName(zero, n, sizeof(n)); EXPECT_STREQ(n, "");
     char tiny[4]; magCalPoseName(d, tiny, sizeof(tiny)); EXPECT_LT(std::strlen(tiny), sizeof(tiny));      // never overruns
 }
@@ -278,19 +278,19 @@ TEST(MagCalCoverage, DisplayShowsPoseGuidanceAndTheRingItFills)
 
     m.guidePhase = MAG_CAL_PHASE_AIM; m.poseErrDeg = 37;
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("point the +Z axis at the floor: 37 deg to go"), std::string::npos) << s;
+    EXPECT_NE(s.find("point the +Z face (bottom) at the floor: 37 deg to go"), std::string::npos) << s;
     // the empty ring is drawn with '*' (32 cells of it, plus the one in the legend), and the field-now marker is '@' (plus the legend)
     EXPECT_EQ(std::count(s.begin(), s.end(), '*'), 32 - 1 + 1) << s;      // one ring cell is the "now" cell and shows as '@'
     EXPECT_EQ(std::count(s.begin(), s.end(), '@'), 1 + 1) << s;
 
     m.guidePhase = MAG_CAL_PHASE_TURN; m.ringPct = 40;
     s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("keep the +Z axis down, turn slowly all the way round (ring 40%)"), std::string::npos) << s;
+    EXPECT_NE(s.find("keep the +Z face down; turn slowly in place, like a turntable (ring 40%)"), std::string::npos) << s;
 
     // A fit that has not been accepted yet does not stop the guidance while gaps remain
     m.lifecycle = MAG_CAL_LC_FITTING; m.reason = MAG_CAL_REASON_FIT_REJECTED;
     s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("turn slowly"), std::string::npos) << s;
+    EXPECT_NE(s.find("turn slowly in place"), std::string::npos) << s;
     EXPECT_NE(s.find("fit not accepted yet"), std::string::npos) << s;
 
     // Single axis: no pose, plain instruction
@@ -309,7 +309,7 @@ TEST(MagCalCoverage, FitNotYetAcceptedStillShowsGuidanceWhileGapsRemain)
     p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
     cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("point the +X axis at the floor"), std::string::npos) << s;
+    EXPECT_NE(s.find("point the +X face (front) at the floor"), std::string::npos) << s;
     EXPECT_NE(s.find("fit not accepted yet"), std::string::npos) << s;
     EXPECT_EQ(s.find("will not help"), std::string::npos) << "gaps remain: more rotation DOES help\n" << s;
     m.guidePhase = MAG_CAL_PHASE_NONE; memset(m.poseDir, 0, 3); m.coveragePct = 100;
