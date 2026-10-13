@@ -36,6 +36,7 @@ TEST(MagCalCoverage, WireLayoutIsStable)
     EXPECT_EQ(offsetof(mag_cal_coverage_t, poseErrDeg), 28u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, ringPct), 29u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, gravDir), 30u);
+    EXPECT_EQ(offsetof(mag_cal_coverage_t, inclSin), 33u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, required), 36u);
     EXPECT_EQ(offsetof(mag_cal_coverage_t, cells), 52u);
     EXPECT_EQ((int)DID_MAG_CAL_COVERAGE, 113);
@@ -373,6 +374,32 @@ TEST(MagCalCoverage, DisplayEmitsTheBellOnlyWhenTheInstructionChanges)
     EXPECT_EQ(bells(m), 0);
     m.lifecycle = MAG_CAL_LC_COMPLETE; m.guidePhase = MAG_CAL_PHASE_NONE;
     EXPECT_EQ(bells(m), 3);
+}
+
+TEST(MagCalCoverage, RingUsesTheFirmwareInclinationWhenItIsReported)
+{
+    mag_cal_coverage_t m = blank();
+    float fld[3] = { 0, 0, 1 }, gr[3] = { 0, 0, 1 }; magCalPackUnit(fld, m.fieldDir); magCalPackUnit(gr, m.gravDir);      // instantaneous field . floor = 1
+    float s = -1;
+    ASSERT_TRUE(magCalSinI(&m, &s));
+    EXPECT_NEAR(s, 1.0f, 0.02f) << "fallback: from the two vectors";
+    m.inclSin = 64; m.flags |= MAG_CAL_FLAG_INCL_VALID;
+    ASSERT_TRUE(magCalSinI(&m, &s));
+    EXPECT_NEAR(s, 64.0f / 127.0f, 1e-5f) << "the firmware's estimate wins";
+    mag_cal_coverage_t none = blank();
+    EXPECT_FALSE(magCalSinI(&none, &s)) << "nothing known";
+
+    // And the display's ring follows it: the same pose draws a different ring for a different inclination
+    m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; magCalRequireAll(&m); m.flags |= MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID;
+    float ax[3] = { 0, 0, 1 }; magCalPackUnit(ax, m.poseDir); m.guidePhase = MAG_CAL_PHASE_AIM;
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    auto stars = [&](int8_t incl) { mag_cal_coverage_t c = m; c.inclSin = incl; cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY); std::string o = d.DataToStringMagCalCoverage(c, hdr); return (int)std::count(o.begin(), o.end(), '*'); };
+    mag_cal_coverage_t fullMap = m; for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&fullMap, i, MAG_CAL_COVERAGE_MIN_COUNT);
+    { cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY); std::string o = d.DataToStringMagCalCoverage(fullMap, hdr); EXPECT_EQ(std::count(o.begin(), o.end(), '*'), 1) << "a full map has no ring cells left to fill: only the legend's '*'"; }
+    (void)stars;
+    mag_cal_coverage_t empty = m; for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&empty, i, 0);
+    auto starsEmpty = [&](int8_t incl) { mag_cal_coverage_t c = empty; c.inclSin = incl; cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY); std::string o = d.DataToStringMagCalCoverage(c, hdr); return (int)std::count(o.begin(), o.end(), '*'); };
+    EXPECT_NE(starsEmpty(0), starsEmpty(100)) << "inclination 0 (ring at the equator) vs 52 deg (a small circle) fill different cells";
 }
 
 } // namespace

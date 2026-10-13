@@ -251,6 +251,19 @@ static inline int magCalChimeCount(const mag_cal_coverage_t &prev, bool prevVali
     return (prev.guidePhase != cur.guidePhase || !samePose) ? 1 : 0;
 }
 
+/** sin(inclination) the pose ring is sized with. Uses the firmware's own estimate when it reports one; otherwise falls back to the instantaneous
+ *  field . floor from the two direction vectors (noisier: it moves with the centre estimate). Returns 0 when neither can be formed. */
+static inline int magCalSinI(const mag_cal_coverage_t *c, float *sinI)
+{
+    if (c->flags & MAG_CAL_FLAG_INCL_VALID) { *sinI = (float)c->inclSin / 127.0f; return 1; }
+    if ((c->fieldDir[0] || c->fieldDir[1] || c->fieldDir[2]) && (c->gravDir[0] || c->gravDir[1] || c->gravDir[2]))
+    {
+        *sinI = ((float)c->fieldDir[0] * c->gravDir[0] + (float)c->fieldDir[1] * c->gravDir[1] + (float)c->fieldDir[2] * c->gravDir[2]) / (127.0f * 127.0f);
+        return 1;
+    }
+    return 0;
+}
+
 /** Why the calibration is not advancing, as a short phrase (empty when there is nothing to say). */
 static inline const char *magCalReasonText(unsigned reason)
 {

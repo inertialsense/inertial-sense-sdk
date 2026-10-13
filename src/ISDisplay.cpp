@@ -1550,11 +1550,10 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
 
     // The ring this pose sweeps (cells marked '*' that the turn will fill): needs the inclination, which is the angle between field and floor
     bool ringOn = false; float poseUnit[3] = { 0, 0, 0 }, ringLo = 0, ringHi = 0;
-    if (haveGuide && (cov.fieldDir[0] || cov.fieldDir[1] || cov.fieldDir[2]) && (cov.gravDir[0] || cov.gravDir[1] || cov.gravDir[2]))
+    float sinI = 0.0f;
+    if (haveGuide && magCalSinI(&cov, &sinI))
     {
-        float f[3], gr[3];
-        for (int k = 0; k < 3; k++) { f[k] = cov.fieldDir[k] / 127.0f; gr[k] = cov.gravDir[k] / 127.0f; poseUnit[k] = cov.poseDir[k] / 127.0f; }
-        float sinI = f[0] * gr[0] + f[1] * gr[1] + f[2] * gr[2];
+        for (int k = 0; k < 3; k++) poseUnit[k] = cov.poseDir[k] / 127.0f;
         magCalRingBounds(sinI, (float)MAG_CAL_POSE_RING_HALF_DEG, &ringLo, &ringHi); ringOn = true;
     }
     unsigned nowCell = 0xFFFF;      // where the field is pointing now (sensor frame), if known

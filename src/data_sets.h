@@ -2421,6 +2421,7 @@ enum eMagCalCoverageFlags
     MAG_CAL_FLAG_FIELD_STEADY   = 0x08, //!< Field currently passes the stationary-field test
     MAG_CAL_FLAG_QUALITY_HELD   = 0x10, //!< The quality verdict is being held: the device is turning too fast for it to be evaluated reliably
     MAG_CAL_FLAG_GRAVITY_VALID  = 0x20, //!< gravDir is meaningful (the accelerometer reads about 1 g)
+    MAG_CAL_FLAG_INCL_VALID     = 0x40, //!< inclSin is meaningful (enough samples have been seen to estimate the inclination)
 };
 
 /** @brief mag_cal_coverage_t.guidePhase */
@@ -2454,7 +2455,7 @@ typedef struct PACKED
     uint8_t                     poseErrDeg;     //!< (deg) Angle between the floor direction and poseDir: how far still to tilt (0..180)
     uint8_t                     ringPct;        //!< (%) Share of the field-direction ring that this pose sweeps which is already covered (0..100). Reaches 100 when the turn is complete
     int8_t                      gravDir[3];     //!< Direction of the FLOOR in the sensor frame (unit vector x127), from the accelerometer. A host can draw it as the arrow that should line up with poseDir
-    uint8_t                     reserved2;
+    int8_t                      inclSin;        //!< sin(inclination) x127: the firmware's own running estimate of field . floor, which sizes the pose ring. Valid when MAG_CAL_FLAG_INCL_VALID is set
     uint8_t                     reserved3[2];
     uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
