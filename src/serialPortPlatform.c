@@ -625,7 +625,8 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         return 0;
     }
 
-    // Assert DTR explicitly; a non-blocking open does not guarantee it, and close drops it (see serialPortClosePlatform())
+    // Assert DTR explicitly rather than relying on the driver's open behaviour, since close drops it
+    // (see serialPortClosePlatform())
     int dtr = TIOCM_DTR;
     ioctl(fd, TIOCMBIS, &dtr);
 
