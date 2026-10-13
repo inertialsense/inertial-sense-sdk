@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sstream>
 #include <iomanip>
 #include <math.h>
+#include <algorithm>
 #include <cstdlib>
 
 #include "DataCSV.h"
@@ -1524,31 +1525,43 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
-    static const char *reason[]    = { "-", "rotate faster", "rotate about vertical axis", "field unsteady/interference", "region full: rotate toward suggested direction",
+    static const char *reason[]    = { "", "rotate faster", "rotate about the vertical axis", "field unsteady / interference", "area full: rotate toward the suggested direction",
                                        "fit rejected", "norm check failed", "mode unsupported" };
     static const char *quality[]   = { "none", "poor", "degraded", "good" };
     const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "  %s%s  progress %3u%%  coverage %3u%%  quality %s (Tcal %.1f)  samples %u",
+    // Fixed three-line layout (status, detail, instruction). Every line is kept under 80 columns so none can wrap: a wrapped line
+    // changes the line count and makes an in-place redraw jump.
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %s%s  progress %u%%  coverage %u%%",
         cov.lifecycle < 7 ? lifecycle[cov.lifecycle] : "?",
         cov.mode == MAG_CAL_STATE_MULTI_AXIS ? " multi-axis" : (cov.mode == MAG_CAL_STATE_SINGLE_AXIS ? " single-axis" : ""),
-        cov.progressPct, cov.coveragePct, qualityStr, cov.fitQuality, cov.sampleCount);
-    if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8)
+        cov.progressPct, cov.coveragePct);
+    char detail[64];
+    SNPRINTF(detail, sizeof(detail), "quality %s  Tcal %.1f  samples %u", qualityStr, cov.fitQuality, cov.sampleCount);
+
+    // Instruction text, built with a clamped append (snprintf returns the length it WOULD have written, not what fit)
+    char instr[160] = "";
+    size_t il = 0;
+    auto append = [&](const char *sep, const char *fmt, float a, float b, float c, const char *str)
     {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  [%s]", reason[cov.reason]);
-    }
+        if (il >= sizeof(instr) - 1) return;
+        int n = SNPRINTF(instr + il, sizeof(instr) - il, "%s", il ? sep : "");
+        if (n > 0) il = std::min(sizeof(instr) - 1, il + (size_t)n);
+        n = str ? SNPRINTF(instr + il, sizeof(instr) - il, fmt, str) : SNPRINTF(instr + il, sizeof(instr) - il, fmt, a, b, c);
+        if (n > 0) il = std::min(sizeof(instr) - 1, il + (size_t)n);
+    };
+    if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8) append("; ", "%s", 0, 0, 0, reason[cov.reason]);
     if (cov.suggestDir[0] || cov.suggestDir[1] || cov.suggestDir[2])
-    {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  rotate toward body (%.2f, %.2f, %.2f)", cov.suggestDir[0] / 127.0f, cov.suggestDir[1] / 127.0f, cov.suggestDir[2] / 127.0f);
-    }
-    if (!(cov.flags & MAG_CAL_FLAG_COVERAGE_VALID))
-    {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  (coverage map unknown)");
-    }
+        append("; ", "aim field toward (%.2f, %.2f, %.2f)", cov.suggestDir[0] / 127.0f, cov.suggestDir[1] / 127.0f, cov.suggestDir[2] / 127.0f, nullptr);
+    if (!(cov.flags & MAG_CAL_FLAG_COVERAGE_VALID)) append("; ", "coverage map unknown", 0, 0, 0, nullptr);
+    if (il > 74) { instr[74] = 0; il = 74; }   // never wider than the line it sits on
 
     if (m_displayMode == DMODE_PRETTY)
-    {   // Map: rows = latitude band (top = +Z/up in sensor frame), columns = longitude sector (atan2(y,x) from -180 to +180 deg)
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n        lon:  -180                0                +180   (sensor frame; '.' missing  ':' thin  'o' ok  'O' good  '#' full  '-' not required)\n");
+    {   // Map: rows = latitude band (top = +Z in the sensor frame), columns = longitude sector (atan2(y,x), -180 to +180 deg)
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  %-76s\n", detail);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  > %-74s\n", instr);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  . missing  : thin  o ok  O good  # full  - not needed   (sensor frame)\n");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  lon:      -180             0            +180\n");
         for (int z = MAG_CAL_CELL_Z_BANDS - 1; z >= 0; z--)
         {
             float zc = ((z + 0.5f) * (2.0f / MAG_CAL_CELL_Z_BANDS)) - 1.0f;
@@ -1561,9 +1574,11 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
         }
     }
-    else if (m_displayMode != DMODE_SCROLL)
+    else
     {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  %s", detail);
+        if (instr[0]) ptr += SNPRINTF(ptr, ptrEnd - ptr, "  [%s]", instr);
+        if (m_displayMode != DMODE_SCROLL) ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
     *ptr = 0;
     return buf;

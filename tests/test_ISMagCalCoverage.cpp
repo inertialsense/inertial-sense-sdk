@@ -164,7 +164,24 @@ TEST(MagCalCoverage, DisplayShowsLifecycleReasonAndMap)
     EXPECT_NE(s.find("fit rejected"), std::string::npos);
     EXPECT_NE(s.find("99%"), std::string::npos);
     EXPECT_NE(s.find(": o O #"), std::string::npos) << s;           // cells 0..3 glyphs: thin, ok, good, full
-    EXPECT_EQ(std::count(s.begin(), s.end(), '\n'), 1 + MAG_CAL_CELL_Z_BANDS + 1);   // summary + header + 8 rows
+    // Constant layout: status, instruction, legend, longitude header, then one row per latitude band
+    const int expectedLines = 1 + 1 + 1 + 1 + 1 + MAG_CAL_CELL_Z_BANDS;   // status, detail, instruction, legend, lon header, rows
+    EXPECT_EQ(std::count(s.begin(), s.end(), '\n'), expectedLines) << s;
+    // No line may be long enough to wrap on an ordinary terminal: a wrapped line changes the line count and the screen jumps
+    size_t start = 0; int lineNo = 0;
+    while (start < s.size()) { size_t nl = s.find('\n', start); if (nl == std::string::npos) nl = s.size(); EXPECT_LE(nl - start, 80u) << "line " << lineNo << " is " << (nl - start) << " columns"; start = nl + 1; lineNo++; }
+}
+
+TEST(MagCalCoverage, DisplayLineCountDoesNotDependOnTheContent)
+{   // The TUI redraws in place; a different number of lines per update is what made the screen "jump".
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    mag_cal_coverage_t quiet = blank();
+    mag_cal_coverage_t busy = blank(); magCalRequireAll(&busy);
+    busy.lifecycle = MAG_CAL_LC_FITTING; busy.mode = MAG_CAL_STATE_MULTI_AXIS; busy.reason = MAG_CAL_REASON_REGION_FULL; busy.sampleCount = 4000000000u; busy.progressPct = 99; busy.coveragePct = 100;
+    busy.fitQuality = 123456.7f; busy.suggestDir[0] = -127; busy.suggestDir[1] = 127; busy.suggestDir[2] = -127; busy.flags = 0;
+    auto lines = [&](const mag_cal_coverage_t &c) { std::string s = d.DataToStringMagCalCoverage(c, hdr); return (int)std::count(s.begin(), s.end(), '\n'); };
+    EXPECT_EQ(lines(quiet), lines(busy));
 }
 
 } // namespace
