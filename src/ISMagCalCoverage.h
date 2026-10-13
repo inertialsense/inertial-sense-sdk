@@ -14,6 +14,7 @@
 #ifndef IS_MAG_CAL_COVERAGE_H
 #define IS_MAG_CAL_COVERAGE_H
 
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
@@ -248,6 +249,55 @@ static inline int magCalChimeCount(const mag_cal_coverage_t &prev, bool prevVali
     if (cur.guidePhase == MAG_CAL_PHASE_NONE) return 0;
     const bool samePose = prev.poseDir[0] == cur.poseDir[0] && prev.poseDir[1] == cur.poseDir[1] && prev.poseDir[2] == cur.poseDir[2];
     return (prev.guidePhase != cur.guidePhase || !samePose) ? 1 : 0;
+}
+
+/** Why the calibration is not advancing, as a short phrase (empty when there is nothing to say). */
+static inline const char *magCalReasonText(unsigned reason)
+{
+    static const char *t[] = { "", "rotate faster", "turn about the vertical axis", "field unsteady / interference", "area full",
+                               "fit not accepted yet", "norm check not passed yet", "mode unsupported" };
+    return reason < 8 ? t[reason] : "";
+}
+
+static inline void magCalAppend(char *buf, size_t cap, size_t *len, const char *sep, const char *str)
+{   // clamped append: snprintf returns the length it WOULD have written, not what fit
+    if (*len >= cap - 1) return;
+    if (*len) { size_t n = strlen(sep); if (n > cap - 1 - *len) n = cap - 1 - *len; memcpy(buf + *len, sep, n); *len += n; }
+    size_t n = strlen(str); if (n > cap - 1 - *len) n = cap - 1 - *len; memcpy(buf + *len, str, n); *len += n; buf[*len] = 0;
+}
+
+/** True when the status carries pose guidance (aim at / turn about the floor). */
+static inline int magCalHaveGuide(const mag_cal_coverage_t *c)
+{
+    return (c->guidePhase == MAG_CAL_PHASE_AIM || c->guidePhase == MAG_CAL_PHASE_TURN) && (c->poseDir[0] || c->poseDir[1] || c->poseDir[2]);
+}
+
+/** The one-line instruction shown to the user by every front end (cltool, EvalTool): same words everywhere. */
+static inline void magCalInstruction(const mag_cal_coverage_t *cov, char *out, size_t cap)
+{
+    size_t il = 0; char tmp[120]; out[0] = 0;
+    const int fitProblem = (cov->reason == MAG_CAL_REASON_FIT_REJECTED || cov->reason == MAG_CAL_REASON_NORM_CHECK);
+    const int haveGuide = magCalHaveGuide(cov);
+    if (cov->reason != MAG_CAL_REASON_NONE && cov->reason < 8 && cov->reason != MAG_CAL_REASON_REGION_FULL)
+    {
+        if (fitProblem && !haveGuide) { snprintf(tmp, sizeof(tmp), "%s - the map is complete, more rotation will not help", magCalReasonText(cov->reason)); magCalAppend(out, cap, &il, "; ", tmp); }   // only when nothing is left to cover
+        else magCalAppend(out, cap, &il, "; ", magCalReasonText(cov->reason));
+    }
+    if (haveGuide)
+    {   // Pose guidance relative to the FLOOR: easy to judge by eye. Shown even while a fit is being retried: gaps still help.
+        char pose[24];
+        magCalPoseName(cov->poseDir, pose, sizeof(pose));
+        if (cov->guidePhase == MAG_CAL_PHASE_AIM) snprintf(tmp, sizeof(tmp), "point the %s at the floor: %u deg to go", pose, (unsigned)cov->poseErrDeg);
+        else
+        {   // second step: shorter name ("+Y face"), and a picture people already know
+            char shortName[16]; int n = 0; for (; pose[n] && pose[n] != '(' && n < 15; n++) shortName[n] = pose[n]; while (n > 0 && shortName[n - 1] == ' ') n--; shortName[n] = 0;
+            snprintf(tmp, sizeof(tmp), "keep the %s down; turn slowly in place, like a turntable (ring %u%%)", shortName, (unsigned)cov->ringPct);
+        }
+        magCalAppend(out, cap, &il, "; ", tmp);
+    }
+    else if (!fitProblem && cov->lifecycle == MAG_CAL_LC_COLLECTING && cov->mode == MAG_CAL_STATE_SINGLE_AXIS && cov->reason == MAG_CAL_REASON_NONE)
+        magCalAppend(out, cap, &il, "; ", "keep turning about the vertical axis");
+    if (!(cov->flags & MAG_CAL_FLAG_COVERAGE_VALID)) magCalAppend(out, cap, &il, "; ", "coverage map unknown");
 }
 
 #ifdef __cplusplus

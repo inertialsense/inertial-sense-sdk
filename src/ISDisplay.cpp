@@ -1528,8 +1528,6 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
-    static const char *reason[]    = { "", "rotate faster", "turn about the vertical axis", "field unsteady / interference", "area full",
-                                       "fit not accepted yet", "norm check not passed yet", "mode unsupported" };
     static const char *quality[]   = { "none", "poor", "degraded", "good" };
     const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
 
@@ -1544,40 +1542,11 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s%s  Tcal %.1f  samples %u%s%s", cov.coveragePct, qualityStr, (cov.flags & MAG_CAL_FLAG_QUALITY_HELD) ? " (held: turning fast)" : "", cov.fitQuality, cov.sampleCount,
         (cov.fitStage && cov.fitStage < 10 && cov.lifecycle == MAG_CAL_LC_FITTING) ? "  fit: " : "", (cov.fitStage && cov.fitStage < 10 && cov.lifecycle == MAG_CAL_LC_FITTING) ? fitStageName[cov.fitStage] : "");
 
-    // Instruction text, built with a clamped append (snprintf returns the length it WOULD have written, not what fit)
+    // Instruction text: shared with EvalTool so every front end says the same thing
     char instr[160] = "";
-    size_t il = 0;
-    auto append = [&](const char *sep, const char *fmt, float a, float b, float c, const char *str)
-    {
-        if (il >= sizeof(instr) - 1) return;
-        int n = SNPRINTF(instr + il, sizeof(instr) - il, "%s", il ? sep : "");
-        if (n > 0) il = std::min(sizeof(instr) - 1, il + (size_t)n);
-        n = str ? SNPRINTF(instr + il, sizeof(instr) - il, fmt, str) : SNPRINTF(instr + il, sizeof(instr) - il, fmt, a, b, c);
-        if (n > 0) il = std::min(sizeof(instr) - 1, il + (size_t)n);
-    };
-    const bool fitProblem = (cov.reason == MAG_CAL_REASON_FIT_REJECTED || cov.reason == MAG_CAL_REASON_NORM_CHECK);
-    const bool haveGuide = (cov.guidePhase == MAG_CAL_PHASE_AIM || cov.guidePhase == MAG_CAL_PHASE_TURN) && (cov.poseDir[0] || cov.poseDir[1] || cov.poseDir[2]);
-    if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8 && cov.reason != MAG_CAL_REASON_REGION_FULL)
-    {
-        if (fitProblem && !haveGuide) append("; ", "%s - the map is complete, more rotation will not help", 0, 0, 0, reason[cov.reason]);   // only when nothing is left to cover
-        else                          append("; ", "%s", 0, 0, 0, reason[cov.reason]);
-    }
-    if (haveGuide)
-    {   // Pose guidance relative to the FLOOR: easy to judge by eye. Shown even while a fit is being retried: gaps still help.
-        char pose[24], g[80];
-        magCalPoseName(cov.poseDir, pose, sizeof(pose));
-        if (cov.guidePhase == MAG_CAL_PHASE_AIM) SNPRINTF(g, sizeof(g), "point the %s at the floor: %u deg to go", pose, cov.poseErrDeg);
-        else
-        {   // second step: shorter name ("+Y face"), and a picture people already know
-            char shortName[16]; int n = 0; for (; pose[n] && pose[n] != '(' && n < 15; n++) shortName[n] = pose[n]; while (n > 0 && shortName[n - 1] == ' ') n--; shortName[n] = 0;
-            SNPRINTF(g, sizeof(g), "keep the %s down; turn slowly in place, like a turntable (ring %u%%)", shortName, cov.ringPct);
-        }
-        append("; ", "%s", 0, 0, 0, g);
-    }
-    else if (!fitProblem && cov.lifecycle == MAG_CAL_LC_COLLECTING && cov.mode == MAG_CAL_STATE_SINGLE_AXIS && cov.reason == MAG_CAL_REASON_NONE)
-        append("; ", "%s", 0, 0, 0, "keep turning about the vertical axis");
-    if (!(cov.flags & MAG_CAL_FLAG_COVERAGE_VALID)) append("; ", "coverage map unknown", 0, 0, 0, nullptr);
-    if (il > 74) { instr[74] = 0; il = 74; }   // never wider than the line it sits on
+    magCalInstruction(&cov, instr, sizeof(instr));
+    const bool haveGuide = magCalHaveGuide(&cov) != 0;
+    if (strlen(instr) > 74) instr[74] = 0;   // never wider than the line it sits on
 
     // The ring this pose sweeps (cells marked '*' that the turn will fill): needs the inclination, which is the angle between field and floor
     bool ringOn = false; float poseUnit[3] = { 0, 0, 0 }, ringLo = 0, ringHi = 0;
