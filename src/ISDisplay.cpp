@@ -1526,7 +1526,7 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
     static const char *reason[]    = { "", "rotate faster", "rotate about the vertical axis", "field unsteady / interference", "area full: rotate toward the suggested direction",
-                                       "fit rejected", "norm check failed", "mode unsupported" };
+                                       "fit rejected - coverage complete, more rotation will not help", "norm check failed - coverage complete, more rotation will not help", "mode unsupported" };
     static const char *quality[]   = { "none", "poor", "degraded", "good" };
     const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
 
