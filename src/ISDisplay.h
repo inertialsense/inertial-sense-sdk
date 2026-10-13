@@ -309,6 +309,7 @@ public:
      * @return a formatted, human-readable string describing mag
      */
     std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
+    std::string DataToStringMagCalCoverage(const mag_cal_coverage_t &cov, const p_data_hdr_t& hdr);
 
     /**
      * @param ver the GNSS receiver version data set to format

@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISUtilities.h"
 #include "ISDisplay.h"
+#include "ISMagCalCoverage.h"
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "ISDevice.h"
@@ -903,6 +904,7 @@ std::string cInertialSenseDisplay::DataToString(const p_data_t* data)
         case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);             break;
         case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);           break;
         case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);              break;
+        case DID_MAG_CAL_COVERAGE:  str = DataToStringMagCalCoverage(d.magCalCoverage, data->hdr);  break;
         case DID_GNSS1_VERSION:      // FALL THROUGH
         case DID_GNSS2_VERSION:      str = DataToStringGnssVersion(d.gnssVer, data->hdr);       break;
         case DID_GNSS1_POS:          // FALL THROUGH
@@ -1500,6 +1502,70 @@ std::string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, cons
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
 
+    return buf;
+}
+
+/** Single glyph for a coverage cell: '.' empty, ':' thin, 'o' covered, 'O' well covered, '#' saturated, '-' empty but not required. */
+static char magCalCellGlyph(const mag_cal_coverage_t &cov, unsigned cell)
+{
+    unsigned n = magCalCellGet(&cov, cell);
+    if (n == 0)                             return magCalCellRequired(&cov, cell) ? '.' : '-';
+    if (n < MAG_CAL_COVERAGE_MIN_COUNT)     return ':';
+    if (n < 6)                              return 'o';
+    if (n < MAG_CAL_CELL_SATURATED)         return 'O';
+    return '#';
+}
+
+std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_coverage_t &cov, const p_data_hdr_t& hdr)
+{
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    ptr += SNPRINTF_ID_NAME(hdr.id);
+
+    static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
+    static const char *reason[]    = { "-", "rotate faster", "rotate about vertical axis", "field unsteady/interference", "region full: rotate toward suggested direction",
+                                       "fit rejected", "norm check failed", "mode unsupported" };
+    static const char *quality[]   = { "none", "poor", "degraded", "good" };
+    const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "  %s%s  progress %3u%%  coverage %3u%%  quality %s (Tcal %.1f)  samples %u",
+        cov.lifecycle < 7 ? lifecycle[cov.lifecycle] : "?",
+        cov.mode == MAG_CAL_STATE_MULTI_AXIS ? " multi-axis" : (cov.mode == MAG_CAL_STATE_SINGLE_AXIS ? " single-axis" : ""),
+        cov.progressPct, cov.coveragePct, qualityStr, cov.fitQuality, cov.sampleCount);
+    if (cov.reason != MAG_CAL_REASON_NONE && cov.reason < 8)
+    {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  [%s]", reason[cov.reason]);
+    }
+    if (cov.suggestDir[0] || cov.suggestDir[1] || cov.suggestDir[2])
+    {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  rotate toward body (%.2f, %.2f, %.2f)", cov.suggestDir[0] / 127.0f, cov.suggestDir[1] / 127.0f, cov.suggestDir[2] / 127.0f);
+    }
+    if (!(cov.flags & MAG_CAL_FLAG_COVERAGE_VALID))
+    {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  (coverage map unknown)");
+    }
+
+    if (m_displayMode == DMODE_PRETTY)
+    {   // Map: rows = latitude band (top = +Z/up in sensor frame), columns = longitude sector (atan2(y,x) from -180 to +180 deg)
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n        lon:  -180                0                +180   (sensor frame; '.' missing  ':' thin  'o' ok  'O' good  '#' full  '-' not required)\n");
+        for (int z = MAG_CAL_CELL_Z_BANDS - 1; z >= 0; z--)
+        {
+            float zc = ((z + 0.5f) * (2.0f / MAG_CAL_CELL_Z_BANDS)) - 1.0f;
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "   z %+5.2f  ", zc);
+            for (int l = 0; l < MAG_CAL_CELL_LON_SECTORS && ptr < ptrEnd - 4; l++)
+            {
+                *ptr++ = magCalCellGlyph(cov, z * MAG_CAL_CELL_LON_SECTORS + l);
+                *ptr++ = ' ';
+            }
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+        }
+    }
+    else if (m_displayMode != DMODE_SCROLL)
+    {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    }
+    *ptr = 0;
     return buf;
 }
 

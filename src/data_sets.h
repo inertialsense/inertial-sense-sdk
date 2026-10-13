@@ -184,6 +184,8 @@ typedef uint32_t eDataIDs;
 // covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
 // under SN-7740. The flat DIDs above are the initial subset; see SN-7740 before adding more.
 
+#define DID_MAG_CAL_COVERAGE            (eDataIDs)113   /**< (mag_cal_coverage_t) Magnetometer calibration lifecycle, quality and sensor-frame sample coverage map. Read-only; supersedes DID_MAG_CAL.progress for monitoring a recalibration. */
+
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
 #define DID_GPX_FIRST                   (eDataIDs)120   /**< First of GPX DIDs */
@@ -2360,10 +2362,87 @@ typedef struct PACKED
 {
     uint32_t                    state;          //!< Mag recalibration command/status.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState)
 
-    float                       progress;       //!< (%) Mag recalibration progress indicator: 0-100
+    float                       progress;       //!< (%) Mag recalibration progress indicator: 0-100. Derived from DID_MAG_CAL_COVERAGE.progressPct: reaches 100 only once the calibration has been applied (state 201).
 
     float                       declination;    //!< (rad) Magnetic declination estimate
 } mag_cal_t;
+
+/** @brief Number of equal-area cells in the magnetometer coverage map, and the layout of those cells (mag_cal_coverage_t.cellScheme). */
+enum eMagCalCellScheme
+{
+    MAG_CAL_CELLS_8Z_16LON      = 0,    //!< 128 equal-area cells: 8 bands of equal sin(latitude) width x 16 longitude sectors. Index = z_band*16 + lon_sector, see ISMagCalCoverage.h
+};
+#define MAG_CAL_CELL_COUNT          128     //!< Cells in the coverage map (MAG_CAL_CELLS_8Z_16LON)
+#define MAG_CAL_CELL_Z_BANDS        8       //!< Latitude bands (equal sin(lat) width, so every cell has the same solid angle)
+#define MAG_CAL_CELL_LON_SECTORS    16      //!< Longitude sectors per band
+#define MAG_CAL_CELL_SATURATED      15      //!< Per-cell sample counts are 4-bit and saturate at this value
+
+/** @brief Magnetometer calibration lifecycle (mag_cal_coverage_t.lifecycle). Status only; commands are still written to DID_MAG_CAL.state. */
+enum eMagCalLifecycle
+{
+    MAG_CAL_LC_NOT_CALIBRATED   = 0,    //!< No valid calibration and none running
+    MAG_CAL_LC_COLLECTING       = 1,    //!< Recalibration running, gathering samples
+    MAG_CAL_LC_FITTING          = 2,    //!< Required coverage reached; fit attempted but not yet accepted (see reason)
+    MAG_CAL_LC_COMPLETE         = 3,    //!< Fit accepted and applied. The only lifecycle in which progressPct may be 100
+    MAG_CAL_LC_ABORTED          = 4,    //!< Aborted by the host; the previous calibration was restored
+    MAG_CAL_LC_NOT_SUPPORTED    = 5,    //!< Requested mode is not supported by the current configuration
+    MAG_CAL_LC_CALIBRATED       = 6,    //!< Idle with a valid calibration (loaded from flash, or completed earlier)
+};
+
+/** @brief Why a recalibration is not advancing or the fit was not accepted (mag_cal_coverage_t.reason). One reason, highest priority first. */
+enum eMagCalReason
+{
+    MAG_CAL_REASON_NONE             = 0,
+    MAG_CAL_REASON_ROTATION_SLOW    = 1,    //!< Angular rate below the calibration minimum
+    MAG_CAL_REASON_WRONG_AXIS       = 2,    //!< Single-axis: not rotating about the vertical axis
+    MAG_CAL_REASON_FIELD_UNSTEADY   = 3,    //!< Interference or non-stationary field
+    MAG_CAL_REASON_REGION_FULL      = 4,    //!< Samples falling in already-saturated cells; rotate toward suggestDir
+    MAG_CAL_REASON_FIT_REJECTED     = 5,    //!< Least-squares fit failed (singular, not an ellipsoid, or not converged)
+    MAG_CAL_REASON_NORM_CHECK       = 6,    //!< Fit produced, but the calibrated field magnitude was out of tolerance
+    MAG_CAL_REASON_MODE_UNSUPPORTED = 7,    //!< Requested recalibration mode is not supported
+};
+
+/** @brief Quality of the current calibration (mag_cal_coverage_t.quality), derived from fitQuality (Tcal) against DID_FLASH_CONFIG.magCalibrationQualityThreshold. */
+enum eMagCalQuality
+{
+    MAG_CAL_QUALITY_NONE        = 0,    //!< No calibration
+    MAG_CAL_QUALITY_POOR        = 1,    //!< Tcal >= threshold, or calibration not good
+    MAG_CAL_QUALITY_DEGRADED    = 2,    //!< Between the low and high thresholds
+    MAG_CAL_QUALITY_GOOD        = 3,    //!< Tcal <= low threshold
+    MAG_CAL_QUALITY_UNKNOWN     = 255,  //!< Not yet evaluated (e.g. just booted and buffers still filling)
+};
+
+/** @brief mag_cal_coverage_t.flags */
+enum eMagCalCoverageFlags
+{
+    MAG_CAL_FLAG_COVERAGE_VALID = 0x01, //!< cells[] describe the samples behind the current calibration. Clear when the map is unknown (e.g. calibration restored from an older firmware's flash).
+    MAG_CAL_FLAG_REQUIRED_VALID = 0x02, //!< required[] is meaningful; if clear, treat every cell as required
+    MAG_CAL_FLAG_AUTO_RECAL     = 0x04, //!< Recalibration was started automatically rather than by the host
+    MAG_CAL_FLAG_FIELD_STEADY   = 0x08, //!< Field currently passes the stationary-field test
+};
+
+/** @brief (DID_MAG_CAL_COVERAGE) Magnetometer calibration status and sample coverage. Read-only.
+ *  Cells are in the SENSOR (body) frame: each cell is a direction of the measured field vector. A host that wants an attitude- or
+ *  world-referenced view rotates the cells using the INS attitude, so no additional data is needed on the wire. */
+typedef struct PACKED
+{
+    uint32_t                    timeOfWeekMs;   //!< (ms) GPS time of week
+    uint8_t                     cellScheme;     //!< Cell layout (eMagCalCellScheme)
+    uint8_t                     lifecycle;      //!< (eMagCalLifecycle)
+    uint8_t                     mode;           //!< Mode that started the recalibration: MAG_CAL_STATE_MULTI_AXIS (1) or MAG_CAL_STATE_SINGLE_AXIS (2)
+    uint8_t                     reason;         //!< Why not advancing / fit not accepted (eMagCalReason)
+    uint8_t                     quality;        //!< Quality of the current calibration (eMagCalQuality)
+    uint8_t                     progressPct;    //!< (%) 0-100 of REQUIRED coverage. Capped at 99 until lifecycle == MAG_CAL_LC_COMPLETE
+    uint8_t                     coveragePct;    //!< (%) 0-100 of ALL cells holding at least MAG_CAL_COVERAGE_MIN_COUNT samples (informational)
+    uint8_t                     flags;          //!< (eMagCalCoverageFlags)
+    float                       fitQuality;     //!< Calibration quality metric Tcal (lower is better); compare with DID_FLASH_CONFIG.magCalibrationQualityThreshold
+    uint32_t                    sampleCount;    //!< Samples in the least-squares accumulator
+    int8_t                      suggestDir[3];  //!< Body-frame unit vector x127 toward the largest missing required region. 0,0,0 when none
+    uint8_t                     reserved;
+    uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
+    uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
+} mag_cal_coverage_t;
+#define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
 
 /** @brief (DID_INL2_MAG_OBS_INFO) INL2 magnetometer observer diagnostic/calibration info. Reports the internal state of the online magnetometer bias/cross-axis calibration and heading-innovation gating used by the INL2 EKF to accept or reject magnetometer updates. */
 typedef struct PACKED
@@ -5383,6 +5462,7 @@ typedef union PACKED
     imus_t                          imus;           //!< DID_IMUS / DID_IMUS_RAW / DID_IMUS_UNCAL
     magnetometer_t                  mag;            //!< DID_MAGNETOMETER / DID_REFERENCE_MAGNETOMETER
     mag_cal_t                       magCal;         //!< DID_MAG_CAL
+    mag_cal_coverage_t              magCalCoverage; //!< DID_MAG_CAL_COVERAGE
     barometer_t                     baro;           //!< DID_BAROMETER
     wheel_encoder_t                 wheelEncoder;   //!< DID_WHEEL_ENCODER
     ground_vehicle_t                groundVehicle;  //!< DID_GROUND_VEHICLE
