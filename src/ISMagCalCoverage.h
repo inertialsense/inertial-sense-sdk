@@ -58,26 +58,34 @@ static inline void magCalCellCenter(unsigned index, float out[3])
     out[0] = r * cosf(lon); out[1] = r * sinf(lon); out[2] = z;
 }
 
-/** Sample count (0..MAG_CAL_CELL_SATURATED) held in a cell. */
-static inline unsigned magCalCellGet(const mag_cal_coverage_t *m, unsigned i)
+/** Raw 4-bit cell accessors on a MAG_CAL_CELL_COUNT/2 byte array (firmware keeps just the cells, not a whole mag_cal_coverage_t). */
+static inline unsigned magCalCellsGet(const uint8_t *cells, unsigned i)
 {
-    return (m->cells[i >> 1] >> ((i & 1u) << 2)) & 0xFu;
+    return (cells[i >> 1] >> ((i & 1u) << 2)) & 0xFu;
 }
 
-/** Set a cell's count (clamped to the 4-bit range). */
-static inline void magCalCellSet(mag_cal_coverage_t *m, unsigned i, unsigned count)
+static inline void magCalCellsSet(uint8_t *cells, unsigned i, unsigned count)
 {
     if (count > MAG_CAL_CELL_SATURATED) count = MAG_CAL_CELL_SATURATED;
     unsigned shift = (i & 1u) << 2;
-    m->cells[i >> 1] = (uint8_t)((m->cells[i >> 1] & ~(0xFu << shift)) | (count << shift));
+    cells[i >> 1] = (uint8_t)((cells[i >> 1] & ~(0xFu << shift)) | (count << shift));
 }
 
 /** Add one sample to a cell (saturating). */
-static inline void magCalCellAdd(mag_cal_coverage_t *m, unsigned i)
+static inline void magCalCellsAdd(uint8_t *cells, unsigned i)
 {
-    unsigned n = magCalCellGet(m, i);
-    if (n < MAG_CAL_CELL_SATURATED) magCalCellSet(m, i, n + 1);
+    unsigned n = magCalCellsGet(cells, i);
+    if (n < MAG_CAL_CELL_SATURATED) magCalCellsSet(cells, i, n + 1);
 }
+
+/** Sample count (0..MAG_CAL_CELL_SATURATED) held in a cell. */
+static inline unsigned magCalCellGet(const mag_cal_coverage_t *m, unsigned i) { return magCalCellsGet(m->cells, i); }
+
+/** Set a cell's count (clamped to the 4-bit range). */
+static inline void magCalCellSet(mag_cal_coverage_t *m, unsigned i, unsigned count) { magCalCellsSet(m->cells, i, count); }
+
+/** Add one sample to a cell (saturating). */
+static inline void magCalCellAdd(mag_cal_coverage_t *m, unsigned i) { magCalCellsAdd(m->cells, i); }
 
 /** Whether a cell is flagged as required for this calibration. */
 static inline int magCalCellRequired(const mag_cal_coverage_t *m, unsigned i)
