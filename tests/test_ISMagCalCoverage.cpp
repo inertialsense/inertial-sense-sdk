@@ -117,38 +117,7 @@ mag_cal_coverage_t full()
     for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&m, i, 15);
     return m;
 }
-int poseIndexOf(float x, float y, float z)
-{
-    float want[3] = { x, y, z }; float n = std::sqrt(x*x + y*y + z*z); for (int k = 0; k < 3; k++) want[k] /= n;
-    for (int p = 0; p < MAG_CAL_POSE_COUNT; p++) { float a[3]; magCalPoseDir(p, a); if (magCalAngleDeg(a, want) < 0.1f) return p; }
-    return -1;
-}
-
-TEST(MagCalPose, SixFacePosesAreDistinctUnitVectorsOnTheAxes)
-{
-    EXPECT_EQ(MAG_CAL_POSE_COUNT, 6);
-    for (int p = 0; p < MAG_CAL_POSE_COUNT; p++)
-    {
-        float a[3]; magCalPoseDir(p, a);
-        EXPECT_NEAR(a[0]*a[0] + a[1]*a[1] + a[2]*a[2], 1.0f, 1e-6f);
-        int nz = (std::fabs(a[0]) > 0.01f) + (std::fabs(a[1]) > 0.01f) + (std::fabs(a[2]) > 0.01f);
-        EXPECT_EQ(nz, 1) << "pose " << p << " must be a face (one axis), never an edge or corner: those need two faces equally low";
-        for (int q = p + 1; q < MAG_CAL_POSE_COUNT; q++) { float b[3]; magCalPoseDir(q, b); EXPECT_GT(magCalAngleDeg(a, b), 89.0f) << p << " and " << q; }   // faces are 90 or 180 deg apart
-    }
-}
-
-TEST(MagCalPose, PoseNamesAreWhatAPersonHoldingTheUnitWouldSay)
-{
-    char n[32]; int8_t d[3]; float a[3];
-    magCalPoseDir(poseIndexOf(0, 0, 1), a);  magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+Z face (bottom)");
-    magCalPoseDir(poseIndexOf(0, 0, -1), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-Z face (top)");
-    magCalPoseDir(poseIndexOf(1, 0, 0), a);  magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+X face (front)");
-    magCalPoseDir(poseIndexOf(-1, 0, 0), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-X face (rear)");
-    magCalPoseDir(poseIndexOf(0, 1, 0), a);  magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "+Y face (right side)");
-    magCalPoseDir(poseIndexOf(0, -1, 0), a); magCalPackUnit(a, d); magCalPoseName(d, n, sizeof(n)); EXPECT_STREQ(n, "-Y face (left side)");
-    int8_t zero[3] = { 0, 0, 0 }; magCalPoseName(zero, n, sizeof(n)); EXPECT_STREQ(n, "");
-    char tiny[4]; magCalPoseName(d, tiny, sizeof(tiny)); EXPECT_LT(std::strlen(tiny), sizeof(tiny));      // never overruns
-}
+float angleBetween(const float a[3], const float b[3]) { return magCalAngleDeg(a, b); }
 
 TEST(MagCalPose, CellCentresFromTablesMatchTheTrigonometricDefinition)
 {
@@ -194,46 +163,76 @@ TEST(MagCalPose, ACellTheCircleOnlyClipsIsNotPartOfTheRing)
     }
 }
 
-TEST(MagCalPose, ChoosesThePoseWhoseRingHoldsTheGaps)
+TEST(MagCalPose, ChoosesTheMarkerWhoseCircleHoldsTheGaps)
 {
-    // Field horizontal (sinI = 0): the ring of pose +X is the great circle x ~ 0. Open exactly those cells and nothing else.
+    // Field horizontal (sinI = 0): the circle about +X is the great circle x ~ 0. Open exactly those cells and nothing else.
     mag_cal_coverage_t m = full();
     float ax[3] = { 1, 0, 0 }; uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(ax, 0.0f, rm);
     for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&m, i, 0);
-    float g[3] = { 0, 0, 1 };
-    int p = magCalChoosePose(&m, g, 0.0f, -1);
-    ASSERT_GE(p, 0);
-    float a[3]; magCalPoseDir(p, a);
-    EXPECT_GT(std::fabs(a[0]), 0.9f) << "should pick +X or -X (same ring)";
-    EXPECT_EQ(magCalChoosePose(&m, g, 0.0f, p) == p, false) << "an excluded pose must not be returned";
+    float g[3] = { 0, 0, 1 }, a[3];
+    ASSERT_TRUE(magCalChoosePose(&m, g, 0.0f, nullptr, a));
+    EXPECT_GT(std::fabs(a[0]), 0.9f) << "should pick (close to) +X or -X: the same circle";
+    float again[3];
+    if (magCalChoosePose(&m, g, 0.0f, a, again)) EXPECT_GE(angleBetween(a, again), MAG_CAL_POSE_AVOID_DEG - 0.01f) << "a marker that was given up on is not chosen again";
+}
+
+TEST(MagCalPose, AnyDirectionIsAllowedNotJustTheSixFaces)
+{
+    // Open the cells of a circle about a diagonal direction: the best marker is that diagonal, which no face is anywhere near
+    mag_cal_coverage_t m = full();
+    float d[3] = { 0.577f, 0.577f, 0.577f }; const float sinI = 0.9f;
+    uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(d, sinI, rm);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&m, i, 0);
+    float g[3] = { 0, 0, 1 }, a[3];
+    ASSERT_TRUE(magCalChoosePose(&m, g, sinI, nullptr, a));
+    EXPECT_LT(angleBetween(a, d), 30.0f) << "the planner must be able to target a direction between the faces";
+    EXPECT_GT(angleBetween(a, g), 20.0f);
 }
 
 TEST(MagCalPose, NothingToDoWhenNothingIsMissing)
 {
-    mag_cal_coverage_t m = full(); float g[3] = { 0, 0, 1 };
-    EXPECT_EQ(magCalChoosePose(&m, g, 0.9f, -1), -1);
+    mag_cal_coverage_t m = full(); float g[3] = { 0, 0, 1 }, a[3];
+    EXPECT_FALSE(magCalChoosePose(&m, g, 0.9f, nullptr, a));
     mag_cal_coverage_t none = blank();                      // nothing required
-    EXPECT_EQ(magCalChoosePose(&none, g, 0.9f, -1), -1);
+    EXPECT_FALSE(magCalChoosePose(&none, g, 0.9f, nullptr, a));
 }
 
 TEST(MagCalPose, ARequiredMaskIsRespected)
 {
     mag_cal_coverage_t m = blank();                          // nothing covered, but only one cell is required
     magCalCellSetRequired(&m, 5 * 16 + 3, 1);
-    float g[3] = { 0, 0, 1 }, c[3]; magCalCellCenter(5 * 16 + 3, c);
-    int p = magCalChoosePose(&m, g, 0.5f, -1);
-    if (p >= 0) { float a[3]; magCalPoseDir(p, a); uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(a, 0.5f, rm); EXPECT_TRUE(magCalRingHas(rm, 5 * 16 + 3)) << "the chosen pose must actually sweep the one required cell"; }
+    float g[3] = { 0, 0, 1 }, a[3];
+    ASSERT_TRUE(magCalChoosePose(&m, g, 0.5f, nullptr, a));
+    uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(a, 0.5f, rm);
+    EXPECT_TRUE(magCalRingHas(rm, 5 * 16 + 3)) << "the chosen marker's circle must actually sweep the one required cell";
 }
 
-TEST(MagCalPose, NearerPoseBreaksATieButGainWins)
-{   // two identical rings (opposite poses +Z / -Z share the same great circle when the field is horizontal): the nearer one is chosen
+TEST(MagCalPose, WhereTheDeviceIsNowIsACandidateSoAnEmptyMapStartsRightThere)
+{
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);    // a fresh calibration: nothing collected yet
+    float g[3] = { 0.3f, -0.5f, 0.0f }; g[2] = std::sqrt(1 - g[0]*g[0] - g[1]*g[1]); float a[3];
+    ASSERT_TRUE(magCalChoosePose(&m, g, 0.9f, nullptr, a));
+    EXPECT_LT(angleBetween(a, g), 30.0f) << "the first turn should need little or no tilt: it is a single-axis turn about where the device already is";
+    // a circle the current attitude already sweeps is taken with no tilt at all
+    mag_cal_coverage_t open = full(); uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(g, 0.9f, rm);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&open, i, 0);
+    ASSERT_TRUE(magCalChoosePose(&open, g, 0.9f, nullptr, a));
+    EXPECT_LT(angleBetween(a, g), 1.0f);
+}
+
+TEST(MagCalPose, TheIncrementalScanGivesTheSameAnswerAsTheOneShotScan)
+{
     mag_cal_coverage_t m = full();
-    float az[3] = { 0, 0, 1 }; uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(az, 0.0f, rm);
-    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&m, i, 0);
-    float gDown[3] = { 0, 0, 1 }, gUp[3] = { 0, 0, -1 };
-    float a[3];
-    magCalPoseDir(magCalChoosePose(&m, gDown, 0.0f, -1), a); EXPECT_GT(a[2], 0.9f);
-    magCalPoseDir(magCalChoosePose(&m, gUp, 0.0f, -1), a);   EXPECT_LT(a[2], -0.9f);
+    float ax[3] = { 0.3f, 0.8f, 0.5f }; float n = std::sqrt(ax[0]*ax[0] + ax[1]*ax[1] + ax[2]*ax[2]); for (float &v : ax) v /= n;
+    uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(ax, 0.7f, rm);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&m, i, 1);
+    float g[3] = { 0, 0, 1 }, one[3];
+    ASSERT_TRUE(magCalChoosePose(&m, g, 0.7f, nullptr, one));
+    mag_cal_chooser_t c; magCalChooserStart(&c, nullptr); int calls = 0;
+    while (!magCalChooserStep(&m, g, 0.7f, &c, 6)) calls++;
+    ASSERT_TRUE(c.found);
+    EXPECT_LT(angleBetween(one, c.bestDir), 0.5f) << "same direction (acos rounding only)";
+    EXPECT_GT(calls, 10) << "the scan really is spread over many calls";
 }
 
 TEST(MagCalPose, UnitPackingRoundsAndClamps)
@@ -303,7 +302,7 @@ TEST(MagCalCoverage, DisplayShowsPoseGuidanceAndTheRingItFills)
 
     m.guidePhase = MAG_CAL_PHASE_AIM; m.poseErrDeg = 37;
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("point the +Z face (bottom) at the floor: 37 deg to go"), std::string::npos) << s;
+    EXPECT_NE(s.find("tilt the device until the marker points at the floor: 37 deg to go"), std::string::npos) << s;
     // the empty ring is drawn with '*' (32 cells of it, plus the one in the legend), and the field-now marker is '@' (plus the legend)
     float nowDir[3] = { 1, 0, 0 }; unsigned nowCell = magCalCellIndex(nowDir);
     EXPECT_EQ(std::count(s.begin(), s.end(), '*'), ringCells - (magCalRingHas(ringMask, nowCell) ? 1 : 0) + 1) << s;      // the "now" cell shows as '@' instead (plus the legend's '*')
@@ -311,7 +310,7 @@ TEST(MagCalCoverage, DisplayShowsPoseGuidanceAndTheRingItFills)
 
     m.guidePhase = MAG_CAL_PHASE_TURN; m.ringPct = 40;
     s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("keep the +Z face down; turn slowly in place, like a turntable (ring 40%)"), std::string::npos) << s;
+    EXPECT_NE(s.find("keep the marker down; turn slowly in place, like a turntable (turn 40%)"), std::string::npos) << s;
 
     // A fit that has not been accepted yet does not stop the guidance while gaps remain
     m.lifecycle = MAG_CAL_LC_FITTING; m.reason = MAG_CAL_REASON_FIT_REJECTED;
@@ -335,7 +334,7 @@ TEST(MagCalCoverage, FitNotYetAcceptedStillShowsGuidanceWhileGapsRemain)
     p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
     cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
-    EXPECT_NE(s.find("point the +X face (front) at the floor"), std::string::npos) << s;
+    EXPECT_NE(s.find("until the marker points at the floor"), std::string::npos) << s;
     EXPECT_NE(s.find("fit not accepted yet"), std::string::npos) << s;
     EXPECT_EQ(s.find("will not help"), std::string::npos) << "gaps remain: more rotation DOES help\n" << s;
     m.guidePhase = MAG_CAL_PHASE_NONE; memset(m.poseDir, 0, 3); m.coveragePct = 100;

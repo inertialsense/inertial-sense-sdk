@@ -160,31 +160,6 @@ static inline void magCalPackUnit(const float u[3], int8_t out[3])
  * Poses are the 6 faces of the device (front/rear, right/left side, bottom/top): each can be named on the case and judged by eye.
  * ------------------------------------------------------------------------------------------------------------------- */
 
-/** Pose idx (0..MAG_CAL_POSE_COUNT-1) as a unit vector in the body frame: the six faces, in the order +X, -X, +Y, -Y, +Z, -Z. */
-static inline void magCalPoseDir(int idx, float out[3])
-{
-    out[0] = out[1] = out[2] = 0.0f;
-    out[idx / 2] = (idx & 1) ? -1.0f : 1.0f;
-}
-
-/** Name of a pose given by its packed direction, the way someone holding the unit would say it: "+Y face (right side)". out needs >= 24 bytes.
- *  X is forward, Y right, Z down in the body frame, so the unit's -Z face is its top, +Z its bottom. */
-static inline void magCalPoseName(const int8_t dir[3], char *out, int outSize)
-{
-    static const char letters[3] = { 'X', 'Y', 'Z' };
-    static const char *side[3][2] = { { "front", "rear" }, { "right side", "left side" }, { "bottom", "top" } };   // [axis][0 = positive face, 1 = negative face]
-    int n = 0, axis = -1, neg = 0;
-    for (int k = 0; k < 3; k++) if (dir[k] >= 30 || dir[k] <= -30) { axis = k; neg = dir[k] < 0; break; }
-    if (axis < 0) { if (outSize > 0) out[0] = 0; return; }
-    char text[32]; int t = 0;
-    text[t++] = neg ? '-' : '+'; text[t++] = letters[axis];
-    const char *tail = " face ("; for (int i = 0; tail[i]; i++) text[t++] = tail[i];
-    for (const char *p = side[axis][neg]; *p; p++) text[t++] = *p;
-    text[t++] = ')'; text[t] = 0;
-    for (int i = 0; text[i] && n < outSize - 1; i++) out[n++] = text[i];
-    out[n] = 0;
-}
-
 /**
  * The ring a turn sweeps. With the floor direction g (unit) and sin(inclination) = field . floor, a device turned about the vertical makes the measured
  * field direction u run round the circle { u : u . g = sinI } (the dot product is invariant under any rotation about the vertical). This returns the cells
@@ -242,25 +217,46 @@ static inline mag_cal_ring_t magCalPoseRing(const mag_cal_coverage_t *m, const f
 }
 
 /**
- * Choose the next pose: the one whose ring holds the most missing required cells (largest gain), discounted a little for a longer tilt.
- * @param g      current direction of the floor in the body frame (unit)
- * @param sinI   sin(inclination) = field . floor, estimated by the device
- * @param avoid  a pose that must not be chosen (one that timed out), or -1
- * @return pose index, or -1 when no pose would cover anything missing
+ * Choose the next "marker": the direction on the device (any direction, not just the six faces) to point at the floor before a turn about the vertical.
+ * The turn then sweeps the circle round that direction (see magCalRingMask); the best marker is the one whose circle holds the most required cells that are still
+ * missing, discounted a little for a bigger tilt from where the device is now. Candidates are the centres of all cells (an even spread over the sphere) and the
+ * direction that is already down, so the first turn on an empty map is simply "turn where you are".
+ * The scan is incremental (a few candidates per call) so a small processor is never held up: Start, then Step until it returns 1.
  */
-static inline int magCalChoosePose(const mag_cal_coverage_t *m, const float g[3], float sinI, int avoid)
+#define MAG_CAL_POSE_CANDIDATES     (MAG_CAL_CELL_COUNT + 1)
+#define MAG_CAL_POSE_TILT_PENALTY   0.2f
+#define MAG_CAL_POSE_AVOID_DEG      30.0f
+typedef struct { int next; int found; float bestScore; float bestDir[3]; int haveAvoid; float avoid[3]; } mag_cal_chooser_t;
+
+static inline void magCalChooserStart(mag_cal_chooser_t *c, const float *avoidDir)
 {
-    int best = -1; float bestScore = 0.0f;
-    for (int p = 0; p < MAG_CAL_POSE_COUNT; p++)
+    memset(c, 0, sizeof(*c));
+    if (avoidDir) { c->haveAvoid = 1; c->avoid[0] = avoidDir[0]; c->avoid[1] = avoidDir[1]; c->avoid[2] = avoidDir[2]; }
+}
+
+/** Evaluate up to perCall more candidates. Returns 1 once every candidate has been evaluated (c->found / c->bestDir hold the result). */
+static inline int magCalChooserStep(const mag_cal_coverage_t *m, const float g[3], float sinI, mag_cal_chooser_t *c, int perCall)
+{
+    for (int n = 0; n < perCall && c->next < MAG_CAL_POSE_CANDIDATES; n++, c->next++)
     {
-        if (p == avoid) continue;
-        float a[3]; magCalPoseDir(p, a);
+        float a[3];
+        if (c->next < (int)MAG_CAL_CELL_COUNT) magCalCellCenter((unsigned)c->next, a); else { a[0] = g[0]; a[1] = g[1]; a[2] = g[2]; }
+        if (c->haveAvoid && magCalAngleDeg(a, c->avoid) < MAG_CAL_POSE_AVOID_DEG) continue;
         mag_cal_ring_t r = magCalPoseRing(m, a, sinI);
         if (r.missing < 1) continue;
-        float score = (float)r.missing * (1.0f - 0.35f * magCalAngleDeg(g, a) / 180.0f);
-        if (score > bestScore) { bestScore = score; best = p; }
+        float score = (float)r.missing * (1.0f - MAG_CAL_POSE_TILT_PENALTY * magCalAngleDeg(g, a) / 180.0f);
+        if (score > c->bestScore) { c->bestScore = score; c->found = 1; c->bestDir[0] = a[0]; c->bestDir[1] = a[1]; c->bestDir[2] = a[2]; }
     }
-    return best;
+    return c->next >= MAG_CAL_POSE_CANDIDATES;
+}
+
+/** The whole scan in one call (host side). Returns 1 and the direction in out[3], or 0 when no turn would cover anything that is missing. */
+static inline int magCalChoosePose(const mag_cal_coverage_t *m, const float g[3], float sinI, const float *avoidDir, float out[3])
+{
+    mag_cal_chooser_t c; magCalChooserStart(&c, avoidDir);
+    magCalChooserStep(m, g, sinI, &c, MAG_CAL_POSE_CANDIDATES);
+    if (c.found) { out[0] = c.bestDir[0]; out[1] = c.bestDir[1]; out[2] = c.bestDir[2]; }
+    return c.found;
 }
 
 // Terminal bell policy: one chime when the instruction changes to a new pose/phase (so a user fighting cabling knows to move on),
@@ -375,14 +371,8 @@ static inline void magCalInstruction(const mag_cal_coverage_t *cov, char *out, s
     }
     if (haveGuide)
     {   // Pose guidance relative to the FLOOR: easy to judge by eye. Shown even while a fit is being retried: gaps still help.
-        char pose[24];
-        magCalPoseName(cov->poseDir, pose, sizeof(pose));
-        if (cov->guidePhase == MAG_CAL_PHASE_AIM) snprintf(tmp, sizeof(tmp), "point the %s at the floor: %u deg to go", pose, (unsigned)cov->poseErrDeg);
-        else
-        {   // second step: shorter name ("+Y face"), and a picture people already know
-            char shortName[16]; int n = 0; for (; pose[n] && pose[n] != '(' && n < 15; n++) shortName[n] = pose[n]; while (n > 0 && shortName[n - 1] == ' ') n--; shortName[n] = 0;
-            snprintf(tmp, sizeof(tmp), "keep the %s down; turn slowly in place, like a turntable (ring %u%%)", shortName, (unsigned)cov->ringPct);
-        }
+        if (cov->guidePhase == MAG_CAL_PHASE_AIM) snprintf(tmp, sizeof(tmp), "tilt the device until the marker points at the floor: %u deg to go", (unsigned)cov->poseErrDeg);
+        else snprintf(tmp, sizeof(tmp), "keep the marker down; turn slowly in place, like a turntable (turn %u%%)", (unsigned)cov->ringPct);
         magCalAppend(out, cap, &il, "; ", tmp);
     }
     else if (!fitProblem && cov->lifecycle == MAG_CAL_LC_COLLECTING && cov->mode == MAG_CAL_STATE_SINGLE_AXIS && cov->reason == MAG_CAL_REASON_NONE)
