@@ -236,12 +236,15 @@ private:
 
     static const int HEX_BUFFER_SIZE = 1024;
 
+    device_handle_t findTargetDevice(device_handle_t fallback);
+
     inline static PortManager& portManager = PortManager::getInstance();
     inline static DeviceManager& deviceManager = DeviceManager::getInstance();
 
     device_handle_t device;                 //!< an ISDevice instance to which are are communicating/updating
     dev_info_t target_devInfo;              //!< the original devInfo of the ISDevice above, used in future validations between reboots, etc.
-    uint64_t lastMissingTargetId = 0;       //!< last target unique-id that fwUpdate_step() failed to locate; throttles the (verbose) lookup-failure diagnostic to one report per distinct id
+    std::string target_location;            //!< physical location (USB sysfs path) of the target's port when the update started; empty when it has none, e.g. a TCP port
+    uint64_t lastMissingTargetId = 0;      //!< last target unique-id that fwUpdate_step() failed to locate; throttles the (verbose) lookup-failure diagnostic to one report per distinct id
     uint32_t last_reboot = 0;               //!< time when the last reboot to the device was issued
     uint32_t isblPhaseStartMs = 0;          //!< when the wait for ISbl FIRST began; unlike last_reboot this survives
                                             //!< the phase's own retries, so it can bound the whole phase
