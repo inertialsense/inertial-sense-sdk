@@ -11,8 +11,11 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstring>
+#include <functional>
 #include <set>
+#include <thread>
 
 #include "ISCborConfig.h"
 #include "ISDataMappings.h"
