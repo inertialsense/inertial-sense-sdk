@@ -1514,7 +1514,7 @@ enum eGenFaultCodes
     GFC_CHIP_ERASE_INVALID      = 0x01000000,  //!< Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.
     GFC_EKF_GNSS_TIME_FAULT     = 0x02000000,  //!< Fault: EKF GNSS time fault
     GFC_GNSS_RECEIVER_TIME      = 0x04000000,  //!< Fault: GNSS receiver time fault
-    GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS reciever ceneral fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
+    GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS receiver general fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
     GFC_EKF_INPUT_INVALID_IMU   = 0x10000000,  //!< Fault: Invalid IMU input rejected by EKF
     GFC_GNSS_RTOS_ERROR         = 0x20000000,  //!< Fault: GNSS RTOS error
     GFC_EKF_BIAS_SATURATED      = 0x40000000,  //!< Fault: EKF bias saturated
@@ -1816,7 +1816,7 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_SER2                   0x00000004
 #define RMC_OPTIONS_PORT_USB                    0x00000008
 #define RMC_OPTIONS_PRESERVE_CTRL               0x00000100                  // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Stage port RMC as the startup config used after reboot; requires a flash save (e.g. SYS_CMD_SAVE_FLASH) to persist.
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00                  // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10                          // Bit offset for NMEA speed filter options
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1                           // NMEA speed filtering: Enable
