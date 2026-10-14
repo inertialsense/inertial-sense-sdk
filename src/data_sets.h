@@ -2484,7 +2484,7 @@ typedef struct PACKED
 #define MAG_CAL_POSE_AIM_DEG        20      //!< AIM becomes TURN once the marker is within this angle of pointing at the floor
 #define MAG_CAL_POSE_LOSE_DEG       40      //!< TURN falls back to AIM if the marker drifts beyond this angle (wide hysteresis: hand wobble must not flip the instruction)
 #define MAG_CAL_POSE_MIN_DWELL_MS   2500    //!< An instruction (AIM or TURN) stays up at least this long before it can change, so the text never flutters
-#define MAG_CAL_SINGLE_AXIS_SPAN_DEG 340    //!< Single-axis: the device must have been turned this far (the extent of the turning angle reached, either way) before the calibration can complete
+#define MAG_CAL_SINGLE_AXIS_SPAN_DEG 380    //!< Single-axis: the device must have been turned this far (the extent of the turning angle reached, either way, slightly more than a full turn) before the calibration can complete
 #define MAG_CAL_TURN_DONE_DEG       340     //!< A turn is complete once the device has been turned this far (net) about the vertical
 #define MAG_CAL_TURN_PROGRESS_RAD   0.0873f //!< Turning further than this (5 deg) counts as progress for the stall timer
 #define MAG_CAL_POSE_TIMEOUT_MS     120000  //!< A pose that is not finished after this long is dropped (the user may not be able to do it where they are). Was 40 s; tripled for development/testing so a demo is not hurried along
