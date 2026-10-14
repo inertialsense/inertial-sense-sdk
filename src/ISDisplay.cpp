@@ -1548,13 +1548,15 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     const bool haveGuide = magCalHaveGuide(&cov) != 0;
     if (strlen(instr) > 74) instr[74] = 0;   // never wider than the line it sits on
 
-    // The ring this pose sweeps (cells marked '*' that the turn will fill): needs the inclination, which is the angle between field and floor
-    bool ringOn = false; float poseUnit[3] = { 0, 0, 0 }, ringLo = 0, ringHi = 0;
+    // The ring the turn sweeps (cells marked '*' that it will fill): the circle round the floor direction (while turning) or round the pose face (while aiming)
+    bool ringOn = false; uint8_t ringMask[MAG_CAL_RING_MASK_BYTES] = { 0 };
     float sinI = 0.0f;
     if (haveGuide && magCalSinI(&cov, &sinI))
     {
-        for (int k = 0; k < 3; k++) poseUnit[k] = cov.poseDir[k] / 127.0f;
-        magCalRingBounds(sinI, (float)MAG_CAL_POSE_RING_HALF_DEG, &ringLo, &ringHi); ringOn = true;
+        const bool turning = cov.guidePhase == MAG_CAL_PHASE_TURN && (cov.flags & MAG_CAL_FLAG_GRAVITY_VALID);
+        const int8_t *ax8 = turning ? cov.gravDir : cov.poseDir;
+        float ax[3] = { ax8[0] / 127.0f, ax8[1] / 127.0f, ax8[2] / 127.0f };
+        magCalRingMask(ax, sinI, ringMask); ringOn = true;
     }
     unsigned nowCell = 0xFFFF;      // where the field is pointing now (sensor frame), if known
     if (cov.fieldDir[0] || cov.fieldDir[1] || cov.fieldDir[2])
@@ -1573,7 +1575,7 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
             for (int l = 0; l < MAG_CAL_CELL_LON_SECTORS && ptr < ptrEnd - 4; l++)
             {
                 unsigned cell = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + l);
-                bool fills = ringOn && magCalCellInRing(cell, poseUnit, ringLo, ringHi) && magCalCellRequired(&cov, cell) && magCalCellGet(&cov, cell) < MAG_CAL_COVERAGE_MIN_COUNT;
+                bool fills = ringOn && magCalRingHas(ringMask, cell) && magCalCellRequired(&cov, cell) && magCalCellGet(&cov, cell) < MAG_CAL_COVERAGE_MIN_COUNT;
                 *ptr++ = (cell == nowCell) ? '@' : (fills ? '*' : magCalCellGlyph(cov, cell));      // where the field is now always shows
                 *ptr++ = ' ';
             }

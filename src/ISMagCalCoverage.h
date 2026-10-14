@@ -185,35 +185,60 @@ static inline void magCalPoseName(const int8_t dir[3], char *out, int outSize)
     out[n] = 0;
 }
 
-/** Bounds on (cell centre . pose direction) for cells in the ring swept by a pose, whose angle from the pose direction is acos(sinI) +- halfDeg. */
-static inline void magCalRingBounds(float sinI, float halfDeg, float *lo, float *hi)
+/**
+ * The ring a turn sweeps. With the floor direction g (unit) and sin(inclination) = field . floor, a device turned about the vertical makes the measured
+ * field direction u run round the circle { u : u . g = sinI } (the dot product is invariant under any rotation about the vertical). This returns the cells
+ * that circle passes THROUGH, as a bitmask (LSB first, like required[]). A cell belongs to the ring only if the circle spends at least
+ * MAG_CAL_RING_MIN_ARC_STEPS steps of MAG_CAL_RING_STEP_DEG inside it: a cell that is merely clipped at a corner would never collect enough samples to count,
+ * so progress through the ring could not reach 100%.
+ */
+#define MAG_CAL_RING_STEP_DEG       2.0f
+#define MAG_CAL_RING_MIN_ARC_STEPS  3
+#define MAG_CAL_RING_MASK_BYTES     (MAG_CAL_CELL_COUNT / 8)
+static inline void magCalRingMask(const float g[3], float sinI, uint8_t mask[MAG_CAL_RING_MASK_BYTES])
 {
-    float s = sinI > 1.0f ? 1.0f : (sinI < -1.0f ? -1.0f : sinI);
-    float th0 = acosf(s), half = halfDeg * (MAG_CAL_COV_PI / 180.0f);
-    *lo = cosf(th0 + half > MAG_CAL_COV_PI ? MAG_CAL_COV_PI : th0 + half);
-    *hi = cosf(th0 - half < 0.0f ? 0.0f : th0 - half);
+    uint8_t steps[MAG_CAL_CELL_COUNT]; memset(steps, 0, sizeof(steps)); memset(mask, 0, MAG_CAL_RING_MASK_BYTES);
+    float gn = sqrtf(g[0] * g[0] + g[1] * g[1] + g[2] * g[2]);
+    if (!(gn > 1.0e-6f)) return;
+    const float ax[3] = { g[0] / gn, g[1] / gn, g[2] / gn };
+    const float s = sinI > 1.0f ? 1.0f : (sinI < -1.0f ? -1.0f : sinI), cI = sqrtf(1.0f - s * s);
+    // two unit vectors perpendicular to the axis
+    float h[3] = { 1.0f, 0.0f, 0.0f }; if (fabsf(ax[0]) > 0.9f) { h[0] = 0.0f; h[1] = 1.0f; }
+    float d = h[0] * ax[0] + h[1] * ax[1] + h[2] * ax[2];
+    float e1[3] = { h[0] - d * ax[0], h[1] - d * ax[1], h[2] - d * ax[2] };
+    float en = sqrtf(e1[0] * e1[0] + e1[1] * e1[1] + e1[2] * e1[2]); e1[0] /= en; e1[1] /= en; e1[2] /= en;
+    const float e2[3] = { ax[1] * e1[2] - ax[2] * e1[1], ax[2] * e1[0] - ax[0] * e1[2], ax[0] * e1[1] - ax[1] * e1[0] };
+    const float step = MAG_CAL_RING_STEP_DEG * (MAG_CAL_COV_PI / 180.0f), cd = cosf(step), sd = sinf(step);
+    const int n = (int)(360.0f / MAG_CAL_RING_STEP_DEG + 0.5f);
+    float c = 1.0f, sn = 0.0f;
+    for (int k = 0; k < n; k++)
+    {
+        float u[3] = { s * ax[0] + cI * (c * e1[0] + sn * e2[0]), s * ax[1] + cI * (c * e1[1] + sn * e2[1]), s * ax[2] + cI * (c * e1[2] + sn * e2[2]) };
+        unsigned cell = magCalCellIndex(u); if (steps[cell] < 255) steps[cell]++;
+        float c2 = c * cd - sn * sd; sn = sn * cd + c * sd; c = c2;
+    }
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (steps[i] >= MAG_CAL_RING_MIN_ARC_STEPS) mask[i >> 3] |= (uint8_t)(1u << (i & 7));
 }
 
-static inline int magCalCellInRing(unsigned cell, const float a[3], float lo, float hi)
-{
-    float c[3]; magCalCellCenter(cell, c);
-    float d = c[0] * a[0] + c[1] * a[1] + c[2] * a[2];
-    return d >= lo && d <= hi;
-}
-
-/** Cells of the ring swept when pose direction a points at the floor and the field makes angle acos(sinI) with the floor. */
 typedef struct { int cells; int missing; } mag_cal_ring_t;
-static inline mag_cal_ring_t magCalPoseRing(const mag_cal_coverage_t *m, const float a[3], float sinI, float halfDeg)
+static inline int magCalRingHas(const uint8_t mask[MAG_CAL_RING_MASK_BYTES], unsigned cell) { return (mask[cell >> 3] >> (cell & 7)) & 1; }
+/** How many cells a ring mask holds, and how many of those are required but not yet covered. */
+static inline mag_cal_ring_t magCalRingStats(const mag_cal_coverage_t *m, const uint8_t mask[MAG_CAL_RING_MASK_BYTES])
 {
-    float lo, hi; magCalRingBounds(sinI, halfDeg, &lo, &hi);
     mag_cal_ring_t r = { 0, 0 };
     for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++)
     {
-        if (!magCalCellInRing(i, a, lo, hi)) continue;
+        if (!magCalRingHas(mask, i)) continue;
         r.cells++;
         if (magCalCellRequired(m, i) && magCalCellGet(m, i) < MAG_CAL_COVERAGE_MIN_COUNT) r.missing++;
     }
     return r;
+}
+/** The ring of a pose axis held exactly at the floor (what the pose promises). */
+static inline mag_cal_ring_t magCalPoseRing(const mag_cal_coverage_t *m, const float a[3], float sinI)
+{
+    uint8_t mask[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(a, sinI, mask);
+    return magCalRingStats(m, mask);
 }
 
 /**
@@ -230,7 +255,7 @@ static inline int magCalChoosePose(const mag_cal_coverage_t *m, const float g[3]
     {
         if (p == avoid) continue;
         float a[3]; magCalPoseDir(p, a);
-        mag_cal_ring_t r = magCalPoseRing(m, a, sinI, (float)MAG_CAL_POSE_RING_HALF_DEG);
+        mag_cal_ring_t r = magCalPoseRing(m, a, sinI);
         if (r.missing < 1) continue;
         float score = (float)r.missing * (1.0f - 0.35f * magCalAngleDeg(g, a) / 180.0f);
         if (score > bestScore) { bestScore = score; best = p; }

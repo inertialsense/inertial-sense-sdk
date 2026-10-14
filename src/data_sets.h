@@ -2462,7 +2462,7 @@ typedef struct PACKED
     int8_t                      fieldDir[3];    //!< Current measured field direction in the sensor frame (unit vector x127), i.e. where the "now" marker sits on the map
     uint8_t                     fitStage;       //!< Diagnostic: which check rejected the most recent calibration fit, 0 = none (1 too few samples, 2 r2<=0, 3 no positive eigenvalue, 4 bad eigenvector, 5 not an ellipsoid, 6 not positive definite, 7 sphere conversion failed, 8 per-sample norm tolerance, 9 single-axis fit)
     uint8_t                     poseErrDeg;     //!< (deg) Angle between the floor direction and poseDir: how far still to tilt (0..180)
-    uint8_t                     ringPct;        //!< (%) Share of the field-direction ring that this pose sweeps which is already covered (0..100). Reaches 100 when the turn is complete
+    uint8_t                     ringPct;        //!< (%) How far round one full turn about the vertical the device has gone (0..100; net rotation measured by the gyro against gravity). 0 while aiming, never decreases during a turn
     int8_t                      gravDir[3];     //!< Direction of the FLOOR in the sensor frame (unit vector x127), from the accelerometer. A host can draw it as the arrow that should line up with poseDir
     int8_t                      inclSin;        //!< sin(inclination) x127: the firmware's own running estimate of field . floor, which sizes the pose ring. Valid when MAG_CAL_FLAG_INCL_VALID is set
     uint8_t                     qualityWhy;     //!< Why the quality verdict is not GOOD (eMagCalQualityWhy). MAG_CAL_WHY_NONE while good, and while no verdict has been computed yet
@@ -2476,8 +2476,10 @@ typedef struct PACKED
 #define MAG_CAL_POSE_AIM_DEG        30      //!< AIM becomes TURN once the pose is within this angle of pointing at the floor (the ring follows the actual floor direction, so this need not be exact)
 #define MAG_CAL_POSE_LOSE_DEG       50      //!< TURN falls back to AIM if the pose drifts beyond this angle (wide hysteresis: hand wobble must not flip the instruction)
 #define MAG_CAL_POSE_MIN_DWELL_MS   2500    //!< An instruction (AIM or TURN) stays up at least this long before it can change, so the text never flutters
-#define MAG_CAL_POSE_RING_HALF_DEG  14      //!< Half width of the ring of field directions a pose is credited with sweeping
-#define MAG_CAL_POSE_TIMEOUT_MS     40000   //!< A pose that is not finished after this long is dropped (the user may not be able to do it where they are)
+#define MAG_CAL_TURN_DONE_DEG       340     //!< A turn is complete once the device has been turned this far (net) about the vertical
+#define MAG_CAL_TURN_PROGRESS_RAD   0.0873f //!< Turning further than this (5 deg) counts as progress for the stall timer
+#define MAG_CAL_POSE_TIMEOUT_MS     120000  //!< A pose that is not finished after this long is dropped (the user may not be able to do it where they are). Was 40 s; tripled for development/testing so a demo is not hurried along
+#define MAG_CAL_POSE_STALL_MS       45000   //!< A turn that has covered nothing new for this long is dropped. Was 15 s; tripled likewise
 
 /** @brief (DID_INL2_MAG_OBS_INFO) INL2 magnetometer observer diagnostic/calibration info. Reports the internal state of the online magnetometer bias/cross-axis calibration and heading-innovation gating used by the INL2 EKF to accept or reject magnetometer updates. */
 typedef struct PACKED

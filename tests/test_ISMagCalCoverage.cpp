@@ -160,24 +160,46 @@ TEST(MagCalPose, CellCentresFromTablesMatchTheTrigonometricDefinition)
     }
 }
 
-TEST(MagCalPose, RingSizeFollowsTheInclination)
+TEST(MagCalPose, RingIsTheSetOfCellsTheCirclePassesThrough)
 {
     float a[3] = { 0, 0, 1 };
     mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
-    mag_cal_ring_t eq = magCalPoseRing(&m, a, 0.0f, (float)MAG_CAL_POSE_RING_HALF_DEG);       // field horizontal: a great circle around the pose axis
-    EXPECT_EQ(eq.cells, 32); EXPECT_EQ(eq.missing, 32);
-    mag_cal_ring_t steep = magCalPoseRing(&m, a, std::sin(66.0f * 3.14159265f / 180.0f), (float)MAG_CAL_POSE_RING_HALF_DEG);   // Utah: field 66 deg below the horizon
-    EXPECT_EQ(steep.cells, 16) << "a small ring about 24 deg from the pose axis";
+    uint8_t mask[MAG_CAL_RING_MASK_BYTES];
+    magCalRingMask(a, 0.0f, mask);                  // field horizontal: a great circle round the pose axis, along the z = 0 band edge
+    mag_cal_ring_t eq = magCalPoseRing(&m, a, 0.0f);
+    EXPECT_GE(eq.cells, 16); EXPECT_LE(eq.cells, 32); EXPECT_EQ(eq.missing, eq.cells);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(mask, i)) { unsigned z = i / MAG_CAL_CELL_LON_SECTORS; EXPECT_TRUE(z == 3 || z == 4) << "cell " << i; }
+    const float s66 = std::sin(66.0f * 3.14159265f / 180.0f);       // Utah: field 66 deg below the horizon
+    mag_cal_ring_t steep = magCalPoseRing(&m, a, s66);
+    EXPECT_EQ(steep.cells, 16) << "a small circle about 24 deg from the pose axis, wholly in the top band";
     for (unsigned i = 0; i < 16; i++) magCalCellSet(&m, 7 * 16 + i, 15);                       // cover the top band: that ring is done
-    EXPECT_EQ(magCalPoseRing(&m, a, std::sin(66.0f * 3.14159265f / 180.0f), 14.0f).missing, 0);
+    EXPECT_EQ(magCalPoseRing(&m, a, s66).missing, 0);
+}
+
+TEST(MagCalPose, ACellTheCircleOnlyClipsIsNotPartOfTheRing)
+{   // The old definition took every cell whose CENTRE was near the circle, including cells the circle never enters: progress through the ring could not reach 100%.
+    const float s = std::sin(40.0f * 3.14159265f / 180.0f);
+    float g[3] = { 0.3f, -0.5f, 0.8124f }; float gn = std::sqrt(g[0]*g[0] + g[1]*g[1] + g[2]*g[2]); for (float &v : g) v /= gn;
+    uint8_t mask[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(g, s, mask);
+    // Every ring cell is genuinely visited: walk the circle at 1 degree and require that each ring cell is entered, and that the walk never enters a cell the ring lacks
+    // for more than the clipping allowance
+    float h[3] = { 1, 0, 0 }; float d = h[0]*g[0]; float e1[3] = { h[0]-d*g[0], -d*g[1], -d*g[2] }; float en = std::sqrt(e1[0]*e1[0]+e1[1]*e1[1]+e1[2]*e1[2]); for (float &v : e1) v /= en;
+    float e2[3] = { g[1]*e1[2]-g[2]*e1[1], g[2]*e1[0]-g[0]*e1[2], g[0]*e1[1]-g[1]*e1[0] };
+    int visits[MAG_CAL_CELL_COUNT] = { 0 }; float cI = std::sqrt(1 - s*s);
+    for (int deg = 0; deg < 360; deg++) { float c = std::cos(deg * 0.0174532925f), sn = std::sin(deg * 0.0174532925f); float u[3]; for (int k = 0; k < 3; k++) u[k] = s*g[k] + cI*(c*e1[k] + sn*e2[k]); visits[magCalCellIndex(u)]++; }
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++)
+    {
+        if (magCalRingHas(mask, i)) EXPECT_GE(visits[i], 3) << "ring cell " << i << " is never really entered";
+        else EXPECT_LE(visits[i], 6) << "a cell with a long arc is missing from the ring: " << i;
+    }
 }
 
 TEST(MagCalPose, ChoosesThePoseWhoseRingHoldsTheGaps)
 {
     // Field horizontal (sinI = 0): the ring of pose +X is the great circle x ~ 0. Open exactly those cells and nothing else.
     mag_cal_coverage_t m = full();
-    float ax[3] = { 1, 0, 0 }; float lo, hi; magCalRingBounds(0.0f, (float)MAG_CAL_POSE_RING_HALF_DEG, &lo, &hi);
-    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalCellInRing(i, ax, lo, hi)) magCalCellSet(&m, i, 0);
+    float ax[3] = { 1, 0, 0 }; uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(ax, 0.0f, rm);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&m, i, 0);
     float g[3] = { 0, 0, 1 };
     int p = magCalChoosePose(&m, g, 0.0f, -1);
     ASSERT_GE(p, 0);
@@ -200,14 +222,14 @@ TEST(MagCalPose, ARequiredMaskIsRespected)
     magCalCellSetRequired(&m, 5 * 16 + 3, 1);
     float g[3] = { 0, 0, 1 }, c[3]; magCalCellCenter(5 * 16 + 3, c);
     int p = magCalChoosePose(&m, g, 0.5f, -1);
-    if (p >= 0) { float a[3]; magCalPoseDir(p, a); float lo, hi; magCalRingBounds(0.5f, 14.0f, &lo, &hi); EXPECT_TRUE(magCalCellInRing(5 * 16 + 3, a, lo, hi)) << "the chosen pose must actually sweep the one required cell"; }
+    if (p >= 0) { float a[3]; magCalPoseDir(p, a); uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(a, 0.5f, rm); EXPECT_TRUE(magCalRingHas(rm, 5 * 16 + 3)) << "the chosen pose must actually sweep the one required cell"; }
 }
 
 TEST(MagCalPose, NearerPoseBreaksATieButGainWins)
 {   // two identical rings (opposite poses +Z / -Z share the same great circle when the field is horizontal): the nearer one is chosen
     mag_cal_coverage_t m = full();
-    float az[3] = { 0, 0, 1 }; float lo, hi; magCalRingBounds(0.0f, 14.0f, &lo, &hi);
-    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalCellInRing(i, az, lo, hi)) magCalCellSet(&m, i, 0);
+    float az[3] = { 0, 0, 1 }; uint8_t rm[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(az, 0.0f, rm);
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(rm, i)) magCalCellSet(&m, i, 0);
     float gDown[3] = { 0, 0, 1 }, gUp[3] = { 0, 0, -1 };
     float a[3];
     magCalPoseDir(magCalChoosePose(&m, gDown, 0.0f, -1), a); EXPECT_GT(a[2], 0.9f);
@@ -270,8 +292,8 @@ TEST(MagCalCoverage, DisplayShowsLifecycleReasonAndMap)
 TEST(MagCalCoverage, DisplayShowsPoseGuidanceAndTheRingItFills)
 {
     mag_cal_coverage_t m = full();
-    float ax[3] = { 0, 0, 1 }, lo, hi; magCalRingBounds(0.0f, (float)MAG_CAL_POSE_RING_HALF_DEG, &lo, &hi);
-    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalCellInRing(i, ax, lo, hi)) magCalCellSet(&m, i, 0);   // the ring of +Z is empty
+    float ax[3] = { 0, 0, 1 }; uint8_t ringMask[MAG_CAL_RING_MASK_BYTES]; magCalRingMask(ax, 0.0f, ringMask);
+    int ringCells = 0; for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) if (magCalRingHas(ringMask, i)) { magCalCellSet(&m, i, 0); ringCells++; }   // the ring of +Z is empty
     m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.flags = MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID | MAG_CAL_FLAG_GRAVITY_VALID;
     magCalPackUnit(ax, m.poseDir);
     // inclination 0: field perpendicular to the floor direction
@@ -283,7 +305,8 @@ TEST(MagCalCoverage, DisplayShowsPoseGuidanceAndTheRingItFills)
     std::string s = d.DataToStringMagCalCoverage(m, hdr);
     EXPECT_NE(s.find("point the +Z face (bottom) at the floor: 37 deg to go"), std::string::npos) << s;
     // the empty ring is drawn with '*' (32 cells of it, plus the one in the legend), and the field-now marker is '@' (plus the legend)
-    EXPECT_EQ(std::count(s.begin(), s.end(), '*'), 32 - 1 + 1) << s;      // one ring cell is the "now" cell and shows as '@'
+    float nowDir[3] = { 1, 0, 0 }; unsigned nowCell = magCalCellIndex(nowDir);
+    EXPECT_EQ(std::count(s.begin(), s.end(), '*'), ringCells - (magCalRingHas(ringMask, nowCell) ? 1 : 0) + 1) << s;      // the "now" cell shows as '@' instead (plus the legend's '*')
     EXPECT_EQ(std::count(s.begin(), s.end(), '@'), 1 + 1) << s;
 
     m.guidePhase = MAG_CAL_PHASE_TURN; m.ringPct = 40;
