@@ -301,12 +301,52 @@ static inline const char *magCalQualityWhyText(unsigned why)
     }
 }
 
+/**
+ * How well the coverage surface matches the unit sphere, in percent: 100 = every required cell holds enough samples, 0 = nothing collected. It is the mean, over the
+ * corners of the cell grid, of a per-corner value that leans toward the WORST of the (up to four) cells meeting there, so a few missing cells show clearly instead of
+ * being averaged away. Corners are weighted by how much of them is required (and by 1/2 on the two pole rows, which are single points). Defined once here so the
+ * firmware (completion hold), EvalTool (display) and cltool all mean the same number.
+ * @param cells     MAG_CAL_CELL_COUNT/2 bytes of 4-bit counts
+ * @param required  MAG_CAL_CELL_COUNT/8 bytes (bit per cell), or NULL for "every cell is required"
+ */
+static inline float magCalSphereFitPct(const uint8_t *cells, const uint8_t *required)
+{
+    double sum = 0.0, wsum = 0.0;
+    for (int iz = 0; iz <= MAG_CAL_CELL_Z_BANDS; iz++)
+    {
+        const double wz = (iz == 0 || iz == MAG_CAL_CELL_Z_BANDS) ? 0.5 : 1.0;
+        for (int il = 0; il < MAG_CAL_CELL_LON_SECTORS; il++)
+        {
+            double sf = 0.0, sr = 0.0, mn = 1.0; int n = 0;
+            for (int dz = -1; dz <= 0; dz++)
+                for (int dl = -1; dl <= 0; dl++)
+                {
+                    int z = iz + dz, l = ((il + dl) % MAG_CAL_CELL_LON_SECTORS + MAG_CAL_CELL_LON_SECTORS) % MAG_CAL_CELL_LON_SECTORS;
+                    if (z < 0 || z >= MAG_CAL_CELL_Z_BANDS) continue;
+                    unsigned cell = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + l);
+                    const int req = required ? ((required[cell >> 3] >> (cell & 7)) & 1) : 1;
+                    double f = req ? (double)magCalCellsGet(cells, cell) / (double)MAG_CAL_COVERAGE_MIN_COUNT : 1.0;   // a cell that is not required is as good as full
+                    if (f > 1.0) f = 1.0;
+                    sf += f; sr += req ? 1.0 : 0.0; if (f < mn) mn = f; n++;
+                }
+            if (!n) continue;
+            const double shape = 0.5 * (sf / n + mn), req = sr / n;
+            sum += wz * req * shape; wsum += wz * req;
+        }
+    }
+    return wsum > 0.0 ? (float)(100.0 * sum / wsum) : 100.0f;
+}
+static inline float magCalSphereFitPctOf(const mag_cal_coverage_t *c)
+{
+    return magCalSphereFitPct(c->cells, (c->flags & MAG_CAL_FLAG_REQUIRED_VALID) ? c->required : NULL);
+}
+
 /** Why the calibration is not advancing, as a short phrase (empty when there is nothing to say). */
 static inline const char *magCalReasonText(unsigned reason)
 {
     static const char *t[] = { "", "rotate faster", "turn about the vertical axis", "field unsteady / interference", "area full",
-                               "fit not accepted yet", "norm check not passed yet", "mode unsupported" };
-    return reason < 8 ? t[reason] : "";
+                               "fit not accepted yet", "norm check not passed yet", "mode unsupported", "extended mode: keep covering the sphere (Finish to accept)" };
+    return reason < 9 ? t[reason] : "";
 }
 
 static inline void magCalAppend(char *buf, size_t cap, size_t *len, const char *sep, const char *str)
@@ -328,7 +368,7 @@ static inline void magCalInstruction(const mag_cal_coverage_t *cov, char *out, s
     size_t il = 0; char tmp[120]; out[0] = 0;
     const int fitProblem = (cov->reason == MAG_CAL_REASON_FIT_REJECTED || cov->reason == MAG_CAL_REASON_NORM_CHECK);
     const int haveGuide = magCalHaveGuide(cov);
-    if (cov->reason != MAG_CAL_REASON_NONE && cov->reason < 8 && cov->reason != MAG_CAL_REASON_REGION_FULL)
+    if (cov->reason != MAG_CAL_REASON_NONE && cov->reason < 9 && cov->reason != MAG_CAL_REASON_REGION_FULL)
     {
         if (fitProblem && !haveGuide) { snprintf(tmp, sizeof(tmp), "%s - the map is complete, more rotation will not help", magCalReasonText(cov->reason)); magCalAppend(out, cap, &il, "; ", tmp); }   // only when nothing is left to cover
         else magCalAppend(out, cap, &il, "; ", magCalReasonText(cov->reason));

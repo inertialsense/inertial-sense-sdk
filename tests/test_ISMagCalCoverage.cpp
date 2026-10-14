@@ -434,4 +434,32 @@ TEST(MagCalCoverage, QualityWhyHasPlainWordsForEveryReason)
     EXPECT_STREQ(magCalQualityWhyText(200), "") << "unknown values from a newer firmware say nothing rather than something wrong";
 }
 
+TEST(MagCalCoverage, SphereFitIs100WhenFullAndZeroWhenEmptyAndRisesMonotonically)
+{
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m); m.flags |= MAG_CAL_FLAG_REQUIRED_VALID;
+    EXPECT_NEAR(magCalSphereFitPctOf(&m), 0.0f, 1e-3f);
+    float prev = -1.0f;
+    for (unsigned n = 0; n <= MAG_CAL_CELL_COUNT; n += 8)
+    {
+        for (unsigned i = 0; i < n; i++) magCalCellSet(&m, i, MAG_CAL_COVERAGE_MIN_COUNT);
+        float f = magCalSphereFitPctOf(&m); EXPECT_GE(f, prev) << "n=" << n; prev = f;
+    }
+    EXPECT_NEAR(magCalSphereFitPctOf(&m), 100.0f, 1e-3f);
+    magCalCellSet(&m, 3 * MAG_CAL_CELL_LON_SECTORS + 4, 0);          // one cell missing in 128: a few percent, but clearly visible
+    float one = magCalSphereFitPctOf(&m); EXPECT_GT(one, 90.0f); EXPECT_LT(one, 99.5f);
+    m.flags &= ~MAG_CAL_FLAG_REQUIRED_VALID;                         // unknown required mask: every cell counts
+    EXPECT_NEAR(magCalSphereFitPctOf(&m), one, 1e-3f);
+    EXPECT_NEAR(magCalSphereFitPct(m.cells, NULL), one, 1e-3f);
+    uint8_t none[MAG_CAL_CELL_COUNT / 8] = { 0 };
+    EXPECT_NEAR(magCalSphereFitPct(m.cells, none), 100.0f, 1e-3f) << "nothing required, nothing to fit";
+}
+
+TEST(MagCalCoverage, HoldingHasWordsAndIsShownAsTheInstruction)
+{
+    EXPECT_GT(strlen(magCalReasonText(MAG_CAL_REASON_HOLDING)), 20u);
+    mag_cal_coverage_t m = blank(); m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.reason = MAG_CAL_REASON_HOLDING; m.flags = MAG_CAL_FLAG_COVERAGE_VALID;
+    char buf[200]; magCalInstruction(&m, buf, sizeof buf);
+    EXPECT_NE(std::string(buf).find("keep covering the sphere"), std::string::npos) << buf;
+}
+
 } // namespace

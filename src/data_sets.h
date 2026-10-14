@@ -2348,7 +2348,13 @@ enum eMagCalState
 
     MAG_CAL_STATE_SINGLE_AXIS               = (int)2,    //!< COMMAND: Recalibrate magnetometers using only one axis
 
+    MAG_CAL_STATE_MULTI_AXIS_EXTENDED       = (int)3,    //!< COMMAND: Multi-axis recalibration that does NOT complete when the algorithm's own criteria are met: it keeps collecting until the sphere fit (see magCalSphereFitPct) reaches MAG_CAL_HOLD_TARGET_PCT, or until MAG_CAL_STATE_FINISH. MAG_CAL_STATE_ABORT cancels it
+
+    MAG_CAL_STATE_MULTI_AXIS_MANUAL         = (int)4,    //!< COMMAND: Multi-axis recalibration that keeps collecting indefinitely, until MAG_CAL_STATE_FINISH (accept) or MAG_CAL_STATE_ABORT (cancel)
+
     MAG_CAL_STATE_ABORT                     = (int)101,  //!< COMMAND: Stop mag recalibration and do not save results
+
+    MAG_CAL_STATE_FINISH                    = (int)102,  //!< COMMAND: Release an extended/manual hold: the calibration completes as soon as the algorithm's own criteria are met
 
     MAG_CAL_STATE_RECAL_RUNNING             = (int)200,  //!< STATUS: Mag recalibration is in progress
 
@@ -2400,6 +2406,7 @@ enum eMagCalReason
     MAG_CAL_REASON_FIT_REJECTED     = 5,    //!< Least-squares fit failed (singular, not an ellipsoid, or not converged)
     MAG_CAL_REASON_NORM_CHECK       = 6,    //!< Fit produced, but the calibrated field magnitude was out of tolerance
     MAG_CAL_REASON_MODE_UNSUPPORTED = 7,    //!< Requested recalibration mode is not supported
+    MAG_CAL_REASON_HOLDING          = 8,    //!< Extended/manual mode: the calibration could complete but is being held for a better sphere fit (or MAG_CAL_STATE_FINISH)
 };
 
 /** @brief Quality of the current calibration (mag_cal_coverage_t.quality), derived from fitQuality (Tcal) against DID_FLASH_CONFIG.magCalibrationQualityThreshold. */
@@ -2470,6 +2477,7 @@ typedef struct PACKED
     uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
 } mag_cal_coverage_t;
+#define MAG_CAL_HOLD_TARGET_PCT     85      //!< Sphere fit (percent) at which MAG_CAL_STATE_MULTI_AXIS_EXTENDED lets the calibration complete
 #define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
 #define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.guidePhase: no guidance
 #define MAG_CAL_POSE_COUNT          6       //!< Guidance poses: the 6 faces of the device (+X,-X,+Y,-Y,+Z,-Z), each pointed at the floor. Edges and corners were removed: they need two faces equally low, which nobody can judge by eye
