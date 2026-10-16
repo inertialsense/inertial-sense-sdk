@@ -1805,7 +1805,12 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuShockDeltaAccLowThreshold", &nvm_flash_cfg_t::imuShockDeltaAccLowThreshold, DATA_TYPE_UINT8, "m/s^2", "IMU shock detection. Max acceleration difference between the 3 IMUs within the latch time to detect end of a shock.");
     mapper.AddMember("imuShockDeltaGyroHighThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroHighThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Min angular rate difference between the 3 IMUs to detect start of a shock.");
     mapper.AddMember("imuShockDeltaGyroLowThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroLowThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect end of a shock.");
- 
+    mapper.AddMember("deadReckoningTimeout", &nvm_flash_cfg_t::deadReckoningTimeout, DATA_TYPE_UINT8, "s", "Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.");
+    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT16, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reserved3", &nvm_flash_cfg_t::reserved3, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reserved4", &nvm_flash_cfg_t::reserved4, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
+
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
     mapper.AddMember("checksum", &nvm_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");

@@ -2968,6 +2968,7 @@ enum eRTKConfigBits
 #define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)       // (rad)
 #define DEFAULT_GNSS_RTK_CN0_MINIMUM            30                          // (dBHz)
 #define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20                          // (dBHz)
+#define DEFAULT_DEAD_RECKONING_TIMEOUT          30                          // (s)
 
 /** @brief IMU/magnetometer sensor hardware configuration, used with nvm_flash_cfg_t.sensorConfig (DID_FLASH_CONFIG). Packs several small sub-fields (each with its own _MASK/_OFFSET pair) selecting gyro/accel full-scale range, gyro/accel DLPF bandwidth, IMU-to-sensor-frame mounting rotation, and disable/fault-detection flags for the magnetometer, barometer, and multi-IMU voting. Most fields require a system reset to take effect. */
 enum eSensorConfig
@@ -3608,7 +3609,20 @@ typedef struct PACKED
 
     uint8_t                 ioConfig2;                          //!< Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2).
 
+    uint8_t                 deadReckoningTimeout;               //!< (s) Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.
+
+    uint8_t                 reserved1;                          //!< Reserved for future use
+
+    uint16_t                reserved2;                          //!< Reserved for future use
+
+    uint32_t                reserved3;                          //!< Reserved for future use
+
+    uint32_t                reserved4;                          //!< Reserved for future use
+
 } nvm_flash_cfg_t;
+
+/** flashChecksum32() works a 32-bit word at a time and returns 0 for a size that is not a multiple of 4, so the struct must stay a whole number of words. When adding a field, take its space from the reserved fields. */
+STATIC_ASSERT((sizeof(nvm_flash_cfg_t) % 4) == 0);
 
 /** @brief (DID_INL2_NED_SIGMA) 1-sigma standard deviations of the INL2 (INS/GNSS loosely-coupled) EKF state estimates, expressed in the NED (north/east/down) frame. Reports estimation uncertainty, not the estimates themselves; see the corresponding INL2 state/status DIDs for the actual state values. */
 typedef struct PACKED
