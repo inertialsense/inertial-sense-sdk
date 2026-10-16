@@ -3398,17 +3398,17 @@ enum eExtAidingFrame
     EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
 };
 
-/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is expected in ECEF; var is expected in NED. */
+/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is in ECEF, or in NED relative to the reference LLA (refLla), as selected by status; var is expected in NED. */
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame/status of measurement; use 1=ECEF (see eExtAidingFrame). Position is currently processed as ECEF even if another frame is specified.
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED (see eExtAidingFrame). Any other frame is discarded.
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
 } ext_aiding_pos_t;
 
-/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is expected in ECEF; var is expected in NED. */
+/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is in the frame selected by status; var is expected in NED. */
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
@@ -3473,13 +3473,13 @@ enum eExtAidingAttitudeType
     EXT_AIDING_ATTITUDE_TYPE_QUATERNION = 2            //!< att = {w, x, y, z}
 };
 
-/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle roll/pitch/yaw rotation vector regardless of whether `att` is euler or quaternion. */
+/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `att` is the body attitude relative to NED. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle rotation about the body axes regardless of whether `att` is euler or quaternion. */
 typedef struct PACKED
 {
     uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType)
-    float      att[4];       //!< attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}
-    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), in the roll/pitch/yaw tangent space. Must have a non-zero diagonal or the observation is discarded.
+    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType). Any other value is discarded.
+    float      att[4];       //!< attitude relative to NED, interpreted per `status`: euler {roll,pitch,yaw,-} or NED-to-body quaternion {w,x,y,z}
+    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), about the body axes. Must have a non-zero diagonal or the observation is discarded.
 } ext_aiding_attitude_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
