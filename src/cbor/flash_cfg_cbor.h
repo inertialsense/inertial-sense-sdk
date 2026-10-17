@@ -57,102 +57,15 @@ static inline bool flash_cfg_is_cbor(const flash_cfg_hdr_t *hdr)
 }
 
 /*===========================================================================
- * IMX flash config field IDs (CBOR integer map keys)
- *
- * One entry per nvm_flash_cfg_t user field (excluding size/checksum/key).
- * wheel_config_t is flattened into individual field IDs.
- * Values are stable — never reorder or reuse IDs.
+ * Field keys for FLASH_CFG (IMX) and GPX_FLASH_CFG (GPX) come from the key registry:
+ * see cbor_registry.h (generated from registry.yaml). The CAN and RMC keys below are the
+ * IMX storage block's layout.
  *===========================================================================*/
-
-typedef enum {
-    IMX_CFG_FIELD_STARTUP_IMU_DT        = 0,
-    IMX_CFG_FIELD_STARTUP_NAV_DT        = 1,
-    IMX_CFG_FIELD_SER0_BAUD             = 2,
-    IMX_CFG_FIELD_SER1_BAUD             = 3,
-    IMX_CFG_FIELD_INS_ROTATION          = 4,    /* float[3] */
-    IMX_CFG_FIELD_INS_OFFSET            = 5,    /* float[3] */
-    IMX_CFG_FIELD_GNSS1_ANT_OFFSET      = 6,    /* float[3] */
-    IMX_CFG_FIELD_DYNAMIC_MODEL         = 7,
-    IMX_CFG_FIELD_DEBUG                 = 8,
-    IMX_CFG_FIELD_GNSS_SAT_SIG_CONST   = 9,
-    IMX_CFG_FIELD_SYS_CFG_BITS         = 10,
-    IMX_CFG_FIELD_REF_LLA              = 11,    /* double[3] */
-    IMX_CFG_FIELD_LAST_LLA             = 12,    /* double[3] */
-    IMX_CFG_FIELD_LAST_LLA_TOW_MS      = 13,
-    IMX_CFG_FIELD_LAST_LLA_WEEK        = 14,
-    IMX_CFG_FIELD_LAST_LLA_UPDATE_DIST = 15,
-    IMX_CFG_FIELD_IO_CONFIG            = 16,
-    IMX_CFG_FIELD_PLATFORM_CONFIG      = 17,
-    IMX_CFG_FIELD_GNSS2_ANT_OFFSET     = 18,    /* float[3] */
-    IMX_CFG_FIELD_ZERO_VEL_ROTATION    = 19,    /* float[3] */
-    IMX_CFG_FIELD_ZERO_VEL_OFFSET      = 20,    /* float[3] */
-    IMX_CFG_FIELD_GPS_TIME_USER_DELAY  = 21,
-    IMX_CFG_FIELD_MAG_DECLINATION      = 22,
-    IMX_CFG_FIELD_GPS_TIME_SYNC_PERIOD = 23,
-    IMX_CFG_FIELD_STARTUP_GNSS_DT      = 24,
-    IMX_CFG_FIELD_RTK_CFG_BITS         = 25,
-    IMX_CFG_FIELD_SENSOR_CONFIG        = 26,
-    IMX_CFG_FIELD_GNSS_MIN_ELEVATION   = 27,
-    IMX_CFG_FIELD_SER2_BAUD            = 28,
-    /* wheel_config_t — flattened */
-    IMX_CFG_FIELD_WHEEL_CFG_BITS       = 29,
-    IMX_CFG_FIELD_WHEEL_E_B2W          = 30,    /* float[3] */
-    IMX_CFG_FIELD_WHEEL_E_B2W_SIGMA    = 31,    /* float[3] */
-    IMX_CFG_FIELD_WHEEL_T_B2W          = 32,    /* float[3] */
-    IMX_CFG_FIELD_WHEEL_T_B2W_SIGMA    = 33,    /* float[3] */
-    IMX_CFG_FIELD_WHEEL_TRACK_WIDTH    = 34,
-    IMX_CFG_FIELD_WHEEL_RADIUS         = 35,
-    /* remaining scalar fields */
-    IMX_CFG_FIELD_MAG_INTERFERENCE_THRESH   = 36,
-    IMX_CFG_FIELD_MAG_CAL_QUAL_THRESH       = 37,
-    IMX_CFG_FIELD_GNSS_CN0_MINIMUM          = 38,
-    IMX_CFG_FIELD_GNSS_CN0_DYN_MIN_OFFSET   = 39,
-    IMX_CFG_FIELD_IMU_REJECT_GYRO_LOW       = 40,
-    IMX_CFG_FIELD_IMU_REJECT_GYRO_HIGH      = 41,
-    IMX_CFG_FIELD_IMU_SHOCK_DETECT_LAT      = 42,
-    IMX_CFG_FIELD_IMU_SHOCK_REJECT_LATCH    = 43,
-    IMX_CFG_FIELD_IMU_SHOCK_OPTIONS         = 44,
-    IMX_CFG_FIELD_IMU_SHOCK_DELTA_ACC_HI    = 45,
-    IMX_CFG_FIELD_IMU_SHOCK_DELTA_ACC_LO    = 46,
-    IMX_CFG_FIELD_IMU_SHOCK_DELTA_GYRO_HI   = 47,
-    IMX_CFG_FIELD_IMU_SHOCK_DELTA_GYRO_LO   = 48,
-    IMX_CFG_FIELD_IO_CONFIG_2               = 49,
-
-    IMX_CFG_FIELD_COUNT
-} eImxFlashCfgFieldId;
-
-/*===========================================================================
- * GPX flash config field IDs (CBOR integer map keys)
- *
- * One entry per gpx_flash_cfg_t user field (excluding size/checksum/key/reserved).
- *===========================================================================*/
-
-typedef enum {
-    GPX_CFG_FIELD_SER0_BAUD            = 0,
-    GPX_CFG_FIELD_SER1_BAUD            = 1,
-    GPX_CFG_FIELD_SER2_BAUD            = 2,
-    GPX_CFG_FIELD_STARTUP_GNSS_DT      = 3,
-    GPX_CFG_FIELD_GNSS1_ANT_OFFSET     = 4,    /* float[3] */
-    GPX_CFG_FIELD_GNSS2_ANT_OFFSET     = 5,    /* float[3] */
-    GPX_CFG_FIELD_GNSS_SAT_SIG_CONST   = 6,
-    GPX_CFG_FIELD_DYNAMIC_MODEL        = 7,
-    GPX_CFG_FIELD_DEBUG                = 8,
-    GPX_CFG_FIELD_GPS_TIME_SYNC_PERIOD = 9,
-    GPX_CFG_FIELD_GPS_TIME_USER_DELAY  = 10,
-    GPX_CFG_FIELD_GNSS_MIN_ELEVATION   = 11,
-    GPX_CFG_FIELD_RTK_CFG_BITS         = 12,
-    GPX_CFG_FIELD_GNSS_CN0_MINIMUM     = 13,
-    GPX_CFG_FIELD_GNSS_CN0_DYN_MIN_OFFSET = 14,
-    GPX_CFG_FIELD_SYS_CFG_BITS         = 15,
-    GPX_CFG_FIELD_REF_LLA              = 16,    /* double[3] */
-
-    GPX_CFG_FIELD_COUNT
-} eGpxFlashCfgFieldId;
 
 /*===========================================================================
  * CAN config CBOR field IDs (encoded in the main IMX CBOR block alongside
  * nvm_flash_cfg_t fields; IDs start at 50 to avoid collision with
- * eImxFlashCfgFieldId values 0–49).
+ * the IMX flash config keys 0–49).
  *
  * Maps directly to can_config_t fields.
  * Values are stable — never reorder or reuse IDs.

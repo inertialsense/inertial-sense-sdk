@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 #include "flash_cfg_cbor.h"
+#include "cbor_registry.h"
 #include "nanocbor/nanocbor.h"
 #include "ISConstants.h"
 
@@ -17,81 +18,6 @@
 
 #define FIELD(id, ftype, count, struct_type, member) \
     { (id), (ftype), (count), offsetof(struct_type, member) }
-
-static const flash_cfg_field_desc_t s_imx_fields[] = {
-    FIELD(IMX_CFG_FIELD_STARTUP_IMU_DT,       FCTYPE_UINT32,       1, nvm_flash_cfg_t, startupImuDtMs),
-    FIELD(IMX_CFG_FIELD_STARTUP_NAV_DT,       FCTYPE_UINT32,       1, nvm_flash_cfg_t, startupNavDtMs),
-    FIELD(IMX_CFG_FIELD_SER0_BAUD,            FCTYPE_UINT32,       1, nvm_flash_cfg_t, ser0BaudRate),
-    FIELD(IMX_CFG_FIELD_SER1_BAUD,            FCTYPE_UINT32,       1, nvm_flash_cfg_t, ser1BaudRate),
-    FIELD(IMX_CFG_FIELD_INS_ROTATION,         FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, insRotation),
-    FIELD(IMX_CFG_FIELD_INS_OFFSET,           FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, insOffset),
-    FIELD(IMX_CFG_FIELD_GNSS1_ANT_OFFSET,     FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, gnss1AntOffset),
-    FIELD(IMX_CFG_FIELD_DYNAMIC_MODEL,        FCTYPE_UINT8,        1, nvm_flash_cfg_t, dynamicModel),
-    FIELD(IMX_CFG_FIELD_DEBUG,                FCTYPE_UINT8,        1, nvm_flash_cfg_t, debug),
-    FIELD(IMX_CFG_FIELD_GNSS_SAT_SIG_CONST,  FCTYPE_UINT16,       1, nvm_flash_cfg_t, gnssSatSigConst),
-    FIELD(IMX_CFG_FIELD_SYS_CFG_BITS,        FCTYPE_UINT32,       1, nvm_flash_cfg_t, sysCfgBits),
-    FIELD(IMX_CFG_FIELD_REF_LLA,             FCTYPE_DOUBLE_ARRAY, 3, nvm_flash_cfg_t, refLla),
-    FIELD(IMX_CFG_FIELD_LAST_LLA,            FCTYPE_DOUBLE_ARRAY, 3, nvm_flash_cfg_t, lastLla),
-    FIELD(IMX_CFG_FIELD_LAST_LLA_TOW_MS,     FCTYPE_UINT32,       1, nvm_flash_cfg_t, lastLlaTimeOfWeekMs),
-    FIELD(IMX_CFG_FIELD_LAST_LLA_WEEK,       FCTYPE_UINT32,       1, nvm_flash_cfg_t, lastLlaWeek),
-    FIELD(IMX_CFG_FIELD_LAST_LLA_UPDATE_DIST,FCTYPE_FLOAT,        1, nvm_flash_cfg_t, lastLlaUpdateDistance),
-    FIELD(IMX_CFG_FIELD_IO_CONFIG,           FCTYPE_UINT32,       1, nvm_flash_cfg_t, ioConfig),
-    FIELD(IMX_CFG_FIELD_PLATFORM_CONFIG,     FCTYPE_UINT32,       1, nvm_flash_cfg_t, platformConfig),
-    FIELD(IMX_CFG_FIELD_GNSS2_ANT_OFFSET,    FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, gnss2AntOffset),
-    FIELD(IMX_CFG_FIELD_ZERO_VEL_ROTATION,   FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, zeroVelRotation),
-    FIELD(IMX_CFG_FIELD_ZERO_VEL_OFFSET,     FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, zeroVelOffset),
-    FIELD(IMX_CFG_FIELD_GPS_TIME_USER_DELAY, FCTYPE_FLOAT,        1, nvm_flash_cfg_t, gnssTimeUserDelay),
-    FIELD(IMX_CFG_FIELD_MAG_DECLINATION,     FCTYPE_FLOAT,        1, nvm_flash_cfg_t, magDeclination),
-    FIELD(IMX_CFG_FIELD_GPS_TIME_SYNC_PERIOD,FCTYPE_UINT32,       1, nvm_flash_cfg_t, gnssTimeSyncPeriodMs),
-    FIELD(IMX_CFG_FIELD_STARTUP_GNSS_DT,     FCTYPE_UINT32,       1, nvm_flash_cfg_t, startupGnssDtMs),
-    FIELD(IMX_CFG_FIELD_RTK_CFG_BITS,        FCTYPE_UINT32,       1, nvm_flash_cfg_t, RTKCfgBits),
-    FIELD(IMX_CFG_FIELD_SENSOR_CONFIG,       FCTYPE_UINT32,       1, nvm_flash_cfg_t, sensorConfig),
-    FIELD(IMX_CFG_FIELD_GNSS_MIN_ELEVATION,  FCTYPE_FLOAT,        1, nvm_flash_cfg_t, gnssMinimumElevation),
-    FIELD(IMX_CFG_FIELD_SER2_BAUD,           FCTYPE_UINT32,       1, nvm_flash_cfg_t, ser2BaudRate),
-    /* wheel_config_t — flattened */
-    FIELD(IMX_CFG_FIELD_WHEEL_CFG_BITS,      FCTYPE_UINT32,       1, nvm_flash_cfg_t, wheelConfig.bits),
-    FIELD(IMX_CFG_FIELD_WHEEL_E_B2W,         FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, wheelConfig.transform.e_b2w),
-    FIELD(IMX_CFG_FIELD_WHEEL_E_B2W_SIGMA,   FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, wheelConfig.transform.e_b2w_sigma),
-    FIELD(IMX_CFG_FIELD_WHEEL_T_B2W,         FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, wheelConfig.transform.t_b2w),
-    FIELD(IMX_CFG_FIELD_WHEEL_T_B2W_SIGMA,   FCTYPE_FLOAT_ARRAY,  3, nvm_flash_cfg_t, wheelConfig.transform.t_b2w_sigma),
-    FIELD(IMX_CFG_FIELD_WHEEL_TRACK_WIDTH,   FCTYPE_FLOAT,        1, nvm_flash_cfg_t, wheelConfig.track_width),
-    FIELD(IMX_CFG_FIELD_WHEEL_RADIUS,        FCTYPE_FLOAT,        1, nvm_flash_cfg_t, wheelConfig.radius),
-    /* remaining scalar fields */
-    FIELD(IMX_CFG_FIELD_MAG_INTERFERENCE_THRESH, FCTYPE_FLOAT,    1, nvm_flash_cfg_t, magInterferenceThreshold),
-    FIELD(IMX_CFG_FIELD_MAG_CAL_QUAL_THRESH,     FCTYPE_FLOAT,    1, nvm_flash_cfg_t, magCalibrationQualityThreshold),
-    FIELD(IMX_CFG_FIELD_GNSS_CN0_MINIMUM,        FCTYPE_UINT8,    1, nvm_flash_cfg_t, gnssCn0Minimum),
-    FIELD(IMX_CFG_FIELD_GNSS_CN0_DYN_MIN_OFFSET, FCTYPE_UINT8,    1, nvm_flash_cfg_t, gnssCn0DynMinOffset),
-    FIELD(IMX_CFG_FIELD_IMU_REJECT_GYRO_LOW,     FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuRejectThreshGyroLow),
-    FIELD(IMX_CFG_FIELD_IMU_REJECT_GYRO_HIGH,    FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuRejectThreshGyroHigh),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_DETECT_LAT,    FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockDetectLatencyMs),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_REJECT_LATCH,  FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockRejectLatchMs),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_OPTIONS,       FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockOptions),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_DELTA_ACC_HI,  FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockDeltaAccHighThreshold),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_DELTA_ACC_LO,  FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockDeltaAccLowThreshold),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_DELTA_GYRO_HI, FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockDeltaGyroHighThreshold),
-    FIELD(IMX_CFG_FIELD_IMU_SHOCK_DELTA_GYRO_LO, FCTYPE_UINT8,    1, nvm_flash_cfg_t, imuShockDeltaGyroLowThreshold),
-    FIELD(IMX_CFG_FIELD_IO_CONFIG_2,             FCTYPE_UINT8,    1, nvm_flash_cfg_t, ioConfig2),
-};
-
-static const flash_cfg_field_desc_t s_gpx_fields[] = {
-    FIELD(GPX_CFG_FIELD_SER0_BAUD,            FCTYPE_UINT32,       1, gpx_flash_cfg_t, ser0BaudRate),
-    FIELD(GPX_CFG_FIELD_SER1_BAUD,            FCTYPE_UINT32,       1, gpx_flash_cfg_t, ser1BaudRate),
-    FIELD(GPX_CFG_FIELD_SER2_BAUD,            FCTYPE_UINT32,       1, gpx_flash_cfg_t, ser2BaudRate),
-    FIELD(GPX_CFG_FIELD_STARTUP_GNSS_DT,      FCTYPE_UINT32,       1, gpx_flash_cfg_t, startupGnssDtMs),
-    FIELD(GPX_CFG_FIELD_GNSS1_ANT_OFFSET,     FCTYPE_FLOAT_ARRAY,  3, gpx_flash_cfg_t, gnss1AntOffset),
-    FIELD(GPX_CFG_FIELD_GNSS2_ANT_OFFSET,     FCTYPE_FLOAT_ARRAY,  3, gpx_flash_cfg_t, gnss2AntOffset),
-    FIELD(GPX_CFG_FIELD_GNSS_SAT_SIG_CONST,   FCTYPE_UINT16,       1, gpx_flash_cfg_t, gnssSatSigConst),
-    FIELD(GPX_CFG_FIELD_DYNAMIC_MODEL,        FCTYPE_UINT8,        1, gpx_flash_cfg_t, dynamicModel),
-    FIELD(GPX_CFG_FIELD_DEBUG,                FCTYPE_UINT8,        1, gpx_flash_cfg_t, debug),
-    FIELD(GPX_CFG_FIELD_GPS_TIME_SYNC_PERIOD, FCTYPE_UINT32,       1, gpx_flash_cfg_t, gnssTimeSyncPeriodMs),
-    FIELD(GPX_CFG_FIELD_GPS_TIME_USER_DELAY,  FCTYPE_FLOAT,        1, gpx_flash_cfg_t, gnssTimeUserDelay),
-    FIELD(GPX_CFG_FIELD_GNSS_MIN_ELEVATION,    FCTYPE_FLOAT,        1, gpx_flash_cfg_t, gnssMinimumElevation),
-    FIELD(GPX_CFG_FIELD_RTK_CFG_BITS,         FCTYPE_UINT32,       1, gpx_flash_cfg_t, RTKCfgBits),
-    FIELD(GPX_CFG_FIELD_GNSS_CN0_MINIMUM,     FCTYPE_UINT8,        1, gpx_flash_cfg_t, gnssCn0Minimum),
-    FIELD(GPX_CFG_FIELD_GNSS_CN0_DYN_MIN_OFFSET, FCTYPE_UINT8,    1, gpx_flash_cfg_t, gnssCn0DynMinOffset),
-    FIELD(GPX_CFG_FIELD_SYS_CFG_BITS,         FCTYPE_UINT32,       1, gpx_flash_cfg_t, sysCfgBits),
-    FIELD(GPX_CFG_FIELD_REF_LLA,              FCTYPE_DOUBLE_ARRAY, 3, gpx_flash_cfg_t, refLla),
-};
 
 static const flash_cfg_field_desc_t s_can_fields[] = {
     FIELD(CAN_CFG_FIELD_PERIOD_MULT,   FCTYPE_UINT16_ARRAY, NUM_CIDS, can_config_t, can_period_mult),
@@ -121,14 +47,14 @@ STATIC_ASSERT(NUM_COM_PORTS <= RMC_CFG_MAX_PORTS);
 
 const flash_cfg_field_desc_t *flash_cfg_cbor_imx_fields(uint16_t *count)
 {
-    *count = TABLE_COUNT(s_imx_fields);
-    return s_imx_fields;
+    *count = g_cborFieldsCount_FLASH_CFG;
+    return g_cborFields_FLASH_CFG;
 }
 
 const flash_cfg_field_desc_t *flash_cfg_cbor_gpx_fields(uint16_t *count)
 {
-    *count = TABLE_COUNT(s_gpx_fields);
-    return s_gpx_fields;
+    *count = g_cborFieldsCount_GPX_FLASH_CFG;
+    return g_cborFields_GPX_FLASH_CFG;
 }
 
 const flash_cfg_field_desc_t *flash_cfg_cbor_can_fields(uint16_t *count)
@@ -807,14 +733,14 @@ int flash_cfg_cbor_encode_imx(const nvm_flash_cfg_t *cfg,
                                const nvm_flash_cfg_t *defaults,
                                uint8_t *buf, size_t buf_size)
 {
-    return encode_delta(s_imx_fields, TABLE_COUNT(s_imx_fields), cfg, defaults, buf, buf_size);
+    return encode_delta(g_cborFields_FLASH_CFG, g_cborFieldsCount_FLASH_CFG, cfg, defaults, buf, buf_size);
 }
 
 int flash_cfg_cbor_decode_imx(nvm_flash_cfg_t *cfg,
                                const nvm_flash_cfg_t *defaults,
                                const uint8_t *buf, size_t buf_size)
 {
-    return decode_delta(s_imx_fields, TABLE_COUNT(s_imx_fields), cfg, defaults, sizeof(nvm_flash_cfg_t),
+    return decode_delta(g_cborFields_FLASH_CFG, g_cborFieldsCount_FLASH_CFG, cfg, defaults, sizeof(nvm_flash_cfg_t),
                         buf, buf_size);
 }
 
@@ -822,14 +748,14 @@ int flash_cfg_cbor_encode_gpx(const gpx_flash_cfg_t *cfg,
                                const gpx_flash_cfg_t *defaults,
                                uint8_t *buf, size_t buf_size)
 {
-    return encode_delta(s_gpx_fields, TABLE_COUNT(s_gpx_fields), cfg, defaults, buf, buf_size);
+    return encode_delta(g_cborFields_GPX_FLASH_CFG, g_cborFieldsCount_GPX_FLASH_CFG, cfg, defaults, buf, buf_size);
 }
 
 int flash_cfg_cbor_decode_gpx(gpx_flash_cfg_t *cfg,
                                const gpx_flash_cfg_t *defaults,
                                const uint8_t *buf, size_t buf_size)
 {
-    return decode_delta(s_gpx_fields, TABLE_COUNT(s_gpx_fields), cfg, defaults, sizeof(gpx_flash_cfg_t),
+    return decode_delta(g_cborFields_GPX_FLASH_CFG, g_cborFieldsCount_GPX_FLASH_CFG, cfg, defaults, sizeof(gpx_flash_cfg_t),
                         buf, buf_size);
 }
 

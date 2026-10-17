@@ -52,6 +52,15 @@ jobs:
           ./install_sdk_dependencies.sh
           ./install_gtest.sh
 
+      - name: CBOR key registry
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 -m unittest test_cbor_registry.py
+          python3 cbor_registry.py generate --check
+          BASE=$(git merge-base HEAD "origin/${{ github.base_ref || 'develop' }}")
+          if [ "$BASE" = "$(git rev-parse HEAD)" ]; then BASE=$(git rev-parse HEAD~1); fi
+          python3 cbor_registry.py check --base "$BASE"
+
       - name: Clean All
         run: ./clean_all.sh
 

@@ -1,0 +1,211 @@
+# CBOR key registry — the single source of truth for every key carried in CBOR messages and CBOR flash storage.
+#
+# Rules (enforced by scripts/cbor_registry.py check, which compares this file against the previous version):
+#   - A key is never renumbered, reused or retyped. Retire a key with `deprecated: true`; never delete it.
+#   - Every key sits in its group's range (see `ranges`).
+#   - Each field has exactly one of `default: <value>` or `default_from: firmware_logic` (computed by the firmware
+#     from context such as nav period, platform type or prior values). A changed default must be reviewed.
+#   - A single field must fit one reply on every device that serves its DID; a whole DID should (warning only).
+#
+# After editing, regenerate:  python3 scripts/cbor_registry.py generate
+# Design: is-common/docs_internal/cbor/CBOR_PROTOCOL_DESIGN.md
+
+registry_version: 1
+
+# Key ranges. Root keys and keys inside a DID share this layout; below 0x8000 a key means a DID at the root and a
+# field inside a DID.
+ranges:
+  protocol:        [0xF000, 0xFFFF]   # protocol / wire / CBOR-specific
+  message:         [0xC000, 0xEFFF]   # general message handling, MSG_*
+  message_type:    [0x9000, 0xBFFF]   # message-type options, a 0x100 block per message type at 0x9000 + type * 0x100
+  data_option:     [0x8000, 0x8FFF]   # data-specific options, numbered per DID
+  legacy_did:      [0x0000, 0x00FF]   # legacy DIDs at their ISB numbers
+  application_did: [0x0100, 0x3FFF]   # application CBOR-only DIDs, assigned upward from 0x0100
+  protocol_did:    [0x4000, 0x7FFF]   # protocol CBOR-only DIDs, assigned downward from 0x7FFF
+  field:           [0x0000, 0x7FFF]   # field keys inside a DID
+
+# Compile-time constants used for array counts and buffer sizes. The generated C asserts each value matches the
+# firmware/SDK definition, so the registry can't drift from the headers.
+constants:
+  NUM_CIDS: 27
+  ISB_MAX_DATASET_SIZE: 2040
+
+# Devices and the largest reply each can build (bytes of CBOR). Used by the worst-case size check.
+devices:
+  IMX-5: { reply_buffer: 1280 }
+  IMX-6: { reply_buffer: ISB_MAX_DATASET_SIZE }
+  GPX-1: { reply_buffer: ISB_MAX_DATASET_SIZE }
+
+enums:
+  msg_type:
+    DATA: 1
+    GET: 2
+    SUBSCRIBE: 3
+  msg_status:
+    OK: 0
+    BAD_REQUEST: 1
+    BAD_VALUE: 2
+    UNSUPPORTED: 3
+    RESP_TOO_LARGE: 4
+    FORWARD_DENIED: 5
+    READ_ONLY: 6
+    ERROR: 7
+  ack_type:
+    ACK_NONE: 0
+    ACK_MINIMAL: 1
+    ACK_DETAILED: 2
+  route_action:
+    DENY: 0
+    ALLOW: 1
+
+# General message keys (envelope at the root; MSG_STATUS / MSG_ERR_KEYS / MSG_FIELDS also appear inside a DID).
+message:
+  - { key: 0xC000, name: MSG_TYPE,           type: uint8,  enum: msg_type,   default_from: protocol_rule }   # values -> DATA, keys only -> GET
+  - { key: 0xC001, name: MSG_SRC_DEV_ID,     type: uint64,                   default: 0 }                    # 0 = the host; devices always send it
+  - { key: 0xC002, name: MSG_DST_DEV_FILTER, type: uint64,                   default_from: protocol_rule }   # absent = link peer only, not forwarded; 0 = host
+  - { key: 0xC003, name: MSG_REQ_ID,         type: uint16,                   default_from: protocol_rule }   # absent = unsolicited
+  - { key: 0xC004, name: MSG_ACK_TYPE,       type: uint8,  enum: ack_type,   default: ACK_MINIMAL }
+  - { key: 0xC005, name: MSG_ROUTE,          type: array,  element: uint8, max_count: 4, default_from: protocol_rule }  # forwarder stack; absent = not forwarded
+  - { key: 0xC006, name: MSG_TIME_GPS_NS,    type: uint64,                   default_from: protocol_rule }   # present only when GNSS time is synced
+  - { key: 0xC007, name: MSG_UPTIME_NS,      type: uint64,                   default_from: protocol_rule }   # sent when GNSS time is not synced
+  - { key: 0xC008, name: MSG_STATUS,         type: uint8,  enum: msg_status, default: OK }
+  - { key: 0xC009, name: MSG_ERR_KEYS,       type: key_paths,                default_from: protocol_rule }   # field keys or key-path arrays
+  - { key: 0xC00A, name: MSG_FIELDS,         type: key_paths,                default_from: protocol_rule }   # absent = every field
+  - { key: 0xC00B, name: MSG_CURSOR,         type: uint32,  reserved: true,  default_from: protocol_rule }   # paging, not implemented (SN-8893)
+  - { key: 0xC00C, name: MSG_OPTION_NO_TIME, type: bool,                     default: false }                # name provisional
+
+# Message-type options, a block per message type.
+message_type:
+  SUBSCRIBE:   # block 0x9300
+    - { key: 0x9300, name: SUB_RATE_PERIOD,    type: uint32, reserved: true, default_from: protocol_rule }  # ms; phase 2 (SN-8888)
+    - { key: 0x9301, name: SUB_RATE_MULTI,     type: uint32, reserved: true, default_from: protocol_rule }  # phase 2
+    - { key: 0x9302, name: SUB_PORTS,          type: array,  element: uint8, max_count: 16, reserved: true, default_from: protocol_rule }  # absent = arriving port
+    - { key: 0x9303, name: SUB_OPTION_PERSIST, type: bool,   reserved: true, default: false }               # phase 2
+
+protocol: []
+
+dids:
+  # ---------------------------------------------------------------- legacy DIDs
+  - key: 12
+    name: FLASH_CFG
+    legacy: { did: DID_FLASH_CONFIG, struct: nvm_flash_cfg_t }
+    served_by: [IMX-5, IMX-6]
+    stored: true
+    fields:
+      - { key: 0,  name: startupImuDtMs,          type: uint32,  default: 1 }
+      - { key: 1,  name: startupNavDtMs,          type: uint32,  default_from: firmware_logic }   # nav period passed to the defaults
+      - { key: 2,  name: ser0BaudRate,            type: uint32,  default: 921600 }
+      - { key: 3,  name: ser1BaudRate,            type: uint32,  default: 921600 }
+      - { key: 4,  name: insRotation,             type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 5,  name: insOffset,               type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 6,  name: gnss1AntOffset,          type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 7,  name: dynamicModel,            type: uint8,   default: 8 }
+      - { key: 8,  name: debug,                   type: uint8,   default: 0 }
+      - { key: 9,  name: gnssSatSigConst,         type: uint16,  default: 5119 }
+      - { key: 10, name: sysCfgBits,              type: uint32,  default: 256 }
+      - { key: 11, name: refLla,                  type: float64, count: 3, default_from: firmware_logic }   # carried over from the prior config
+      - { key: 12, name: lastLla,                 type: float64, count: 3, default_from: firmware_logic }   # carried over
+      - { key: 13, name: lastLlaTimeOfWeekMs,     type: uint32,  default_from: firmware_logic }   # carried over
+      - { key: 14, name: lastLlaWeek,             type: uint32,  default_from: firmware_logic }   # carried over
+      - { key: 15, name: lastLlaUpdateDistance,   type: float32, default: 1000 }
+      - { key: 16, name: ioConfig,                type: uint32,  default_from: firmware_logic }   # depends on platform type
+      - { key: 17, name: platformConfig,          type: uint32,  default_from: firmware_logic }   # platform type from manufacturing info
+      - { key: 18, name: gnss2AntOffset,          type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 19, name: zeroVelRotation,         type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 20, name: zeroVelOffset,           type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 21, name: gnssTimeUserDelay,       type: float32, default: 0 }
+      - { key: 22, name: magDeclination,          type: float32, default: 0 }
+      - { key: 23, name: gnssTimeSyncPeriodMs,    type: uint32,  default: 1000 }
+      - { key: 24, name: startupGnssDtMs,         type: uint32,  default: 200 }
+      - { key: 25, name: RTKCfgBits,              type: uint32,  default: 0 }
+      - { key: 26, name: sensorConfig,            type: uint32,  default: 119 }
+      - { key: 27, name: gnssMinimumElevation,    type: float32, default: 0.17453292 }
+      - { key: 28, name: ser2BaudRate,            type: uint32,  default: 921600 }
+      - { key: 29, name: wheelConfig.bits,                   type: uint32,  default: 0 }
+      - { key: 30, name: wheelConfig.transform.e_b2w,        type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 31, name: wheelConfig.transform.e_b2w_sigma,  type: float32, count: 3, default: [0.0174532924, 0.0174532924, 0.0174532924] }
+      - { key: 32, name: wheelConfig.transform.t_b2w,        type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 33, name: wheelConfig.transform.t_b2w_sigma,  type: float32, count: 3, default: [0.300000012, 0.300000012, 0.300000012] }
+      - { key: 34, name: wheelConfig.track_width,            type: float32, default: 0 }
+      - { key: 35, name: wheelConfig.radius,                 type: float32, default: 0 }
+      - { key: 36, name: magInterferenceThreshold,           type: float32, default: 3 }
+      - { key: 37, name: magCalibrationQualityThreshold,     type: float32, default: 10 }
+      - { key: 38, name: gnssCn0Minimum,                     type: uint8,   default: 30 }
+      - { key: 39, name: gnssCn0DynMinOffset,                type: uint8,   default: 20 }
+      - { key: 40, name: imuRejectThreshGyroLow,             type: uint8,   default: 2 }
+      - { key: 41, name: imuRejectThreshGyroHigh,            type: uint8,   default: 3 }
+      - { key: 42, name: imuShockDetectLatencyMs,            type: uint8,   default: 10 }
+      - { key: 43, name: imuShockRejectLatchMs,              type: uint8,   default: 5 }
+      - { key: 44, name: imuShockOptions,                    type: uint8,   default: 2 }
+      - { key: 45, name: imuShockDeltaAccHighThreshold,      type: uint8,   default: 20 }
+      - { key: 46, name: imuShockDeltaAccLowThreshold,       type: uint8,   default: 3 }
+      - { key: 47, name: imuShockDeltaGyroHighThreshold,     type: uint8,   default: 120 }
+      - { key: 48, name: imuShockDeltaGyroLowThreshold,      type: uint8,   default: 12 }
+      - { key: 49, name: ioConfig2,                          type: uint8,   default_from: firmware_logic }   # depends on platform type
+
+  - key: 90
+    name: CAN_CONFIG
+    legacy: { did: DID_CAN_CONFIG, struct: can_config_t }   # DID_CANFD_CONFIG (44) is the same struct; FD is a bit in can_setting
+    served_by: [IMX-5, IMX-6]
+    stored: true
+    fields:
+      - { key: 0, name: can_period_mult,      type: uint16, count: NUM_CIDS, default: 0 }
+      - { key: 1, name: can_transmit_address, type: uint32, count: NUM_CIDS, default: 0 }
+      - { key: 2, name: can_setting,          type: uint16, default: 100 }   # CAN_BAUDRATE_100_KBPS
+      - { key: 3, name: can_receive_address,  type: uint32, default: 0 }
+
+  - key: 121
+    name: GPX_FLASH_CFG
+    legacy: { did: DID_GPX_FLASH_CFG, struct: gpx_flash_cfg_t }
+    served_by: [GPX-1]
+    stored: true
+    fields:
+      - { key: 0,  name: ser0BaudRate,          type: uint32,  default: 921600 }
+      - { key: 1,  name: ser1BaudRate,          type: uint32,  default: 921600 }
+      - { key: 2,  name: ser2BaudRate,          type: uint32,  default: 921600 }
+      - { key: 3,  name: startupGnssDtMs,       type: uint32,  default: 200 }
+      - { key: 4,  name: gnss1AntOffset,        type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 5,  name: gnss2AntOffset,        type: float32, count: 3, default: [0, 0, 0] }
+      - { key: 6,  name: gnssSatSigConst,       type: uint16,  default: 5119 }
+      - { key: 7,  name: dynamicModel,          type: uint8,   default: 8 }
+      - { key: 8,  name: debug,                 type: uint8,   default: 32 }   # GPX_FLASH_CONFIG_DEBUG_INTEL_EN_OUTPUT1
+      - { key: 9,  name: gnssTimeSyncPeriodMs,  type: uint32,  default: 1000 }
+      - { key: 10, name: gnssTimeUserDelay,     type: float32, default: 0 }
+      - { key: 11, name: gnssMinimumElevation,  type: float32, default: 0.17453292 }
+      - { key: 12, name: RTKCfgBits,            type: uint32,  default: 0 }
+      - { key: 13, name: gnssCn0Minimum,        type: uint8,   default: 30 }
+      - { key: 14, name: gnssCn0DynMinOffset,   type: uint8,   default: 20 }
+      - { key: 15, name: sysCfgBits,            type: uint32,  default: 0 }
+      - { key: 16, name: refLla,                type: float64, count: 3, default: [0, 0, 0] }
+
+  # ---------------------------------------------------------------- application CBOR-only DIDs (from 0x0100 up)
+  - key: 0x0100
+    name: CALIBRATION
+    reserved: true     # SN-8891
+    fields: []
+
+  # ---------------------------------------------------------------- protocol CBOR-only DIDs (from 0x7FFF down)
+  - key: 0x7FFF
+    name: ROUTE_FILTER
+    served_by: [IMX-5, IMX-6]
+    read_only: true          # writable later (SN-8890)
+    default_from: firmware_logic   # built-in default: deny DATA to GPX_FLASH_CFG on GPX-1.0 (0x1040FFFFFFFFFFFF)
+    indexed_fields:          # field key n = rule n, checked in order; the first match wins
+      max_count: 8
+      element:
+        type: map
+        fields:
+          - { key: 0, name: MATCH_DEV,  type: uint64, default_from: protocol_rule }                                # device filter
+          - { key: 1, name: MATCH_MSG,  type: array, element: uint8,  max_count: 3,  default_from: protocol_rule }  # absent = every message type
+          - { key: 2, name: MATCH_DIDS, type: array, element: uint16, max_count: 16, default_from: protocol_rule }  # absent = every DID
+          - { key: 3, name: ACTION,     type: uint8, enum: route_action, default: DENY }
+
+  - key: 0x7FFC
+    name: CAPABILITIES
+    served_by: [IMX-5, IMX-6, GPX-1]
+    read_only: true
+    default_from: firmware_logic
+    did_keyed_fields:        # field key = a DID the device owns; value = the field keys it serves
+      element: { type: array, element: uint16 }
+
+  # 0x7FFE (runtime subscriptions) and 0x7FFD (stored startup subscriptions): schema pending; names undecided.

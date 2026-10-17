@@ -1,0 +1,184 @@
+/* Generated from src/cbor/registry.yaml by scripts/cbor_registry.py -- do not edit. */
+
+#ifndef CBOR_REGISTRY_H
+#define CBOR_REGISTRY_H
+
+#include <stdint.h>
+#include "cbor/flash_cfg_cbor.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define CBOR_REGISTRY_VERSION  1
+
+/* Root DID keys */
+#define CBOR_DID_FLASH_CFG  0x000C
+#define CBOR_DID_CAN_CONFIG  0x005A
+#define CBOR_DID_GPX_FLASH_CFG  0x0079
+#define CBOR_DID_CALIBRATION  0x0100
+#define CBOR_DID_ROUTE_FILTER  0x7FFF
+#define CBOR_DID_CAPABILITIES  0x7FFC
+
+/* General message keys */
+#define CBOR_MSG_TYPE  0xC000
+#define CBOR_MSG_SRC_DEV_ID  0xC001
+#define CBOR_MSG_DST_DEV_FILTER  0xC002
+#define CBOR_MSG_REQ_ID  0xC003
+#define CBOR_MSG_ACK_TYPE  0xC004
+#define CBOR_MSG_ROUTE  0xC005
+#define CBOR_MSG_TIME_GPS_NS  0xC006
+#define CBOR_MSG_UPTIME_NS  0xC007
+#define CBOR_MSG_STATUS  0xC008
+#define CBOR_MSG_ERR_KEYS  0xC009
+#define CBOR_MSG_FIELDS  0xC00A
+#define CBOR_MSG_CURSOR  0xC00B
+#define CBOR_MSG_OPTION_NO_TIME  0xC00C
+
+/* Message-type option keys */
+#define CBOR_SUB_RATE_PERIOD  0x9300
+#define CBOR_SUB_RATE_MULTI  0x9301
+#define CBOR_SUB_PORTS  0x9302
+#define CBOR_SUB_OPTION_PERSIST  0x9303
+
+typedef enum
+{
+    CBOR_MSG_TYPE_DATA = 1,
+    CBOR_MSG_TYPE_GET = 2,
+    CBOR_MSG_TYPE_SUBSCRIBE = 3,
+} eCborMsgType;
+
+typedef enum
+{
+    CBOR_MSG_STATUS_OK = 0,
+    CBOR_MSG_STATUS_BAD_REQUEST = 1,
+    CBOR_MSG_STATUS_BAD_VALUE = 2,
+    CBOR_MSG_STATUS_UNSUPPORTED = 3,
+    CBOR_MSG_STATUS_RESP_TOO_LARGE = 4,
+    CBOR_MSG_STATUS_FORWARD_DENIED = 5,
+    CBOR_MSG_STATUS_READ_ONLY = 6,
+    CBOR_MSG_STATUS_ERROR = 7,
+} eCborMsgStatus;
+
+typedef enum
+{
+    CBOR_ACK_TYPE_ACK_NONE = 0,
+    CBOR_ACK_TYPE_ACK_MINIMAL = 1,
+    CBOR_ACK_TYPE_ACK_DETAILED = 2,
+} eCborAckType;
+
+typedef enum
+{
+    CBOR_ROUTE_ACTION_DENY = 0,
+    CBOR_ROUTE_ACTION_ALLOW = 1,
+} eCborRouteAction;
+
+/* FLASH_CFG field keys */
+#define CBOR_FLASH_CFG__STARTUPIMUDTMS  0
+#define CBOR_FLASH_CFG__STARTUPNAVDTMS  1
+#define CBOR_FLASH_CFG__SER0BAUDRATE  2
+#define CBOR_FLASH_CFG__SER1BAUDRATE  3
+#define CBOR_FLASH_CFG__INSROTATION  4
+#define CBOR_FLASH_CFG__INSOFFSET  5
+#define CBOR_FLASH_CFG__GNSS1ANTOFFSET  6
+#define CBOR_FLASH_CFG__DYNAMICMODEL  7
+#define CBOR_FLASH_CFG__DEBUG  8
+#define CBOR_FLASH_CFG__GNSSSATSIGCONST  9
+#define CBOR_FLASH_CFG__SYSCFGBITS  10
+#define CBOR_FLASH_CFG__REFLLA  11
+#define CBOR_FLASH_CFG__LASTLLA  12
+#define CBOR_FLASH_CFG__LASTLLATIMEOFWEEKMS  13
+#define CBOR_FLASH_CFG__LASTLLAWEEK  14
+#define CBOR_FLASH_CFG__LASTLLAUPDATEDISTANCE  15
+#define CBOR_FLASH_CFG__IOCONFIG  16
+#define CBOR_FLASH_CFG__PLATFORMCONFIG  17
+#define CBOR_FLASH_CFG__GNSS2ANTOFFSET  18
+#define CBOR_FLASH_CFG__ZEROVELROTATION  19
+#define CBOR_FLASH_CFG__ZEROVELOFFSET  20
+#define CBOR_FLASH_CFG__GNSSTIMEUSERDELAY  21
+#define CBOR_FLASH_CFG__MAGDECLINATION  22
+#define CBOR_FLASH_CFG__GNSSTIMESYNCPERIODMS  23
+#define CBOR_FLASH_CFG__STARTUPGNSSDTMS  24
+#define CBOR_FLASH_CFG__RTKCFGBITS  25
+#define CBOR_FLASH_CFG__SENSORCONFIG  26
+#define CBOR_FLASH_CFG__GNSSMINIMUMELEVATION  27
+#define CBOR_FLASH_CFG__SER2BAUDRATE  28
+#define CBOR_FLASH_CFG__WHEELCONFIG_BITS  29
+#define CBOR_FLASH_CFG__WHEELCONFIG_TRANSFORM_E_B2W  30
+#define CBOR_FLASH_CFG__WHEELCONFIG_TRANSFORM_E_B2W_SIGMA  31
+#define CBOR_FLASH_CFG__WHEELCONFIG_TRANSFORM_T_B2W  32
+#define CBOR_FLASH_CFG__WHEELCONFIG_TRANSFORM_T_B2W_SIGMA  33
+#define CBOR_FLASH_CFG__WHEELCONFIG_TRACK_WIDTH  34
+#define CBOR_FLASH_CFG__WHEELCONFIG_RADIUS  35
+#define CBOR_FLASH_CFG__MAGINTERFERENCETHRESHOLD  36
+#define CBOR_FLASH_CFG__MAGCALIBRATIONQUALITYTHRESHOLD  37
+#define CBOR_FLASH_CFG__GNSSCN0MINIMUM  38
+#define CBOR_FLASH_CFG__GNSSCN0DYNMINOFFSET  39
+#define CBOR_FLASH_CFG__IMUREJECTTHRESHGYROLOW  40
+#define CBOR_FLASH_CFG__IMUREJECTTHRESHGYROHIGH  41
+#define CBOR_FLASH_CFG__IMUSHOCKDETECTLATENCYMS  42
+#define CBOR_FLASH_CFG__IMUSHOCKREJECTLATCHMS  43
+#define CBOR_FLASH_CFG__IMUSHOCKOPTIONS  44
+#define CBOR_FLASH_CFG__IMUSHOCKDELTAACCHIGHTHRESHOLD  45
+#define CBOR_FLASH_CFG__IMUSHOCKDELTAACCLOWTHRESHOLD  46
+#define CBOR_FLASH_CFG__IMUSHOCKDELTAGYROHIGHTHRESHOLD  47
+#define CBOR_FLASH_CFG__IMUSHOCKDELTAGYROLOWTHRESHOLD  48
+#define CBOR_FLASH_CFG__IOCONFIG2  49
+
+/* CAN_CONFIG field keys */
+#define CBOR_CAN_CONFIG__CAN_PERIOD_MULT  0
+#define CBOR_CAN_CONFIG__CAN_TRANSMIT_ADDRESS  1
+#define CBOR_CAN_CONFIG__CAN_SETTING  2
+#define CBOR_CAN_CONFIG__CAN_RECEIVE_ADDRESS  3
+
+/* GPX_FLASH_CFG field keys */
+#define CBOR_GPX_FLASH_CFG__SER0BAUDRATE  0
+#define CBOR_GPX_FLASH_CFG__SER1BAUDRATE  1
+#define CBOR_GPX_FLASH_CFG__SER2BAUDRATE  2
+#define CBOR_GPX_FLASH_CFG__STARTUPGNSSDTMS  3
+#define CBOR_GPX_FLASH_CFG__GNSS1ANTOFFSET  4
+#define CBOR_GPX_FLASH_CFG__GNSS2ANTOFFSET  5
+#define CBOR_GPX_FLASH_CFG__GNSSSATSIGCONST  6
+#define CBOR_GPX_FLASH_CFG__DYNAMICMODEL  7
+#define CBOR_GPX_FLASH_CFG__DEBUG  8
+#define CBOR_GPX_FLASH_CFG__GNSSTIMESYNCPERIODMS  9
+#define CBOR_GPX_FLASH_CFG__GNSSTIMEUSERDELAY  10
+#define CBOR_GPX_FLASH_CFG__GNSSMINIMUMELEVATION  11
+#define CBOR_GPX_FLASH_CFG__RTKCFGBITS  12
+#define CBOR_GPX_FLASH_CFG__GNSSCN0MINIMUM  13
+#define CBOR_GPX_FLASH_CFG__GNSSCN0DYNMINOFFSET  14
+#define CBOR_GPX_FLASH_CFG__SYSCFGBITS  15
+#define CBOR_GPX_FLASH_CFG__REFLLA  16
+
+/* ROUTE_FILTER field keys */
+#define CBOR_ROUTE_FILTER__MATCH_DEV  0
+#define CBOR_ROUTE_FILTER__MATCH_MSG  1
+#define CBOR_ROUTE_FILTER__MATCH_DIDS  2
+#define CBOR_ROUTE_FILTER__ACTION  3
+
+/* Field tables for legacy DIDs (bound to their C structs) */
+extern const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[];
+extern const uint16_t g_cborFieldsCount_FLASH_CFG;
+extern const flash_cfg_field_desc_t g_cborFields_CAN_CONFIG[];
+extern const uint16_t g_cborFieldsCount_CAN_CONFIG;
+extern const flash_cfg_field_desc_t g_cborFields_GPX_FLASH_CFG[];
+extern const uint16_t g_cborFieldsCount_GPX_FLASH_CFG;
+
+/* Field names (SDK only: cbor_registry_names.c) */
+const char *cbor_registry_field_name(uint16_t did, uint16_t key);
+int cbor_registry_field_key(uint16_t did, const char *name);
+
+/* Registry defaults (cbor_registry_defaults.c): the struct holds every fixed default; fixed[i] is 1 when
+   field i of g_cborFields_<DID> has a fixed default and 0 when the firmware computes it. */
+extern const nvm_flash_cfg_t g_cborDefaults_FLASH_CFG;
+extern const uint8_t g_cborDefaultFixed_FLASH_CFG[];
+extern const can_config_t g_cborDefaults_CAN_CONFIG;
+extern const uint8_t g_cborDefaultFixed_CAN_CONFIG[];
+extern const gpx_flash_cfg_t g_cborDefaults_GPX_FLASH_CFG;
+extern const uint8_t g_cborDefaultFixed_GPX_FLASH_CFG[];
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CBOR_REGISTRY_H */
