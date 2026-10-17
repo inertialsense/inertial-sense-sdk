@@ -1,105 +1,59 @@
-/* Generated from the CBOR key registry -- do not edit. */
+/**
+ * @file cbor_registry_names.c
+ * @brief Field name lookup across every DID in the registry. SDK only: firmware does not carry the names.
+ *
+ * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
+ */
 
 #include <string.h>
 #include "cbor/cbor_registry.h"
 
-typedef struct { uint16_t did; uint16_t key; const char *name; } cbor_registry_name_t;
+/** One DID's name table */
+typedef struct
+{
+    uint16_t                    did;    //!< root DID key
+    const cbor_registry_name_t *names;  //!< the DID's field names
+    uint16_t                    count;  //!< entries in names
+} cbor_registry_did_names_t;
 
-static const cbor_registry_name_t s_names[] = {
-    { 0x000C, 0x0000, "startupImuDtMs" },
-    { 0x000C, 0x0001, "startupNavDtMs" },
-    { 0x000C, 0x0002, "ser0BaudRate" },
-    { 0x000C, 0x0003, "ser1BaudRate" },
-    { 0x000C, 0x0004, "insRotation" },
-    { 0x000C, 0x0005, "insOffset" },
-    { 0x000C, 0x0006, "gnss1AntOffset" },
-    { 0x000C, 0x0007, "dynamicModel" },
-    { 0x000C, 0x0008, "debug" },
-    { 0x000C, 0x0009, "gnssSatSigConst" },
-    { 0x000C, 0x000A, "sysCfgBits" },
-    { 0x000C, 0x000B, "refLla" },
-    { 0x000C, 0x000C, "lastLla" },
-    { 0x000C, 0x000D, "lastLlaTimeOfWeekMs" },
-    { 0x000C, 0x000E, "lastLlaWeek" },
-    { 0x000C, 0x000F, "lastLlaUpdateDistance" },
-    { 0x000C, 0x0010, "ioConfig" },
-    { 0x000C, 0x0011, "platformConfig" },
-    { 0x000C, 0x0012, "gnss2AntOffset" },
-    { 0x000C, 0x0013, "zeroVelRotation" },
-    { 0x000C, 0x0014, "zeroVelOffset" },
-    { 0x000C, 0x0015, "gnssTimeUserDelay" },
-    { 0x000C, 0x0016, "magDeclination" },
-    { 0x000C, 0x0017, "gnssTimeSyncPeriodMs" },
-    { 0x000C, 0x0018, "startupGnssDtMs" },
-    { 0x000C, 0x0019, "RTKCfgBits" },
-    { 0x000C, 0x001A, "sensorConfig" },
-    { 0x000C, 0x001B, "gnssMinimumElevation" },
-    { 0x000C, 0x001C, "ser2BaudRate" },
-    { 0x000C, 0x001D, "wheelConfig.bits" },
-    { 0x000C, 0x001E, "wheelConfig.transform.e_b2w" },
-    { 0x000C, 0x001F, "wheelConfig.transform.e_b2w_sigma" },
-    { 0x000C, 0x0020, "wheelConfig.transform.t_b2w" },
-    { 0x000C, 0x0021, "wheelConfig.transform.t_b2w_sigma" },
-    { 0x000C, 0x0022, "wheelConfig.track_width" },
-    { 0x000C, 0x0023, "wheelConfig.radius" },
-    { 0x000C, 0x0024, "magInterferenceThreshold" },
-    { 0x000C, 0x0025, "magCalibrationQualityThreshold" },
-    { 0x000C, 0x0026, "gnssCn0Minimum" },
-    { 0x000C, 0x0027, "gnssCn0DynMinOffset" },
-    { 0x000C, 0x0028, "imuRejectThreshGyroLow" },
-    { 0x000C, 0x0029, "imuRejectThreshGyroHigh" },
-    { 0x000C, 0x002A, "imuShockDetectLatencyMs" },
-    { 0x000C, 0x002B, "imuShockRejectLatchMs" },
-    { 0x000C, 0x002C, "imuShockOptions" },
-    { 0x000C, 0x002D, "imuShockDeltaAccHighThreshold" },
-    { 0x000C, 0x002E, "imuShockDeltaAccLowThreshold" },
-    { 0x000C, 0x002F, "imuShockDeltaGyroHighThreshold" },
-    { 0x000C, 0x0030, "imuShockDeltaGyroLowThreshold" },
-    { 0x000C, 0x0031, "ioConfig2" },
-    { 0x005A, 0x0000, "can_period_mult" },
-    { 0x005A, 0x0001, "can_transmit_address" },
-    { 0x005A, 0x0002, "can_setting" },
-    { 0x005A, 0x0003, "can_receive_address" },
-    { 0x0079, 0x0000, "ser0BaudRate" },
-    { 0x0079, 0x0001, "ser1BaudRate" },
-    { 0x0079, 0x0002, "ser2BaudRate" },
-    { 0x0079, 0x0003, "startupGnssDtMs" },
-    { 0x0079, 0x0004, "gnss1AntOffset" },
-    { 0x0079, 0x0005, "gnss2AntOffset" },
-    { 0x0079, 0x0006, "gnssSatSigConst" },
-    { 0x0079, 0x0007, "dynamicModel" },
-    { 0x0079, 0x0008, "debug" },
-    { 0x0079, 0x0009, "gnssTimeSyncPeriodMs" },
-    { 0x0079, 0x000A, "gnssTimeUserDelay" },
-    { 0x0079, 0x000B, "gnssMinimumElevation" },
-    { 0x0079, 0x000C, "RTKCfgBits" },
-    { 0x0079, 0x000D, "gnssCn0Minimum" },
-    { 0x0079, 0x000E, "gnssCn0DynMinOffset" },
-    { 0x0079, 0x000F, "sysCfgBits" },
-    { 0x0079, 0x0010, "refLla" },
-    { 0x7FFD, 0x8000, "RMC_SAVE_PORTS" },
-    { 0x7FFD, 0x8001, "RMC_PRESET" },
-    { 0x7FFD, 0x8002, "NMEA_SPEED_FILTER" },
-    { 0x7FFE, 0x8001, "RMC_PRESET" },
-    { 0x7FFE, 0x8002, "NMEA_SPEED_FILTER" },
-    { 0x7FFF, 0x0000, "MATCH_DEV" },
-    { 0x7FFF, 0x0001, "MATCH_MSG" },
-    { 0x7FFF, 0x0002, "MATCH_DIDS" },
-    { 0x7FFF, 0x0003, "ACTION" },
+static const cbor_registry_did_names_t s_dids[] = {
+    { CBOR_DID_FLASH_CFG, g_cborNames_FLASH_CFG, CBOR_FLASH_CFG_NAME_COUNT },
+    { CBOR_DID_CAN_CONFIG, g_cborNames_CAN_CONFIG, CBOR_CAN_CONFIG_NAME_COUNT },
+    { CBOR_DID_GPX_FLASH_CFG, g_cborNames_GPX_FLASH_CFG, CBOR_GPX_FLASH_CFG_NAME_COUNT },
+    { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
+    { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
+    { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
 };
+
+/**
+ * @brief Finds a DID's name table.
+ * @param did  root DID key
+ * @return the table, or NULL if the DID has no field keys
+ */
+static const cbor_registry_did_names_t *did_names(uint16_t did)
+{
+    for (size_t i = 0; i < sizeof(s_dids) / sizeof(s_dids[0]); i++)
+        if (s_dids[i].did == did)
+            return &s_dids[i];
+    return NULL;
+}
 
 const char *cbor_registry_field_name(uint16_t did, uint16_t key)
 {
-    for (size_t i = 0; i < sizeof(s_names) / sizeof(s_names[0]); i++)
-        if (s_names[i].did == did && s_names[i].key == key)
-            return s_names[i].name;
+    const cbor_registry_did_names_t *t = did_names(did);
+    for (uint16_t i = 0; t && i < t->count; i++)
+        if (t->names[i].key == key)
+            return t->names[i].name;
     return NULL;
 }
 
 int cbor_registry_field_key(uint16_t did, const char *name)
 {
-    for (size_t i = 0; i < sizeof(s_names) / sizeof(s_names[0]); i++)
-        if (s_names[i].did == did && strcmp(s_names[i].name, name) == 0)
-            return s_names[i].key;
+    const cbor_registry_did_names_t *t = did_names(did);
+    for (uint16_t i = 0; t && i < t->count; i++)
+        if (strcmp(t->names[i].name, name) == 0)
+            return t->names[i].key;
     return -1;
 }

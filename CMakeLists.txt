@@ -39,6 +39,8 @@ file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
 	"${CMAKE_CURRENT_LIST_DIR}/src/cbor/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/cbor/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/cbor/dids/*.c"
+	"${CMAKE_CURRENT_LIST_DIR}/src/cbor/dids/*.h"
 	"${CMAKE_CURRENT_LIST_DIR}/src/nanocbor/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/nanocbor/*.h"
 	"${CMAKE_CURRENT_LIST_DIR}/src/core/*.c"
