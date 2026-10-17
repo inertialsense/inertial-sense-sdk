@@ -1,5 +1,5 @@
 /**
- * @file test_cbor_rmc.cpp
+ * @file test_cbor_rmc_stored.cpp
  * @brief RMC_STORED over per-port rmci_t: encoding of stored DIDs and options, selection, and all-or-nothing writes
  *        (preset first, DID entries after, a multiple of 0 removes, phase-1 rejections, RMC_SAVE_PORTS).
  */
@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "cbor/cbor_registry.h"
-#include "cbor/cbor_rmc.h"
+#include "cbor/dids/cbor_rmc_stored.h"
 
 typedef std::vector<uint8_t> Bytes;
 

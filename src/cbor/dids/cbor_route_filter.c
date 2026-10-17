@@ -1,13 +1,13 @@
 /**
- * @file cbor_route.c
- * @brief ROUTE_FILTER evaluation and encoding. See cbor_route.h.
+ * @file cbor_route_filter.c
+ * @brief ROUTE_FILTER evaluation and encoding. See cbor_route_filter.h.
  *
  * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
-#include "cbor_route.h"
-#include "cbor_msg.h"
-#include "cbor_registry.h"
+#include "cbor/dids/cbor_route_filter.h"
+#include "cbor/cbor_msg.h"
+#include "cbor/cbor_registry.h"
 
 uint8_t cbor_route_action(const cbor_route_rule_t *rules, size_t ruleCount, uint64_t devId, uint8_t op, uint16_t did)
 {

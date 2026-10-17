@@ -1,5 +1,5 @@
 /**
- * @file cbor_rmc.h
+ * @file cbor_rmc_stored.h
  * @brief RMC_STORED on a device that keeps its startup subscriptions as per-port rmci_t (the IMX's startupRmc[]).
  *
  * RMC_STORED is a map of ports (key n = port n). Each port holds RMC_PRESET and NMEA_SPEED_FILTER options and an entry
@@ -15,14 +15,14 @@
  * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
-#ifndef CBOR_RMC_H
-#define CBOR_RMC_H
+#ifndef CBOR_RMC_STORED_H
+#define CBOR_RMC_STORED_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "cbor_codec.h"
+#include "cbor/cbor_codec.h"
 #include "data_sets.h"
 
 #ifdef __cplusplus
@@ -74,4 +74,4 @@ int cbor_rmc_encode_keys(const cbor_rmc_store_t *s, nanocbor_encoder_t *enc);
 }
 #endif
 
-#endif /* CBOR_RMC_H */
+#endif /* CBOR_RMC_STORED_H */

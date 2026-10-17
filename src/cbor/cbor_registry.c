@@ -9,7 +9,7 @@
 
 #include "ISComm.h"
 #include "cbor/cbor_registry.h"
-#include "cbor/cbor_rmc.h"
+#include "cbor/dids/cbor_rmc_stored.h"
 
 _Static_assert(DID_CBOR == 129, "registry transport.isb_did does not match DID_CBOR");
 _Static_assert((NUM_CIDS) == 27, "registry constant NUM_CIDS does not match the C definition");

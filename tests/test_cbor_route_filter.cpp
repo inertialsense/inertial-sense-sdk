@@ -1,5 +1,5 @@
 /**
- * @file test_cbor_route.cpp
+ * @file test_cbor_route_filter.cpp
  * @brief ROUTE_FILTER: first-match rule evaluation with device-filter, operation and DID matching (default forward),
  *        its CBOR encoding and selection, and a device serving it read-only through the message layer's custom hooks.
  */
@@ -9,7 +9,7 @@
 
 #include "cbor/cbor_msg.h"
 #include "cbor/cbor_registry.h"
-#include "cbor/cbor_route.h"
+#include "cbor/dids/cbor_route_filter.h"
 
 static const uint64_t IMX_ID = 0x0D400000'0000F54Dull;
 static const uint64_t GPX_ID = 0x10400000'3756473Dull;

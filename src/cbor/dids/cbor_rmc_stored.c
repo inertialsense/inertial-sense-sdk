@@ -1,14 +1,14 @@
 /**
- * @file cbor_rmc.c
- * @brief RMC_STORED encoding and decoding over per-port rmci_t. See cbor_rmc.h.
+ * @file cbor_rmc_stored.c
+ * @brief RMC_STORED encoding and decoding over per-port rmci_t. See cbor_rmc_stored.h.
  *
  * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <string.h>
 
-#include "cbor_rmc.h"
-#include "cbor_registry.h"
+#include "cbor/dids/cbor_rmc_stored.h"
+#include "cbor/cbor_registry.h"
 
 static const cbor_field_t s_u8   = { 0, CBOR_T_UINT, 1, 0, 0, NULL };
 

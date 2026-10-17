@@ -1,5 +1,5 @@
 /**
- * @file cbor_route.h
+ * @file cbor_route_filter.h
  * @brief ROUTE_FILTER: the ordered rules a forwarding device applies before passing a message to a downstream device.
  *
  * Each rule matches a downstream device (device filter), optionally a set of message operations and a set of DIDs, and
@@ -10,13 +10,13 @@
  * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
-#ifndef CBOR_ROUTE_H
-#define CBOR_ROUTE_H
+#ifndef CBOR_ROUTE_FILTER_H
+#define CBOR_ROUTE_FILTER_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#include "cbor_codec.h"
+#include "cbor/cbor_codec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,4 +60,4 @@ int cbor_route_encode_keys(size_t ruleCount, nanocbor_encoder_t *enc);
 }
 #endif
 
-#endif /* CBOR_ROUTE_H */
+#endif /* CBOR_ROUTE_FILTER_H */
