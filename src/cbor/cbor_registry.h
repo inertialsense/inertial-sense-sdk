@@ -1,4 +1,4 @@
-/* Generated from src/cbor/registry.yaml by scripts/cbor_registry.py -- do not edit. */
+/* Generated from the CBOR key registry -- do not edit. */
 
 #ifndef CBOR_REGISTRY_H
 #define CBOR_REGISTRY_H
@@ -38,10 +38,10 @@ extern "C" {
 #define CBOR_DID_NMEA_INTEL  0x3F11
 #define CBOR_DID_NMEA_POWGPS  0x3F12
 #define CBOR_DID_NMEA_POWTLV  0x3F13
-#define CBOR_DID_ROUTE_FILTER  0x7FFF
-#define CBOR_DID_RMC  0x7FFE
-#define CBOR_DID_RMC_STORED  0x7FFD
 #define CBOR_DID_CAPABILITIES  0x7FFC
+#define CBOR_DID_RMC_STORED  0x7FFD
+#define CBOR_DID_RMC  0x7FFE
+#define CBOR_DID_ROUTE_FILTER  0x7FFF
 
 /* General message keys */
 #define CBOR_MSG_TYPE  0xC000
@@ -204,20 +204,20 @@ typedef enum
 #define CBOR_GPX_FLASH_CFG__SYSCFGBITS  15
 #define CBOR_GPX_FLASH_CFG__REFLLA  16
 
-/* ROUTE_FILTER field keys */
-#define CBOR_ROUTE_FILTER__MATCH_DEV  0
-#define CBOR_ROUTE_FILTER__MATCH_MSG  1
-#define CBOR_ROUTE_FILTER__MATCH_DIDS  2
-#define CBOR_ROUTE_FILTER__ACTION  3
+/* RMC_STORED field keys */
+#define CBOR_RMC_STORED__RMC_SAVE_PORTS  0x8000
+#define CBOR_RMC_STORED__RMC_PRESET  0x8001
+#define CBOR_RMC_STORED__NMEA_SPEED_FILTER  0x8002
 
 /* RMC field keys */
 #define CBOR_RMC__RMC_PRESET  0x8001
 #define CBOR_RMC__NMEA_SPEED_FILTER  0x8002
 
-/* RMC_STORED field keys */
-#define CBOR_RMC_STORED__RMC_SAVE_PORTS  0x8000
-#define CBOR_RMC_STORED__RMC_PRESET  0x8001
-#define CBOR_RMC_STORED__NMEA_SPEED_FILTER  0x8002
+/* ROUTE_FILTER field keys */
+#define CBOR_ROUTE_FILTER__MATCH_DEV  0
+#define CBOR_ROUTE_FILTER__MATCH_MSG  1
+#define CBOR_ROUTE_FILTER__MATCH_DIDS  2
+#define CBOR_ROUTE_FILTER__ACTION  3
 
 /* Field tables for legacy DIDs (bound to their C structs) */
 extern const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[];

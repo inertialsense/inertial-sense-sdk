@@ -197,7 +197,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127   /**< (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_SYS_FAULT               (eDataIDs)128   /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
 #define DID_GPX_LAST                    128             /**< Last of GPX DIDs */
-#define DID_CBOR                        (eDataIDs)129   /**< (cbor_msg_t) A CBOR message: one CBOR map holding envelope keys and then DID keys (see cbor/cbor_registry.h and SDK/src/cbor/registry.yaml). Variable length up to ISB_MAX_DATASET_SIZE; sent and requested at offset 0 only. */
+#define DID_CBOR                        (eDataIDs)129   /**< (cbor_msg_t) A CBOR message: one CBOR map holding envelope keys and then DID keys (see cbor/cbor_registry.h). Variable length up to ISB_MAX_DATASET_SIZE; sent and requested at offset 0 only. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments

@@ -1,4 +1,4 @@
-/* Generated from src/cbor/registry.yaml by scripts/cbor_registry.py -- do not edit. */
+/* Generated from the CBOR key registry -- do not edit. */
 
 #include <string.h>
 #include "cbor/cbor_registry.h"
@@ -77,15 +77,15 @@ static const cbor_registry_name_t s_names[] = {
     { 0x0079, 0x000E, "gnssCn0DynMinOffset" },
     { 0x0079, 0x000F, "sysCfgBits" },
     { 0x0079, 0x0010, "refLla" },
+    { 0x7FFD, 0x8000, "RMC_SAVE_PORTS" },
+    { 0x7FFD, 0x8001, "RMC_PRESET" },
+    { 0x7FFD, 0x8002, "NMEA_SPEED_FILTER" },
+    { 0x7FFE, 0x8001, "RMC_PRESET" },
+    { 0x7FFE, 0x8002, "NMEA_SPEED_FILTER" },
     { 0x7FFF, 0x0000, "MATCH_DEV" },
     { 0x7FFF, 0x0001, "MATCH_MSG" },
     { 0x7FFF, 0x0002, "MATCH_DIDS" },
     { 0x7FFF, 0x0003, "ACTION" },
-    { 0x7FFE, 0x8001, "RMC_PRESET" },
-    { 0x7FFE, 0x8002, "NMEA_SPEED_FILTER" },
-    { 0x7FFD, 0x8000, "RMC_SAVE_PORTS" },
-    { 0x7FFD, 0x8001, "RMC_PRESET" },
-    { 0x7FFD, 0x8002, "NMEA_SPEED_FILTER" },
 };
 
 const char *cbor_registry_field_name(uint16_t did, uint16_t key)

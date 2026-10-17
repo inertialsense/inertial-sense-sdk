@@ -1,4 +1,4 @@
-/* Generated from src/cbor/registry.yaml by scripts/cbor_registry.py -- do not edit. */
+/* Generated from the CBOR key registry -- do not edit. */
 
 #include "data_sets.h"
 #include "cbor/cbor_registry.h"

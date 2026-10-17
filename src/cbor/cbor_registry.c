@@ -1,15 +1,15 @@
-/* Generated from src/cbor/registry.yaml by scripts/cbor_registry.py -- do not edit. */
+/* Generated from the CBOR key registry -- do not edit. */
 
 #include <stddef.h>
 #include "data_sets.h"
 #include "ISComm.h"
 #include "cbor/cbor_registry.h"
 
-_Static_assert(DID_CBOR == 129, "registry.yaml transport.isb_did does not match DID_CBOR");
-_Static_assert((NUM_CIDS) == 27, "registry.yaml constant NUM_CIDS does not match the C definition");
-_Static_assert((NMEA_MSG_ID_COUNT) == 20, "registry.yaml constant NMEA_MSG_ID_COUNT does not match the C definition");
-_Static_assert((RMC_CFG_MAX_PORTS) == 6, "registry.yaml constant RMC_CFG_MAX_PORTS does not match the C definition");
-_Static_assert((ISB_MAX_DATASET_SIZE) == 2040, "registry.yaml constant ISB_MAX_DATASET_SIZE does not match the C definition");
+_Static_assert(DID_CBOR == 129, "registry transport.isb_did does not match DID_CBOR");
+_Static_assert((NUM_CIDS) == 27, "registry constant NUM_CIDS does not match the C definition");
+_Static_assert((NMEA_MSG_ID_COUNT) == 20, "registry constant NMEA_MSG_ID_COUNT does not match the C definition");
+_Static_assert((RMC_CFG_MAX_PORTS) == 6, "registry constant RMC_CFG_MAX_PORTS does not match the C definition");
+_Static_assert((ISB_MAX_DATASET_SIZE) == 2040, "registry constant ISB_MAX_DATASET_SIZE does not match the C definition");
 
 const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[] = {
     { 0, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, startupImuDtMs) },
