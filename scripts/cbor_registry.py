@@ -38,6 +38,13 @@ SCALAR_TYPES = {
     'float64': ('double',   'FCTYPE_DOUBLE', 'FCTYPE_DOUBLE_ARRAY', 9),
     'bool':    ('uint8_t',  None, None, 1),
 }
+# registry type: (codec field type, element size)
+CODEC_TYPES = {
+    'uint8': ('CBOR_T_UINT', 1), 'uint16': ('CBOR_T_UINT', 2), 'uint32': ('CBOR_T_UINT', 4), 'uint64': ('CBOR_T_UINT', 8),
+    'int8': ('CBOR_T_INT', 1), 'int16': ('CBOR_T_INT', 2), 'int32': ('CBOR_T_INT', 4), 'int64': ('CBOR_T_INT', 8),
+    'float32': ('CBOR_T_FLOAT', 4), 'float64': ('CBOR_T_FLOAT', 8), 'bool': ('CBOR_T_BOOL', 1),
+    'text': ('CBOR_T_TEXT', 1), 'bytes': ('CBOR_T_BYTES', 1),
+}
 COMPOUND_TYPES = {'array', 'map', 'key_paths', 'text', 'bytes'}
 DEFAULT_SOURCES = {'firmware_logic', 'protocol_rule'}
 
@@ -347,7 +354,7 @@ def legacy_dids(reg):
 
 def gen_header(reg):
     out = [HEADER, '#ifndef CBOR_REGISTRY_H', '#define CBOR_REGISTRY_H', '',
-           '#include <stdint.h>', '#include "cbor/flash_cfg_cbor.h"', '',
+           '#include <stdint.h>', '#include "cbor/cbor_codec.h"', '#include "cbor/flash_cfg_cbor.h"', '',
            '#ifdef __cplusplus', 'extern "C" {', '#endif', '']
     out.append(f'#define CBOR_REGISTRY_VERSION  {reg["registry_version"]}')
     out.append(f'#define CBOR_ISB_DID           {reg["transport"]["isb_did"]}   /* DID_CBOR */')
@@ -379,6 +386,7 @@ def gen_header(reg):
         n = c_ident(d['name'])
         out.append(f'extern const flash_cfg_field_desc_t g_cborFields_{n}[];')
         out.append(f'extern const uint16_t g_cborFieldsCount_{n};')
+        out.append(f'extern const cbor_schema_t g_cborSchema_{n};')
     out += ['', '/* Field names (SDK only: cbor_registry_names.c) */',
             'const char *cbor_registry_field_name(uint16_t did, uint16_t key);',
             'int cbor_registry_field_key(uint16_t did, const char *name);', '',
@@ -410,6 +418,16 @@ def gen_tables(reg):
             ft = fa if cnt is not None else fs
             out.append(f'    {{ {f["key"]}, {ft}, {cnt if cnt is not None else 1}, offsetof({st}, {member}) }},')
         out += ['};', f'const uint16_t g_cborFieldsCount_{n} = sizeof(g_cborFields_{n}) / sizeof(g_cborFields_{n}[0]);', '']
+        out.append(f'static const cbor_field_t s_schemaFields_{n}[] = {{')
+        for f in d['fields']:
+            if f['type'] not in CODEC_TYPES:
+                raise ValueError(f'{d["name"]}.{f["name"]}: type {f["type"]} has no codec mapping for a legacy struct')
+            ct, size = CODEC_TYPES[f['type']]
+            cnt = f.get('count')
+            member = f.get('member', f['name'])
+            out.append(f'    {{ {f["key"]}, {ct}, {size}, {cnt if cnt is not None else 0}, offsetof({st}, {member}), NULL }},')
+        out += ['};', f'const cbor_schema_t g_cborSchema_{n} = {{ s_schemaFields_{n}, '
+                      f'sizeof(s_schemaFields_{n}) / sizeof(s_schemaFields_{n}[0]) }};', '']
         out.append(f'/* {d["name"]}: each entry matches its {st} member in type and size */')
         for f in d['fields']:
             ctype = SCALAR_TYPES[f['type']][0]

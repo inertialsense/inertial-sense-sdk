@@ -65,6 +65,60 @@ const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[] = {
 };
 const uint16_t g_cborFieldsCount_FLASH_CFG = sizeof(g_cborFields_FLASH_CFG) / sizeof(g_cborFields_FLASH_CFG[0]);
 
+static const cbor_field_t s_schemaFields_FLASH_CFG[] = {
+    { 0, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupImuDtMs), NULL },
+    { 1, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupNavDtMs), NULL },
+    { 2, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, ser0BaudRate), NULL },
+    { 3, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, ser1BaudRate), NULL },
+    { 4, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, insRotation), NULL },
+    { 5, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, insOffset), NULL },
+    { 6, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, gnss1AntOffset), NULL },
+    { 7, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, dynamicModel), NULL },
+    { 8, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, debug), NULL },
+    { 9, CBOR_T_UINT, 2, 0, offsetof(nvm_flash_cfg_t, gnssSatSigConst), NULL },
+    { 10, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, sysCfgBits), NULL },
+    { 11, CBOR_T_FLOAT, 8, 3, offsetof(nvm_flash_cfg_t, refLla), NULL },
+    { 12, CBOR_T_FLOAT, 8, 3, offsetof(nvm_flash_cfg_t, lastLla), NULL },
+    { 13, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, lastLlaTimeOfWeekMs), NULL },
+    { 14, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, lastLlaWeek), NULL },
+    { 15, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, lastLlaUpdateDistance), NULL },
+    { 16, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, ioConfig), NULL },
+    { 17, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, platformConfig), NULL },
+    { 18, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, gnss2AntOffset), NULL },
+    { 19, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, zeroVelRotation), NULL },
+    { 20, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, zeroVelOffset), NULL },
+    { 21, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, gnssTimeUserDelay), NULL },
+    { 22, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, magDeclination), NULL },
+    { 23, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, gnssTimeSyncPeriodMs), NULL },
+    { 24, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupGnssDtMs), NULL },
+    { 25, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, RTKCfgBits), NULL },
+    { 26, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, sensorConfig), NULL },
+    { 27, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, gnssMinimumElevation), NULL },
+    { 28, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, ser2BaudRate), NULL },
+    { 29, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, wheelConfig.bits), NULL },
+    { 30, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w), NULL },
+    { 31, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w_sigma), NULL },
+    { 32, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w), NULL },
+    { 33, CBOR_T_FLOAT, 4, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w_sigma), NULL },
+    { 34, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, wheelConfig.track_width), NULL },
+    { 35, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, wheelConfig.radius), NULL },
+    { 36, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, magInterferenceThreshold), NULL },
+    { 37, CBOR_T_FLOAT, 4, 0, offsetof(nvm_flash_cfg_t, magCalibrationQualityThreshold), NULL },
+    { 38, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, gnssCn0Minimum), NULL },
+    { 39, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, gnssCn0DynMinOffset), NULL },
+    { 40, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuRejectThreshGyroLow), NULL },
+    { 41, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuRejectThreshGyroHigh), NULL },
+    { 42, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDetectLatencyMs), NULL },
+    { 43, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockRejectLatchMs), NULL },
+    { 44, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockOptions), NULL },
+    { 45, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDeltaAccHighThreshold), NULL },
+    { 46, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDeltaAccLowThreshold), NULL },
+    { 47, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDeltaGyroHighThreshold), NULL },
+    { 48, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDeltaGyroLowThreshold), NULL },
+    { 49, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, ioConfig2), NULL },
+};
+const cbor_schema_t g_cborSchema_FLASH_CFG = { s_schemaFields_FLASH_CFG, sizeof(s_schemaFields_FLASH_CFG) / sizeof(s_schemaFields_FLASH_CFG[0]) };
+
 /* FLASH_CFG: each entry matches its nvm_flash_cfg_t member in type and size */
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->startupImuDtMs, uint32_t: 1, default: 0), "FLASH_CFG.startupImuDtMs type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->startupNavDtMs, uint32_t: 1, default: 0), "FLASH_CFG.startupNavDtMs type");
@@ -137,6 +191,14 @@ const flash_cfg_field_desc_t g_cborFields_CAN_CONFIG[] = {
 };
 const uint16_t g_cborFieldsCount_CAN_CONFIG = sizeof(g_cborFields_CAN_CONFIG) / sizeof(g_cborFields_CAN_CONFIG[0]);
 
+static const cbor_field_t s_schemaFields_CAN_CONFIG[] = {
+    { 0, CBOR_T_UINT, 2, NUM_CIDS, offsetof(can_config_t, can_period_mult), NULL },
+    { 1, CBOR_T_UINT, 4, NUM_CIDS, offsetof(can_config_t, can_transmit_address), NULL },
+    { 2, CBOR_T_UINT, 2, 0, offsetof(can_config_t, can_setting), NULL },
+    { 3, CBOR_T_UINT, 4, 0, offsetof(can_config_t, can_receive_address), NULL },
+};
+const cbor_schema_t g_cborSchema_CAN_CONFIG = { s_schemaFields_CAN_CONFIG, sizeof(s_schemaFields_CAN_CONFIG) / sizeof(s_schemaFields_CAN_CONFIG[0]) };
+
 /* CAN_CONFIG: each entry matches its can_config_t member in type and size */
 _Static_assert(_Generic(((can_config_t *)0)->can_period_mult[0], uint16_t: 1, default: 0), "CAN_CONFIG.can_period_mult type");
 _Static_assert(sizeof(((can_config_t *)0)->can_period_mult) == sizeof(uint16_t) * (NUM_CIDS), "CAN_CONFIG.can_period_mult count");
@@ -165,6 +227,27 @@ const flash_cfg_field_desc_t g_cborFields_GPX_FLASH_CFG[] = {
     { 16, FCTYPE_DOUBLE_ARRAY, 3, offsetof(gpx_flash_cfg_t, refLla) },
 };
 const uint16_t g_cborFieldsCount_GPX_FLASH_CFG = sizeof(g_cborFields_GPX_FLASH_CFG) / sizeof(g_cborFields_GPX_FLASH_CFG[0]);
+
+static const cbor_field_t s_schemaFields_GPX_FLASH_CFG[] = {
+    { 0, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, ser0BaudRate), NULL },
+    { 1, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, ser1BaudRate), NULL },
+    { 2, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, ser2BaudRate), NULL },
+    { 3, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, startupGnssDtMs), NULL },
+    { 4, CBOR_T_FLOAT, 4, 3, offsetof(gpx_flash_cfg_t, gnss1AntOffset), NULL },
+    { 5, CBOR_T_FLOAT, 4, 3, offsetof(gpx_flash_cfg_t, gnss2AntOffset), NULL },
+    { 6, CBOR_T_UINT, 2, 0, offsetof(gpx_flash_cfg_t, gnssSatSigConst), NULL },
+    { 7, CBOR_T_UINT, 1, 0, offsetof(gpx_flash_cfg_t, dynamicModel), NULL },
+    { 8, CBOR_T_UINT, 1, 0, offsetof(gpx_flash_cfg_t, debug), NULL },
+    { 9, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, gnssTimeSyncPeriodMs), NULL },
+    { 10, CBOR_T_FLOAT, 4, 0, offsetof(gpx_flash_cfg_t, gnssTimeUserDelay), NULL },
+    { 11, CBOR_T_FLOAT, 4, 0, offsetof(gpx_flash_cfg_t, gnssMinimumElevation), NULL },
+    { 12, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, RTKCfgBits), NULL },
+    { 13, CBOR_T_UINT, 1, 0, offsetof(gpx_flash_cfg_t, gnssCn0Minimum), NULL },
+    { 14, CBOR_T_UINT, 1, 0, offsetof(gpx_flash_cfg_t, gnssCn0DynMinOffset), NULL },
+    { 15, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, sysCfgBits), NULL },
+    { 16, CBOR_T_FLOAT, 8, 3, offsetof(gpx_flash_cfg_t, refLla), NULL },
+};
+const cbor_schema_t g_cborSchema_GPX_FLASH_CFG = { s_schemaFields_GPX_FLASH_CFG, sizeof(s_schemaFields_GPX_FLASH_CFG) / sizeof(s_schemaFields_GPX_FLASH_CFG[0]) };
 
 /* GPX_FLASH_CFG: each entry matches its gpx_flash_cfg_t member in type and size */
 _Static_assert(_Generic(((gpx_flash_cfg_t *)0)->ser0BaudRate, uint32_t: 1, default: 0), "GPX_FLASH_CFG.ser0BaudRate type");

@@ -4,6 +4,7 @@
 #define CBOR_REGISTRY_H
 
 #include <stdint.h>
+#include "cbor/cbor_codec.h"
 #include "cbor/flash_cfg_cbor.h"
 
 #ifdef __cplusplus
@@ -213,10 +214,13 @@ typedef enum
 /* Field tables for legacy DIDs (bound to their C structs) */
 extern const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[];
 extern const uint16_t g_cborFieldsCount_FLASH_CFG;
+extern const cbor_schema_t g_cborSchema_FLASH_CFG;
 extern const flash_cfg_field_desc_t g_cborFields_CAN_CONFIG[];
 extern const uint16_t g_cborFieldsCount_CAN_CONFIG;
+extern const cbor_schema_t g_cborSchema_CAN_CONFIG;
 extern const flash_cfg_field_desc_t g_cborFields_GPX_FLASH_CFG[];
 extern const uint16_t g_cborFieldsCount_GPX_FLASH_CFG;
+extern const cbor_schema_t g_cborSchema_GPX_FLASH_CFG;
 
 /* Field names (SDK only: cbor_registry_names.c) */
 const char *cbor_registry_field_name(uint16_t did, uint16_t key);
