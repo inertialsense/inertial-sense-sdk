@@ -29,6 +29,9 @@
 extern "C" {
 #endif
 
+/** Number of ports RMC_STORED holds */
+#define RMC_CFG_MAX_PORTS   6
+
 /** A device's stored per-port subscriptions */
 typedef struct
 {

@@ -30,10 +30,9 @@ TEST(CborRegistry, UnknownFieldsAreNotFound)
     EXPECT_EQ(cbor_registry_field_key(CBOR_DID_FLASH_CFG, "noSuchField"), -1);
 }
 
-TEST(CborRegistry, LegacyFieldTablesAreInKeyOrder)
+TEST(CborRegistry, LegacySchemasAreInKeyOrder)
 {
-    for (uint16_t i = 1; i < g_cborFieldsCount_FLASH_CFG; i++)
-        EXPECT_LT(g_cborFields_FLASH_CFG[i - 1].id, g_cborFields_FLASH_CFG[i].id);
-    for (uint16_t i = 1; i < g_cborFieldsCount_GPX_FLASH_CFG; i++)
-        EXPECT_LT(g_cborFields_GPX_FLASH_CFG[i - 1].id, g_cborFields_GPX_FLASH_CFG[i].id);
+    for (const cbor_schema_t* s : { &g_cborSchema_FLASH_CFG, &g_cborSchema_CAN_CONFIG, &g_cborSchema_GPX_FLASH_CFG })
+        for (uint16_t i = 1; i < s->count; i++)
+            EXPECT_LT(s->fields[i - 1].key, s->fields[i].key);
 }

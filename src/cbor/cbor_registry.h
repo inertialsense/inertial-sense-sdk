@@ -4,8 +4,8 @@
 #define CBOR_REGISTRY_H
 
 #include <stdint.h>
+#include "data_sets.h"
 #include "cbor/cbor_codec.h"
-#include "cbor/flash_cfg_cbor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -219,15 +219,9 @@ typedef enum
 #define CBOR_ROUTE_FILTER__MATCH_DIDS  2
 #define CBOR_ROUTE_FILTER__ACTION  3
 
-/* Field tables for legacy DIDs (bound to their C structs) */
-extern const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[];
-extern const uint16_t g_cborFieldsCount_FLASH_CFG;
+/* Schemas for legacy DIDs (bound to their C structs) */
 extern const cbor_schema_t g_cborSchema_FLASH_CFG;
-extern const flash_cfg_field_desc_t g_cborFields_CAN_CONFIG[];
-extern const uint16_t g_cborFieldsCount_CAN_CONFIG;
 extern const cbor_schema_t g_cborSchema_CAN_CONFIG;
-extern const flash_cfg_field_desc_t g_cborFields_GPX_FLASH_CFG[];
-extern const uint16_t g_cborFieldsCount_GPX_FLASH_CFG;
 extern const cbor_schema_t g_cborSchema_GPX_FLASH_CFG;
 
 /* Field names (SDK only: cbor_registry_names.c) */
@@ -235,7 +229,7 @@ const char *cbor_registry_field_name(uint16_t did, uint16_t key);
 int cbor_registry_field_key(uint16_t did, const char *name);
 
 /* Registry defaults (cbor_registry_defaults.c): the struct holds every fixed default; fixed[i] is 1 when
-   field i of g_cborFields_<DID> has a fixed default and 0 when the firmware computes it. */
+   field i of g_cborSchema_<DID> has a fixed default and 0 when the firmware computes it. */
 extern const nvm_flash_cfg_t g_cborDefaults_FLASH_CFG;
 extern const uint8_t g_cborDefaultFixed_FLASH_CFG[];
 extern const can_config_t g_cborDefaults_CAN_CONFIG;

@@ -380,18 +380,6 @@ TEST(CborCodec, RejectsBadKeyPaths)
     EXPECT_EQ(parse({ 0x81, 0x80 }, 2), CBOR_CODEC_ERR_VALUE);                          // empty path
 }
 
-/*-------------------------------------------------------------------------------------------- generated schemas */
-
-TEST(CborCodec, GeneratedLegacySchemasMatchTheirFieldTables)
-{
-    ASSERT_EQ(g_cborSchema_FLASH_CFG.count, g_cborFieldsCount_FLASH_CFG);
-    for (uint16_t i = 0; i < g_cborSchema_FLASH_CFG.count; i++)
-    {
-        EXPECT_EQ(g_cborSchema_FLASH_CFG.fields[i].key, g_cborFields_FLASH_CFG[i].id);
-        EXPECT_EQ(g_cborSchema_FLASH_CFG.fields[i].offset, g_cborFields_FLASH_CFG[i].offset);
-    }
-    ASSERT_EQ(g_cborSchema_GPX_FLASH_CFG.count, g_cborFieldsCount_GPX_FLASH_CFG);
-}
 
 TEST(CborCodec, FlashConfigRoundTripsThroughItsSchema)
 {

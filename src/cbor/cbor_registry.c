@@ -4,66 +4,13 @@
 #include "data_sets.h"
 #include "ISComm.h"
 #include "cbor/cbor_registry.h"
+#include "cbor/cbor_rmc.h"
 
 _Static_assert(DID_CBOR == 129, "registry transport.isb_did does not match DID_CBOR");
 _Static_assert((NUM_CIDS) == 27, "registry constant NUM_CIDS does not match the C definition");
 _Static_assert((NMEA_MSG_ID_COUNT) == 20, "registry constant NMEA_MSG_ID_COUNT does not match the C definition");
 _Static_assert((RMC_CFG_MAX_PORTS) == 6, "registry constant RMC_CFG_MAX_PORTS does not match the C definition");
 _Static_assert((ISB_MAX_DATASET_SIZE) == 2040, "registry constant ISB_MAX_DATASET_SIZE does not match the C definition");
-
-const flash_cfg_field_desc_t g_cborFields_FLASH_CFG[] = {
-    { 0, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, startupImuDtMs) },
-    { 1, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, startupNavDtMs) },
-    { 2, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, ser0BaudRate) },
-    { 3, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, ser1BaudRate) },
-    { 4, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, insRotation) },
-    { 5, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, insOffset) },
-    { 6, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, gnss1AntOffset) },
-    { 7, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, dynamicModel) },
-    { 8, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, debug) },
-    { 9, FCTYPE_UINT16, 1, offsetof(nvm_flash_cfg_t, gnssSatSigConst) },
-    { 10, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, sysCfgBits) },
-    { 11, FCTYPE_DOUBLE_ARRAY, 3, offsetof(nvm_flash_cfg_t, refLla) },
-    { 12, FCTYPE_DOUBLE_ARRAY, 3, offsetof(nvm_flash_cfg_t, lastLla) },
-    { 13, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, lastLlaTimeOfWeekMs) },
-    { 14, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, lastLlaWeek) },
-    { 15, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, lastLlaUpdateDistance) },
-    { 16, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, ioConfig) },
-    { 17, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, platformConfig) },
-    { 18, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, gnss2AntOffset) },
-    { 19, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, zeroVelRotation) },
-    { 20, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, zeroVelOffset) },
-    { 21, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, gnssTimeUserDelay) },
-    { 22, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, magDeclination) },
-    { 23, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, gnssTimeSyncPeriodMs) },
-    { 24, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, startupGnssDtMs) },
-    { 25, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, RTKCfgBits) },
-    { 26, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, sensorConfig) },
-    { 27, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, gnssMinimumElevation) },
-    { 28, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, ser2BaudRate) },
-    { 29, FCTYPE_UINT32, 1, offsetof(nvm_flash_cfg_t, wheelConfig.bits) },
-    { 30, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w) },
-    { 31, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w_sigma) },
-    { 32, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w) },
-    { 33, FCTYPE_FLOAT_ARRAY, 3, offsetof(nvm_flash_cfg_t, wheelConfig.transform.t_b2w_sigma) },
-    { 34, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, wheelConfig.track_width) },
-    { 35, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, wheelConfig.radius) },
-    { 36, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, magInterferenceThreshold) },
-    { 37, FCTYPE_FLOAT, 1, offsetof(nvm_flash_cfg_t, magCalibrationQualityThreshold) },
-    { 38, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, gnssCn0Minimum) },
-    { 39, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, gnssCn0DynMinOffset) },
-    { 40, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuRejectThreshGyroLow) },
-    { 41, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuRejectThreshGyroHigh) },
-    { 42, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockDetectLatencyMs) },
-    { 43, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockRejectLatchMs) },
-    { 44, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockOptions) },
-    { 45, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockDeltaAccHighThreshold) },
-    { 46, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockDeltaAccLowThreshold) },
-    { 47, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockDeltaGyroHighThreshold) },
-    { 48, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, imuShockDeltaGyroLowThreshold) },
-    { 49, FCTYPE_UINT8, 1, offsetof(nvm_flash_cfg_t, ioConfig2) },
-};
-const uint16_t g_cborFieldsCount_FLASH_CFG = sizeof(g_cborFields_FLASH_CFG) / sizeof(g_cborFields_FLASH_CFG[0]);
 
 static const cbor_field_t s_schemaFields_FLASH_CFG[] = {
     { 0, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupImuDtMs), NULL },
@@ -183,14 +130,6 @@ _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->imuShockDeltaGyroHighThreshold, 
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->imuShockDeltaGyroLowThreshold, uint8_t: 1, default: 0), "FLASH_CFG.imuShockDeltaGyroLowThreshold type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->ioConfig2, uint8_t: 1, default: 0), "FLASH_CFG.ioConfig2 type");
 
-const flash_cfg_field_desc_t g_cborFields_CAN_CONFIG[] = {
-    { 0, FCTYPE_UINT16_ARRAY, NUM_CIDS, offsetof(can_config_t, can_period_mult) },
-    { 1, FCTYPE_UINT32_ARRAY, NUM_CIDS, offsetof(can_config_t, can_transmit_address) },
-    { 2, FCTYPE_UINT16, 1, offsetof(can_config_t, can_setting) },
-    { 3, FCTYPE_UINT32, 1, offsetof(can_config_t, can_receive_address) },
-};
-const uint16_t g_cborFieldsCount_CAN_CONFIG = sizeof(g_cborFields_CAN_CONFIG) / sizeof(g_cborFields_CAN_CONFIG[0]);
-
 static const cbor_field_t s_schemaFields_CAN_CONFIG[] = {
     { 0, CBOR_T_UINT, 2, NUM_CIDS, offsetof(can_config_t, can_period_mult), NULL },
     { 1, CBOR_T_UINT, 4, NUM_CIDS, offsetof(can_config_t, can_transmit_address), NULL },
@@ -206,27 +145,6 @@ _Static_assert(_Generic(((can_config_t *)0)->can_transmit_address[0], uint32_t: 
 _Static_assert(sizeof(((can_config_t *)0)->can_transmit_address) == sizeof(uint32_t) * (NUM_CIDS), "CAN_CONFIG.can_transmit_address count");
 _Static_assert(_Generic(((can_config_t *)0)->can_setting, uint16_t: 1, default: 0), "CAN_CONFIG.can_setting type");
 _Static_assert(_Generic(((can_config_t *)0)->can_receive_address, uint32_t: 1, default: 0), "CAN_CONFIG.can_receive_address type");
-
-const flash_cfg_field_desc_t g_cborFields_GPX_FLASH_CFG[] = {
-    { 0, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, ser0BaudRate) },
-    { 1, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, ser1BaudRate) },
-    { 2, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, ser2BaudRate) },
-    { 3, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, startupGnssDtMs) },
-    { 4, FCTYPE_FLOAT_ARRAY, 3, offsetof(gpx_flash_cfg_t, gnss1AntOffset) },
-    { 5, FCTYPE_FLOAT_ARRAY, 3, offsetof(gpx_flash_cfg_t, gnss2AntOffset) },
-    { 6, FCTYPE_UINT16, 1, offsetof(gpx_flash_cfg_t, gnssSatSigConst) },
-    { 7, FCTYPE_UINT8, 1, offsetof(gpx_flash_cfg_t, dynamicModel) },
-    { 8, FCTYPE_UINT8, 1, offsetof(gpx_flash_cfg_t, debug) },
-    { 9, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, gnssTimeSyncPeriodMs) },
-    { 10, FCTYPE_FLOAT, 1, offsetof(gpx_flash_cfg_t, gnssTimeUserDelay) },
-    { 11, FCTYPE_FLOAT, 1, offsetof(gpx_flash_cfg_t, gnssMinimumElevation) },
-    { 12, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, RTKCfgBits) },
-    { 13, FCTYPE_UINT8, 1, offsetof(gpx_flash_cfg_t, gnssCn0Minimum) },
-    { 14, FCTYPE_UINT8, 1, offsetof(gpx_flash_cfg_t, gnssCn0DynMinOffset) },
-    { 15, FCTYPE_UINT32, 1, offsetof(gpx_flash_cfg_t, sysCfgBits) },
-    { 16, FCTYPE_DOUBLE_ARRAY, 3, offsetof(gpx_flash_cfg_t, refLla) },
-};
-const uint16_t g_cborFieldsCount_GPX_FLASH_CFG = sizeof(g_cborFields_GPX_FLASH_CFG) / sizeof(g_cborFields_GPX_FLASH_CFG[0]);
 
 static const cbor_field_t s_schemaFields_GPX_FLASH_CFG[] = {
     { 0, CBOR_T_UINT, 4, 0, offsetof(gpx_flash_cfg_t, ser0BaudRate), NULL },
