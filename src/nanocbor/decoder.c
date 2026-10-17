@@ -273,7 +273,14 @@ int nanocbor_get_tag(nanocbor_value_t *cvalue, uint32_t *tag)
 
 int nanocbor_get_tag64(nanocbor_value_t *cvalue, uint64_t *tag)
 {
-    return _get_and_advance_uint64(cvalue, tag, NANOCBOR_TYPE_TAG);
+    int res = _get_uint64(cvalue, tag, NANOCBOR_SIZE_LONG, NANOCBOR_TYPE_TAG);
+
+    if (res >= 0) {
+        cvalue->cur += res;
+        res = NANOCBOR_OK;
+    }
+
+    return res;
 }
 
 int nanocbor_get_decimal_frac(nanocbor_value_t *cvalue, int32_t *e, int32_t *m)
@@ -642,7 +649,8 @@ static int _skip_limited(nanocbor_value_t *it, uint8_t limit)
             if (res < 0) {
                 return res;
             }
-            _advance(it, res);
+            /* a tag and its content are one item: advance without counting the tag */
+            it->cur += res;
             /* do not decrement skip as tag content still needs to be skipped, too */
             continue;
         }
