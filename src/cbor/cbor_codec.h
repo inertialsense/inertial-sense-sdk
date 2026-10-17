@@ -158,6 +158,17 @@ int cbor_codec_encode_map(const cbor_schema_t *schema, const void *data, const c
  */
 int cbor_codec_decode_map(nanocbor_value_t *it, const cbor_schema_t *schema, void *data, cbor_decode_result_t *res);
 
+/**
+ * @brief Encodes the fields selected by a mask (bit i of mask[i / 8] selects schema field i), each written whole,
+ *        with the same budget and too-large marking as cbor_codec_encode_map().
+ * @return bytes written, or CBOR_CODEC_ERR_NO_SPACE if not even the map header fits
+ */
+int cbor_codec_encode_fields(const cbor_schema_t *schema, const void *data, const uint8_t *mask, uint8_t *buf,
+                             size_t bufSize, uint16_t *tooLarge);
+
+/** @return bytes a field occupies in its struct (for a nested map, the extent of its members) */
+size_t cbor_codec_field_size(const cbor_field_t *f);
+
 /** @return the schema field with the given key, or NULL */
 const cbor_field_t *cbor_codec_find_field(const cbor_schema_t *schema, uint16_t key);
 

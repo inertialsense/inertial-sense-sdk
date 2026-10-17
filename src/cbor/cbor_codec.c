@@ -331,7 +331,7 @@ int cbor_codec_decode_value(nanocbor_value_t *it, const cbor_field_t *f, void *d
 /*============================================================================================== value encode */
 
 static int encode_map(const cbor_schema_t *schema, const void *data, const cbor_path_t *paths, size_t pathCount,
-                      uint8_t *buf, size_t bufSize, uint16_t *tooLarge, bool strict);
+                      const uint8_t *mask, uint8_t *buf, size_t bufSize, uint16_t *tooLarge, bool strict);
 
 static int encode_element(nanocbor_encoder_t *enc, const cbor_field_t *f, const void *src)
 {
@@ -358,7 +358,7 @@ int cbor_codec_encode_value(nanocbor_encoder_t *enc, const cbor_field_t *f, cons
     case CBOR_T_MAP:
     {
         size_t room = (size_t)(enc->end - enc->cur);
-        int n = encode_map(f->sub, src, NULL, 0, enc->cur, room, NULL, true);
+        int n = encode_map(f->sub, src, NULL, 0, NULL, enc->cur, room, NULL, true);
         if (n < 0)
             return NANOCBOR_ERR_END;
         enc->cur += n;
@@ -499,9 +499,12 @@ static int encode_too_large_marker(nanocbor_encoder_t *enc, uint16_t key)
     return 0;
 }
 
-/** Strict: fail with CBOR_CODEC_ERR_NO_SPACE if any selected field does not fit, instead of marking it */
+/**
+ * mask, when given, selects fields by schema index instead of paths. Strict: fail with CBOR_CODEC_ERR_NO_SPACE if any
+ * selected field does not fit, instead of marking it.
+ */
 static int encode_map(const cbor_schema_t *schema, const void *data, const cbor_path_t *paths, size_t pathCount,
-                      uint8_t *buf, size_t bufSize, uint16_t *tooLarge, bool strict)
+                      const uint8_t *mask, uint8_t *buf, size_t bufSize, uint16_t *tooLarge, bool strict)
 {
     if (!schema || !data || !buf)
         return CBOR_CODEC_ERR_ARG;
@@ -517,8 +520,14 @@ static int encode_map(const cbor_schema_t *schema, const void *data, const cbor_
         const cbor_field_t *f = &schema->fields[i];
         bool whole;
         cbor_path_t sub[SUB_SELECT_MAX];
-        size_t subCount;
-        if (!select_field(f, paths, pathCount, &whole, sub, SUB_SELECT_MAX, &subCount))
+        size_t subCount = 0;
+        if (mask)
+        {
+            if (!(mask[i / 8] & (1u << (i % 8))))
+                continue;
+            whole = true;
+        }
+        else if (!select_field(f, paths, pathCount, &whole, sub, SUB_SELECT_MAX, &subCount))
             continue;
 
         const uint8_t *src = (const uint8_t *)data + f->offset;
@@ -528,7 +537,7 @@ static int encode_map(const cbor_schema_t *schema, const void *data, const cbor_
             int n;
             if (f->type == CBOR_T_MAP)
             {   // a nested map that does not fit whole is written with its own fields marked
-                n = encode_map(f->sub, src, whole ? NULL : sub, whole ? 0 : subCount,
+                n = encode_map(f->sub, src, whole ? NULL : sub, whole ? 0 : subCount, NULL,
                                enc.cur, (size_t)(enc.end - enc.cur), tooLarge, strict);
                 if (n >= 0)
                 {
@@ -571,7 +580,33 @@ static int encode_map(const cbor_schema_t *schema, const void *data, const cbor_
 int cbor_codec_encode_map(const cbor_schema_t *schema, const void *data, const cbor_path_t *paths, size_t pathCount,
                           uint8_t *buf, size_t bufSize, uint16_t *tooLarge)
 {
-    return encode_map(schema, data, paths, pathCount, buf, bufSize, tooLarge, false);
+    return encode_map(schema, data, paths, pathCount, NULL, buf, bufSize, tooLarge, false);
+}
+
+int cbor_codec_encode_fields(const cbor_schema_t *schema, const void *data, const uint8_t *mask, uint8_t *buf,
+                             size_t bufSize, uint16_t *tooLarge)
+{
+    if (!mask)
+        return CBOR_CODEC_ERR_ARG;
+    return encode_map(schema, data, NULL, 0, mask, buf, bufSize, tooLarge, false);
+}
+
+size_t cbor_codec_field_size(const cbor_field_t *f)
+{
+    if (f->type == CBOR_T_MAP)
+    {   // extent of the nested struct's members (trailing padding excluded)
+        size_t end = 0;
+        for (uint16_t i = 0; f->sub && i < f->sub->count; i++)
+        {
+            size_t e = f->sub->fields[i].offset + cbor_codec_field_size(&f->sub->fields[i]);
+            if (e > end)
+                end = e;
+        }
+        return end;
+    }
+    if (f->type == CBOR_T_TEXT || f->type == CBOR_T_BYTES)
+        return f->count;
+    return (size_t)f->size * (f->count ? f->count : 1);
 }
 
 /*============================================================================================== map decode */
