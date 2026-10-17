@@ -440,6 +440,8 @@ int cbor_codec_encode_path(nanocbor_encoder_t *enc, const cbor_path_t *path)
 
 /*============================================================================================== map encode */
 
+static int encode_too_large_marker(nanocbor_encoder_t *enc, uint16_t key);
+
 const cbor_field_t *cbor_codec_find_field(const cbor_schema_t *schema, uint16_t key)
 {
     for (uint16_t i = 0; schema && i < schema->count; i++)
@@ -489,6 +491,32 @@ static bool select_field(const cbor_field_t *f, const cbor_path_t *paths, size_t
         memcpy(s->key, &paths[i].key[1], s->depth * sizeof(uint16_t));
     }
     return selected;
+}
+
+bool cbor_map_begin(cbor_map_writer_t *w, uint8_t *buf, const uint8_t *end)
+{
+    if (end - buf < MAP_HDR_RESERVE)
+        return false;
+    w->start = buf;
+    w->entries = 0;
+    nanocbor_encoder_init(&w->enc, buf + MAP_HDR_RESERVE, (size_t)(end - buf) - MAP_HDR_RESERVE);
+    return true;
+}
+
+size_t cbor_map_end(cbor_map_writer_t *w)
+{
+    size_t body = (size_t)(w->enc.cur - (w->start + MAP_HDR_RESERVE));
+    size_t hdr = map_hdr_len(w->entries);
+    nanocbor_encoder_t h;
+    nanocbor_encoder_init(&h, w->start, hdr);
+    nanocbor_fmt_map(&h, w->entries);
+    memmove(w->start + hdr, w->start + MAP_HDR_RESERVE, body);
+    return hdr + body;
+}
+
+int cbor_codec_encode_too_large(nanocbor_encoder_t *enc, uint16_t key)
+{
+    return encode_too_large_marker(enc, key);
 }
 
 static int encode_too_large_marker(nanocbor_encoder_t *enc, uint16_t key)

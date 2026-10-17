@@ -93,7 +93,10 @@ bool cbor_msg_addressed_to(const cbor_envelope_t *env, uint64_t devId);
 
 typedef struct cbor_did_s cbor_did_t;
 
-/** A DID the device owns, backed by a C struct described by schema */
+/**
+ * A DID the device owns. Most are backed by a C struct described by schema (read/write). A DID that is not a fixed
+ * struct (rule lists, per-port tables) leaves schema NULL and provides encode/decode/keys instead.
+ */
 struct cbor_did_s
 {
     uint16_t                did;        //!< Root key (CBOR_DID_*)
@@ -107,6 +110,19 @@ struct cbor_did_s
      * @return eCborMsgStatus (CBOR_MSG_STATUS_OK on success). NULL = the DID is read-only.
      */
     uint8_t (*write)(const cbor_did_t *d, void *ctx, const void *values);
+    /**
+     * GET for a DID without a schema: writes the selected part (pathCount 0 = all) as one map into buf, marking what
+     * does not fit with RESP_TOO_LARGE. @return bytes written, or a negative value if not even the map header fits
+     */
+    int (*encode)(const cbor_did_t *d, void *ctx, const cbor_path_t *paths, size_t pathCount, uint8_t *buf,
+                  size_t size);
+    /**
+     * DATA for a DID without a schema: validates and applies the map at it, all or nothing, advancing past it; the
+     * key paths of invalid values go in res. @return eCborMsgStatus. NULL (with write NULL) = read-only.
+     */
+    uint8_t (*decode)(const cbor_did_t *d, void *ctx, nanocbor_value_t *it, cbor_decode_result_t *res);
+    /** CAPABILITIES for a DID without a schema: writes the array of field keys served. NULL = an empty array. */
+    int (*keys)(const cbor_did_t *d, void *ctx, nanocbor_encoder_t *enc);
 };
 
 /** A device answering CBOR messages */

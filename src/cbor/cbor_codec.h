@@ -169,6 +169,23 @@ int cbor_codec_encode_fields(const cbor_schema_t *schema, const void *data, cons
 /** @return bytes a field occupies in its struct (for a nested map, the extent of its members) */
 size_t cbor_codec_field_size(const cbor_field_t *f);
 
+/** Writes a map whose entry count is known only at the end: entries go through enc, counted in entries */
+typedef struct
+{
+    uint8_t            *start;
+    nanocbor_encoder_t  enc;
+    size_t              entries;
+} cbor_map_writer_t;
+
+/** @brief Starts a map in [buf, end), reserving room for its header. @return false if not even the header fits */
+bool cbor_map_begin(cbor_map_writer_t *w, uint8_t *buf, const uint8_t *end);
+
+/** @brief Writes the map header for w->entries and closes the reserved gap. @return bytes of the whole map */
+size_t cbor_map_end(cbor_map_writer_t *w);
+
+/** @brief Writes key: {MSG_STATUS: RESP_TOO_LARGE}. @return >= 0, or NANOCBOR_ERR_END if it does not fit */
+int cbor_codec_encode_too_large(nanocbor_encoder_t *enc, uint16_t key);
+
 /** @return the schema field with the given key, or NULL */
 const cbor_field_t *cbor_codec_find_field(const cbor_schema_t *schema, uint16_t key);
 

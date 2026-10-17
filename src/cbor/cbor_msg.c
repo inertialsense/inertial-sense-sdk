@@ -10,9 +10,6 @@
 #include "cbor_msg.h"
 #include "cbor_registry.h"
 
-/** Bytes reserved for a map header whose entry count is not yet known */
-#define MAP_HDR_RESERVE     3
-
 /** Largest {MSG_STATUS: x} marker for one DID: DID key (3) + map header (1) + MSG_STATUS key (3) + status (1) */
 #define DID_MARKER_MAX      8
 
@@ -54,35 +51,6 @@ static int next_key(nanocbor_value_t *map, uint16_t *key)
 
 static bool mask_test(const uint8_t *mask, uint16_t i)  { return (mask[i / 8] & (1u << (i % 8))) != 0; }
 static void mask_set(uint8_t *mask, uint16_t i)         { mask[i / 8] |= (uint8_t)(1u << (i % 8)); }
-
-/** Writes a map whose entry count is known only at the end: reserve the header, then close the gap */
-typedef struct
-{
-    uint8_t            *start;
-    nanocbor_encoder_t  enc;
-    size_t              entries;
-} map_writer_t;
-
-static bool mw_begin(map_writer_t *w, uint8_t *buf, const uint8_t *end)
-{
-    if (end - buf < MAP_HDR_RESERVE)
-        return false;
-    w->start = buf;
-    w->entries = 0;
-    nanocbor_encoder_init(&w->enc, buf + MAP_HDR_RESERVE, (size_t)(end - buf) - MAP_HDR_RESERVE);
-    return true;
-}
-
-static size_t mw_end(map_writer_t *w)
-{
-    size_t body = (size_t)(w->enc.cur - (w->start + MAP_HDR_RESERVE));
-    size_t hdr = (w->entries < 24) ? 1 : (w->entries < 256) ? 2 : 3;
-    nanocbor_encoder_t h;
-    nanocbor_encoder_init(&h, w->start, hdr);
-    nanocbor_fmt_map(&h, w->entries);
-    memmove(w->start + hdr, w->start + MAP_HDR_RESERVE, body);
-    return hdr + body;
-}
 
 /** Advances enc past n bytes written directly into its buffer */
 static void enc_advance(nanocbor_encoder_t *enc, size_t n)
@@ -292,7 +260,7 @@ int cbor_msg_encode_envelope(nanocbor_encoder_t *enc, const cbor_envelope_t *env
 /** The reply under construction: its root map, and the bytes held back so every remaining DID can still be marked */
 typedef struct
 {
-    map_writer_t        root;
+    cbor_map_writer_t        root;
     const uint8_t      *end;            //!< true end of the reply buffer
     size_t              reserve;        //!< bytes held back for the markers of DIDs not yet answered
     bool                content;        //!< a DID entry has been written
@@ -401,6 +369,22 @@ static int encode_fields_fn(const void *arg, uint8_t *buf, size_t size)
 
 typedef struct
 {
+    const cbor_did_t       *d;
+    void                   *ctx;
+    const cbor_path_t      *paths;
+    size_t                  pathCount;
+} custom_arg_t;
+
+static int encode_custom_fn(const void *arg, uint8_t *buf, size_t size)
+{
+    const custom_arg_t *a = (const custom_arg_t *)arg;
+    if (!a->d->encode)
+        return CBOR_CODEC_ERR_ARG;
+    return a->d->encode(a->d, a->ctx, a->paths, a->pathCount, buf, size);
+}
+
+typedef struct
+{
     const cbor_device_t    *dev;
     const cbor_path_t      *paths;
     size_t                  pathCount;
@@ -416,12 +400,15 @@ static bool caps_selected(const caps_arg_t *a, uint16_t did)
     return false;
 }
 
-/** One CAPABILITIES entry: did: [field keys] (for CAPABILITIES itself, the DID keys) */
-static int encode_caps_entry(nanocbor_encoder_t *enc, const cbor_device_t *dev, uint16_t did,
-                             const cbor_schema_t *schema)
+/** One CAPABILITIES entry: did: [field keys] (for CAPABILITIES itself, d is NULL and the entry lists the DIDs) */
+static int encode_caps_entry(nanocbor_encoder_t *enc, const cbor_device_t *dev, uint16_t did, const cbor_did_t *d)
 {
     if (nanocbor_fmt_uint(enc, did) < 0)
         return NANOCBOR_ERR_END;
+    if (d && !d->schema)
+        return d->keys ? (d->keys(d, dev->ctx, enc) < 0 ? NANOCBOR_ERR_END : 0)
+                       : (nanocbor_fmt_array(enc, 0) < 0 ? NANOCBOR_ERR_END : 0);
+    const cbor_schema_t *schema = d ? d->schema : NULL;
     if (schema)
     {
         if (nanocbor_fmt_array(enc, schema->count) < 0)
@@ -442,8 +429,8 @@ static int encode_caps_entry(nanocbor_encoder_t *enc, const cbor_device_t *dev, 
 static int encode_caps_fn(const void *arg, uint8_t *buf, size_t size)
 {
     const caps_arg_t *a = (const caps_arg_t *)arg;
-    map_writer_t w;
-    if (!mw_begin(&w, buf, buf + size))
+    cbor_map_writer_t w;
+    if (!cbor_map_begin(&w, buf, buf + size))
         return CBOR_CODEC_ERR_NO_SPACE;
     for (uint16_t i = 0; i <= a->dev->didCount; i++)
     {
@@ -452,7 +439,7 @@ static int encode_caps_fn(const void *arg, uint8_t *buf, size_t size)
         if (!caps_selected(a, did))
             continue;
         nanocbor_encoder_t save = w.enc;
-        if (encode_caps_entry(&w.enc, a->dev, did, self ? NULL : a->dev->dids[i].schema) < 0)
+        if (encode_caps_entry(&w.enc, a->dev, did, self ? NULL : &a->dev->dids[i]) < 0)
         {
             w.enc = save;
             if (nanocbor_fmt_uint(&w.enc, did) < 0 || nanocbor_fmt_map(&w.enc, 1) < 0 ||
@@ -462,7 +449,7 @@ static int encode_caps_fn(const void *arg, uint8_t *buf, size_t size)
         }
         w.entries++;
     }
-    return (int)mw_end(&w);
+    return (int)cbor_map_end(&w);
 }
 
 static const cbor_did_t *find_did(const cbor_device_t *dev, uint16_t did)
@@ -546,6 +533,12 @@ static void handle_get(const cbor_device_t *dev, reply_t *r, uint16_t didKey, co
         reply_did_map(r, didKey, encode_caps_fn, &a);
         return;
     }
+    if (!d->schema)
+    {
+        custom_arg_t a = { d, dev->ctx, paths, (size_t)n };
+        reply_did_map(r, didKey, encode_custom_fn, &a);
+        return;
+    }
     fields_arg_t a = { d->schema, d->read(d, dev->ctx), paths, (size_t)n, NULL };
     reply_did_map(r, didKey, encode_fields_fn, &a);
 }
@@ -590,6 +583,39 @@ static bool scan_data_map(nanocbor_value_t it, const cbor_schema_t *schema, uint
     return ok;
 }
 
+/** DATA for a DID without a schema: its decode hook applies it; ACK_DETAILED returns the whole DID as kept */
+static void handle_data_custom(const cbor_device_t *dev, reply_t *r, uint16_t didKey, const cbor_did_t *d,
+                               nanocbor_value_t *it, uint8_t ackType)
+{
+    cbor_decode_result_t res;
+    memset(&res, 0, sizeof(res));
+    uint8_t status;
+    if (!d->decode)
+    {
+        nanocbor_skip(it);
+        status = CBOR_MSG_STATUS_READ_ONLY;
+    }
+    else
+    {
+        nanocbor_value_t start = *it;
+        status = d->decode(d, dev->ctx, it, &res);
+        if (it->cur == start.cur)
+            nanocbor_skip(it);
+    }
+    if (ackType == CBOR_ACK_TYPE_ACK_NONE)
+        return;
+    if (status != CBOR_MSG_STATUS_OK)
+    {
+        reply_did_status(r, didKey, status, res.errCount ? &res : NULL);
+        return;
+    }
+    if (ackType == CBOR_ACK_TYPE_ACK_DETAILED)
+    {
+        custom_arg_t a = { d, dev->ctx, NULL, 0 };
+        reply_did_map(r, didKey, encode_custom_fn, &a);
+    }
+}
+
 static void handle_data(const cbor_device_t *dev, reply_t *r, uint16_t didKey, const cbor_did_t *d,
                         nanocbor_value_t *it, uint8_t ackType)
 {
@@ -608,6 +634,11 @@ static void handle_data(const cbor_device_t *dev, reply_t *r, uint16_t didKey, c
     res.errCount = 0;
     if (!optionsOk)
         status = CBOR_MSG_STATUS_BAD_REQUEST;
+    else if (d && !d->schema)
+    {
+        handle_data_custom(dev, r, didKey, d, it, ackType);
+        return;
+    }
     else if (!d || !d->write)
         status = CBOR_MSG_STATUS_READ_ONLY;
     else if (!dev->scratch || dev->scratchSize < d->size)
@@ -707,14 +738,14 @@ static void reply_envelope(const cbor_device_t *dev, const cbor_envelope_t *req,
 
 static int envelope_only(const cbor_device_t *dev, const cbor_envelope_t *rep)
 {
-    map_writer_t w;
-    if (!mw_begin(&w, dev->reply, dev->reply + dev->replySize))
+    cbor_map_writer_t w;
+    if (!cbor_map_begin(&w, dev->reply, dev->reply + dev->replySize))
         return CBOR_CODEC_ERR_NO_SPACE;
     int n = cbor_msg_encode_envelope(&w.enc, rep);
     if (n < 0)
         return CBOR_CODEC_ERR_NO_SPACE;
     w.entries = (size_t)n;
-    return (int)mw_end(&w);
+    return (int)cbor_map_end(&w);
 }
 
 static bool owns(const cbor_device_t *dev, uint16_t did)
@@ -746,7 +777,7 @@ int cbor_device_handle(const cbor_device_t *dev, const uint8_t *msg, size_t len)
     reply_t r;
     memset(&r, 0, sizeof(r));
     r.end = dev->reply + dev->replySize;
-    if (!mw_begin(&r.root, dev->reply, r.end))
+    if (!cbor_map_begin(&r.root, dev->reply, r.end))
         return CBOR_CODEC_ERR_NO_SPACE;
     int n = cbor_msg_encode_envelope(&r.root.enc, &rep);
     if (n < 0)
@@ -790,5 +821,5 @@ int cbor_device_handle(const cbor_device_t *dev, const uint8_t *msg, size_t len)
     if (req.type == CBOR_MSG_TYPE_DATA && req.ackType == CBOR_ACK_TYPE_ACK_NONE && !r.content)
         return 0;
     reply_unlimit(&r);
-    return (int)mw_end(&r.root);
+    return (int)cbor_map_end(&r.root);
 }
