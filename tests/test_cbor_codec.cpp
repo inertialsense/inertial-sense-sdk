@@ -3,6 +3,8 @@
  * @brief The schema-driven CBOR codec: round trips, minimal encodings, selections, too-large marking within a byte
  *        budget, the decoding rules (exact encodings accepted, meaning-changing ones rejected), the array overlap
  *        rule, all-or-nothing map decoding with error key paths, and the generated legacy DID schemas.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>
@@ -60,6 +62,7 @@ static const cbor_field_t s_sampleFields[] = {
 };
 static const cbor_schema_t s_sample = { s_sampleFields, sizeof(s_sampleFields) / sizeof(s_sampleFields[0]) };
 
+/** A Sample with a distinct non-zero value in every field */
 static Sample makeSample()
 {
     Sample s = {};
@@ -79,6 +82,7 @@ static Sample makeSample()
     return s;
 }
 
+/** Expects every field of two Samples to be equal */
 static void expectSampleEq(const Sample &x, const Sample &y)
 {
     EXPECT_EQ(x.u8, y.u8);
@@ -97,6 +101,7 @@ static void expectSampleEq(const Sample &x, const Sample &y)
     EXPECT_EQ(x.inner.b[1], y.inner.b[1]);
 }
 
+/** Encodes s through cbor_codec_encode_map() with a selection and budget; the result code goes to *rc */
 static Bytes encode(const Sample &s, const std::vector<cbor_path_t> &paths, size_t bufSize, int *rc = nullptr,
                     uint16_t *tooLarge = nullptr)
 {

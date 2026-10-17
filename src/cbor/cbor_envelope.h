@@ -43,25 +43,37 @@ typedef struct
     bool        hasTimeGps;                 //!< MSG_TIME_GPS_NS present
     bool        hasUptime;                  //!< MSG_UPTIME_NS present
     bool        noTime;                     //!< MSG_OPTION_NO_TIME: the sender asks for no time on the reply
-    uint16_t    reqId;
-    uint64_t    srcDevId;
-    uint64_t    dstFilter;
-    uint64_t    timeGpsNs;                  //!< ns since the GPS epoch
-    uint64_t    uptimeNs;
+    uint16_t    reqId;                      //!< MSG_REQ_ID, echoed by replies
+    uint64_t    srcDevId;                   //!< MSG_SRC_DEV_ID: the sender's unique ID
+    uint64_t    dstFilter;                  //!< MSG_DST_DEV_FILTER: devices the message is for (0 = the host)
+    uint64_t    timeGpsNs;                  //!< MSG_TIME_GPS_NS: ns since the GPS epoch
+    uint64_t    uptimeNs;                   //!< MSG_UPTIME_NS: the sender's uptime in ns
     uint16_t    didCount;                   //!< on parse: DID keys in the message
 } cbor_envelope_t;
 
-/** @return the operation of a MSG_TYPE value (eCborMsgType) */
+/**
+ * @param type  a MSG_TYPE value
+ * @return its operation (eCborMsgType)
+ */
 static inline uint8_t cbor_msg_op(uint8_t type)         { return (uint8_t)(type & CBOR_MSG_TYPE_OP_MASK); }
 
-/** @return the MSG_TYPE of a reply to a message of the given MSG_TYPE */
+/**
+ * @param type  MSG_TYPE of a request
+ * @return the MSG_TYPE of a reply to it
+ */
 static inline uint8_t cbor_msg_reply_type(uint8_t type) { return (uint8_t)((unsigned)CBOR_MSG_TYPE_FLAG_REPLY | type); }
 
-/** @return true if a MSG_TYPE value marks a reply */
+/**
+ * @param type  a MSG_TYPE value
+ * @return true if it marks a reply
+ */
 static inline bool cbor_msg_is_reply(uint8_t type)      { return (type & CBOR_MSG_TYPE_FLAG_REPLY) != 0; }
 
 /**
  * @brief Parses the envelope of a message.
+ * @param msg  the message
+ * @param len  its length
+ * @param env  [out] the envelope, with defaults for absent keys
  * @return CBOR_CODEC_OK; CBOR_CODEC_ERR_VALUE if an envelope key has an invalid value (the rest of env is still
  *         filled); CBOR_CODEC_ERR_MALFORMED if msg is not exactly one well-formed CBOR map
  */
@@ -69,6 +81,8 @@ int cbor_msg_parse_envelope(const uint8_t *msg, size_t len, cbor_envelope_t *env
 
 /**
  * @brief Writes the envelope's present keys as map entries (no map header), in protocol order.
+ * @param enc  encoder to write to
+ * @param env  the envelope
  * @return number of entries written, or a negative value if the encoder ran out of space
  */
 int cbor_msg_encode_envelope(nanocbor_encoder_t *enc, const cbor_envelope_t *env);
@@ -76,10 +90,17 @@ int cbor_msg_encode_envelope(nanocbor_encoder_t *enc, const cbor_envelope_t *env
 /**
  * @brief Matches a device filter against a unique ID, sub-field by sub-field (hardware type, major, minor, serial);
  *        an all-ones sub-field matches any value.
+ * @param filter  MSG_DST_DEV_FILTER value
+ * @param devId   a device's unique ID
+ * @return true if the device matches
  */
 bool cbor_dev_filter_match(uint64_t filter, uint64_t devId);
 
-/** @return true if a message with this envelope is for the device: no filter (the link peer), or a matching one */
+/**
+ * @param env    the message's envelope
+ * @param devId  the device's unique ID
+ * @return true if the message is for the device: it has no filter (the link peer), or a matching one
+ */
 bool cbor_msg_addressed_to(const cbor_envelope_t *env, uint64_t devId);
 
 #ifdef __cplusplus

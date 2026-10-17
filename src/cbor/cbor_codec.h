@@ -58,14 +58,14 @@ typedef struct
 /** A map: its fields in key order */
 struct cbor_schema_s
 {
-    const cbor_field_t     *fields;
-    uint16_t                count;
+    const cbor_field_t     *fields;     //!< The map's fields, in key order
+    uint16_t                count;      //!< Entries in fields
 };
 
 /** Codec results. Values >= 0 are byte counts or item counts. */
 typedef enum
 {
-    CBOR_CODEC_OK            =  0,
+    CBOR_CODEC_OK            =  0,  //!< Success
     CBOR_CODEC_ERR_MALFORMED = -1,  //!< Input is not well-formed CBOR, or not the expected container
     CBOR_CODEC_ERR_VALUE     = -2,  //!< One or more values are invalid (see cbor_decode_result_t)
     CBOR_CODEC_ERR_NO_SPACE  = -3,  //!< Not even the map header (or a too-large marker) fits the budget
@@ -79,8 +79,8 @@ typedef enum
 /** A key path: one key for a top-level field, or a key per level for a nested field */
 typedef struct
 {
-    uint8_t                 depth;
-    uint16_t                key[CBOR_PATH_MAX_DEPTH];
+    uint8_t                 depth;                      //!< Keys used in key (1 = a top-level field)
+    uint16_t                key[CBOR_PATH_MAX_DEPTH];   //!< Key at each level, outermost first
 } cbor_path_t;
 
 /** Maximum invalid-value paths a decode reports */
@@ -97,7 +97,10 @@ typedef struct
 /*---------------------------------------------------------------------------- values */
 
 /**
- * @brief Encodes one field's value from src (the field's location in memory).
+ * @brief Encodes one field's value.
+ * @param enc  encoder to write to
+ * @param f    field describing the value
+ * @param src  the field's location in memory
  * @return >= 0 on success, NANOCBOR_ERR_END if the encoder is out of space (the caller rolls back)
  */
 int cbor_codec_encode_value(nanocbor_encoder_t *enc, const cbor_field_t *f, const void *src);
@@ -119,13 +122,20 @@ int cbor_codec_decode_value(nanocbor_value_t *it, const cbor_field_t *f, void *d
 
 /**
  * @brief Parses a selection array (MSG_FIELDS): each entry is a key or an array of keys.
- * @param it    decoder positioned at the array
- * @param paths [out] parsed paths
+ * @param it        decoder positioned at the array; advanced past it
+ * @param paths     [out] parsed paths
+ * @param pathsMax  entries paths can hold
  * @return number of paths (0 = the array was empty, meaning every field), or a negative eCborCodecResult
+ *         (CBOR_CODEC_ERR_TOO_MANY if the array has more than pathsMax entries)
  */
 int cbor_codec_decode_paths(nanocbor_value_t *it, cbor_path_t *paths, size_t pathsMax);
 
-/** @brief Encodes a path as a key (depth 1) or an array of keys. @return >= 0, or NANOCBOR_ERR_END */
+/**
+ * @brief Encodes a path as a key (depth 1) or an array of keys.
+ * @param enc   encoder to write to
+ * @param path  the path
+ * @return >= 0, or NANOCBOR_ERR_END if it does not fit
+ */
 int cbor_codec_encode_path(nanocbor_encoder_t *enc, const cbor_path_t *path);
 
 /*---------------------------------------------------------------------------- maps */
@@ -138,7 +148,12 @@ int cbor_codec_encode_path(nanocbor_encoder_t *enc, const cbor_path_t *path);
  * {MSG_STATUS: RESP_TOO_LARGE} instead; a nested map that does not fit whole is written with its own fields marked
  * the same way. A value is never split.
  *
+ * @param schema     schema of the struct
+ * @param data       the struct
  * @param paths      selection (NULL or pathCount 0 = every field)
+ * @param pathCount  entries in paths
+ * @param buf        output buffer
+ * @param bufSize    bytes available in buf
  * @param tooLarge   [out, optional] number of fields marked too large
  * @return bytes written, or CBOR_CODEC_ERR_NO_SPACE if not even the map header fits
  */
@@ -151,42 +166,74 @@ int cbor_codec_encode_map(const cbor_schema_t *schema, const void *data, const c
  * Unknown keys (and keys that are not unsigned integers) are skipped. Fields absent from the map are left
  * unchanged. Arrays apply the elements that overlap the field and leave the rest unchanged.
  *
- * @param it    decoder positioned at the map; advanced past it on success or CBOR_CODEC_ERR_VALUE
- * @param data  struct to apply onto, or NULL to validate only
- * @param res   [out] invalid-value paths and the number of known fields present
+ * @param it      decoder positioned at the map; advanced past it on success or CBOR_CODEC_ERR_VALUE
+ * @param schema  schema of the struct
+ * @param data    struct to apply onto, or NULL to validate only
+ * @param res     [out] invalid-value paths and the number of known fields present
  * @return CBOR_CODEC_OK, CBOR_CODEC_ERR_VALUE (nothing written), or CBOR_CODEC_ERR_MALFORMED
  */
 int cbor_codec_decode_map(nanocbor_value_t *it, const cbor_schema_t *schema, void *data, cbor_decode_result_t *res);
 
 /**
- * @brief Encodes the fields selected by a mask (bit i of mask[i / 8] selects schema field i), each written whole,
- *        with the same budget and too-large marking as cbor_codec_encode_map().
+ * @brief Encodes the fields selected by a mask, each written whole, with the same budget and too-large marking as
+ *        cbor_codec_encode_map().
+ * @param schema    schema of the struct
+ * @param data      the struct
+ * @param mask      bit i of mask[i / 8] selects schema field i
+ * @param buf       output buffer
+ * @param bufSize   bytes available in buf
+ * @param tooLarge  [out, optional] number of fields marked too large
  * @return bytes written, or CBOR_CODEC_ERR_NO_SPACE if not even the map header fits
  */
 int cbor_codec_encode_fields(const cbor_schema_t *schema, const void *data, const uint8_t *mask, uint8_t *buf,
                              size_t bufSize, uint16_t *tooLarge);
 
-/** @return bytes a field occupies in its struct (for a nested map, the extent of its members) */
+/**
+ * @param f  the field
+ * @return bytes the field occupies in its struct (for a nested map, the extent of its members)
+ */
 size_t cbor_codec_field_size(const cbor_field_t *f);
 
-/** Writes a map whose entry count is known only at the end: entries go through enc, counted in entries */
+/**
+ * Writes a map whose entry count is known only at the end. The caller writes key/value pairs through enc and counts
+ * them in entries; cbor_map_end() then writes the header in front of them.
+ */
 typedef struct
 {
-    uint8_t            *start;
-    nanocbor_encoder_t  enc;
-    size_t              entries;
+    uint8_t            *start;      //!< Where the map (its header) begins
+    nanocbor_encoder_t  enc;        //!< Encoder for the entries, positioned after the reserved header
+    size_t              entries;    //!< Entries written so far
 } cbor_map_writer_t;
 
-/** @brief Starts a map in [buf, end), reserving room for its header. @return false if not even the header fits */
+/**
+ * @brief Starts a map in [buf, end), reserving room for its header.
+ * @param w    [out] the writer
+ * @param buf  where the map begins
+ * @param end  end of the space available
+ * @return false if not even the header fits
+ */
 bool cbor_map_begin(cbor_map_writer_t *w, uint8_t *buf, const uint8_t *end);
 
-/** @brief Writes the map header for w->entries and closes the reserved gap. @return bytes of the whole map */
+/**
+ * @brief Writes the map header for w->entries and closes the gap left by the reserved header.
+ * @param w  the writer
+ * @return bytes of the whole map
+ */
 size_t cbor_map_end(cbor_map_writer_t *w);
 
-/** @brief Writes key: {MSG_STATUS: RESP_TOO_LARGE}. @return >= 0, or NANOCBOR_ERR_END if it does not fit */
+/**
+ * @brief Writes key: {MSG_STATUS: RESP_TOO_LARGE}.
+ * @param enc  encoder to write to
+ * @param key  the key of the entry that did not fit
+ * @return >= 0, or NANOCBOR_ERR_END if not even the marker fits
+ */
 int cbor_codec_encode_too_large(nanocbor_encoder_t *enc, uint16_t key);
 
-/** @return the schema field with the given key, or NULL */
+/**
+ * @param schema  the schema
+ * @param key     a field key
+ * @return the schema field with the given key, or NULL
+ */
 const cbor_field_t *cbor_codec_find_field(const cbor_schema_t *schema, uint16_t key);
 
 #ifdef __cplusplus

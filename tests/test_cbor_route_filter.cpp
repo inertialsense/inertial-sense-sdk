@@ -2,6 +2,8 @@
  * @file test_cbor_route_filter.cpp
  * @brief ROUTE_FILTER: first-match rule evaluation with device-filter, operation and DID matching (default forward),
  *        its CBOR encoding and selection, and a device serving it read-only through the message layer's custom hooks.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>

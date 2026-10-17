@@ -2,6 +2,8 @@
  * @file test_cbor_registry.cpp
  * @brief The SDK side of the CBOR key registry: DID_CBOR is registered, and the generated key constants and name
  *        tables agree with each other.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>

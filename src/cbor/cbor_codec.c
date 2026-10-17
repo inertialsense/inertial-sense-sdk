@@ -34,6 +34,7 @@ static bool is_indefinite(const nanocbor_value_t *it)
     return (major >= NANOCBOR_TYPE_BSTR && major <= NANOCBOR_TYPE_MAP) && (b & 0x1F) == 31;
 }
 
+/** Records key (under prefix) as an invalid value in res; counts past CBOR_DECODE_ERR_MAX without storing the path */
 static void record_error(cbor_decode_result_t *res, const cbor_path_t *prefix, uint16_t key)
 {
     if (!res)
@@ -49,16 +50,19 @@ static void record_error(cbor_decode_result_t *res, const cbor_path_t *prefix, u
         res->errCount++;
 }
 
+/** @return the largest unsigned value of an integer of size bytes */
 static uint64_t uint_max(uint8_t size)
 {
     return (size >= 8) ? UINT64_MAX : ((1ULL << (size * 8)) - 1);
 }
 
+/** @return the largest signed value of an integer of size bytes */
 static int64_t int_max(uint8_t size)
 {
     return (size >= 8) ? INT64_MAX : (int64_t)((1ULL << (size * 8 - 1)) - 1);
 }
 
+/** Stores v in an unsigned integer of size bytes (the caller has range-checked it); dst may be unaligned */
 static void store_uint(void *dst, uint8_t size, uint64_t v)
 {
     switch (size)
@@ -70,6 +74,7 @@ static void store_uint(void *dst, uint8_t size, uint64_t v)
     }
 }
 
+/** @return the unsigned integer of size bytes at src (may be unaligned) */
 static uint64_t load_uint(const void *src, uint8_t size)
 {
     switch (size)
@@ -81,6 +86,7 @@ static uint64_t load_uint(const void *src, uint8_t size)
     }
 }
 
+/** @return the signed integer of size bytes at src (may be unaligned) */
 static int64_t load_int(const void *src, uint8_t size)
 {
     switch (size)
@@ -130,6 +136,7 @@ static int decode_element(nanocbor_value_t *it, const cbor_field_t *f, void *dst
     return rc;
 }
 
+/** decode_element() without the rewind: on CBOR_CODEC_ERR_VALUE the decoder may be left inside the element */
 static int decode_element_at(nanocbor_value_t *it, const cbor_field_t *f, void *dst)
 {
     int type = nanocbor_get_type(it);
@@ -333,6 +340,7 @@ int cbor_codec_decode_value(nanocbor_value_t *it, const cbor_field_t *f, void *d
 static int encode_map(const cbor_schema_t *schema, const void *data, const cbor_path_t *paths, size_t pathCount,
                       const uint8_t *mask, uint8_t *buf, size_t bufSize, uint16_t *tooLarge, bool strict);
 
+/** Encodes one number or bool element of f from src. @return >= 0, NANOCBOR_ERR_END, or CBOR_CODEC_ERR_ARG */
 static int encode_element(nanocbor_encoder_t *enc, const cbor_field_t *f, const void *src)
 {
     switch (f->type)

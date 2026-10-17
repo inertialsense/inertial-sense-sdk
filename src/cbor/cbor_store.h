@@ -25,30 +25,64 @@
 extern "C" {
 #endif
 
-/** @brief Starts a document in buf. @return false if buf cannot hold even an empty map */
+/**
+ * @brief Starts a document in buf.
+ * @param w     [out] the document writer
+ * @param buf   where the document is written
+ * @param size  bytes available in buf
+ * @return false if buf cannot hold even an empty map
+ */
 bool cbor_store_begin(cbor_map_writer_t *w, uint8_t *buf, size_t size);
 
 /**
  * @brief Adds did: {fields of data that differ from defaults}. Nothing is added when no field differs.
+ * @param w         the document writer
+ * @param did       root DID key
+ * @param schema    schema of the DID's struct
+ * @param data      the current values
+ * @param defaults  the firmware defaults the delta is taken against
  * @return 0, or CBOR_CODEC_ERR_NO_SPACE (the document is then incomplete and must not be written)
  */
 int cbor_store_add_delta(cbor_map_writer_t *w, uint16_t did, const cbor_schema_t *schema, const void *data,
                          const void *defaults);
 
 /**
- * @brief Adds did: <a map written by encode into [buf, buf + size)> (for DIDs that are not one struct).
+ * @brief Adds did: <the map encode writes>, for a DID that is not one struct.
+ * @param w       the document writer
+ * @param did     root DID key
+ * @param encode  writes the DID's map into [buf, buf + size); returns its length, or a negative value if it does not
+ *                fit
+ * @param ctx     passed to encode
  * @return 0, or CBOR_CODEC_ERR_NO_SPACE
  */
 int cbor_store_add(cbor_map_writer_t *w, uint16_t did, int (*encode)(void *ctx, uint8_t *buf, size_t size), void *ctx);
 
-/** @brief Closes the document. @return its length */
+/**
+ * @brief Closes the document.
+ * @param w  the document writer
+ * @return the document's length
+ */
 size_t cbor_store_end(cbor_map_writer_t *w);
 
-/** @brief Finds did in a document. @return true with *it positioned at its value */
+/**
+ * @brief Finds did in a document.
+ * @param doc  the document
+ * @param len  its length
+ * @param did  root DID key
+ * @param it   [out] positioned at the DID's value
+ * @return true if the document holds did
+ */
 bool cbor_store_find(const uint8_t *doc, size_t len, uint16_t did, nanocbor_value_t *it);
 
 /**
  * @brief Loads a struct-backed DID: data = defaults, then the stored delta applied (all or nothing).
+ * @param doc       the document
+ * @param len       its length
+ * @param did       root DID key
+ * @param schema    schema of the DID's struct
+ * @param data      [out] the loaded values
+ * @param defaults  the firmware defaults
+ * @param size      sizeof the struct
  * @return CBOR_CODEC_OK (also when the document does not hold the DID), or a negative eCborCodecResult when the stored
  *         values are invalid (data is then equal to defaults)
  */

@@ -28,7 +28,7 @@ extern "C" {
 typedef struct
 {
     uint16_t    denied[CBOR_FORWARD_DENIED_MAX];    //!< DIDs left out of the forwarded copy
-    uint8_t     deniedCount;
+    uint8_t     deniedCount;                        //!< Entries in denied
     uint16_t    forwardedDids;                      //!< DIDs kept in the forwarded copy
 } cbor_forward_result_t;
 
@@ -38,7 +38,14 @@ typedef struct
 /**
  * @brief Builds the copy of a message a forwarder sends downstream: the envelope unchanged except MSG_ROUTE, which gets
  *        arrivalPort appended, and the DIDs for which deny() returns false. Envelope keys stay ahead of the DIDs.
- * @param deny   returns true to leave a DID out (NULL = forward every DID)
+ * @param msg          the message
+ * @param len          its length
+ * @param arrivalPort  the port it arrived on, pushed onto MSG_ROUTE
+ * @param deny         returns true to leave a DID out (NULL = forward every DID)
+ * @param ctx          passed to deny
+ * @param out          output buffer for the copy
+ * @param outSize      bytes available in out
+ * @param res          [out] the DIDs denied and the number forwarded
  * @return length written to out; 0 if every DID was denied (nothing to forward); CBOR_MSG_ROUTE_FULL; or another
  *         negative eCborCodecResult (malformed input, or out too small)
  */
@@ -48,6 +55,7 @@ int cbor_msg_forward_build(const uint8_t *msg, size_t len, uint8_t arrivalPort, 
 /**
  * @brief Removes the last MSG_ROUTE entry of a message in place (a forwarder sending a reply back upstream). MSG_ROUTE
  *        is dropped when it becomes empty.
+ * @param msg   the message, rewritten in place
  * @param len   [in/out] message length
  * @param port  [out] the removed entry: the port to send the message out of
  * @return CBOR_CODEC_OK, CBOR_CODEC_ERR_VALUE if the message has no MSG_ROUTE, or CBOR_CODEC_ERR_MALFORMED

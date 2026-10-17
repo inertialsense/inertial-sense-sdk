@@ -2220,8 +2220,7 @@ double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-// CBOR requests (DID_CBOR)
+// ---- CBOR requests (DID_CBOR)
 
 bool ISDevice::cborRequestAsync(const CborRequest& req, std::function<void(const std::vector<CborReply>&)> done,
                                 uint32_t timeoutMs, bool collectAll)

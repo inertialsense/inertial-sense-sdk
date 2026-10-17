@@ -4,6 +4,8 @@
  *        far end is a device built on the same message layer the firmware runs (cbor_device_handle()), serving
  *        FLASH_CFG through its generated schema. Covers request/reply matching, ACK levels, automatic narrowing on
  *        RESP_TOO_LARGE, timeouts, collecting several replies, and the device-filter notation and time helpers.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>

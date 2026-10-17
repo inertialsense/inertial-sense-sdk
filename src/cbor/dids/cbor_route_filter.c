@@ -28,7 +28,7 @@ uint8_t cbor_route_action(const cbor_route_rule_t *rules, size_t ruleCount, uint
     return CBOR_ROUTE_ACTION_ALLOW;
 }
 
-/** True if field key of rule index is selected; pathCount 0 selects everything */
+/** @return true if the selection includes rule index (field < 0) or that field of it; an empty selection includes all */
 static bool selected(const cbor_path_t *paths, size_t pathCount, uint16_t index, int field)
 {
     if (pathCount == 0)
@@ -43,6 +43,7 @@ static bool selected(const cbor_path_t *paths, size_t pathCount, uint16_t index,
     return false;
 }
 
+/** Writes rule index's map, limited to the selection; fields with no entries (match every value) are left out */
 static int encode_rule(nanocbor_encoder_t *enc, const cbor_route_rule_t *r, const cbor_path_t *paths, size_t pathCount,
                        uint16_t index)
 {

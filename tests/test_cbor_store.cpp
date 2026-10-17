@@ -1,6 +1,8 @@
 /**
  * @file test_cbor_store.cpp
  * @brief Stored configuration documents: deltas against defaults keyed by DID, lookup, and loading onto defaults.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>

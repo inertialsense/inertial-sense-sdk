@@ -36,38 +36,55 @@ extern "C" {
 typedef struct
 {
     rmci_t     *ports;          //!< Stored state, one per port (port n = ports[n])
-    uint8_t     portCount;
+    uint8_t     portCount;      //!< Entries in ports
     /** Sets the period multiples a preset implies, after its bits have been applied to r */
     void      (*presetDefaults)(rmci_t *r, uint64_t presetBits, void *ctx);
     /** Copies port's runtime subscriptions into ports[port] (RMC_SAVE_PORTS) */
     void      (*savePort)(uint8_t port, void *ctx);
-    void       *ctx;
+    void       *ctx;            //!< Passed to the callbacks
 } cbor_rmc_store_t;
 
-/** @return the RMC_PRESET_* bits for an eCborRmcPreset value (0 for NONE or an unknown value) */
+/**
+ * @param preset  an eCborRmcPreset value
+ * @return the RMC_PRESET_* bits it stands for (0 for NONE or an unknown value)
+ */
 uint64_t cbor_rmc_preset_bits(uint8_t preset);
 
 /**
  * @brief Encodes RMC_STORED within size bytes. A selection picks ports (one key) or entries of a port (two keys); a
  *        port that does not fit is marked RESP_TOO_LARGE.
+ * @param s          the stored subscriptions
+ * @param paths      selection (NULL or pathCount 0 = every port)
+ * @param pathCount  entries in paths
+ * @param buf        output buffer
+ * @param size       bytes available in buf
  * @return bytes written, or CBOR_CODEC_ERR_NO_SPACE if not even the map header fits
  */
 int cbor_rmc_encode(const cbor_rmc_store_t *s, const cbor_path_t *paths, size_t pathCount, uint8_t *buf, size_t size);
 
 /**
  * @brief Validates the RMC_STORED map at it and, if every value is valid, applies it to s->ports. Advances past it.
- * @param res [out] key paths of invalid values
+ * @param s    the stored subscriptions
+ * @param it   decoder positioned at the map
+ * @param res  [out] key paths of invalid values
  * @return CBOR_MSG_STATUS_OK, CBOR_MSG_STATUS_BAD_VALUE (nothing applied) or CBOR_MSG_STATUS_BAD_REQUEST (malformed)
  */
 uint8_t cbor_rmc_decode(const cbor_rmc_store_t *s, nanocbor_value_t *it, cbor_decode_result_t *res);
 
 /**
  * @brief Applies a stored RMC_STORED map (flash storage) on top of s->ports, skipping any entry it cannot apply rather
- *        than rejecting the map, so storage written by other firmware loads as far as it is understood. Advances past it.
+ *        than rejecting the map, so storage written by other firmware loads as far as it is understood.
+ * @param s   the stored subscriptions
+ * @param it  decoder positioned at the stored map; advanced past it
  */
 void cbor_rmc_load(const cbor_rmc_store_t *s, nanocbor_value_t *it);
 
-/** @brief Writes the RMC_STORED field keys (the port numbers) as an array. @return >= 0, or NANOCBOR_ERR_END */
+/**
+ * @brief Writes the RMC_STORED field keys (the port numbers) as an array, for CAPABILITIES.
+ * @param s    the stored subscriptions
+ * @param enc  encoder to write to
+ * @return >= 0, or NANOCBOR_ERR_END
+ */
 int cbor_rmc_encode_keys(const cbor_rmc_store_t *s, nanocbor_encoder_t *enc);
 
 #ifdef __cplusplus

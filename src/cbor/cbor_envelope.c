@@ -29,8 +29,10 @@ bool cbor_msg_addressed_to(const cbor_envelope_t *env, uint64_t devId)
     return !env->hasDst || cbor_dev_filter_match(env->dstFilter, devId);
 }
 
-
-
+/**
+ * Decodes the value of one envelope key into env; the value of a key the envelope does not know is skipped.
+ * @return CBOR_CODEC_OK, CBOR_CODEC_ERR_VALUE (value skipped), or CBOR_CODEC_ERR_MALFORMED
+ */
 static int decode_envelope_key(nanocbor_value_t *map, uint16_t key, cbor_envelope_t *env)
 {
     int rc;

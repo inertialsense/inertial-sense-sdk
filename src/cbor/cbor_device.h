@@ -37,7 +37,7 @@ typedef struct cbor_did_s cbor_did_t;
 struct cbor_did_s
 {
     uint16_t                did;        //!< Root key (CBOR_DID_*)
-    const cbor_schema_t    *schema;
+    const cbor_schema_t    *schema;    //!< Schema of the backing struct, or NULL for a DID served by encode/decode/keys
     uint16_t                size;       //!< sizeof the struct
     /** @return the current values */
     const void *(*read)(const cbor_did_t *d, void *ctx);
@@ -66,12 +66,12 @@ struct cbor_did_s
 typedef struct
 {
     uint64_t            devId;          //!< This device's unique ID (MSG_SRC_DEV_ID)
-    const cbor_did_t   *dids;
-    uint16_t            didCount;
+    const cbor_did_t   *dids;           //!< The DIDs the device owns
+    uint16_t            didCount;       //!< Entries in dids
     uint8_t            *reply;          //!< Reply buffer
-    size_t              replySize;
+    size_t              replySize;      //!< Bytes in reply
     void               *scratch;        //!< Work area, aligned for any type; at least the largest writable DID's size
-    size_t              scratchSize;
+    size_t              scratchSize;    //!< Bytes in scratch
     /** Current time: *gpsNs = ns since the GPS epoch, or 0 when GNSS time is not synced; *uptimeNs = system uptime */
     void              (*time)(void *ctx, uint64_t *gpsNs, uint64_t *uptimeNs);
     void               *ctx;            //!< Passed to the callbacks
@@ -80,12 +80,20 @@ typedef struct
 /**
  * @brief Handles one message addressed to the device and builds the reply in dev->reply. Replies are not handled
  *        here (they belong to whoever sent the request): a reply returns 0 and changes nothing.
+ * @param dev  the device
+ * @param msg  the message
+ * @param len  its length
  * @return reply length (0 = no reply), or CBOR_MSG_NOT_ADDRESSED if the message is not for this device
  */
 int cbor_device_handle(const cbor_device_t *dev, const uint8_t *msg, size_t len);
 
 /**
  * @brief Writes into dev->reply a reply to req that marks each of dids with status (e.g. FORWARD_DENIED).
+ * @param dev       the device
+ * @param req       the request's envelope
+ * @param dids      root DID keys to mark
+ * @param didCount  entries in dids
+ * @param status    eCborMsgStatus to mark them with
  * @return reply length, 0 if req asked for no acknowledgement, or a negative value if it does not fit
  */
 int cbor_device_reply_status(const cbor_device_t *dev, const cbor_envelope_t *req, const uint16_t *dids,

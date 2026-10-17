@@ -14,7 +14,7 @@
 /** The reply under construction: its root map, and the bytes held back so every remaining DID can still be marked */
 typedef struct
 {
-    cbor_map_writer_t        root;
+    cbor_map_writer_t   root;           //!< the reply's root map
     const uint8_t      *end;            //!< true end of the reply buffer
     size_t              reserve;        //!< bytes held back for the markers of DIDs not yet answered
     bool                content;        //!< a DID entry has been written
@@ -27,11 +27,13 @@ static void reply_limit(reply_t *r)
     r->root.enc.end = r->root.enc.cur + (room > r->reserve ? room - r->reserve : 0);
 }
 
+/** Lifts the limit set by reply_limit() */
 static void reply_unlimit(reply_t *r)
 {
     r->root.enc.end = (uint8_t *)r->end;
 }
 
+/** Releases the marker space held back for a DID once it has been answered */
 static void reply_did_done(reply_t *r)
 {
     if (r->reserve >= DID_MARKER_MAX)
@@ -75,12 +77,13 @@ static void reply_did_status(reply_t *r, uint16_t did, uint8_t status, const cbo
     reply_unlimit(r);
 }
 
-/**
- * Writes did: <map> with encodeFn filling the map within the DID's budget. A DID that does not fit at all is
- * marked RESP_TOO_LARGE.
- */
+/** Writes one DID's map into [buf, buf + size) from arg. @return bytes written, or negative if it does not fit */
 typedef int (*did_encode_fn)(const void *arg, uint8_t *buf, size_t size);
 
+/**
+ * Writes did: <map> into the reply, with fn filling the map within the DID's budget. A DID that does not fit at all
+ * is marked RESP_TOO_LARGE.
+ */
 static void reply_did_map(reply_t *r, uint16_t did, did_encode_fn fn, const void *arg)
 {
     nanocbor_encoder_t *enc = &r->root.enc;
@@ -104,15 +107,17 @@ static void reply_did_map(reply_t *r, uint16_t did, did_encode_fn fn, const void
 
 /*============================================================================================== device: DIDs */
 
+/** encode_fields_fn() argument: a schema DID's values and the fields to write */
 typedef struct
 {
-    const cbor_schema_t    *schema;
-    const void             *data;
-    const cbor_path_t      *paths;
-    size_t                  pathCount;
-    const uint8_t          *mask;
+    const cbor_schema_t    *schema;     //!< the DID's schema
+    const void             *data;       //!< its current values
+    const cbor_path_t      *paths;      //!< selection (pathCount 0 = every field); used when mask is NULL
+    size_t                  pathCount;  //!< entries in paths
+    const uint8_t          *mask;       //!< fields to write by schema index (DATA acknowledgements), or NULL
 } fields_arg_t;
 
+/** did_encode_fn for a schema DID */
 static int encode_fields_fn(const void *arg, uint8_t *buf, size_t size)
 {
     const fields_arg_t *a = (const fields_arg_t *)arg;
@@ -121,14 +126,16 @@ static int encode_fields_fn(const void *arg, uint8_t *buf, size_t size)
     return cbor_codec_encode_map(a->schema, a->data, a->paths, a->pathCount, buf, size, NULL);
 }
 
+/** encode_custom_fn() argument: a DID without a schema and the selection to pass to its encode callback */
 typedef struct
 {
-    const cbor_did_t       *d;
-    void                   *ctx;
-    const cbor_path_t      *paths;
-    size_t                  pathCount;
+    const cbor_did_t       *d;          //!< the DID
+    void                   *ctx;        //!< the device's callback context
+    const cbor_path_t      *paths;      //!< selection (pathCount 0 = every field)
+    size_t                  pathCount;  //!< entries in paths
 } custom_arg_t;
 
+/** did_encode_fn for a DID without a schema: its encode callback */
 static int encode_custom_fn(const void *arg, uint8_t *buf, size_t size)
 {
     const custom_arg_t *a = (const custom_arg_t *)arg;
@@ -137,13 +144,15 @@ static int encode_custom_fn(const void *arg, uint8_t *buf, size_t size)
     return a->d->encode(a->d, a->ctx, a->paths, a->pathCount, buf, size);
 }
 
+/** encode_caps_fn() argument: the device and the DIDs selected (pathCount 0 = every owned DID) */
 typedef struct
 {
-    const cbor_device_t    *dev;
-    const cbor_path_t      *paths;
-    size_t                  pathCount;
+    const cbor_device_t    *dev;        //!< the device
+    const cbor_path_t      *paths;      //!< selection: one key per DID
+    size_t                  pathCount;  //!< entries in paths
 } caps_arg_t;
 
+/** @return true if CAPABILITIES should list did */
 static bool caps_selected(const caps_arg_t *a, uint16_t did)
 {
     if (a->pathCount == 0)
@@ -180,6 +189,7 @@ static int encode_caps_entry(nanocbor_encoder_t *enc, const cbor_device_t *dev, 
     return nanocbor_fmt_uint(enc, CBOR_DID_CAPABILITIES) < 0 ? NANOCBOR_ERR_END : 0;
 }
 
+/** did_encode_fn for CAPABILITIES: each owned DID (or the selected ones) with the field keys it serves */
 static int encode_caps_fn(const void *arg, uint8_t *buf, size_t size)
 {
     const caps_arg_t *a = (const caps_arg_t *)arg;
@@ -270,6 +280,10 @@ static int read_selection(nanocbor_value_t *it, cbor_path_t *paths, size_t paths
     return n;
 }
 
+/**
+ * Answers a GET entry for one DID: reads its selection (an array of key paths, empty = every field) and adds the DID's
+ * values to the reply. d is NULL for CAPABILITIES, which the handler answers from the DID table.
+ */
 static void handle_get(const cbor_device_t *dev, reply_t *r, uint16_t didKey, const cbor_did_t *d,
                        nanocbor_value_t *it)
 {
@@ -370,6 +384,11 @@ static void handle_data_custom(const cbor_device_t *dev, reply_t *r, uint16_t di
     }
 }
 
+/**
+ * Applies a DATA entry for one DID, all or nothing: the map is validated against the current values (on a copy in the
+ * work area for a schema DID) and written only if every value is valid. The reply gets the DID's outcome as ackType
+ * asks: nothing, a status on failure or a changed value (ACK_MINIMAL), or every value sent, as kept (ACK_DETAILED).
+ */
 static void handle_data(const cbor_device_t *dev, reply_t *r, uint16_t didKey, const cbor_did_t *d,
                         nanocbor_value_t *it, uint8_t ackType)
 {
@@ -452,6 +471,10 @@ static void handle_data(const cbor_device_t *dev, reply_t *r, uint16_t didKey, c
 
 /*============================================================================================== device: entry */
 
+/**
+ * Builds the reply envelope for req: the REPLY type, this device as source, the requester as destination (0 for a
+ * host behind a forwarder), the request's MSG_REQ_ID and MSG_ROUTE, and the time unless req asked for none.
+ */
 static void reply_envelope(const cbor_device_t *dev, const cbor_envelope_t *req, cbor_envelope_t *rep)
 {
     memset(rep, 0, sizeof(*rep));
@@ -490,6 +513,7 @@ static void reply_envelope(const cbor_device_t *dev, const cbor_envelope_t *req,
     }
 }
 
+/** Writes a reply holding only the envelope rep into dev->reply. @return its length, or CBOR_CODEC_ERR_NO_SPACE */
 static int envelope_only(const cbor_device_t *dev, const cbor_envelope_t *rep)
 {
     cbor_map_writer_t w;
@@ -502,6 +526,7 @@ static int envelope_only(const cbor_device_t *dev, const cbor_envelope_t *rep)
     return (int)cbor_map_end(&w);
 }
 
+/** @return true if the device answers did: one of its DIDs, or CAPABILITIES */
 static bool owns(const cbor_device_t *dev, uint16_t did)
 {
     return did == CBOR_DID_CAPABILITIES || find_did(dev, did) != NULL;

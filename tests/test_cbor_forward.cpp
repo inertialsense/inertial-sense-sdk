@@ -2,6 +2,8 @@
  * @file test_cbor_forward.cpp
  * @brief Forwarding: the downstream copy (MSG_ROUTE pushed, envelope ahead of DIDs, denied DIDs left out), popping
  *        MSG_ROUTE on the way back, FORWARD_DENIED replies, and a host -> IMX -> GPX -> host exchange on these pieces.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>
@@ -41,6 +43,7 @@ static bool denyFn(void *ctx, uint16_t did)
     return cbor_route_action(s_rules, 1, GPX_ID, ((DenyCtx *)ctx)->op, did) == CBOR_ROUTE_ACTION_DENY;
 }
 
+/** Runs cbor_msg_forward_build() with the test rules; returns the downstream copy (empty if none) */
 static Bytes forward(const Bytes &msg, uint8_t port, cbor_forward_result_t *res, int *rc = nullptr)
 {
     cbor_envelope_t env;

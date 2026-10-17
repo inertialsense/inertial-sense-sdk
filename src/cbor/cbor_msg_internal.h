@@ -28,6 +28,7 @@ static const cbor_field_t s_bool = { 0, CBOR_T_BOOL, 1, 0, 0, NULL };
 
 /*============================================================================================== helpers */
 
+/** True when the item at it uses an indefinite length, which the protocol does not allow */
 static inline bool is_indefinite(const nanocbor_value_t *it)
 {
     if (it->cur >= it->end)
@@ -54,6 +55,7 @@ static inline int next_key(nanocbor_value_t *map, uint16_t *key)
     return 1;
 }
 
+/** Bit i of a field mask (schema field i) */
 static inline bool mask_test(const uint8_t *mask, uint16_t i)  { return (mask[i / 8] & (1u << (i % 8))) != 0; }
 static inline void mask_set(uint8_t *mask, uint16_t i)         { mask[i / 8] |= (uint8_t)(1u << (i % 8)); }
 
@@ -71,6 +73,10 @@ static inline int decode_scalar(nanocbor_value_t *map, const cbor_field_t *f, vo
     return (rc == CBOR_CODEC_ERR_MALFORMED || rc == CBOR_CODEC_ERR_VALUE) ? rc : CBOR_CODEC_OK;
 }
 
+/**
+ * Decodes MSG_ROUTE into env. An invalid entry, or more than CBOR_ROUTE_MAX, rejects the whole route (routeDepth 0).
+ * @return CBOR_CODEC_OK, CBOR_CODEC_ERR_VALUE, or CBOR_CODEC_ERR_MALFORMED
+ */
 static inline int decode_route(nanocbor_value_t *map, cbor_envelope_t *env)
 {
     nanocbor_value_t arr;

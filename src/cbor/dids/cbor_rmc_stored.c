@@ -34,6 +34,7 @@ uint64_t cbor_rmc_preset_bits(uint8_t preset)
 /** First NMEA sentence pseudo-DID (0x3F00 + NMEA_MSG_ID_*) */
 #define NMEA_PSEUDO_DID_BASE    0x3F00
 
+/** @return true if key is an NMEA sentence pseudo-DID */
 static bool is_nmea_did(uint16_t key)
 {
     return key > NMEA_PSEUDO_DID_BASE && key < NMEA_PSEUDO_DID_BASE + NMEA_MSG_ID_COUNT;
@@ -45,6 +46,7 @@ static bool storable(uint16_t key)
     return (key < DID_COUNT && g_didToRmcBit[key] != 0) || is_nmea_did(key);
 }
 
+/** @return true if r subscribes to key (a DID or NMEA pseudo-DID) */
 static bool did_stored(const rmci_t *r, uint16_t key)
 {
     if (is_nmea_did(key))
@@ -55,6 +57,7 @@ static bool did_stored(const rmci_t *r, uint16_t key)
     return bit && (r->rmc.bits & bit);
 }
 
+/** @return r's period multiple for key (a DID or NMEA pseudo-DID) */
 static uint8_t stored_multiple(const rmci_t *r, uint16_t key)
 {
     return is_nmea_did(key) ? r->rmcNmea.nmeaPeriod[key - NMEA_PSEUDO_DID_BASE] : r->periodMultiple[key];
@@ -86,6 +89,7 @@ static uint8_t speed_filter(const rmci_t *r)
 
 /*============================================================================================== encode */
 
+/** @return true if the selection includes port (key < 0) or the port's entry key; an empty selection includes all */
 static bool selected(const cbor_path_t *paths, size_t pathCount, uint16_t port, int32_t key)
 {
     if (pathCount == 0)
@@ -100,6 +104,7 @@ static bool selected(const cbor_path_t *paths, size_t pathCount, uint16_t port, 
     return false;
 }
 
+/** Writes one port's map (options, then an entry per subscribed DID and NMEA sentence), limited to the selection */
 static int encode_port(nanocbor_encoder_t *enc, const rmci_t *r, const cbor_path_t *paths, size_t pathCount,
                        uint16_t port)
 {
@@ -159,14 +164,16 @@ int cbor_rmc_encode_keys(const cbor_rmc_store_t *s, nanocbor_encoder_t *enc)
 
 /*============================================================================================== decode */
 
+/** State of one pass over an RMC_STORED map (validate, then apply) */
 typedef struct
 {
-    const cbor_rmc_store_t *s;
-    cbor_decode_result_t   *res;
-    bool                    apply;
-    bool                    malformed;
+    const cbor_rmc_store_t *s;          //!< The store being written
+    cbor_decode_result_t   *res;        //!< [out, optional] key paths of invalid values
+    bool                    apply;      //!< false: validate only; true: write to s->ports
+    bool                    malformed;  //!< Set when the input is not well-formed CBOR
 } walk_t;
 
+/** Records the key path k0[, k1[, k2]] (depth keys) as an invalid value */
 static void bad(walk_t *w, uint8_t depth, uint16_t k0, uint16_t k1, uint16_t k2)
 {
     if (!w->res)
@@ -183,6 +190,7 @@ static void bad(walk_t *w, uint8_t depth, uint16_t k0, uint16_t k1, uint16_t k2)
         w->res->errCount++;
 }
 
+/** Reads the next map key. @return 0 with *key set; 1 if the key is not a uint16 (the entry is skipped) */
 static int read_key(walk_t *w, nanocbor_value_t *map, uint16_t *key)
 {
     uint32_t k;
@@ -196,6 +204,7 @@ static int read_key(walk_t *w, nanocbor_value_t *map, uint16_t *key)
     return 1;   // not a uint16 key: entry skipped
 }
 
+/** Skips the item at it, noting malformed input */
 static void skip(walk_t *w, nanocbor_value_t *it)
 {
     if (nanocbor_skip(it) < 0)

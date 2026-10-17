@@ -3,6 +3,8 @@
  * @brief The CBOR message layer: envelope parsing and defaults, device-filter matching, and a device answering DATA
  *        and GET per DID — all-or-nothing outcomes, unowned DIDs left out, too-large marking, acknowledgement levels,
  *        CAPABILITIES, and SUBSCRIBE answered UNSUPPORTED.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
 #include <gtest/gtest.h>
@@ -64,6 +66,7 @@ struct Item
     }
 };
 
+/** Parses a CBOR item into an Item tree, for comparing replies by structure */
 static bool parse(nanocbor_value_t *it, Item &out)
 {
     out.type = nanocbor_get_type(it);

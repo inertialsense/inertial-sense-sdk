@@ -1117,18 +1117,25 @@ private:
     /** State of the running CBOR request */
     struct CborPending
     {
-        bool active = false;
-        uint16_t reqId = 0;
-        uint32_t timeoutMs = 0;
+        bool active = false;                        //!< a request is outstanding
+        uint16_t reqId = 0;                         //!< its MSG_REQ_ID
+        uint32_t timeoutMs = 0;                     //!< how long to wait for a (further) reply
         uint32_t lastMs = 0;                        //!< when the request was sent, or the last reply arrived
-        bool collectAll = false;
-        std::vector<CborReply> replies;
-        std::function<void(const std::vector<CborReply>&)> done;
+        bool collectAll = false;                    //!< keep collecting replies until the timeout (wildcard requests)
+        std::vector<CborReply> replies;             //!< replies received so far
+        std::function<void(const std::vector<CborReply>&)> done;   //!< called with the replies when the request ends
     };
     CborPending                 cbor_;                               //!< CBOR request in progress, if active
     uint16_t                    cborNextReqId_ = 1;                  //!< next CBOR MSG_REQ_ID (never 0)
 
+    /**
+     * @brief Receive path for DID_CBOR: adds a reply that echoes the running request's MSG_REQ_ID, finishing the
+     *        request unless it collects every reply.
+     * @param data  the received message
+     */
     void cborOnMessage(const p_data_t* data);
+
+    /** @brief Ends the running CBOR request and passes its replies to done. */
     void cborFinish();
 
     int                         m_calUploadState = -1;               //!< step indicator for calibration uploads (-1 = idle, 0..7 = active step)

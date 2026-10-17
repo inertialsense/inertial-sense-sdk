@@ -29,15 +29,17 @@ extern "C" {
 typedef struct
 {
     uint64_t    matchDev;                           //!< Device filter the downstream device must match
-    uint8_t     msgCount;
+    uint8_t     msgCount;                           //!< Entries in msgs
     uint8_t     msgs[CBOR_ROUTE_RULE_MSGS_MAX];     //!< Operations (eCborMsgType) the rule applies to
-    uint8_t     didCount;
+    uint8_t     didCount;                           //!< Entries in dids
     uint16_t    dids[CBOR_ROUTE_RULE_DIDS_MAX];     //!< Root DID keys the rule applies to
     uint8_t     action;                             //!< eCborRouteAction
 } cbor_route_rule_t;
 
 /**
- * @brief The action for forwarding one DID of a message to a downstream device.
+ * @brief The action for forwarding one DID of a message to a downstream device: the first matching rule's, or ALLOW.
+ * @param rules      the rules, in order
+ * @param ruleCount  entries in rules
  * @param devId  the downstream device's unique ID
  * @param op     the message's operation (eCborMsgType, without flags)
  * @param did    the root DID key
@@ -48,12 +50,23 @@ uint8_t cbor_route_action(const cbor_route_rule_t *rules, size_t ruleCount, uint
 /**
  * @brief Encodes rules as the ROUTE_FILTER map (rule n at key n), within size bytes. A selection picks rules (one key)
  *        or fields of a rule (two keys); a rule that does not fit is marked RESP_TOO_LARGE.
+ * @param rules      the rules, in order
+ * @param ruleCount  entries in rules
+ * @param paths      selection (NULL or pathCount 0 = every rule)
+ * @param pathCount  entries in paths
+ * @param buf        output buffer
+ * @param size       bytes available in buf
  * @return bytes written, or CBOR_CODEC_ERR_NO_SPACE if not even the map header fits
  */
 int cbor_route_encode(const cbor_route_rule_t *rules, size_t ruleCount, const cbor_path_t *paths, size_t pathCount,
                       uint8_t *buf, size_t size);
 
-/** @brief Writes the ROUTE_FILTER field keys (the rule indices) as an array. @return >= 0, or NANOCBOR_ERR_END */
+/**
+ * @brief Writes the ROUTE_FILTER field keys (the rule indices) as an array, for CAPABILITIES.
+ * @param ruleCount  number of rules
+ * @param enc        encoder to write to
+ * @return >= 0, or NANOCBOR_ERR_END
+ */
 int cbor_route_encode_keys(size_t ruleCount, nanocbor_encoder_t *enc);
 
 #ifdef __cplusplus
