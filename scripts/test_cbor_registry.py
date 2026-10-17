@@ -118,6 +118,10 @@ class ForbiddenChanges(unittest.TestCase):
         self.head['schemas']['subscriptions']['indexed_fields']['element']['did_keyed_fields']['element']['option_keys'].append('SUB_NOPE')
         self.assertError('option_keys names unknown key SUB_NOPE')
 
+    def test_changed_transport_did(self):
+        self.head['transport']['isb_did'] = 130
+        self.assertError('transport changed')
+
     def test_field_too_large_for_one_reply(self):
         field(self.head, 'CAN_CONFIG', 'can_transmit_address')['count'] = 1000
         self.assertError('cannot fit one reply')

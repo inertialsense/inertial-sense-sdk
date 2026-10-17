@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #define CBOR_REGISTRY_VERSION  1
+#define CBOR_ISB_DID           129   /* DID_CBOR */
 
 /* Root DID keys */
 #define CBOR_DID_FLASH_CFG  0x000C

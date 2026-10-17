@@ -197,6 +197,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127   /**< (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_SYS_FAULT               (eDataIDs)128   /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
 #define DID_GPX_LAST                    128             /**< Last of GPX DIDs */
+#define DID_CBOR                        (eDataIDs)129   /**< (cbor_msg_t) A CBOR message: one CBOR map holding envelope keys and then DID keys (see cbor/cbor_registry.h and SDK/src/cbor/registry.yaml). Variable length up to ISB_MAX_DATASET_SIZE; sent and requested at offset 0 only. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -5031,6 +5032,13 @@ typedef struct
     uint8_t         data[1];       //!< Variable-length payload, length bytes; interpretation depends on msgTypeID
 } did_event_t;
 
+/** @brief (DID_CBOR) A CBOR message. The payload is one CBOR map and nothing else; the ISB packet size is its length.
+ *  Keys and their meanings are defined by the CBOR key registry (cbor/cbor_registry.h). */
+typedef struct
+{
+    uint8_t         data[1];        //!< CBOR map, ISB packet size bytes
+} cbor_msg_t;
+
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))  //!< Size of did_event_t excluding its trailing variable-length data payload byte
 
 /** @brief Bitmask/value set for system_fault_t.status (DID_SYS_FAULT / DID_GPX_SYS_FAULT). Bits 0-23 are general, non-fatal status/error flags that may accumulate independently; bits 24-31 (SYS_FAULT_STATUS_CRITICAL_ERROR_MASK) instead encode a single small integer value (1-7) at SYS_FAULT_STATUS_CRITICAL_ERROR_pos identifying the specific critical fault that caused a reset, since only one critical fault can be active/reported at a time. */
@@ -5421,6 +5429,7 @@ typedef union PACKED
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
     is_timepulse_t                  ISBTimepulse;   //!< DID_TIMEPULSE
     did_event_t                     event;          //!< DID_EVENT
+    cbor_msg_t                      cbor;           //!< DID_CBOR
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT
 

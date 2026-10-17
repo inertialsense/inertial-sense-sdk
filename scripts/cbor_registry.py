@@ -286,6 +286,8 @@ def compare(base, head, rep):
             out[(scope, key)] = e
         return out
 
+    if base.get('transport') != head.get('transport'):
+        rep.error(f'transport changed: {base.get("transport")} -> {head.get("transport")}')
     b, h = index(base), index(head)
     for (scope, key), be in b.items():
         he = h.get((scope, key))
@@ -348,6 +350,7 @@ def gen_header(reg):
            '#include <stdint.h>', '#include "cbor/flash_cfg_cbor.h"', '',
            '#ifdef __cplusplus', 'extern "C" {', '#endif', '']
     out.append(f'#define CBOR_REGISTRY_VERSION  {reg["registry_version"]}')
+    out.append(f'#define CBOR_ISB_DID           {reg["transport"]["isb_did"]}   /* DID_CBOR */')
     out += ['', '/* Root DID keys */']
     for d in reg.get('dids', []):
         out.append(f'#define CBOR_DID_{c_ident(d["name"])}  0x{d["key"]:04X}')
@@ -393,6 +396,7 @@ def gen_header(reg):
 
 def gen_tables(reg):
     out = [HEADER, '#include <stddef.h>', '#include "data_sets.h"', '#include "ISComm.h"', '#include "cbor/cbor_registry.h"', '']
+    out.append(f'_Static_assert(DID_CBOR == {reg["transport"]["isb_did"]}, "registry.yaml transport.isb_did does not match DID_CBOR");')
     for cname, val in (reg.get('constants') or {}).items():
         out.append(f'_Static_assert(({cname}) == {val}, "registry.yaml constant {cname} does not match the C definition");')
     out.append('')

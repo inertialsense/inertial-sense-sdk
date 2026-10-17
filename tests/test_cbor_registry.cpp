@@ -1,0 +1,39 @@
+/**
+ * @file test_cbor_registry.cpp
+ * @brief The SDK side of the CBOR key registry: DID_CBOR is registered, and the generated key constants and name
+ *        tables agree with each other.
+ */
+
+#include <gtest/gtest.h>
+#include <cstring>
+
+#include "ISDataMappings.h"
+#include "cbor/cbor_registry.h"
+
+TEST(CborRegistry, CborDidIsRegistered)
+{
+    EXPECT_EQ(DID_CBOR, CBOR_ISB_DID);
+    EXPECT_STREQ(cISDataMappings::DataName(DID_CBOR), "DID_CBOR");
+}
+
+TEST(CborRegistry, FieldNamesAndKeysRoundTrip)
+{
+    EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_FLASH_CFG, CBOR_FLASH_CFG__SER0BAUDRATE), "ser0BaudRate");
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_FLASH_CFG, "ser0BaudRate"), CBOR_FLASH_CFG__SER0BAUDRATE);
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_GPX_FLASH_CFG, "ser0BaudRate"), CBOR_GPX_FLASH_CFG__SER0BAUDRATE);
+    EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_RMC_STORED, CBOR_RMC_STORED__RMC_PRESET), "RMC_PRESET");
+}
+
+TEST(CborRegistry, UnknownFieldsAreNotFound)
+{
+    EXPECT_EQ(cbor_registry_field_name(CBOR_DID_FLASH_CFG, 0x7FFF), nullptr);
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_FLASH_CFG, "noSuchField"), -1);
+}
+
+TEST(CborRegistry, LegacyFieldTablesAreInKeyOrder)
+{
+    for (uint16_t i = 1; i < g_cborFieldsCount_FLASH_CFG; i++)
+        EXPECT_LT(g_cborFields_FLASH_CFG[i - 1].id, g_cborFields_FLASH_CFG[i].id);
+    for (uint16_t i = 1; i < g_cborFieldsCount_GPX_FLASH_CFG; i++)
+        EXPECT_LT(g_cborFields_GPX_FLASH_CFG[i - 1].id, g_cborFields_GPX_FLASH_CFG[i].id);
+}

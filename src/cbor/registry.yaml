@@ -12,6 +12,10 @@
 
 registry_version: 1
 
+# The ISB DID that carries every CBOR message (DID_CBOR).
+transport:
+  isb_did: 129
+
 # Key ranges. Root keys and keys inside a DID share this layout; below 0x8000 a key means a DID at the root and a
 # field inside a DID.
 ranges:
