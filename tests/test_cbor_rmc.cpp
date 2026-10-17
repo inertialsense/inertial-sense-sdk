@@ -200,3 +200,34 @@ TEST(CborRmc, UnknownKeysAreIgnored)
     ASSERT_EQ(st.write(msg, &res), CBOR_MSG_STATUS_OK);
     EXPECT_EQ(st.ports[0].periodMultiple[DID_INS_2], 2);
 }
+
+TEST(CborRmc, NmeaSentencesAreNmeaPseudoDids)
+{
+    Store st;
+    st.ports[0].rmcNmea.nmeaBits = 1u << NMEA_MSG_ID_GNGGA;
+    st.ports[0].rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGGA] = 5;
+    Bytes gga = { 0x19, 0x3F, (uint8_t)NMEA_MSG_ID_GNGGA };
+    EXPECT_EQ(st.read({ cbor_path_t{ 1, { 0 } } }), cat({ { 0xA1, 0x00, 0xA1 }, gga, { 0xA1 }, SUB_MULTI, { 0x05 } }));
+
+    cbor_decode_result_t res;
+    Bytes rmcMsg = { 0x19, 0x3F, (uint8_t)NMEA_MSG_ID_GNRMC };
+    // {0: {NMEA_GNGGA: {SUB_RATE_MULTI: 0}, NMEA_GNRMC: {SUB_RATE_MULTI: 2}}}
+    Bytes msg = cat({ { 0xA1, 0x00, 0xA2 }, gga, { 0xA1 }, SUB_MULTI, { 0x00 }, rmcMsg, { 0xA1 }, SUB_MULTI, { 0x02 } });
+    ASSERT_EQ(st.write(msg, &res), CBOR_MSG_STATUS_OK);
+    EXPECT_EQ(st.ports[0].rmcNmea.nmeaBits, 1u << NMEA_MSG_ID_GNRMC);
+    EXPECT_EQ(st.ports[0].rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNRMC], 2);
+}
+
+TEST(CborRmc, LoadSkipsEntriesItCannotApply)
+{
+    Store st;
+    // {0: {FLASH_CONFIG (no RMC bit): {}, INS_2: {SUB_RATE_PERIOD: 100}, GNSS1_POS: {SUB_RATE_MULTI: 2}}, 9: {}}
+    Bytes msg = cat({ { 0xA2, 0x00, 0xA3 }, did(DID_FLASH_CONFIG), { 0xA0 }, did(DID_INS_2), { 0xA1 }, SUB_PERIOD,
+                      { 0x18, 0x64 }, did(DID_GNSS1_POS), { 0xA1 }, SUB_MULTI, { 0x02 }, { 0x09, 0xA0 } });
+    nanocbor_value_t it;
+    nanocbor_decoder_init(&it, msg.data(), msg.size());
+    cbor_rmc_load(&st.s, &it);
+    EXPECT_TRUE(nanocbor_at_end(&it));
+    EXPECT_EQ(st.ports[0].rmc.bits, RMC_BITS_GNSS1_POS);
+    EXPECT_EQ(st.ports[0].periodMultiple[DID_GNSS1_POS], 2);
+}

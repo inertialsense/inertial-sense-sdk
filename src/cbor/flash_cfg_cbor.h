@@ -50,6 +50,12 @@ typedef struct PACKED {
     };
 } flash_cfg_hdr_t;
 
+/** Major storage-format version of a flash block (valid after flash_cfg_cbor_read_block() succeeds) */
+static inline uint8_t flash_cfg_cbor_block_major(const uint8_t *block)
+{
+    return ((const flash_cfg_hdr_t *)block)->version[0];
+}
+
 /** Check if a flash block header indicates CBOR format */
 static inline bool flash_cfg_is_cbor(const flash_cfg_hdr_t *hdr)
 {

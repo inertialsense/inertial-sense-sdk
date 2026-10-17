@@ -31,11 +31,53 @@ uint64_t cbor_rmc_preset_bits(uint8_t preset)
     }
 }
 
-static bool did_stored(const rmci_t *r, uint16_t did)
+/** First NMEA sentence pseudo-DID (0x3F00 + NMEA_MSG_ID_*) */
+#define NMEA_PSEUDO_DID_BASE    0x3F00
+
+static bool is_nmea_did(uint16_t key)
 {
-    uint64_t bit = g_didToRmcBit[did];
+    return key > NMEA_PSEUDO_DID_BASE && key < NMEA_PSEUDO_DID_BASE + NMEA_MSG_ID_COUNT;
+}
+
+/** True if key is a DID (with an RMC bit) or an NMEA pseudo-DID that an rmci_t can hold */
+static bool storable(uint16_t key)
+{
+    return (key < DID_COUNT && g_didToRmcBit[key] != 0) || is_nmea_did(key);
+}
+
+static bool did_stored(const rmci_t *r, uint16_t key)
+{
+    if (is_nmea_did(key))
+        return (r->rmcNmea.nmeaBits & (1UL << (key - NMEA_PSEUDO_DID_BASE))) != 0;
+    if (key >= DID_COUNT)
+        return false;
+    uint64_t bit = g_didToRmcBit[key];
     return bit && (r->rmc.bits & bit);
 }
+
+static uint8_t stored_multiple(const rmci_t *r, uint16_t key)
+{
+    return is_nmea_did(key) ? r->rmcNmea.nmeaPeriod[key - NMEA_PSEUDO_DID_BASE] : r->periodMultiple[key];
+}
+
+/** Adds (mult > 0) or removes (mult 0) a DID or NMEA sentence */
+static void set_stored(rmci_t *r, uint16_t key, uint8_t mult)
+{
+    if (is_nmea_did(key))
+    {
+        uint32_t bit = 1UL << (key - NMEA_PSEUDO_DID_BASE);
+        r->rmcNmea.nmeaBits = mult ? (r->rmcNmea.nmeaBits | bit) : (r->rmcNmea.nmeaBits & ~bit);
+        r->rmcNmea.nmeaPeriod[key - NMEA_PSEUDO_DID_BASE] = mult;
+        return;
+    }
+    uint64_t bit = g_didToRmcBit[key];
+    r->rmc.bits = mult ? (r->rmc.bits | bit) : (r->rmc.bits & ~bit);
+    r->periodMultiple[key] = mult;
+}
+
+/** Visits the DIDs, then the NMEA pseudo-DIDs, an rmci_t can hold, in key order */
+#define FOR_EACH_STORABLE(key) \
+    for (uint16_t key = 0; key < NMEA_PSEUDO_DID_BASE + NMEA_MSG_ID_COUNT; key = (key + 1 == DID_COUNT) ? NMEA_PSEUDO_DID_BASE + 1 : key + 1)
 
 static uint8_t speed_filter(const rmci_t *r)
 {
@@ -65,17 +107,17 @@ static int encode_port(nanocbor_encoder_t *enc, const rmci_t *r, const cbor_path
     bool filter = speed_filter(r) != CBOR_NMEA_SPEED_FILTER_DEFAULT &&
                   selected(paths, pathCount, port, CBOR_RMC_STORED__NMEA_SPEED_FILTER);
     n += filter;
-    for (uint16_t did = 0; did < DID_COUNT; did++)
+    FOR_EACH_STORABLE(did)
         n += did_stored(r, did) && selected(paths, pathCount, port, did);
 
     if (nanocbor_fmt_map(enc, n) < 0)
         return NANOCBOR_ERR_END;
-    for (uint16_t did = 0; did < DID_COUNT; did++)
+    FOR_EACH_STORABLE(did)
     {
         if (!did_stored(r, did) || !selected(paths, pathCount, port, did))
             continue;
         if (nanocbor_fmt_uint(enc, did) < 0 || nanocbor_fmt_map(enc, 1) < 0 ||
-            nanocbor_fmt_uint(enc, CBOR_SUB_RATE_MULTI) < 0 || nanocbor_fmt_uint(enc, r->periodMultiple[did]) < 0)
+            nanocbor_fmt_uint(enc, CBOR_SUB_RATE_MULTI) < 0 || nanocbor_fmt_uint(enc, stored_multiple(r, did)) < 0)
             return NANOCBOR_ERR_END;
     }
     if (filter && (nanocbor_fmt_uint(enc, CBOR_RMC_STORED__NMEA_SPEED_FILTER) < 0 ||
@@ -163,8 +205,7 @@ static void skip(walk_t *w, nanocbor_value_t *it)
 /** One DID entry {SUB_RATE_MULTI: m}: validates, and with w->apply sets or removes the DID */
 static void walk_did(walk_t *w, nanocbor_value_t *it, uint8_t port, uint16_t did)
 {
-    bool storable = did < DID_COUNT && g_didToRmcBit[did] != 0;
-    if (nanocbor_get_type(it) != NANOCBOR_TYPE_MAP || !storable)
+    if (nanocbor_get_type(it) != NANOCBOR_TYPE_MAP || !storable(did))
     {
         bad(w, 2, port, did, 0);
         skip(w, it);
@@ -178,6 +219,7 @@ static void walk_did(walk_t *w, nanocbor_value_t *it, uint8_t port, uint16_t did
     }
     rmci_t *r = &w->s->ports[port];
     int mult = -1;
+    bool invalid = false;
     while (!nanocbor_at_end(&map) && !w->malformed)
     {
         uint16_t key;
@@ -187,13 +229,17 @@ static void walk_did(walk_t *w, nanocbor_value_t *it, uint8_t port, uint16_t did
         {
             uint8_t v;
             if (cbor_codec_decode_value(&map, &s_u8, &v, NULL, NULL) != CBOR_CODEC_OK)
+            {
                 bad(w, 3, port, did, key);
+                invalid = true;
+            }
             else
                 mult = v;
         }
         else if (key == CBOR_SUB_RATE_PERIOD || key == CBOR_MSG_FIELDS)
         {   // not representable in rmci_t
             bad(w, 3, port, did, key);
+            invalid = true;
             skip(w, &map);
         }
         else
@@ -201,19 +247,11 @@ static void walk_did(walk_t *w, nanocbor_value_t *it, uint8_t port, uint16_t did
     }
     if (nanocbor_leave_container(it, &map) < 0)
         w->malformed = true;
-    if (!w->apply)
+    if (!w->apply || invalid)
         return;
-    uint64_t bit = g_didToRmcBit[did];
-    if (mult == 0)
-    {
-        r->rmc.bits &= ~bit;
-        r->periodMultiple[did] = 0;
-        return;
-    }
     if (mult < 0)
-        mult = (r->rmc.bits & bit) ? r->periodMultiple[did] : 1;  // no rate given: keep it, or the source rate
-    r->rmc.bits |= bit;
-    r->periodMultiple[did] = (uint8_t)mult;
+        mult = did_stored(r, did) ? stored_multiple(r, did) : 1;   // no rate given: keep it, or the source rate
+    set_stored(r, did, (uint8_t)mult);
 }
 
 /** One port map. With w->apply: RMC_PRESET first, then the DID entries and NMEA_SPEED_FILTER. */
@@ -354,4 +392,14 @@ uint8_t cbor_rmc_decode(const cbor_rmc_store_t *s, nanocbor_value_t *it, cbor_de
     }
     nanocbor_skip(it);
     return status;
+}
+
+void cbor_rmc_load(const cbor_rmc_store_t *s, nanocbor_value_t *it)
+{
+    if (nanocbor_get_type(it) == NANOCBOR_TYPE_MAP)
+    {
+        walk_t a = { s, NULL, true, false };
+        walk(&a, *it);
+    }
+    nanocbor_skip(it);
 }

@@ -3,12 +3,12 @@
  * @brief RMC_STORED on a device that keeps its startup subscriptions as per-port rmci_t (the IMX's startupRmc[]).
  *
  * RMC_STORED is a map of ports (key n = port n). Each port holds RMC_PRESET and NMEA_SPEED_FILTER options and an entry
- * per subscribed DID: {SUB_RATE_MULTI: m}. The DID-level option RMC_SAVE_PORTS copies the listed ports' runtime
- * subscriptions into storage. In phase 1 a DID is stored only if it has an RMC bit, and rates are period multiples:
- * SUB_RATE_PERIOD and field selections (MSG_FIELDS) are rejected.
+ * per subscribed DID or NMEA sentence pseudo-DID (0x3F00 + NMEA_MSG_ID_*): {SUB_RATE_MULTI: m}. The DID-level option
+ * RMC_SAVE_PORTS copies the listed ports' runtime subscriptions into storage. In phase 1 a DID is stored only if it
+ * has an RMC bit, and rates are period multiples: SUB_RATE_PERIOD and field selections (MSG_FIELDS) are rejected.
  *
  * Writes are all or nothing: the whole map is validated before any port changes. Within a port, RMC_PRESET is applied
- * first and the DID entries after it; a multiple of 0 removes the DID. NMEA sentence settings are not carried here.
+ * first and the DID entries after it; a multiple of 0 removes the DID.
  *
  * Design: is-common/docs_internal/cbor/CBOR_PROTOCOL_DESIGN.md (section 9).
  *
@@ -57,6 +57,12 @@ int cbor_rmc_encode(const cbor_rmc_store_t *s, const cbor_path_t *paths, size_t 
  * @return CBOR_MSG_STATUS_OK, CBOR_MSG_STATUS_BAD_VALUE (nothing applied) or CBOR_MSG_STATUS_BAD_REQUEST (malformed)
  */
 uint8_t cbor_rmc_decode(const cbor_rmc_store_t *s, nanocbor_value_t *it, cbor_decode_result_t *res);
+
+/**
+ * @brief Applies a stored RMC_STORED map (flash storage) on top of s->ports, skipping any entry it cannot apply rather
+ *        than rejecting the map, so storage written by other firmware loads as far as it is understood. Advances past it.
+ */
+void cbor_rmc_load(const cbor_rmc_store_t *s, nanocbor_value_t *it);
 
 /** @brief Writes the RMC_STORED field keys (the port numbers) as an array. @return >= 0, or NANOCBOR_ERR_END */
 int cbor_rmc_encode_keys(const cbor_rmc_store_t *s, nanocbor_encoder_t *enc);
