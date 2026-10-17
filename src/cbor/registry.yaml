@@ -18,9 +18,10 @@ ranges:
   protocol:        [0xF000, 0xFFFF]   # protocol / wire / CBOR-specific
   message:         [0xC000, 0xEFFF]   # general message handling, MSG_*
   message_type:    [0x9000, 0xBFFF]   # message-type options, a 0x100 block per message type at 0x9000 + type * 0x100
-  data_option:     [0x8000, 0x8FFF]   # data-specific options, numbered per DID
+  data_option:     [0x8000, 0x8FFF]   # data-specific options, numbered per DID and unique across all of its levels
   legacy_did:      [0x0000, 0x00FF]   # legacy DIDs at their ISB numbers
-  application_did: [0x0100, 0x3FFF]   # application CBOR-only DIDs, assigned upward from 0x0100
+  application_did: [0x0100, 0x3EFF]   # application CBOR-only DIDs, assigned upward from 0x0100
+  nmea_did:        [0x3F00, 0x3FFF]   # NMEA sentence pseudo-DIDs: 0x3F00 + NMEA message ID (output as ASCII NMEA)
   protocol_did:    [0x4000, 0x7FFF]   # protocol CBOR-only DIDs, assigned downward from 0x7FFF
   field:           [0x0000, 0x7FFF]   # field keys inside a DID
 
@@ -28,6 +29,8 @@ ranges:
 # firmware/SDK definition, so the registry can't drift from the headers.
 constants:
   NUM_CIDS: 27
+  NMEA_MSG_ID_COUNT: 20
+  RMC_CFG_MAX_PORTS: 6
   ISB_MAX_DATASET_SIZE: 2040
 
 # Devices and the largest reply each can build (bytes of CBOR). Used by the worst-case size check.
@@ -57,6 +60,23 @@ enums:
   route_action:
     DENY: 0
     ALLOW: 1
+  rmc_preset:            # the RMC_PRESET_* broadcast sets; rates follow the nav period when applied
+    NONE: 0
+    IMX_PPD_NO_IMU: 1
+    IMX_PPD: 2
+    IMX_PPD_IMUS_RAW: 3
+    IMX_PPD_IMUS_UNCAL: 4
+    INS: 5
+    IMX_PPD_RTK_DBG: 6
+    IMX_PPD_GROUND_VEHICLE: 7
+    ALLAN_VARIANCE: 8
+    ALLAN_VARIANCE_IMUS: 9
+    GNSS: 10
+    GPX_PPD: 11
+  nmea_speed_filter:     # RMC_OPTIONS_NMEA_SPEED_FILTER_* values
+    DEFAULT: 0
+    ENABLE: 1
+    DISABLE: 2
 
 # General message keys (envelope at the root; MSG_STATUS / MSG_ERR_KEYS / MSG_FIELDS also appear inside a DID).
 message:
@@ -77,12 +97,28 @@ message:
 # Message-type options, a block per message type.
 message_type:
   SUBSCRIBE:   # block 0x9300
-    - { key: 0x9300, name: SUB_RATE_PERIOD,    type: uint32, reserved: true, default_from: protocol_rule }  # ms; phase 2 (SN-8888)
-    - { key: 0x9301, name: SUB_RATE_MULTI,     type: uint32, reserved: true, default_from: protocol_rule }  # phase 2
+    - { key: 0x9300, name: SUB_RATE_PERIOD,    type: uint32, default_from: protocol_rule }  # ms; stored in RMC_STORED from phase 1, SUBSCRIBE in phase 2 (SN-8888)
+    - { key: 0x9301, name: SUB_RATE_MULTI,     type: uint32, default_from: protocol_rule }  # multiple of the DID's source rate
     - { key: 0x9302, name: SUB_PORTS,          type: array,  element: uint8, max_count: 16, reserved: true, default_from: protocol_rule }  # absent = arriving port
     - { key: 0x9303, name: SUB_OPTION_PERSIST, type: bool,   reserved: true, default: false }               # phase 2
 
 protocol: []
+
+# Shared schemas, referenced by `schema:` in a DID.
+schemas:
+  subscriptions:         # each port's subscriptions; the runtime RMC and the stored RMC_STORED share it
+    indexed_fields:      # field key n = port n
+      max_count: RMC_CFG_MAX_PORTS
+      element:
+        type: map
+        fields:          # per-port data options
+          - { key: 0x8001, name: RMC_PRESET,        type: uint8, enum: rmc_preset,        default: NONE }      # applied first; entries below override it
+          - { key: 0x8002, name: NMEA_SPEED_FILTER, type: uint8, enum: nmea_speed_filter, default: DEFAULT }
+        did_keyed_fields:          # field key = a DID (or NMEA pseudo-DID) subscribed on this port
+          max_count: 96            # bound used by the size check (64 RMC-bit DIDs + NMEA sentences, with headroom)
+          element:
+            type: map
+            option_keys: [SUB_RATE_PERIOD, SUB_RATE_MULTI, MSG_FIELDS]   # absent MSG_FIELDS = every field
 
 dids:
   # ---------------------------------------------------------------- legacy DIDs
@@ -184,6 +220,27 @@ dids:
     reserved: true     # SN-8891
     fields: []
 
+  # ---------------------------------------------------------------- NMEA sentence pseudo-DIDs (0x3F00 + NMEA_MSG_ID_*)
+  - { key: 0x3F01, name: NMEA_PIMU, nmea: true }
+  - { key: 0x3F02, name: NMEA_PPIMU, nmea: true }
+  - { key: 0x3F03, name: NMEA_PRIMU, nmea: true }
+  - { key: 0x3F04, name: NMEA_PINS1, nmea: true }
+  - { key: 0x3F05, name: NMEA_PINS2, nmea: true }
+  - { key: 0x3F06, name: NMEA_PGPSP, nmea: true }
+  - { key: 0x3F07, name: NMEA_GNGGA, nmea: true }
+  - { key: 0x3F08, name: NMEA_GNGLL, nmea: true }
+  - { key: 0x3F09, name: NMEA_GNGSA, nmea: true }
+  - { key: 0x3F0A, name: NMEA_GNRMC, nmea: true }
+  - { key: 0x3F0B, name: NMEA_GNZDA, nmea: true }
+  - { key: 0x3F0C, name: NMEA_PASHR, nmea: true }
+  - { key: 0x3F0D, name: NMEA_PSTRB, nmea: true }
+  - { key: 0x3F0E, name: NMEA_INFO, nmea: true }
+  - { key: 0x3F0F, name: NMEA_GNGSV, nmea: true }
+  - { key: 0x3F10, name: NMEA_GNVTG, nmea: true }
+  - { key: 0x3F11, name: NMEA_INTEL, nmea: true }
+  - { key: 0x3F12, name: NMEA_POWGPS, nmea: true }
+  - { key: 0x3F13, name: NMEA_POWTLV, nmea: true }
+
   # ---------------------------------------------------------------- protocol CBOR-only DIDs (from 0x7FFF down)
   - key: 0x7FFF
     name: ROUTE_FILTER
@@ -200,6 +257,21 @@ dids:
           - { key: 2, name: MATCH_DIDS, type: array, element: uint16, max_count: 16, default_from: protocol_rule }  # absent = every DID
           - { key: 3, name: ACTION,     type: uint8, enum: route_action, default: DENY }
 
+  - key: 0x7FFE
+    name: RMC                # runtime subscriptions; name undecided (design doc banner)
+    schema: subscriptions
+    served_by: [IMX-5, IMX-6, GPX-1]
+    default_from: firmware_logic
+
+  - key: 0x7FFD
+    name: RMC_STORED         # stored startup subscriptions, applied at boot; name undecided
+    schema: subscriptions
+    served_by: [IMX-5, IMX-6, GPX-1]
+    stored: true
+    default_from: firmware_logic
+    fields:                  # DID-level data options (write triggers)
+      - { key: 0x8000, name: RMC_SAVE_PORTS, type: array, element: uint8, max_count: RMC_CFG_MAX_PORTS, default_from: protocol_rule }  # copy these ports' runtime subscriptions to flash
+
   - key: 0x7FFC
     name: CAPABILITIES
     served_by: [IMX-5, IMX-6, GPX-1]
@@ -208,4 +280,3 @@ dids:
     did_keyed_fields:        # field key = a DID the device owns; value = the field keys it serves
       element: { type: array, element: uint16 }
 
-  # 0x7FFE (runtime subscriptions) and 0x7FFD (stored startup subscriptions): schema pending; names undecided.

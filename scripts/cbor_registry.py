@@ -71,6 +71,11 @@ def load(text):
     reg = yaml.safe_load(text)
     if not isinstance(reg, dict):
         raise ValueError('registry is not a mapping')
+    for did in reg.get('dids', []):
+        name = did.get('schema')
+        if name:
+            for k, v in reg['schemas'][name].items():
+                did.setdefault(k, v)
     return reg
 
 
@@ -111,7 +116,11 @@ def worst_size(reg, f):
         es = SCALAR_TYPES[elem][3] if isinstance(elem, str) else worst_size(reg, elem)
         return 3 + n * es
     if t == 'map':
-        return 3 + sum(3 + worst_size(reg, sub) for sub in f.get('fields', []))
+        total = 3 + sum(3 + worst_size(reg, sub) for sub in f.get('fields', []))
+        dk = f.get('did_keyed_fields')
+        if dk:
+            total += resolve_count(reg, dk['max_count']) * (3 + entry_worst_size(reg, dk['element']))
+        return total
     if t in ('text', 'bytes'):
         return 3 + resolve_count(reg, f.get('max_count', f.get('count')))
     if t == 'key_paths':
@@ -119,16 +128,61 @@ def worst_size(reg, f):
     return 0
 
 
+def entry_worst_size(reg, elem):
+    """Worst-case bytes of a map whose keys are named option keys (e.g. a subscription entry)."""
+    by_name = {e['name']: e for e in reg.get('message', [])}
+    for entries in (reg.get('message_type') or {}).values():
+        by_name.update({e['name']: e for e in entries})
+    return 3 + sum(3 + worst_size(reg, by_name[k]) for k in elem.get('option_keys', []) if k in by_name) + \
+        sum(3 + worst_size(reg, sub) for sub in elem.get('fields', []))
+
+
 def did_worst_size(reg, did):
-    if 'fields' in did:
-        return 3 + sum(3 + worst_size(reg, f) for f in did['fields'])
-    if 'indexed_fields' in did:
-        ix = did['indexed_fields']
-        return 3 + resolve_count(reg, ix['max_count']) * (3 + worst_size(reg, ix['element']))
-    return 0
+    total = 3 + sum(3 + worst_size(reg, f) for f in did.get('fields') or [])
+    ix = did.get('indexed_fields')
+    if ix:
+        total += resolve_count(reg, ix['max_count']) * (3 + worst_size(reg, ix['element']))
+    return total
 
 
 # ------------------------------------------------------------------------------------------------ validation
+
+def did_range(reg, did):
+    if 'legacy' in did:
+        return 'legacy_did'
+    if did.get('nmea'):
+        return 'nmea_did'
+    return 'protocol_did' if did['key'] >= reg['ranges']['protocol_did'][0] else 'application_did'
+
+
+def field_range(key):
+    return 'field' if key < 0x8000 else 'data_option'
+
+
+def walk_fields(scope, fields):
+    """Yields (scope, key, entry, range_name) for fields and anything nested inside them."""
+    for f in fields or []:
+        yield (scope, f['key'], f, field_range(f['key']))
+        yield from walk_fields(f'{scope}.{f["name"]}', f.get('fields'))
+        elem = f.get('element')
+        if isinstance(elem, dict):
+            yield from walk_fields(f'{scope}.{f["name"]}[]', elem.get('fields'))
+
+
+def did_children(did):
+    """Yields (scope suffix, fields) for each field set a DID defines, directly or through its element maps."""
+    yield ('', did.get('fields'))
+    ix = did.get('indexed_fields')
+    if ix:
+        elem = ix['element']
+        yield ('[]', elem.get('fields'))
+        dk = elem.get('did_keyed_fields')
+        if dk:
+            yield ('[][did]', dk['element'].get('fields'))
+    dk = did.get('did_keyed_fields')
+    if dk:
+        yield ('[did]', dk['element'].get('fields'))
+
 
 def iter_keyed(reg):
     """Yields (scope, key, entry, range_name) for every key the registry defines."""
@@ -140,17 +194,16 @@ def iter_keyed(reg):
     for e in reg.get('protocol', []) or []:
         yield ('protocol', e['key'], e, 'protocol')
     for did in reg.get('dids', []):
-        k = did['key']
-        rng = 'legacy_did' if 'legacy' in did else ('protocol_did' if k >= reg['ranges']['protocol_did'][0] else 'application_did')
-        yield ('root', k, did, rng)
-        for f in did.get('fields', []):
-            yield (f'did.{did["name"]}', f['key'], f, 'field' if f['key'] < 0x8000 else 'data_option')
-            for sub in f.get('fields', []):
-                yield (f'did.{did["name"]}.{f["name"]}', sub['key'], sub, 'field')
-        ix = did.get('indexed_fields')
-        if ix and ix['element'].get('type') == 'map':
-            for sub in ix['element'].get('fields', []):
-                yield (f'did.{did["name"]}[]', sub['key'], sub, 'field')
+        yield ('root', did['key'], did, did_range(reg, did))
+        for suffix, fields in did_children(did):
+            yield from walk_fields(f'did.{did["name"]}{suffix}', fields)
+
+
+def option_key_names(reg):
+    names = {e['name'] for e in reg.get('message', [])}
+    for entries in (reg.get('message_type') or {}).values():
+        names |= {e['name'] for e in entries}
+    return names
 
 
 def check_defaults(scope, e, rep):
@@ -188,6 +241,21 @@ def validate(reg, rep):
         if (scope, n) in names and names[(scope, n)] != key:
             rep.error(f'{scope}: name {n} used for two keys')
         names[(scope, n)] = key
+
+    for did in reg.get('dids', []):
+        seen_opts = {}
+        for scope, key, e, rng in walk_all(did):
+            if rng == 'data_option':
+                if key in seen_opts:
+                    rep.error(f'{did["name"]}: data option 0x{key:04X} used by both {seen_opts[key]} and {e["name"]}')
+                seen_opts[key] = e['name']
+
+    known = option_key_names(reg)
+    for did in reg.get('dids', []):
+        for dk in (did.get('did_keyed_fields'), (did.get('indexed_fields') or {}).get('element', {}).get('did_keyed_fields')):
+            for k in (dk or {}).get('element', {}).get('option_keys', []):
+                if k not in known:
+                    rep.error(f'{did["name"]}: option_keys names unknown key {k}')
 
     devices = reg.get('devices', {})
     for did in reg.get('dids', []):
@@ -251,6 +319,11 @@ def compare(base, head, rep):
 
 # ------------------------------------------------------------------------------------------------ generation
 
+def walk_all(did):
+    for suffix, fields in did_children(did):
+        yield from walk_fields(suffix, fields)
+
+
 HEADER = '/* Generated from src/cbor/registry.yaml by scripts/cbor_registry.py -- do not edit. */\n'
 
 
@@ -291,12 +364,13 @@ def gen_header(reg):
             out.append(f'    CBOR_{c_ident(name)}_{sym} = {v},')
         out.append(f'}} eCbor{"".join(p.capitalize() for p in name.split("_"))};')
     for d in reg.get('dids', []):
-        fields = d.get('fields') or d.get('indexed_fields', {}).get('element', {}).get('fields') or []
-        if not fields:
+        entries = [(scope, f) for scope, _, f, _ in walk_all(d)]
+        if not entries:
             continue
         out += ['', f'/* {d["name"]} field keys */']
-        for f in fields:
-            out.append(f'#define CBOR_{c_ident(d["name"])}__{c_ident(f["name"])}  {f["key"]}')
+        for _, f in entries:
+            out.append(f'#define CBOR_{c_ident(d["name"])}__{c_ident(f["name"])}  0x{f["key"]:04X}' if f['key'] >= 0x8000
+                       else f'#define CBOR_{c_ident(d["name"])}__{c_ident(f["name"])}  {f["key"]}')
     out += ['', '/* Field tables for legacy DIDs (bound to their C structs) */']
     for d in legacy_dids(reg):
         n = c_ident(d['name'])
@@ -350,9 +424,8 @@ def gen_names(reg):
            'typedef struct { uint16_t did; uint16_t key; const char *name; } cbor_registry_name_t;', '',
            'static const cbor_registry_name_t s_names[] = {']
     for d in reg.get('dids', []):
-        fields = d.get('fields') or d.get('indexed_fields', {}).get('element', {}).get('fields') or []
-        for f in fields:
-            out.append(f'    {{ 0x{d["key"]:04X}, {f["key"]}, "{f["name"]}" }},')
+        for _, _, f, _ in walk_all(d):
+            out.append(f'    {{ 0x{d["key"]:04X}, 0x{f["key"]:04X}, "{f["name"]}" }},')
     out += ['};', '',
             'const char *cbor_registry_field_name(uint16_t did, uint16_t key)', '{',
             '    for (size_t i = 0; i < sizeof(s_names) / sizeof(s_names[0]); i++)',

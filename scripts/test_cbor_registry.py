@@ -110,6 +110,14 @@ class ForbiddenChanges(unittest.TestCase):
         del field(self.head, 'FLASH_CFG', 'debug')['default']
         self.assertError('exactly one of default / default_from')
 
+    def test_data_option_reused_across_levels(self):
+        did(self.head, 'RMC_STORED')['indexed_fields']['element']['fields'][0]['key'] = 0x8000
+        self.assertError('data option 0x8000 used by both')
+
+    def test_unknown_subscription_option_key(self):
+        self.head['schemas']['subscriptions']['indexed_fields']['element']['did_keyed_fields']['element']['option_keys'].append('SUB_NOPE')
+        self.assertError('option_keys names unknown key SUB_NOPE')
+
     def test_field_too_large_for_one_reply(self):
         field(self.head, 'CAN_CONFIG', 'can_transmit_address')['count'] = 1000
         self.assertError('cannot fit one reply')
