@@ -670,7 +670,7 @@ static void handle_data(const cbor_device_t *dev, reply_t *r, uint16_t didKey, c
 static void reply_envelope(const cbor_device_t *dev, const cbor_envelope_t *req, cbor_envelope_t *rep)
 {
     memset(rep, 0, sizeof(*rep));
-    rep->type = CBOR_MSG_TYPE_DATA;
+    rep->type = cbor_msg_reply_type(req->type);
     rep->ackType = CBOR_ACK_TYPE_ACK_MINIMAL;
     rep->hasSrc = true;
     rep->srcDevId = dev->devId;
@@ -731,12 +731,15 @@ int cbor_device_handle(const cbor_device_t *dev, const uint8_t *msg, size_t len)
     int prc = cbor_msg_parse_envelope(msg, len, &req);
     if (prc != CBOR_CODEC_ERR_MALFORMED && !cbor_msg_addressed_to(&req, dev->devId))
         return CBOR_MSG_NOT_ADDRESSED;
+    if (prc != CBOR_CODEC_ERR_MALFORMED && cbor_msg_is_reply(req.type))
+        return 0;   // a reply is never answered, not even with an error
 
     reply_envelope(dev, &req, &rep);
+    uint8_t op = cbor_msg_op(req.type);
     if (prc != CBOR_CODEC_OK)
         rep.status = CBOR_MSG_STATUS_BAD_REQUEST;
-    else if (req.type != CBOR_MSG_TYPE_DATA && req.type != CBOR_MSG_TYPE_GET)
-        rep.status = CBOR_MSG_STATUS_UNSUPPORTED;
+    else if (req.type != op || (op != CBOR_MSG_TYPE_DATA && op != CBOR_MSG_TYPE_GET))
+        rep.status = CBOR_MSG_STATUS_UNSUPPORTED;   // unknown flags or an operation this device does not handle
     if (rep.status != CBOR_MSG_STATUS_OK)
         return (prc == CBOR_CODEC_OK && req.ackType == CBOR_ACK_TYPE_ACK_NONE) ? 0 : envelope_only(dev, &rep);
 

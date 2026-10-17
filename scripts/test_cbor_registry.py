@@ -122,6 +122,14 @@ class ForbiddenChanges(unittest.TestCase):
         self.head['transport']['isb_did'] = 130
         self.assertError('transport changed')
 
+    def test_message_type_overlaps_a_flag(self):
+        self.head['enums']['msg_type']['BIG'] = 0x80
+        self.assertError('overlaps msg_type_flag')
+
+    def test_message_type_flag_not_a_single_bit(self):
+        self.head['enums']['msg_type_flag']['TWO_BITS'] = 0x60
+        self.assertError('is not a single bit')
+
     def test_field_too_large_for_one_reply(self):
         field(self.head, 'CAN_CONFIG', 'can_transmit_address')['count'] = 1000
         self.assertError('cannot fit one reply')

@@ -44,10 +44,12 @@ devices:
   GPX-1: { reply_buffer: ISB_MAX_DATASET_SIZE }
 
 enums:
-  msg_type:
+  msg_type:              # MSG_TYPE operation: counts up from 1 in the low bits
     DATA: 1
     GET: 2
     SUBSCRIBE: 3
+  msg_type_flag:         # MSG_TYPE flags: single bits taken from the MSbit (0x80) downward; never meet the operations
+    REPLY: 0x80          # an answer to a request: consumed, never applied, acknowledged or answered
   msg_status:
     OK: 0
     BAD_REQUEST: 1

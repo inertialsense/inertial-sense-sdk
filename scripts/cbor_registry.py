@@ -264,6 +264,17 @@ def validate(reg, rep):
                 if k not in known:
                     rep.error(f'{did["name"]}: option_keys names unknown key {k}')
 
+    enums = reg.get('enums') or {}
+    flags = list((enums.get('msg_type_flag') or {}).values())
+    ops = list((enums.get('msg_type') or {}).values())
+    for v in flags:
+        if v <= 0 or v > 0x80 or v & (v - 1):
+            rep.error(f'msg_type_flag value 0x{v:X} is not a single bit of a uint8')
+    if flags and ops and max(ops) >= min(flags):
+        rep.error(f'msg_type operation {max(ops)} overlaps msg_type_flag bit 0x{min(flags):02X}')
+    if any(v <= 0 for v in ops):
+        rep.error('msg_type operations start at 1')
+
     devices = reg.get('devices', {})
     for did in reg.get('dids', []):
         if did.get('reserved'):
@@ -373,6 +384,10 @@ def gen_header(reg):
         for sym, v in vals.items():
             out.append(f'    CBOR_{c_ident(name)}_{sym} = {v},')
         out.append(f'}} eCbor{"".join(p.capitalize() for p in name.split("_"))};')
+    flags = list(((reg.get('enums') or {}).get('msg_type_flag') or {}).values())
+    if flags:
+        out += ['', '/* MSG_TYPE = operation | flags; the operation is the bits below the lowest flag */',
+                f'#define CBOR_MSG_TYPE_OP_MASK  0x{min(flags) - 1:02X}']
     for d in reg.get('dids', []):
         entries = [(scope, f) for scope, _, f, _ in walk_all(d)]
         if not entries:

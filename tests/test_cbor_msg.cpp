@@ -316,7 +316,7 @@ TEST(CborDevice, GetReturnsTheSelectedFieldsWithTheReplyEnvelope)
     Item r = b.send(Cbor().map(2).u(CBOR_MSG_REQ_ID).u(3).u(DID_CFG).arr(2).u(0).u(3).bytes());
     EXPECT_EQ(r.keys(), (std::vector<uint64_t>{ CBOR_MSG_TYPE, CBOR_MSG_SRC_DEV_ID, CBOR_MSG_REQ_ID, CBOR_MSG_UPTIME_NS,
                                                 DID_CFG }));
-    EXPECT_EQ(r.get(CBOR_MSG_TYPE)->u, CBOR_MSG_TYPE_DATA);
+    EXPECT_EQ(r.get(CBOR_MSG_TYPE)->u, cbor_msg_reply_type(CBOR_MSG_TYPE_GET));
     EXPECT_EQ(r.get(CBOR_MSG_SRC_DEV_ID)->u, IMX_ID);
     EXPECT_EQ(r.get(CBOR_MSG_REQ_ID)->u, 3u);
     EXPECT_EQ(r.get(CBOR_MSG_UPTIME_NS)->u, b.uptimeNs);
@@ -410,6 +410,7 @@ TEST(CborDevice, DataAppliesOnTopOfCurrentValues)
     EXPECT_STREQ(b.cfg.name, "rover");
     EXPECT_EQ(b.cfg.rate, 10u) << "fields not sent are unchanged";
     // ACK_MINIMAL with nothing to report: envelope only
+    EXPECT_EQ(r.get(CBOR_MSG_TYPE)->u, cbor_msg_reply_type(CBOR_MSG_TYPE_DATA));
     EXPECT_EQ(r.get(DID_CFG), nullptr);
     EXPECT_EQ(r.get(CBOR_MSG_REQ_ID)->u, 4u);
 }
@@ -510,7 +511,49 @@ TEST(CborDevice, SubscribeIsUnsupported)
     Item r = b.send(Cbor().map(3).u(CBOR_MSG_TYPE).u(CBOR_MSG_TYPE_SUBSCRIBE).u(CBOR_SUB_RATE_PERIOD).u(200)
                         .u(DID_CFG).arr(0).bytes());
     EXPECT_EQ(r.get(CBOR_MSG_STATUS)->u, CBOR_MSG_STATUS_UNSUPPORTED);
+    EXPECT_EQ(r.get(CBOR_MSG_TYPE)->u, cbor_msg_reply_type(CBOR_MSG_TYPE_SUBSCRIBE));
     EXPECT_EQ(r.get(DID_CFG), nullptr);
+}
+
+TEST(CborDevice, UnknownFlagsAreUnsupported)
+{
+    Bench b;
+    Item r = b.send(Cbor().map(2).u(CBOR_MSG_TYPE).u(0x40 | CBOR_MSG_TYPE_DATA).u(DID_CFG).map(1).u(0).u(50).bytes());
+    EXPECT_EQ(r.get(CBOR_MSG_STATUS)->u, CBOR_MSG_STATUS_UNSUPPORTED);
+    EXPECT_EQ(b.cfg.rate, 10u);
+}
+
+TEST(CborDevice, RepliesAreNeverAppliedOrAnswered)
+{
+    Bench b;
+    // a reply holding values of a DID this device owns, addressed to it
+    Bytes reply = Cbor().map(4).u(CBOR_MSG_TYPE).u(cbor_msg_reply_type(CBOR_MSG_TYPE_GET))
+                      .u(CBOR_MSG_SRC_DEV_ID).u(GPX_ID).u(CBOR_MSG_DST_DEV_FILTER).u(IMX_ID)
+                      .u(DID_CFG).map(1).u(0).u(55).bytes();
+    EXPECT_EQ(b.handle(reply), 0);
+    EXPECT_EQ(b.cfg.rate, 10u);
+    // not even a malformed-looking one is answered
+    EXPECT_EQ(b.handle(Cbor().map(2).u(CBOR_MSG_TYPE).u(cbor_msg_reply_type(CBOR_MSG_TYPE_DATA))
+                           .u(CBOR_MSG_REQ_ID).u(70000).bytes()), 0);
+}
+
+TEST(CborDevice, ExchangeBetweenTwoDevicesEnds)
+{
+    // Device A asks device B to apply a value; B's acknowledgement reaches A, which neither applies nor answers it.
+    // Both own the same DID, so a reply mistaken for a write would change A's configuration.
+    Bench a, b;
+    b.dev.devId = GPX_ID;
+    Bytes msg = Cbor().map(4).u(CBOR_MSG_SRC_DEV_ID).u(IMX_ID).u(CBOR_MSG_REQ_ID).u(8)
+                    .u(CBOR_MSG_ACK_TYPE).u(CBOR_ACK_TYPE_ACK_DETAILED).u(DID_CFG).map(1).u(0).u(42).bytes();
+    int n = b.handle(msg);
+    ASSERT_GT(n, 0);
+    EXPECT_EQ(b.cfg.rate, 42u);
+    Item ack = parseReply(b.reply, n);
+    EXPECT_EQ(ack.get(CBOR_MSG_DST_DEV_FILTER)->u, IMX_ID);
+    EXPECT_EQ(ack.get(DID_CFG)->get(0)->u, 42u);
+
+    EXPECT_EQ(a.handle(Bytes(b.reply, b.reply + n)), 0) << "the ack is not answered";
+    EXPECT_EQ(a.cfg.rate, 10u) << "nor applied";
 }
 
 TEST(CborDevice, MalformedAndBadEnvelopesAreBadRequests)

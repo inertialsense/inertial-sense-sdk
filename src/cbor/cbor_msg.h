@@ -4,6 +4,8 @@
  *        answers DATA and GET for a table of DIDs.
  *
  * A message is one CBOR map. Keys at 0x8000 and above form the envelope (MSG_*, options); keys below 0x8000 are DIDs.
+ * MSG_TYPE is an operation (DATA, GET, SUBSCRIBE) plus flags; a reply carries the operation it answers with the REPLY
+ * flag, and is never applied, acknowledged or answered.
  * The device handler applies DATA per DID (all-or-nothing within a DID), answers GET with the selected fields, builds
  * replies within a fixed buffer (marking what does not fit with RESP_TOO_LARGE), acknowledges per MSG_ACK_TYPE and
  * answers CAPABILITIES from its DID table.
@@ -21,6 +23,7 @@
 #include <stdint.h>
 
 #include "cbor_codec.h"
+#include "cbor_registry.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,7 +38,8 @@ extern "C" {
 /** Message envelope. Absent keys take their defaults (design doc section 4). */
 typedef struct
 {
-    uint8_t     type;                       //!< eCborMsgType; on parse, inferred when absent (values: DATA, keys only: GET)
+    uint8_t     type;                       //!< eCborMsgType operation | eCborMsgTypeFlag flags; on parse, inferred when
+                                            //!< absent (values: DATA, keys only: GET)
     uint8_t     ackType;                    //!< eCborAckType; default ACK_MINIMAL
     uint8_t     status;                     //!< eCborMsgStatus; envelope-level outcome
     uint8_t     routeDepth;                 //!< entries in route (0 = not forwarded)
@@ -53,6 +57,15 @@ typedef struct
     uint64_t    uptimeNs;
     uint16_t    didCount;                   //!< on parse: DID keys in the message
 } cbor_envelope_t;
+
+/** @return the operation of a MSG_TYPE value (eCborMsgType) */
+static inline uint8_t cbor_msg_op(uint8_t type)         { return (uint8_t)(type & CBOR_MSG_TYPE_OP_MASK); }
+
+/** @return the MSG_TYPE of a reply to a message of the given MSG_TYPE */
+static inline uint8_t cbor_msg_reply_type(uint8_t type) { return (uint8_t)((unsigned)CBOR_MSG_TYPE_FLAG_REPLY | type); }
+
+/** @return true if a MSG_TYPE value marks a reply */
+static inline bool cbor_msg_is_reply(uint8_t type)      { return (type & CBOR_MSG_TYPE_FLAG_REPLY) != 0; }
 
 /**
  * @brief Parses the envelope of a message.
@@ -112,7 +125,8 @@ typedef struct
 } cbor_device_t;
 
 /**
- * @brief Handles one message addressed to the device and builds the reply in dev->reply.
+ * @brief Handles one message addressed to the device and builds the reply in dev->reply. Replies are not handled
+ *        here (they belong to whoever sent the request): a reply returns 0 and changes nothing.
  * @return reply length (0 = no reply), or CBOR_MSG_NOT_ADDRESSED if the message is not for this device
  */
 int cbor_device_handle(const cbor_device_t *dev, const uint8_t *msg, size_t len);

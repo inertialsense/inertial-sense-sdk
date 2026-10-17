@@ -73,6 +73,11 @@ typedef enum
 
 typedef enum
 {
+    CBOR_MSG_TYPE_FLAG_REPLY = 128,
+} eCborMsgTypeFlag;
+
+typedef enum
+{
     CBOR_MSG_STATUS_OK = 0,
     CBOR_MSG_STATUS_BAD_REQUEST = 1,
     CBOR_MSG_STATUS_BAD_VALUE = 2,
@@ -118,6 +123,9 @@ typedef enum
     CBOR_NMEA_SPEED_FILTER_ENABLE = 1,
     CBOR_NMEA_SPEED_FILTER_DISABLE = 2,
 } eCborNmeaSpeedFilter;
+
+/* MSG_TYPE = operation | flags; the operation is the bits below the lowest flag */
+#define CBOR_MSG_TYPE_OP_MASK  0x7F
 
 /* FLASH_CFG field keys */
 #define CBOR_FLASH_CFG__STARTUPIMUDTMS  0
