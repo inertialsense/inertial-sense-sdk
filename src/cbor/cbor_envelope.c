@@ -7,7 +7,81 @@
 
 #include <string.h>
 
-#include "cbor_msg_internal.h"
+#include "cbor_envelope.h"
+
+static const cbor_field_t s_u8   = { 0, CBOR_T_UINT, 1, 0, 0, NULL };
+static const cbor_field_t s_u16  = { 0, CBOR_T_UINT, 2, 0, 0, NULL };
+static const cbor_field_t s_u64  = { 0, CBOR_T_UINT, 8, 0, 0, NULL };
+static const cbor_field_t s_bool = { 0, CBOR_T_BOOL, 1, 0, 0, NULL };
+
+/** True when the item at it uses an indefinite length, which the protocol does not allow */
+static bool is_indefinite(const nanocbor_value_t *it)
+{
+    if (it->cur >= it->end)
+        return false;
+    uint8_t b = *it->cur;
+    uint8_t major = b >> NANOCBOR_TYPE_OFFSET;
+    return (major >= NANOCBOR_TYPE_BSTR && major <= NANOCBOR_TYPE_MAP) && (b & 0x1F) == 31;
+}
+
+/** Decodes a scalar envelope value; CBOR_CODEC_ERR_VALUE (value skipped) if it is not valid for f */
+static int decode_scalar(nanocbor_value_t *map, const cbor_field_t *f, void *dst)
+{
+    int rc = cbor_codec_decode_value(map, f, dst, NULL, NULL);
+    return (rc == CBOR_CODEC_ERR_MALFORMED || rc == CBOR_CODEC_ERR_VALUE) ? rc : CBOR_CODEC_OK;
+}
+
+/*============================================================================================== keys and routes */
+
+int cbor_msg_next_key(nanocbor_value_t *map, uint16_t *key)
+{
+    uint64_t k;
+    if (nanocbor_get_type(map) == NANOCBOR_TYPE_UINT && nanocbor_get_uint64(map, &k) >= 0)
+    {   // the key has been read: a value too large for a key leaves only its value to skip
+        if (k <= 0xFFFF)
+        {
+            *key = (uint16_t)k;
+            return CBOR_CODEC_OK;
+        }
+        return nanocbor_skip(map) < 0 ? CBOR_CODEC_ERR_MALFORMED : 1;
+    }
+    if (nanocbor_skip(map) < 0 || nanocbor_skip(map) < 0)
+        return CBOR_CODEC_ERR_MALFORMED;
+    return 1;
+}
+
+int cbor_msg_decode_route(nanocbor_value_t *it, cbor_envelope_t *env)
+{
+    nanocbor_value_t arr;
+    if (nanocbor_get_type(it) != NANOCBOR_TYPE_ARR || is_indefinite(it) || nanocbor_enter_array(it, &arr) < 0)
+        return nanocbor_skip(it) < 0 ? CBOR_CODEC_ERR_MALFORMED : CBOR_CODEC_ERR_VALUE;
+    int rc = CBOR_CODEC_OK;
+    uint8_t depth = 0;
+    while (!nanocbor_at_end(&arr))
+    {
+        uint8_t port;
+        if (depth >= CBOR_ROUTE_MAX)
+        {
+            rc = CBOR_CODEC_ERR_VALUE;
+            if (nanocbor_skip(&arr) < 0)
+                return CBOR_CODEC_ERR_MALFORMED;
+            continue;
+        }
+        int r = decode_scalar(&arr, &s_u8, &port);     // advances past the entry, valid or not
+        if (r == CBOR_CODEC_ERR_MALFORMED)
+            return r;
+        if (r != CBOR_CODEC_OK)
+        {
+            rc = CBOR_CODEC_ERR_VALUE;
+            continue;
+        }
+        env->route[depth++] = port;
+    }
+    if (nanocbor_leave_container(it, &arr) < 0)
+        return CBOR_CODEC_ERR_MALFORMED;
+    env->routeDepth = (rc == CBOR_CODEC_OK) ? depth : 0;
+    return rc;
+}
 
 /*============================================================================================== envelope */
 
@@ -65,7 +139,7 @@ static int decode_envelope_key(nanocbor_value_t *map, uint16_t key, cbor_envelop
         return CBOR_CODEC_OK;
     }
     case CBOR_MSG_ROUTE:
-        return decode_route(map, env);
+        return cbor_msg_decode_route(map, env);
     case CBOR_MSG_TIME_GPS_NS:
         rc = decode_scalar(map, &s_u64, &env->timeGpsNs);
         env->hasTimeGps = (rc == CBOR_CODEC_OK);
@@ -92,7 +166,7 @@ static bool map_has_values(const nanocbor_value_t *it)
     while (!nanocbor_at_end(&map))
     {
         uint16_t key;
-        int rc = next_key(&map, &key);
+        int rc = cbor_msg_next_key(&map, &key);
         if (rc < 0)
             return false;
         if (rc > 0)
@@ -122,7 +196,7 @@ int cbor_msg_parse_envelope(const uint8_t *msg, size_t len, cbor_envelope_t *env
     while (!nanocbor_at_end(&map))
     {
         uint16_t key;
-        int rc = next_key(&map, &key);
+        int rc = cbor_msg_next_key(&map, &key);
         if (rc < 0)
             return CBOR_CODEC_ERR_MALFORMED;
         if (rc > 0)

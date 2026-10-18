@@ -414,3 +414,26 @@ TEST(CborCodec, FlashConfigRoundTripsThroughItsSchema)
         EXPECT_EQ(0, memcmp((uint8_t *)&in + f.offset, (uint8_t *)&out + f.offset, len)) << "field " << f.key;
     }
 }
+
+TEST(CborCodec, KeysTooLargeForUint16AreSkippedWithOnlyTheirValue)
+{
+    // {0x10000: 1, <key of a known field>: <value>}: the oversized key must not swallow the next entry
+    const cbor_field_t &f = g_cborSchema_FLASH_CFG.fields[0];
+    uint8_t buf[32];
+    nanocbor_encoder_t enc;
+    nanocbor_encoder_init(&enc, buf, sizeof(buf));
+    nanocbor_fmt_map(&enc, 2);
+    nanocbor_fmt_uint(&enc, 0x10000);
+    nanocbor_fmt_uint(&enc, 1);
+    nanocbor_fmt_uint(&enc, f.key);
+    nanocbor_fmt_uint(&enc, 3);
+    nvm_flash_cfg_t cfg = {};
+    nanocbor_value_t it;
+    nanocbor_decoder_init(&it, buf, nanocbor_encoded_len(&enc));
+    cbor_decode_result_t res = {};
+    ASSERT_EQ(cbor_codec_decode_map(&it, &g_cborSchema_FLASH_CFG, &cfg, &res), CBOR_CODEC_OK);
+    EXPECT_EQ(res.appliedCount, 1);
+    uint32_t v;
+    memcpy(&v, (uint8_t *)&cfg + f.offset, sizeof(v));
+    EXPECT_EQ(v, 3u);
+}

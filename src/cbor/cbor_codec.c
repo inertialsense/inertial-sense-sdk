@@ -653,10 +653,16 @@ static int decode_map_fields(nanocbor_value_t *map, const cbor_schema_t *schema,
     int result = CBOR_CODEC_OK;
     while (!nanocbor_at_end(map))
     {
-        uint32_t key;
-        if (nanocbor_get_type(map) != NANOCBOR_TYPE_UINT || nanocbor_get_uint32(map, &key) < 0 || key > 0xFFFF)
-        {   // keys that are not uint16: skip the entry
+        uint64_t key;
+        if (nanocbor_get_type(map) != NANOCBOR_TYPE_UINT || nanocbor_get_uint64(map, &key) < 0)
+        {   // a key that is not an unsigned integer: skip the entry
             if (nanocbor_skip(map) < 0 || nanocbor_skip(map) < 0)
+                return CBOR_CODEC_ERR_MALFORMED;
+            continue;
+        }
+        if (key > 0xFFFF)
+        {   // read, but too large for a key: skip its value
+            if (nanocbor_skip(map) < 0)
                 return CBOR_CODEC_ERR_MALFORMED;
             continue;
         }

@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "cbor/cbor_msg.h"
+#include "cbor/cbor_envelope.h"
 #include "cbor/cbor_registry.h"
 
 /**

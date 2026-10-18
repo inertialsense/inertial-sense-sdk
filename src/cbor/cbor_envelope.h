@@ -88,6 +88,25 @@ int cbor_msg_parse_envelope(const uint8_t *msg, size_t len, cbor_envelope_t *env
 int cbor_msg_encode_envelope(nanocbor_encoder_t *enc, const cbor_envelope_t *env);
 
 /**
+ * @brief Reads the next key of a map, skipping an entry whose key is not a uint16 (keys of other types are ignored at
+ *        every level of a message).
+ * @param map  decoder positioned at a key
+ * @param key  [out] the key
+ * @return CBOR_CODEC_OK with *key set and the decoder at the value; 1 if the entry was skipped;
+ *         CBOR_CODEC_ERR_MALFORMED on bad input
+ */
+int cbor_msg_next_key(nanocbor_value_t *map, uint16_t *key);
+
+/**
+ * @brief Decodes a MSG_ROUTE value into env->route and env->routeDepth. An invalid entry, or more than
+ *        CBOR_ROUTE_MAX entries, rejects the whole route (routeDepth 0).
+ * @param it   decoder positioned at the value; advanced past it
+ * @param env  [out] the envelope whose route is set
+ * @return CBOR_CODEC_OK, CBOR_CODEC_ERR_VALUE, or CBOR_CODEC_ERR_MALFORMED
+ */
+int cbor_msg_decode_route(nanocbor_value_t *it, cbor_envelope_t *env);
+
+/**
  * @brief Matches a device filter against a unique ID, sub-field by sub-field (hardware type, major, minor, serial);
  *        an all-ones sub-field matches any value.
  * @param filter  MSG_DST_DEV_FILTER value

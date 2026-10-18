@@ -22,6 +22,8 @@ extern "C" {
 #define CBOR_REGISTRY_VERSION                        1        //!< registry format version
 #define CBOR_ISB_DID                                 129      //!< the ISB DID that carries every CBOR message (DID_CBOR)
 
+#define RMC_CFG_MAX_PORTS                            6        //!< protocol limit defined by the registry
+
 /** @name Root DID keys */
 /** @{ */
 #define CBOR_DID_FLASH_CFG                           0x000C   //!< FLASH_CFG: legacy DID_FLASH_CONFIG (nvm_flash_cfg_t), served by IMX-5, IMX-6
