@@ -1391,9 +1391,9 @@ void cltool_outputUsage()
     cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-    cout << "    -nmea=[s]" << boldOff << "       Send stop-broadcast command `$STPC`, then NMEA message s with added checksum footer. Display rx NMEA. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
+    cout << "    -nmea=[s]" << boldOff << "       Send stop-broadcast command `$STPC`, then NMEA message s with added checksum footer. Display rx NMEA. (`-nmea=ASCE,0,GxGGA,1`) With s empty (`-nmea=`), only sends `$STPC`." << endlbOn;
     cout << "    -nmea" << boldOff << "           Listen mode for NMEA. Displays rx NMEA and sends nothing to the device (like -lm)." << endlbOn;
-    cout << boldOff << "                    Rx NMEA lines are timestamped. Works with any -c port type. Runs until 'q' or -dur." << endlbOn;
+    cout << boldOff << "                    Only rx NMEA with a valid checksum is displayed, timestamped. Works with any -c port type. Runs until 'q' or -dur." << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
     cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
