@@ -807,10 +807,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.nmeaMessage = &a[6];
             g_commandLineOptions.nmeaRx = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-nmea"))
-        {
+        {   // Listen only.  Like -lm, send nothing to the device (no stop-broadcast or device validation).
             g_commandLineOptions.nmeaRx = true;
+            g_commandLineOptions.listenMode = true;
+            g_commandLineOptions.disableDeviceValidation = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-manfKey="))
         {
@@ -1357,6 +1361,9 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"    # Return portion of two DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -nmea=ASCE,0,GxGGA,1                                         # Send NMEA message, display rx NMEA" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c tcp://192.168.1.100:7777 -nmea=ASCE                            " << EXAMPLE_SPACE_2 << "# Send NMEA query over TCP" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4 -nmea                                                " << EXAMPLE_SPACE_2 << "# Listen for NMEA on two ports" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
@@ -1384,10 +1391,9 @@ void cltool_outputUsage()
     cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-    cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
-    cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
-    cout << boldOff << "                    -nmea options require a single direct serial port (-c PORT or -sn) and use -baud and -dur." << endlbOn;
-    cout << boldOff << "                    Discovery and relay options (-c *, -device, -use-mdns, -use-relay) do not apply." << endlbOn;
+    cout << "    -nmea=[s]" << boldOff << "       Send stop-broadcast command `$STPC`, then NMEA message s with added checksum footer. Display rx NMEA. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
+    cout << "    -nmea" << boldOff << "           Listen mode for NMEA. Displays rx NMEA and sends nothing to the device (like -lm)." << endlbOn;
+    cout << boldOff << "                    Rx NMEA lines are timestamped. Works with any -c port type. Runs until 'q' or -dur." << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
     cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;

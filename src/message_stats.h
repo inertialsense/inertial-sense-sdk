@@ -121,6 +121,9 @@ public:
      */
     void processRTCM3(const uint8_t* msg, int msgSize);
 
+    /** @brief Current local time formatted as "[HH:MM:SS.mmm] ", the prefix used for each message history line. */
+    static std::string getCurrentTimeString();
+
     /** @brief Reset all statistics and history to initial state. */
     void clear()
     {
@@ -145,7 +148,6 @@ private:
     static std::string descriptionRtcm3(int id);
     static stats_t createNewMsgStats(int timeMs, const std::string& description = "");
     static void updateTimeMs(stats_t &s, int timeMs, int bytes);
-    static std::string getCurrentTimeString();
 };
 
 #endif // __GPS_STATS_H__
