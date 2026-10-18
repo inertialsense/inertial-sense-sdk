@@ -1043,6 +1043,15 @@ static void PopulateMapSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 } 
 
+/**
+ * Maps DID_CBOR. The CBOR map is exposed as raw bytes; decoding it is up to the caller (see cbor/cbor_registry.h).
+*/
+static void PopulateMapCbor(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<cbor_msg_t> mapper(data_set, did);
+    mapper.AddMember("data", &cbor_msg_t::data, DATA_TYPE_BINARY, "", "CBOR map", DATA_FLAGS_DISPLAY_HEX);
+}
+
 static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_fault_t> mapper(data_set, did);
@@ -2830,7 +2839,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
     "DID_GPX_SYS_FAULT",                // 128
-    "",                                 // 129
+    "DID_CBOR",                         // 129
     "",                                 // 130
     ""                                  // 131
 };
@@ -2946,6 +2955,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
+    PopulateMapCbor(                m_data_set, DID_CBOR);
     PopulateMapISBTimepulse(        m_data_set, DID_TIMEPULSE);
 
     // COMMUNICATIONS
