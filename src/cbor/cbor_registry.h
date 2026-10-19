@@ -106,6 +106,7 @@ typedef enum
     CBOR_MSG_STATUS_READ_ONLY = 6,
     CBOR_MSG_STATUS_ERROR = 7,
     CBOR_MSG_STATUS_REQ_TOO_LARGE = 8,
+    CBOR_MSG_STATUS_UNREACHABLE = 9,
 } eCborMsgStatus;
 
 /** Registry enum `ack_type` */
