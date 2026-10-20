@@ -386,7 +386,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 110: DID_EXT_AIDING_HEADING
         0,                      // 111: DID_EXT_AIDING_ATTITUDE
         0,                      // 112: DID_EXT_IMU
-        0,                      // 113:
+        0,                      // 113: DID_EXT_AIDING_TIME_SYNC
         0,                      // 114:
         0,                      // 115:
         0,                      // 116:
@@ -576,7 +576,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 110: DID_EXT_AIDING_HEADING
         0,                      // 111: DID_EXT_AIDING_ATTITUDE
         0,                      // 112: DID_EXT_IMU
-        0,                      // 113:
+        0,                      // 113: DID_EXT_AIDING_TIME_SYNC
         0,                      // 114:
         0,                      // 115:
         0,                      // 116:

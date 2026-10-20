@@ -180,6 +180,7 @@ typedef uint32_t eDataIDs;
 #define DID_EXT_AIDING_HEADING          (eDataIDs)110   /**< (ext_aiding_heading_t) External aiding heading observation, input to the INS/EKF */
 #define DID_EXT_AIDING_ATTITUDE         (eDataIDs)111   /**< (ext_aiding_attitude_t) External aiding attitude observation, input to the INS/EKF */
 #define DID_EXT_IMU                     (eDataIDs)112   /**< (imu_t) External IMU (gyro/accel) input. Not currently fused by the INS/EKF; reserved for a future consistency-check or blended time-update path. */
+#define DID_EXT_AIDING_TIME_SYNC        (eDataIDs)113   /**< (is_timepulse_t) External aiding time sync. Written by the external aiding source with the time of its NEXT sync pulse; read back for sync status (see eExtAidingTimeSyncStatus). */
 // RESERVED: a future consolidated external-aiding message (DID + sub-ID + SID-dependent payload,
 // covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
 // under SN-7740. The flat DIDs above are the initial subset; see SN-7740 before adding more.
@@ -3611,7 +3612,7 @@ typedef struct PACKED
 
     uint8_t                 deadReckoningTimeout;               //!< (s) Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.
 
-    uint8_t                 reserved1;                          //!< Reserved for future use
+    uint8_t                 extAidingSyncPin;                   //!< G pin number (2, 5, 8, 9, 11, 12, 13, or 15) receiving the external aiding time sync pulse (see DID_EXT_AIDING_TIME_SYNC).  0 = no pulse; sync on message arrival.
 
     uint16_t                reserved2;                          //!< Reserved for future use
 
@@ -5138,7 +5139,18 @@ typedef struct
 
 } system_fault_t;
 
-/** @brief (DID_TIMEPULSE) GPX 1PPS/timepulse status. Reports the GPS time of week corresponding to the most recent 1PPS timepulse event, along with its status and a running count of timepulse sync events. */
+/** @brief Status flags read back in is_timepulse_t.status from DID_EXT_AIDING_TIME_SYNC. */
+enum eExtAidingTimeSyncStatus
+{
+    EXT_TIME_SYNC_STATUS_PULSE          = 0x00000001,  //!< Last sync was timed by the sync pulse on extAidingSyncPin
+    EXT_TIME_SYNC_STATUS_MESSAGE        = 0x00000002,  //!< Last sync was timed by message arrival (no usable sync pin)
+    EXT_TIME_SYNC_STATUS_TIME_SOURCE    = 0x00000004,  //!< External time sync is the IMX time base (GNSS has no time)
+    EXT_TIME_SYNC_STATUS_ERR_NO_PULSE   = 0x00000010,  //!< No sync pulse arrived within 1 s of the last message
+    EXT_TIME_SYNC_STATUS_ERR_PIN        = 0x00000020,  //!< extAidingSyncPin is not a supported pin, or its interrupt line is in use by a GNSS PPS or strobe input
+    EXT_TIME_SYNC_STATUS_ERR_DRIFT      = 0x00000040,  //!< Last offset rejected: it moved too far from the previous one; accepted once the next sync confirms it
+};
+
+/** @brief (DID_TIMEPULSE, DID_EXT_AIDING_TIME_SYNC) Time of a 1PPS/sync pulse. For DID_TIMEPULSE it is the GPX's GPS time of week of the next 1PPS timepulse event, with its status and a running count of timepulse sync events. For DID_EXT_AIDING_TIME_SYNC it is written with the external aiding source's time of its next sync pulse, and read back with the last accepted sync, eExtAidingTimeSyncStatus flags, and the sync count. */
 typedef struct
 {
     uint32_t    week;           //!< GPS number of weeks since January 6th, 1980

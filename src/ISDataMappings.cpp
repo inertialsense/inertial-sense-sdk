@@ -1806,7 +1806,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuShockDeltaGyroHighThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroHighThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Min angular rate difference between the 3 IMUs to detect start of a shock.");
     mapper.AddMember("imuShockDeltaGyroLowThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroLowThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect end of a shock.");
     mapper.AddMember("deadReckoningTimeout", &nvm_flash_cfg_t::deadReckoningTimeout, DATA_TYPE_UINT8, "s", "Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.");
-    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("extAidingSyncPin", &nvm_flash_cfg_t::extAidingSyncPin, DATA_TYPE_UINT8, "", "G pin number (2, 5, 8, 9, 11, 12, 13, or 15) receiving the external aiding time sync pulse (see DID_EXT_AIDING_TIME_SYNC).  0 = no pulse; sync on message arrival.");
     mapper.AddMember("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT16, "", "", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved3", &nvm_flash_cfg_t::reserved3, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved4", &nvm_flash_cfg_t::reserved4, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
@@ -2819,7 +2819,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EXT_AIDING_HEADING",           // 110
     "DID_EXT_AIDING_ATTITUDE",          // 111
     "DID_EXT_IMU",                      // 112
-    "UNUSED_113",                       // 113
+    "DID_EXT_AIDING_TIME_SYNC",         // 113
     "UNUSED_114",                       // 114
     "UNUSED_115",                       // 115
     "UNUSED_116",                       // 116
@@ -2952,6 +2952,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
     PopulateMapISBTimepulse(        m_data_set, DID_TIMEPULSE);
+    PopulateMapISBTimepulse(        m_data_set, DID_EXT_AIDING_TIME_SYNC);
 
     // COMMUNICATIONS
     PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
