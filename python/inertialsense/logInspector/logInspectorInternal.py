@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
 try:
-    from .logInspector import LogInspectorWindow
+    from .logInspector import LogInspectorWindow, verArrayToString, hardwareVerString
 except ImportError:
     # Fallback for direct script execution
-    from logInspector import LogInspectorWindow
+    from logInspector import LogInspectorWindow, verArrayToString, hardwareVerString
 
 import subprocess
 import sys, os, signal, ctypes, yaml
 from PyQt6 import QtCore
-from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
+from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox, QTableWidget, QTableWidgetItem, \
+    QAbstractItemView, QHeaderView
 from PyQt6.QtCore import Qt
+from inertialsense.tools.data_sets import DID_DEV_INFO
 
 # import logInspector as logInspector
 
@@ -31,13 +33,36 @@ class ChooseDevsDialog(QDialog):
         self.selectNoneButton.clicked.connect(self.selectNone)
         self.mainLayout.addWidget(self.selectNoneButton)
 
-        self.checkboxes = []
+        # One row per device: checkable serial number, then hardware and firmware from DID_DEV_INFO
+        self.table = QTableWidget(parent.log.numDev, 3)
+        self.table.setHorizontalHeaderLabels(['Serial#', 'Hardware', 'Firmware'])
+        for col in (1, 2):
+            self.table.horizontalHeaderItem(col).setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.cellClicked.connect(self.toggleRow)
+
         for i in range(parent.log.numDev):
-            checkbox = QCheckBox()
-            checkbox.setText(str(parent.log.serials[i]))
-            checkbox.setChecked(i in parent.mplots[0].plotter.active_devs)
-            self.checkboxes.append(checkbox)
-            self.mainLayout.addWidget(checkbox)
+            serialItem = QTableWidgetItem(str(parent.log.serials[i]))
+            serialItem.setFlags(Qt.ItemFlag.ItemIsEnabled)     # Shows its check state; toggleRow() changes it
+            checked = i in parent.mplots[0].plotter.active_devs
+            serialItem.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
+            self.table.setItem(i, 0, serialItem)
+
+            hardware, firmware = '', ''
+            devInfos = parent.log.data[i][DID_DEV_INFO]
+            if len(devInfos):   # Not every device in a log necessarily reported DID_DEV_INFO
+                hardware = hardwareVerString(devInfos[0])
+                firmware = verArrayToString(devInfos[0]['firmwareVer'])
+            for col, text in ((1, hardware), (2, firmware)):
+                item = QTableWidgetItem(text)
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                self.table.setItem(i, col, item)
+
+        self.mainLayout.addWidget(self.table)
 
         self.applyButton = QPushButton()
         self.applyButton.setText("Apply")
@@ -51,11 +76,12 @@ class ChooseDevsDialog(QDialog):
 
 
         self.setLayout(self.mainLayout)
+        self.resize(290, min(800, 220 + 30 * parent.log.numDev))
 
     def updatePlot(self):
         active_serials = []
-        for i, checkbox in enumerate(self.checkboxes):
-            if checkbox.isChecked():
+        for i in range(self.table.rowCount()):
+            if self.table.item(i, 0).checkState() == Qt.CheckState.Checked:
                 active_serials.append(self.parent.log.serials[i])
         for mplot in self.parent.mplots:
             mplot.plotter.setActiveSerials(active_serials)
@@ -65,13 +91,22 @@ class ChooseDevsDialog(QDialog):
         self.updatePlot()
         self.close()
 
+    def toggleRow(self, row, column):
+        # A click anywhere in the row, the checkbox and serial number included, toggles it
+        item = self.table.item(row, 0)
+        checked = item.checkState() == Qt.CheckState.Checked
+        item.setCheckState(Qt.CheckState.Unchecked if checked else Qt.CheckState.Checked)
+
+    def setAllChecked(self, checked):
+        state = Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+        for i in range(self.table.rowCount()):
+            self.table.item(i, 0).setCheckState(state)
+
     def selectAll(self):
-        for checkbox in self.checkboxes:
-            checkbox.setChecked(True)
+        self.setAllChecked(True)
 
     def selectNone(self):
-        for checkbox in self.checkboxes:
-            checkbox.setChecked(False)
+        self.setAllChecked(False)
 
 
 class logInspectorInternal(LogInspectorWindow):
