@@ -1368,7 +1368,7 @@ typedef struct PACKED
     int             accel_motion;   //!< Non-zero when accelerometer-sensed motion is detected
     int             rot_motion;     //!< Non-zero when rotational motion is detected
     int             zero_vel;       //!< Non-zero when zero-velocity condition is detected
-    int             reserved;
+    int             reserved;       //!< Reserved
     float           hdg_err;        //!< Estimated heading error, in radians
     int             hdg_coarse;     //!< Flag whether a coarse (uncertain) initial heading has been established
     int             hdg_aligned;    //!< Flag whether initial attitude error has converged (heading alignment complete)
@@ -3390,20 +3390,26 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-/** @brief Frame of measurement for an external aiding observation, held in the low nibble of ext_aiding_pos_t.status / ext_aiding_vel_t.status (DID_EXT_AIDING_POS, DID_EXT_AIDING_VEL). Note 0 is not a valid frame. */
-enum eExtAidingFrame
+/** @brief Status bits of the external aiding observations (DID_EXT_AIDING_POS, _VEL, _SPEED, _DIR_SPEED, _HEADING, _ATTITUDE). The low nibble holds the frame of measurement for ext_aiding_pos_t / ext_aiding_vel_t (0 is not a valid frame), or the type for the other messages (eExtAidingSpeedType, eExtAidingHeadingType, eExtAidingAttitudeType). The time bits select how timeMs is interpreted, in every message; the reserved values 0x200 and 0x300 cause the observation to be discarded. */
+enum eExtAidingStatus
 {
-    EXT_AIDING_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
-    EXT_AIDING_FRAME_ECEF    = 1,           //!< ECEF frame
-    EXT_AIDING_FRAME_NED     = 2,           //!< NED frame
-    EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
+    EXT_AIDING_FRAME_MASK           = 0x0000000F,  //!< Mask for the frame of measurement
+    EXT_AIDING_FRAME_ECEF           = 1,           //!< ECEF frame
+    EXT_AIDING_FRAME_NED            = 2,           //!< NED frame
+    EXT_AIDING_FRAME_BODY           = 3,           //!< Body frame
+    EXT_AIDING_STATUS_TIME_MASK     = 0x00000300,  //!< Bitmask for how timeMs is interpreted
+    EXT_AIDING_STATUS_TIME_TOW_MS   = 0x00000000,  //!< timeMs is GNSS time of week (ms)
+    EXT_AIDING_STATUS_TIME_LATENCY  = 0x00000100,  //!< timeMs is latency from IMU time (ms)
 };
+
+/** @deprecated Renamed to eExtAidingStatus. */
+typedef enum eExtAidingStatus eExtAidingFrame;
 
 /** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is in ECEF, or in NED relative to the reference LLA (refLla), as selected by status; var is expected in NED. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED (see eExtAidingFrame). Any other frame is discarded.
+    uint32_t   timeMs;       //!< (ms) Time of measurement: GNSS time of week, or latency before reception, as selected by status (see eExtAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, plus time interpretation of timeMs (see eExtAidingStatus). Any other frame is discarded.
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
@@ -3412,8 +3418,8 @@ typedef struct PACKED
 /** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is in the frame selected by status; var is expected in NED. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
+    uint32_t   timeMs;       //!< (ms) Time of measurement: GNSS time of week, or latency before reception, as selected by status (see eExtAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body, plus time interpretation of timeMs (see eExtAidingStatus). Any other frame is discarded.
     float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2/s^2).  Must be non-zero or the observation is discarded.
@@ -3430,8 +3436,8 @@ enum eExtAidingSpeedType
 /** @brief (DID_EXT_AIDING_SPEED) External aiding scalar speed observation (e.g. a wheel-speed sensor or GNSS-derived ground speed with no direction), supplied by a host or external sensor as an input to the INS/EKF. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType)
+    uint32_t   timeMs;       //!< (ms) Time of measurement: GNSS time of week, or latency before reception, as selected by status (see eExtAidingStatus)
+    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      speed;        //!< speed (m/s)
     float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
@@ -3440,8 +3446,8 @@ typedef struct PACKED
 /** @brief (DID_EXT_AIDING_DIR_SPEED) External aiding directional speed observation (e.g. airspeed from a pitot tube), supplied by a host or external sensor as an input to the INS/EKF. `direction` is a unit vector in the IMU/body frame (e.g. [1,0,0] for a sensor measuring speed along the body X axis); `speed` is the velocity component along that direction at the point of measurement. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< reserved, set to 0
+    uint32_t   timeMs;       //!< (ms) Time of measurement: GNSS time of week, or latency before reception, as selected by status (see eExtAidingStatus)
+    uint32_t   status;       //!< Time interpretation of timeMs (see eExtAidingStatus); other bits reserved, set to 0
     float      speed;        //!< speed along `direction` (m/s)
     float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
@@ -3460,8 +3466,8 @@ enum eExtAidingHeadingType
 /** @brief (DID_EXT_AIDING_HEADING) External aiding heading observation, supplied by a host or external sensor as an input to the INS/EKF. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType)
+    uint32_t   timeMs;       //!< (ms) Time of measurement: GNSS time of week, or latency before reception, as selected by status (see eExtAidingStatus)
+    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      heading;      //!< heading (rad), 0 = north, positive clockwise, range [-pi, pi]
     float      var;          //!< observation variance (rad^2).  Must be non-zero or the observation is discarded.
 } ext_aiding_heading_t;
@@ -3477,8 +3483,8 @@ enum eExtAidingAttitudeType
 /** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `att` is the body attitude relative to NED. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle rotation about the body axes regardless of whether `att` is euler or quaternion. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType). Any other value is discarded.
+    uint32_t   timeMs;       //!< (ms) Time of measurement: GNSS time of week, or latency before reception, as selected by status (see eExtAidingStatus)
+    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      att[4];       //!< attitude relative to NED, interpreted per `status`: euler {roll,pitch,yaw,-} or NED-to-body quaternion {w,x,y,z}
     float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), about the body axes. Must have a non-zero diagonal or the observation is discarded.
 } ext_aiding_attitude_t;
