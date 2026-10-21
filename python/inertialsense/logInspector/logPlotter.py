@@ -4653,14 +4653,14 @@ class logPlot:
             if dtPimu.size:
                 ax[5].plot(xImu, dtPimu)
 
-            self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
-            self.configureSubplot(ax[1], f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
-            self.configureSubplot(ax[2], f'GNSS2 dt: {np.mean(dtGnss2):.3f}s', 's')
+            self.configureSubplot(ax[0], f'INS dt:   {1000.0*np.mean(dtIns):.3f} ms', 's')
+            self.configureSubplot(ax[1], f'GNSS1 dt: {1000.0*np.mean(dtGnss1):.3f} ms', 's')
+            self.configureSubplot(ax[2], f'GNSS2 dt: {1000.0*np.mean(dtGnss2):.3f} ms', 's')
             if deltaImusTimestamp.size > 0:
-                self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {np.mean(deltaImusTimestamp):.4f}s', 's')
-            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.4f}s', 's')
+                self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {1000.0*np.mean(deltaImusTimestamp):.3f} ms', 's')
+            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {1000.0*np.mean(deltaTimestamp):.3f} ms', 's')
             if dtPimu.size:
-                self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.4f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
+                self.configureSubplot(ax[5], f'PIMU Integration Period: {1000.0*np.mean(dtPimu):.3f} ms', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):
