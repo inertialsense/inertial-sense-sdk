@@ -44,6 +44,12 @@ class ChooseDevsDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.cellClicked.connect(self.toggleRow)
+        from PyQt6.QtGui import QShortcut
+        self.toggleShortcut = QShortcut('Space', self.table)
+        self.toggleShortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.toggleShortcut.activated.connect(
+            lambda: self.toggleRow(self.table.currentRow(), 0)
+            if self.table.currentRow() >= 0 else None)
 
         for i in range(parent.log.numDev):
             serialItem = QTableWidgetItem(str(parent.log.serials[i]))
