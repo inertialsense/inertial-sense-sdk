@@ -113,7 +113,7 @@ TEST(ISDataMappings, DataToYamlToData)
     d.sysParams.baroTemp = 20.0f; // Barometer temperature in degrees
     d.sysParams.mcuTemp = 30.0f; // MCU temperature in degrees
     d.sysParams.sysStatus = 0x090A0B0C; // System status
-    d.sysParams.imuSamplePeriodMs = 50; // IMU sample period in milliseconds
+    d.sysParams.sampleTaskPeriodMs = 50; // IMU sample period in milliseconds
     d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
     d.sysParams.sensorTruePeriod = 0.001; // Sensor true period in seconds
     d.sysParams.flashCfgChecksum = 0x12345678; // Flash config checksum
@@ -293,7 +293,7 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.sysParams.baroTemp = 20.0f; // Barometer temperature in degrees
     d.sysParams.mcuTemp = 30.0f; // MCU temperature in degrees
     d.sysParams.sysStatus = 0x090A0B0C; // System status
-    d.sysParams.imuSamplePeriodMs = 50; // IMU sample period in milliseconds
+    d.sysParams.sampleTaskPeriodMs = 50; // IMU sample period in milliseconds
     d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
     d.sysParams.sensorTruePeriod = 0.001; // Sensor true period in seconds
     d.sysParams.flashCfgChecksum = 0x12345678; // Flash config checksum
