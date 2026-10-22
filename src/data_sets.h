@@ -69,7 +69,7 @@ typedef uint32_t eDataIDs;
 #define DID_DEV_INFO                    (eDataIDs)1     /**< (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)  /**< Alias of DID_DEV_INFO used on IMX firmware */
 #define DID_SYS_FAULT                   (eDataIDs)2     /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is the IMU sample period (DID_SYS_PARAMS.imuSamplePeriodMs) or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
+#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 1 kHz).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is the IMU sample period (DID_SYS_PARAMS.imuSamplePeriodMs) or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4     /**< (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5     /**< (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GNSS1_RCVR_POS              (eDataIDs)6     /**< (gnss_pos_t) GNSS 1 position data from GNSS receiver. */
@@ -951,7 +951,7 @@ typedef struct PACKED
  * @brief (DID_PIMU, DID_REFERENCE_PIMU) Preintegrated IMU (PIMU), a.k.a. delta theta / delta
  * velocity or the Coning and Sculling integral, in body/IMU frame. Rather than reporting
  * instantaneous angular rate and acceleration, this data is integrated from the raw IMU samples
- * at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz); the integration period
+ * at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 1 kHz); the integration period
  * (dt) matches the INS navigation update period (DID_FLASH_CONFIG.startupNavDtMs). This acts as a
  * form of lossless compression: it preserves the high-rate IMU information (avoiding the
  * antialiasing/filter-delay cost of simply decimating) while allowing a lower output data rate,
@@ -1840,7 +1840,7 @@ typedef struct PACKED
 #define RMC_BITS_GNSS_BASE_RAW      0x0000000000010000  //
 #define RMC_BITS_STROBE_IN_TIME     0x0000000000020000  // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE 0x0000000000040000
-#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuOdr (2 kHz default)
+#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuOdr (1 kHz default)
 #define RMC_BITS_GNSS1_VEL          0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
 #define RMC_BITS_GNSS2_VEL          0x0000000000200000  // "
 #define RMC_BITS_GNSS1_UBX_POS      0x0000000000400000  // "
@@ -3515,14 +3515,14 @@ enum eImuShockOptions
 enum eImuOdr
 {
     IMU_ODR_DISABLED        = 0,   //!< IMU sampling disabled
-    IMU_ODR_2000HZ          = 1,   //!< 2 kHz, 0.5 ms sample period (default)
-    IMU_ODR_1000HZ          = 2,   //!< 1 kHz, 1 ms sample period
-    IMU_ODR_500HZ           = 3,   //!< 500 Hz, 2 ms sample period
-    IMU_ODR_250HZ           = 4,   //!< 250 Hz, 4 ms sample period
-    IMU_ODR_125HZ           = 5,   //!< 125 Hz, 8 ms sample period
-    IMU_ODR_62_5HZ          = 6,   //!< 62.5 Hz, 16 ms sample period
-    IMU_ODR_31_25HZ         = 7,   //!< 31.25 Hz, 32 ms sample period
-    IMU_ODR_15_625HZ        = 8,   //!< 15.625 Hz, 64 ms sample period
+    IMU_ODR_1000HZ          = 1,   //!< 1 kHz,  1 ms sample period (default)
+    IMU_ODR_500HZ           = 2,   //!< 500 Hz, 2 ms sample period
+    IMU_ODR_250HZ           = 3,   //!< 250 Hz, 4 ms sample period
+    IMU_ODR_125HZ           = 4,   //!< 125 Hz, 8 ms sample period
+    IMU_ODR_62_5HZ          = 5,   //!< 62.5 Hz, 16 ms sample period
+    IMU_ODR_31_25HZ         = 6,   //!< 31.25 Hz, 32 ms sample period
+    IMU_ODR_15_625HZ        = 7,   //!< 15.625 Hz, 64 ms sample period
+    IMU_ODR_2000HZ          = 8,   //!< 2 kHz, 0.5 ms sample period
     IMU_ODR_4000HZ          = 9,   //!< 4 kHz, 0.25 ms sample period
     IMU_ODR_8000HZ          = 10,  //!< 8 kHz, 0.125 ms sample period (EXPERIMENTAL / UNSUPPORTED)
     IMU_ODR_COUNT                  //!< Must be last; count of defined rates, not a valid rate selection

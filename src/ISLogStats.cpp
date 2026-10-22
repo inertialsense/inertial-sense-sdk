@@ -350,7 +350,7 @@ static void flashCfgDefaultsIMX(nvm_flash_cfg_t* fc)
     memset(fc, 0, sizeof(nvm_flash_cfg_t));
     fc->size                    = sizeof(nvm_flash_cfg_t);
     fc->key                     = 36;
-    fc->startupImuOdr           = IMU_ODR_2000HZ;
+    fc->startupImuOdr           = IMU_ODR_1000HZ;
     fc->startupGnssDtMs          = 200;
     fc->startupNavDtMs          = 4;
     fc->ser0BaudRate            = IS_BAUDRATE_921600;
