@@ -3517,16 +3517,24 @@ enum eImuShockOptions
 enum eImuOdr
 {
     IMU_ODR_DISABLED        = 0,   //!< IMU sampling disabled
-    IMU_ODR_1000HZ          = 1,   //!< 1 kHz,  1 ms sample period (default)
-    IMU_ODR_500HZ           = 2,   //!< 500 Hz, 2 ms sample period
-    IMU_ODR_250HZ           = 3,   //!< 250 Hz, 4 ms sample period
-    IMU_ODR_125HZ           = 4,   //!< 125 Hz, 8 ms sample period
-    IMU_ODR_62_5HZ          = 5,   //!< 62.5 Hz, 16 ms sample period
-    IMU_ODR_31_25HZ         = 6,   //!< 31.25 Hz, 32 ms sample period
-    IMU_ODR_15_625HZ        = 7,   //!< 15.625 Hz, 64 ms sample period
-    IMU_ODR_2000HZ          = 8,   //!< 2 kHz, 0.5 ms sample period
-    IMU_ODR_4000HZ          = 9,   //!< 4 kHz, 0.25 ms sample period
-    IMU_ODR_8000HZ          = 10,  //!< 8 kHz, 0.125 ms sample period (EXPERIMENTAL / UNSUPPORTED)
+    IMU_ODR_2000HZ          = 1,   //!< 2 kHz, 0.5 ms sample period (default)
+    IMU_ODR_1000HZ          = 2,   //!< 1 kHz, 1 ms sample period
+    IMU_ODR_500HZ           = 3,   //!< 500 Hz, 2 ms sample period
+    IMU_ODR_250HZ           = 4,   //!< 250 Hz, 4 ms sample period
+    IMU_ODR_125HZ           = 5,   //!< 125 Hz, 8 ms sample period
+    IMU_ODR_62_5HZ          = 6,   //!< 62.5 Hz, 16 ms sample period
+    IMU_ODR_31_25HZ         = 7,   //!< 31.25 Hz, 32 ms sample period
+    IMU_ODR_15_625HZ        = 8,   //!< 15.625 Hz, 64 ms sample period
+    /**
+     * 4 kHz, 0.25 ms sample period. Compared with 2 kHz, doubles the accelerometer bandwidth (ODR/4, 1 kHz)
+     * and moves the anti-aliasing margin well above the gyro's fixed bandwidth (about 500 Hz, the same at
+     * either rate), so vibration between 1 and 2 kHz is filtered instead of aliasing into the solution.
+     * Consider it for platforms with strong high-frequency vibration (engines, rotors, motors) or when
+     * accelerometer content above 500 Hz is needed. Costs about twice the sample processing of 2 kHz, and
+     * DID_IMUS_RAW output at this rate needs a high-bandwidth port.
+     */
+    IMU_ODR_4000HZ          = 9,
+    IMU_ODR_8000HZ          = 10,  //!< 8 kHz, 0.125 ms sample period (requires high-bandwidth communication port to prevent data loss)
     IMU_ODR_COUNT                  //!< Must be last; count of defined rates, not a valid rate selection
 };
 

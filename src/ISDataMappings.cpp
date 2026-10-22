@@ -1737,7 +1737,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<nvm_flash_cfg_t> mapper(data_set, did);
     string str;
-    mapper.AddMember("startupImuOdr", &nvm_flash_cfg_t::startupImuOdr, DATA_TYPE_UINT32, "", "IMU output data rate set on startup (see eImuOdr): 1=1kHz, 2=500Hz, 3=250Hz, 4=125Hz, 5=62.5Hz, 6=31.25Hz, 7=15.625Hz, 8=2kHz, 9=4kHz, 10=8kHz. 0 disables sensor/IMU sampling.");
+    mapper.AddMember("startupImuOdr", &nvm_flash_cfg_t::startupImuOdr, DATA_TYPE_UINT32, "", "IMU output data rate set on startup (see eImuOdr): 1=2kHz, 2=1kHz, 3=500Hz, 4=250Hz, 5=125Hz, 6=62.5Hz, 7=31.25Hz, 8=15.625Hz, 9=4kHz, 10=8kHz. 0 disables sensor/IMU sampling.");
     mapper.AddMember("startupNavDtMs", &nvm_flash_cfg_t::startupNavDtMs, DATA_TYPE_UINT32, "ms", "Nav filter (system output data) update period set on startup. 1ms min (1KHz max).");
     mapper.AddMember("startupGnssDtMs", &nvm_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GNSS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
