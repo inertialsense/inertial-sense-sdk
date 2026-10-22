@@ -69,7 +69,7 @@ typedef uint32_t eDataIDs;
 #define DID_DEV_INFO                    (eDataIDs)1     /**< (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)  /**< Alias of DID_DEV_INFO used on IMX firmware */
 #define DID_SYS_FAULT                   (eDataIDs)2     /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
+#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is the IMU sample period (DID_SYS_PARAMS.imuSamplePeriodMs) or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4     /**< (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5     /**< (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GNSS1_RCVR_POS              (eDataIDs)6     /**< (gnss_pos_t) GNSS 1 position data from GNSS receiver. */
@@ -86,7 +86,7 @@ typedef uint32_t eDataIDs;
 #define DID_GNSS1_VERSION               (eDataIDs)17    /**< (gnss_version_t) GNSS 1 version info */
 #define DID_GNSS2_VERSION               (eDataIDs)18    /**< (gnss_version_t) GNSS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19    /**< (mag_cal_t) Magnetometer calibration */
-#define DID_IMUS                        (eDataIDs)20    /**< (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
+#define DID_IMUS                        (eDataIDs)20    /**< (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuOdr) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
 #define DID_GNSS1_RTK_POS_REL           (eDataIDs)21    /**< (gnss_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GNSS1_RTK_POS_MISC          (eDataIDs)22    /**< (gnss_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23    /**< INTERNAL USE ONLY (feature_bits_t) */
@@ -123,8 +123,8 @@ typedef uint32_t eDataIDs;
 #define DID_GNSS1_RTK_POS               (eDataIDs)54    /**< (gnss_pos_t) GNSS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55    /**< (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56    /**< INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMUS_UNCAL                  (eDataIDs)57    /**< INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
-#define DID_IMU                         (eDataIDs)58    /**< (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
+#define DID_IMUS_UNCAL                  (eDataIDs)57    /**< INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is the IMU sample period (DID_SYS_PARAMS.imuSamplePeriodMs) or 4, whichever is larger (250Hz max). */
+#define DID_IMU                         (eDataIDs)58    /**< (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuOdr) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59    /**< (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GNSS_BASE_RAW               (eDataIDs)60    /**< (gnss_raw_t) GNSS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GNSS_RTK_OPT                (eDataIDs)61    /**< (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
@@ -882,7 +882,7 @@ typedef struct PACKED
 /**
  * @brief (DID_IMU, DID_IMU_RAW, DID_REFERENCE_IMU) Single combined Inertial Measurement Unit (IMU)
  * sample, in body/sensor frame. DID_IMU is down-sampled from the raw IMU rate
- * (DID_FLASH_CONFIG.startupImuDtMs) to the navigation update rate (DID_FLASH_CONFIG.startupNavDtMs)
+ * (DID_FLASH_CONFIG.startupImuOdr) to the navigation update rate (DID_FLASH_CONFIG.startupNavDtMs)
  * as an anti-aliasing filter; DID_IMU_RAW is averaged from DID_IMUS_RAW for output rates faster
  * than the nav update rate; DID_REFERENCE_IMU carries a reference/truth IMU input from a testbed
  * used for manufacturing calibration and testing.
@@ -901,7 +901,7 @@ typedef struct PACKED
  * @brief (DID_IMUS_UNCAL, DID_IMUS_RAW, DID_IMUS) Samples from up to MAX_IMU_DEVICES individual
  * IMUs, in body/sensor frame. DID_IMUS_UNCAL is uncalibrated raw multi-IMU data (internal use
  * only); DID_IMUS_RAW is the calibrated version of DID_IMUS_UNCAL; DID_IMUS is DID_IMUS_RAW
- * down-sampled from the IMU rate (DID_FLASH_CONFIG.startupImuDtMs) to the navigation update rate
+ * down-sampled from the IMU rate (DID_FLASH_CONFIG.startupImuOdr) to the navigation update rate
  * (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter. DID_IMU/DID_PIMU (the combined,
  * oversampled single-IMU outputs) are recommended over these for general use since they contain
  * less noise; this per-device data is primarily used for Allan variance / calibration analysis.
@@ -951,13 +951,13 @@ typedef struct PACKED
  * @brief (DID_PIMU, DID_REFERENCE_PIMU) Preintegrated IMU (PIMU), a.k.a. delta theta / delta
  * velocity or the Coning and Sculling integral, in body/IMU frame. Rather than reporting
  * instantaneous angular rate and acceleration, this data is integrated from the raw IMU samples
- * at the IMU update rate (DID_FLASH_CONFIG.startupImuDtMs, default 1ms); the integration period
+ * at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz); the integration period
  * (dt) matches the INS navigation update period (DID_FLASH_CONFIG.startupNavDtMs). This acts as a
  * form of lossless compression: it preserves the high-rate IMU information (avoiding the
  * antialiasing/filter-delay cost of simply decimating) while allowing a lower output data rate,
  * which is most beneficial for systems with higher dynamics and lower-bandwidth communication
  * links. To recover instantaneous IMU-equivalent values, divide by dt (IMU = PIMU / dt). Minimum
- * data period is DID_FLASH_CONFIG.startupImuDtMs or 4ms, whichever is larger (250Hz max).
+ * data period is the IMU sample period (DID_SYS_PARAMS.imuSamplePeriodMs) or 4ms, whichever is larger (250Hz max).
  * DID_REFERENCE_PIMU carries a reference/truth IMU input used for manufacturing calibration and
  * testing.
  */
@@ -1840,7 +1840,7 @@ typedef struct PACKED
 #define RMC_BITS_GNSS_BASE_RAW      0x0000000000010000  //
 #define RMC_BITS_STROBE_IN_TIME     0x0000000000020000  // On strobe input event
 #define RMC_BITS_DIAGNOSTIC_MESSAGE 0x0000000000040000
-#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
+#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuOdr (2 kHz default)
 #define RMC_BITS_GNSS1_VEL          0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
 #define RMC_BITS_GNSS2_VEL          0x0000000000200000  // "
 #define RMC_BITS_GNSS1_UBX_POS      0x0000000000400000  // "
@@ -3506,6 +3506,34 @@ enum eImuShockOptions
     IMU_SHOCK_OPTIONS_FAST_RECOVERY = 0x02   //!< Useful when shocks occur during rotation, as it minimizes post-shock error and reduces the time required for attitude convergence. However, this option increases the amount of attitude error induced by shock events and is therefore discouraged when the platform is stationary and not rotating during shocks.
 };
 
+/**
+ * @brief IMU output data rate (ODR), used with nvm_flash_cfg_t.startupImuOdr (DID_FLASH_CONFIG).
+ * Each IMU runs at its supported ODR nearest the nominal rate (exactly the nominal rate on the LSM6DSV).
+ * The IMU sample period (DID_SYS_PARAMS.imuSamplePeriodMs) is 0.5 ms for 2 kHz, 1 ms for rates of
+ * 1 kHz and above, which processes every IMU sample where the hardware supports it (IMX-6), and the ODR period below 1 kHz.
+ */
+enum eImuOdr
+{
+    IMU_ODR_DISABLED        = 0,   //!< IMU sampling disabled
+    IMU_ODR_2000HZ          = 1,   //!< 2 kHz, 0.5 ms sample period (default)
+    IMU_ODR_1000HZ          = 2,   //!< 1 kHz, 1 ms sample period
+    IMU_ODR_500HZ           = 3,   //!< 500 Hz, 2 ms sample period
+    IMU_ODR_250HZ           = 4,   //!< 250 Hz, 4 ms sample period
+    IMU_ODR_125HZ           = 5,   //!< 125 Hz, 8 ms sample period
+    IMU_ODR_62_5HZ          = 6,   //!< 62.5 Hz, 16 ms sample period
+    IMU_ODR_31_25HZ         = 7,   //!< 31.25 Hz, 32 ms sample period
+    IMU_ODR_15_625HZ        = 8,   //!< 15.625 Hz, 64 ms sample period
+    IMU_ODR_4000HZ          = 9,   //!< 4 kHz, 0.25 ms sample period
+    IMU_ODR_8000HZ          = 10,  //!< 8 kHz, 0.125 ms sample period (EXPERIMENTAL / UNSUPPORTED)
+    IMU_ODR_COUNT                  //!< Must be last; count of defined rates, not a valid rate selection
+};
+
+/** True if odr is a defined eImuOdr value */
+#define IMU_ODR_IS_VALID(odr)           ((uint32_t)(odr) < IMU_ODR_COUNT)
+/** IMU sample period (ms) of an eImuOdr value: 1 ms at 1 kHz and above, the ODR period below that, 0 when disabled */
+#define IMU_ODR_SAMPLE_PERIOD_MS(odr)   ((((odr) >= IMU_ODR_500HZ) && ((odr) <= IMU_ODR_15_625HZ)) ? (1U << ((odr) - IMU_ODR_1000HZ)) : \
+                                         (((odr) == IMU_ODR_DISABLED) ? 0U : 1U))
+
 /** @brief (DID_FLASH_CONFIG) Persistent device configuration, written to and read back from flash memory (NVM). This is the device's primary user-configurable settings block, covering IMU/GNSS/navigation update rates, serial port baud rates, sensor-to-body-frame rotations and lever-arm offsets, dynamic model, platform config, RTK config, hardware I/O config, sensor config, magnetometer calibration thresholds, ground-vehicle/wheel-encoder config, magnetic declination, and IMU shock-rejection tuning. Applied by the device firmware at boot and re-applied/persisted whenever the host writes this DID. Most fields participate in the flash checksum (the checksum field itself covers the whole struct except size and checksum); PLATFORM_CFG_UPDATE_IO_CONFIG within platformConfig is a documented exception, excluded from the checksum and from upload change-detection so it can be used as a one-shot trigger.
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
  * or new fields added to the end.
@@ -3520,7 +3548,7 @@ typedef struct PACKED
 
     uint32_t                key;                                //!< Manufacturer method for restoring flash defaults
 
-    uint32_t                startupImuDtMs;                     //!< (ms) IMU sample (system input) period set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling.
+    uint32_t                startupImuOdr;                      //!< IMU output data rate set on startup (see eImuOdr). Raised if its sample period would be larger than startupNavDtMs. IMU_ODR_DISABLED disables sensor/IMU sampling.
 
     uint32_t                startupNavDtMs;                     //!< (ms) Navigation filter (system output) output period set on startup.  Used to initialize sysParams.navOutputPeriodMs.
 

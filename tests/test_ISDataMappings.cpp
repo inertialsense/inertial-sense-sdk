@@ -122,7 +122,7 @@ TEST(ISDataMappings, DataToYamlToData)
     d.sysParams.upTime = 3600.0; // System up time in seconds
     testDataToYamlToData(d, DID_SYS_PARAMS);
 
-    d.flashCfg.startupImuDtMs = 100;
+    d.flashCfg.startupImuOdr = IMU_ODR_250HZ;
     d.flashCfg.startupNavDtMs = 200;
     d.flashCfg.ser0BaudRate = 115200;
     d.flashCfg.ser1BaudRate = 230400;
@@ -302,7 +302,7 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.sysParams.upTime = 3600.0; // System up time in seconds
     testDidBufToStringToDidBuf(d, DID_SYS_PARAMS);
 
-    d.flashCfg.startupImuDtMs = 100;
+    d.flashCfg.startupImuOdr = IMU_ODR_250HZ;
     d.flashCfg.startupNavDtMs = 200;
     d.flashCfg.ser0BaudRate = 115200;
     d.flashCfg.ser1BaudRate = 230400;
