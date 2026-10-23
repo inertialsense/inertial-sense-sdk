@@ -44,9 +44,10 @@ void cltool_cborWatch(ISDevice& device);
 bool cltool_cborImxFlashCfg(ISDevice& device, const std::string& str, bool& handled);
 
 /**
- * @brief -gpxFlashCfg over CBOR: reads GPX_FLASH_CFG from the GPX (directly, or behind an IMX) and writes it to a GPX
- *        connected directly. A write for a GPX behind an IMX is left to the caller's DID_GPX_FLASH_CFG write to the
- *        IMX, which the IMX proxies: it applies the change to its copy of the GPX's configuration and re-sends it.
+ * @brief -gpxFlashCfg over CBOR: reads GPX_FLASH_CFG from the GPX (directly, or behind an IMX). A write goes to a GPX
+ *        connected directly, or to the IMX for a GPX behind it, which proxies it: it applies the change to its copy
+ *        of the GPX's configuration, keeping its own values for the fields its flash config sets, and re-sends it.
+ *        The write is then read back from the GPX and the written fields printed.
  * @param device  the IMX or GPX the host is connected to
  * @param str     the -gpxFlashCfg argument
  * @param handled [out] false if the caller should use the legacy DID

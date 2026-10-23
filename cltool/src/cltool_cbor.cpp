@@ -5,10 +5,13 @@
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
+#include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <optional>
 #include <set>
+#include <thread>
 
 #include "cltool.h"
 #include "cltool_cbor.h"
@@ -21,6 +24,9 @@ namespace {
 
 /** Time allowed for the CAPABILITIES probe: firmware without CBOR does not answer */
 constexpr uint32_t CAPABILITIES_TIMEOUT_MS = 500;
+
+/** Time allowed for a GPX to hold the values of an accepted GPX_FLASH_CFG write */
+constexpr uint32_t GPX_APPLY_TIMEOUT_MS = 3000;
 
 /** Prints a YAML node on its own lines */
 void printYaml(const YAML::Node& node)
@@ -100,9 +106,14 @@ string statusName(uint8_t status)
 /**
  * Reports the outcome of a DATA write of did: the device's refusal with its reason, or the values it kept differently
  * (an ACK_MINIMAL reply carries only those).
+ * @param reps      the replies to the write
+ * @param did       root DID key
+ * @param what      "IMX" or "GPX", for the messages
+ * @param adjusted  heading printed above the values the device kept differently
  * @return true if the write was accepted
  */
-bool reportWrite(const vector<CborReply>& reps, uint16_t did, const char* what)
+bool reportWrite(const vector<CborReply>& reps, uint16_t did, const char* what,
+                 const char* adjusted = "The device adjusted:")
 {
     if (reps.empty())
     {
@@ -121,10 +132,61 @@ bool reportWrite(const vector<CborReply>& reps, uint16_t did, const char* what)
     if (rep.has(did))
     {   // values the device kept differently from what was sent
         YAML::Node y = cborToYaml(rep.msg.data(), rep.msg.size());
-        cout << "The device adjusted:" << endl;
+        cout << adjusted << endl;
         printYaml(y);
     }
     return true;
+}
+
+/** Field names of did for keys, separated by '|' as the -flashCfg / -gpxFlashCfg key list is */
+string fieldList(uint16_t did, const vector<uint16_t>& keys)
+{
+    string s;
+    for (uint16_t key : keys)
+    {
+        const char* n = cbor_registry_field_name(did, key);
+        if (n)
+            s += (s.empty() ? "" : "|") + string(n);
+    }
+    return s;
+}
+
+/**
+ * Reads GPX_FLASH_CFG back from the GPX until the written fields hold the values the write was accepted with, then
+ * prints them. The GPX applies a write proxied by an IMX after the IMX's reply, so the first reads may predate it.
+ * @param device  the IMX or GPX the host is connected to
+ * @param gpx     destination filter for a GPX behind an IMX; none for a GPX connected directly
+ * @param base    the configuration the write started from (members CBOR does not carry)
+ * @param kept    the values written, with any the device adjusted
+ * @param keys    the field keys written
+ * @return true if the GPX holds them within GPX_APPLY_TIMEOUT_MS
+ */
+bool confirmGpxWrite(ISDevice& device, optional<uint64_t> gpx, const gpx_flash_cfg_t& base,
+                     const gpx_flash_cfg_t& kept, const vector<uint16_t>& keys)
+{
+    gpx_flash_cfg_t now = base;
+    vector<uint16_t> differ = keys;
+    for (auto start = chrono::steady_clock::now();
+         chrono::steady_clock::now() - start < chrono::milliseconds(GPX_APPLY_TIMEOUT_MS);
+         this_thread::sleep_for(chrono::milliseconds(100)))
+    {
+        if (device.cborGetStruct(CBOR_DID_GPX_FLASH_CFG, g_cborSchema_GPX_FLASH_CFG, &now, gpx) < 0)
+            continue;
+        differ.clear();
+        for (uint16_t key : changedKeys(g_cborSchema_GPX_FLASH_CFG, &kept, &now))
+            if (find(keys.begin(), keys.end(), key) != keys.end())
+                differ.push_back(key);
+        if (differ.empty())
+            break;
+    }
+
+    string output;
+    cISDataMappings::DidBufferToString(DID_GPX_FLASH_CFG, (uint8_t*)&now, output,
+                                       fieldList(CBOR_DID_GPX_FLASH_CFG, differ.empty() ? keys : differ));
+    if (!differ.empty())
+        cout << "Failed to set GPX flash config: the GPX kept:" << endl;
+    cout << output;
+    return differ.empty();
 }
 
 /** True if a device filter can match more than one device (one of its sub-fields is a wildcard) */
@@ -269,17 +331,16 @@ bool cltool_cborGpxFlashCfg(ISDevice& device, const string& str, bool& handled)
     cltool_cborWatch(device);
     bool direct = device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX;
     bool write = str.find('=') != string::npos;
-    handled = false;
-    if (!direct && write)
-        return true;    // DID_GPX_FLASH_CFG to the IMX, which proxies it to its GPX through its own copy
 
-    optional<uint64_t> dst;
+    optional<uint64_t> gpx;
     if (!direct)
     {   // the GPX behind this IMX
         uint64_t filter;
         cborDevFilterFromString("GPX", filter);
-        dst = filter;
+        gpx = filter;
     }
+    // A read goes to the GPX. A write for a GPX behind an IMX goes to the IMX, which proxies it through its own copy.
+    optional<uint64_t> dst = write ? nullopt : gpx;
     handled = servedDids(device, dst).count(CBOR_DID_GPX_FLASH_CFG) > 0;
     if (!handled)
         return true;
@@ -316,5 +377,13 @@ bool cltool_cborGpxFlashCfg(ISDevice& device, const string& str, bool& handled)
         return true;
     CborRequest req(CBOR_MSG_TYPE_DATA);
     req.set(CBOR_DID_GPX_FLASH_CFG, g_cborSchema_GPX_FLASH_CFG, &want, keys);
-    return reportWrite(device.cborRequest(req), CBOR_DID_GPX_FLASH_CFG, "GPX");
+    vector<CborReply> reps = device.cborRequest(req);
+    if (!reportWrite(reps, CBOR_DID_GPX_FLASH_CFG, "GPX",
+                     direct ? "The device adjusted:" : "The IMX kept the values its flash config sets:"))
+        return false;
+
+    gpx_flash_cfg_t kept = want;
+    if (reps.front().has(CBOR_DID_GPX_FLASH_CFG))
+        reps.front().decode(CBOR_DID_GPX_FLASH_CFG, g_cborSchema_GPX_FLASH_CFG, &kept);
+    return confirmGpxWrite(device, gpx, cfg, kept, keys);
 }
