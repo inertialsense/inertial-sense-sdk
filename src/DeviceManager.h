@@ -429,6 +429,9 @@ protected:
 
 
 private:
+    device_handle_t getReturningDevice(const dev_info_t& devInfo, port_handle_t port);
+    bool hasLiveDeviceWithId(uint64_t uid, port_handle_t port);
+
     /** @brief A previously-discovered device's identity, tracked in knownDevices even after the device itself has been released. */
     struct device_entry_t {
         DeviceFactory* factory;    //!< the factory that discovered/claimed this device
