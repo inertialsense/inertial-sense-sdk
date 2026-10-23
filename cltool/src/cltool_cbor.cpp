@@ -271,7 +271,7 @@ bool cltool_cborGpxFlashCfg(ISDevice& device, const string& str, bool& handled)
     bool write = str.find('=') != string::npos;
     handled = false;
     if (!direct && write)
-        return true;    // the IMX owns its GPX's configuration: write through the legacy DID, which the IMX applies
+        return true;    // DID_GPX_FLASH_CFG to the IMX, which proxies it to its GPX through its own copy
 
     optional<uint64_t> dst;
     if (!direct)

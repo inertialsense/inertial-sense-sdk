@@ -1643,7 +1643,7 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
     if (!inertialSenseInterface.getDevices().empty())
-    {   // over CBOR when the GPX serves GPX_FLASH_CFG (a GPX behind an IMX is written through the legacy DID)
+    {   // over CBOR when the GPX serves GPX_FLASH_CFG; a write for a GPX behind an IMX goes to the IMX, which proxies it
         bool handled;
         bool ok = cltool_cborGpxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
         if (handled)
