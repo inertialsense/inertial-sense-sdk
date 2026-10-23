@@ -1015,8 +1015,9 @@ void ISDevice::SyncFlashConfig()
     }
 
     if (devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
-        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
-    {   // Sync GPX flash config if a GPX present
+        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
+        gpxStatusReceived || gpxFlashCfgUploadTimeMs)
+    {   // Sync GPX flash config if a GPX is present: identified, reporting its status, or being written
         DeviceSyncFlashCfg(timeMs, DID_GPX_FLASH_CFG, DID_GPX_STATUS, gpxFlashCfgUploadTimeMs, gpxFlashCfg.checksum, gpxStatus.flashCfgChecksum, gpxFlashCfgUploadChecksum);
     }
 }
@@ -1865,6 +1866,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_GPX_STATUS:
             copyDataPToStructP(&gpxStatus, data, sizeof(gpx_status_t));
+            gpxStatusReceived = true;
             log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_STATUS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
         case DID_GPX_FLASH_CFG:

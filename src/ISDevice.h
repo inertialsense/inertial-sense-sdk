@@ -922,6 +922,7 @@ public:
     dev_info_t                  gpxDevInfo = { };                    //!< Only populated if a GPX device is present
     sys_params_t                sysParams = { };                     //!< IMX system parameters/status, updated as DID_SYS_PARAMS messages are received
     gpx_status_t                gpxStatus = { };                     //!< GPX status, updated as DID_GPX_STATUS messages are received
+    bool                        gpxStatusReceived = false;           //!< a DID_GPX_STATUS has arrived, so a GPX is present (directly or behind this device)
     nvm_flash_cfg_t             imxFlashCfg = { };                    //!< Locally synchronized copy of the IMX flash configuration (see ImxFlashConfig())
     gpx_flash_cfg_t             gpxFlashCfg = { };                    //!< Locally synchronized copy of the GPX flash configuration (see GpxFlashConfig())
     nvm_flash_cfg_t             imxFlashCfgUpload = { };             //!< This is the flashConfig that was most recently sent to the device
