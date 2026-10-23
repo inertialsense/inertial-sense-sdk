@@ -11,7 +11,7 @@
 #include "cbor/cbor_registry.h"
 
 static const cbor_field_t s_fields[] = {
-    { 0, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupImuDtMs), NULL },
+    { 0, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupImuOdr), NULL },
     { 1, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, startupNavDtMs), NULL },
     { 2, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, ser0BaudRate), NULL },
     { 3, CBOR_T_UINT, 4, 0, offsetof(nvm_flash_cfg_t, ser1BaudRate), NULL },
@@ -66,7 +66,7 @@ static const cbor_field_t s_fields[] = {
 const cbor_schema_t g_cborSchema_FLASH_CFG = { s_fields, sizeof(s_fields) / sizeof(s_fields[0]) };
 
 /* Each entry matches its nvm_flash_cfg_t member in type and size */
-_Static_assert(_Generic(((nvm_flash_cfg_t *)0)->startupImuDtMs, uint32_t: 1, default: 0), "FLASH_CFG.startupImuDtMs type");
+_Static_assert(_Generic(((nvm_flash_cfg_t *)0)->startupImuOdr, uint32_t: 1, default: 0), "FLASH_CFG.startupImuOdr type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->startupNavDtMs, uint32_t: 1, default: 0), "FLASH_CFG.startupNavDtMs type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->ser0BaudRate, uint32_t: 1, default: 0), "FLASH_CFG.ser0BaudRate type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->ser1BaudRate, uint32_t: 1, default: 0), "FLASH_CFG.ser1BaudRate type");
@@ -130,7 +130,7 @@ _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->imuShockDeltaGyroLowThreshold, u
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->ioConfig2, uint8_t: 1, default: 0), "FLASH_CFG.ioConfig2 type");
 
 const nvm_flash_cfg_t g_cborDefaults_FLASH_CFG = {
-    .startupImuDtMs = 1,
+    .startupImuOdr = 1,
     .ser0BaudRate = 921600,
     .ser1BaudRate = 921600,
     .insRotation = { 0, 0, 0 },
@@ -179,7 +179,7 @@ const uint8_t g_cborDefaultFixed_FLASH_CFG[] = {
 };
 
 const cbor_registry_name_t g_cborNames_FLASH_CFG[CBOR_FLASH_CFG_NAME_COUNT] = {
-    { 0x0000, "startupImuDtMs" },
+    { 0x0000, "startupImuOdr" },
     { 0x0001, "startupNavDtMs" },
     { 0x0002, "ser0BaudRate" },
     { 0x0003, "ser1BaudRate" },

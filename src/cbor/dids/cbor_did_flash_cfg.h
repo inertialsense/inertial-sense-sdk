@@ -19,7 +19,7 @@ extern "C" {
 
 /** @name FLASH_CFG field keys */
 /** @{ */
-#define CBOR_FLASH_CFG__STARTUPIMUDTMS               0        //!< startupImuDtMs: uint32, default 1
+#define CBOR_FLASH_CFG__STARTUPIMUODR                0        //!< startupImuOdr: uint32, default 1
 #define CBOR_FLASH_CFG__STARTUPNAVDTMS               1        //!< startupNavDtMs: uint32, default set by the firmware
 #define CBOR_FLASH_CFG__SER0BAUDRATE                 2        //!< ser0BaudRate: uint32, default 921600
 #define CBOR_FLASH_CFG__SER1BAUDRATE                 3        //!< ser1BaudRate: uint32, default 921600
