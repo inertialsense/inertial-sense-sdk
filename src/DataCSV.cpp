@@ -85,8 +85,6 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& 
 
 #else
 
-    (void)id;
-
     char line[8192];
     line[0] = '\0';
     if (fgets(line, _ARRAY_BYTE_COUNT(line), pFile) == NULL || ferror(pFile) != 0)
@@ -114,7 +112,7 @@ int cDataCSV::ReadHeaderFromFile(FILE* pFile, uint32_t id, vector<data_info_t>& 
         }
         else
         {
-            map_name_to_info_t::const_iterator offset = offsetMap->find(columnHeader);
+            map_name_to_info_t::const_iterator offset = offsetMap->find(cISDataMappings::CurrentFieldName(id, columnHeader));
             if (offset == offsetMap->end())
             {
                 columnHeaders.push_back({ 0xFFFFFFFF, 0xFFFFFFFF, DATA_TYPE_BINARY, 0, 0, (eDataFlags)0, columnHeader });
