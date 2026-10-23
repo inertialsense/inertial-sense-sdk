@@ -189,12 +189,6 @@ bool confirmGpxWrite(ISDevice& device, optional<uint64_t> gpx, const gpx_flash_c
     return differ.empty();
 }
 
-/** True if a device filter can match more than one device (one of its sub-fields is a wildcard) */
-bool isWildcard(uint64_t filter)
-{
-    return cborDevFilterToString(filter).find("-1") != string::npos;
-}
-
 }   // namespace
 
 void cltool_cborOut(const char* direction, const uint8_t* msg, size_t len)
@@ -252,7 +246,7 @@ bool cltool_cborGetSet(InertialSense& inertialSenseInterface)
         return false;
     }
 
-    bool collectAll = req.dst && isWildcard(*req.dst);
+    bool collectAll = req.dst && cborDevFilterIsWildcard(*req.dst);
     vector<CborReply> reps = device->cborRequest(req, g_commandLineOptions.cborTimeoutMs, collectAll);
     if (reps.empty())
     {

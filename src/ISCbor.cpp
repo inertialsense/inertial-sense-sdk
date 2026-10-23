@@ -318,6 +318,11 @@ std::string cborDevFilterToString(uint64_t filter)
     return s;
 }
 
+bool cborDevFilterIsWildcard(uint64_t filter)
+{
+    return filter != 0 && (isAll(filter, 0) || isAll(filter, 1) || isAll(filter, 2) || isAll(filter, 3));
+}
+
 bool cborDevFilterFromString(const std::string& str, uint64_t& filter)
 {
     if (str == "all" || str == "*")

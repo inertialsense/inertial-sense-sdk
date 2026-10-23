@@ -104,6 +104,7 @@ bool parseInt(const std::string& s, int64_t& v, bool& isUnsigned, uint64_t& u)
     if (*p == '-')
     {
         v = strtoll(p, &end, 0);
+        u = 0;
         isUnsigned = false;
     }
     else
@@ -144,15 +145,24 @@ int keyFromString(const Scope& sc, const std::string& s)
     return k;
 }
 
-/** Splits "name[i]" into name and index; index is -1 without one */
-std::string splitIndex(const std::string& s, int& index)
+/**
+ * Splits "name[i]" into name and index; index is -1 without one.
+ * @return false if the brackets hold anything but a decimal index, e.g. "name[abc]", "name[1x]" or "name[-1]"
+ */
+bool splitIndex(const std::string& s, std::string& name, int& index)
 {
+    name = s;
     index = -1;
     size_t open = s.find('[');
-    if (open == std::string::npos || s.back() != ']')
-        return s;
-    index = atoi(s.c_str() + open + 1);
-    return s.substr(0, open);
+    if (open == std::string::npos)
+        return true;
+    std::string digits = s.substr(open + 1, s.size() - open - 2);
+    if (s.back() != ']' || digits.empty() || digits.size() > 5 ||
+        digits.find_first_not_of("0123456789") != std::string::npos)
+        return false;
+    name = s.substr(0, open);
+    index = atoi(digits.c_str());
+    return true;
 }
 
 /** True for keys whose value is a device ID or device filter; sc is the scope of the value */
@@ -517,7 +527,8 @@ class Writer
 public:
     Writer() : buf_(ISB_MAX_DATASET_SIZE) { nanocbor_encoder_init(&enc, buf_.data(), buf_.size()); }
     nanocbor_encoder_t enc;
-    bool ok() const { return enc.cur <= enc.end; }
+    /** @return false if what was encoded did not fit (nanocbor counts the bytes it could not write) */
+    bool ok() const { return enc.len <= buf_.size(); }
     std::vector<uint8_t> bytes() const { return std::vector<uint8_t>(buf_.data(), (const uint8_t*)enc.cur); }
 private:
     std::vector<uint8_t> buf_;
@@ -635,8 +646,8 @@ bool encodeFieldScalar(nanocbor_encoder_t* enc, const cbor_field_t* f, const Sco
         return nanocbor_fmt_int(enc, v) >= 0;
     }
     case CBOR_T_FLOAT:
-        if (!parseDouble(s, d))
-            break;
+        if (!parseDouble(s, d) || !std::isfinite(f->size == 4 ? (double)(float)d : d))
+            break;      // NaN, infinity, or out of the field's range
         return (f->size == 4 ? nanocbor_fmt_float(enc, (float)d) : nanocbor_fmt_double(enc, d)) >= 0;
     case CBOR_T_BOOL:
         if (s == "true" || s == "1")
@@ -771,7 +782,12 @@ bool encodeSchemaMap(nanocbor_encoder_t* enc, const cbor_schema_t* schema, const
     {
         std::string ks = kv.first.as<std::string>();
         int index;
-        std::string name = splitIndex(ks, index);
+        std::string name;
+        if (!splitIndex(ks, name, index))
+        {
+            error = "invalid index: " + ks;
+            return false;
+        }
         int k = keyFromString(sc, name);
         if (k < 0)
         {
@@ -792,6 +808,11 @@ bool encodeSchemaMap(nanocbor_encoder_t* enc, const cbor_schema_t* schema, const
         {
             e->isRaw = true;
             e->raw = kv.second;
+        }
+        else if ((index >= 0 && e->whole) || (index < 0 && !e->elements.empty()))
+        {
+            error = name + " is given both whole and by element";
+            return false;
         }
         else if (index >= 0)
             e->elements[index] = kv.second;
@@ -822,7 +843,12 @@ bool collectPaths(const YAML::Node& n, const Scope& sc, cbor_path_t prefix, std:
     auto add = [&](const std::string& ks, const YAML::Node* sub) -> bool
     {
         int index;
-        std::string name = splitIndex(ks, index);
+        std::string name;
+        if (!splitIndex(ks, name, index))
+        {
+            error = "invalid index: " + ks;
+            return false;
+        }
         int k = keyFromString(sc, name);
         if (k < 0)
         {
@@ -913,8 +939,12 @@ bool applyEnvelopeKey(CborRequest& req, int key, const YAML::Node& v, std::vecto
     default:
     {
         Writer w;
-        if (!encodeGeneric(&w.enc, root, key, v, error))
+        if (!encodeGeneric(&w.enc, root, key, v, error) || !w.ok())
+        {
+            if (error.empty())
+                error = "values do not fit one message";
             return false;
+        }
         raw.emplace_back((uint16_t)key, w.bytes());
         return true;
     }

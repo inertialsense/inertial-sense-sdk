@@ -132,6 +132,23 @@ TEST(CborFormat, EnvelopeKeysSetTheRequestOptions)
     ASSERT_EQ(req.entries.size(), 1u);
 }
 
+TEST(CborFormat, AFilterIsAWildcardOnlyWhenAPartMatchesEveryValue)
+{
+    // A GPX-1's major version is 1, so its notation holds "-1" even when every part is specific
+    for (const char* specific : { "GPX-1.0::SN928401213", "IMX-5.0::SN62797", "IMX-6.0::942755895", "host" })
+    {
+        uint64_t f;
+        ASSERT_TRUE(cborDevFilterFromString(specific, f)) << specific;
+        EXPECT_FALSE(cborDevFilterIsWildcard(f)) << specific;
+    }
+    for (const char* wildcard : { "GPX", "GPX-1", "GPX-1.0", "GPX-1.0::-1", "IMX::62797", "all" })
+    {
+        uint64_t f;
+        ASSERT_TRUE(cborDevFilterFromString(wildcard, f)) << wildcard;
+        EXPECT_TRUE(cborDevFilterIsWildcard(f)) << wildcard;
+    }
+}
+
 TEST(CborFormat, NumericKeysWriteARawMessage)
 {
     // MSG_ROUTE given by number goes out as given, ahead of the DIDs
@@ -154,6 +171,46 @@ TEST(CborFormat, BadInputIsRefusedWithAReason)
     EXPECT_NE(refusal("{RMC_STORED: {0: {RMC_PRESET: NOPE}}}", CBOR_MSG_TYPE_DATA).find("rmc_preset"), std::string::npos);
     EXPECT_NE(refusal("{MSG_REQ_ID: 4, FLASH_CFG}", CBOR_MSG_TYPE_GET).find("MSG_REQ_ID"), std::string::npos);
     EXPECT_FALSE(refusal("[FLASH_CFG]", CBOR_MSG_TYPE_GET).empty()) << "a list is not a map";
+}
+
+TEST(CborFormat, AnIndexMustBeADecimalNumber)
+{
+    for (const char* bad : { "abc", "1x", "-1", "" })
+    {
+        std::string key = std::string("'gnss1AntOffset[") + bad + "]'";
+        EXPECT_NE(refusal("{FLASH_CFG: {" + key + ": 9}}", CBOR_MSG_TYPE_DATA).find("invalid index"), std::string::npos)
+            << key;
+        EXPECT_NE(refusal("{FLASH_CFG: [" + key + "]}", CBOR_MSG_TYPE_GET).find("invalid index"), std::string::npos)
+            << key;
+    }
+}
+
+TEST(CborFormat, AFieldIsGivenWholeOrByElementNotBoth)
+{
+    EXPECT_NE(refusal("{FLASH_CFG: {gnss1AntOffset: [1, 2, 3], 'gnss1AntOffset[2]': 9}}", CBOR_MSG_TYPE_DATA)
+                  .find("both whole and by element"), std::string::npos);
+    EXPECT_NE(refusal("{FLASH_CFG: {'gnss1AntOffset[2]': 9, gnss1AntOffset: [1, 2, 3]}}", CBOR_MSG_TYPE_DATA)
+                  .find("both whole and by element"), std::string::npos);
+}
+
+TEST(CborFormat, AFloatMustBeFiniteInItsField)
+{
+    for (const char* bad : { "1e300", "nan", "inf", "-inf" })
+        EXPECT_NE(refusal(std::string("{FLASH_CFG: {gnss1AntOffset: [") + bad + ", 0, 0]}}", CBOR_MSG_TYPE_DATA)
+                      .find("gnss1AntOffset"), std::string::npos) << bad << " in a float32";
+    request("{FLASH_CFG: {gnss1AntOffset: [1e30, 0, 0]}}", CBOR_MSG_TYPE_DATA);     // within float32's range
+}
+
+TEST(CborFormat, AValueTooLargeForOneMessageSaysSo)
+{
+    std::string big = "[0";
+    for (int i = 0; i < 2040; i++)
+        big += ", 100000";
+    big += "]";
+    EXPECT_NE(refusal("{49407: " + big + "}", CBOR_MSG_TYPE_DATA).find("do not fit"), std::string::npos)
+        << "a raw message key";
+    EXPECT_NE(refusal("{CAN_CONFIG: {200: " + big + "}}", CBOR_MSG_TYPE_DATA).find("do not fit"), std::string::npos)
+        << "a field the schema does not know";
 }
 
 /*-------------------------------------------------------------------------------------------- message -> YAML */
