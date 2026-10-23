@@ -122,6 +122,10 @@ bool ISDevice::step() {
     if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
         fn.mark("Parsed messages.");
+        if (cbor_.active && (current_timeMs() - cbor_.lastMs) > cbor_.timeoutMs) {
+            cborFinish();   // after parsing, so a reply that just arrived is not timed out
+            didStuff = true;
+        }
         if (!hasConfirmedDeviceInfo()) {
             validateAsync(250);
             fn.mark("Validating device.");
@@ -1835,6 +1839,9 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
             markDevInfoConfirmed();
             break;
+        case DID_CBOR:
+            cborOnMessage(data);
+            break;
         case DID_GPX_DEV_INFO:
             gpxDevInfo = *(dev_info_t*)data->ptr;
             log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_DEV_INFO: hwType=%d, fw=%d.%d.%d.%d",
@@ -2213,4 +2220,127 @@ double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
         default:                    stat.sample();  break;
     }
     return stat.lastSampleTime();
+}
+
+
+// ---- CBOR requests (DID_CBOR)
+
+bool ISDevice::cborRequestAsync(const CborRequest& req, std::function<void(const std::vector<CborReply>&)> done,
+                                uint32_t timeoutMs, bool collectAll)
+{
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (cbor_.active || !isConnected() || devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
+        return false;
+    if (cborNextReqId_ == 0)
+        cborNextReqId_ = 1;
+    uint16_t reqId = cborNextReqId_++;
+    std::vector<uint8_t> msg = req.encode(reqId);
+    if (msg.empty() || msg.size() > ISB_MAX_DATASET_SIZE)
+        return false;
+
+    cbor_ = CborPending();
+    cbor_.active = true;
+    cbor_.reqId = reqId;
+    cbor_.timeoutMs = timeoutMs;
+    cbor_.collectAll = collectAll;
+    cbor_.done = std::move(done);
+    cbor_.lastMs = current_timeMs();
+    if (SendData(DID_CBOR, msg.data(), (uint32_t)msg.size(), 0) < 0)
+    {
+        cborFinish();
+        return true;    // started, and finished at once with no replies
+    }
+    return true;
+}
+
+void ISDevice::cborOnMessage(const p_data_t* data)
+{
+    if (!cbor_.active || data->hdr.offset != 0)
+        return;
+    CborReply rep;
+    if (cbor_msg_parse_envelope(data->ptr, data->hdr.size, &rep.env) == CBOR_CODEC_ERR_MALFORMED)
+        return;
+    if (!cbor_msg_is_reply(rep.env.type) || !rep.env.hasReqId || rep.env.reqId != cbor_.reqId)
+        return;     // not an answer to the request in flight
+    rep.msg.assign(data->ptr, data->ptr + data->hdr.size);
+    cbor_.replies.push_back(std::move(rep));
+    cbor_.lastMs = current_timeMs();
+    if (!cbor_.collectAll)
+        cborFinish();
+}
+
+void ISDevice::cborFinish()
+{
+    std::vector<CborReply> replies = std::move(cbor_.replies);
+    auto done = std::move(cbor_.done);
+    cbor_ = CborPending();      // idle before the callback, so it may start another request
+    if (done)
+        done(replies);
+}
+
+std::vector<CborReply> ISDevice::cborRequest(const CborRequest& req, uint32_t timeoutMs, bool collectAll)
+{
+    std::vector<CborReply> result;
+    bool finished = false;
+    if (!cborRequestAsync(req, [&](const std::vector<CborReply>& r) { result = r; finished = true; }, timeoutMs, collectAll))
+        return result;
+    uint32_t startMs = current_timeMs();
+    const uint32_t limitMs = timeoutMs * 4 + 1000;      // backstop if step() stops advancing the request
+    while (!finished)
+    {
+        step();
+        if (finished)
+            break;
+        if ((current_timeMs() - startMs) > limitMs)
+        {
+            std::lock_guard<std::recursive_mutex> lock(portMutex);
+            cborFinish();
+            break;
+        }
+        SLEEP_MS(2);
+    }
+    return result;
+}
+
+int ISDevice::cborGetStruct(uint16_t did, const cbor_schema_t& schema, void* data, std::optional<uint64_t> dst,
+                            uint32_t timeoutMs)
+{
+    // Field lists still to read. A reply that marks the whole DID too large splits its list in two; fields it marks one
+    // by one are asked for again; a single field that cannot fit is given up.
+    std::vector<std::vector<uint16_t>> pending(1);  // empty list: every field
+    int total = -1;
+    for (int requests = 0; !pending.empty() && requests < 64; requests++)
+    {
+        std::vector<uint16_t> keys = pending.back();
+        pending.pop_back();
+        CborRequest req(CBOR_MSG_TYPE_GET);
+        if (dst)
+            req.to(*dst);
+        req.getKeys(did, keys);
+        std::vector<CborReply> replies = cborRequest(req, timeoutMs);
+        if (replies.empty())
+            return total;
+        const CborReply& rep = replies.front();
+        if (rep.status(did) == CBOR_MSG_STATUS_RESP_TOO_LARGE)
+        {
+            if (keys.empty())
+                for (uint16_t i = 0; i < schema.count; i++)
+                    keys.push_back(schema.fields[i].key);
+            if (keys.size() > 1)
+            {
+                size_t half = keys.size() / 2;
+                pending.emplace_back(keys.begin() + half, keys.end());
+                pending.emplace_back(keys.begin(), keys.begin() + half);
+            }
+            continue;
+        }
+        std::vector<uint16_t> tooLarge;
+        int n = rep.decode(did, schema, data, &tooLarge);
+        if (n < 0)
+            return total;
+        total = (total < 0 ? 0 : total) + n;
+        if (!tooLarge.empty() && (n > 0 || tooLarge.size() < keys.size()))
+            pending.push_back(tooLarge);
+    }
+    return total;
 }
