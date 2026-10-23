@@ -3074,6 +3074,35 @@ const map_name_to_info_t* cISDataMappings::NameToInfoMap(uint32_t did)
     return &(ds->nameToInfo);
 }
 
+namespace
+{
+/** A field renamed without changing its meaning, so saved data under the former name maps onto it */
+struct FormerFieldName
+{
+    uint32_t    did;
+    const char* former;
+    const char* current;
+};
+
+const FormerFieldName FORMER_FIELD_NAMES[] =
+{
+    { DID_SYS_PARAMS, "imuSamplePeriodMs", "sampleTaskPeriodMs" },
+};
+}
+
+std::string cISDataMappings::CurrentFieldName(uint32_t did, const std::string& name)
+{
+    const sCaseInsensitiveCompare less;
+    for (const FormerFieldName& f : FORMER_FIELD_NAMES)
+    {
+        if (f.did == did && !less(name, f.former) && !less(f.former, name))
+        {
+            return f.current;
+        }
+    }
+    return name;
+}
+
 const map_index_to_info_t* cISDataMappings::IndexToInfoMap(uint32_t did)
 {
     data_set_t* ds = DataSet(did);

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <deque>
 #include "ISDataMappings.h"
+#include "DataCSV.h"
 
 using namespace std;
 
@@ -331,4 +332,38 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.flashCfg.ioConfig = 0x00000001; // IO configuration bits
     d.flashCfg.platformConfig = 0x00000002; // Platform configuration bits
     testDidBufToStringToDidBuf(d, DID_FLASH_CONFIG);
+}
+
+TEST(ISDataMappings, FormerFieldNameReadsButIsNotListed)
+{
+    const map_name_to_info_t& map = *cISDataMappings::NameToInfoMap(DID_SYS_PARAMS);
+    EXPECT_EQ(map.count("imuSamplePeriodMs"), 0u);
+    EXPECT_EQ(map.count("sampleTaskPeriodMs"), 1u);
+
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_SYS_PARAMS, "imuSamplePeriodMs"), "sampleTaskPeriodMs");
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_SYS_PARAMS, "IMUSAMPLEPERIODMS"), "sampleTaskPeriodMs");
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_SYS_PARAMS, "mcuTemp"), "mcuTemp");
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_FLASH_CONFIG, "imuSamplePeriodMs"), "imuSamplePeriodMs");
+}
+
+TEST(ISDataMappings, CsvReadsFormerFieldName)
+{
+    FILE* f = tmpfile();
+    ASSERT_NE(f, nullptr);
+    fputs("_ID_,mcuTemp,imuSamplePeriodMs\n", f);
+    rewind(f);
+
+    cDataCSV csv;
+    vector<data_info_t> columns;
+    ASSERT_GT(csv.ReadHeaderFromFile(f, DID_SYS_PARAMS, columns), 0);
+    fclose(f);
+
+    string row = "7,25.5,2\n";
+    p_data_hdr_t hdr = {};
+    hdr.id = DID_SYS_PARAMS;
+    hdr.size = sizeof(sys_params_t);
+    sys_params_t sp = {};
+    ASSERT_TRUE(csv.StringCSVToData(row, hdr, (uint8_t*)&sp, sizeof(sp), columns));
+    EXPECT_EQ(sp.sampleTaskPeriodMs, 2u);
+    EXPECT_FLOAT_EQ(sp.mcuTemp, 25.5f);
 }
