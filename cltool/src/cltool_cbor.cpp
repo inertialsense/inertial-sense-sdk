@@ -277,7 +277,7 @@ bool cltool_cborGpxFlashCfg(ISDevice& device, const string& str, bool& handled)
     if (!direct)
     {   // the GPX behind this IMX
         uint64_t filter;
-        cborDevFilterFromString("GPX-1.-1::-1", filter);
+        cborDevFilterFromString("GPX", filter);
         dst = filter;
     }
     handled = servedDids(device, dst).count(CBOR_DID_GPX_FLASH_CFG) > 0;

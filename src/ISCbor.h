@@ -133,8 +133,9 @@ struct CborReply
 std::string cborDevFilterToString(uint64_t filter);
 
 /**
- * @brief Parses the notation of cborDevFilterToString() (also "*" for a wildcard, a missing version or serial as a
- *        wildcard, "all", "host" and a 0x-prefixed hex value).
+ * @brief Parses the notation of cborDevFilterToString(): TYPE[-MAJOR[.MINOR]][::SERIAL], where a part left out (or
+ *        -1 or *) matches every value, so "GPX", "GPX-1" and "GPX-1.0" all reach any GPX-1.0, and SERIAL may carry an
+ *        SN prefix. Also "all", "host" and a 0x-prefixed hex value.
  * @param str     the notation
  * @param filter  [out] the MSG_DST_DEV_FILTER value
  * @return false if str is not recognised

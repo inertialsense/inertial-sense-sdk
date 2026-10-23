@@ -1518,11 +1518,12 @@ void cltool_outputUsage()
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
     cout << "    -cbor-get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\"" << boldOff << " As -get, over CBOR (DID_CBOR). DID: registry name (FLASH_CFG), DID_ name or number." << endlbOn;
     cout << "                                            " << boldOff << " Examples: -cbor-get FLASH_CFG" << endlbOn;
-    cout << "                                            " << boldOff << "           -cbor-get \"{GPX_FLASH_CFG: {ser2BaudRate}}\" -cbor-dst=GPX-1.0::-1" << endlbOn;
+    cout << "                                            " << boldOff << "           -cbor-get \"{GPX_FLASH_CFG: {ser2BaudRate}}\" -cbor-dst=GPX" << endlbOn;
     cout << "    -cbor-set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " As -set, over CBOR. Numeric keys (incl. MSG_* keys) are sent as given." << endlbOn;
     cout << "                                            " << boldOff << " Examples: -cbor-set \"{FLASH_CFG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -cbor-set \"{RMC_STORED: {0: {RMC_PRESET: INS}}}\"" << endlbOn;
-    cout << "    -cbor-dst=<FILTER>  " << boldOff << "  Device(s) a -cbor-get/-cbor-set addresses: IMX-5.0::62797, GPX-1.0::-1 (any GPX-1.0), all." << endlbOn;
+    cout << "    -cbor-dst=<FILTER>  " << boldOff << "  Device(s) a -cbor-get/-cbor-set addresses: TYPE[-MAJOR[.MINOR]][::SN], parts left out match any" << endlbOn;
+    cout << "                        " << boldOff << "  (GPX, GPX-1.0, IMX-5.0::SN62797), or all." << endlbOn;
     cout << "                        " << boldOff << "  Without it, the device at the other end of the link answers. A wildcard collects every reply." << endlbOn;
     cout << "    -cbor-ack=<LEVEL>   " << boldOff << "  Reply level of a -cbor-set: none, minimal (default: errors and adjusted values) or detailed." << endlbOn;
     cout << "    -cbor-timeout=<MS>  " << boldOff << "  Time allowed for each CBOR reply (default 1000)." << endlbOn;
