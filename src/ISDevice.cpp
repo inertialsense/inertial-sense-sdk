@@ -932,6 +932,9 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     uint8_t buf[1024] = {0};
+    if (nmeaMsg.empty() || (nmeaMsg.size() > sizeof(buf) - 7))
+        return -1;  // Empty, or no room for the '$' header, "*XX\r\n" footer, and null terminator
+
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
