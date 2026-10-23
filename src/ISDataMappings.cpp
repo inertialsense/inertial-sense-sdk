@@ -1859,7 +1859,7 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
     mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
-    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "System configuration bits (see eGpxSysConfigBits): 0x1=disable VCC_RF, brownout reset threshold", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxSysCfgBits;
+    mapper.AddMember("sysCfgBits", &gpx_flash_cfg_t::sysCfgBits, DATA_TYPE_UINT32, "", "System configuration bits (see eGpxSysConfigBits): 0x1=disable VCC_RF, 0x2=ext aiding latency timing, brownout reset threshold", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderGpxSysCfgBits;
     mapper.AddMember("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32);
     mapper.AddLlaDegM("refLla", offsetof(gpx_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude");
 

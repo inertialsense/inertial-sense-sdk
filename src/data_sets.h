@@ -4419,6 +4419,7 @@ typedef struct
 enum eGpxSysConfigBits
 {
     GPX_SYS_CFG_BITS_DISABLE_VCC_RF         = 0x00000001,  //!< Disable (tri-state) VCC_RF (GPX pin 16) output supplied via VAUX (GPX pin 40)
+    GPX_SYS_CFG_BITS_EXT_AIDING_LATENCY     = 0x00000002,  //!< Time the DID_EXT_AIDING_POS/_VEL observations the GPX emits (GRMC_BITS_EXT_AIDING_POS/_VEL) as fixed latency (EXT_AIDING_STATUS_TIME_LATENCY) instead of GNSS time of week
 
     GPX_SYS_CFG_BITS_BOR_LEVEL_0            = 0x0,  //!< Brownout reset threshold voltage level: 1.65 - 1.75 V (default)
     GPX_SYS_CFG_BITS_BOR_LEVEL_1            = 0x1,  //!< Brownout reset threshold voltage level: 2.0 - 2.1 V
