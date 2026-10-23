@@ -715,6 +715,9 @@ public:
     /** @return true while a CBOR request is running */
     bool cborBusy() const { return cbor_.active; }
 
+    /** Called with each CBOR message cborRequestAsync() sends (e.g. to print traffic); empty = not called */
+    std::function<void(const uint8_t* msg, size_t len)> cborOnSent;
+
     static constexpr uint32_t CBOR_REPLY_TIMEOUT_MS = 1000;     //!< default time allowed for a CBOR reply
 
     /** @brief Attempts to acquire portMutex without blocking. @return true if the lock was acquired. */

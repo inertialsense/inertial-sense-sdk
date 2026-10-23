@@ -57,11 +57,23 @@ int didKeyedDepth(int did)
     }
 }
 
+/** Depth at which a DID's keys below 0x8000 are indices (ROUTE_FILTER rules, RMC / RMC_STORED ports), or 0 */
+int indexedDepth(int did)
+{
+    switch (did)
+    {
+    case CBOR_DID_ROUTE_FILTER:
+    case CBOR_DID_RMC:
+    case CBOR_DID_RMC_STORED:   return 1;
+    default:                    return 0;
+    }
+}
+
 /** A root DID's name: the registry's, else the legacy DID's, else NULL */
 const char* didName(int did)
 {
     const char* n = cbor_registry_did_name((uint16_t)did);
-    if (!n && did > DID_NULL && did < DID_COUNT)
+    if (!n && did > (int)DID_NULL && did < (int)DID_COUNT)
         n = cISDataMappings::DataName((uint32_t)did);
     return n;
 }
@@ -73,6 +85,8 @@ const char* keyName(const Scope& sc, int key)
         return key >= 0x8000 ? cbor_registry_msg_key_name((uint16_t)key) : didName(key);
     if (key >= 0x9000)
         return cbor_registry_msg_key_name((uint16_t)key);
+    if (key < 0x8000 && sc.depth == indexedDepth(sc.did))
+        return nullptr;     // a rule or port index
     const char* n = cbor_registry_field_name((uint16_t)sc.did, (uint16_t)key);
     if (!n && key < 0x8000 && sc.depth == didKeyedDepth(sc.did))
         n = didName(key);
@@ -187,8 +201,14 @@ std::string uintText(const Scope& sc, int key, uint64_t v)
     return n ? n : "";
 }
 
-/** Shortest text that reads back as the same double */
-std::string doubleText(double d, bool diag)
+/** True if the float item at it is encoded narrower than a double (half or single precision) */
+bool isNarrowFloat(const nanocbor_value_t* it)
+{
+    return it->cur < it->end && (*it->cur == 0xF9 || *it->cur == 0xFA);
+}
+
+/** Shortest text that reads back as the same value, at single precision when narrow */
+std::string doubleText(double d, bool diag, bool narrow)
 {
     if (std::isnan(d))
         return diag ? "NaN" : ".nan";
@@ -198,7 +218,8 @@ std::string doubleText(double d, bool diag)
     for (int prec = 6; prec <= 17; prec++)
     {
         snprintf(buf, sizeof(buf), "%.*g", prec, d);
-        if (strtod(buf, nullptr) == d)
+        double back = strtod(buf, nullptr);
+        if (narrow ? ((float)back == (float)d) : (back == d))
             break;
     }
     std::string s = buf;
@@ -260,11 +281,13 @@ bool diagContainer(nanocbor_value_t* it, std::string& out, const Scope& sc, int 
                 return false;
             out += ": ";
             Scope cs = (k >= 0) ? sc.child(k) : sc;
-            int childList = -1;
+            int childList = -1;     // the DID whose field keys the value lists, to name them
             if (k == CBOR_MSG_ERR_KEYS || k == CBOR_MSG_FIELDS)
                 childList = sc.did;
             else if (sc.did == CBOR_DID_CAPABILITIES && sc.depth == 1)
                 childList = k;     // a DID's served field keys
+            if (childList >= 0 && !cbor_registry_did_schema((uint16_t)childList))
+                childList = -1;    // keys of a DID without a flat schema are indices (rules, ports), not field names
             if (!diagItem(&c, out, cs, k, names, childList))
                 return false;
         }
@@ -371,6 +394,7 @@ bool diagItem(nanocbor_value_t* it, std::string& out, const Scope& sc, int key, 
         bool b;
         uint8_t simple;
         double d;
+        bool narrow = isNarrowFloat(it);
         if (nanocbor_get_bool(it, &b) >= 0)
             out += b ? "true" : "false";
         else if (nanocbor_get_null(it) >= 0)
@@ -378,7 +402,7 @@ bool diagItem(nanocbor_value_t* it, std::string& out, const Scope& sc, int key, 
         else if (nanocbor_get_undefined(it) >= 0)
             out += "undefined";
         else if (nanocbor_get_double(it, &d) >= 0)
-            out += doubleText(d, true);
+            out += doubleText(d, true, narrow);
         else if (nanocbor_get_simple(it, &simple) >= 0)
             out += "simple(" + std::to_string(simple) + ")";
         else
@@ -469,12 +493,13 @@ bool yamlItem(nanocbor_value_t* it, YAML::Node& node, const Scope& sc, int key)
     {
         bool b;
         double d;
+        bool narrow = isNarrowFloat(it);
         if (nanocbor_get_bool(it, &b) >= 0)
             node = b;
         else if (nanocbor_get_null(it) >= 0 || nanocbor_get_undefined(it) >= 0)
             node = YAML::Node(YAML::NodeType::Null);
         else if (nanocbor_get_double(it, &d) >= 0)
-            node = d;
+            node = YAML::Load(doubleText(d, false, narrow));   // as written, so a float32 prints at its own precision
         else
             return false;
         return true;
@@ -909,7 +934,7 @@ int cborDidFromString(const std::string& s)
     if (k >= 0)
         return k;
     uint32_t did = cISDataMappings::NameToDid(s);
-    return (did > DID_NULL && did < DID_COUNT) ? (int)did : -1;
+    return (did > DID_NULL && did < DID_COUNT) ? (int)did : -1;   // NameToDid() returns 0 when the name is unknown
 }
 
 bool cborRequestFromYaml(const YAML::Node& node, uint8_t op, CborRequest& req, std::string& error,

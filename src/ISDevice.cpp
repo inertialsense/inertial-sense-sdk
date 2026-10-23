@@ -2252,6 +2252,8 @@ bool ISDevice::cborRequestAsync(const CborRequest& req, std::function<void(const
         cborFinish();
         return true;    // started, and finished at once with no replies
     }
+    if (cborOnSent)
+        cborOnSent(msg.data(), msg.size());
     return true;
 }
 

@@ -233,3 +233,27 @@ TEST(CborFormat, DiagnosticNotationShowsMessageTime)
     Bytes msg = Cbor().map(1).u(CBOR_MSG_TIME_GPS_NS).u(ns).out();
     EXPECT_EQ(cborToDiag(msg.data(), msg.size()), "{MSG_TIME_GPS_NS(0xC006): week 2390 tow 100.500000}");
 }
+
+TEST(CborFormat, FloatsPrintAtTheirEncodedPrecision)
+{
+    Bytes msg = Cbor().arr(2).f(0.17453292f).out();
+    nanocbor_encoder_t enc;
+    uint8_t dbl[9];
+    nanocbor_encoder_init(&enc, dbl, sizeof(dbl));
+    nanocbor_fmt_double(&enc, 0.1);
+    msg.insert(msg.end(), dbl, (uint8_t *)enc.cur);
+    EXPECT_EQ(cborToDiag(msg.data(), msg.size(), false), "[0.17453292, 0.1]");
+
+    Bytes reply = Cbor().map(1).u(CBOR_DID_FLASH_CFG).map(1).u(CBOR_FLASH_CFG__GNSSMINIMUMELEVATION).f(0.17453292f).out();
+    YAML::Node y = cborToYaml(reply.data(), reply.size());
+    EXPECT_EQ(y["FLASH_CFG"]["gnssMinimumElevation"].Scalar(), "0.17453292");
+}
+
+TEST(CborFormat, IndicesAreNotNamedAsFields)
+{
+    // ROUTE_FILTER rule 0 and RMC_STORED port 0 are indices; the fields inside them are named
+    Bytes msg = Cbor().map(2).u(CBOR_DID_ROUTE_FILTER).map(1).u(0).map(1).u(CBOR_ROUTE_FILTER__ACTION).u(CBOR_ROUTE_ACTION_DENY)
+                    .u(CBOR_DID_RMC_STORED).map(1).u(0).map(1).u(CBOR_RMC_STORED__RMC_PRESET).u(CBOR_RMC_PRESET_INS).out();
+    EXPECT_EQ(cborToDiag(msg.data(), msg.size()),
+              "{ROUTE_FILTER(32767): {0: {ACTION(3): DENY}}, RMC_STORED(32765): {0: {RMC_PRESET(0x8001): INS}}}");
+}
