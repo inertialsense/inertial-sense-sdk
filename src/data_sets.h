@@ -69,7 +69,7 @@ typedef uint32_t eDataIDs;
 #define DID_DEV_INFO                    (eDataIDs)1     /**< (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)  /**< Alias of DID_DEV_INFO used on IMX firmware */
 #define DID_SYS_FAULT                   (eDataIDs)2     /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 1 kHz).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is the IMU sample task period (DID_SYS_PARAMS.sampleTaskPeriodMs) or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
+#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is the IMU sample task period (DID_SYS_PARAMS.sampleTaskPeriodMs) or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4     /**< (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5     /**< (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GNSS1_RCVR_POS              (eDataIDs)6     /**< (gnss_pos_t) GNSS 1 position data from GNSS receiver. */
@@ -952,7 +952,7 @@ typedef struct PACKED
  * @brief (DID_PIMU, DID_REFERENCE_PIMU) Preintegrated IMU (PIMU), a.k.a. delta theta / delta
  * velocity or the Coning and Sculling integral, in body/IMU frame. Rather than reporting
  * instantaneous angular rate and acceleration, this data is integrated from the raw IMU samples
- * at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 1 kHz); the integration period
+ * at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz); the integration period
  * (dt) matches the INS navigation update period (DID_FLASH_CONFIG.startupNavDtMs). This acts as a
  * form of lossless compression: it preserves the high-rate IMU information (avoiding the
  * antialiasing/filter-delay cost of simply decimating) while allowing a lower output data rate,
@@ -1831,29 +1831,29 @@ typedef struct PACKED
 #define RMC_BITS_BAROMETER              0x0000000000000040  // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080  // ~10ms
 #define RMC_BITS_IMUS                   0x0000000000000100  // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-#define RMC_BITS_TIME                    0x0000000000000200  // GPX 1PPS/timepulse status, forwarded from DID_TIMEPULSE
-#define RMC_BITS_GNSS1_POS          0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS2_POS          0x0000000000000800  // "
-#define RMC_BITS_GNSS1_RAW          0x0000000000001000  // "
-#define RMC_BITS_GNSS2_RAW          0x0000000000002000  // "
-#define RMC_BITS_GNSS1_SAT          0x0000000000004000  // 1s
-#define RMC_BITS_GNSS2_SAT          0x0000000000008000  // "
-#define RMC_BITS_GNSS_BASE_RAW      0x0000000000010000  //
-#define RMC_BITS_STROBE_IN_TIME     0x0000000000020000  // On strobe input event
-#define RMC_BITS_DIAGNOSTIC_MESSAGE 0x0000000000040000
-#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuOdr (1 kHz default)
-#define RMC_BITS_GNSS1_VEL          0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS2_VEL          0x0000000000200000  // "
-#define RMC_BITS_GNSS1_UBX_POS      0x0000000000400000  // "
-#define RMC_BITS_GNSS1_RTK_POS      0x0000000000800000  // "
-#define RMC_BITS_GNSS1_RTK_POS_REL  0x0000000001000000  // "
-#define RMC_BITS_GNSS1_RTK_POS_MISC 0x0000000004000000  // "
-#define RMC_BITS_INL2_NED_SIGMA     0x0000000008000000
-#define RMC_BITS_RTK_STATE          0x0000000010000000
-#define RMC_BITS_RTK_CODE_RESIDUAL  0x0000000020000000
-#define RMC_BITS_RTK_PHASE_RESIDUAL 0x0000000040000000
-#define RMC_BITS_WHEEL_ENCODER      0x0000000080000000
-#define RMC_BITS_GROUND_VEHICLE     0x0000000100000000
+#define RMC_BITS_TIME                   0x0000000000000200  // GPX 1PPS/timepulse status, forwarded from DID_TIMEPULSE
+#define RMC_BITS_GNSS1_POS              0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS2_POS              0x0000000000000800  // "
+#define RMC_BITS_GNSS1_RAW              0x0000000000001000  // "
+#define RMC_BITS_GNSS2_RAW              0x0000000000002000  // "
+#define RMC_BITS_GNSS1_SAT              0x0000000000004000  // 1s
+#define RMC_BITS_GNSS2_SAT              0x0000000000008000  // "
+#define RMC_BITS_GNSS_BASE_RAW          0x0000000000010000  //
+#define RMC_BITS_STROBE_IN_TIME         0x0000000000020000  // On strobe input event
+#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
+#define RMC_BITS_IMUS_UNCAL             0x0000000000080000  // DID_FLASH_CONFIG.startupImuOdr (2 kHz default)
+#define RMC_BITS_GNSS1_VEL              0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS2_VEL              0x0000000000200000  // "
+#define RMC_BITS_GNSS1_UBX_POS          0x0000000000400000  // "
+#define RMC_BITS_GNSS1_RTK_POS          0x0000000000800000  // "
+#define RMC_BITS_GNSS1_RTK_POS_REL      0x0000000001000000  // "
+#define RMC_BITS_GNSS1_RTK_POS_MISC     0x0000000004000000  // "
+#define RMC_BITS_INL2_NED_SIGMA         0x0000000008000000
+#define RMC_BITS_RTK_STATE              0x0000000010000000
+#define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
+#define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
+#define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
+#define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
 // #define RMC_BITS_UNUSED                 0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
