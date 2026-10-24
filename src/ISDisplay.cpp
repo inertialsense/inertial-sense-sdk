@@ -843,8 +843,19 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
     sDidStats& s = m_didStats[id];
     s.count++;
     if (s.lastTimeMs)
-        s.dtMs = curTimeMs - s.lastTimeMs;
+        s.rxDtMs = curTimeMs - s.lastTimeMs;
     s.lastTimeMs = curTimeMs;
+
+    double ts = cISDataMappings::Timestamp(&data->hdr, data->ptr);
+    if (ts != 0.0)
+    {
+        if (s.lastTs != 0.0)
+        {
+            s.tsDtMs = (ts - s.lastTs) * 1.0e3;
+            s.hasTsDtMs = true;
+        }
+        s.lastTs = ts;
+    }
 }
 
 /**
@@ -853,13 +864,16 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 void cInertialSenseDisplay::PrintStats()
 {
     // Display stats
-    printf("    Count      dt  DID  Name \n");
+    printf("    Count   rxDtMs   tsDtMs  DID  Name \n");
     for (int i = 0; i < (int)m_didStats.size(); i++)
     {
         sDidStats& s = m_didStats[i];
         if (s.count)
         {
-            printf("%9d %7.3lf %4d  %s\n", s.count, s.dtMs*0.001, i, cISDataMappings::DataName(i));
+            if (s.hasTsDtMs)
+                printf("%9d %8d %8.3f %4d  %s\n", s.count, s.rxDtMs, s.tsDtMs, i, cISDataMappings::DataName(i));
+            else
+                printf("%9d %8d %8s %4d  %s\n", s.count, s.rxDtMs, "", i, cISDataMappings::DataName(i));
         }
     }
 }
