@@ -122,6 +122,10 @@ bool ISDevice::step() {
     if (isConnected() && (portType(port) & PORT_TYPE__COMM) && !(COMM_PORT(port)->flags & COMM_PORT_FLAG__EXPLICIT_READ)) {
         is_comm_port_parse_messages(port); // Read data directly into comm buffer and call callback functions
         fn.mark("Parsed messages.");
+        if (cbor_.active && (current_timeMs() - cbor_.lastMs) > cbor_.timeoutMs) {
+            cborFinish();   // after parsing, so a reply that just arrived is not timed out
+            didStuff = true;
+        }
         if (!hasConfirmedDeviceInfo()) {
             validateAsync(250);
             fn.mark("Validating device.");
@@ -932,6 +936,9 @@ int ISDevice::SendNmea(const std::string& nmeaMsg)
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 
     uint8_t buf[1024] = {0};
+    if (nmeaMsg.empty() || (nmeaMsg.size() > sizeof(buf) - 7))
+        return -1;  // Empty, or no room for the '$' header, "*XX\r\n" footer, and null terminator
+
     int n = 0;
     if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
     memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
@@ -1008,8 +1015,9 @@ void ISDevice::SyncFlashConfig()
     }
 
     if (devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
-        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
-    {   // Sync GPX flash config if a GPX present
+        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
+        gpxStatusReceived || gpxFlashCfgUploadTimeMs)
+    {   // Sync GPX flash config if a GPX is present: identified, reporting its status, or being written
         DeviceSyncFlashCfg(timeMs, DID_GPX_FLASH_CFG, DID_GPX_STATUS, gpxFlashCfgUploadTimeMs, gpxFlashCfg.checksum, gpxStatus.flashCfgChecksum, gpxFlashCfgUploadChecksum);
     }
 }
@@ -1035,8 +1043,8 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
         if (ValidFlashCfgCksum(flashCfgChecksum) && (syncChecksum == flashCfgChecksum))
         {   // Checksum is valid and matches
             if (uploadTimeMs)
-            {   // Upload complete.  Allow sync.
-                bool success = (uploadChecksum == syncChecksum);
+            {   // Upload complete.  Allow sync.  An upload checksum of 0 was not predicted (see SetImxFlashConfig()).
+                bool success = (uploadChecksum == 0) || (uploadChecksum == syncChecksum);
                 log_debug(IS_LOG_ISDEVICE, "[%s] %s upload %s.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
                 return (success ? 1 : 0);
@@ -1157,8 +1165,8 @@ bool ISDevice::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg) {
         imxFlashCfgUploadChecksum
     );
 
-    if (imxFlashCfgUploadTimeMs)
-        imxFlashCfgUploadChecksum = flashCfg.checksum;
+    if (imxFlashCfgUploadTimeMs)    // a device whose struct differs in size computes its checksum over its own struct
+        imxFlashCfgUploadChecksum = (imxFlashCfg.size == sizeof(nvm_flash_cfg_t)) ? flashCfg.checksum : 0;
 
     imxFlashCfg = flashCfg;
     return success;
@@ -1178,8 +1186,8 @@ bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
         gpxFlashCfgUploadChecksum
     );
 
-    if (gpxFlashCfgUploadTimeMs)
-        gpxFlashCfgUploadChecksum = flashCfg.checksum;
+    if (gpxFlashCfgUploadTimeMs)    // a device whose struct differs in size computes its checksum over its own struct
+        gpxFlashCfgUploadChecksum = (gpxFlashCfg.size == sizeof(gpx_flash_cfg_t)) ? flashCfg.checksum : 0;
 
     gpxFlashCfg = flashCfg;
     return success;
@@ -1810,6 +1818,22 @@ const char* ISDevice::manfPlatformResultString(ManfPlatformResult result) {
     return "unknown result";
 }
 
+/**
+ * @brief Copies the part of a received flash config that falls within the host's struct. Flash-config structs only grow
+ *        at the end, so firmware newer than the host sends more than the host's struct holds, with every field the host
+ *        knows at its usual offset; the rest is dropped.
+ * @param sptr     the host's struct
+ * @param data     the received data
+ * @param maxsize  sizeof the host's struct
+ */
+static void copyFlashCfgPrefix(void* sptr, const p_data_t* data, unsigned int maxsize)
+{
+    if (data->hdr.offset >= maxsize)
+        return;
+    unsigned int size = std::min<unsigned int>(data->hdr.size, maxsize - data->hdr.offset);
+    memcpy((uint8_t*)sptr + data->hdr.offset, data->ptr, size);
+}
+
 int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
     if ((data->hdr.size==0) || (data->ptr==NULL))
@@ -1832,6 +1856,9 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
                 devInfo.hdwRunState = HDW_STATE_APP;        // since this is ISB, its pretty safe to assume that we are in APP mode.
             markDevInfoConfirmed();
             break;
+        case DID_CBOR:
+            cborOnMessage(data);
+            break;
         case DID_GPX_DEV_INFO:
             gpxDevInfo = *(dev_info_t*)data->ptr;
             log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_DEV_INFO: hwType=%d, fw=%d.%d.%d.%d",
@@ -1847,7 +1874,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             log_bombastic(IS_LOG_ISDEVICE, "[%s] Received DID_SYS_PARAMS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());    // this ones bombastic, because it can come every millisecond.
             break;
         case DID_FLASH_CONFIG:
-            copyDataPToStructP(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
+            copyFlashCfgPrefix(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
                 sysParams.flashCfgChecksum = imxFlashCfg.checksum;
             }
@@ -1855,10 +1882,11 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_GPX_STATUS:
             copyDataPToStructP(&gpxStatus, data, sizeof(gpx_status_t));
+            gpxStatusReceived = true;
             log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_STATUS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
         case DID_GPX_FLASH_CFG:
-            copyDataPToStructP(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
+            copyFlashCfgPrefix(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
             if ( dataOverlap( offsetof(gpx_flash_cfg_t, checksum), 4, data ) )
             {	// Checksum received
                 gpxStatus.flashCfgChecksum = gpxFlashCfg.checksum;
@@ -2210,4 +2238,129 @@ double ISDevice::sampleIsbMsgStats(const p_data_t& data) {
         default:                    stat.sample();  break;
     }
     return stat.lastSampleTime();
+}
+
+
+// ---- CBOR requests (DID_CBOR)
+
+bool ISDevice::cborRequestAsync(const CborRequest& req, std::function<void(const std::vector<CborReply>&)> done,
+                                uint32_t timeoutMs, bool collectAll)
+{
+    std::lock_guard<std::recursive_mutex> lock(portMutex);
+    if (cbor_.active || !isConnected() || devInfo.hdwRunState == HDW_STATE_BOOTLOADER)
+        return false;
+    if (cborNextReqId_ == 0)
+        cborNextReqId_ = 1;
+    uint16_t reqId = cborNextReqId_++;
+    std::vector<uint8_t> msg = req.encode(reqId);
+    if (msg.empty() || msg.size() > ISB_MAX_DATASET_SIZE)
+        return false;
+
+    cbor_ = CborPending();
+    cbor_.active = true;
+    cbor_.reqId = reqId;
+    cbor_.timeoutMs = timeoutMs;
+    cbor_.collectAll = collectAll;
+    cbor_.done = std::move(done);
+    cbor_.lastMs = current_timeMs();
+    if (SendData(DID_CBOR, msg.data(), (uint32_t)msg.size(), 0) < 0)
+    {
+        cborFinish();
+        return true;    // started, and finished at once with no replies
+    }
+    if (cborOnSent)
+        cborOnSent(msg.data(), msg.size());
+    return true;
+}
+
+void ISDevice::cborOnMessage(const p_data_t* data)
+{
+    if (!cbor_.active || data->hdr.offset != 0)
+        return;
+    CborReply rep;
+    if (cbor_msg_parse_envelope(data->ptr, data->hdr.size, &rep.env) == CBOR_CODEC_ERR_MALFORMED)
+        return;
+    if (!cbor_msg_is_reply(rep.env.type) || !rep.env.hasReqId || rep.env.reqId != cbor_.reqId)
+        return;     // not an answer to the request in flight
+    rep.msg.assign(data->ptr, data->ptr + data->hdr.size);
+    cbor_.replies.push_back(std::move(rep));
+    cbor_.lastMs = current_timeMs();
+    if (!cbor_.collectAll)
+        cborFinish();
+}
+
+void ISDevice::cborFinish()
+{
+    std::vector<CborReply> replies = std::move(cbor_.replies);
+    auto done = std::move(cbor_.done);
+    cbor_ = CborPending();      // idle before the callback, so it may start another request
+    if (done)
+        done(replies);
+}
+
+std::vector<CborReply> ISDevice::cborRequest(const CborRequest& req, uint32_t timeoutMs, bool collectAll)
+{
+    std::vector<CborReply> result;
+    bool finished = false;
+    if (!cborRequestAsync(req, [&](const std::vector<CborReply>& r) { result = r; finished = true; }, timeoutMs, collectAll))
+        return result;
+    uint32_t startMs = current_timeMs();
+    const uint32_t limitMs = timeoutMs * 4 + 1000;      // backstop if step() stops advancing the request
+    while (!finished)
+    {
+        step();
+        if (finished)
+            break;
+        if ((current_timeMs() - startMs) > limitMs)
+        {
+            std::lock_guard<std::recursive_mutex> lock(portMutex);
+            cborFinish();
+            break;
+        }
+        SLEEP_MS(2);
+    }
+    return result;
+}
+
+int ISDevice::cborGetStruct(uint16_t did, const cbor_schema_t& schema, void* data, std::optional<uint64_t> dst,
+                            uint32_t timeoutMs)
+{
+    // Field lists still to read. A reply that marks the whole DID too large splits its list in two; fields it marks one
+    // by one are asked for again; a single field that cannot fit is given up.
+    std::vector<std::vector<uint16_t>> pending(1);  // empty list: every field
+    int total = -1;
+    for (int requests = 0; !pending.empty() && requests < 64; requests++)
+    {
+        std::vector<uint16_t> keys = pending.back();
+        pending.pop_back();
+        CborRequest req(CBOR_MSG_TYPE_GET);
+        if (dst)
+            req.to(*dst);
+        req.getKeys(did, keys);
+        std::vector<CborReply> replies = cborRequest(req, timeoutMs);
+        if (replies.empty())
+            return total;
+        const CborReply& rep = replies.front();
+        if (rep.status(did) == CBOR_MSG_STATUS_RESP_TOO_LARGE)
+        {
+            if (keys.empty())
+                for (uint16_t i = 0; i < schema.count; i++)
+                    keys.push_back(schema.fields[i].key);
+            if (keys.size() > 1)
+            {
+                size_t half = keys.size() / 2;
+                pending.emplace_back(keys.begin() + half, keys.end());
+                pending.emplace_back(keys.begin(), keys.begin() + half);
+            }
+            continue;
+        }
+        std::vector<uint16_t> tooLarge;
+        int n = rep.decode(did, schema, data, &tooLarge);
+        if (n < 0)
+            return total;
+        total = (total < 0 ? 0 : total) + n;
+        if (!tooLarge.empty() && (n > 0 || tooLarge.size() < keys.size()))
+            pending.push_back(tooLarge);
+    }
+    return total;
 }

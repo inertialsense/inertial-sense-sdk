@@ -402,7 +402,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 126:
         0,                      // 127:
         0,                      // 128:
-        0,                      // 129:
+        0,                      // 129: DID_CBOR
         0,                      // 130:
         0                       // 131:
     };
@@ -592,7 +592,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
         0,                      // 126:
         0,                      // 127:
         0,                      // 128:
-        0,                      // 129:
+        0,                      // 129: DID_CBOR
         0,                      // 130:
         0                       // 131:
     };

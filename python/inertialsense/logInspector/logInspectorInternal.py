@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
 try:
-    from .logInspector import LogInspectorWindow
+    from .logInspector import LogInspectorWindow, verArrayToString, hardwareVerString
 except ImportError:
     # Fallback for direct script execution
-    from logInspector import LogInspectorWindow
+    from logInspector import LogInspectorWindow, verArrayToString, hardwareVerString
 
 import subprocess
 import sys, os, signal, ctypes, yaml
 from PyQt6 import QtCore
-from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox, \
-    QTableWidget, QTableWidgetItem, QAbstractItemView
+from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox, QTableWidget, QTableWidgetItem, \
+    QAbstractItemView, QHeaderView
 from PyQt6.QtCore import Qt
+from inertialsense.tools.data_sets import DID_DEV_INFO
 
 from inertialsense.tools.data_sets import DID_DEV_INFO
 
@@ -55,33 +56,42 @@ class ChooseDevsDialog(QDialog):
         self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.table.setRowCount(parent.log.numDev)
 
-        self.checkboxes = []
+        # One row per device: checkable serial number, then hardware and firmware from DID_DEV_INFO
+        self.table = QTableWidget(parent.log.numDev, 3)
+        self.table.setHorizontalHeaderLabels(['Serial#', 'Hardware', 'Firmware'])
+        for col in (1, 2):
+            self.table.horizontalHeaderItem(col).setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.cellClicked.connect(self.toggleRow)
+        from PyQt6.QtGui import QShortcut
+        self.toggleShortcut = QShortcut('Space', self.table)
+        self.toggleShortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.toggleShortcut.activated.connect(
+            lambda: self.toggleRow(self.table.currentRow(), 0)
+            if self.table.currentRow() >= 0 else None)
+
         for i in range(parent.log.numDev):
-            checkbox = QCheckBox()
-            checkbox.setText(str(parent.log.serials[i]))
-            checkbox.setChecked(i in parent.mplots[0].plotter.active_devs)
-            self.checkboxes.append(checkbox)
-            self.table.setCellWidget(i, DEVICE_TABLE_COL_CHECKBOX, checkbox)
+            serialItem = QTableWidgetItem(str(parent.log.serials[i]))
+            serialItem.setFlags(Qt.ItemFlag.ItemIsEnabled)     # Shows its check state; toggleRow() changes it
+            checked = i in parent.mplots[0].plotter.active_devs
+            serialItem.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
+            self.table.setItem(i, 0, serialItem)
 
-            hardwareStr, firmwareStr, buildStr, protocolStr, commitStr, buildDateStr = self.deviceInfoStrings(i)
-            self.table.setItem(i, DEVICE_TABLE_COL_HARDWARE, self.readOnlyItem(hardwareStr))
-            self.table.setItem(i, DEVICE_TABLE_COL_FIRMWARE, self.readOnlyItem(firmwareStr))
-            self.table.setItem(i, DEVICE_TABLE_COL_BUILD, self.readOnlyItem(buildStr))
-            self.table.setItem(i, DEVICE_TABLE_COL_PROTOCOL, self.readOnlyItem(protocolStr))
-            self.table.setItem(i, DEVICE_TABLE_COL_COMMIT, self.readOnlyItem(commitStr))
-            self.table.setItem(i, DEVICE_TABLE_COL_BUILDDATE, self.readOnlyItem(buildDateStr))
+            hardware, firmware = '', ''
+            devInfos = parent.log.data[i][DID_DEV_INFO]
+            if len(devInfos):   # Not every device in a log necessarily reported DID_DEV_INFO
+                hardware = hardwareVerString(devInfos[0])
+                firmware = verArrayToString(devInfos[0]['firmwareVer'])
+            for col, text in ((1, hardware), (2, firmware)):
+                item = QTableWidgetItem(text)
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                self.table.setItem(i, col, item)
 
-        self.table.resizeColumnsToContents()
-        for col in DEVICE_TABLE_MORE_INFO_COLS:
-            self.table.setColumnHidden(col, True)
-        self.fitTableWidth()
         self.mainLayout.addWidget(self.table)
-
-        self.moreInfoCheckbox = QCheckBox()
-        self.moreInfoCheckbox.setText("More info")
-        self.moreInfoCheckbox.setChecked(False)
-        self.moreInfoCheckbox.stateChanged.connect(self.toggleMoreInfo)
-        self.mainLayout.addWidget(self.moreInfoCheckbox)
 
         self.applyButton = QPushButton()
         self.applyButton.setText("Apply")
@@ -99,83 +109,12 @@ class ChooseDevsDialog(QDialog):
             b.setFixedWidth(buttonWidth)
 
         self.setLayout(self.mainLayout)
-        self.fitDialogWidth()
-        self.fitDialogHeight()
-
-    @staticmethod
-    def readOnlyItem(text):
-        item = QTableWidgetItem(text)
-        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        return item
-
-    def deviceInfoStrings(self, devIdx):
-        devInfoArray = self.parent.log.data[devIdx, DID_DEV_INFO]
-        if len(devInfoArray) == 0:
-            return '', '', '', '', '', ''
-        devInfo = devInfoArray[0]
-        hv = devInfo['hardwareVer']
-        fv = devInfo['firmwareVer']
-        pv = devInfo['protocolVer']
-        buildNumber = int(devInfo['buildNumber'])
-        hardwareStr = 'IMX-%d.%d.%d' % (hv[0], hv[1], hv[2])
-        firmwareStr = '%d.%d.%d' % (fv[0], fv[1], fv[2])
-        buildStr = '%05X.%d' % ((buildNumber >> 12) & 0xFFFFF, buildNumber & 0xFFF)
-        protocolStr = '%d.%d.%d' % (pv[0], pv[1], pv[2])
-        commitStr = '%08X' % int(devInfo['repoRevision'])
-        buildDateStr = '%04d-%02d-%02d' % (2000 + int(devInfo['buildYear']), devInfo['buildMonth'], devInfo['buildDay'])
-        return hardwareStr, firmwareStr, buildStr, protocolStr, commitStr, buildDateStr
-
-    def toggleMoreInfo(self):
-        showMoreInfo = self.moreInfoCheckbox.isChecked()
-        for col in DEVICE_TABLE_MORE_INFO_COLS:
-            self.table.setColumnHidden(col, not showMoreInfo)
-        self.table.resizeColumnsToContents()
-        self.fitDialogWidth()
-
-    def fitDialogWidth(self):
-        self.fitTableWidth()
-        self.setFixedWidth(self.sizeHint().width())
-
-    def fitDialogHeight(self):
-        numDev = len(self.checkboxes)
-        rowsToShow = min(numDev, DEVICE_TABLE_AUTO_FIT_ROWS)
-        rowHeight = self.table.rowHeight(0) if numDev > 0 else self.table.verticalHeader().defaultSectionSize()
-        headerHeight = self.table.horizontalHeader().sizeHint().height()
-        tableFitHeight = headerHeight + rowsToShow * rowHeight + self.table.frameWidth() * 2 + 2
-
-        # Temporarily pin the table to its up-to-N-row height so the dialog's
-        # sizeHint (and adjustSize) reflect that, not the full row count.
-        self.table.setFixedHeight(tableFitHeight)
-        self.adjustSize()
-
-        screen = QApplication.primaryScreen()
-        if screen is not None:
-            maxHeight = screen.availableGeometry().height()
-            if self.height() > maxHeight:
-                self.resize(self.width(), maxHeight)
-            self.setMaximumHeight(maxHeight)
-
-        fittedHeight = self.height()
-
-        # Release the table's height so it can grow/shrink again when the
-        # user manually resizes the dialog (e.g. for >30 devices).
-        self.table.setMinimumHeight(0)
-        self.table.setMaximumHeight(16777215)
-        self.resize(self.width(), fittedHeight)
-
-    def fitTableWidth(self):
-        width = self.table.frameWidth() * 2
-        if self.table.verticalHeader().isVisible():
-            width += self.table.verticalHeader().width()
-        for col in range(self.table.columnCount()):
-            if not self.table.isColumnHidden(col):
-                width += self.table.columnWidth(col)
-        self.table.setFixedWidth(width + 4)
+        self.resize(290, min(800, 220 + 30 * parent.log.numDev))
 
     def updatePlot(self):
         active_serials = []
-        for i, checkbox in enumerate(self.checkboxes):
-            if checkbox.isChecked():
+        for i in range(self.table.rowCount()):
+            if self.table.item(i, 0).checkState() == Qt.CheckState.Checked:
                 active_serials.append(self.parent.log.serials[i])
         for mplot in self.parent.mplots:
             mplot.plotter.setActiveSerials(active_serials)
@@ -185,13 +124,22 @@ class ChooseDevsDialog(QDialog):
         self.updatePlot()
         self.close()
 
+    def toggleRow(self, row, column):
+        # A click anywhere in the row, the checkbox and serial number included, toggles it
+        item = self.table.item(row, 0)
+        checked = item.checkState() == Qt.CheckState.Checked
+        item.setCheckState(Qt.CheckState.Unchecked if checked else Qt.CheckState.Checked)
+
+    def setAllChecked(self, checked):
+        state = Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+        for i in range(self.table.rowCount()):
+            self.table.item(i, 0).setCheckState(state)
+
     def selectAll(self):
-        for checkbox in self.checkboxes:
-            checkbox.setChecked(True)
+        self.setAllChecked(True)
 
     def selectNone(self):
-        for checkbox in self.checkboxes:
-            checkbox.setChecked(False)
+        self.setAllChecked(False)
 
 
 class logInspectorInternal(LogInspectorWindow):
