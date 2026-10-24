@@ -14,24 +14,47 @@ from PyQt6.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCh
 from PyQt6.QtCore import Qt
 from inertialsense.tools.data_sets import DID_DEV_INFO
 
+from inertialsense.tools.data_sets import DID_DEV_INFO
+
 # import logInspector as logInspector
+
+DEVICE_TABLE_COL_CHECKBOX  = 0
+DEVICE_TABLE_COL_HARDWARE  = 1
+DEVICE_TABLE_COL_FIRMWARE  = 2
+DEVICE_TABLE_COL_BUILD     = 3
+DEVICE_TABLE_COL_PROTOCOL  = 4
+DEVICE_TABLE_COL_COMMIT    = 5
+DEVICE_TABLE_COL_BUILDDATE = 6
+DEVICE_TABLE_MORE_INFO_COLS = (DEVICE_TABLE_COL_HARDWARE, DEVICE_TABLE_COL_FIRMWARE, DEVICE_TABLE_COL_BUILD,
+                                DEVICE_TABLE_COL_PROTOCOL, DEVICE_TABLE_COL_COMMIT, DEVICE_TABLE_COL_BUILDDATE)
+
+DEVICE_TABLE_AUTO_FIT_ROWS = 30
 
 class ChooseDevsDialog(QDialog):
     def __init__(self, parent):
         super(ChooseDevsDialog, self).__init__(parent)
-        self.setWindowTitle("Choose Devices")
+        self.setWindowTitle("Devices")
         self.parent = parent
         self.mainLayout = QVBoxLayout()
 
         self.selectAllButton = QPushButton()
         self.selectAllButton.setText("Select All")
         self.selectAllButton.clicked.connect(self.selectAll)
-        self.mainLayout.addWidget(self.selectAllButton)
+        self.mainLayout.addWidget(self.selectAllButton, 0, Qt.AlignmentFlag.AlignLeft)
 
         self.selectNoneButton = QPushButton()
         self.selectNoneButton.setText("Select None")
         self.selectNoneButton.clicked.connect(self.selectNone)
-        self.mainLayout.addWidget(self.selectNoneButton)
+        self.mainLayout.addWidget(self.selectNoneButton, 0, Qt.AlignmentFlag.AlignLeft)
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(7)
+        self.table.setHorizontalHeaderLabels(['Serial#', 'Hardware', 'Firmware', 'Build', 'Protocol', 'Commit', 'Build Date'])
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.table.setRowCount(parent.log.numDev)
 
         # One row per device: checkable serial number, then hardware and firmware from DID_DEV_INFO
         self.table = QTableWidget(parent.log.numDev, 3)
@@ -73,13 +96,17 @@ class ChooseDevsDialog(QDialog):
         self.applyButton = QPushButton()
         self.applyButton.setText("Apply")
         self.applyButton.clicked.connect(self.updatePlot)
-        self.mainLayout.addWidget(self.applyButton)
+        self.mainLayout.addWidget(self.applyButton, 0, Qt.AlignmentFlag.AlignLeft)
 
         self.okbutton = QPushButton()
         self.okbutton.setText("OK")
         self.okbutton.clicked.connect(self.clickedOk)
-        self.mainLayout.addWidget(self.okbutton)
+        self.mainLayout.addWidget(self.okbutton, 0, Qt.AlignmentFlag.AlignLeft)
 
+        buttonWidth = max(b.sizeHint().width() for b in
+                           (self.selectAllButton, self.selectNoneButton, self.applyButton, self.okbutton))
+        for b in (self.selectAllButton, self.selectNoneButton, self.applyButton, self.okbutton):
+            b.setFixedWidth(buttonWidth)
 
         self.setLayout(self.mainLayout)
         self.resize(290, min(800, 220 + 30 * parent.log.numDev))
