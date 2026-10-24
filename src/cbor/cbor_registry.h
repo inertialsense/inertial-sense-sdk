@@ -174,6 +174,57 @@ const char *cbor_registry_field_name(uint16_t did, uint16_t key);
  */
 int cbor_registry_field_key(uint16_t did, const char *name);
 
+/** A registry enum: its values and their names */
+typedef struct
+{
+    const char                 *name;   //!< enum name (e.g. "msg_status")
+    const cbor_registry_name_t *values; //!< value and name of each member
+    uint16_t                    count;  //!< entries in values
+} cbor_registry_enum_t;
+
+/**
+ * @brief Looks up a DID's registry name (cbor_registry_names.c, SDK only).
+ * @param did  root DID key
+ * @return the name (e.g. "FLASH_CFG"), or NULL if the registry has no such DID
+ */
+const char *cbor_registry_did_name(uint16_t did);
+
+/**
+ * @brief Looks up a DID's key by registry name (cbor_registry_names.c, SDK only).
+ * @param name  registry name (e.g. "FLASH_CFG")
+ * @return the root DID key, or -1 if the registry has no such DID
+ */
+int cbor_registry_did_key(const char *name);
+
+/**
+ * @brief Looks up the name of a message key (MSG_*) or message-type option key (cbor_registry_names.c, SDK only).
+ * @param key  the key
+ * @return the name (e.g. "MSG_STATUS"), or NULL if the key is neither
+ */
+const char *cbor_registry_msg_key_name(uint16_t key);
+
+/**
+ * @brief Looks up a message key or message-type option key by name (cbor_registry_names.c, SDK only).
+ * @param name  the name (e.g. "MSG_ACK_TYPE")
+ * @return the key, or -1 if the registry has no such key
+ */
+int cbor_registry_msg_key(const char *name);
+
+/**
+ * @brief Finds the enum a key's value takes (cbor_registry_names.c, SDK only).
+ * @param did  root DID key holding the key; ignored for message and message-type keys (0x9000 and above)
+ * @param key  the key
+ * @return the enum, or NULL if the key's value is not an enum
+ */
+const cbor_registry_enum_t *cbor_registry_key_enum(uint16_t did, uint16_t key);
+
+/**
+ * @brief Finds the schema of a DID bound to a legacy struct (cbor_registry_names.c, SDK only).
+ * @param did  root DID key
+ * @return the schema, or NULL if the DID has none
+ */
+const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
+
 #ifdef __cplusplus
 }
 #endif

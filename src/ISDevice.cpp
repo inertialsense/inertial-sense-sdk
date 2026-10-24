@@ -1015,8 +1015,9 @@ void ISDevice::SyncFlashConfig()
     }
 
     if (devInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
-        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX)
-    {   // Sync GPX flash config if a GPX present
+        gpxDevInfo.hardwareType == IS_HARDWARE_TYPE_GPX ||
+        gpxStatusReceived || gpxFlashCfgUploadTimeMs)
+    {   // Sync GPX flash config if a GPX is present: identified, reporting its status, or being written
         DeviceSyncFlashCfg(timeMs, DID_GPX_FLASH_CFG, DID_GPX_STATUS, gpxFlashCfgUploadTimeMs, gpxFlashCfg.checksum, gpxStatus.flashCfgChecksum, gpxFlashCfgUploadChecksum);
     }
 }
@@ -1042,8 +1043,8 @@ int ISDevice::DeviceSyncFlashCfg(unsigned int timeMs, uint16_t flashCfgDid, uint
         if (ValidFlashCfgCksum(flashCfgChecksum) && (syncChecksum == flashCfgChecksum))
         {   // Checksum is valid and matches
             if (uploadTimeMs)
-            {   // Upload complete.  Allow sync.
-                bool success = (uploadChecksum == syncChecksum);
+            {   // Upload complete.  Allow sync.  An upload checksum of 0 was not predicted (see SetImxFlashConfig()).
+                bool success = (uploadChecksum == 0) || (uploadChecksum == syncChecksum);
                 log_debug(IS_LOG_ISDEVICE, "[%s] %s upload %s.", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str(), cISDataMappings::DataName(flashCfgDid), (success ? "complete" : "rejected"));
                 uploadTimeMs = 0;
                 return (success ? 1 : 0);
@@ -1164,8 +1165,8 @@ bool ISDevice::SetImxFlashConfig(nvm_flash_cfg_t& flashCfg) {
         imxFlashCfgUploadChecksum
     );
 
-    if (imxFlashCfgUploadTimeMs)
-        imxFlashCfgUploadChecksum = flashCfg.checksum;
+    if (imxFlashCfgUploadTimeMs)    // a device whose struct differs in size computes its checksum over its own struct
+        imxFlashCfgUploadChecksum = (imxFlashCfg.size == sizeof(nvm_flash_cfg_t)) ? flashCfg.checksum : 0;
 
     imxFlashCfg = flashCfg;
     return success;
@@ -1185,8 +1186,8 @@ bool ISDevice::SetGpxFlashConfig(gpx_flash_cfg_t& flashCfg) {
         gpxFlashCfgUploadChecksum
     );
 
-    if (gpxFlashCfgUploadTimeMs)
-        gpxFlashCfgUploadChecksum = flashCfg.checksum;
+    if (gpxFlashCfgUploadTimeMs)    // a device whose struct differs in size computes its checksum over its own struct
+        gpxFlashCfgUploadChecksum = (gpxFlashCfg.size == sizeof(gpx_flash_cfg_t)) ? flashCfg.checksum : 0;
 
     gpxFlashCfg = flashCfg;
     return success;
@@ -1817,6 +1818,22 @@ const char* ISDevice::manfPlatformResultString(ManfPlatformResult result) {
     return "unknown result";
 }
 
+/**
+ * @brief Copies the part of a received flash config that falls within the host's struct. Flash-config structs only grow
+ *        at the end, so firmware newer than the host sends more than the host's struct holds, with every field the host
+ *        knows at its usual offset; the rest is dropped.
+ * @param sptr     the host's struct
+ * @param data     the received data
+ * @param maxsize  sizeof the host's struct
+ */
+static void copyFlashCfgPrefix(void* sptr, const p_data_t* data, unsigned int maxsize)
+{
+    if (data->hdr.offset >= maxsize)
+        return;
+    unsigned int size = std::min<unsigned int>(data->hdr.size, maxsize - data->hdr.offset);
+    memcpy((uint8_t*)sptr + data->hdr.offset, data->ptr, size);
+}
+
 int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
 {
     if ((data->hdr.size==0) || (data->ptr==NULL))
@@ -1857,7 +1874,7 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             log_bombastic(IS_LOG_ISDEVICE, "[%s] Received DID_SYS_PARAMS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());    // this ones bombastic, because it can come every millisecond.
             break;
         case DID_FLASH_CONFIG:
-            copyDataPToStructP(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
+            copyFlashCfgPrefix(&imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap(offsetof(nvm_flash_cfg_t, checksum), 4, data)) {
                 sysParams.flashCfgChecksum = imxFlashCfg.checksum;
             }
@@ -1865,10 +1882,11 @@ int ISDevice::onIsbDataHandler(p_data_t* data, port_handle_t port)
             break;
         case DID_GPX_STATUS:
             copyDataPToStructP(&gpxStatus, data, sizeof(gpx_status_t));
+            gpxStatusReceived = true;
             log_more_debug(IS_LOG_ISDEVICE, "[%s] Received DID_GPX_STATUS", getDescription(ESSENTIAL_FIRMWARE_INFO|COMPACT_SERIALNO).c_str());
             break;
         case DID_GPX_FLASH_CFG:
-            copyDataPToStructP(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
+            copyFlashCfgPrefix(&gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
             if ( dataOverlap( offsetof(gpx_flash_cfg_t, checksum), 4, data ) )
             {	// Checksum received
                 gpxStatus.flashCfgChecksum = gpxFlashCfg.checksum;
@@ -2250,6 +2268,8 @@ bool ISDevice::cborRequestAsync(const CborRequest& req, std::function<void(const
         cborFinish();
         return true;    // started, and finished at once with no replies
     }
+    if (cborOnSent)
+        cborOnSent(msg.data(), msg.size());
     return true;
 }
 

@@ -133,13 +133,22 @@ struct CborReply
 std::string cborDevFilterToString(uint64_t filter);
 
 /**
- * @brief Parses the notation of cborDevFilterToString() (also "*" for a wildcard, a missing version or serial as a
- *        wildcard, "all", "host" and a 0x-prefixed hex value).
+ * @brief Parses the notation of cborDevFilterToString(): TYPE[-MAJOR[.MINOR]][::SERIAL], where a part left out (or
+ *        -1 or *) matches every value, so "GPX", "GPX-1" and "GPX-1.0" all reach any GPX-1.0, and SERIAL may carry an
+ *        SN prefix. Also "all", "host" and a 0x-prefixed hex value.
  * @param str     the notation
  * @param filter  [out] the MSG_DST_DEV_FILTER value
  * @return false if str is not recognised
  */
 bool cborDevFilterFromString(const std::string& str, uint64_t& filter);
+
+/**
+ * @brief Whether a device filter can match more than one device: any of its sub-fields (type, major, minor, serial)
+ *        is the all-ones wildcard. The host filter (0) is not a wildcard.
+ * @param filter  the MSG_DST_DEV_FILTER value
+ * @return true if a sub-field is a wildcard
+ */
+bool cborDevFilterIsWildcard(uint64_t filter);
 
 /**
  * @brief Converts MSG_TIME_GPS_NS (ns since the GPS epoch) to GPS week and time of week.

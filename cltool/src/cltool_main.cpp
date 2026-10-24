@@ -38,6 +38,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+#include "cltool_cbor.h"
 
 #include "core/msg_logger.h"
 
@@ -489,6 +490,9 @@ static int cltool_errorCallback(void* ctx, port_handle_t port)
 int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
     ISDevice::onIsbDataHandler(data, port);
 
+    if (g_commandLineOptions.cborOut && data->hdr.id == DID_CBOR && data->hdr.offset == 0)
+        cltool_cborOut("rx", data->ptr, data->hdr.size);
+
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
@@ -702,6 +706,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
 
 
+    for (auto& device : inertialSenseInterface.getDevices())
+        cltool_cborWatch(*device);
+
     // we can only display a single device at a time; so use the first available device.  - FIXME: This should be selectable while running
     device_handle_t activeDevice = inertialSenseInterface.getDevices().front();
     g_inertialSenseDisplay.setDevice(activeDevice);
@@ -895,6 +902,15 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                 g_commandLineOptions.setAckDid.push_back(did);
             }
         }
+    }
+    if ((g_commandLineOptions.cborGetNode && g_commandLineOptions.cborGetNode.size() > 0) ||
+        (g_commandLineOptions.cborSetNode && g_commandLineOptions.cborSetNode.size() > 0))
+    {
+        if (!cltool_cborGetSet(inertialSenseInterface))
+        {   // Exit cltool now and report error code
+            std::exit(-4);
+        }
+        g_cmdSuccessExitAppNow = true;
     }
     if (g_commandLineOptions.imxflashCfgSet)
     {
