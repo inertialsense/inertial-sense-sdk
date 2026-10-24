@@ -851,8 +851,8 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
     {
         if (s.lastTs != 0.0)
         {
-            s.tsDtUs = (int)llround((ts - s.lastTs) * 1.0e6);
-            s.hasTsDtUs = true;
+            s.tsDtMs = (ts - s.lastTs) * 1.0e3;
+            s.hasTsDtMs = true;
         }
         s.lastTs = ts;
     }
@@ -864,14 +864,14 @@ void cInertialSenseDisplay::DataToStats(const p_data_t* data)
 void cInertialSenseDisplay::PrintStats()
 {
     // Display stats
-    printf("    Count   rxDtMs   tsDtUs  DID  Name \n");
+    printf("    Count   rxDtMs   tsDtMs  DID  Name \n");
     for (int i = 0; i < (int)m_didStats.size(); i++)
     {
         sDidStats& s = m_didStats[i];
         if (s.count)
         {
-            if (s.hasTsDtUs)
-                printf("%9d %8d %8d %4d  %s\n", s.count, s.rxDtMs, s.tsDtUs, i, cISDataMappings::DataName(i));
+            if (s.hasTsDtMs)
+                printf("%9d %8d %8.3f %4d  %s\n", s.count, s.rxDtMs, s.tsDtMs, i, cISDataMappings::DataName(i));
             else
                 printf("%9d %8d %8s %4d  %s\n", s.count, s.rxDtMs, "", i, cISDataMappings::DataName(i));
         }
