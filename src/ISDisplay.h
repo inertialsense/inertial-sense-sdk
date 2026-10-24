@@ -555,9 +555,12 @@ private:
 
     struct sDidStats
     {
-        int lastTimeMs;    //!< the timestamp (ms) of the previous sample used to compute dtMs
-        int dtMs;          //!< the time delta (ms) between the two most recent samples
-        int count;         //!< the number of samples received for this DID
+        int lastTimeMs;     //!< the local receive time (ms) of the previous sample used to compute rxDtMs
+        int rxDtMs;         //!< the time delta (ms) between receiving the two most recent samples
+        double lastTs;      //!< the message timestamp (s) of the previous sample used to compute tsDtUs, 0 if none
+        int tsDtUs;         //!< the time delta (us) between the message timestamps of the two most recent samples
+        bool hasTsDtUs;     //!< true once tsDtUs holds a delta between two timestamped samples
+        int count;          //!< the number of samples received for this DID
     };
 
     std::vector<sDidStats> m_didStats;
