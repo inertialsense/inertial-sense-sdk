@@ -69,9 +69,10 @@ extern "C" {
 #define CBOR_FLASH_CFG__IMUSHOCKDELTAGYROHIGHTHRESHOLD 47       //!< imuShockDeltaGyroHighThreshold: uint8, default 120
 #define CBOR_FLASH_CFG__IMUSHOCKDELTAGYROLOWTHRESHOLD 48       //!< imuShockDeltaGyroLowThreshold: uint8, default 12
 #define CBOR_FLASH_CFG__IOCONFIG2                    49       //!< ioConfig2: uint8, default set by the firmware
+#define CBOR_FLASH_CFG__DEADRECKONINGTIMEOUT         50       //!< deadReckoningTimeout: uint8, default 30
 /** @} */
 
-#define CBOR_FLASH_CFG_NAME_COUNT                    50       //!< entries in g_cborNames_FLASH_CFG
+#define CBOR_FLASH_CFG_NAME_COUNT                    51       //!< entries in g_cborNames_FLASH_CFG
 
 /** FLASH_CFG field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_FLASH_CFG[CBOR_FLASH_CFG_NAME_COUNT];

@@ -1428,7 +1428,7 @@ TEST(ISStatusDecode, GpxSysCfgBits_IsMuchSmallerThanImxTable)
     const status_field_decode_t* imxDec = GetStatusDecodeByField("sysCfgBits");
     ASSERT_NE(gpxDec, nullptr);
     ASSERT_NE(imxDec, nullptr);
-    EXPECT_EQ(gpxDec->subfields.size(), 2u);
+    EXPECT_EQ(gpxDec->subfields.size(), 3u);
     EXPECT_GT(imxDec->subfields.size(), gpxDec->subfields.size());
 }
 
