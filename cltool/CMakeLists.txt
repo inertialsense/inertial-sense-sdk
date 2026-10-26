@@ -27,6 +27,7 @@ endif()
 add_executable(${PROJECT_NAME} 
     src/cltool_main.cpp
     src/cltool.cpp
+    src/cltool_cbor.cpp
 )
 
 # Build using C11 and CXX20
