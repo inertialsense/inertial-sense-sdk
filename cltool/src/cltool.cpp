@@ -1434,7 +1434,7 @@ void cltool_outputUsage()
     cout << "OPTIONS (Firmware Update)" << endl;
     cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
     cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
-    cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
+    cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using FILEPATH (.hex for IMX-5, .bin for uINS-3/EVB-2) if version is old. Must be used with option -uf." << endlbOn;
     cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
     cout << "    -fw-set-policy " << boldOff << "POLICY[:PATTERN]  Set update policy (skip, if-newer, force)." << endlbOn;

@@ -386,7 +386,7 @@ typedef struct
     uint16_t* fieldsAndOffsets;
 } asciiMessageMap_t;
 
-/** Represents the 4 bytes that begin each binary packet */
+/** Represents the 6 bytes that begin each binary packet */
 typedef struct
 {
     /** Packet start bytes, always 0x49EF */
