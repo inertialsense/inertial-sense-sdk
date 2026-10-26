@@ -174,6 +174,13 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 
     YAML::Node getNode;
     YAML::Node setNode;
+    YAML::Node cborGetNode;                 // -cbor-get <yaml>: GET over CBOR, in the -get form
+    YAML::Node cborSetNode;                 // -cbor-set <yaml>: DATA over CBOR, in the -set form
+    bool cborOut = false;                   // -cbor-out: print every DID_CBOR message, sent and received
+    bool cborOutNames = true;               // -cbor-out=raw: plain diagnostic notation, without registry names
+    std::string cborDst;                    // -cbor-dst=<device filter>: MSG_DST_DEV_FILTER of -cbor-get / -cbor-set
+    int cborAck = -1;                       // -cbor-ack=none|minimal|detailed (-1 = the protocol default)
+    uint32_t cborTimeoutMs = 1000;          // -cbor-timeout=<ms>: time allowed for (each) reply
     
     uint32_t sysCommand;
     int32_t platformType;

@@ -12,6 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 #include "cltool.h"
+#include "cltool_cbor.h"
+#include "ISCborFormat.h"
 #include <string.h>
 #include <chrono>
 #include <ctime>
@@ -180,7 +182,14 @@ void ConvertIndexedKeysToSequences(YAML::Node& node)
     }
 }
 
-bool read_get_set_argument(std::string s, YAML::Node &node)
+/**
+ * @brief Parses the inline YAML of a -get / -set style argument: braces are added when there are none, a space is put
+ *        after each ':' and indexed keys (name[i]) are quoted so they read as keys.
+ * @param s     the argument
+ * @param node  [out] the parsed YAML
+ * @return false if s is not valid YAML (the reason is printed)
+ */
+static bool parse_get_set_yaml(std::string s, YAML::Node &node)
 {
     // Preprocess s: wrap with braces if it contains no braces at all
     if (!s.empty() && s.find('{') == std::string::npos && s.find('}') == std::string::npos)
@@ -215,6 +224,13 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         std::cerr << "General YAML error: " << e.what() << "\n";
         return false;
     }
+    return true;
+}
+
+bool read_get_set_argument(std::string s, YAML::Node &node)
+{
+    if (!parse_get_set_yaml(s, node))
+        return false;
 
     // Convert indexed keys to sequences i.e. {gnss1AntOffset[0]: 1.5, gnss1AntOffset[1]: 2.5} becomes {gnss1AntOffset: [1.5, 2.5]}
     ConvertIndexedKeysToSequences(node);
@@ -666,6 +682,52 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.gpxflashCfgSet = true;
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-cbor-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!parse_get_set_yaml(argv[++i], g_commandLineOptions.cborGetNode))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-cbor-set") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!parse_get_set_yaml(argv[++i], g_commandLineOptions.cborSetNode))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-cbor-out"))
+        {
+            g_commandLineOptions.cborOut = true;
+            g_commandLineOptions.cborOutNames = !matches(a, "-cbor-out=raw");
+        }
+        else if (startsWith(a, "-cbor-dst="))
+        {
+            uint64_t filter;
+            g_commandLineOptions.cborDst = &a[10];
+            if (!cborDevFilterFromString(g_commandLineOptions.cborDst, filter))
+            {
+                cout << "Invalid -cbor-dst device filter: " << g_commandLineOptions.cborDst << endl;
+                return false;
+            }
+        }
+        else if (startsWith(a, "-cbor-ack="))
+        {
+            std::string ack = &a[10];
+            g_commandLineOptions.cborAck = (ack == "none") ? CBOR_ACK_TYPE_ACK_NONE : (ack == "minimal") ? CBOR_ACK_TYPE_ACK_MINIMAL :
+                                           (ack == "detailed") ? CBOR_ACK_TYPE_ACK_DETAILED : -1;
+            if (g_commandLineOptions.cborAck < 0)
+            {
+                cout << "Invalid -cbor-ack (none, minimal or detailed): " << ack << endl;
+                return false;
+            }
+        }
+        else if (startsWith(a, "-cbor-timeout="))
+        {
+            g_commandLineOptions.cborTimeoutMs = (uint32_t)strtoul(&a[14], NULL, 10);
         }
         else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
@@ -1454,6 +1516,19 @@ void cltool_outputUsage()
     cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
+    cout << "    -cbor-get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\"" << boldOff << " As -get, over CBOR (DID_CBOR). DID: registry name (FLASH_CFG), DID_ name or number." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -cbor-get FLASH_CFG" << endlbOn;
+    cout << "                                            " << boldOff << "           -cbor-get \"{GPX_FLASH_CFG: {ser2BaudRate}}\" -cbor-dst=GPX" << endlbOn;
+    cout << "    -cbor-set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " As -set, over CBOR. Numeric keys (incl. MSG_* keys) are sent as given." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -cbor-set \"{FLASH_CFG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -cbor-set \"{RMC_STORED: {0: {RMC_PRESET: INS}}}\"" << endlbOn;
+    cout << "    -cbor-dst=<FILTER>  " << boldOff << "  Device(s) a -cbor-get/-cbor-set addresses: TYPE[-MAJOR[.MINOR]][::SN], parts left out match any" << endlbOn;
+    cout << "                        " << boldOff << "  (GPX, GPX-1.0, IMX-5.0::SN62797), or all." << endlbOn;
+    cout << "                        " << boldOff << "  Without it, the device at the other end of the link answers. A wildcard collects every reply." << endlbOn;
+    cout << "    -cbor-ack=<LEVEL>   " << boldOff << "  Reply level of a -cbor-set: none, minimal (default: errors and adjusted values) or detailed." << endlbOn;
+    cout << "    -cbor-timeout=<MS>  " << boldOff << "  Time allowed for each CBOR reply (default 1000)." << endlbOn;
+    cout << "    -cbor-out[=raw]     " << boldOff << "  Print every DID_CBOR message sent and received, in CBOR diagnostic notation with" << endlbOn;
+    cout << "                        " << boldOff << "  registry names (=raw: plain diagnostic notation)." << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
@@ -1520,6 +1595,13 @@ void cltool_outputHelp()
 
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
+    if (!inertialSenseInterface.getDevices().empty())
+    {   // over CBOR when the device serves FLASH_CFG
+        bool handled;
+        bool ok = cltool_cborImxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
+        if (handled)
+            return ok;
+    }
     if (!inertialSenseInterface.WaitForImxFlashCfgSynced())
     {
         cout << "Failed to sync IMX flash config." << endl;
@@ -1560,6 +1642,13 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
 
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
+    if (!inertialSenseInterface.getDevices().empty())
+    {   // over CBOR when the GPX serves GPX_FLASH_CFG; a write for a GPX behind an IMX goes to the IMX, which proxies it
+        bool handled;
+        bool ok = cltool_cborGpxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
+        if (handled)
+            return ok;
+    }
     if (!inertialSenseInterface.WaitForGpxFlashCfgSynced())
     {
         cout << "Failed to sync GPX flash config." << endl;

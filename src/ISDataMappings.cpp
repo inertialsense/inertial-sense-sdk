@@ -1043,6 +1043,15 @@ static void PopulateMapSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("var3", &system_fault_t::var3, DATA_TYPE_UINT32, "", "var3 at fault (usage depends on fault type, see var1, var2, var3)");
 } 
 
+/**
+ * Maps DID_CBOR. The CBOR map is exposed as raw bytes; decoding it is up to the caller (see cbor/cbor_registry.h).
+*/
+static void PopulateMapCbor(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<cbor_msg_t> mapper(data_set, did);
+    mapper.AddMember("data", &cbor_msg_t::data, DATA_TYPE_BINARY, "", "CBOR map", DATA_FLAGS_DISPLAY_HEX);
+}
+
 static void PopulateMapGpxSystemFault(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<system_fault_t> mapper(data_set, did);
@@ -1124,7 +1133,7 @@ static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("baroTemp",            &sys_params_t::baroTemp, DATA_TYPE_F32, SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("mcuTemp",             &sys_params_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("sysStatus",           &sys_params_t::sysStatus, DATA_TYPE_UINT32, "", "System Status Flags (See eSysStatusFlags)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderSysStatus;
-    mapper.AddMember("imuSamplePeriodMs",   &sys_params_t::imuSamplePeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample period. Zero disables sensor sampling");
+    mapper.AddMember("sampleTaskPeriodMs",  &sys_params_t::sampleTaskPeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample task period, not the sensor sample period (see eImuOdr). Zero disables sensor sampling");
     mapper.AddMember("navOutputPeriodMs",   &sys_params_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter ouput period");
     mapper.AddMember("navUpdatePeriodMs",   &sys_params_t::navUpdatePeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter update period", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("sensorTruePeriod",    &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "us", "Actual sample period relative to GNSS PPS", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, 1.0e6);
@@ -1737,7 +1746,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<nvm_flash_cfg_t> mapper(data_set, did);
     string str;
-    mapper.AddMember("startupImuDtMs", &nvm_flash_cfg_t::startupImuDtMs, DATA_TYPE_UINT32, "ms", "IMU sample (system input data) period set on startup. Cannot be larger than startupInsDtMs. Zero disables sensor/IMU sampling.");
+    mapper.AddMember("startupImuOdr", &nvm_flash_cfg_t::startupImuOdr, DATA_TYPE_UINT32, "", "IMU output data rate set on startup (see eImuOdr): 1=2kHz, 2=1kHz, 3=500Hz, 4=250Hz, 5=125Hz, 6=62.5Hz, 7=31.25Hz, 8=15.625Hz, 9=4kHz, 10=8kHz. 0 disables sensor/IMU sampling.");
     mapper.AddMember("startupNavDtMs", &nvm_flash_cfg_t::startupNavDtMs, DATA_TYPE_UINT32, "ms", "Nav filter (system output data) update period set on startup. 1ms min (1KHz max).");
     mapper.AddMember("startupGnssDtMs", &nvm_flash_cfg_t::startupGnssDtMs, DATA_TYPE_UINT32, "ms", "GNSS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
@@ -2830,7 +2839,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RMC",                      // 126
     "DID_GPX_PORT_MONITOR",             // 127
     "DID_GPX_SYS_FAULT",                // 128
-    "",                                 // 129
+    "DID_CBOR",                         // 129
     "",                                 // 130
     ""                                  // 131
 };
@@ -2946,6 +2955,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpxRtosInfo(         m_data_set, DID_GPX_RTOS_INFO);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
     PopulateMapGpxSystemFault(      m_data_set, DID_GPX_SYS_FAULT);
+    PopulateMapCbor(                m_data_set, DID_CBOR);
     PopulateMapISBTimepulse(        m_data_set, DID_TIMEPULSE);
 
     // COMMUNICATIONS
@@ -3072,6 +3082,35 @@ const map_name_to_info_t* cISDataMappings::NameToInfoMap(uint32_t did)
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
     return &(ds->nameToInfo);
+}
+
+namespace
+{
+/** A field renamed without changing its meaning, so saved data under the former name maps onto it */
+struct FormerFieldName
+{
+    uint32_t    did;
+    const char* former;
+    const char* current;
+};
+
+const FormerFieldName FORMER_FIELD_NAMES[] =
+{
+    { DID_SYS_PARAMS, "imuSamplePeriodMs", "sampleTaskPeriodMs" },
+};
+}
+
+std::string cISDataMappings::CurrentFieldName(uint32_t did, const std::string& name)
+{
+    const sCaseInsensitiveCompare less;
+    for (const FormerFieldName& f : FORMER_FIELD_NAMES)
+    {
+        if (f.did == did && !less(name, f.former) && !less(f.former, name))
+        {
+            return f.current;
+        }
+    }
+    return name;
 }
 
 const map_index_to_info_t* cISDataMappings::IndexToInfoMap(uint32_t did)

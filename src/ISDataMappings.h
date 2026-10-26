@@ -808,6 +808,15 @@ public:
     static const map_name_to_info_t* NameToInfoMap(uint32_t did);
 
     /**
+    * Translates a field's former name to its current one, so data saved under the former name (e.g. a
+    * CSV column header) still reads. Use when parsing saved data; output always uses the current name.
+    * @param did the data id
+    * @param name a field name as found in the saved data
+    * @return the current field name, or name unchanged when it is not a former name
+    */
+    static std::string CurrentFieldName(uint32_t did, const std::string& name);
+
+    /**
     * Get map pointer for a data id
     * @param did the data id
     * @return map pointer for the data id, or NULL if none found
