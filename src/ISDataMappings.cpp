@@ -1678,7 +1678,7 @@ static void PopulateMapGroundVehicle(data_set_t data_set[DID_COUNT], uint32_t di
 static void PopulateMapExtAidingPos(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ext_aiding_pos_t> mapper(data_set, did);
-    mapper.AddMember("timeMs", &ext_aiding_pos_t::timeMs, DATA_TYPE_UINT32, "ms", "Measurement time: GNSS time of week, or latency before reception, per the status time bits (see eExtAidingStatus)");
+    mapper.AddMember("timeMs", &ext_aiding_pos_t::timeMs, DATA_TYPE_UINT32, "ms", "When the measurement was taken: GNSS time of week, or its age when the IMX receives it, per the status time bits (see eExtAidingStatus)");
     mapper.AddMember("status", &ext_aiding_pos_t::status, DATA_TYPE_UINT32, "", "Frame of measurement: 1=ECEF, 2=NED. Time bits 0x300: 0=GNSS time of week, 0x100=latency (see eExtAidingStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("pos", &ext_aiding_pos_t::pos, DATA_TYPE_F64, 3, {"m"}, {"Position {x,y,z}, in the frame given by status (ECEF expected)"}, DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray("offset", &ext_aiding_pos_t::offset, DATA_TYPE_F32, 3, {"m"}, {"Point of measurement relative to IMU origin, in IMU (body) frame {x,y,z}"}, DATA_FLAGS_FIXED_DECIMAL_3);
@@ -1688,7 +1688,7 @@ static void PopulateMapExtAidingPos(data_set_t data_set[DID_COUNT], uint32_t did
 static void PopulateMapExtAidingVel(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ext_aiding_vel_t> mapper(data_set, did);
-    mapper.AddMember("timeMs", &ext_aiding_vel_t::timeMs, DATA_TYPE_UINT32, "ms", "Measurement time: GNSS time of week, or latency before reception, per the status time bits (see eExtAidingStatus)");
+    mapper.AddMember("timeMs", &ext_aiding_vel_t::timeMs, DATA_TYPE_UINT32, "ms", "When the measurement was taken: GNSS time of week, or its age when the IMX receives it, per the status time bits (see eExtAidingStatus)");
     mapper.AddMember("status", &ext_aiding_vel_t::status, DATA_TYPE_UINT32, "", "Frame of measurement: 1=ECEF, 2=NED, 3=Body. Time bits 0x300: 0=GNSS time of week, 0x100=latency (see eExtAidingStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("vel", &ext_aiding_vel_t::vel, DATA_TYPE_F32, 3, {SYM_M_PER_S}, {"Velocity {vx,vy,vz}, in the frame given by status (ECEF expected)"}, DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddArray("offset", &ext_aiding_vel_t::offset, DATA_TYPE_F32, 3, {"m"}, {"Point of measurement relative to IMU origin, in IMU (body) frame {x,y,z}"}, DATA_FLAGS_FIXED_DECIMAL_3);
@@ -1698,7 +1698,7 @@ static void PopulateMapExtAidingVel(data_set_t data_set[DID_COUNT], uint32_t did
 static void PopulateMapExtAidingSpeed(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ext_aiding_speed_t> mapper(data_set, did);
-    mapper.AddMember("timeMs", &ext_aiding_speed_t::timeMs, DATA_TYPE_UINT32, "ms", "Measurement time: GNSS time of week, or latency before reception, per the status time bits (see eExtAidingStatus)");
+    mapper.AddMember("timeMs", &ext_aiding_speed_t::timeMs, DATA_TYPE_UINT32, "ms", "When the measurement was taken: GNSS time of week, or its age when the IMX receives it, per the status time bits (see eExtAidingStatus)");
     mapper.AddMember("status", &ext_aiding_speed_t::status, DATA_TYPE_UINT32, "", "Speed type: 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType). Time bits 0x300: 0=GNSS time of week, 0x100=latency (see eExtAidingStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("speed", &ext_aiding_speed_t::speed, DATA_TYPE_F32, SYM_M_PER_S, "Speed magnitude", DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("var", &ext_aiding_speed_t::var, DATA_TYPE_F32, "m^2/s^2", "Observation variance.  Must be non-zero or the observation is discarded", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1708,7 +1708,7 @@ static void PopulateMapExtAidingSpeed(data_set_t data_set[DID_COUNT], uint32_t d
 static void PopulateMapExtAidingDirSpeed(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ext_aiding_dir_speed_t> mapper(data_set, did);
-    mapper.AddMember("timeMs", &ext_aiding_dir_speed_t::timeMs, DATA_TYPE_UINT32, "ms", "Measurement time: GNSS time of week, or latency before reception, per the status time bits (see eExtAidingStatus)");
+    mapper.AddMember("timeMs", &ext_aiding_dir_speed_t::timeMs, DATA_TYPE_UINT32, "ms", "When the measurement was taken: GNSS time of week, or its age when the IMX receives it, per the status time bits (see eExtAidingStatus)");
     mapper.AddMember("status", &ext_aiding_dir_speed_t::status, DATA_TYPE_UINT32, "", "Time bits 0x300: 0=GNSS time of week, 0x100=latency (see eExtAidingStatus). Other bits reserved", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("speed", &ext_aiding_dir_speed_t::speed, DATA_TYPE_F32, SYM_M_PER_S, "Speed along `direction`", DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("var", &ext_aiding_dir_speed_t::var, DATA_TYPE_F32, "m^2/s^2", "Observation variance.  Must be non-zero or the observation is discarded", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1719,7 +1719,7 @@ static void PopulateMapExtAidingDirSpeed(data_set_t data_set[DID_COUNT], uint32_
 static void PopulateMapExtAidingHeading(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ext_aiding_heading_t> mapper(data_set, did);
-    mapper.AddMember("timeMs", &ext_aiding_heading_t::timeMs, DATA_TYPE_UINT32, "ms", "Measurement time: GNSS time of week, or latency before reception, per the status time bits (see eExtAidingStatus)");
+    mapper.AddMember("timeMs", &ext_aiding_heading_t::timeMs, DATA_TYPE_UINT32, "ms", "When the measurement was taken: GNSS time of week, or its age when the IMX receives it, per the status time bits (see eExtAidingStatus)");
     mapper.AddMember("status", &ext_aiding_heading_t::status, DATA_TYPE_UINT32, "", "Heading type: 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType). Time bits 0x300: 0=GNSS time of week, 0x100=latency (see eExtAidingStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("heading", &ext_aiding_heading_t::heading, DATA_TYPE_F32, SYM_DEG, "Heading, 0=north, positive clockwise", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     mapper.AddMember("var", &ext_aiding_heading_t::var, DATA_TYPE_F32, "rad^2", "Observation variance.  Must be non-zero or the observation is discarded", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1728,7 +1728,7 @@ static void PopulateMapExtAidingHeading(data_set_t data_set[DID_COUNT], uint32_t
 static void PopulateMapExtAidingAttitude(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ext_aiding_attitude_t> mapper(data_set, did);
-    mapper.AddMember("timeMs", &ext_aiding_attitude_t::timeMs, DATA_TYPE_UINT32, "ms", "Measurement time: GNSS time of week, or latency before reception, per the status time bits (see eExtAidingStatus)");
+    mapper.AddMember("timeMs", &ext_aiding_attitude_t::timeMs, DATA_TYPE_UINT32, "ms", "When the measurement was taken: GNSS time of week, or its age when the IMX receives it, per the status time bits (see eExtAidingStatus)");
     mapper.AddMember("status", &ext_aiding_attitude_t::status, DATA_TYPE_UINT32, "", "Attitude representation: 1=euler, 2=quaternion (see eExtAidingAttitudeType). Time bits 0x300: 0=GNSS time of week, 0x100=latency (see eExtAidingStatus)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("att", &ext_aiding_attitude_t::att, DATA_TYPE_F32, 4, {""}, {"Attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}"}, DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("var", &ext_aiding_attitude_t::var, DATA_TYPE_F32, 9, {"rad^2"}, {"3x3 row-major attitude-error covariance, in the roll/pitch/yaw tangent space.  Must have a non-zero diagonal or the observation is discarded"}, DATA_FLAGS_FIXED_DECIMAL_4);
