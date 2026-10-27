@@ -61,6 +61,7 @@ static const cbor_field_t s_fields[] = {
     { 47, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDeltaGyroHighThreshold), NULL },
     { 48, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, imuShockDeltaGyroLowThreshold), NULL },
     { 49, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, ioConfig2), NULL },
+    { 50, CBOR_T_UINT, 1, 0, offsetof(nvm_flash_cfg_t, deadReckoningTimeout), NULL },
 };
 
 const cbor_schema_t g_cborSchema_FLASH_CFG = { s_fields, sizeof(s_fields) / sizeof(s_fields[0]) };
@@ -128,6 +129,7 @@ _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->imuShockDeltaAccLowThreshold, ui
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->imuShockDeltaGyroHighThreshold, uint8_t: 1, default: 0), "FLASH_CFG.imuShockDeltaGyroHighThreshold type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->imuShockDeltaGyroLowThreshold, uint8_t: 1, default: 0), "FLASH_CFG.imuShockDeltaGyroLowThreshold type");
 _Static_assert(_Generic(((nvm_flash_cfg_t *)0)->ioConfig2, uint8_t: 1, default: 0), "FLASH_CFG.ioConfig2 type");
+_Static_assert(_Generic(((nvm_flash_cfg_t *)0)->deadReckoningTimeout, uint8_t: 1, default: 0), "FLASH_CFG.deadReckoningTimeout type");
 
 const nvm_flash_cfg_t g_cborDefaults_FLASH_CFG = {
     .startupImuOdr = 1,
@@ -172,10 +174,11 @@ const nvm_flash_cfg_t g_cborDefaults_FLASH_CFG = {
     .imuShockDeltaAccLowThreshold = 3,
     .imuShockDeltaGyroHighThreshold = 120,
     .imuShockDeltaGyroLowThreshold = 12,
+    .deadReckoningTimeout = 30,
 };
 
 const uint8_t g_cborDefaultFixed_FLASH_CFG[] = {
-    1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+    1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1,
 };
 
 const cbor_registry_name_t g_cborNames_FLASH_CFG[CBOR_FLASH_CFG_NAME_COUNT] = {
@@ -229,4 +232,5 @@ const cbor_registry_name_t g_cborNames_FLASH_CFG[CBOR_FLASH_CFG_NAME_COUNT] = {
     { 0x002F, "imuShockDeltaGyroHighThreshold" },
     { 0x0030, "imuShockDeltaGyroLowThreshold" },
     { 0x0031, "ioConfig2" },
+    { 0x0032, "deadReckoningTimeout" },
 };
