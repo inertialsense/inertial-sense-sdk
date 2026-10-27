@@ -590,7 +590,24 @@ bool cISBootloaderThread::set_mode_and_check_devices(
             cancel_update();
             return false;
         }
-                
+
+        // IMX-5 bootloaders are written over DFU, which reads Intel HEX only. A .bin is the SAMx70
+        // (uINS-3/EVB-2) bootloader format; given with IMX-5 firmware it matches no device and the
+        // bootloader step is skipped with only an INFO message, so refuse it here instead.
+        // Keyed on the app file because an IMX-5 update cannot run without one (checked above, and
+        // mode_device_app() only reboots an IMX-5 into its bootloader for IMX-5 firmware). No device has
+        // been queried yet, and every bl_* slot holds the same -ub path, so the app file is the only
+        // indication of the target here. Supporting bootloader-only updates would need another way to
+        // identify an IMX-5 target.
+        const std::string& blPath = firmware.bl_IMX_5.path;
+        bool blIsHex = (blPath.size() >= 4) && (blPath.compare(blPath.size() - 4, 4, ".hex") == 0);
+        if ((cISBootloaderBase::get_image_signature(firmware.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5p0) && !blIsHex)
+        {
+            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, "Update Aborted: IMX-5 bootloader must be a .hex file: %s\n", blPath.c_str());
+            cancel_update();
+            return false;
+        }
+
         // Check that firmware size will fit using specified bootloader
         size_t pages = calculateFlashPagesUsed(firmware.fw_IMX_5.path, IMX5_FLASH_PAGE_SIZE);
         uint8_t major = 0, minor = 0;
