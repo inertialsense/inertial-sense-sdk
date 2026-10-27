@@ -932,16 +932,22 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-preset="))
         {
-            if (startsWith(a, "-preset=INS"))
+            // Exact match: "-preset=PPD" is a prefix of the other PPD values
+            if (matches(a, "-preset=INS"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
-            else if (startsWith(a, "-preset=PPD"))
+            else if (matches(a, "-preset=PPD"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD;
-            else if (startsWith(a, "-preset=PPD_GROUND_VEHICLE"))
+            else if (matches(a, "-preset=PPD_GROUND_VEHICLE"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
-            else if (startsWith(a, "-preset=PPD_RTK"))
+            else if (matches(a, "-preset=PPD_RTK"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_RTK_DBG;
-            else if (startsWith(a, "-preset=PPD_GPX"))
+            else if (matches(a, "-preset=PPD_GPX"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
+            else
+            {
+                cout << "Invalid preset: " << &a[8] << "\n\n";
+                return false;
+            }
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -1537,10 +1543,13 @@ void cltool_outputUsage()
 	cout << "          DID_GNSS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream with ground vehicle" << endlbOn;
+	cout << "                   " << boldOff << " data (same as -preset=PPD_GROUND_VEHICLE)" << endlbOn;
 	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
 	cout << "    -presetGNSS    " << boldOff << " Send RMC preset to enable GNSS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
+	cout << "    -preset=<NAME> " << boldOff << " Send the named RMC preset: INS, PPD (IMX PPD without ground vehicle data)," << endlbOn;
+	cout << "                   " << boldOff << " PPD_GROUND_VEHICLE, PPD_RTK (PPD + RTK debug) or PPD_GPX" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Writing to data log file)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
