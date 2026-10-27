@@ -1369,7 +1369,7 @@ typedef struct PACKED
     int             accel_motion;   //!< Non-zero when accelerometer-sensed motion is detected
     int             rot_motion;     //!< Non-zero when rotational motion is detected
     int             zero_vel;       //!< Non-zero when zero-velocity condition is detected
-    int             reserved;
+    int             reserved;       //!< Reserved
     float           hdg_err;        //!< Estimated heading error, in radians
     int             hdg_coarse;     //!< Flag whether a coarse (uncertain) initial heading has been established
     int             hdg_aligned;    //!< Flag whether initial attitude error has converged (heading alignment complete)
@@ -2969,6 +2969,7 @@ enum eRTKConfigBits
 #define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)       // (rad)
 #define DEFAULT_GNSS_RTK_CN0_MINIMUM            30                          // (dBHz)
 #define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20                          // (dBHz)
+#define DEFAULT_DEAD_RECKONING_TIMEOUT          30                          // (s)
 
 /** @brief IMU/magnetometer sensor hardware configuration, used with nvm_flash_cfg_t.sensorConfig (DID_FLASH_CONFIG). Packs several small sub-fields (each with its own _MASK/_OFFSET pair) selecting gyro/accel full-scale range, gyro/accel DLPF bandwidth, IMU-to-sensor-frame mounting rotation, and disable/fault-detection flags for the magnetometer, barometer, and multi-IMU voting. Most fields require a system reset to take effect. */
 enum eSensorConfig
@@ -3390,30 +3391,36 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-/** @brief Frame of measurement for an external aiding observation, held in the low nibble of ext_aiding_pos_t.status / ext_aiding_vel_t.status (DID_EXT_AIDING_POS, DID_EXT_AIDING_VEL). Note 0 is not a valid frame. */
-enum eExtAidingFrame
+/** @brief Status bits of the external aiding observations (DID_EXT_AIDING_POS, _VEL, _SPEED, _DIR_SPEED, _HEADING, _ATTITUDE). The low nibble holds the frame of measurement for ext_aiding_pos_t / ext_aiding_vel_t (0 is not a valid frame), or the type for the other messages (eExtAidingSpeedType, eExtAidingHeadingType, eExtAidingAttitudeType). The time bits select how timeMs is interpreted, in every message; the reserved values 0x200 and 0x300 cause the observation to be discarded. */
+enum eExtAidingStatus
 {
-    EXT_AIDING_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
-    EXT_AIDING_FRAME_ECEF    = 1,           //!< ECEF frame
-    EXT_AIDING_FRAME_NED     = 2,           //!< NED frame
-    EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
+    EXT_AIDING_FRAME_MASK           = 0x0000000F,  //!< Mask for the frame of measurement
+    EXT_AIDING_FRAME_ECEF           = 1,           //!< ECEF frame
+    EXT_AIDING_FRAME_NED            = 2,           //!< NED frame
+    EXT_AIDING_FRAME_BODY           = 3,           //!< Body frame
+    EXT_AIDING_STATUS_TIME_MASK     = 0x00000300,  //!< Bitmask for how timeMs is interpreted
+    EXT_AIDING_STATUS_TIME_TOW_MS   = 0x00000000,  //!< timeMs is GNSS time of week (ms)
+    EXT_AIDING_STATUS_TIME_LATENCY  = 0x00000100,  //!< timeMs is the measurement's age when the IMX receives it (ms): how long before reception it was taken
 };
 
-/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is expected in ECEF; var is expected in NED. */
+/** @deprecated Renamed to eExtAidingStatus. */
+typedef enum eExtAidingStatus eExtAidingFrame;
+
+/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is in ECEF, or in NED relative to the reference LLA (refLla), as selected by status; var is expected in NED. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame/status of measurement; use 1=ECEF (see eExtAidingFrame). Position is currently processed as ECEF even if another frame is specified.
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, plus time interpretation of timeMs (see eExtAidingStatus). Any other frame is discarded.
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
 } ext_aiding_pos_t;
 
-/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is expected in ECEF; var is expected in NED. */
+/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is in the frame selected by status; var is expected in NED. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body, plus time interpretation of timeMs (see eExtAidingStatus). Any other frame is discarded.
     float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2/s^2).  Must be non-zero or the observation is discarded.
@@ -3430,8 +3437,8 @@ enum eExtAidingSpeedType
 /** @brief (DID_EXT_AIDING_SPEED) External aiding scalar speed observation (e.g. a wheel-speed sensor or GNSS-derived ground speed with no direction), supplied by a host or external sensor as an input to the INS/EKF. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType)
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      speed;        //!< speed (m/s)
     float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
@@ -3440,8 +3447,8 @@ typedef struct PACKED
 /** @brief (DID_EXT_AIDING_DIR_SPEED) External aiding directional speed observation (e.g. airspeed from a pitot tube), supplied by a host or external sensor as an input to the INS/EKF. `direction` is a unit vector in the IMU/body frame (e.g. [1,0,0] for a sensor measuring speed along the body X axis); `speed` is the velocity component along that direction at the point of measurement. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< reserved, set to 0
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Time interpretation of timeMs (see eExtAidingStatus); other bits reserved, set to 0
     float      speed;        //!< speed along `direction` (m/s)
     float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
@@ -3460,8 +3467,8 @@ enum eExtAidingHeadingType
 /** @brief (DID_EXT_AIDING_HEADING) External aiding heading observation, supplied by a host or external sensor as an input to the INS/EKF. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType)
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      heading;      //!< heading (rad), 0 = north, positive clockwise, range [-pi, pi]
     float      var;          //!< observation variance (rad^2).  Must be non-zero or the observation is discarded.
 } ext_aiding_heading_t;
@@ -3474,13 +3481,13 @@ enum eExtAidingAttitudeType
     EXT_AIDING_ATTITUDE_TYPE_QUATERNION = 2            //!< att = {w, x, y, z}
 };
 
-/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle roll/pitch/yaw rotation vector regardless of whether `att` is euler or quaternion. */
+/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `att` is the body attitude relative to NED. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle rotation about the body axes regardless of whether `att` is euler or quaternion. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType)
-    float      att[4];       //!< attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}
-    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), in the roll/pitch/yaw tangent space. Must have a non-zero diagonal or the observation is discarded.
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType), plus time interpretation of timeMs (see eExtAidingStatus)
+    float      att[4];       //!< attitude relative to NED, interpreted per `status`: euler {roll,pitch,yaw,-} or NED-to-body quaternion {w,x,y,z}
+    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), about the body axes. Must have a non-zero diagonal or the observation is discarded.
 } ext_aiding_attitude_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
@@ -3647,7 +3654,20 @@ typedef struct PACKED
 
     uint8_t                 ioConfig2;                          //!< Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2).
 
+    uint8_t                 deadReckoningTimeout;               //!< (s) Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.
+
+    uint8_t                 reserved1;                          //!< Reserved for future use
+
+    uint16_t                reserved2;                          //!< Reserved for future use
+
+    uint32_t                reserved3;                          //!< Reserved for future use
+
+    uint32_t                reserved4;                          //!< Reserved for future use
+
 } nvm_flash_cfg_t;
+
+/** flashChecksum32() works a 32-bit word at a time and returns 0 for a size that is not a multiple of 4, so the struct must stay a whole number of words. When adding a field, take its space from the reserved fields. */
+STATIC_ASSERT((sizeof(nvm_flash_cfg_t) % 4) == 0);
 
 /** @brief (DID_INL2_NED_SIGMA) 1-sigma standard deviations of the INL2 (INS/GNSS loosely-coupled) EKF state estimates, expressed in the NED (north/east/down) frame. Reports estimation uncertainty, not the estimates themselves; see the corresponding INL2 state/status DIDs for the actual state values. */
 typedef struct PACKED
@@ -4438,6 +4458,7 @@ typedef struct
 enum eGpxSysConfigBits
 {
     GPX_SYS_CFG_BITS_DISABLE_VCC_RF         = 0x00000001,  //!< Disable (tri-state) VCC_RF (GPX pin 16) output supplied via VAUX (GPX pin 40)
+    GPX_SYS_CFG_BITS_EXT_AIDING_LATENCY     = 0x00000002,  //!< Timestamp the DID_EXT_AIDING_POS/_VEL observations the GPX outputs (GRMC_BITS_EXT_AIDING_POS/_VEL) with a fixed latency (150 ms position, 250 ms velocity; EXT_AIDING_STATUS_TIME_LATENCY) instead of GNSS time of week, so a consumer that has no GNSS time can still use them. Clear (default): GNSS time of week.
 
     GPX_SYS_CFG_BITS_BOR_LEVEL_0            = 0x0,  //!< Brownout reset threshold voltage level: 1.65 - 1.75 V (default)
     GPX_SYS_CFG_BITS_BOR_LEVEL_1            = 0x1,  //!< Brownout reset threshold voltage level: 2.0 - 2.1 V
