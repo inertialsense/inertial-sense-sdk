@@ -4544,6 +4544,9 @@ enum eGpxStatus
     GPX_STATUS_GENERAL_FAULT_MASK               = (int)0xFFDF0000,  //!< Mask covering all general fault bits (RTK/GNSS/RTOS/DMA faults and the fatal sub-field)        // GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN excluded to prevent RTOS task period overrun false positives. WHJ
 
     GPX_STATUS_FAULT_RTK_QUEUE_LIMITED          = (int)0x00010000,  //!< RTK buffer filled causing data loss
+    GPX_STATUS_FAULT_FLASH_WRITE                = (int)0x00020000,  //!< Saving the configuration to flash failed (encode, program or read-back); the save is retried
+    GPX_STATUS_FAULT_FLASH_CHECKSUM             = (int)0x00040000,  //!< A stored configuration slot failed its CRC at boot
+    GPX_STATUS_FAULT_FLASH_INVALID              = (int)0x00080000,  //!< Stored configuration values were invalid at boot and were replaced by their defaults
 
     GPX_STATUS_FAULT_GNSS_RCVR_TIME             = (int)0x00100000,  //!< GNSS receiver time fault
     GPX_STATUS_FAULT_RTOS_TASK_PERIOD_OVERRUN   = (int)0x00200000,  //!< RTOS task period overrun
