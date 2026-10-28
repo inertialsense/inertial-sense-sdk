@@ -670,13 +670,6 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
  */
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
-    if (g_commandLineOptions.nmeaRx && g_commandLineOptions.disableDeviceValidation)
-    {   // NMEA mode without device validation (-nmea listen only, or -nmea= with -vd).  Validation is what normally opens
-        // each port, so open them here.  connect() without revalidating sends nothing to the device.
-        for (auto& device : inertialSenseInterface.getDevices())
-            device->connect();
-    }
-
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
     if (!g_commandLineOptions.listenMode)
     {   
@@ -1471,7 +1464,24 @@ static int cltool_dataStreaming()
                 cout << endl;
             }
         }
-        return -1;
+        // Not EXIT_CODE_INVALID_COMMAND_LINE (-1): the command line was fine, and that code also prints the help hint.
+        return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
+    }
+
+    // With validation off, Open() binds a device to every port it finds but opens none of them (validation is what
+    // normally opens a port), so open them here.  connect() without revalidating sends nothing to the device.
+    if (g_commandLineOptions.disableDeviceValidation) {
+        bool anyConnected = false;
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (!device)
+                continue;
+            if (device->connect())
+                anyConnected = true;
+            else
+                cerr << "Unable to open " << device->getPortName() << endl;
+        }
+        if (!anyConnected)
+            return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
 
     // A relay announces each device's identity, so discovery can register a device from that
