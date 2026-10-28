@@ -530,27 +530,6 @@ void recursive_moving_mean_var_filter(float *mean, float *var, float input, int 
 void multiToSingleImu(imu_t *result, const imus_t *imus, const int numDevices);
 
 /**
- * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual IMUs.
- * @param result     Output: averaged IMU sample.
- * @param di         Input: multiple IMUs' samples (numDevices of them).
- * @param numDevices Number of IMU devices (and samples) in di.
- * @param exclude    Per-IMU exclusion flags (length numDevices); true excludes that IMU from the average.
- * @return 1 on success, 0 on failure (e.g. all IMUs excluded).
- */
-int multiToSingleImuExc(imu_t *result, const imus_t *di, const int numDevices, bool *exclude);
-
-/**
- * @brief Condense multiple IMUs' samples down to a single averaged IMU sample, excluding individual gyro/accelerometer axes.
- * @param result       Output: averaged IMU sample.
- * @param di           Input: multiple IMUs' samples (numDevices of them).
- * @param numDevices   Number of IMU devices (and samples) in di.
- * @param exclude_gyro Per-axis gyro exclusion flags (X/Y/Z); true excludes that axis from the average.
- * @param exclude_acc  Per-axis accelerometer exclusion flags (X/Y/Z); true excludes that axis from the average.
- * @param iaxis        Axis index (0=X, 1=Y, 2=Z) being processed by this call.
- */
-void multiToSingleImuAxis(imu_t* result, const imus_t* di, const int numDevices, bool exclude_gyro[3], bool exclude_acc[3], int iaxis);
-
-/**
  * @brief Duplicate one IMU sample to fill a multi-IMU (imus_t) sample.
  * @param result     Output: multi-IMU sample with every device set to imu.
  * @param imu        Input: single IMU sample to duplicate.
