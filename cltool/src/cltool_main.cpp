@@ -1468,22 +1468,6 @@ static int cltool_dataStreaming()
         return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
 
-    // With validation off, Open() binds a device to every port it finds but opens none of them (validation is what
-    // normally opens a port), so open them here.  connect() without revalidating sends nothing to the device.
-    if (g_commandLineOptions.disableDeviceValidation) {
-        bool anyConnected = false;
-        for (auto device : inertialSenseInterface.getDevices()) {
-            if (!device)
-                continue;
-            if (device->connect())
-                anyConnected = true;
-            else
-                cerr << "Unable to open " << device->getPortName() << endl;
-        }
-        if (!anyConnected)
-            return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
-    }
-
     // A relay announces each device's identity, so discovery can register a device from that
     // announcement without opening its port. Everything below talks to the device, so open it now.
     if (g_commandLineOptions.useRelay && !g_commandLineOptions.list_devices) {
@@ -1504,6 +1488,29 @@ static int cltool_dataStreaming()
             device->GetData(DID_GPX_STATUS);
             device->WaitForImxFlashCfgSynced();
         }
+    }
+
+    // With validation off, Open() binds a device to every port it finds but opens none of them (validation is what
+    // normally opens a port), so open them here.  connect() without revalidating sends nothing to the device.  This
+    // runs after the relay loop so relay devices keep the handling above.
+    if (g_commandLineOptions.disableDeviceValidation) {
+        bool anyConnected = false;
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (!device)
+                continue;
+            if (portIsOpened(device->port)) {
+                anyConnected = true;
+                continue;
+            }
+            if (g_relayPortNames.count(device->getPortName()))
+                continue;   // the relay loop already tried this one and reported it
+            if (device->connect())
+                anyConnected = true;
+            else
+                cerr << "Unable to open " << device->getPortName() << endl;
+        }
+        if (!anyConnected)
+            return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
 
     if (g_commandLineOptions.list_devices) {
