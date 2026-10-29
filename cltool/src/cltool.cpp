@@ -872,7 +872,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-nmea"))
-        {   // Listen only.  Like -lm, send nothing to the device (no stop-broadcast or device validation).
+        {   // Listen only.  Send nothing to the device (no stop-broadcast, device validation, or data requests).
             g_commandLineOptions.nmeaRx = true;
             g_commandLineOptions.listenMode = true;
             g_commandLineOptions.disableDeviceValidation = true;
@@ -1446,7 +1446,7 @@ void cltool_outputUsage()
     cout << "         " << boldOff << "  m<MODE>   SPI clock/phase mode 0-3 (default: 3)." << endlbOn;
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
-	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
+	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPC` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
     cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
@@ -1457,10 +1457,11 @@ void cltool_outputUsage()
     cout << boldOff << "                    Relay connections are annotated with name 'cltool', this command line as the purpose, and priority" << endlbOn;
     cout << boldOff << "                    high during a firmware update (normal otherwise). Override with the environment variables" << endlbOn;
     cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
-    cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
+    cout << "    -lm" << boldOff << "             Listen mode for ISB. Does not send the stop-broadcast command on start, so the device's current output" << endlbOn;
+    cout << boldOff << "                    is left unchanged. Disables device validation (-vd). Requests such as -did and -edit are still sent." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send stop-broadcast command `$STPC`, then NMEA message s with added checksum footer. Display rx NMEA. (`-nmea=ASCE,0,GxGGA,1`) With s empty (`-nmea=`), only sends `$STPC`." << endlbOn;
-    cout << "    -nmea" << boldOff << "           Listen mode for NMEA. Displays rx NMEA and sends nothing to the device (like -lm)." << endlbOn;
+    cout << "    -nmea" << boldOff << "           Listen mode for NMEA. Displays rx NMEA and sends nothing to the device." << endlbOn;
     cout << boldOff << "                    Only rx NMEA with a valid checksum is displayed, timestamped. Works with any -c port type. Runs until 'q' or -dur." << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
@@ -1470,6 +1471,7 @@ void cltool_outputUsage()
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
     cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
+    cout << boldOff << "                    Still sends the stop-broadcast command on start (use -lm to skip it)." << endlbOn;
     cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
     cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
