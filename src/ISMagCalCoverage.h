@@ -337,10 +337,10 @@ static inline float magCalSphereFitPctOf(const mag_cal_coverage_t *c)
     return magCalSphereFitPct(c->cells, (c->flags & MAG_CAL_FLAG_REQUIRED_VALID) ? c->required : NULL);
 }
 
-/** Sphere fit (percent) below which a host should say the calibration only covers PART of the sphere. Provisional: the value is for GNC to confirm.
+/** Sphere fit (percent) below which a host should say the calibration only covers PART of the sphere. The value is the one basic multi-axis completion holds to (agreed with GNC, Alex).
  *  The firmware's quality verdict (GOOD/DEGRADED/POOR) is about how well the calibrated field agrees with itself where it was sampled, so a calibration
  *  that covers half the sphere can still read GOOD. A host uses magCalCoverageLimited() to say so; it is information only and never blocks anything. */
-#define MAG_CAL_FIT_ADEQUATE_PCT    70
+#define MAG_CAL_FIT_ADEQUATE_PCT    MAG_CAL_HOLD_BASIC_PCT       // the same number the basic multi-axis hold uses
 
 /** True when the coverage map is known and its sphere fit is below MAG_CAL_FIT_ADEQUATE_PCT. False (= say nothing) when the map is unknown, e.g. a calibration restored from an older firmware. */
 static inline int magCalCoverageLimited(const mag_cal_coverage_t *c)
@@ -352,7 +352,7 @@ static inline int magCalCoverageLimited(const mag_cal_coverage_t *c)
 static inline const char *magCalReasonText(unsigned reason)
 {
     static const char *t[] = { "", "rotate faster", "turn about the vertical axis", "field unsteady / interference", "area full",
-                               "fit not accepted yet", "norm check not passed yet", "mode unsupported", "extended mode: keep covering the sphere (Finish to accept)" };
+                               "fit not accepted yet", "norm check not passed yet", "mode unsupported", "keep covering the sphere (Finish to accept)" };
     return reason < 9 ? t[reason] : "";
 }
 

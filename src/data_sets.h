@@ -2347,7 +2347,7 @@ enum eMagCalState
 {
     MAG_CAL_STATE_DO_NOTHING                = (int)0,    //!< No command / idle, no calibration in progress
 
-    MAG_CAL_STATE_MULTI_AXIS                = (int)1,    //!< COMMAND: Recalibrate magnetometers using multiple axis
+    MAG_CAL_STATE_MULTI_AXIS                = (int)1,    //!< COMMAND: Recalibrate magnetometers using multiple axis. Completes when the algorithm's own criteria are met AND the sphere fit (see magCalSphereFitPct) reaches MAG_CAL_HOLD_BASIC_PCT: the same hold as MAG_CAL_STATE_MULTI_AXIS_EXTENDED with a lower target. MAG_CAL_STATE_FINISH releases it and MAG_CAL_STATE_ABORT cancels it
 
     MAG_CAL_STATE_SINGLE_AXIS               = (int)2,    //!< COMMAND: Recalibrate magnetometers using only one axis
 
@@ -2482,6 +2482,7 @@ typedef struct PACKED
     uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
 } mag_cal_coverage_t;
 #define MAG_CAL_HOLD_TARGET_PCT     85      //!< Sphere fit (percent) at which MAG_CAL_STATE_MULTI_AXIS_EXTENDED lets the calibration complete
+#define MAG_CAL_HOLD_BASIC_PCT      70      //!< Sphere fit (percent) at which MAG_CAL_STATE_MULTI_AXIS (basic) lets the calibration complete. The algorithm's own criterion alone (MAG_CAL_SURF_SPAN) is a coverage of 48 field-direction bins, which in practice ends at a 44 to 59 percent sphere fit
 #define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
 #define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.guidePhase: no guidance
 #define MAG_CAL_CHOOSER_PER_CALL    12      //!< Candidates the planner evaluates per status update (each is a circle of 180 steps), so the whole scan takes about ten updates
