@@ -2441,6 +2441,7 @@ enum eMagCalCoverageFlags
     MAG_CAL_FLAG_QUALITY_HELD   = 0x10, //!< The quality verdict is being held: the device is turning too fast for it to be evaluated reliably
     MAG_CAL_FLAG_GRAVITY_VALID  = 0x20, //!< gravDir is meaningful (the accelerometer reads about 1 g)
     MAG_CAL_FLAG_INCL_VALID     = 0x40, //!< inclSin is meaningful (enough samples have been seen to estimate the inclination)
+    MAG_CAL_FLAG_HOLD_ACTIVE    = 0x80, //!< An Extended/Manual hold is in force: the calibration will not complete until the sphere fit reaches its target (Extended) or the host releases it (Finish)
 };
 
 /** @brief mag_cal_coverage_t.guidePhase */
