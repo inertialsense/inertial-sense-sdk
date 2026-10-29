@@ -337,6 +337,17 @@ static inline float magCalSphereFitPctOf(const mag_cal_coverage_t *c)
     return magCalSphereFitPct(c->cells, (c->flags & MAG_CAL_FLAG_REQUIRED_VALID) ? c->required : NULL);
 }
 
+/** Sphere fit (percent) below which a host should say the calibration only covers PART of the sphere. Provisional: the value is for GNC to confirm.
+ *  The firmware's quality verdict (GOOD/DEGRADED/POOR) is about how well the calibrated field agrees with itself where it was sampled, so a calibration
+ *  that covers half the sphere can still read GOOD. A host uses magCalCoverageLimited() to say so; it is information only and never blocks anything. */
+#define MAG_CAL_FIT_ADEQUATE_PCT    70
+
+/** True when the coverage map is known and its sphere fit is below MAG_CAL_FIT_ADEQUATE_PCT. False (= say nothing) when the map is unknown, e.g. a calibration restored from an older firmware. */
+static inline int magCalCoverageLimited(const mag_cal_coverage_t *c)
+{
+    return (c->flags & MAG_CAL_FLAG_COVERAGE_VALID) && magCalSphereFitPctOf(c) < (float)MAG_CAL_FIT_ADEQUATE_PCT;
+}
+
 /** Why the calibration is not advancing, as a short phrase (empty when there is nothing to say). */
 static inline const char *magCalReasonText(unsigned reason)
 {

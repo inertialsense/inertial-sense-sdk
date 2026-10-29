@@ -110,6 +110,20 @@ TEST(MagCalCoverage, RequiredMaskAndStats)
     s.requiredCells = 0; EXPECT_EQ(magCalProgressPct(&s), 0);      // nothing required: no divide by zero
 }
 
+TEST(MagCalCoverage, LimitedCoverageIsFlaggedOnlyWhenTheMapIsKnownAndSmall)
+{
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
+    m.flags |= MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID;
+    for (unsigned i = 0; i < 48; i++) magCalCellSet(&m, i, 15);                      // well under half the sphere
+    EXPECT_LT(magCalSphereFitPctOf(&m), (float)MAG_CAL_FIT_ADEQUATE_PCT);
+    EXPECT_TRUE(magCalCoverageLimited(&m));
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&m, i, 15);      // the whole sphere
+    EXPECT_FALSE(magCalCoverageLimited(&m));
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++) magCalCellSet(&m, i, 0);
+    m.flags &= ~MAG_CAL_FLAG_COVERAGE_VALID;                                          // map unknown (restored from an older firmware): say nothing
+    EXPECT_FALSE(magCalCoverageLimited(&m));
+}
+
 // ---- Gravity-referenced pose guidance ---------------------------------------------------------------------------------------
 mag_cal_coverage_t full()
 {
