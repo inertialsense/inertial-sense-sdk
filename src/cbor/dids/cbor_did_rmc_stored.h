@@ -1,6 +1,6 @@
 /**
  * @file cbor_did_rmc_stored.h
- * @brief RMC_STORED: CBOR-only DID, served by IMX-5, IMX-6, GPX-1. Field keys.
+ * @brief RMC_STORED: CBOR-only DID, served by IMX-5, IMX-6. Field keys.
  *
  * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
  *
