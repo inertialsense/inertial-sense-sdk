@@ -744,6 +744,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {
         // Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.state: 200=in progress, 201=done).
         inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
+        // Also stream the coverage map, lifecycle and failure reason (DID_MAG_CAL_COVERAGE) so progress can be explained, not just counted.
+        inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL_COVERAGE, 200);
         // Enable mag recal
         inertialSenseInterface.SendData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, state));
     }

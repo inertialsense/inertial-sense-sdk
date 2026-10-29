@@ -184,6 +184,8 @@ typedef uint32_t eDataIDs;
 // covering position/velocity/speed/heading/attitude/IMU/config with full covariance) was proposed
 // under SN-7740. The flat DIDs above are the initial subset; see SN-7740 before adding more.
 
+#define DID_MAG_CAL_COVERAGE            (eDataIDs)113   /**< (mag_cal_coverage_t) Magnetometer calibration lifecycle, quality and sensor-frame sample coverage map. Read-only; supersedes DID_MAG_CAL.progress for monitoring a recalibration. */
+
 #define DID_EVENT                       (eDataIDs)119   /**< INTERNAL USE ONLY (did_event_t)*/
 
 #define DID_GPX_FIRST                   (eDataIDs)120   /**< First of GPX DIDs */
@@ -2349,7 +2351,13 @@ enum eMagCalState
 
     MAG_CAL_STATE_SINGLE_AXIS               = (int)2,    //!< COMMAND: Recalibrate magnetometers using only one axis
 
+    MAG_CAL_STATE_MULTI_AXIS_EXTENDED       = (int)3,    //!< COMMAND: Multi-axis recalibration that does NOT complete when the algorithm's own criteria are met: it keeps collecting until the sphere fit (see magCalSphereFitPct) reaches MAG_CAL_HOLD_TARGET_PCT, or until MAG_CAL_STATE_FINISH. MAG_CAL_STATE_ABORT cancels it
+
+    MAG_CAL_STATE_MULTI_AXIS_MANUAL         = (int)4,    //!< COMMAND: Multi-axis recalibration that keeps collecting indefinitely, until MAG_CAL_STATE_FINISH (accept) or MAG_CAL_STATE_ABORT (cancel)
+
     MAG_CAL_STATE_ABORT                     = (int)101,  //!< COMMAND: Stop mag recalibration and do not save results
+
+    MAG_CAL_STATE_FINISH                    = (int)102,  //!< COMMAND: Release an extended/manual hold: the calibration completes as soon as the algorithm's own criteria are met
 
     MAG_CAL_STATE_RECAL_RUNNING             = (int)200,  //!< STATUS: Mag recalibration is in progress
 
@@ -2363,10 +2371,128 @@ typedef struct PACKED
 {
     uint32_t                    state;          //!< Mag recalibration command/status.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState)
 
-    float                       progress;       //!< (%) Mag recalibration progress indicator: 0-100
+    float                       progress;       //!< (%) Mag recalibration progress indicator: 0-100. Derived from DID_MAG_CAL_COVERAGE.progressPct: reaches 100 only once the calibration has been applied (state 201).
 
     float                       declination;    //!< (rad) Magnetic declination estimate
 } mag_cal_t;
+
+/** @brief Number of equal-area cells in the magnetometer coverage map, and the layout of those cells (mag_cal_coverage_t.cellScheme). */
+enum eMagCalCellScheme
+{
+    MAG_CAL_CELLS_8Z_16LON      = 0,    //!< 128 equal-area cells: 8 bands of equal sin(latitude) width x 16 longitude sectors. Index = z_band*16 + lon_sector, see ISMagCalCoverage.h
+};
+#define MAG_CAL_CELL_COUNT          128     //!< Cells in the coverage map (MAG_CAL_CELLS_8Z_16LON)
+#define MAG_CAL_CELL_Z_BANDS        8       //!< Latitude bands (equal sin(lat) width, so every cell has the same solid angle)
+#define MAG_CAL_CELL_LON_SECTORS    16      //!< Longitude sectors per band
+#define MAG_CAL_CELL_SATURATED      15      //!< Per-cell sample counts are 4-bit and saturate at this value
+
+/** @brief Magnetometer calibration lifecycle (mag_cal_coverage_t.lifecycle). Status only; commands are still written to DID_MAG_CAL.state. */
+enum eMagCalLifecycle
+{
+    MAG_CAL_LC_NOT_CALIBRATED   = 0,    //!< No valid calibration and none running
+    MAG_CAL_LC_COLLECTING       = 1,    //!< Recalibration running, gathering samples
+    MAG_CAL_LC_FITTING          = 2,    //!< Required coverage reached; fit attempted but not yet accepted (see reason)
+    MAG_CAL_LC_COMPLETE         = 3,    //!< Fit accepted and applied. The only lifecycle in which progressPct may be 100
+    MAG_CAL_LC_ABORTED          = 4,    //!< Aborted by the host; the previous calibration was restored
+    MAG_CAL_LC_NOT_SUPPORTED    = 5,    //!< Requested mode is not supported by the current configuration
+    MAG_CAL_LC_CALIBRATED       = 6,    //!< Idle with a valid calibration (loaded from flash, or completed earlier)
+};
+
+/** @brief Why a recalibration is not advancing or the fit was not accepted (mag_cal_coverage_t.reason). One reason, highest priority first. */
+enum eMagCalReason
+{
+    MAG_CAL_REASON_NONE             = 0,
+    MAG_CAL_REASON_ROTATION_SLOW    = 1,    //!< Angular rate below the calibration minimum
+    MAG_CAL_REASON_WRONG_AXIS       = 2,    //!< Single-axis: not rotating about the vertical axis
+    MAG_CAL_REASON_FIELD_UNSTEADY   = 3,    //!< Interference or non-stationary field
+    MAG_CAL_REASON_REGION_FULL      = 4,    //!< Samples falling in already-saturated cells; rotate toward the target (guideRot)
+    MAG_CAL_REASON_FIT_REJECTED     = 5,    //!< Least-squares fit failed (singular, not an ellipsoid, or not converged)
+    MAG_CAL_REASON_NORM_CHECK       = 6,    //!< Fit produced, but the calibrated field magnitude was out of tolerance
+    MAG_CAL_REASON_MODE_UNSUPPORTED = 7,    //!< Requested recalibration mode is not supported
+    MAG_CAL_REASON_HOLDING          = 8,    //!< Extended/manual mode: the calibration could complete but is being held for a better sphere fit (or MAG_CAL_STATE_FINISH)
+};
+
+/** @brief Quality of the current calibration (mag_cal_coverage_t.quality), derived from fitQuality (Tcal) against DID_FLASH_CONFIG.magCalibrationQualityThreshold. */
+enum eMagCalQuality
+{
+    MAG_CAL_QUALITY_NONE        = 0,    //!< No calibration
+    MAG_CAL_QUALITY_POOR        = 1,    //!< Tcal >= threshold, or calibration not good
+    MAG_CAL_QUALITY_DEGRADED    = 2,    //!< Between the low and high thresholds
+    MAG_CAL_QUALITY_GOOD        = 3,    //!< Tcal <= low threshold
+    MAG_CAL_QUALITY_UNKNOWN     = 255,  //!< Not yet evaluated (e.g. just booted and buffers still filling)
+};
+
+/** @brief mag_cal_coverage_t.qualityWhy: the term of the quality metric (Tcal = max(static-field variance, 20 x field-magnitude error)) that keeps the verdict from being GOOD */
+enum eMagCalQualityWhy
+{
+    MAG_CAL_WHY_NONE            = 0,    //!< Nothing wrong (or no verdict yet)
+    MAG_CAL_WHY_FIELD_VARIES    = 1,    //!< The buffered field vectors disagree after rotating them into the current frame: interference that is changing, or motion/gyro error
+    MAG_CAL_WHY_NORM_OFF        = 2,    //!< The calibrated field magnitude differs from 1.0 enough to matter: the calibration does not fit the field here (see normErrPct)
+    MAG_CAL_WHY_NORM_INVALID    = 3,    //!< The calibrated field magnitude is more than 15% off: the calibration is not valid for this field at all (different place, nearby magnet or steel)
+};
+
+/** @brief mag_cal_coverage_t.flags */
+enum eMagCalCoverageFlags
+{
+    MAG_CAL_FLAG_COVERAGE_VALID = 0x01, //!< cells[] describe the samples behind the current calibration. Clear when the map is unknown (e.g. calibration restored from an older firmware's flash).
+    MAG_CAL_FLAG_REQUIRED_VALID = 0x02, //!< required[] is meaningful; if clear, treat every cell as required
+    MAG_CAL_FLAG_AUTO_RECAL     = 0x04, //!< Recalibration was started automatically rather than by the host
+    MAG_CAL_FLAG_FIELD_STEADY   = 0x08, //!< Field currently passes the stationary-field test
+    MAG_CAL_FLAG_QUALITY_HELD   = 0x10, //!< The quality verdict is being held: the device is turning too fast for it to be evaluated reliably
+    MAG_CAL_FLAG_GRAVITY_VALID  = 0x20, //!< gravDir is meaningful (the accelerometer reads about 1 g)
+    MAG_CAL_FLAG_INCL_VALID     = 0x40, //!< inclSin is meaningful (enough samples have been seen to estimate the inclination)
+    MAG_CAL_FLAG_HOLD_ACTIVE    = 0x80, //!< An Extended/Manual hold is in force: the calibration will not complete until the sphere fit reaches its target (Extended) or the host releases it (Finish)
+};
+
+/** @brief mag_cal_coverage_t.guidePhase */
+enum eMagCalGuidePhase
+{
+    MAG_CAL_PHASE_NONE = 0,     //!< No guidance
+    MAG_CAL_PHASE_AIM  = 1,     //!< Tilt the device until poseDir points at the floor (poseErrDeg to go)
+    MAG_CAL_PHASE_TURN = 2,     //!< Keep poseDir pointed at the floor and turn slowly all the way round about the vertical (ringPct done)
+};
+
+/** @brief (DID_MAG_CAL_COVERAGE) Magnetometer calibration status and sample coverage. Read-only.
+ *  Cells are in the SENSOR (body) frame: each cell is a direction of the measured field vector. A host that wants an attitude- or
+ *  world-referenced view rotates the cells using the INS attitude, so no additional data is needed on the wire. */
+typedef struct PACKED
+{
+    uint32_t                    timeOfWeekMs;   //!< (ms) GPS time of week
+    uint8_t                     cellScheme;     //!< Cell layout (eMagCalCellScheme)
+    uint8_t                     lifecycle;      //!< (eMagCalLifecycle)
+    uint8_t                     mode;           //!< Mode that started the recalibration: MAG_CAL_STATE_MULTI_AXIS (1) or MAG_CAL_STATE_SINGLE_AXIS (2)
+    uint8_t                     reason;         //!< Why not advancing / fit not accepted (eMagCalReason)
+    uint8_t                     quality;        //!< Quality of the current calibration (eMagCalQuality)
+    uint8_t                     progressPct;    //!< (%) 0-100 of REQUIRED coverage. Capped at 99 until lifecycle == MAG_CAL_LC_COMPLETE
+    uint8_t                     coveragePct;    //!< (%) 0-100 of ALL cells holding at least MAG_CAL_COVERAGE_MIN_COUNT samples (informational)
+    uint8_t                     flags;          //!< (eMagCalCoverageFlags)
+    float                       fitQuality;     //!< Calibration quality metric Tcal (lower is better); compare with DID_FLASH_CONFIG.magCalibrationQualityThreshold
+    uint32_t                    sampleCount;    //!< Samples in the least-squares accumulator
+    int8_t                      poseDir[3];     //!< Guidance pose: the part of the device that should point at the FLOOR, as a body-frame unit vector x127 (e.g. +Z axis = 0,0,127; an edge = two components at 90). All zero when there is no guidance
+    uint8_t                     guidePhase;     //!< (eMagCalGuidePhase) AIM at the floor with poseDir, then TURN slowly about the vertical. MAG_CAL_GUIDE_NONE (0) = no guidance, so a zeroed packet means none
+    int8_t                      fieldDir[3];    //!< Current measured field direction in the sensor frame (unit vector x127), i.e. where the "now" marker sits on the map
+    uint8_t                     fitStage;       //!< Diagnostic: which check rejected the most recent calibration fit, 0 = none (1 too few samples, 2 r2<=0, 3 no positive eigenvalue, 4 bad eigenvector, 5 not an ellipsoid, 6 not positive definite, 7 sphere conversion failed, 8 per-sample norm tolerance, 9 single-axis fit)
+    uint8_t                     poseErrDeg;     //!< (deg) Angle between the floor direction and poseDir: how far still to tilt (0..180)
+    uint8_t                     ringPct;        //!< (%) How far round one full turn about the vertical the device has gone (0..100; net rotation measured by the gyro against gravity). 0 while aiming, never decreases during a turn
+    int8_t                      gravDir[3];     //!< Direction of the FLOOR in the sensor frame (unit vector x127), from the accelerometer. A host can draw it as the arrow that should line up with poseDir
+    int8_t                      inclSin;        //!< sin(inclination) x127: the firmware's own running estimate of field . floor, which sizes the pose ring. Valid when MAG_CAL_FLAG_INCL_VALID is set
+    uint8_t                     qualityWhy;     //!< Why the quality verdict is not GOOD (eMagCalQualityWhy). MAG_CAL_WHY_NONE while good, and while no verdict has been computed yet
+    uint8_t                     normErrPct;     //!< (%) How far the calibrated field magnitude is from the expected 1.0 in the last verdict (0..255)
+    uint8_t                     required[MAG_CAL_CELL_COUNT / 8];   //!< 1 bit per cell (LSB first): cell must be covered. Single-axis marks only its own region
+    uint8_t                     cells[MAG_CAL_CELL_COUNT / 2];      //!< 4-bit saturating sample count per cell. Even cell index = low nibble
+} mag_cal_coverage_t;
+#define MAG_CAL_HOLD_TARGET_PCT     85      //!< Sphere fit (percent) at which MAG_CAL_STATE_MULTI_AXIS_EXTENDED lets the calibration complete
+#define MAG_CAL_COVERAGE_MIN_COUNT  3       //!< A cell counts as covered once it holds this many samples
+#define MAG_CAL_GUIDE_NONE          0       //!< mag_cal_coverage_t.guidePhase: no guidance
+#define MAG_CAL_CHOOSER_PER_CALL    12      //!< Candidates the planner evaluates per status update (each is a circle of 180 steps), so the whole scan takes about ten updates
+#define MAG_CAL_POSE_AIM_DEG        20      //!< AIM becomes TURN once the marker is within this angle of pointing at the floor
+#define MAG_CAL_POSE_LOSE_DEG       40      //!< TURN falls back to AIM if the marker drifts beyond this angle (wide hysteresis: hand wobble must not flip the instruction)
+#define MAG_CAL_POSE_MIN_DWELL_MS   2500    //!< An instruction (AIM or TURN) stays up at least this long before it can change, so the text never flutters
+#define MAG_CAL_SINGLE_AXIS_SPAN_DEG 380    //!< Single-axis: the device must have been turned this far (the extent of the turning angle reached, either way, slightly more than a full turn) before the calibration can complete
+#define MAG_CAL_TURN_DONE_DEG       340     //!< A turn is complete once the device has been turned this far (net) about the vertical
+#define MAG_CAL_TURN_PROGRESS_RAD   0.0873f //!< Turning further than this (5 deg) counts as progress for the stall timer
+#define MAG_CAL_POSE_TIMEOUT_MS     120000  //!< A pose that is not finished after this long is dropped (the user may not be able to do it where they are). Was 40 s; tripled for development/testing so a demo is not hurried along
+#define MAG_CAL_POSE_STALL_MS       45000   //!< A turn that has covered nothing new for this long is dropped. Was 15 s; tripled likewise
 
 /** @brief (DID_INL2_MAG_OBS_INFO) INL2 magnetometer observer diagnostic/calibration info. Reports the internal state of the online magnetometer bias/cross-axis calibration and heading-innovation gating used by the INL2 EKF to accept or reject magnetometer updates. */
 typedef struct PACKED
@@ -5452,6 +5578,7 @@ typedef union PACKED
     imus_t                          imus;           //!< DID_IMUS / DID_IMUS_RAW / DID_IMUS_UNCAL
     magnetometer_t                  mag;            //!< DID_MAGNETOMETER / DID_REFERENCE_MAGNETOMETER
     mag_cal_t                       magCal;         //!< DID_MAG_CAL
+    mag_cal_coverage_t              magCalCoverage; //!< DID_MAG_CAL_COVERAGE
     barometer_t                     baro;           //!< DID_BAROMETER
     wheel_encoder_t                 wheelEncoder;   //!< DID_WHEEL_ENCODER
     ground_vehicle_t                groundVehicle;  //!< DID_GROUND_VEHICLE

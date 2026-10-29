@@ -309,6 +309,7 @@ public:
      * @return a formatted, human-readable string describing mag
      */
     std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
+    std::string DataToStringMagCalCoverage(const mag_cal_coverage_t &cov, const p_data_hdr_t& hdr);
 
     /**
      * @param ver the GNSS receiver version data set to format
@@ -539,6 +540,8 @@ private:
 
     bool m_nonblockingkeyboard = false;
     std::vector<std::string> m_didMsgs;
+    mag_cal_coverage_t m_lastMagCalCov = {};     // last DID_MAG_CAL_COVERAGE shown, to decide when to ring the terminal bell
+    bool m_lastMagCalCovValid = false;
     eDisplayMode m_displayMode = DMODE_QUIET;
     uint32_t m_startMs = 0;
     device_handle_t m_device = NULL;
