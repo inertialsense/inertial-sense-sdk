@@ -4609,6 +4609,14 @@ class logPlot:
             if np.any(timeRef):
                 refImuPresent = True
 
+        # The raw IMU delta timestamp comes from DID_IMUS_RAW, or from DID_IMU_RAW when the log has no DID_IMUS_RAW
+        imusRawPresent = any(self.getData(d, DID_IMUS_RAW, 'time').size for d in self.active_devs_no_ref)
+        imuRawPresent  = any(self.getData(d, DID_IMU_RAW, 'time').size for d in self.active_devs_no_ref)
+        if not imusRawPresent and imuRawPresent:
+            rawImuDid, rawImuName = DID_IMU_RAW, 'IMU'
+        else:
+            rawImuDid, rawImuName = DID_IMUS_RAW, 'IMUS'
+
         N = 6
         if refImuPresent:
             N = N + 2
@@ -4618,7 +4626,7 @@ class logPlot:
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GNSS1 dt', 's')
         self.configureSubplot(ax[2], 'GNSS2 dt', 's')
-        self.configureSubplot(ax[3], 'IMUS Delta Timestamp', 's')
+        self.configureSubplot(ax[3], f'{rawImuName} Delta Timestamp', 's')
         self.configureSubplot(ax[4], 'PIMU Delta Timestamp', 's')
         self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
@@ -4659,7 +4667,7 @@ class logPlot:
             timeImusX = np.array([])
             timePimu = self.getData(d, DID_PIMU, 'time', downsample=False)
             timeIMU  = self.getData(d, DID_IMU, 'time', downsample=False)
-            timeImusFull = self.getData(d, DID_IMUS_RAW, 'time', downsample=False)
+            timeImusFull = self.getData(d, rawImuDid, 'time', downsample=False)
             if timePimu.size:
                 timeImuAll = getTimeFromGpsTow(timePimu + towOffset)
                 deltaTimestamp = np.diff(timePimu)[::self.d]
@@ -4704,7 +4712,7 @@ class logPlot:
             self.configureSubplot(ax[1], f'GNSS1 dt: {1000.0*np.mean(dtGnss1):.3f} ms', 's')
             self.configureSubplot(ax[2], f'GNSS2 dt: {1000.0*np.mean(dtGnss2):.3f} ms', 's')
             if deltaImusTimestamp.size > 0:
-                self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {1000.0*np.mean(deltaImusTimestamp):.3f} ms', 's')
+                self.configureSubplot(ax[3], f'{rawImuName} Delta Timestamp: {1000.0*np.mean(deltaImusTimestamp):.3f} ms', 's')
             self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {1000.0*np.mean(deltaTimestamp):.3f} ms', 's')
             if dtPimu.size:
                 self.configureSubplot(ax[5], f'PIMU Integration Period: {1000.0*np.mean(dtPimu):.3f} ms', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
