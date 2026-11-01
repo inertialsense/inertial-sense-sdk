@@ -298,6 +298,22 @@ static inline const char *magCalQualityWhyText(unsigned why)
 }
 
 /**
+ * 1 when every required cell holds at least MAG_CAL_COVERAGE_MIN_COUNT samples (the map is full), else 0. The "multi-axis, complete" recalibration
+ * (MAG_CAL_STATE_MULTI_AXIS_MANUAL) finishes by itself on this.
+ * @param cells     MAG_CAL_CELL_COUNT/2 bytes of 4-bit counts
+ * @param required  MAG_CAL_CELL_COUNT/8 bytes (bit per cell), or NULL for "every cell is required"
+ */
+static inline int magCalAllRequiredCovered(const uint8_t *cells, const uint8_t *required)
+{
+    for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++)
+    {
+        const int req = required ? ((required[i >> 3] >> (i & 7)) & 1) : 1;
+        if (req && magCalCellsGet(cells, i) < MAG_CAL_COVERAGE_MIN_COUNT) return 0;
+    }
+    return 1;
+}
+
+/**
  * How well the coverage surface matches the unit sphere, in percent: 100 = every required cell holds enough samples, 0 = nothing collected. It is the mean, over the
  * corners of the cell grid, of a per-corner value that leans toward the WORST of the (up to four) cells meeting there, so a few missing cells show clearly instead of
  * being averaged away. Corners are weighted by how much of them is required (and by 1/2 on the two pole rows, which are single points). Defined once here so the

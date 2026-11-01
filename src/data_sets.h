@@ -2353,7 +2353,7 @@ enum eMagCalState
 
     MAG_CAL_STATE_MULTI_AXIS_EXTENDED       = (int)3,    //!< COMMAND: Multi-axis recalibration that does NOT complete when the algorithm's own criteria are met: it keeps collecting until the sphere fit (see magCalSphereFitPct) reaches MAG_CAL_HOLD_TARGET_PCT, or until MAG_CAL_STATE_FINISH. MAG_CAL_STATE_ABORT cancels it
 
-    MAG_CAL_STATE_MULTI_AXIS_MANUAL         = (int)4,    //!< COMMAND: Multi-axis recalibration that keeps collecting indefinitely, until MAG_CAL_STATE_FINISH (accept) or MAG_CAL_STATE_ABORT (cancel)
+    MAG_CAL_STATE_MULTI_AXIS_MANUAL         = (int)4,    //!< COMMAND: Multi-axis recalibration ("complete") that keeps collecting until every cell of the coverage map is populated (then it completes by itself), or until MAG_CAL_STATE_FINISH (accept what there is) or MAG_CAL_STATE_ABORT (cancel)
 
     MAG_CAL_STATE_ABORT                     = (int)101,  //!< COMMAND: Stop mag recalibration and do not save results
 
