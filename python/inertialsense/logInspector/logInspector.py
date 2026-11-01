@@ -487,7 +487,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GNSS Velocity NED', 'gnssVelNED')
 
     def createListGeneral(self):
-        None
+        self.addListItem('Delta Time', 'deltatime')
 
     def setCurrentListRow(self, row):
         if row < self.modelList.rowCount() and row < len(self.functionList):
