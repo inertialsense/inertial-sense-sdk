@@ -1522,60 +1522,60 @@ std::string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, cons
 }
 
 /** Single glyph for a coverage cell: '.' empty, ':' thin, 'o' covered, 'O' well covered, '#' saturated, '-' empty but not required. */
-static char magCalCellGlyph(const mag_cal_coverage_t &cov, unsigned cell)
+static char magCalCellGlyph(const mag_cal_coverage_t &cover, unsigned cell)
 {
-    unsigned n = magCalCellGet(&cov, cell);
-    if (n == 0)                             return magCalCellRequired(&cov, cell) ? '.' : '-';
+    unsigned n = magCalCellGet(&cover, cell);
+    if (n == 0)                             return magCalCellRequired(&cover, cell) ? '.' : '-';
     if (n < MAG_CAL_COVERAGE_MIN_COUNT)     return ':';
     if (n < 6)                              return 'o';
     if (n < MAG_CAL_CELL_SATURATED)         return 'O';
     return '#';
 }
 
-std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_coverage_t &cov, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_coverage_t &cover, const p_data_hdr_t& hdr)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
     // Terminal bell: the instruction changed (move to the next face) or the calibration completed. BEL is non-printing, so the layout is unaffected.
-    for (int i = magCalChimeCount(m_lastMagCalCov, m_lastMagCalCovValid, cov); i > 0 && ptr < ptrEnd - 1; i--) *ptr++ = '\a';
-    m_lastMagCalCov = cov; m_lastMagCalCovValid = true;
+    for (int i = magCalChimeCount(m_lastMagCalCov, m_lastMagCalCoverValid, cover); i > 0 && ptr < ptrEnd - 1; i--) *ptr++ = '\a';
+    m_lastMagCalCov = cover; m_lastMagCalCoverValid = true;
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
     static const char *quality[]   = { "none", "poor", "degraded", "good" };
-    const char *qualityStr = cov.quality < 4 ? quality[cov.quality] : "unknown";
+    const char *qualityStr = cover.quality < 4 ? quality[cover.quality] : "unknown";
 
     // Fixed three-line layout (status, detail, instruction). Every line is kept under 80 columns so none can wrap: a wrapped line
     // changes the line count and makes an in-place redraw jump.
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %s%s  progress %u%%",
-        cov.lifecycle < 7 ? lifecycle[cov.lifecycle] : "?",
-        cov.mode == MAG_CAL_STATE_MULTI_AXIS ? " multi-axis" : (cov.mode == MAG_CAL_STATE_SINGLE_AXIS ? " single-axis" : ""),
-        cov.progressPct);
+        cover.lifecycle < 7 ? lifecycle[cover.lifecycle] : "?",
+        cover.mode == MAG_CAL_STATE_MULTI_AXIS ? " multi-axis" : (cover.mode == MAG_CAL_STATE_SINGLE_AXIS ? " single-axis" : ""),
+        cover.progressPct);
     static const char *fitStageName[] = { "", "few samples", "r2<=0", "no +eigenvalue", "bad eigenvector", "not ellipsoid", "not pos-def", "sphere failed", "norm tolerance", "1-axis fit" };
     char detail[96];
-    SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s%s  Tcal %.1f  samples %u%s%s", cov.coveragePct, qualityStr, (cov.flags & MAG_CAL_FLAG_QUALITY_HELD) ? " (held: turning fast)" : "", cov.fitQuality, cov.sampleCount,
-        (cov.fitStage && cov.fitStage < 10 && cov.lifecycle == MAG_CAL_LC_FITTING) ? "  fit: " : "", (cov.fitStage && cov.fitStage < 10 && cov.lifecycle == MAG_CAL_LC_FITTING) ? fitStageName[cov.fitStage] : "");
+    SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s%s  Tcal %.1f  samples %u%s%s", cover.coveragePct, qualityStr, (cover.flags & MAG_CAL_FLAG_QUALITY_HELD) ? " (held: turning fast)" : "", cover.fitQuality, cover.sampleCount,
+        (cover.fitStage && cover.fitStage < 10 && cover.lifecycle == MAG_CAL_LC_FITTING) ? "  fit: " : "", (cover.fitStage && cover.fitStage < 10 && cover.lifecycle == MAG_CAL_LC_FITTING) ? fitStageName[cover.fitStage] : "");
 
     // Instruction text: shared with EvalTool so every front end says the same thing
     char instr[160] = "";
-    magCalInstruction(&cov, instr, sizeof(instr));
-    const bool haveGuide = magCalHaveGuide(&cov) != 0;
+    magCalInstruction(&cover, instr, sizeof(instr));
+    const bool haveGuide = magCalHaveGuide(&cover) != 0;
     if (strlen(instr) > 74) instr[74] = 0;   // never wider than the line it sits on
 
     // The ring the turn sweeps (cells marked '*' that it will fill): the circle round the floor direction (while turning) or round the pose face (while aiming)
     bool ringOn = false; uint8_t ringMask[MAG_CAL_RING_MASK_BYTES] = { 0 };
     float sinI = 0.0f;
-    if (haveGuide && magCalSinI(&cov, &sinI))
+    if (haveGuide && magCalSinI(&cover, &sinI))
     {
-        const bool turning = cov.guidePhase == MAG_CAL_PHASE_TURN && (cov.flags & MAG_CAL_FLAG_GRAVITY_VALID);
-        const int8_t *ax8 = turning ? cov.gravDir : cov.poseDir;
+        const bool turning = cover.guidePhase == MAG_CAL_PHASE_TURN && (cover.flags & MAG_CAL_FLAG_GRAVITY_VALID);
+        const int8_t *ax8 = turning ? cover.gravDir : cover.poseDir;
         float ax[3] = { ax8[0] / 127.0f, ax8[1] / 127.0f, ax8[2] / 127.0f };
         magCalRingMask(ax, sinI, ringMask); ringOn = true;
     }
     unsigned nowCell = 0xFFFF;      // where the field is pointing now (sensor frame), if known
-    if (cov.fieldDir[0] || cov.fieldDir[1] || cov.fieldDir[2])
-    {   float f[3] = { cov.fieldDir[0] / 127.0f, cov.fieldDir[1] / 127.0f, cov.fieldDir[2] / 127.0f }; unsigned c; if (magCalCellIndexOfVector(f, &c)) nowCell = c; }
+    if (cover.fieldDir[0] || cover.fieldDir[1] || cover.fieldDir[2])
+    {   float f[3] = { cover.fieldDir[0] / 127.0f, cover.fieldDir[1] / 127.0f, cover.fieldDir[2] / 127.0f }; unsigned c; if (magCalCellIndexOfVector(f, &c)) nowCell = c; }
 
     if (m_displayMode == DMODE_PRETTY)
     {   // Map: rows = latitude band (top = +Z in the sensor frame), columns = longitude sector (atan2(y,x), -180 to +180 deg)
@@ -1590,8 +1590,8 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
             for (int l = 0; l < MAG_CAL_CELL_LON_SECTORS && ptr < ptrEnd - 4; l++)
             {
                 unsigned cell = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + l);
-                bool fills = ringOn && magCalRingHas(ringMask, cell) && magCalCellRequired(&cov, cell) && magCalCellGet(&cov, cell) < MAG_CAL_COVERAGE_MIN_COUNT;
-                *ptr++ = (cell == nowCell) ? '@' : (fills ? '*' : magCalCellGlyph(cov, cell));      // where the field is now always shows
+                bool fills = ringOn && magCalRingHas(ringMask, cell) && magCalCellRequired(&cover, cell) && magCalCellGet(&cover, cell) < MAG_CAL_COVERAGE_MIN_COUNT;
+                *ptr++ = (cell == nowCell) ? '@' : (fills ? '*' : magCalCellGlyph(cover, cell));      // where the field is now always shows
                 *ptr++ = ' ';
             }
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");

@@ -113,11 +113,11 @@ typedef struct
     unsigned requiredCells;      //!< cells flagged required
     unsigned requiredCovered;    //!< required cells with at least MAG_CAL_COVERAGE_MIN_COUNT samples
     unsigned coveredCells;       //!< all cells with at least MAG_CAL_COVERAGE_MIN_COUNT samples
-} mag_cal_cov_stats_t;
+} mag_cal_cover_stats_t;
 
-static inline mag_cal_cov_stats_t magCalCoverageStats(const mag_cal_coverage_t *m)
+static inline mag_cal_cover_stats_t magCalCoverageStats(const mag_cal_coverage_t *m)
 {
-    mag_cal_cov_stats_t s = { 0, 0, 0 };
+    mag_cal_cover_stats_t s = { 0, 0, 0 };
     for (unsigned i = 0; i < MAG_CAL_CELL_COUNT; i++)
     {
         int covered = magCalCellGet(m, i) >= MAG_CAL_COVERAGE_MIN_COUNT;
@@ -130,7 +130,7 @@ static inline mag_cal_cov_stats_t magCalCoverageStats(const mag_cal_coverage_t *
 }
 
 /** Percent (0..100) of required cells covered. 0 if nothing is required. */
-static inline uint8_t magCalProgressPct(const mag_cal_cov_stats_t *s)
+static inline uint8_t magCalProgressPct(const mag_cal_cover_stats_t *s)
 {
     return s->requiredCells ? (uint8_t)((100u * s->requiredCovered) / s->requiredCells) : 0;
 }
@@ -386,25 +386,25 @@ static inline int magCalHaveGuide(const mag_cal_coverage_t *c)
 }
 
 /** The one-line instruction shown to the user by every front end (cltool, EvalTool): same words everywhere. */
-static inline void magCalInstruction(const mag_cal_coverage_t *cov, char *out, size_t cap)
+static inline void magCalInstruction(const mag_cal_coverage_t *cover, char *out, size_t cap)
 {
     size_t il = 0; char tmp[120]; out[0] = 0;
-    const int fitProblem = (cov->reason == MAG_CAL_REASON_FIT_REJECTED || cov->reason == MAG_CAL_REASON_NORM_CHECK);
-    const int haveGuide = magCalHaveGuide(cov);
-    if (cov->reason != MAG_CAL_REASON_NONE && cov->reason < 9 && cov->reason != MAG_CAL_REASON_REGION_FULL)
+    const int fitProblem = (cover->reason == MAG_CAL_REASON_FIT_REJECTED || cover->reason == MAG_CAL_REASON_NORM_CHECK);
+    const int haveGuide = magCalHaveGuide(cover);
+    if (cover->reason != MAG_CAL_REASON_NONE && cover->reason < 9 && cover->reason != MAG_CAL_REASON_REGION_FULL)
     {
-        if (fitProblem && !haveGuide) { snprintf(tmp, sizeof(tmp), "%s - the map is complete, more rotation will not help", magCalReasonText(cov->reason)); magCalAppend(out, cap, &il, "; ", tmp); }   // only when nothing is left to cover
-        else magCalAppend(out, cap, &il, "; ", magCalReasonText(cov->reason));
+        if (fitProblem && !haveGuide) { snprintf(tmp, sizeof(tmp), "%s - the map is complete, more rotation will not help", magCalReasonText(cover->reason)); magCalAppend(out, cap, &il, "; ", tmp); }   // only when nothing is left to cover
+        else magCalAppend(out, cap, &il, "; ", magCalReasonText(cover->reason));
     }
     if (haveGuide)
     {   // Pose guidance relative to the FLOOR: easy to judge by eye. Shown even while a fit is being retried: gaps still help.
-        if (cov->guidePhase == MAG_CAL_PHASE_AIM) snprintf(tmp, sizeof(tmp), "tilt the device until the marker points at the floor: %u deg to go", (unsigned)cov->poseErrDeg);
-        else snprintf(tmp, sizeof(tmp), "keep the marker down; turn slowly in place, like a turntable (turn %u%%)", (unsigned)cov->ringPct);
+        if (cover->guidePhase == MAG_CAL_PHASE_AIM) snprintf(tmp, sizeof(tmp), "tilt the device until the marker points at the floor: %u deg to go", (unsigned)cover->poseErrDeg);
+        else snprintf(tmp, sizeof(tmp), "keep the marker down; turn slowly in place, like a turntable (turn %u%%)", (unsigned)cover->ringPct);
         magCalAppend(out, cap, &il, "; ", tmp);
     }
-    else if (!fitProblem && cov->lifecycle == MAG_CAL_LC_COLLECTING && cov->mode == MAG_CAL_STATE_SINGLE_AXIS && cov->reason == MAG_CAL_REASON_NONE)
+    else if (!fitProblem && cover->lifecycle == MAG_CAL_LC_COLLECTING && cover->mode == MAG_CAL_STATE_SINGLE_AXIS && cover->reason == MAG_CAL_REASON_NONE)
         magCalAppend(out, cap, &il, "; ", "keep turning about the vertical axis");
-    if (!(cov->flags & MAG_CAL_FLAG_COVERAGE_VALID)) magCalAppend(out, cap, &il, "; ", "coverage map unknown");
+    if (!(cover->flags & MAG_CAL_FLAG_COVERAGE_VALID)) magCalAppend(out, cap, &il, "; ", "coverage map unknown");
 }
 
 #ifdef __cplusplus
