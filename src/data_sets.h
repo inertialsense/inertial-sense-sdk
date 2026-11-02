@@ -2355,6 +2355,8 @@ enum eMagCalState
 
     MAG_CAL_STATE_MULTI_AXIS_MANUAL         = (int)4,    //!< COMMAND: Multi-axis recalibration ("complete") that keeps collecting until every cell of the coverage map is populated (then it completes by itself), or until MAG_CAL_STATE_FINISH (accept what there is) or MAG_CAL_STATE_ABORT (cancel)
 
+    MAG_CAL_STATE_MULTI_AXIS_CLASSIC        = (int)5,    //!< COMMAND: Multi-axis recalibration as documented on docs.inertialsense.com: completes when the algorithm's own criteria are met (data across at least two axes, one of them yaw, over a sufficient angular span), with NO sphere-fit hold. Generally a lower-quality calibration than MAG_CAL_STATE_MULTI_AXIS. MAG_CAL_STATE_ABORT cancels it
+
     MAG_CAL_STATE_ABORT                     = (int)101,  //!< COMMAND: Stop mag recalibration and do not save results
 
     MAG_CAL_STATE_FINISH                    = (int)102,  //!< COMMAND: Release an extended/manual hold: the calibration completes as soon as the algorithm's own criteria are met
