@@ -433,41 +433,42 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
         if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
         serialNum = stoi(str);
 
-        // The remaining underscore-delimited tokens carry the index and, where the writer supplied
-        // them, the date and time.  Tokens that are neither are skipped rather than failing the
-        // parse, because callers need the serial number and the index while the date and time are
-        // only descriptive, and names can carry other text in between: a tag some tools embed
-        // (e.g. "..._225101_no_f9p_0001.dat"), or the name of the source log folder, which
-        // NavPostProcess embeds in the files it writes.
         vector<string> tokens;
         while (getline(ss, str, '_'))
         {
             tokens.push_back(str);
         }
+        size_t next = 0;
 
-        // Index is the last token that starts with a digit
-        int indexToken = -1;
-        for (int i = (int)tokens.size() - 1; i >= 0; i--)
+        // Date and time follow the serial number, when the writer supplied them.  Each is taken only
+        // if the token in its place is all digits, so a name that carries something else there is
+        // not rejected: the source log folder name, which NavPostProcess embeds in the files it
+        // writes, leaves both empty (e.g. "LOG_SN60339_LOG_SN60339_2024-03-11-13-25_0001.dat").
+        if ((next < tokens.size()) && tokens[next].size() &&
+            (tokens[next].find_first_not_of("0123456789") == string::npos))
+        {
+            date = tokens[next++];
+
+            if ((next < tokens.size()) && tokens[next].size() &&
+                (tokens[next].find_first_not_of("0123456789") == string::npos))
+            {
+                time = tokens[next++];
+            }
+        }
+
+        // Index is the last remaining token that starts with a digit.  Anything between it and the
+        // time is skipped rather than failing the parse, so a descriptive tag some tools embed
+        // (e.g. "..._225101_no_f9p_0001.dat") does not prevent the file from being recognized.
+        bool foundIndex = false;
+        for (size_t i = next; i < tokens.size(); i++)
         {
             if (tokens[i].size() && isdigit(tokens[i][0]))
             {
                 index = stoi(tokens[i]);
-                indexToken = i;
-                break;
+                foundIndex = true;
             }
         }
-        if (indexToken < 0) { return false; }
-
-        // Date and time are the first two all-digit tokens ahead of the index
-        for (int i = 0; i < indexToken; i++)
-        {
-            if (tokens[i].empty() || (tokens[i].find_first_not_of("0123456789") != string::npos))
-            {
-                continue;
-            }
-            if (date.empty())       { date = tokens[i]; }
-            else                    { time = tokens[i]; break; }
-        }
+        if (!foundIndex) { return false; }
     }
     else
     {   // No prefix - only index number
