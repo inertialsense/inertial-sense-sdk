@@ -64,6 +64,18 @@ public:
     bool discoverPorts(const std::string& pattern = "(.+)", uint16_t pType = PORT_TYPE__UNKNOWN);
 
     /**
+     * Converts a command-line style port specifier (a glob, or a comma-separated list of globs) into the regex discoverPorts() expects,
+     * resolving udev-style symlink aliases first.
+     * Each part is resolved on its LITERAL text before metacharacters are escaped: once "/dev/imx5.0" has become "/dev/imx5\\.0" it no longer
+     * names a file, so the alias can not be resolved afterwards. Only parts that are real symlinks change; "*", "?" and everything else
+     * are passed through to utils::globToRegex() exactly as before. (SN-8661)
+     * Note that this is for callers holding a GLOB. A caller holding a literal path or a genuine regex passes it to discoverPorts() directly.
+     * @param globs a glob or comma-separated list of globs, an empty string matches all ports
+     * @return a regex suitable for discoverPorts()
+     */
+    static std::string globSpecifierToRegex(const std::string& globs);
+
+    /**
      * Removes/clears all previously registered port factories from the PortManager.  No ports (of any type) will be discovered
      * if there are no factories registered.
      */

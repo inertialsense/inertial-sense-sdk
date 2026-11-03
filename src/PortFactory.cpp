@@ -126,14 +126,9 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     // matter how the regex is written. Resolve before matching. Non-symlinks, patterns included,
     // pass through untouched. (SN-8575)
     //
-    // KNOWN LIMITATION: two conventions reach this function. OpenPorts() forwards the caller's
-    // string verbatim (the path SN-8575 reports, and the one this handles), but cltool's -ufpkg
-    // re-discovery loop passes it through utils::globToRegex() first, which escapes regex
-    // metacharacters. An alias containing one -- "/dev/imx5.0" arriving here as "/dev/imx5\.0" --
-    // is no longer a real path, so the lstat() gate above declines to resolve it. Un-escaping a
-    // regex back into a path would be guesswork; the underlying problem is that the two paths
-    // disagree about whether a port specifier is a literal or a pattern, which wants fixing on its
-    // own terms rather than being papered over here.
+    // locatePorts() takes a regex or a literal path. A caller that holds a GLOB (cltool's -ufpkg re-discovery) must go through
+    // PortManager::globSpecifierToRegex(), which resolves aliases on the literal text BEFORE escaping metacharacters: an escaped
+    // "/dev/imx5\.0" names no file, so it can not be resolved here. (SN-8661)
     const std::string resolvedPattern = resolvePortName(pattern);
 
     // An unusable pattern must not abort a port scan by throwing out of it. std::regex's constructor

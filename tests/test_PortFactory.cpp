@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -388,5 +389,64 @@ TEST(test_PortFactory, symlinkedPort_isValidatedAndLocated) {
     ASSERT_EQ(viaAlias.size(), 1u);
     EXPECT_EQ(viaAlias.front(), canonical);   // reported under its canonical name, not the alias
 }
+
+// --- SN-8661: one specifier must resolve the same whichever internal path carries it -----------
+//
+// OpenPorts() hands the caller's string to discoverPorts() verbatim; cltool's -ufpkg re-discovery used to
+// escape it with utils::globToRegex() first, so "/dev/imx5.0" became "/dev/imx5\\.0" -- no longer a path, and
+// resolvePortName() (which only resolves real symlinks) declined it. PortManager::globSpecifierToRegex()
+// resolves aliases on the literal text before escaping.
+
+namespace {
+/** True if @p regexText (as discoverPorts() would compile it) matches @p name in full. */
+bool regexMatches(const std::string& regexText, const std::string& name) {
+    return std::regex_match(name, std::regex(regexText));
+}
+} // namespace
+
+// The asymmetry itself: the escaped form of a dotted alias names no file, so it can not resolve.
+TEST(test_PortFactory, SN8661_escapedDottedAlias_doesNotResolve_literalDoes) {
+    TempDir dir; ASSERT_TRUE(dir.valid());
+    const std::string target = dir.file("ttyFAKE0");
+    const std::string alias = dir.link("imx5.0", "ttyFAKE0");
+    ASSERT_FALSE(alias.empty());
+    EXPECT_EQ(SerialPortFactory::resolvePortName(alias), realOf(target));
+    EXPECT_EQ(SerialPortFactory::resolvePortName(utils::globToRegex(alias)), utils::globToRegex(alias))
+        << "the escaped form names no file, which is why the glob path must resolve before escaping";
+}
+
+// The fix: both conventions end up matching the canonical device path for a metacharacter-bearing alias.
+TEST(test_PortFactory, SN8661_globSpecifier_resolvesDottedAlias) {
+    TempDir dir; ASSERT_TRUE(dir.valid());
+    const std::string target = dir.file("ttyFAKE0");
+    const std::string alias = dir.link("imx5.0", "ttyFAKE0");
+    ASSERT_FALSE(alias.empty());
+    const std::string rx = PortManager::globSpecifierToRegex(alias);
+    EXPECT_TRUE(regexMatches(rx, realOf(target))) << rx;
+    EXPECT_FALSE(regexMatches(rx, dir.path() + "/ttyFAKE1"));
+}
+
+TEST(test_PortFactory, SN8661_globSpecifier_resolvesEachPartOfACommaList) {
+    TempDir dir; ASSERT_TRUE(dir.valid());
+    const std::string t0 = dir.file("ttyFAKE0"), t1 = dir.file("ttyFAKE1");
+    const std::string a0 = dir.link("imx5.0", "ttyFAKE0"), a1 = dir.link("gpx1.0", "ttyFAKE1");
+    ASSERT_FALSE(a0.empty()); ASSERT_FALSE(a1.empty());
+    const std::string rx = PortManager::globSpecifierToRegex(a0 + "," + a1 + ",/dev/ttyACM*");
+    EXPECT_TRUE(regexMatches(rx, realOf(t0)));
+    EXPECT_TRUE(regexMatches(rx, realOf(t1)));
+    EXPECT_TRUE(regexMatches(rx, "/dev/ttyACM7"));
+}
+
+// Everything that worked before must produce exactly what utils::globToRegex() produced, since no part is a symlink.
+TEST(test_PortFactory, SN8661_globSpecifier_leavesExistingSpecifierFormsUnchanged) {
+    const char* forms[] = {
+        "", "*", "/dev/ttyACM*", "/dev/ttyACM0", "/dev/ttyACM0,/dev/ttyUSB1", "/dev/does.not.exist",
+        "spi:///dev/spi0.0[b2000000", "tcp://192.168.1.10:8080", "/dev/tty(ACM|USB)[0-9]+",
+    };
+    for (const char* f : forms)
+        EXPECT_EQ(PortManager::globSpecifierToRegex(f), utils::globToRegex(f)) << "'" << f << "'";
+    EXPECT_TRUE(regexMatches(PortManager::globSpecifierToRegex("*"), "/dev/ttyACM0"));
+}
+
 
 #endif // PLATFORM_IS_LINUX

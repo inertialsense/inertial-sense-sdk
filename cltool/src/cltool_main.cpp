@@ -1639,7 +1639,7 @@ static int cltool_dataStreaming()
                 // per port"). Passing the resolved comPort scopes the periodic check to
                 // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts(utils::globToRegex(g_commandLineOptions.comPort));
+                    PortManager::getInstance().discoverPorts(PortManager::globSpecifierToRegex(g_commandLineOptions.comPort));
                     nextPortCheck = current_timeMs() + 1500;
                 }
 

@@ -17,6 +17,22 @@
  * @param pType a PORT_TYPE__ value indicating that only ports matching the specified type will be discovered, default
  *  value of PORT_TYPE__UNKNOWN will match all port types
  */
+std::string PortManager::globSpecifierToRegex(const std::string& globs) {
+    // Split on ',' exactly as utils::globToRegex() does, so each part can be resolved before it is escaped
+    std::string resolved;
+    for (size_t start = 0; start <= globs.size(); ) {
+        size_t comma = globs.find(',', start);
+        const std::string part = globs.substr(start, (comma == std::string::npos) ? std::string::npos : comma - start);
+        if (!resolved.empty() || start > 0)
+            resolved += ',';
+        resolved += part.empty() ? part : SerialPortFactory::resolvePortName(part);
+        if (comma == std::string::npos)
+            break;
+        start = comma + 1;
+    }
+    return utils::globToRegex(resolved);
+}
+
 bool PortManager::discoverPorts(const std::string& pattern, uint16_t pType) {
     FnProfiler fn("PortManager::discoverPorts", 10000); // this can take a long time, but it generally should be fast
     bool changed = false;
