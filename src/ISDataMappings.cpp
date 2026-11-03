@@ -2701,7 +2701,7 @@ static void PopulateMapInl2NedSigma(data_set_t data_set[DID_COUNT], uint32_t did
     DataMapper<inl2_ned_sigma_t> mapper(data_set, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
     mapper.AddMember("timeOfWeekMs", &inl2_ned_sigma_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("StdAttNed", &inl2_ned_sigma_t::StdAttNed, DATA_TYPE_F32, 3, {SYM_DEG}, {"NED attitude error standard deviation"}, flags, C_RAD2DEG);
+    mapper.AddArray("StdAttNed", &inl2_ned_sigma_t::StdAttNed, DATA_TYPE_F32, 3, {SYM_DEG}, {"Roll, pitch, yaw error standard deviation of the body attitude in NED"}, flags, C_RAD2DEG);
     mapper.AddArray("StdVelNed", &inl2_ned_sigma_t::StdVelNed, DATA_TYPE_F32, 3, {"m/s"}, {"NED velocity error standard deviation"}, flags);
     mapper.AddArray("StdPosNed", &inl2_ned_sigma_t::StdPosNed, DATA_TYPE_F32, 3, {"m"}, {"NED position error standard deviation"}, flags);
     mapper.AddArray("StdAccBias", &inl2_ned_sigma_t::StdAccBias, DATA_TYPE_F32, 3, {SYM_M_PER_S_2}, {"Acceleration bias error standard deviation"}, flags);
