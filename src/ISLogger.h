@@ -449,17 +449,21 @@ public:
     /**
      * @brief Parse a log filename into its serial number, date, time, and file-index components.
      *
-     * Recognizes two forms: `IS_LOG_FILE_PREFIX` followed by `<serial>_<date>_<time>_<index>`
-     * (e.g. "LOG_SN30013_20170103_151023_001.raw"), or a bare `<index>` with no prefix. Any other
-     * form fails to parse. In the first form, `<index>` is taken to be whichever underscore-
-     * delimited token (starting with a digit) comes last before the extension, so extra
-     * descriptive tokens some tools insert between `<time>` and `<index>` (e.g.
-     * "LOG_SN30013_20170103_151023_no_f9p_001.dat") don't prevent the file from being recognized.
+     * Recognizes two forms: `IS_LOG_FILE_PREFIX` followed by `<serial>_..._<index>` (e.g.
+     * "LOG_SN30013_20170103_151023_001.raw"), or a bare `<index>` with no prefix. Any other form
+     * fails to parse. In the first form, `<index>` is taken to be whichever underscore-delimited
+     * token (starting with a digit) comes last before the extension, and `<date>` and `<time>` are
+     * the first two all-digit tokens ahead of it. Tokens that are neither are skipped rather than
+     * failing the parse, so neither a descriptive token some tools insert (e.g.
+     * "LOG_SN30013_20170103_151023_no_f9p_001.dat") nor a source log folder name carried into the
+     * filename (e.g. "LOG_SN30013_LOG_SN30013_2017-01-03-15-10_001.dat", which NavPostProcess used
+     * to write) prevents the file from being recognized. A name of that second kind has no
+     * all-digit date or time token, so those come back empty.
      *
      * @param filename filename to parse (extension is stripped internally; path should already be removed).
      * @param[out] serialNum parsed serial number; 0 if the bare-index form was used.
-     * @param[out] date parsed date string; empty if the bare-index form was used.
-     * @param[out] time parsed time string; empty if the bare-index form was used.
+     * @param[out] date parsed date string; empty if absent or if the bare-index form was used.
+     * @param[out] time parsed time string; empty if absent or if the bare-index form was used.
      * @param[out] index parsed file index; -1 if parsing failed before reaching it.
      * @return true if @p filename matched one of the two recognized forms, false otherwise.
      */

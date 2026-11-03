@@ -4953,6 +4953,7 @@ class logPlot:
         self.configureSubplot(ax[0,1], 'bias acc X', 'm/s^2')
         self.configureSubplot(ax[1,1], 'bias acc Y', 'm/s^2')
         self.configureSubplot(ax[2,1], 'bias acc Z', 'm/s^2')
+        self.configureSubplot(ax[3,1], 'mag declination', 'deg')
         fig.suptitle('EKF Biases - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromGpsTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'), True)
@@ -4964,6 +4965,7 @@ class logPlot:
             ax[0,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 0], label=self.log.serials[d])
             ax[1,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 1])
             ax[2,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 2])
+            ax[3,1].plot(time, self.getData(d, DID_INL2_STATES, 'magDec')*180.0/np.pi, label=self.log.serials[d])
 
         self.legends_add(ax[0,0].legend(ncol=2))
         for a in ax:
@@ -4972,6 +4974,89 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'ekfBiases')
+
+    def ekfSigma(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(3, 3, sharex=True)
+        self.configureSubplot(ax[0,0], 'sigma att roll', 'deg')
+        self.configureSubplot(ax[0,1], 'sigma att pitch', 'deg')
+        self.configureSubplot(ax[0,2], 'sigma att yaw', 'deg')
+
+        self.configureSubplot(ax[1,0], 'sigma vel N', 'm/s')
+        self.configureSubplot(ax[1,1], 'sigma vel E', 'm/s')
+        self.configureSubplot(ax[1,2], 'sigma vel D', 'm/s')
+
+        self.configureSubplot(ax[2,0], 'sigma pos N', 'm')
+        self.configureSubplot(ax[2,1], 'sigma pos E', 'm')
+        self.configureSubplot(ax[2,2], 'sigma pos D', 'm')
+        fig.suptitle('EKF Sigma - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            timeMs = self.getData(d, DID_INL2_VARIANCE, 'timeOfWeekMs')
+            if len(timeMs) == 0:
+                continue
+            time = getTimeFromGpsTowMs(timeMs, True)
+            sigmaPos = self.getData(d, DID_INL2_VARIANCE, 'StdPosNed')
+            sigmaVel = self.getData(d, DID_INL2_VARIANCE, 'StdVelNed')
+            sigmaAtt = self.getData(d, DID_INL2_VARIANCE, 'StdAttNed')*180.0/np.pi
+            ax[0,0].plot(time, sigmaAtt[:, 0], label=self.log.serials[d])
+            ax[0,1].plot(time, sigmaAtt[:, 1])
+            ax[0,2].plot(time, sigmaAtt[:, 2])
+
+            ax[1,0].plot(time, sigmaVel[:, 0])
+            ax[1,1].plot(time, sigmaVel[:, 1])
+            ax[1,2].plot(time, sigmaVel[:, 2])
+
+            ax[2,0].plot(time, sigmaPos[:, 0])
+            ax[2,1].plot(time, sigmaPos[:, 1])
+            ax[2,2].plot(time, sigmaPos[:, 2])
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, axs, fig, 'ekfSigma')
+
+    def ekfSigmaBiases(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(4, 2, sharex=True)
+        self.configureSubplot(ax[0,0], 'sigma bias P', 'deg/s')
+        self.configureSubplot(ax[1,0], 'sigma bias Q', 'deg/s')
+        self.configureSubplot(ax[2,0], 'sigma bias R', 'deg/s')
+        self.configureSubplot(ax[3,0], 'sigma bias Barometer', 'm')
+
+        self.configureSubplot(ax[0,1], 'sigma bias acc X', 'm/s^2')
+        self.configureSubplot(ax[1,1], 'sigma bias acc Y', 'm/s^2')
+        self.configureSubplot(ax[2,1], 'sigma bias acc Z', 'm/s^2')
+        self.configureSubplot(ax[3,1], 'sigma mag declination', 'deg')
+        fig.suptitle('EKF Sigma Biases - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            timeMs = self.getData(d, DID_INL2_VARIANCE, 'timeOfWeekMs')
+            if len(timeMs) == 0:
+                continue
+            time = getTimeFromGpsTowMs(timeMs, True)
+            sigmaGyrBias = self.getData(d, DID_INL2_VARIANCE, 'StdGyrBias')*180.0/np.pi
+            sigmaAccBias = self.getData(d, DID_INL2_VARIANCE, 'StdAccBias')
+            ax[0,0].plot(time, sigmaGyrBias[:, 0], label=self.log.serials[d])
+            ax[1,0].plot(time, sigmaGyrBias[:, 1])
+            ax[2,0].plot(time, sigmaGyrBias[:, 2])
+            ax[3,0].plot(time, self.getData(d, DID_INL2_VARIANCE, 'StdBarBias'))
+
+            ax[0,1].plot(time, sigmaAccBias[:, 0])
+            ax[1,1].plot(time, sigmaAccBias[:, 1])
+            ax[2,1].plot(time, sigmaAccBias[:, 2])
+            ax[3,1].plot(time, self.getData(d, DID_INL2_VARIANCE, 'StdMagDeclination')*180.0/np.pi)
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, axs, fig, 'ekfSigmaBiases')
 
     def rtkResiduals(self, type, page, fig=None,  axs=None):
         if fig is None:

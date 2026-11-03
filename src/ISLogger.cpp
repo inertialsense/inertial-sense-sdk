@@ -405,7 +405,8 @@ bool nextStreamDigit(stringstream &ss, string &str)
     return true;
 }
 
-// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.
+// Return true for valid filenames, only if they contain 1.) a serial number and an index number,
+// optionally with a date and time, or 2.) only an index number.
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -428,29 +429,45 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
         content = content.substr(n + sizeof(IS_LOG_FILE_PREFIX) - 1);
         stringstream ss(content);
 
-        // Read serial number, date, time
+        // Read serial number
         if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
         serialNum = stoi(str);
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
-        date = str;
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
-        time = str;
 
-        // Index is the LAST underscore-delimited token, which must start with a digit. Anything
-        // between time and index is skipped rather than failing the parse, so an extra descriptive
-        // tag some tools embed in the filename (e.g. "..._225101_no_f9p_0001.dat") doesn't prevent
-        // the file from being recognized.
-        string token;
-        bool foundIndex = false;
-        while (getline(ss, token, '_'))
+        // The remaining underscore-delimited tokens carry the index and, where the writer supplied
+        // them, the date and time.  Tokens that are neither are skipped rather than failing the
+        // parse, because callers need the serial number and the index while the date and time are
+        // only descriptive, and names can carry other text in between: a tag some tools embed
+        // (e.g. "..._225101_no_f9p_0001.dat"), or the name of the source log folder, which
+        // NavPostProcess embeds in the files it writes.
+        vector<string> tokens;
+        while (getline(ss, str, '_'))
         {
-            if (token.size() && isdigit(token[0]))
+            tokens.push_back(str);
+        }
+
+        // Index is the last token that starts with a digit
+        int indexToken = -1;
+        for (int i = (int)tokens.size() - 1; i >= 0; i--)
+        {
+            if (tokens[i].size() && isdigit(tokens[i][0]))
             {
-                index = stoi(token);
-                foundIndex = true;
+                index = stoi(tokens[i]);
+                indexToken = i;
+                break;
             }
         }
-        if (!foundIndex) { return false; }
+        if (indexToken < 0) { return false; }
+
+        // Date and time are the first two all-digit tokens ahead of the index
+        for (int i = 0; i < indexToken; i++)
+        {
+            if (tokens[i].empty() || (tokens[i].find_first_not_of("0123456789") != string::npos))
+            {
+                continue;
+            }
+            if (date.empty())       { date = tokens[i]; }
+            else                    { time = tokens[i]; break; }
+        }
     }
     else
     {   // No prefix - only index number
