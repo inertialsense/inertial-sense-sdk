@@ -84,12 +84,14 @@ typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, 
  *   0x0000000B  (REPORTED | VALID | OPENED), error-free: a healthy, open port
  *   0x00000009  (REPORTED | VALID):          a valid port that is closed / not yet opened
  *   0x00000008  (REPORTED):                  a port that was invalidated (portInvalidate()) and is closed
+ *   bit 4 (HOST_OPEN) is set by firmware on a USB port only, while a host has the virtual COM port open (DTR asserted); it is never set by portStatsStatus() itself. A USB port reads OPENED whenever the firmware's port is initialised, so only HOST_OPEN tells a host is actually attached.
  *   bit 2 (ERROR) and bits 16-31 hold the last PORT_ERROR__* code (the low 16 bits of base_port_t::perror, two's complement, so -3 reads 0xFFFD)
  */
 #define PORT_STATUS__VALID          0x00000001  //!< the port passes its integrity check and has PORT_FLAG__VALID set (portIsValid())
 #define PORT_STATUS__OPENED         0x00000002  //!< PORT_FLAG__OPENED is set
 #define PORT_STATUS__ERROR          0x00000004  //!< the last operation on the port reported an error (base_port_t::perror is not PORT_ERROR__NONE)
 #define PORT_STATUS__REPORTED       0x00000008  //!< always set in a status word the firmware produced: distinguishes "reported, nothing set" from "not reported" (0)
+#define PORT_STATUS__HOST_OPEN      0x00000010  //!< USB ports only, set by firmware: a host has the CDC virtual COM port open (DTR asserted). Cable unplugged or port closed on the host reads clear.
 #define PORT_STATUS__ERROR_SHIFT    16          //!< bit position of the last PORT_ERROR__* code (16 bits)
 #define PORT_STATUS__ERROR_MASK     0xFFFF0000  //!< mask of the last PORT_ERROR__* code
 

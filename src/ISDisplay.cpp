@@ -2211,6 +2211,7 @@ std::string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t 
             {
                 const int16_t err = (int16_t)((st & PORT_STATUS__ERROR_MASK) >> PORT_STATUS__ERROR_SHIFT);
                 int n = SNPRINTF(desc, sizeof(desc), "%s %s", (st & PORT_STATUS__VALID) ? "valid" : "INVALID", (st & PORT_STATUS__OPENED) ? "open" : "closed");
+                if (portTypeIdx == (PORT_MON_PORT_TYPE_USB >> 4) && n > 0 && n < (int)sizeof(desc)) { n += SNPRINTF(desc + n, sizeof(desc) - n, ", %s", (st & PORT_STATUS__HOST_OPEN) ? "host connected" : "no host"); }
                 if ((st & PORT_STATUS__ERROR) && n > 0 && n < (int)sizeof(desc)) SNPRINTF(desc + n, sizeof(desc) - n, ", last error %d", err);
             }
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: %s (0x%08x)]\n", portTypeNames[portTypeIdx], portId, desc, st);

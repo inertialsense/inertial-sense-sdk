@@ -74,3 +74,14 @@ TEST(PortStatsStatus, EveryStateHasADistinctWord) {
     const uint32_t w[] = { portStatsStatus(&healthy), portStatsStatus(&closed), portStatsStatus(&invalidated), portStatsStatus(&errored) };
     for (int i = 0; i < 4; i++) for (int j = i + 1; j < 4; j++) EXPECT_NE(w[i], w[j]) << i << " vs " << j;
 }
+
+TEST(PortStatsStatus, HostOpenIsItsOwnBitAndIsNeverSetByTheEncoder) {
+    // HOST_OPEN is OR-ed in by USB firmware from the CDC DTR state; it must not collide with the other flags or the error code field.
+    const uint32_t flags = PORT_STATUS__VALID | PORT_STATUS__OPENED | PORT_STATUS__ERROR | PORT_STATUS__REPORTED;
+    EXPECT_EQ(PORT_STATUS__HOST_OPEN & (flags | PORT_STATUS__ERROR_MASK), 0u);
+    base_port_t usb = makePort(PORT_FLAG__VALID | PORT_FLAG__OPENED);
+    usb.ptype = PORT_TYPE__USB | PORT_TYPE__COMM;
+    EXPECT_EQ(portStatsStatus(&usb) & PORT_STATUS__HOST_OPEN, 0u) << "an open USB port with no host attached must not read as host-connected";
+    base_port_t errored = makePort(PORT_FLAG__VALID | PORT_FLAG__OPENED); errored.perror = (uint16_t)PORT_ERROR__WRITE_FAILURE;
+    EXPECT_EQ(portStatsStatus(&errored) & PORT_STATUS__HOST_OPEN, 0u);
+}
