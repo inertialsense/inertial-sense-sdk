@@ -75,13 +75,49 @@ TEST(PortStatsStatus, EveryStateHasADistinctWord) {
     for (int i = 0; i < 4; i++) for (int j = i + 1; j < 4; j++) EXPECT_NE(w[i], w[j]) << i << " vs " << j;
 }
 
-TEST(PortStatsStatus, HostOpenIsItsOwnBitAndIsNeverSetByTheEncoder) {
-    // HOST_OPEN is OR-ed in by USB firmware from the CDC DTR state; it must not collide with the other flags or the error code field.
-    const uint32_t flags = PORT_STATUS__VALID | PORT_STATUS__OPENED | PORT_STATUS__ERROR | PORT_STATUS__REPORTED;
-    EXPECT_EQ(PORT_STATUS__HOST_OPEN & (flags | PORT_STATUS__ERROR_MASK), 0u);
-    base_port_t usb = makePort(PORT_FLAG__VALID | PORT_FLAG__OPENED);
-    usb.ptype = PORT_TYPE__USB | PORT_TYPE__COMM;
-    EXPECT_EQ(portStatsStatus(&usb) & PORT_STATUS__HOST_OPEN, 0u) << "an open USB port with no host attached must not read as host-connected";
-    base_port_t errored = makePort(PORT_FLAG__VALID | PORT_FLAG__OPENED); errored.perror = (uint16_t)PORT_ERROR__WRITE_FAILURE;
-    EXPECT_EQ(portStatsStatus(&errored) & PORT_STATUS__HOST_OPEN, 0u);
+namespace {
+base_port_t makeUsbPort(uint16_t flags) { base_port_t p = makePort(flags); p.ptype = PORT_TYPE__USB | PORT_TYPE__COMM; portRecalcChksum(&p); return p; }
+}
+
+TEST(PortStatsStatusUsb, EnumeratedIsItsOwnBit) {
+    const uint32_t others = PORT_STATUS__VALID | PORT_STATUS__OPENED | PORT_STATUS__ERROR | PORT_STATUS__REPORTED | PORT_STATUS__ERROR_MASK;
+    EXPECT_EQ(PORT_STATUS__ENUMERATED & others, 0u);
+}
+
+TEST(PortStatsStatusUsb, ThreeLevelsReadDistinctlyAndWithTheDocumentedWords) {
+    base_port_t usb = makeUsbPort(PORT_FLAG__VALID | PORT_FLAG__OPENED);   // firmware flags the port OPENED from init; that must not leak into the status
+    EXPECT_EQ(portStatsStatusUsb(&usb, false, false), (uint32_t)(PORT_STATUS__REPORTED | PORT_STATUS__VALID));
+    EXPECT_EQ(portStatsStatusUsb(&usb, true,  false), (uint32_t)(PORT_STATUS__REPORTED | PORT_STATUS__VALID | PORT_STATUS__ENUMERATED));
+    EXPECT_EQ(portStatsStatusUsb(&usb, true,  true),  (uint32_t)(PORT_STATUS__REPORTED | PORT_STATUS__VALID | PORT_STATUS__ENUMERATED | PORT_STATUS__OPENED));
+    EXPECT_EQ(portStatsStatusUsb(&usb, true,  true),  0x1Bu);
+}
+
+TEST(PortStatsStatusUsb, StaleDtrWithoutEnumerationDoesNotReadOpen) {
+    // IMX-5 only clears its DTR flag on a SET_CONTROL_LINE_STATE, so it can be left set by an unplugged cable
+    base_port_t usb = makeUsbPort(PORT_FLAG__VALID | PORT_FLAG__OPENED);
+    EXPECT_EQ(portStatsStatusUsb(&usb, false, true) & (PORT_STATUS__OPENED | PORT_STATUS__ENUMERATED), 0u);
+}
+
+TEST(PortStatsStatusUsb, InvalidatedPortReportsNeitherEnumeratedNorOpen) {
+    base_port_t usb = makeUsbPort(PORT_FLAG__VALID | PORT_FLAG__OPENED); portInvalidate(&usb);
+    const uint32_t st = portStatsStatusUsb(&usb, true, true);
+    EXPECT_EQ(st & (PORT_STATUS__VALID | PORT_STATUS__ENUMERATED | PORT_STATUS__OPENED), 0u);
+    EXPECT_NE(st & PORT_STATUS__REPORTED, 0u);
+    EXPECT_EQ(portStatsStatusUsb(nullptr, true, true), (uint32_t)PORT_STATUS__REPORTED);
+}
+
+TEST(PortStatsStatusUsb, OpenedImpliesEnumeratedImpliesValidForEveryInput) {
+    for (int flags = 0; flags < 2; flags++) for (int en = 0; en < 2; en++) for (int open = 0; open < 2; open++) {
+        base_port_t usb = makeUsbPort(flags ? (PORT_FLAG__VALID | PORT_FLAG__OPENED) : 0);
+        const uint32_t st = portStatsStatusUsb(&usb, en, open);
+        if (st & PORT_STATUS__OPENED)     EXPECT_NE(st & PORT_STATUS__ENUMERATED, 0u) << flags << en << open;
+        if (st & PORT_STATUS__ENUMERATED) EXPECT_NE(st & PORT_STATUS__VALID, 0u) << flags << en << open;
+    }
+}
+
+TEST(PortStatsStatusUsb, LastErrorCodeSurvives) {
+    base_port_t usb = makeUsbPort(PORT_FLAG__VALID | PORT_FLAG__OPENED); usb.perror = (uint16_t)PORT_ERROR__WRITE_FAILURE;
+    const uint32_t st = portStatsStatusUsb(&usb, true, true);
+    EXPECT_NE(st & PORT_STATUS__ERROR, 0u);
+    EXPECT_EQ((st & PORT_STATUS__ERROR_MASK) >> PORT_STATUS__ERROR_SHIFT, (uint32_t)(uint16_t)PORT_ERROR__WRITE_FAILURE);
 }

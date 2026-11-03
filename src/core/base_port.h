@@ -12,6 +12,7 @@
 #ifndef IS_CORE__BASE_PORT_H
 #define IS_CORE__BASE_PORT_H
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "core/types.h"
@@ -84,14 +85,17 @@ typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, 
  *   0x0000000B  (REPORTED | VALID | OPENED), error-free: a healthy, open port
  *   0x00000009  (REPORTED | VALID):          a valid port that is closed / not yet opened
  *   0x00000008  (REPORTED):                  a port that was invalidated (portInvalidate()) and is closed
- *   bit 4 (HOST_OPEN) is set by firmware on a USB port only, while a host has the virtual COM port open (DTR asserted); it is never set by portStatsStatus() itself. A USB port reads OPENED whenever the firmware's port is initialised, so only HOST_OPEN tells a host is actually attached.
+ *   USB ports have three levels, built by portStatsStatusUsb(): VALID = the driver is initialised, nothing implied about a host; ENUMERATED = the host has configured the device (and the bus is not suspended), so host<->device comms are possible; OPENED = the host also has the virtual COM port open (DTR), so data can stream. OPENED implies ENUMERATED implies VALID.
+ *     0x00000009 (REPORTED | VALID):                        USB initialised, no host (or unplugged / bus suspended)
+ *     0x00000019 (REPORTED | VALID | ENUMERATED):           enumerated, host has not opened the COM port
+ *     0x0000001B (REPORTED | VALID | ENUMERATED | OPENED):  host has the port open, data can stream
  *   bit 2 (ERROR) and bits 16-31 hold the last PORT_ERROR__* code (the low 16 bits of base_port_t::perror, two's complement, so -3 reads 0xFFFD)
  */
 #define PORT_STATUS__VALID          0x00000001  //!< the port passes its integrity check and has PORT_FLAG__VALID set (portIsValid())
-#define PORT_STATUS__OPENED         0x00000002  //!< PORT_FLAG__OPENED is set
+#define PORT_STATUS__OPENED         0x00000002  //!< PORT_FLAG__OPENED is set; on a USB port, the host has the virtual COM port open (DTR) so data can stream (see portStatsStatusUsb())
 #define PORT_STATUS__ERROR          0x00000004  //!< the last operation on the port reported an error (base_port_t::perror is not PORT_ERROR__NONE)
 #define PORT_STATUS__REPORTED       0x00000008  //!< always set in a status word the firmware produced: distinguishes "reported, nothing set" from "not reported" (0)
-#define PORT_STATUS__HOST_OPEN      0x00000010  //!< USB ports only, set by firmware: a host has the CDC virtual COM port open (DTR asserted). Cable unplugged or port closed on the host reads clear.
+#define PORT_STATUS__ENUMERATED     0x00000010  //!< USB ports only: the host has configured the device and the bus is active (not suspended or unplugged), so host<->device comms are possible whether or not the COM port is open
 #define PORT_STATUS__ERROR_SHIFT    16          //!< bit position of the last PORT_ERROR__* code (16 bits)
 #define PORT_STATUS__ERROR_MASK     0xFFFF0000  //!< mask of the last PORT_ERROR__* code
 
@@ -455,6 +459,22 @@ static inline uint32_t portStatsStatus(port_handle_t port) {
     if (portFlagsIsSet(port, PORT_FLAG__OPENED)) status |= PORT_STATUS__OPENED;
     const uint16_t err = BASE_PORT(port)->perror;
     if (err != 0) status |= PORT_STATUS__ERROR | ((uint32_t)err << PORT_STATUS__ERROR_SHIFT);
+    return status;
+}
+
+/**
+ * portStatsStatus() for a USB port, whose OPENED means a host has the virtual COM port open rather than that the driver is up (the port's own PORT_FLAG__OPENED is set from initialisation).
+ * VALID comes from the port; ENUMERATED and OPENED come from the USB driver and are only reported on a valid port, with OPENED only on an enumerated one,
+ * so a stale DTR left over from an unplugged cable can not read as open.
+ * @param enumerated the host has configured the device and the bus is active
+ * @param hostOpen   the host has the virtual COM port open (DTR asserted)
+ */
+static inline uint32_t portStatsStatusUsb(port_handle_t port, bool enumerated, bool hostOpen) {
+    uint32_t status = portStatsStatus(port) & ~(uint32_t)PORT_STATUS__OPENED;
+    if ((status & PORT_STATUS__VALID) && enumerated) {
+        status |= PORT_STATUS__ENUMERATED;
+        if (hostOpen) status |= PORT_STATUS__OPENED;
+    }
     return status;
 }
 

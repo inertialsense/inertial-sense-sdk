@@ -2210,8 +2210,11 @@ std::string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t 
             if (st & PORT_STATUS__REPORTED)
             {
                 const int16_t err = (int16_t)((st & PORT_STATUS__ERROR_MASK) >> PORT_STATUS__ERROR_SHIFT);
-                int n = SNPRINTF(desc, sizeof(desc), "%s %s", (st & PORT_STATUS__VALID) ? "valid" : "INVALID", (st & PORT_STATUS__OPENED) ? "open" : "closed");
-                if (portTypeIdx == (PORT_MON_PORT_TYPE_USB >> 4) && n > 0 && n < (int)sizeof(desc)) { n += SNPRINTF(desc + n, sizeof(desc) - n, ", %s", (st & PORT_STATUS__HOST_OPEN) ? "host connected" : "no host"); }
+                int n;
+                if (portTypeIdx == (PORT_MON_PORT_TYPE_USB >> 4))   // USB: valid = driver up, enumerated = host configured it, open = host has the COM port open
+                    n = SNPRINTF(desc, sizeof(desc), "%s %s", (st & PORT_STATUS__VALID) ? "valid" : "INVALID", (st & PORT_STATUS__OPENED) ? "host open" : (st & PORT_STATUS__ENUMERATED) ? "enumerated, not open" : "no host");
+                else
+                    n = SNPRINTF(desc, sizeof(desc), "%s %s", (st & PORT_STATUS__VALID) ? "valid" : "INVALID", (st & PORT_STATUS__OPENED) ? "open" : "closed");
                 if ((st & PORT_STATUS__ERROR) && n > 0 && n < (int)sizeof(desc)) SNPRINTF(desc + n, sizeof(desc) - n, ", last error %d", err);
             }
             ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: %s (0x%08x)]\n", portTypeNames[portTypeIdx], portId, desc, st);
