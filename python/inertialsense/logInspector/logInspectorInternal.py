@@ -185,7 +185,6 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createListGeneral(self):
         super(logInspectorInternal, self).createListGeneral()
-        self.addListItem('Delta Time', 'deltatime')
         self.addListItem('Debug Int', 'debugiArr')
         self.addListItem('Debug Float', 'debugfArr')
         self.addListItem('Debug Double', 'debuglfArr')

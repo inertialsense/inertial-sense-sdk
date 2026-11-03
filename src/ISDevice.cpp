@@ -896,7 +896,9 @@ bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
     if (!portIsValid(port))
         return false;
 
-    if (devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0)
+    // A device the caller chose not to validate never learns its protocol version, and the caller has asked to talk to
+    // it regardless (cltool -vd), so don't hold that against it.
+    if ((devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) && !doNotValidate)
         return false;   // TODO: Not sure if we really need this here.  We should be doing a broader level check for protocol compatibility either at a higher level, preventing us from getting here in the first place
                         //   Or at a lower-level, like in the comMangerGetData() call that does this check for everything.
 
