@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <deque>
 #include "ISDataMappings.h"
+#include "DataCSV.h"
 
 using namespace std;
 
@@ -113,7 +114,7 @@ TEST(ISDataMappings, DataToYamlToData)
     d.sysParams.baroTemp = 20.0f; // Barometer temperature in degrees
     d.sysParams.mcuTemp = 30.0f; // MCU temperature in degrees
     d.sysParams.sysStatus = 0x090A0B0C; // System status
-    d.sysParams.imuSamplePeriodMs = 50; // IMU sample period in milliseconds
+    d.sysParams.sampleTaskPeriodMs = 50; // IMU sample period in milliseconds
     d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
     d.sysParams.sensorTruePeriod = 0.001; // Sensor true period in seconds
     d.sysParams.flashCfgChecksum = 0x12345678; // Flash config checksum
@@ -122,7 +123,7 @@ TEST(ISDataMappings, DataToYamlToData)
     d.sysParams.upTime = 3600.0; // System up time in seconds
     testDataToYamlToData(d, DID_SYS_PARAMS);
 
-    d.flashCfg.startupImuDtMs = 100;
+    d.flashCfg.startupImuOdr = IMU_ODR_250HZ;
     d.flashCfg.startupNavDtMs = 200;
     d.flashCfg.ser0BaudRate = 115200;
     d.flashCfg.ser1BaudRate = 230400;
@@ -293,7 +294,7 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.sysParams.baroTemp = 20.0f; // Barometer temperature in degrees
     d.sysParams.mcuTemp = 30.0f; // MCU temperature in degrees
     d.sysParams.sysStatus = 0x090A0B0C; // System status
-    d.sysParams.imuSamplePeriodMs = 50; // IMU sample period in milliseconds
+    d.sysParams.sampleTaskPeriodMs = 50; // IMU sample period in milliseconds
     d.sysParams.navOutputPeriodMs = 100; // Navigation output period in milliseconds
     d.sysParams.sensorTruePeriod = 0.001; // Sensor true period in seconds
     d.sysParams.flashCfgChecksum = 0x12345678; // Flash config checksum
@@ -302,7 +303,7 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.sysParams.upTime = 3600.0; // System up time in seconds
     testDidBufToStringToDidBuf(d, DID_SYS_PARAMS);
 
-    d.flashCfg.startupImuDtMs = 100;
+    d.flashCfg.startupImuOdr = IMU_ODR_250HZ;
     d.flashCfg.startupNavDtMs = 200;
     d.flashCfg.ser0BaudRate = 115200;
     d.flashCfg.ser1BaudRate = 230400;
@@ -331,4 +332,38 @@ TEST(ISDataMappings, DidBufferToStringToDidBuffer)
     d.flashCfg.ioConfig = 0x00000001; // IO configuration bits
     d.flashCfg.platformConfig = 0x00000002; // Platform configuration bits
     testDidBufToStringToDidBuf(d, DID_FLASH_CONFIG);
+}
+
+TEST(ISDataMappings, FormerFieldNameReadsButIsNotListed)
+{
+    const map_name_to_info_t& map = *cISDataMappings::NameToInfoMap(DID_SYS_PARAMS);
+    EXPECT_EQ(map.count("imuSamplePeriodMs"), 0u);
+    EXPECT_EQ(map.count("sampleTaskPeriodMs"), 1u);
+
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_SYS_PARAMS, "imuSamplePeriodMs"), "sampleTaskPeriodMs");
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_SYS_PARAMS, "IMUSAMPLEPERIODMS"), "sampleTaskPeriodMs");
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_SYS_PARAMS, "mcuTemp"), "mcuTemp");
+    EXPECT_EQ(cISDataMappings::CurrentFieldName(DID_FLASH_CONFIG, "imuSamplePeriodMs"), "imuSamplePeriodMs");
+}
+
+TEST(ISDataMappings, CsvReadsFormerFieldName)
+{
+    FILE* f = tmpfile();
+    ASSERT_NE(f, nullptr);
+    fputs("_ID_,mcuTemp,imuSamplePeriodMs\n", f);
+    rewind(f);
+
+    cDataCSV csv;
+    vector<data_info_t> columns;
+    ASSERT_GT(csv.ReadHeaderFromFile(f, DID_SYS_PARAMS, columns), 0);
+    fclose(f);
+
+    string row = "7,25.5,2\n";
+    p_data_hdr_t hdr = {};
+    hdr.id = DID_SYS_PARAMS;
+    hdr.size = sizeof(sys_params_t);
+    sys_params_t sp = {};
+    ASSERT_TRUE(csv.StringCSVToData(row, hdr, (uint8_t*)&sp, sizeof(sp), columns));
+    EXPECT_EQ(sp.sampleTaskPeriodMs, 2u);
+    EXPECT_FLOAT_EQ(sp.mcuTemp, 25.5f);
 }

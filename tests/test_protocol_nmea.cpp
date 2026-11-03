@@ -1335,6 +1335,57 @@ TEST(protocol_nmea, VTG)
     }
 }
 
+// Returns comma-separated field idx of NMEA sentence a (0 = talker/sentence ID), without the checksum
+static std::string nmeaField(const char *a, int idx)
+{
+    std::string s(a);
+    s = s.substr(0, s.find('*'));
+    size_t start = 0;
+    for (int i = 0; i < idx; i++)
+    {
+        start = s.find(',', start);
+        if (start == std::string::npos)
+            return "";
+        start++;
+    }
+    return s.substr(start, s.find(',', start) - start);
+}
+
+TEST(protocol_nmea, GGA_differential_fix_quality)
+{   // NMEA 0183: GGA quality 2 = DGPS/SBAS
+    for (uint32_t fix : { (uint32_t)GNSS_STATUS_FIX_SBAS, (uint32_t)GNSS_STATUS_FIX_DGPS })
+    {
+        gnss_pos_t pos = {};
+        pos.week = 2260;
+        pos.timeOfWeekMs = 342678200;
+        pos.satsUsed = 12;
+        pos.status = (GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GNSS_STATUS_FLAGS_FIX_OK | fix;
+        pos.lla[0] = 40.0557;
+        pos.lla[1] = -111.6586;
+
+        char abuf[ASCII_BUF_LEN] = { 0 };
+        nmea_gga(abuf, ASCII_BUF_LEN, pos);
+        EXPECT_EQ(nmeaField(abuf, 6), "2") << abuf;
+    }
+}
+
+TEST(protocol_nmea, VTG_differential_mode)
+{   // NMEA 0183: VTG mode D = differential, including SBAS
+    for (uint32_t fix : { (uint32_t)GNSS_STATUS_FIX_SBAS, (uint32_t)GNSS_STATUS_FIX_DGPS })
+    {
+        gnss_pos_t pos = {};
+        pos.timeOfWeekMs = 423199200;
+        pos.lla[0] = 40.19759002;
+        pos.lla[1] = -111.62147172;
+        pos.status = GNSS_STATUS_FLAGS_FIX_OK | fix;
+        gnss_vel_t vel = {};
+
+        char abuf[ASCII_BUF_LEN] = { 0 };
+        nmea_vtg(abuf, ASCII_BUF_LEN, pos, vel);
+        EXPECT_EQ(nmeaField(abuf, 9), "D") << abuf;
+    }
+}
+
 TEST(protocol_nmea, INTEL)
 {
     dev_info_t info = {};

@@ -445,6 +445,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Flash Config', lambda: self.showFlashConfig())
         self.addListItem('Device Info', lambda: self.showDeviceInfo())
         self.addListItem('IMU Status', 'imuStatus')
+        self.addListItem('IMUs Status', 'imusStatus')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
         self.addListItem('GPX Status', 'gpxStatus')
@@ -486,7 +487,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GNSS Velocity NED', 'gnssVelNED')
 
     def createListGeneral(self):
-        None
+        self.addListItem('Delta Time', 'deltatime')
 
     def setCurrentListRow(self, row):
         if row < self.modelList.rowCount() and row < len(self.functionList):

@@ -2182,6 +2182,53 @@ class logPlot:
         except:
             print(RED + "problem plotting imuStatus: " + str(sys.exc_info()[1]) + RESET)
 
+    def imusStatus(self, fig=None, axs=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('IMUs Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            axisLabels = ['X Gyr OK', 'Y Gyr OK', 'Z Gyr OK', 'X Acc OK', 'Y Acc OK', 'Z Acc OK']
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+
+                time   = self.getData(d, DID_IMUS_RAW, 'time')
+                status = self.getData(d, DID_IMUS_RAW, 'status')
+                if not len(time):
+                    continue
+
+                towOffset = self.getGpsTowOffset(d)
+                if len(towOffset) > 0:
+                    time = getTimeFromGpsTow(time + np.mean(towOffset))
+
+                labelX = 0.02  # axes-fraction: stays pinned near the left edge of the CURRENT view, unlike a fixed data x-value
+                imuCount = self.log.c_log.numImuDevices
+
+                for imuIdx in range(imuCount):
+                    shift = imuIdx * 6    # eImusStatus: 6 status bits per IMU device (IMUS_STATUS_IMU_OK_BITSIZE)
+                    for bit, label in enumerate(axisLabels):
+                        ax.plot(time, -cnt * 1.5 + ((status & (1 << (shift + bit))) != 0))
+                        if r: ax.text(labelX, -cnt * 1.5, 'IMU%d %s' % (imuIdx, label), transform=ax.get_yaxis_transform())
+                        cnt += 1
+                    cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x40000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'Gyro Saturation', transform=ax.get_yaxis_transform())
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0x80000000) != 0))
+                if r: ax.text(labelX, -cnt * 1.5, 'Accel Saturation', transform=ax.get_yaxis_transform())
+                cnt += 1
+
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            return self.saveFigJoinAxes(ax, axs, fig, 'imusStatus')
+        except:
+            print(RED + "problem plotting imusStatus: " + str(sys.exc_info()[1]) + RESET)
+
     def insStatus(self, fig=None, axs=None):
         try:
             if fig is None:
@@ -3698,7 +3745,7 @@ class logPlot:
                                 snr = quatRot(self.log.mount_bias_quat[d,:], snr)
                                 mean = np.mean(snr[:, i])
                                 std = np.std(snr[:, i])
-                                alable = 'Gyro'
+                                alable = 'Gyr'
                                 if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
@@ -3714,7 +3761,7 @@ class logPlot:
                                 print('%s, %s%s, %.4g, %.3g' % (label, alable.strip(), axislable, mean*180.0/np.pi, std*180.0/np.pi))
                                 ax[i, n].plot(time, snr[:, i] * 180.0/np.pi, label=label)
                                 if plotResidual and (len(refTime) != 0) and self.log.serials[d] != 'Ref INS':
-                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/2')
+                                    self.configureSubplot(ax[i,1], 'Residual', 'deg/s')
                                     intSnr = np.empty_like(refSnr)
                                     intSnr[:,i] = np.interp(refTime, time, snr[:,i], right=np.nan, left=np.nan)
                                     resSnr = intSnr - refSnr
@@ -3790,7 +3837,7 @@ class logPlot:
                             if np.all(sensor) is not None:
                                 mean = np.mean(sensor[:, i])
                                 std = np.std(sensor[:, i])
-                                alable = 'Accel'
+                                alable = 'Acc'
                                 if len(sensors) > 1 and not combineImus:
                                     alable += '%d ' % n
                                 else:
@@ -3960,7 +4007,7 @@ class logPlot:
             axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
             for n, pqr in enumerate(initial_sensors):
                 if np.all(pqr) != None and n<len(initial_sensors):
-                    alable = 'Accel'
+                    alable = 'Acc'
                     if len(initial_sensors) > 1:
                         alable += '%d ' % n
                     else:
@@ -4015,7 +4062,7 @@ class logPlot:
                 if np.all(acc) != None and n<len(sensors):
                     for i in range(3):
                         axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
-                        alable = 'Accel'
+                        alable = 'Acc'
                         if len(sensors) > 1:
                             alable += '%d ' % n
                         else:
@@ -4562,6 +4609,14 @@ class logPlot:
             if np.any(timeRef):
                 refImuPresent = True
 
+        # The raw IMU delta timestamp comes from DID_IMUS_RAW, or from DID_IMU_RAW when the log has no DID_IMUS_RAW
+        imusRawPresent = any(self.getData(d, DID_IMUS_RAW, 'time').size for d in self.active_devs_no_ref)
+        imuRawPresent  = any(self.getData(d, DID_IMU_RAW, 'time').size for d in self.active_devs_no_ref)
+        if not imusRawPresent and imuRawPresent:
+            rawImuDid, rawImuName = DID_IMU_RAW, 'IMU'
+        else:
+            rawImuDid, rawImuName = DID_IMUS_RAW, 'IMUS'
+
         N = 6
         if refImuPresent:
             N = N + 2
@@ -4571,7 +4626,7 @@ class logPlot:
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GNSS1 dt', 's')
         self.configureSubplot(ax[2], 'GNSS2 dt', 's')
-        self.configureSubplot(ax[3], 'IMUS Delta Timestamp', 's')
+        self.configureSubplot(ax[3], f'{rawImuName} Delta Timestamp', 's')
         self.configureSubplot(ax[4], 'PIMU Delta Timestamp', 's')
         self.configureSubplot(ax[5], 'PIMU Integration Period', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
@@ -4612,7 +4667,7 @@ class logPlot:
             timeImusX = np.array([])
             timePimu = self.getData(d, DID_PIMU, 'time', downsample=False)
             timeIMU  = self.getData(d, DID_IMU, 'time', downsample=False)
-            timeImusFull = self.getData(d, DID_IMUS_RAW, 'time', downsample=False)
+            timeImusFull = self.getData(d, rawImuDid, 'time', downsample=False)
             if timePimu.size:
                 timeImuAll = getTimeFromGpsTow(timePimu + towOffset)
                 deltaTimestamp = np.diff(timePimu)[::self.d]
@@ -4653,14 +4708,14 @@ class logPlot:
             if dtPimu.size:
                 ax[5].plot(xImu, dtPimu)
 
-            self.configureSubplot(ax[0],  f'INS dt: {np.mean(dtIns):.3f}s', 's')
-            self.configureSubplot(ax[1], f'GNSS1 dt: {np.mean(dtGnss1):.3f}s', 's')
-            self.configureSubplot(ax[2], f'GNSS2 dt: {np.mean(dtGnss2):.3f}s', 's')
+            self.configureSubplot(ax[0], f'INS dt:   {1000.0*np.mean(dtIns):.3f} ms', 's')
+            self.configureSubplot(ax[1], f'GNSS1 dt: {1000.0*np.mean(dtGnss1):.3f} ms', 's')
+            self.configureSubplot(ax[2], f'GNSS2 dt: {1000.0*np.mean(dtGnss2):.3f} ms', 's')
             if deltaImusTimestamp.size > 0:
-                self.configureSubplot(ax[3], f'IMUS Delta Timestamp: {np.mean(deltaImusTimestamp):.3f}s', 's')
-            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {np.mean(deltaTimestamp):.3f}s', 's')
+                self.configureSubplot(ax[3], f'{rawImuName} Delta Timestamp: {1000.0*np.mean(deltaImusTimestamp):.3f} ms', 's')
+            self.configureSubplot(ax[4], f'PIMU Delta Timestamp: {1000.0*np.mean(deltaTimestamp):.3f} ms', 's')
             if dtPimu.size:
-                self.configureSubplot(ax[5], f'PIMU Integration Period: {np.mean(deltaTimestamp):.3f}s', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
+                self.configureSubplot(ax[5], f'PIMU Integration Period: {1000.0*np.mean(dtPimu):.3f} ms', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week')
 
         # Don't zoom in closer than 0.005s so we can easily see that the delta time is clean
         for i in range(len(ax)):

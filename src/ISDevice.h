@@ -20,6 +20,7 @@
 #include "core/msg_logger.h"
 #include "ChronoStat.h"
 #include "DeviceLog.h"
+#include "ISCbor.h"
 #include "ISDeviceCal.h"
 #include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
@@ -671,6 +672,54 @@ public:
     /** @brief Blocks (calling step() internally) until all pending IMX flash writes complete or timeoutMs elapses. @return true if all pending writes completed before the timeout. */
     bool waitForImxFlashWrite(uint32_t timeoutMs);
 
+    /**
+     * @brief Sends a CBOR request (DID_CBOR) and collects the replies that echo its MSG_REQ_ID.
+     *
+     * One CBOR request runs per device at a time; step() and the receive path advance it, and done runs once, on that
+     * thread, when it finishes: at the first reply, or with collectAll (for a wildcard MSG_DST_DEV_FILTER, which several
+     * devices answer) once timeoutMs passes without another reply. With no reply it finishes after timeoutMs with an
+     * empty list. A request sent with ACK_NONE gets no reply and so always ends that way.
+     *
+     * @param req         the request (its MSG_REQ_ID is assigned here)
+     * @param done        receives the replies
+     * @param timeoutMs   time allowed for (each) reply
+     * @param collectAll  keep collecting replies until timeoutMs passes without one
+     * @return false if not started (another CBOR request is running, or the device is not connected)
+     */
+    bool cborRequestAsync(const CborRequest& req, std::function<void(const std::vector<CborReply>&)> done,
+                          uint32_t timeoutMs = CBOR_REPLY_TIMEOUT_MS, bool collectAll = false);
+
+    /**
+     * @brief Blocking cborRequestAsync(): calls step() until the request finishes.
+     * @param req         the request
+     * @param timeoutMs   time allowed for (each) reply
+     * @param collectAll  keep collecting replies until timeoutMs passes without one
+     * @return the replies (empty on timeout, or if the request could not be sent)
+     */
+    std::vector<CborReply> cborRequest(const CborRequest& req, uint32_t timeoutMs = CBOR_REPLY_TIMEOUT_MS,
+                                       bool collectAll = false);
+
+    /**
+     * @brief Reads a struct-backed DID (blocking), re-requesting any fields a reply marked RESP_TOO_LARGE until every
+     *        field has been read or a round brings nothing new.
+     * @param did        root DID key (e.g. CBOR_DID_FLASH_CFG)
+     * @param schema     schema of the struct (e.g. g_cborSchema_FLASH_CFG)
+     * @param data       the struct to fill
+     * @param dst        MSG_DST_DEV_FILTER for a device behind this one (e.g. its GPX), or none for this device
+     * @param timeoutMs  time allowed for each reply
+     * @return number of fields read, or -1 if no reply carried the DID's values
+     */
+    int cborGetStruct(uint16_t did, const cbor_schema_t& schema, void* data, std::optional<uint64_t> dst = std::nullopt,
+                      uint32_t timeoutMs = CBOR_REPLY_TIMEOUT_MS);
+
+    /** @return true while a CBOR request is running */
+    bool cborBusy() const { return cbor_.active; }
+
+    /** Called with each CBOR message cborRequestAsync() sends (e.g. to print traffic); empty = not called */
+    std::function<void(const uint8_t* msg, size_t len)> cborOnSent;
+
+    static constexpr uint32_t CBOR_REPLY_TIMEOUT_MS = 1000;     //!< default time allowed for a CBOR reply
+
     /** @brief Attempts to acquire portMutex without blocking. @return true if the lock was acquired. */
     bool lockPort() { return portMutex.try_lock(); }
     /** @brief Releases portMutex previously acquired via lockPort(). */
@@ -876,6 +925,7 @@ public:
     dev_info_t                  gpxDevInfo = { };                    //!< Only populated if a GPX device is present
     sys_params_t                sysParams = { };                     //!< IMX system parameters/status, updated as DID_SYS_PARAMS messages are received
     gpx_status_t                gpxStatus = { };                     //!< GPX status, updated as DID_GPX_STATUS messages are received
+    bool                        gpxStatusReceived = false;           //!< a DID_GPX_STATUS has arrived, so a GPX is present (directly or behind this device)
     nvm_flash_cfg_t             imxFlashCfg = { };                    //!< Locally synchronized copy of the IMX flash configuration (see ImxFlashConfig())
     gpx_flash_cfg_t             gpxFlashCfg = { };                    //!< Locally synchronized copy of the GPX flash configuration (see GpxFlashConfig())
     nvm_flash_cfg_t             imxFlashCfgUpload = { };             //!< This is the flashConfig that was most recently sent to the device
@@ -1067,6 +1117,30 @@ private:
     pfnIsCommHandler            packetHandler = nullptr;              //!< previously registered "all packets" handler, restored when this device is unbound/destroyed
     pfnIsCommHandler            externalAllHandler = nullptr;        //!< A user-implemented handler for all packet/message types
     pfnIsCommIsbDataHandler     defaultISBHandler = nullptr;          //!< previously registered ISB-data handler, restored when this device is unbound/destroyed
+
+    /** State of the running CBOR request */
+    struct CborPending
+    {
+        bool active = false;                        //!< a request is outstanding
+        uint16_t reqId = 0;                         //!< its MSG_REQ_ID
+        uint32_t timeoutMs = 0;                     //!< how long to wait for a (further) reply
+        uint32_t lastMs = 0;                        //!< when the request was sent, or the last reply arrived
+        bool collectAll = false;                    //!< keep collecting replies until the timeout (wildcard requests)
+        std::vector<CborReply> replies;             //!< replies received so far
+        std::function<void(const std::vector<CborReply>&)> done;   //!< called with the replies when the request ends
+    };
+    CborPending                 cbor_;                               //!< CBOR request in progress, if active
+    uint16_t                    cborNextReqId_ = 1;                  //!< next CBOR MSG_REQ_ID (never 0)
+
+    /**
+     * @brief Receive path for DID_CBOR: adds a reply that echoes the running request's MSG_REQ_ID, finishing the
+     *        request unless it collects every reply.
+     * @param data  the received message
+     */
+    void cborOnMessage(const p_data_t* data);
+
+    /** @brief Ends the running CBOR request and passes its replies to done. */
+    void cborFinish();
 
     int                         m_calUploadState = -1;               //!< step indicator for calibration uploads (-1 = idle, 0..7 = active step)
     std::unique_ptr<ISDeviceCal> m_calibration;                       //!< calibration object owned by the device while an async upload is in flight (nullptr otherwise)

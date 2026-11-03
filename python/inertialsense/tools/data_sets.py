@@ -111,6 +111,7 @@ DID_GPX_DEBUG_ARRAY             = 124
 DID_GPX_BIT                     = 125
 DID_GPX_RMC                     = 126
 DID_GPX_PORT_MONITOR            = 127
+DID_CBOR                        = 129
 
 NUM_DIDS                        = 132
 
@@ -214,6 +215,7 @@ did_name_lookup = {
  DID_GPX_BIT : "gpxBit",
  DID_GPX_RMC : "gpxRmc",
  DID_GPX_PORT_MONITOR : "gpxPortMonitor",
+ DID_CBOR : "cbor",
 }
 
 class eGnssNavFixStatus(Enum):

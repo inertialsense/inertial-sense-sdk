@@ -12,6 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 #include "cltool.h"
+#include "cltool_cbor.h"
+#include "ISCborFormat.h"
 #include <string.h>
 #include <chrono>
 #include <ctime>
@@ -180,7 +182,14 @@ void ConvertIndexedKeysToSequences(YAML::Node& node)
     }
 }
 
-bool read_get_set_argument(std::string s, YAML::Node &node)
+/**
+ * @brief Parses the inline YAML of a -get / -set style argument: braces are added when there are none, a space is put
+ *        after each ':' and indexed keys (name[i]) are quoted so they read as keys.
+ * @param s     the argument
+ * @param node  [out] the parsed YAML
+ * @return false if s is not valid YAML (the reason is printed)
+ */
+static bool parse_get_set_yaml(std::string s, YAML::Node &node)
 {
     // Preprocess s: wrap with braces if it contains no braces at all
     if (!s.empty() && s.find('{') == std::string::npos && s.find('}') == std::string::npos)
@@ -215,6 +224,13 @@ bool read_get_set_argument(std::string s, YAML::Node &node)
         std::cerr << "General YAML error: " << e.what() << "\n";
         return false;
     }
+    return true;
+}
+
+bool read_get_set_argument(std::string s, YAML::Node &node)
+{
+    if (!parse_get_set_yaml(s, node))
+        return false;
 
     // Convert indexed keys to sequences i.e. {gnss1AntOffset[0]: 1.5, gnss1AntOffset[1]: 2.5} becomes {gnss1AntOffset: [1.5, 2.5]}
     ConvertIndexedKeysToSequences(node);
@@ -667,6 +683,52 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.gpxflashCfgSet = true;
             enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
+        else if (startsWith(a, "-cbor-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!parse_get_set_yaml(argv[++i], g_commandLineOptions.cborGetNode))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-cbor-set") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
+        {
+            if (!parse_get_set_yaml(argv[++i], g_commandLineOptions.cborSetNode))    // use next argument
+            {
+                return false;
+            }
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
+        }
+        else if (startsWith(a, "-cbor-out"))
+        {
+            g_commandLineOptions.cborOut = true;
+            g_commandLineOptions.cborOutNames = !matches(a, "-cbor-out=raw");
+        }
+        else if (startsWith(a, "-cbor-dst="))
+        {
+            uint64_t filter;
+            g_commandLineOptions.cborDst = &a[10];
+            if (!cborDevFilterFromString(g_commandLineOptions.cborDst, filter))
+            {
+                cout << "Invalid -cbor-dst device filter: " << g_commandLineOptions.cborDst << endl;
+                return false;
+            }
+        }
+        else if (startsWith(a, "-cbor-ack="))
+        {
+            std::string ack = &a[10];
+            g_commandLineOptions.cborAck = (ack == "none") ? CBOR_ACK_TYPE_ACK_NONE : (ack == "minimal") ? CBOR_ACK_TYPE_ACK_MINIMAL :
+                                           (ack == "detailed") ? CBOR_ACK_TYPE_ACK_DETAILED : -1;
+            if (g_commandLineOptions.cborAck < 0)
+            {
+                cout << "Invalid -cbor-ack (none, minimal or detailed): " << ack << endl;
+                return false;
+            }
+        }
+        else if (startsWith(a, "-cbor-timeout="))
+        {
+            g_commandLineOptions.cborTimeoutMs = (uint32_t)strtoul(&a[14], NULL, 10);
+        }
         else if (startsWith(a, "-get") && (i + 1) < argc && !startsWith(argv[i + 1], "-"))
         {
             if (!read_get_set_argument(argv[++i], g_commandLineOptions.getNode))    // use next argument
@@ -807,10 +869,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.nmeaMessage = &a[6];
             g_commandLineOptions.nmeaRx = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-nmea"))
-        {
+        {   // Listen only.  Send nothing to the device (no stop-broadcast, device validation, or data requests).
             g_commandLineOptions.nmeaRx = true;
+            g_commandLineOptions.listenMode = true;
+            g_commandLineOptions.disableDeviceValidation = true;
+            enable_display_mode(cInertialSenseDisplay::eDisplayMode::DMODE_QUIET);
         }
         else if (startsWith(a, "-manfKey="))
         {
@@ -866,16 +932,22 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-preset="))
         {
-            if (startsWith(a, "-preset=INS"))
+            // Exact match: "-preset=PPD" is a prefix of the other PPD values
+            if (matches(a, "-preset=INS"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
-            else if (startsWith(a, "-preset=PPD"))
+            else if (matches(a, "-preset=PPD"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD;
-            else if (startsWith(a, "-preset=PPD_GROUND_VEHICLE"))
+            else if (matches(a, "-preset=PPD_GROUND_VEHICLE"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
-            else if (startsWith(a, "-preset=PPD_RTK"))
+            else if (matches(a, "-preset=PPD_RTK"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_RTK_DBG;
-            else if (startsWith(a, "-preset=PPD_GPX"))
+            else if (matches(a, "-preset=PPD_GPX"))
                 g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
+            else
+            {
+                cout << "Invalid preset: " << &a[8] << "\n\n";
+                return false;
+            }
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -1357,6 +1429,9 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"    # Return portion of two DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\" # Set values in DID" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -nmea=ASCE,0,GxGGA,1                                         # Send NMEA message, display rx NMEA" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c tcp://192.168.1.100:7777 -nmea=ASCE                            " << EXAMPLE_SPACE_2 << "# Send NMEA query over TCP" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4 -nmea                                                " << EXAMPLE_SPACE_2 << "# Listen for NMEA on two ports" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
@@ -1371,7 +1446,7 @@ void cltool_outputUsage()
     cout << "         " << boldOff << "  m<MODE>   SPI clock/phase mode 0-3 (default: 3)." << endlbOn;
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
-	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
+	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPC` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
     cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
@@ -1382,10 +1457,12 @@ void cltool_outputUsage()
     cout << boldOff << "                    Relay connections are annotated with name 'cltool', this command line as the purpose, and priority" << endlbOn;
     cout << boldOff << "                    high during a firmware update (normal otherwise). Override with the environment variables" << endlbOn;
     cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
-    cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
+    cout << "    -lm" << boldOff << "             Listen mode for ISB. Does not send the stop-broadcast command on start, so the device's current output" << endlbOn;
+    cout << boldOff << "                    is left unchanged. Disables device validation (-vd). Requests such as -did and -edit are still sent." << endlbOn;
     cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-    cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
-    cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
+    cout << "    -nmea=[s]" << boldOff << "       Send stop-broadcast command `$STPC`, then NMEA message s with added checksum footer. Display rx NMEA. (`-nmea=ASCE,0,GxGGA,1`) With s empty (`-nmea=`), only sends `$STPC`." << endlbOn;
+    cout << "    -nmea" << boldOff << "           Listen mode for NMEA. Displays rx NMEA and sends nothing to the device." << endlbOn;
+    cout << boldOff << "                    Only rx NMEA with a valid checksum is displayed, timestamped. Works with any -c port type. Runs until 'q' or -dur." << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
     cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
@@ -1394,6 +1471,7 @@ void cltool_outputUsage()
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
     cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
+    cout << boldOff << "                    Still sends the stop-broadcast command on start (use -lm to skip it)." << endlbOn;
     cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
     cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
@@ -1426,7 +1504,7 @@ void cltool_outputUsage()
     cout << "OPTIONS (Firmware Update)" << endl;
     cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
     cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
-    cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
+    cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using FILEPATH (.hex for IMX-5, .bin for uINS-3/EVB-2) if version is old. Must be used with option -uf." << endlbOn;
     cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
     cout << "    -fw-set-policy " << boldOff << "POLICY[:PATTERN]  Set update policy (skip, if-newer, force)." << endlbOn;
@@ -1446,6 +1524,19 @@ void cltool_outputUsage()
     cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
+    cout << "    -cbor-get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\"" << boldOff << " As -get, over CBOR (DID_CBOR). DID: registry name (FLASH_CFG), DID_ name or number." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -cbor-get FLASH_CFG" << endlbOn;
+    cout << "                                            " << boldOff << "           -cbor-get \"{GPX_FLASH_CFG: {ser2BaudRate}}\" -cbor-dst=GPX" << endlbOn;
+    cout << "    -cbor-set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " As -set, over CBOR. Numeric keys (incl. MSG_* keys) are sent as given." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -cbor-set \"{FLASH_CFG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
+    cout << "                                            " << boldOff << "           -cbor-set \"{RMC_STORED: {0: {RMC_PRESET: INS}}}\"" << endlbOn;
+    cout << "    -cbor-dst=<FILTER>  " << boldOff << "  Device(s) a -cbor-get/-cbor-set addresses: TYPE[-MAJOR[.MINOR]][::SN], parts left out match any" << endlbOn;
+    cout << "                        " << boldOff << "  (GPX, GPX-1.0, IMX-5.0::SN62797), or all." << endlbOn;
+    cout << "                        " << boldOff << "  Without it, the device at the other end of the link answers. A wildcard collects every reply." << endlbOn;
+    cout << "    -cbor-ack=<LEVEL>   " << boldOff << "  Reply level of a -cbor-set: none, minimal (default: errors and adjusted values) or detailed." << endlbOn;
+    cout << "    -cbor-timeout=<MS>  " << boldOff << "  Time allowed for each CBOR reply (default 1000)." << endlbOn;
+    cout << "    -cbor-out[=raw]     " << boldOff << "  Print every DID_CBOR message sent and received, in CBOR diagnostic notation with" << endlbOn;
+    cout << "                        " << boldOff << "  registry names (=raw: plain diagnostic notation)." << endlbOn;
 	cout << "    -did [DID#<=PERIODMULT> DID#<=PERIODMULT> ...]" << boldOff << "  Stream 1 or more datasets and display w/ compact view." << endlbOn;
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
@@ -1454,10 +1545,13 @@ void cltool_outputUsage()
 	cout << "          DID_GNSS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream with ground vehicle" << endlbOn;
+	cout << "                   " << boldOff << " data (same as -preset=PPD_GROUND_VEHICLE)" << endlbOn;
 	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
 	cout << "    -presetGNSS    " << boldOff << " Send RMC preset to enable GNSS data stream" << endlbOn;
 	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
+	cout << "    -preset=<NAME> " << boldOff << " Send the named RMC preset: INS, PPD (IMX PPD without ground vehicle data)," << endlbOn;
+	cout << "                   " << boldOff << " PPD_GROUND_VEHICLE, PPD_RTK (PPD + RTK debug) or PPD_GPX" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Writing to data log file)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
@@ -1512,6 +1606,13 @@ void cltool_outputHelp()
 
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
+    if (!inertialSenseInterface.getDevices().empty())
+    {   // over CBOR when the device serves FLASH_CFG
+        bool handled;
+        bool ok = cltool_cborImxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
+        if (handled)
+            return ok;
+    }
     if (!inertialSenseInterface.WaitForImxFlashCfgSynced())
     {
         cout << "Failed to sync IMX flash config." << endl;
@@ -1552,6 +1653,13 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
 
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
+    if (!inertialSenseInterface.getDevices().empty())
+    {   // over CBOR when the GPX serves GPX_FLASH_CFG; a write for a GPX behind an IMX goes to the IMX, which proxies it
+        bool handled;
+        bool ok = cltool_cborGpxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
+        if (handled)
+            return ok;
+    }
     if (!inertialSenseInterface.WaitForGpxFlashCfgSynced())
     {
         cout << "Failed to sync GPX flash config." << endl;

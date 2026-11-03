@@ -69,7 +69,7 @@ typedef uint32_t eDataIDs;
 #define DID_DEV_INFO                    (eDataIDs)1     /**< (dev_info_t) Device information */
 #define DID_IMX_DEV_INFO                (DID_DEV_INFO)  /**< Alias of DID_DEV_INFO used on IMX firmware */
 #define DID_SYS_FAULT                   (eDataIDs)2     /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
-#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (startupImuDtMs, default 1ms).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
+#define DID_PIMU                        (eDataIDs)3     /**< (pimu_t) Preintegrated IMU (a.k.a. Coning and Sculling integral) in body/IMU frame.  Updated at IMU rate. Also know as delta theta delta velocity, or preintegrated IMU (PIMU). For clarification, the name "Preintegrated IMU" or "PIMU" throughout our User Manual. This data is integrated from the IMU data at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz).  The PIMU integration period (dt) and INS NAV update data period are the same.  DID_FLASH_CONFIG.startupNavDtMs sets the NAV output period at startup.  The minimum NAV update and output periods are found here:  https://docs.inertialsense.com/user-manual/imx/application-config/imu_ins_gnss_configuration/#navigation-update-and-output-periods.  If a faster output data rate for IMU is desired, DID_IMU_RAW can be used instead. PIMU data acts as a form of compression, adding the benefit of higher integration rates for slower output data rates, preserving the IMU data without adding filter delay and addresses antialiasing. It is most effective for systems that have higher dynamics and lower communications data rates.  The minimum data period is the IMU sample task period (DID_SYS_PARAMS.sampleTaskPeriodMs) or 4, whichever is larger (250Hz max). The PIMU value can be converted to IMU by dividing PIMU by dt (i.e. IMU = PIMU / dt)  */
 #define DID_INS_1                       (eDataIDs)4     /**< (ins_1_t) INS output: euler rotation w/ respect to NED, NED position from reference LLA. */
 #define DID_INS_2                       (eDataIDs)5     /**< (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GNSS1_RCVR_POS              (eDataIDs)6     /**< (gnss_pos_t) GNSS 1 position data from GNSS receiver. */
@@ -86,7 +86,7 @@ typedef uint32_t eDataIDs;
 #define DID_GNSS1_VERSION               (eDataIDs)17    /**< (gnss_version_t) GNSS 1 version info */
 #define DID_GNSS2_VERSION               (eDataIDs)18    /**< (gnss_version_t) GNSS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19    /**< (mag_cal_t) Magnetometer calibration */
-#define DID_IMUS                        (eDataIDs)20    /**< (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
+#define DID_IMUS                        (eDataIDs)20    /**< (imus_t) Multiple inertial measurement units data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuOdr) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  Enabled by using RMC preset "Allan Variance IMUs".  Enabling this message adds processing overhead to sensor RTOS task. */
 #define DID_GNSS1_RTK_POS_REL           (eDataIDs)21    /**< (gnss_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GNSS1_RTK_POS_MISC          (eDataIDs)22    /**< (gnss_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23    /**< INTERNAL USE ONLY (feature_bits_t) */
@@ -123,8 +123,8 @@ typedef uint32_t eDataIDs;
 #define DID_GNSS1_RTK_POS               (eDataIDs)54    /**< (gnss_pos_t) GNSS RTK position data */
 #define DID_ROS_COVARIANCE_POSE_TWIST   (eDataIDs)55    /**< (ros_covariance_pose_twist_t) INL2 EKF 6x6 covariance matrices packed in arrays containing their elements on main diagonal and below */
 #define DID_COMMUNICATIONS_LOOPBACK     (eDataIDs)56    /**< INTERNAL USE ONLY - Unit test for communications manager  */
-#define DID_IMUS_UNCAL                  (eDataIDs)57    /**< INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is DID_FLASH_CONFIG.startupImuDtMs or 4, whichever is larger (250Hz max). */
-#define DID_IMU                         (eDataIDs)58    /**< (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuDtMs (1KHz)) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
+#define DID_IMUS_UNCAL                  (eDataIDs)57    /**< INTERNAL USE ONLY (imus_t) Uncalibrated multiple IMU data.  We recommend use of DID_IMU or DID_PIMU as they are calibrated and oversampled and contain less noise.  Minimum data period is the IMU sample task period (DID_SYS_PARAMS.sampleTaskPeriodMs) or 4, whichever is larger (250Hz max). */
+#define DID_IMU                         (eDataIDs)58    /**< (imu_t) Inertial measurement unit data down-sampled from IMU rate (DID_FLASH_CONFIG.startupImuOdr) to navigation update rate (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter to reduce noise and preserve accuracy.  Minimum data period is DID_FLASH_CONFIG.startupNavDtMs (1KHz max).  */
 #define DID_INL2_MAG_OBS_INFO           (eDataIDs)59    /**< (inl2_mag_obs_info_t) INL2 magnetometer calibration information. */
 #define DID_GNSS_BASE_RAW               (eDataIDs)60    /**< (gnss_raw_t) GNSS raw data for base station (observation, ephemeris, etc.) - requires little endian CPU. The contents of data can vary for this message and are determined by dataType field. RTK positioning or RTK compassing must be enabled to stream this message. */
 #define DID_GNSS_RTK_OPT                (eDataIDs)61    /**< (gnss_rtk_opt_t) RTK options - requires little endian CPU. */
@@ -197,6 +197,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127   /**< (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_SYS_FAULT               (eDataIDs)128   /**< (system_fault_t) System fault information. This is broadcast automatically every 10s if a critical fault is detected. */
 #define DID_GPX_LAST                    128             /**< Last of GPX DIDs */
+#define DID_CBOR                        (eDataIDs)129   /**< (cbor_msg_t) A CBOR message: one CBOR map holding envelope keys and then DID keys (see cbor/cbor_registry.h). Variable length up to ISB_MAX_DATASET_SIZE; sent and requested at offset 0 only. */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -882,7 +883,7 @@ typedef struct PACKED
 /**
  * @brief (DID_IMU, DID_IMU_RAW, DID_REFERENCE_IMU) Single combined Inertial Measurement Unit (IMU)
  * sample, in body/sensor frame. DID_IMU is down-sampled from the raw IMU rate
- * (DID_FLASH_CONFIG.startupImuDtMs) to the navigation update rate (DID_FLASH_CONFIG.startupNavDtMs)
+ * (DID_FLASH_CONFIG.startupImuOdr) to the navigation update rate (DID_FLASH_CONFIG.startupNavDtMs)
  * as an anti-aliasing filter; DID_IMU_RAW is averaged from DID_IMUS_RAW for output rates faster
  * than the nav update rate; DID_REFERENCE_IMU carries a reference/truth IMU input from a testbed
  * used for manufacturing calibration and testing.
@@ -901,7 +902,7 @@ typedef struct PACKED
  * @brief (DID_IMUS_UNCAL, DID_IMUS_RAW, DID_IMUS) Samples from up to MAX_IMU_DEVICES individual
  * IMUs, in body/sensor frame. DID_IMUS_UNCAL is uncalibrated raw multi-IMU data (internal use
  * only); DID_IMUS_RAW is the calibrated version of DID_IMUS_UNCAL; DID_IMUS is DID_IMUS_RAW
- * down-sampled from the IMU rate (DID_FLASH_CONFIG.startupImuDtMs) to the navigation update rate
+ * down-sampled from the IMU rate (DID_FLASH_CONFIG.startupImuOdr) to the navigation update rate
  * (DID_FLASH_CONFIG.startupNavDtMs) as an anti-aliasing filter. DID_IMU/DID_PIMU (the combined,
  * oversampled single-IMU outputs) are recommended over these for general use since they contain
  * less noise; this per-device data is primarily used for Allan variance / calibration analysis.
@@ -951,13 +952,13 @@ typedef struct PACKED
  * @brief (DID_PIMU, DID_REFERENCE_PIMU) Preintegrated IMU (PIMU), a.k.a. delta theta / delta
  * velocity or the Coning and Sculling integral, in body/IMU frame. Rather than reporting
  * instantaneous angular rate and acceleration, this data is integrated from the raw IMU samples
- * at the IMU update rate (DID_FLASH_CONFIG.startupImuDtMs, default 1ms); the integration period
+ * at the IMU update rate (DID_FLASH_CONFIG.startupImuOdr, default 2 kHz); the integration period
  * (dt) matches the INS navigation update period (DID_FLASH_CONFIG.startupNavDtMs). This acts as a
  * form of lossless compression: it preserves the high-rate IMU information (avoiding the
  * antialiasing/filter-delay cost of simply decimating) while allowing a lower output data rate,
  * which is most beneficial for systems with higher dynamics and lower-bandwidth communication
  * links. To recover instantaneous IMU-equivalent values, divide by dt (IMU = PIMU / dt). Minimum
- * data period is DID_FLASH_CONFIG.startupImuDtMs or 4ms, whichever is larger (250Hz max).
+ * data period is the IMU sample task period (DID_SYS_PARAMS.sampleTaskPeriodMs) or 4ms, whichever is larger (250Hz max).
  * DID_REFERENCE_PIMU carries a reference/truth IMU input used for manufacturing calibration and
  * testing.
  */
@@ -1013,6 +1014,8 @@ enum eImusStatus
     IMUS_STATUS_IMU_OK_MASK     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK | IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,  //!< Mask of all IMU-valid bits
     IMUS_STATUS_GYR_OK_MASK     = IMUS_STATUS_GYR_X_OK | IMUS_STATUS_GYR_Y_OK | IMUS_STATUS_GYR_Z_OK,  //!< Mask of all gyro-valid bits
     IMUS_STATUS_ACC_OK_MASK     = IMUS_STATUS_ACC_X_OK | IMUS_STATUS_ACC_Y_OK | IMUS_STATUS_ACC_Z_OK,  //!< Mask of all accelerometer-valid bits
+    IMUS_STATUS_ALL_GYR_OK_MASK = IMUS_STATUS_GYR_OK_MASK<<0 | IMUS_STATUS_GYR_OK_MASK<<6 | IMUS_STATUS_GYR_OK_MASK<<12 | IMUS_STATUS_GYR_OK_MASK<<18 | IMUS_STATUS_GYR_OK_MASK<<24,  //!< Mask of all gyro-valid bits
+    IMUS_STATUS_ALL_ACC_OK_MASK = IMUS_STATUS_ACC_OK_MASK<<0 | IMUS_STATUS_ACC_OK_MASK<<6 | IMUS_STATUS_ACC_OK_MASK<<12 | IMUS_STATUS_ACC_OK_MASK<<18 | IMUS_STATUS_ACC_OK_MASK<<24,  //!< Mask of all accelerometer-valid bits
 
     IMUS_STATUS_SATURATION_GYR  = (int)0x40000000,  //!< Gyro sensor saturation detected
     IMUS_STATUS_SATURATION_ACC  = (int)0x80000000,  //!< Accelerometer sensor saturation detected
@@ -1368,7 +1371,7 @@ typedef struct PACKED
     int             accel_motion;   //!< Non-zero when accelerometer-sensed motion is detected
     int             rot_motion;     //!< Non-zero when rotational motion is detected
     int             zero_vel;       //!< Non-zero when zero-velocity condition is detected
-    int             reserved;
+    int             reserved;       //!< Reserved
     float           hdg_err;        //!< Estimated heading error, in radians
     int             hdg_coarse;     //!< Flag whether a coarse (uncertain) initial heading has been established
     int             hdg_aligned;    //!< Flag whether initial attitude error has converged (heading alignment complete)
@@ -1467,7 +1470,7 @@ typedef struct PACKED
 
     uint32_t                sysStatus;          //!< System status flags (see eSysStatusFlags)
 
-    uint32_t                imuSamplePeriodMs;  //!< IMU sample period, in milliseconds. Zero disables sampling.
+    uint32_t                sampleTaskPeriodMs; //!< IMU sample task period, in milliseconds. Not the sensor sample period (see eImuOdr). Zero disables sampling.
 
     uint32_t                navOutputPeriodMs;  //!< Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period, in milliseconds
 
@@ -1512,7 +1515,7 @@ enum eGenFaultCodes
     GFC_CHIP_ERASE_INVALID      = 0x01000000,  //!< Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.
     GFC_EKF_GNSS_TIME_FAULT     = 0x02000000,  //!< Fault: EKF GNSS time fault
     GFC_GNSS_RECEIVER_TIME      = 0x04000000,  //!< Fault: GNSS receiver time fault
-    GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS reciever ceneral fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
+    GFC_GNSS_GENERAL_FAULT      = 0x08000000,  //!< Fault: GNSS receiver general fault. See the corresponding GNSS status fault flags (i.e. GPX_STATUS_GENERAL_FAULT_MASK)
     GFC_EKF_INPUT_INVALID_IMU   = 0x10000000,  //!< Fault: Invalid IMU input rejected by EKF
     GFC_GNSS_RTOS_ERROR         = 0x20000000,  //!< Fault: GNSS RTOS error
     GFC_EKF_BIAS_SATURATED      = 0x40000000,  //!< Fault: EKF bias saturated
@@ -1814,7 +1817,7 @@ typedef struct PACKED
 #define RMC_OPTIONS_PORT_SER2                   0x00000004
 #define RMC_OPTIONS_PORT_USB                    0x00000008
 #define RMC_OPTIONS_PRESERVE_CTRL               0x00000100                  // Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
-#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.
+#define RMC_OPTIONS_PERSISTENT                  0x00000200                  // Stage port RMC as the startup config used after reboot; requires a flash save (e.g. SYS_CMD_SAVE_FLASH) to persist.
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK   0x00000C00                  // Enable speed filtering (NMEA message only, i.e. GLL, RMC, VTG).  This filters out small velocity caused by system noise.
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_OFFSET    10                          // Bit offset for NMEA speed filter options
 #define RMC_OPTIONS_NMEA_SPEED_FILTER_ENABLE    1                           // NMEA speed filtering: Enable
@@ -1830,29 +1833,29 @@ typedef struct PACKED
 #define RMC_BITS_BAROMETER              0x0000000000000040  // ~8ms
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080  // ~10ms
 #define RMC_BITS_IMUS                   0x0000000000000100  // DID_FLASH_CONFIG.startupNavDtMs (4ms default)
-#define RMC_BITS_TIME                    0x0000000000000200  // GPX 1PPS/timepulse status, forwarded from DID_TIMEPULSE
-#define RMC_BITS_GNSS1_POS          0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS2_POS          0x0000000000000800  // "
-#define RMC_BITS_GNSS1_RAW          0x0000000000001000  // "
-#define RMC_BITS_GNSS2_RAW          0x0000000000002000  // "
-#define RMC_BITS_GNSS1_SAT          0x0000000000004000  // 1s
-#define RMC_BITS_GNSS2_SAT          0x0000000000008000  // "
-#define RMC_BITS_GNSS_BASE_RAW      0x0000000000010000  //
-#define RMC_BITS_STROBE_IN_TIME     0x0000000000020000  // On strobe input event
-#define RMC_BITS_DIAGNOSTIC_MESSAGE 0x0000000000040000
-#define RMC_BITS_IMUS_UNCAL         0x0000000000080000  // DID_FLASH_CONFIG.startupImuDtMs (1ms default)
-#define RMC_BITS_GNSS1_VEL          0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
-#define RMC_BITS_GNSS2_VEL          0x0000000000200000  // "
-#define RMC_BITS_GNSS1_UBX_POS      0x0000000000400000  // "
-#define RMC_BITS_GNSS1_RTK_POS      0x0000000000800000  // "
-#define RMC_BITS_GNSS1_RTK_POS_REL  0x0000000001000000  // "
-#define RMC_BITS_GNSS1_RTK_POS_MISC 0x0000000004000000  // "
-#define RMC_BITS_INL2_NED_SIGMA     0x0000000008000000
-#define RMC_BITS_RTK_STATE          0x0000000010000000
-#define RMC_BITS_RTK_CODE_RESIDUAL  0x0000000020000000
-#define RMC_BITS_RTK_PHASE_RESIDUAL 0x0000000040000000
-#define RMC_BITS_WHEEL_ENCODER      0x0000000080000000
-#define RMC_BITS_GROUND_VEHICLE     0x0000000100000000
+#define RMC_BITS_TIME                   0x0000000000000200  // GPX 1PPS/timepulse status, forwarded from DID_TIMEPULSE
+#define RMC_BITS_GNSS1_POS              0x0000000000000400  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS2_POS              0x0000000000000800  // "
+#define RMC_BITS_GNSS1_RAW              0x0000000000001000  // "
+#define RMC_BITS_GNSS2_RAW              0x0000000000002000  // "
+#define RMC_BITS_GNSS1_SAT              0x0000000000004000  // 1s
+#define RMC_BITS_GNSS2_SAT              0x0000000000008000  // "
+#define RMC_BITS_GNSS_BASE_RAW          0x0000000000010000  //
+#define RMC_BITS_STROBE_IN_TIME         0x0000000000020000  // On strobe input event
+#define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000
+#define RMC_BITS_IMUS_UNCAL             0x0000000000080000  // DID_FLASH_CONFIG.startupImuOdr (2 kHz default)
+#define RMC_BITS_GNSS1_VEL              0x0000000000100000  // DID_FLASH_CONFIG.startupGnssDtMs (200ms default)
+#define RMC_BITS_GNSS2_VEL              0x0000000000200000  // "
+#define RMC_BITS_GNSS1_UBX_POS          0x0000000000400000  // "
+#define RMC_BITS_GNSS1_RTK_POS          0x0000000000800000  // "
+#define RMC_BITS_GNSS1_RTK_POS_REL      0x0000000001000000  // "
+#define RMC_BITS_GNSS1_RTK_POS_MISC     0x0000000004000000  // "
+#define RMC_BITS_INL2_NED_SIGMA         0x0000000008000000
+#define RMC_BITS_RTK_STATE              0x0000000010000000
+#define RMC_BITS_RTK_CODE_RESIDUAL      0x0000000020000000
+#define RMC_BITS_RTK_PHASE_RESIDUAL     0x0000000040000000
+#define RMC_BITS_WHEEL_ENCODER          0x0000000080000000
+#define RMC_BITS_GROUND_VEHICLE         0x0000000100000000
 // #define RMC_BITS_UNUSED                 0x0000000200000000
 #define RMC_BITS_IMU_MAG                0x0000000400000000
 #define RMC_BITS_PIMU_MAG               0x0000000800000000
@@ -2307,6 +2310,8 @@ enum GRMC_BIT_POS{
                                         | GRMC_BITS_GNSS1_SIG \
                                         | GRMC_BITS_GNSS1_VERSION \
                                         /*| GRMC_BITS_GNSS1_RTK_POS*/ \
+                                        | GRMC_BITS_GNSS1_RTK_POS_REL \
+                                        | GRMC_BITS_GNSS1_RTK_POS_MISC \
                                         | GRMC_BITS_GNSS1_RAW)
 
 #define GRMC_PRESET_GPX_GNSS2   (GRMC_BITS_GNSS2_POS \
@@ -2966,6 +2971,7 @@ enum eRTKConfigBits
 #define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)       // (rad)
 #define DEFAULT_GNSS_RTK_CN0_MINIMUM            30                          // (dBHz)
 #define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     20                          // (dBHz)
+#define DEFAULT_DEAD_RECKONING_TIMEOUT          30                          // (s)
 
 /** @brief IMU/magnetometer sensor hardware configuration, used with nvm_flash_cfg_t.sensorConfig (DID_FLASH_CONFIG). Packs several small sub-fields (each with its own _MASK/_OFFSET pair) selecting gyro/accel full-scale range, gyro/accel DLPF bandwidth, IMU-to-sensor-frame mounting rotation, and disable/fault-detection flags for the magnetometer, barometer, and multi-IMU voting. Most fields require a system reset to take effect. */
 enum eSensorConfig
@@ -3387,30 +3393,36 @@ typedef struct PACKED
 
 } ground_vehicle_t;
 
-/** @brief Frame of measurement for an external aiding observation, held in the low nibble of ext_aiding_pos_t.status / ext_aiding_vel_t.status (DID_EXT_AIDING_POS, DID_EXT_AIDING_VEL). Note 0 is not a valid frame. */
-enum eExtAidingFrame
+/** @brief Status bits of the external aiding observations (DID_EXT_AIDING_POS, _VEL, _SPEED, _DIR_SPEED, _HEADING, _ATTITUDE). The low nibble holds the frame of measurement for ext_aiding_pos_t / ext_aiding_vel_t (0 is not a valid frame), or the type for the other messages (eExtAidingSpeedType, eExtAidingHeadingType, eExtAidingAttitudeType). The time bits select how timeMs is interpreted, in every message; the reserved values 0x200 and 0x300 cause the observation to be discarded. */
+enum eExtAidingStatus
 {
-    EXT_AIDING_FRAME_MASK    = 0x0000000F,  //!< Mask for the frame of measurement
-    EXT_AIDING_FRAME_ECEF    = 1,           //!< ECEF frame
-    EXT_AIDING_FRAME_NED     = 2,           //!< NED frame
-    EXT_AIDING_FRAME_BODY    = 3            //!< Body frame
+    EXT_AIDING_FRAME_MASK           = 0x0000000F,  //!< Mask for the frame of measurement
+    EXT_AIDING_FRAME_ECEF           = 1,           //!< ECEF frame
+    EXT_AIDING_FRAME_NED            = 2,           //!< NED frame
+    EXT_AIDING_FRAME_BODY           = 3,           //!< Body frame
+    EXT_AIDING_STATUS_TIME_MASK     = 0x00000300,  //!< Bitmask for how timeMs is interpreted
+    EXT_AIDING_STATUS_TIME_TOW_MS   = 0x00000000,  //!< timeMs is GNSS time of week (ms)
+    EXT_AIDING_STATUS_TIME_LATENCY  = 0x00000100,  //!< timeMs is the measurement's age when the IMX receives it (ms): how long before reception it was taken
 };
 
-/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is expected in ECEF; var is expected in NED. */
+/** @deprecated Renamed to eExtAidingStatus. */
+typedef enum eExtAidingStatus eExtAidingFrame;
+
+/** @brief (DID_EXT_AIDING_POS) External aiding position observation, supplied by a host or external sensor as an input to the INS/EKF. Position is in ECEF, or in NED relative to the reference LLA (refLla), as selected by status; var is expected in NED. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame/status of measurement; use 1=ECEF (see eExtAidingFrame). Position is currently processed as ECEF even if another frame is specified.
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, plus time interpretation of timeMs (see eExtAidingStatus). Any other frame is discarded.
     double     pos[3];       //!< position {x,y,z} (m)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2).  Must be non-zero or the observation is discarded.
 } ext_aiding_pos_t;
 
-/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is expected in ECEF; var is expected in NED. */
+/** @brief (DID_EXT_AIDING_VEL) External aiding velocity observation, supplied by a host or external sensor as an input to the INS/EKF. Velocity is in the frame selected by status; var is expected in NED. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body (see eExtAidingFrame)
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Frame of measurement, 1=ECEF, 2=NED, 3=Body, plus time interpretation of timeMs (see eExtAidingStatus). Any other frame is discarded.
     float      vel[3];       //!< velocity {vx,vy,vz} (m/s)
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
     float      var[3];       //!< observation variance, per axis, in NED (m^2/s^2).  Must be non-zero or the observation is discarded.
@@ -3427,8 +3439,8 @@ enum eExtAidingSpeedType
 /** @brief (DID_EXT_AIDING_SPEED) External aiding scalar speed observation (e.g. a wheel-speed sensor or GNSS-derived ground speed with no direction), supplied by a host or external sensor as an input to the INS/EKF. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType)
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Speed type, 1=3D magnitude, 2=horizontal magnitude (see eExtAidingSpeedType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      speed;        //!< speed (m/s)
     float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
@@ -3437,8 +3449,8 @@ typedef struct PACKED
 /** @brief (DID_EXT_AIDING_DIR_SPEED) External aiding directional speed observation (e.g. airspeed from a pitot tube), supplied by a host or external sensor as an input to the INS/EKF. `direction` is a unit vector in the IMU/body frame (e.g. [1,0,0] for a sensor measuring speed along the body X axis); `speed` is the velocity component along that direction at the point of measurement. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< reserved, set to 0
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Time interpretation of timeMs (see eExtAidingStatus); other bits reserved, set to 0
     float      speed;        //!< speed along `direction` (m/s)
     float      var;          //!< observation variance (m^2/s^2).  Must be non-zero or the observation is discarded.
     float      offset[3];    //!< point of measurement relative to IMU origin in IMU/body frame {x,y,z} (m)
@@ -3457,8 +3469,8 @@ enum eExtAidingHeadingType
 /** @brief (DID_EXT_AIDING_HEADING) External aiding heading observation, supplied by a host or external sensor as an input to the INS/EKF. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType)
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Heading type, 1=true, 2=magnetic, 3=course over ground (see eExtAidingHeadingType), plus time interpretation of timeMs (see eExtAidingStatus)
     float      heading;      //!< heading (rad), 0 = north, positive clockwise, range [-pi, pi]
     float      var;          //!< observation variance (rad^2).  Must be non-zero or the observation is discarded.
 } ext_aiding_heading_t;
@@ -3471,13 +3483,13 @@ enum eExtAidingAttitudeType
     EXT_AIDING_ATTITUDE_TYPE_QUATERNION = 2            //!< att = {w, x, y, z}
 };
 
-/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle roll/pitch/yaw rotation vector regardless of whether `att` is euler or quaternion. */
+/** @brief (DID_EXT_AIDING_ATTITUDE) External aiding attitude observation, supplied by a host or external sensor (e.g. a second INS) as an input to the INS/EKF. `att` is the body attitude relative to NED. `var` is the 3x3 attitude-error covariance (row-major), expressed as a small-angle rotation about the body axes regardless of whether `att` is euler or quaternion. */
 typedef struct PACKED
 {
-    uint32_t   timeOfWeekMs; //!< GPS time of week (since Sunday morning) in milliseconds
-    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType)
-    float      att[4];       //!< attitude, interpreted per `status`: euler {roll,pitch,yaw,-} or quaternion {w,x,y,z}
-    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), in the roll/pitch/yaw tangent space. Must have a non-zero diagonal or the observation is discarded.
+    uint32_t   timeMs;       //!< (ms) When the measurement was taken: GNSS time of week, or its age when the IMX receives it, as selected by the status time bits (see eExtAidingStatus)
+    uint32_t   status;       //!< Attitude representation, 1=euler, 2=quaternion (see eExtAidingAttitudeType), plus time interpretation of timeMs (see eExtAidingStatus)
+    float      att[4];       //!< attitude relative to NED, interpreted per `status`: euler {roll,pitch,yaw,-} or NED-to-body quaternion {w,x,y,z}
+    float      var[9];       //!< 3x3 row-major attitude-error covariance (rad^2), about the body axes. Must have a non-zero diagonal or the observation is discarded.
 } ext_aiding_attitude_t;
 
 /** @brief INS dynamic platform model selection, used with nvm_flash_cfg_t.dynamicModel (DID_FLASH_CONFIG). Selects a motion-profile model (expected acceleration/jerk limits) that the EKF and the GNSS receiver's own navigation filter use to balance measurement noise rejection against tracking responsiveness; the model chosen must be at least as dynamic as the actual platform motion or navigation accuracy will suffer. Also passed through to the GNSS receiver's dynamic model setting where supported. */
@@ -3504,6 +3516,44 @@ enum eImuShockOptions
     IMU_SHOCK_OPTIONS_FAST_RECOVERY = 0x02   //!< Useful when shocks occur during rotation, as it minimizes post-shock error and reduces the time required for attitude convergence. However, this option increases the amount of attitude error induced by shock events and is therefore discouraged when the platform is stationary and not rotating during shocks.
 };
 
+/**
+ * @brief IMU output data rate (ODR), used with nvm_flash_cfg_t.startupImuOdr (DID_FLASH_CONFIG).
+ * Each IMU runs at its supported ODR nearest the nominal rate (exactly the nominal rate on the LSM6DSV).
+ * Each value lists its sensor sample period, the time between IMU samples (1 / ODR). This differs from the
+ * firmware sample task period (DID_SYS_PARAMS.sampleTaskPeriodMs, see IMU_ODR_TASK_PERIOD_MS()), which is
+ * 1 ms for rates of 1 kHz and above, processing every IMU sample where the hardware supports it (IMX-6), and
+ * the sensor sample period below 1 kHz.
+ */
+enum eImuOdr
+{
+    IMU_ODR_DISABLED        = 0,   //!< IMU sampling disabled
+    IMU_ODR_2000HZ          = 1,   //!< 2 kHz, 0.5 ms sample period (default)
+    IMU_ODR_1000HZ          = 2,   //!< 1 kHz, 1 ms sample period
+    IMU_ODR_500HZ           = 3,   //!< 500 Hz, 2 ms sample period
+    IMU_ODR_250HZ           = 4,   //!< 250 Hz, 4 ms sample period
+    IMU_ODR_125HZ           = 5,   //!< 125 Hz, 8 ms sample period
+    IMU_ODR_62_5HZ          = 6,   //!< 62.5 Hz, 16 ms sample period
+    IMU_ODR_31_25HZ         = 7,   //!< 31.25 Hz, 32 ms sample period
+    IMU_ODR_15_625HZ        = 8,   //!< 15.625 Hz, 64 ms sample period
+    /**
+     * 4 kHz, 0.25 ms sample period. Compared with 2 kHz, doubles the accelerometer bandwidth (ODR/4, 1 kHz)
+     * and moves the anti-aliasing margin well above the gyro's fixed bandwidth (about 500 Hz, the same at
+     * either rate), so vibration between 1 and 2 kHz is filtered instead of aliasing into the solution.
+     * Consider it for platforms with strong high-frequency vibration (engines, rotors, motors) or when
+     * accelerometer content above 500 Hz is needed. Costs about twice the sample processing of 2 kHz, and
+     * DID_IMUS_RAW output at this rate needs a high-bandwidth port.
+     */
+    IMU_ODR_4000HZ          = 9,
+    IMU_ODR_8000HZ          = 10,  //!< 8 kHz, 0.125 ms sample period (requires high-bandwidth communication port to prevent data loss)
+    IMU_ODR_COUNT                  //!< Must be last; count of defined rates, not a valid rate selection
+};
+
+/** True if odr is a defined eImuOdr value */
+#define IMU_ODR_IS_VALID(odr)         ((uint32_t)(odr) < IMU_ODR_COUNT)
+/** Sample task period (ms, DID_SYS_PARAMS.sampleTaskPeriodMs) of an eImuOdr value: 1 ms at 1 kHz and above, the sensor sample period below that, 0 when disabled */
+#define IMU_ODR_TASK_PERIOD_MS(odr)   ((((odr) >= IMU_ODR_500HZ) && ((odr) <= IMU_ODR_15_625HZ)) ? (1U << ((odr) - IMU_ODR_1000HZ)) : \
+                                       (((odr) == IMU_ODR_DISABLED) ? 0U : 1U))
+
 /** @brief (DID_FLASH_CONFIG) Persistent device configuration, written to and read back from flash memory (NVM). This is the device's primary user-configurable settings block, covering IMU/GNSS/navigation update rates, serial port baud rates, sensor-to-body-frame rotations and lever-arm offsets, dynamic model, platform config, RTK config, hardware I/O config, sensor config, magnetometer calibration thresholds, ground-vehicle/wheel-encoder config, magnetic declination, and IMU shock-rejection tuning. Applied by the device firmware at boot and re-applied/persisted whenever the host writes this DID. Most fields participate in the flash checksum (the checksum field itself covers the whole struct except size and checksum); PLATFORM_CFG_UPDATE_IO_CONFIG within platformConfig is a documented exception, excluded from the checksum and from upload change-detection so it can be used as a one-shot trigger.
  * IMPORTANT: These fields should not be deleted, they can be deprecated and marked as reserved,
  * or new fields added to the end.
@@ -3518,7 +3568,7 @@ typedef struct PACKED
 
     uint32_t                key;                                //!< Manufacturer method for restoring flash defaults
 
-    uint32_t                startupImuDtMs;                     //!< (ms) IMU sample (system input) period set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling.
+    uint32_t                startupImuOdr;                      //!< IMU output data rate set on startup (see eImuOdr). Raised if its sample period would be larger than startupNavDtMs. IMU_ODR_DISABLED disables sensor/IMU sampling.
 
     uint32_t                startupNavDtMs;                     //!< (ms) Navigation filter (system output) output period set on startup.  Used to initialize sysParams.navOutputPeriodMs.
 
@@ -3606,7 +3656,20 @@ typedef struct PACKED
 
     uint8_t                 ioConfig2;                          //!< Hardware interface configuration bits for GNSS2 PPS (see eIoConfig2).
 
+    uint8_t                 deadReckoningTimeout;               //!< (s) Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.
+
+    uint8_t                 reserved1;                          //!< Reserved for future use
+
+    uint16_t                reserved2;                          //!< Reserved for future use
+
+    uint32_t                reserved3;                          //!< Reserved for future use
+
+    uint32_t                reserved4;                          //!< Reserved for future use
+
 } nvm_flash_cfg_t;
+
+/** flashChecksum32() works a 32-bit word at a time and returns 0 for a size that is not a multiple of 4, so the struct must stay a whole number of words. When adding a field, take its space from the reserved fields. */
+STATIC_ASSERT((sizeof(nvm_flash_cfg_t) % 4) == 0);
 
 /** @brief (DID_INL2_NED_SIGMA) 1-sigma standard deviations of the INL2 (INS/GNSS loosely-coupled) EKF state estimates, expressed in the NED (north/east/down) frame. Reports estimation uncertainty, not the estimates themselves; see the corresponding INL2 state/status DIDs for the actual state values. */
 typedef struct PACKED
@@ -4397,6 +4460,7 @@ typedef struct
 enum eGpxSysConfigBits
 {
     GPX_SYS_CFG_BITS_DISABLE_VCC_RF         = 0x00000001,  //!< Disable (tri-state) VCC_RF (GPX pin 16) output supplied via VAUX (GPX pin 40)
+    GPX_SYS_CFG_BITS_EXT_AIDING_LATENCY     = 0x00000002,  //!< Timestamp the DID_EXT_AIDING_POS/_VEL observations the GPX outputs (GRMC_BITS_EXT_AIDING_POS/_VEL) with a fixed latency (150 ms position, 250 ms velocity; EXT_AIDING_STATUS_TIME_LATENCY) instead of GNSS time of week, so a consumer that has no GNSS time can still use them. Clear (default): GNSS time of week.
 
     GPX_SYS_CFG_BITS_BOR_LEVEL_0            = 0x0,  //!< Brownout reset threshold voltage level: 1.65 - 1.75 V (default)
     GPX_SYS_CFG_BITS_BOR_LEVEL_1            = 0x1,  //!< Brownout reset threshold voltage level: 2.0 - 2.1 V
@@ -5029,6 +5093,13 @@ typedef struct
     uint8_t         data[1];       //!< Variable-length payload, length bytes; interpretation depends on msgTypeID
 } did_event_t;
 
+/** @brief (DID_CBOR) A CBOR message. The payload is one CBOR map and nothing else; the ISB packet size is its length.
+ *  Keys and their meanings are defined by the CBOR key registry (cbor/cbor_registry.h). */
+typedef struct
+{
+    uint8_t         data[1];        //!< CBOR map, ISB packet size bytes
+} cbor_msg_t;
+
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))  //!< Size of did_event_t excluding its trailing variable-length data payload byte
 
 /** @brief Bitmask/value set for system_fault_t.status (DID_SYS_FAULT / DID_GPX_SYS_FAULT). Bits 0-23 are general, non-fatal status/error flags that may accumulate independently; bits 24-31 (SYS_FAULT_STATUS_CRITICAL_ERROR_MASK) instead encode a single small integer value (1-7) at SYS_FAULT_STATUS_CRITICAL_ERROR_pos identifying the specific critical fault that caused a reset, since only one critical fault can be active/reported at a time. */
@@ -5419,6 +5490,7 @@ typedef union PACKED
     port_monitor_t                  portMonitor;    //!< DID_PORT_MONITOR / DID_GPX_PORT_MONITOR
     is_timepulse_t                  ISBTimepulse;   //!< DID_TIMEPULSE
     did_event_t                     event;          //!< DID_EVENT
+    cbor_msg_t                      cbor;           //!< DID_CBOR
     manufacturing_info_t            manfInfo;       //!< DID_MANUFACTURING_INFO
     bit_t                           bit;            //!< DID_BIT
 

@@ -38,6 +38,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+#include "cltool_cbor.h"
 
 #include "core/msg_logger.h"
 
@@ -66,8 +67,6 @@ int g_devicesUpdating = 0;
 InertialSense *g_inertialSenseInterface = NULL;
 shared_ptr<CorrectionService> g_correctionInput = NULL;
 shared_ptr<Rtcm3CorrectionServer> g_correctionOutput = NULL;
-
-static void sendNmea(serial_port_t &port, string nmeaMsg);
 
 /// The command line cltool was started with, excluding the executable; the default relay annotation purpose.
 static std::string g_commandLineText;
@@ -491,6 +490,9 @@ static int cltool_errorCallback(void* ctx, port_handle_t port)
 int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
     ISDevice::onIsbDataHandler(data, port);
 
+    if (g_commandLineOptions.cborOut && data->hdr.id == DID_CBOR && data->hdr.offset == 0)
+        cltool_cborOut("rx", data->ptr, data->hdr.size);
+
     if (!g_enableDataCallback)
     {   // Receive disabled
         return 0;
@@ -577,7 +579,22 @@ int CltoolDevice::onIsbDataHandler(p_data_t *data, port_handle_t port) {
 
 int CltoolDevice::onNmeaHandler(const unsigned char *msg, int msgSize, port_handle_t port) {
     ISDevice::onNmeaHandler(msg, msgSize, port);
-    return 0;   // do something special, if we need to...
+
+    if (!g_enableDataCallback || !g_commandLineOptions.nmeaRx)
+    {   // Receive disabled, or not displaying NMEA (-nmea)
+        return 0;
+    }
+
+    // Display the received NMEA sentence, timestamped like the EvalTool message history.  Prefix the port name when
+    // more than one device is open.
+    std::string line((const char*)msg, msgSize);
+    while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
+        line.pop_back();
+    cout << MessageStats::getCurrentTimeString();
+    if (DeviceManager::getInstance().DeviceCount() > 1)
+        cout << "[" << portName(port) << "] ";
+    cout << line << endl;
+    return 0;
 }
 
 int CltoolDevice::onIsbAckHandler(p_ack_t* ack, unsigned char packetIdentifier, port_handle_t port) {
@@ -664,15 +681,26 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (inertialSenseInterface.DeviceCount() <= 0)
         return false;
 
-    if (g_commandLineOptions.nmeaMessage.size() != 0)
+    if (g_commandLineOptions.nmeaRx)
     {
         /**
-         * Send the specified NMEA message to all connected devices, and exit
+         * NMEA mode: send the specified NMEA message (if any) to all connected devices, then only display received
+         * NMEA (see CltoolDevice::onNmeaHandler).  Skip the binary data requests below.
          */
-        inertialSenseInterface.SendNmea(g_commandLineOptions.nmeaMessage);
+        if (!g_commandLineOptions.nmeaMessage.empty())
+        {
+            for (auto& device : inertialSenseInterface.getDevices())
+            {
+                if (device->SendNmea(g_commandLineOptions.nmeaMessage) < 0)
+                    cout << "Failed to send NMEA message on " << device->getPortName() << endl;
+            }
+        }
         return true;
     }
 
+
+    for (auto& device : inertialSenseInterface.getDevices())
+        cltool_cborWatch(*device);
 
     // we can only display a single device at a time; so use the first available device.  - FIXME: This should be selectable while running
     device_handle_t activeDevice = inertialSenseInterface.getDevices().front();
@@ -867,6 +895,15 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                 g_commandLineOptions.setAckDid.push_back(did);
             }
         }
+    }
+    if ((g_commandLineOptions.cborGetNode && g_commandLineOptions.cborGetNode.size() > 0) ||
+        (g_commandLineOptions.cborSetNode && g_commandLineOptions.cborSetNode.size() > 0))
+    {
+        if (!cltool_cborGetSet(inertialSenseInterface))
+        {   // Exit cltool now and report error code
+            std::exit(-4);
+        }
+        g_cmdSuccessExitAppNow = true;
     }
     if (g_commandLineOptions.imxflashCfgSet)
     {
@@ -1427,7 +1464,8 @@ static int cltool_dataStreaming()
                 cout << endl;
             }
         }
-        return -1;
+        // Not EXIT_CODE_INVALID_COMMAND_LINE (-1): the command line was fine, and that code also prints the help hint.
+        return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
 
     // A relay announces each device's identity, so discovery can register a device from that
@@ -1450,6 +1488,29 @@ static int cltool_dataStreaming()
             device->GetData(DID_GPX_STATUS);
             device->WaitForImxFlashCfgSynced();
         }
+    }
+
+    // With validation off, Open() binds a device to every port it finds but opens none of them (validation is what
+    // normally opens a port), so open them here.  connect() without revalidating sends nothing to the device.  This
+    // runs after the relay loop so relay devices keep the handling above.
+    if (g_commandLineOptions.disableDeviceValidation) {
+        bool anyConnected = false;
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (!device)
+                continue;
+            if (portIsOpened(device->port)) {
+                anyConnected = true;
+                continue;
+            }
+            if (g_relayPortNames.count(device->getPortName()))
+                continue;   // the relay loop already tried this one and reported it
+            if (device->connect())
+                anyConnected = true;
+            else
+                cerr << "Unable to open " << device->getPortName() << endl;
+        }
+        if (!anyConnected)
+            return EXIT_CODE_FAILED_TO_SETUP_COMMUNICATIONS;
     }
 
     if (g_commandLineOptions.list_devices) {
@@ -1508,7 +1569,7 @@ static int cltool_dataStreaming()
         }
 
         // [LOGGER INSTRUCTION] Setup and start data logger
-        if (g_commandLineOptions.nmeaMessage.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
+        if (!g_commandLineOptions.nmeaRx && !cltool_setupLogger(inertialSenseInterface))
         {
             cout << "Failed to setup logger!" << endl;
             // No need to Close() the InertialSense class interface; It will be closed when destroyed.
@@ -1557,7 +1618,7 @@ static int cltool_dataStreaming()
                 g_commandLineOptions.runDurationMs = 10000; // 10 second timeout, if none is specified
 
             // Main loop. Could be in separate thread if desired.
-            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDurationMs;
+            uint32_t startTimeMs = current_uptimeMs();     // monotonic and wrap-safe, unlike current_timeMs()
             uint32_t requestDataSetsTimeMs = 0;
 
             // yield to allow comms
@@ -1567,7 +1628,7 @@ static int cltool_dataStreaming()
             uint32_t nextPortCheck = current_timeMs() + 1000;
 
             // [C++ COMM INSTRUCTION] STEP 4: Read data
-            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
+            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || ((current_uptimeMs() - startTimeMs) < g_commandLineOptions.runDurationMs)))
             {
                 // Re-discover ONLY the originally-specified port(s), not every port the
                 // relay/mDNS factories know about. Default `discoverPorts()` uses pattern
@@ -1702,23 +1763,6 @@ static void sigint_cb(int sig)
     signal(SIGINT, SIG_DFL);
 }
 
-// Create and send full NMEA message with terminator w/ checksum trailer
-//TODO - deprecate this.  There should be functions in ISDevice and InertialSense class to do the same thing...
-static void sendNmea(port_handle_t port, string nmeaMsg)
-{
-    char buf[1024] = {0};
-    int n = 0;
-    if (nmeaMsg[0] != '$')
-    {   // Append header
-        nmeaMsg = "$" + nmeaMsg;
-    }
-    memcpy(buf, nmeaMsg.c_str(), nmeaMsg.size());
-    n += nmeaMsg.size();
-    nmea_sprint_footer(buf, sizeof(buf), n);
-    printf("Sending: %.*s\\r\\n\n", n-2, buf);
-    portWrite(port, (unsigned char*)buf, n);
-}
-
 /**
  * Discovers all available devices and resolves the target device ID to a port name.
  * On success, sets g_commandLineOptions.comPort to the resolved port and returns true.
@@ -1842,28 +1886,6 @@ static int inertialSenseMain()
     else if (g_commandLineOptions.baseConnection.length() != 0)
     {
         return cltool_createHost();
-    }
-    else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
-    {
-        for (auto port : InertialSense::getLastInstance()->portManager) {
-            if ( portValidate(port) && portOpen(port) ) {
-                sendNmea(port, "STPB");
-                sendNmea(port, g_commandLineOptions.nmeaMessage);
-            }
-
-            unsigned char line[512];
-            unsigned char* asciiData;
-            while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
-            {
-                if (portReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData) > 0)
-                {
-                    printf("%s\r\n", (char*)asciiData);
-                }
-
-                // Scan for "q" press to exit program
-                g_inertialSenseDisplay.GetKeyboardInput();
-            }
-        }
     }
     else
     {   // open the device, start streaming data and logging if needed

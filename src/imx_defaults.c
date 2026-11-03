@@ -392,7 +392,7 @@ uint32_t imxMinNavOutputMs(nvm_flash_cfg_t *cfg)
 {
     if (cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_INS_EKF)
     {
-        return 4;
+        return tNAV_MIN_OUTPUT_PERIOD_MS_VRS_MODE;
     }
     else if (!(cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_GNSS1_FUSION) ||
              !(cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_GNSS2_FUSION))

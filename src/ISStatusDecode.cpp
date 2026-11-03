@@ -1096,7 +1096,7 @@ status_field_decode_t buildRmcOptionsDecode()
     d.subfields.push_back(bitField("Preserve control", RMC_OPTIONS_PRESERVE_CTRL, false,
         "0x00000100 - Preserve current message bits (OR new bits in, don't replace)"));
     d.subfields.push_back(bitField("Persistent", RMC_OPTIONS_PERSISTENT, false,
-        "0x00000200 - Save current port RMC to flash; persists across reboot"));
+        "0x00000200 - Stage port RMC as startup config; persists across reboot once flash is saved"));
 
     {
         const uint32_t mask  = (uint32_t)RMC_OPTIONS_NMEA_SPEED_FILTER_BITMASK;
@@ -1491,6 +1491,8 @@ status_field_decode_t buildGpxSysCfgBitsDecode()
 
     d.subfields.push_back(bitField("VCC_RF disabled", GPX_SYS_CFG_BITS_DISABLE_VCC_RF, false,
         "0x00000001 - Disable (tri-state) VCC_RF output"));
+    d.subfields.push_back(bitField("Ext aiding latency timing", GPX_SYS_CFG_BITS_EXT_AIDING_LATENCY, false,
+        "0x00000002 - Time emitted external aiding observations as latency, not GNSS time of week"));
 
     {
         const uint32_t mask  = (uint32_t)GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK;
