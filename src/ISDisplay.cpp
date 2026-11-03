@@ -2204,7 +2204,17 @@ std::string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t 
         int portTypeIdx = (portMon.port[pIdx].portInfo & 0xF0) >> 4;
         int portId = (portMon.port[pIdx].portInfo & 0x0F);
 
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: 0x%02x]\n", portTypeNames[portTypeIdx], portId, portMon.port[pIdx].status);
+        {   // the status word (see PORT_STATUS__*): decoded, and the raw value after it
+            const uint32_t st = portMon.port[pIdx].status;
+            char desc[96] = "not reported";
+            if (st & PORT_STATUS__REPORTED)
+            {
+                const int16_t err = (int16_t)((st & PORT_STATUS__ERROR_MASK) >> PORT_STATUS__ERROR_SHIFT);
+                int n = SNPRINTF(desc, sizeof(desc), "%s %s", (st & PORT_STATUS__VALID) ? "valid" : "INVALID", (st & PORT_STATUS__OPENED) ? "open" : "closed");
+                if ((st & PORT_STATUS__ERROR) && n > 0 && n < (int)sizeof(desc)) SNPRINTF(desc + n, sizeof(desc) - n, ", last error %d", err);
+            }
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: %s (0x%08x)]\n", portTypeNames[portTypeIdx], portId, desc, st);
+        }
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\trx:  %u Kbytes,  %u KB/s,  %u errors,  %u overflows\n",
                         portMon.port[pIdx].rxBytes / 1024, portMon.port[pIdx].rxBytesPerSec / 1024, portMon.port[pIdx].rxChecksumErrors, portMon.port[pIdx].rxOverflows);
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u drops\n",

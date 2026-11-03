@@ -78,6 +78,21 @@ typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int 
 typedef int(*pfnPortLogger)(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData); //!< invoked on every portRead()/portWrite() to monitor/copy data flowing through the port
 // typedef int(*pfnPortSetName)(port_handle_t port, const char* name, unsigned int len);
 
+/**
+ * port_stats_t::status bit layout (built by portStatsStatus() from state the port already holds, so a host can tell a closed, never-opened or invalidated port from a healthy one).
+ * An all-zero word means the device does not report port status at all (older firmware); every word portStatsStatus() produces has PORT_STATUS__REPORTED set.
+ *   0x0000000B  (REPORTED | VALID | OPENED), error-free: a healthy, open port
+ *   0x00000009  (REPORTED | VALID):          a valid port that is closed / not yet opened
+ *   0x00000008  (REPORTED):                  a port that was invalidated (portInvalidate()) and is closed
+ *   bit 2 (ERROR) and bits 16-31 hold the last PORT_ERROR__* code (the low 16 bits of base_port_t::perror, two's complement, so -3 reads 0xFFFD)
+ */
+#define PORT_STATUS__VALID          0x00000001  //!< the port passes its integrity check and has PORT_FLAG__VALID set (portIsValid())
+#define PORT_STATUS__OPENED         0x00000002  //!< PORT_FLAG__OPENED is set
+#define PORT_STATUS__ERROR          0x00000004  //!< the last operation on the port reported an error (base_port_t::perror is not PORT_ERROR__NONE)
+#define PORT_STATUS__REPORTED       0x00000008  //!< always set in a status word the firmware produced: distinguishes "reported, nothing set" from "not reported" (0)
+#define PORT_STATUS__ERROR_SHIFT    16          //!< bit position of the last PORT_ERROR__* code (16 bits)
+#define PORT_STATUS__ERROR_MASK     0xFFFF0000  //!< mask of the last PORT_ERROR__* code
+
 /** Traffic/error counters optionally attached to a port (see base_port_t::stats), reset via portStatsReset(). */
 PUSH_PACK_1
 typedef struct
@@ -423,6 +438,22 @@ static inline int portValidate(port_handle_t port) {
  */
 static inline uint8_t portIsOpened(port_handle_t port) {
     return (portIsValid(port) && portFlagsIsSet(port, PORT_FLAG__OPENED));
+}
+
+/**
+ * Encodes the state a port already holds into a port_stats_t::status word (see PORT_STATUS__*): whether it is valid, whether it is open, and the last error code.
+ * Cheap and side-effect free, so firmware can call it when it fills in the port monitor DID.
+ * @param port the port handle (NULL is allowed and reads as an invalid, closed port)
+ * @return the status word; never zero, so it can be told from a device that does not report status
+ */
+static inline uint32_t portStatsStatus(port_handle_t port) {
+    uint32_t status = PORT_STATUS__REPORTED;
+    if (!port) return status;
+    if (portIsValid(port)) status |= PORT_STATUS__VALID;
+    if (portFlagsIsSet(port, PORT_FLAG__OPENED)) status |= PORT_STATUS__OPENED;
+    const uint16_t err = BASE_PORT(port)->perror;
+    if (err != 0) status |= PORT_STATUS__ERROR | ((uint32_t)err << PORT_STATUS__ERROR_SHIFT);
+    return status;
 }
 
 /**
