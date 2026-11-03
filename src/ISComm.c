@@ -1579,12 +1579,6 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
-int portWriteUpdateChecksum(port_handle_t port, const uint8_t* buf, int len, uint16_t *checksum)
-{
-    *checksum = is_comm_isb_checksum16(*checksum, buf, len);
-    return portWrite(port, buf, len);
-}
-
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM) || !portIsOpened(port))
@@ -1600,23 +1594,6 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-#ifdef GPX_1    // @Tony We want to remove this and use the single write call version for all ports.  We first need the stack usage (high water marks)
-    // implemented in the GPX RTOS status so we know if it is save to allocate a 2048 bytes buffer on the stack as a local variable in this function.
-
-    // Write packet to port in multiple write calls (LEGACY).  Interruptable calls to this function that also write to the port could cause severed packets written.
-
-    // Write packet to port
-    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));                               // Header
-    if (pkt->offset)
-    {
-        n += portWriteUpdateChecksum(port, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));              // Offset (optional)
-    }
-    if (pkt->data.size && pkt->data.ptr)
-    {
-        n += portWriteUpdateChecksum(port, (uint8_t*)pkt->data.ptr, pkt->data.size, &(pkt->checksum));  // Payload
-    }
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                                                // Footer (checksum)
-#else
     // Write packet to port in a single write call.  Reentrant function that prevents severed packets written to the port if this function gets interrupted and data written the same port.
     uint8_t buf[MAX_MSG_SIZE_ISB];
     uint8_t *ptr = buf;
@@ -1635,7 +1612,6 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 
     // Write entire packet to port (all at once).
     int n = portWrite(port, buf, (unsigned int)(ptr - buf));
-#endif
 
     // Increment Tx count
     COMM_PORT(port)->comm.txPktCount++;
