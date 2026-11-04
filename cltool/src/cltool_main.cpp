@@ -48,7 +48,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "TcpPortFactory.h"
 #include "ISmDnsPortFactory.h"
 #include "RelayPortFactory.h"
-#include "cltool_port_spec.h"
 #include "PortFactory.h"
 #include "util/natsort.h"
 #include "util/util.h"
@@ -118,6 +117,30 @@ static cltool_relay_identity_t cltoolRelayIdentity(bool isFwUpdate)
  * port is annotated again whenever RelayPortFactory::connectionId() changes. Cheap to call every loop: a
  * port only reaches the relay when it needs annotating.
  */
+/**
+ * Replaces each comma-separated entry of the -c port specifier that is a udev-style symlink with its canonical device path, so that
+ * utils::globToRegex() -- which escapes regex metacharacters -- cannot turn an alias such as "/dev/imx5.0" into "/dev/imx5\.0", which names no
+ * file and so can no longer be resolved by SerialPortFactory::locatePorts(). Entries that are not symlinks ("*", "/dev/ttyACM*", URIs, an empty
+ * entry) are left exactly as written. (SN-8661)
+ * Only cltool needs this: EvalTool and InertialSense::OpenPorts() pass their pattern to discoverPorts() unescaped, where locatePorts() resolves a
+ * literal alias itself (SN-8575).
+ */
+static std::string cltoolResolvePortAliases(const std::string& specifier)
+{
+    std::string out;
+    for (size_t start = 0; start <= specifier.size(); ) {
+        const size_t comma = specifier.find(',', start);
+        const std::string entry = specifier.substr(start, (comma == std::string::npos) ? std::string::npos : comma - start);
+        if (start > 0)
+            out += ',';
+        out += entry.empty() ? entry : SerialPortFactory::resolvePortName(entry);
+        if (comma == std::string::npos)
+            break;
+        start = comma + 1;
+    }
+    return out;
+}
+
 static void cltoolAnnotateRelayPorts(InertialSense& is)
 {
     if (!g_commandLineOptions.useRelay)

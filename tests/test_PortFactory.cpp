@@ -23,7 +23,6 @@
 #include "TcpPortFactory.h"
 #include "TcpServerPortFactory.h"
 #include "PortManager.h"
-#include "../cltool/src/cltool_port_spec.h"
 #include "Rtcm3CorrectionServer.h"
 
 // NOTE: must follow the SDK headers -- PLATFORM_IS_LINUX comes from ISConstants.h via those.
@@ -391,24 +390,13 @@ TEST(test_PortFactory, symlinkedPort_isValidatedAndLocated) {
     EXPECT_EQ(viaAlias.front(), canonical);   // reported under its canonical name, not the alias
 }
 
-// --- SN-8661: one specifier must resolve the same whichever internal path carries it -----------
+// --- SN-8661 -------------------------------------------------------------------------------------
 //
-// OpenPorts() hands the caller's string to discoverPorts() verbatim; cltool's -ufpkg re-discovery used to
-// escape it with utils::globToRegex() first, so "/dev/imx5.0" became "/dev/imx5\\.0" -- no longer a path, and
-// resolvePortName() (which only resolves real symlinks) declined it. cltoolResolvePortAliases()
-// resolves aliases on the literal text before escaping.
+// OpenPorts() hands the caller's string to discoverPorts() verbatim; cltool's -ufpkg re-discovery escapes it with utils::globToRegex() first,
+// so "/dev/imx5.0" becomes "/dev/imx5\\.0" -- no longer a path, and resolvePortName() (which only resolves real symlinks) declines it. cltool
+// therefore resolves each -c entry before escaping (cltoolResolvePortAliases() in cltool_main.cpp, which these tests cannot reach).
 
-namespace {
-/** What cltool's re-discovery does: udev aliases resolved on the literal text, then the normal glob translation. */
-std::string globResolving(const std::string& globs) { return utils::globToRegex(cltoolResolvePortAliases(globs)); }
-
-/** True if @p regexText (as discoverPorts() would compile it) matches @p name in full. */
-bool regexMatches(const std::string& regexText, const std::string& name) {
-    return std::regex_match(name, std::regex(regexText));
-}
-} // namespace
-
-// The asymmetry itself: the escaped form of a dotted alias names no file, so it can not resolve.
+// The asymmetry that makes that necessary: the literal alias resolves, its escaped form names no file and does not.
 TEST(test_PortFactory, SN8661_escapedDottedAlias_doesNotResolve_literalDoes) {
     TempDir dir; ASSERT_TRUE(dir.valid());
     const std::string target = dir.file("ttyFAKE0");
@@ -416,41 +404,7 @@ TEST(test_PortFactory, SN8661_escapedDottedAlias_doesNotResolve_literalDoes) {
     ASSERT_FALSE(alias.empty());
     EXPECT_EQ(SerialPortFactory::resolvePortName(alias), realOf(target));
     EXPECT_EQ(SerialPortFactory::resolvePortName(utils::globToRegex(alias)), utils::globToRegex(alias))
-        << "the escaped form names no file, which is why the glob path must resolve before escaping";
+        << "the escaped form names no file, which is why cltool must resolve before escaping";
 }
-
-// The fix: both conventions end up matching the canonical device path for a metacharacter-bearing alias.
-TEST(test_PortFactory, SN8661_globSpecifier_resolvesDottedAlias) {
-    TempDir dir; ASSERT_TRUE(dir.valid());
-    const std::string target = dir.file("ttyFAKE0");
-    const std::string alias = dir.link("imx5.0", "ttyFAKE0");
-    ASSERT_FALSE(alias.empty());
-    const std::string rx = globResolving(alias);
-    EXPECT_TRUE(regexMatches(rx, realOf(target))) << rx;
-    EXPECT_FALSE(regexMatches(rx, dir.path() + "/ttyFAKE1"));
-}
-
-TEST(test_PortFactory, SN8661_globSpecifier_resolvesEachPartOfACommaList) {
-    TempDir dir; ASSERT_TRUE(dir.valid());
-    const std::string t0 = dir.file("ttyFAKE0"), t1 = dir.file("ttyFAKE1");
-    const std::string a0 = dir.link("imx5.0", "ttyFAKE0"), a1 = dir.link("gpx1.0", "ttyFAKE1");
-    ASSERT_FALSE(a0.empty()); ASSERT_FALSE(a1.empty());
-    const std::string rx = globResolving(a0 + "," + a1 + ",/dev/ttyACM*");
-    EXPECT_TRUE(regexMatches(rx, realOf(t0)));
-    EXPECT_TRUE(regexMatches(rx, realOf(t1)));
-    EXPECT_TRUE(regexMatches(rx, "/dev/ttyACM7"));
-}
-
-// Everything that worked before must produce exactly what utils::globToRegex() produced, since no part is a symlink.
-TEST(test_PortFactory, SN8661_globSpecifier_leavesExistingSpecifierFormsUnchanged) {
-    const char* forms[] = {
-        "", "*", "/dev/ttyACM*", "/dev/ttyACM0", "/dev/ttyACM0,/dev/ttyUSB1", "/dev/does.not.exist",
-        "spi:///dev/spi0.0[b2000000", "tcp://192.168.1.10:8080", "/dev/tty(ACM|USB)[0-9]+",
-    };
-    for (const char* f : forms)
-        EXPECT_EQ(globResolving(f), utils::globToRegex(f)) << "'" << f << "'";
-    EXPECT_TRUE(regexMatches(globResolving("*"), "/dev/ttyACM0"));
-}
-
 
 #endif // PLATFORM_IS_LINUX
