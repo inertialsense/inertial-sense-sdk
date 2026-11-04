@@ -109,15 +109,6 @@ static cltool_relay_identity_t cltoolRelayIdentity(bool isFwUpdate)
 }
 
 /**
- * Annotates each relay connection cltool holds, so the relay shows who holds the device and why (see
- * cltoolRelayIdentity()). High priority during a firmware update protects the connection from an unforced
- * operator eject.
- *
- * Each connection is annotated once. The relay forgets an annotation when its TCP connection closes, so a
- * port is annotated again whenever RelayPortFactory::connectionId() changes. Cheap to call every loop: a
- * port only reaches the relay when it needs annotating.
- */
-/**
  * Replaces each comma-separated entry of the -c port specifier that is a udev-style symlink with its canonical device path, so that
  * utils::globToRegex() -- which escapes regex metacharacters -- cannot turn an alias such as "/dev/imx5.0" into "/dev/imx5\.0", which names no
  * file and so can no longer be resolved by SerialPortFactory::locatePorts(). Entries that are not symlinks ("*", "/dev/ttyACM*", URIs, an empty
@@ -141,6 +132,15 @@ static std::string cltoolResolvePortAliases(const std::string& specifier)
     return out;
 }
 
+/**
+ * Annotates each relay connection cltool holds, so the relay shows who holds the device and why (see
+ * cltoolRelayIdentity()). High priority during a firmware update protects the connection from an unforced
+ * operator eject.
+ *
+ * Each connection is annotated once. The relay forgets an annotation when its TCP connection closes, so a
+ * port is annotated again whenever RelayPortFactory::connectionId() changes. Cheap to call every loop: a
+ * port only reaches the relay when it needs annotating.
+ */
 static void cltoolAnnotateRelayPorts(InertialSense& is)
 {
     if (!g_commandLineOptions.useRelay)
