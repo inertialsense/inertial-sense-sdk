@@ -23,6 +23,7 @@
 #include "TcpPortFactory.h"
 #include "TcpServerPortFactory.h"
 #include "PortManager.h"
+#include "../cltool/src/cltool_port_spec.h"
 #include "Rtcm3CorrectionServer.h"
 
 // NOTE: must follow the SDK headers -- PLATFORM_IS_LINUX comes from ISConstants.h via those.
@@ -394,12 +395,12 @@ TEST(test_PortFactory, symlinkedPort_isValidatedAndLocated) {
 //
 // OpenPorts() hands the caller's string to discoverPorts() verbatim; cltool's -ufpkg re-discovery used to
 // escape it with utils::globToRegex() first, so "/dev/imx5.0" became "/dev/imx5\\.0" -- no longer a path, and
-// resolvePortName() (which only resolves real symlinks) declined it. utils::globToRegex()'s resolver argument
+// resolvePortName() (which only resolves real symlinks) declined it. cltoolResolvePortAliases()
 // resolves aliases on the literal text before escaping.
 
 namespace {
-/** What cltool's re-discovery passes: the glob, with udev aliases resolved on the literal text before escaping. */
-std::string globResolving(const std::string& globs) { return utils::globToRegex(globs, SerialPortFactory::resolvePortName); }
+/** What cltool's re-discovery does: udev aliases resolved on the literal text, then the normal glob translation. */
+std::string globResolving(const std::string& globs) { return utils::globToRegex(cltoolResolvePortAliases(globs)); }
 
 /** True if @p regexText (as discoverPorts() would compile it) matches @p name in full. */
 bool regexMatches(const std::string& regexText, const std::string& name) {

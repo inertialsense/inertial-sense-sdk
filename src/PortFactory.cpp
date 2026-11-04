@@ -126,9 +126,9 @@ void SerialPortFactory::locatePorts(std::function<void(PortFactory*, uint16_t, s
     // matter how the regex is written. Resolve before matching. Non-symlinks, patterns included,
     // pass through untouched. (SN-8575)
     //
-    // locatePorts() takes a regex or a literal path. A caller that holds a GLOB (cltool's -ufpkg re-discovery) must go through
-    // utils::globToRegex() with SerialPortFactory::resolvePortName as its resolver, which resolves aliases on the literal text BEFORE escaping metacharacters: an escaped
-    // "/dev/imx5\.0" names no file, so it can not be resolved here. (SN-8661)
+    // locatePorts() takes a regex or a literal path, and resolves a literal alias itself. A caller that escapes its input first (cltool's re-discovery,
+    // via utils::globToRegex()) hides the alias: "/dev/imx5\.0" names no file. That caller resolves the alias before escaping; see
+    // cltool/src/cltool_port_spec.h. (SN-8661)
     const std::string resolvedPattern = resolvePortName(pattern);
 
     // An unusable pattern must not abort a port scan by throwing out of it. std::regex's constructor

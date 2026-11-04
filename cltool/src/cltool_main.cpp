@@ -48,6 +48,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "TcpPortFactory.h"
 #include "ISmDnsPortFactory.h"
 #include "RelayPortFactory.h"
+#include "cltool_port_spec.h"
 #include "PortFactory.h"
 #include "util/natsort.h"
 #include "util/util.h"
@@ -1639,7 +1640,7 @@ static int cltool_dataStreaming()
                 // per port"). Passing the resolved comPort scopes the periodic check to
                 // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts(utils::globToRegex(g_commandLineOptions.comPort, SerialPortFactory::resolvePortName));
+                    PortManager::getInstance().discoverPorts(utils::globToRegex(cltoolResolvePortAliases(g_commandLineOptions.comPort)));
                     nextPortCheck = current_timeMs() + 1500;
                 }
 

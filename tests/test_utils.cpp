@@ -379,30 +379,6 @@ TEST(test_utils, parseFirmwareFromString_roundtrip) {
  */
 
 /** Every output must be a compilable regex -- this is the invariant whose violation caused the outage. */
-// SN-8661: the optional resolver is applied to each non-empty entry on its literal text, before escaping.
-TEST(test_utils, globToRegex_resolver_sees_the_literal_entry_before_escaping) {
-    std::vector<std::string> seen;
-    const std::string rx = utils::globToRegex("/dev/imx5.0,,/dev/ttyACM*", [&seen](const std::string& e) { seen.push_back(e); return e; });
-    ASSERT_EQ(seen.size(), 2u) << "empty entries are skipped, so they are not passed to the resolver";
-    EXPECT_EQ(seen[0], "/dev/imx5.0") << "the dot is still a dot when the resolver sees it";
-    EXPECT_EQ(seen[1], "/dev/ttyACM*") << "wildcards are passed through unexpanded";
-    EXPECT_EQ(rx, utils::globToRegex("/dev/imx5.0,/dev/ttyACM*"));
-}
-
-TEST(test_utils, globToRegex_resolver_result_is_what_gets_translated) {
-    const std::string rx = utils::globToRegex("alias.0,other", [](const std::string& e) { return e == "alias.0" ? std::string("/dev/ttyACM3") : e; });
-    std::regex re(rx);
-    EXPECT_TRUE(std::regex_match("/dev/ttyACM3", re));
-    EXPECT_FALSE(std::regex_match("alias.0", re));
-    EXPECT_TRUE(std::regex_match("other", re));
-    EXPECT_FALSE(std::regex_match("/dev/ttyACMX", re)) << "the resolved name is still escaped, so its dot-like characters do not widen the match";
-}
-
-TEST(test_utils, globToRegex_without_a_resolver_is_unchanged) {
-    for (const char* spec : { "", "*", "/dev/ttyACM*", "a+b(c)", "/dev/ttyACM0,/dev/ttyACM1" })
-        EXPECT_EQ(utils::globToRegex(spec), utils::globToRegex(spec, nullptr)) << spec;
-}
-
 TEST(test_utils, globToRegex_output_always_compiles) {
     for (const char* spec : { "*", "", "?", "**", "*.*", "/dev/ttyACM*", "a,b,,c", "[a-z]", "+", "(", ")",
                               "a+b", "$^", "{2}", "\\", "tcp://host.local:45007", "*,*" }) {
