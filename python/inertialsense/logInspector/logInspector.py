@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
     QTableWidget, QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
 from PyQt6.QtGui import QFileSystemModel
-from PyQt6.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem, QShortcut, QKeySequence
+from PyQt6.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem, QShortcut, QKeySequence, QClipboard
 from PyQt6.QtCore import pyqtSignal, QItemSelectionModel, Qt
 
 import matplotlib
@@ -992,8 +992,8 @@ class LogInspectorWindow(QMainWindow):
         action = menu.exec(self.fileTree.viewport().mapToGlobal(event))
         if action == copyAction:
             cb = QApplication.clipboard()
-            cb.clear(mode=cb.Clipboard)
-            cb.setText(directory, mode=cb.Clipboard)
+            cb.clear(mode=QClipboard.Mode.Clipboard)
+            cb.setText(directory, mode=QClipboard.Mode.Clipboard)
         if action == nppActionHot:
             self.runNpp(directory, START_MODE_HOT)
         if action == nppActionCold:
