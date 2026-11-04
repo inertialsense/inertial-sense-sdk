@@ -1917,6 +1917,7 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
+                                            | RMC_BITS_INL2_NED_SIGMA \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE\
                                             | RMC_BITS_EXT_AIDING_POS \
                                             | RMC_BITS_EXT_AIDING_VEL \
