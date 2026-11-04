@@ -356,11 +356,23 @@ bool cDeviceLog::OpenNextReadFile()
 
 std::string cDeviceLog::GetNewBaseFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
 {
+    // The time stamp is not always a timestamp: NavPostProcess passes the name of the log folder it
+    // is processing, so that its output lands in a folder of that name, and such a folder already
+    // carries the prefix and the serial number.  Use only the part that follows them, so that the
+    // file name carries each of them once.
+    std::string timeStamp = m_timeStamp;
+    size_t prefixPos = timeStamp.find(IS_LOG_FILE_PREFIX);
+    if (prefixPos != std::string::npos)
+    {
+        size_t sep = timeStamp.find('_', prefixPos + sizeof(IS_LOG_FILE_PREFIX) - 1);
+        timeStamp = (sep == std::string::npos) ? "" : timeStamp.substr(sep + 1);
+    }
+
     return utils::string_format("%s/%s%d_%s_%04d%s",
                                 m_directory.c_str(),
                                 IS_LOG_FILE_PREFIX,
                                 (int)serialNumber,
-                                m_timeStamp.c_str(),
+                                timeStamp.c_str(),
                                 (int)(fileCount % 10000),
                                 (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str())
 );
