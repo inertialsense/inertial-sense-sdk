@@ -394,10 +394,13 @@ TEST(test_PortFactory, symlinkedPort_isValidatedAndLocated) {
 //
 // OpenPorts() hands the caller's string to discoverPorts() verbatim; cltool's -ufpkg re-discovery used to
 // escape it with utils::globToRegex() first, so "/dev/imx5.0" became "/dev/imx5\\.0" -- no longer a path, and
-// resolvePortName() (which only resolves real symlinks) declined it. PortManager::globSpecifierToRegex()
+// resolvePortName() (which only resolves real symlinks) declined it. utils::globToRegex()'s resolver argument
 // resolves aliases on the literal text before escaping.
 
 namespace {
+/** What cltool's re-discovery passes: the glob, with udev aliases resolved on the literal text before escaping. */
+std::string globResolving(const std::string& globs) { return utils::globToRegex(globs, SerialPortFactory::resolvePortName); }
+
 /** True if @p regexText (as discoverPorts() would compile it) matches @p name in full. */
 bool regexMatches(const std::string& regexText, const std::string& name) {
     return std::regex_match(name, std::regex(regexText));
@@ -421,7 +424,7 @@ TEST(test_PortFactory, SN8661_globSpecifier_resolvesDottedAlias) {
     const std::string target = dir.file("ttyFAKE0");
     const std::string alias = dir.link("imx5.0", "ttyFAKE0");
     ASSERT_FALSE(alias.empty());
-    const std::string rx = PortManager::globSpecifierToRegex(alias);
+    const std::string rx = globResolving(alias);
     EXPECT_TRUE(regexMatches(rx, realOf(target))) << rx;
     EXPECT_FALSE(regexMatches(rx, dir.path() + "/ttyFAKE1"));
 }
@@ -431,7 +434,7 @@ TEST(test_PortFactory, SN8661_globSpecifier_resolvesEachPartOfACommaList) {
     const std::string t0 = dir.file("ttyFAKE0"), t1 = dir.file("ttyFAKE1");
     const std::string a0 = dir.link("imx5.0", "ttyFAKE0"), a1 = dir.link("gpx1.0", "ttyFAKE1");
     ASSERT_FALSE(a0.empty()); ASSERT_FALSE(a1.empty());
-    const std::string rx = PortManager::globSpecifierToRegex(a0 + "," + a1 + ",/dev/ttyACM*");
+    const std::string rx = globResolving(a0 + "," + a1 + ",/dev/ttyACM*");
     EXPECT_TRUE(regexMatches(rx, realOf(t0)));
     EXPECT_TRUE(regexMatches(rx, realOf(t1)));
     EXPECT_TRUE(regexMatches(rx, "/dev/ttyACM7"));
@@ -444,8 +447,8 @@ TEST(test_PortFactory, SN8661_globSpecifier_leavesExistingSpecifierFormsUnchange
         "spi:///dev/spi0.0[b2000000", "tcp://192.168.1.10:8080", "/dev/tty(ACM|USB)[0-9]+",
     };
     for (const char* f : forms)
-        EXPECT_EQ(PortManager::globSpecifierToRegex(f), utils::globToRegex(f)) << "'" << f << "'";
-    EXPECT_TRUE(regexMatches(PortManager::globSpecifierToRegex("*"), "/dev/ttyACM0"));
+        EXPECT_EQ(globResolving(f), utils::globToRegex(f)) << "'" << f << "'";
+    EXPECT_TRUE(regexMatches(globResolving("*"), "/dev/ttyACM0"));
 }
 
 

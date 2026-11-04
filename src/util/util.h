@@ -10,6 +10,7 @@
 #define IS_SDK__UTIL_H
 
 #include <string>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <iostream>
@@ -108,9 +109,13 @@ namespace utils {
      * matched literally, since silently reinterpreting them is worse than not supporting them.
      *
      * @param globs a glob, or a comma-separated list of globs
+     * @param resolve optional. Applied to each non-empty entry BEFORE it is escaped, and its result is what gets translated. It exists for
+     *        names that only mean something as written: a udev alias such as "/dev/imx5.0" can be resolved to its device node only while
+     *        it is still the literal path, because the escaped form "/dev/imx5\\.0" names no file (SN-8661). Callers that have no such
+     *        mapping pass nothing, and the result is exactly what it was without this parameter.
      * @return an equivalent regex; alternatives are joined with '|', and an empty input yields "(.+)"
      */
-    std::string globToRegex(const std::string& globs);
+    std::string globToRegex(const std::string& globs, const std::function<std::string(const std::string&)>& resolve = nullptr);
 
     /**
      * Base case for the variadic string_format() below; returns format unchanged, since there are

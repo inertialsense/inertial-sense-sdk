@@ -1190,7 +1190,7 @@ std::string utils::generateUUIDv4() {
     return std::string(buf);
 }
 
-std::string utils::globToRegex(const std::string& globs) {
+std::string utils::globToRegex(const std::string& globs, const std::function<std::string(const std::string&)>& resolve) {
     if (globs.empty())
         return "(.+)";      // match everything, matching PortManager::discoverPorts()'s own default
 
@@ -1212,7 +1212,8 @@ std::string utils::globToRegex(const std::string& globs) {
             continue;
         if (!pattern.empty())
             pattern += "|";
-        for (char c : glob) {
+        const std::string name = resolve ? resolve(glob) : glob;     // resolve on the literal text, before metacharacters are escaped
+        for (char c : name) {
             switch (c) {
                 case '*': pattern += ".*"; break;
                 case '?': pattern += '.';  break;
