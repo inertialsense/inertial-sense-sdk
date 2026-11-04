@@ -47,8 +47,9 @@ TEST(PortStatsStatus, InvalidatedPortDropsTheValidBitAndIsNeverZero) {
     portInvalidate(&p);
     const uint32_t s = portStatsStatus(&p);
     EXPECT_EQ(s & PORT_STATUS__VALID, 0u);
+    EXPECT_EQ(s & PORT_STATUS__OPENED, 0u) << "portInvalidate() leaves PORT_FLAG__OPENED set, but an invalidated port is not open (portIsOpened() is false)";
     EXPECT_NE(s, 0u) << "an invalidated port must not read as 'not reported' (0)";
-    EXPECT_NE(s, (uint32_t)(PORT_STATUS__REPORTED | PORT_STATUS__VALID | PORT_STATUS__OPENED));
+    EXPECT_EQ(s, (uint32_t)PORT_STATUS__REPORTED) << "the documented invalidated/closed word";
 }
 
 TEST(PortStatsStatus, LastErrorCodeIsCarriedInTheUpperBits) {

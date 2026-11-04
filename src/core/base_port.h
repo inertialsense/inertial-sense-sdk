@@ -456,7 +456,7 @@ static inline uint32_t portStatsStatus(port_handle_t port) {
     uint32_t status = PORT_STATUS__REPORTED;
     if (!port) return status;
     if (portIsValid(port)) status |= PORT_STATUS__VALID;
-    if (portFlagsIsSet(port, PORT_FLAG__OPENED)) status |= PORT_STATUS__OPENED;
+    if (portIsOpened(port)) status |= PORT_STATUS__OPENED;     // valid AND opened: portInvalidate() clears only VALID, so a stale OPENED flag must not read as open
     const uint16_t err = BASE_PORT(port)->perror;
     if (err != 0) status |= PORT_STATUS__ERROR | ((uint32_t)err << PORT_STATUS__ERROR_SHIFT);
     return status;
