@@ -405,7 +405,8 @@ bool nextStreamDigit(stringstream &ss, string &str)
     return true;
 }
 
-// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.
+// Return true for valid filenames, only if they contain 1.) a serial number and an index number,
+// optionally with a date and time, or 2.) only an index number.
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -428,25 +429,42 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
         content = content.substr(n + sizeof(IS_LOG_FILE_PREFIX) - 1);
         stringstream ss(content);
 
-        // Read serial number, date, time
+        // Read serial number
         if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
         serialNum = stoi(str);
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
-        date = str;
-        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
-        time = str;
 
-        // Index is the LAST underscore-delimited token, which must start with a digit. Anything
-        // between time and index is skipped rather than failing the parse, so an extra descriptive
-        // tag some tools embed in the filename (e.g. "..._225101_no_f9p_0001.dat") doesn't prevent
-        // the file from being recognized.
-        string token;
-        bool foundIndex = false;
-        while (getline(ss, token, '_'))
+        vector<string> tokens;
+        while (getline(ss, str, '_'))
         {
-            if (token.size() && isdigit(token[0]))
+            tokens.push_back(str);
+        }
+        size_t next = 0;
+
+        // Date and time follow the serial number, when the writer supplied them.  Each is taken only
+        // if the token in its place is all digits, so a name that carries something else there is
+        // not rejected: the source log folder name, which NavPostProcess embeds in the files it
+        // writes, leaves both empty (e.g. "LOG_SN60339_LOG_SN60339_2024-03-11-13-25_0001.dat").
+        if ((next < tokens.size()) && tokens[next].size() &&
+            (tokens[next].find_first_not_of("0123456789") == string::npos))
+        {
+            date = tokens[next++];
+
+            if ((next < tokens.size()) && tokens[next].size() &&
+                (tokens[next].find_first_not_of("0123456789") == string::npos))
             {
-                index = stoi(token);
+                time = tokens[next++];
+            }
+        }
+
+        // Index is the last remaining token that starts with a digit.  Anything between it and the
+        // time is skipped rather than failing the parse, so a descriptive tag some tools embed
+        // (e.g. "..._225101_no_f9p_0001.dat") does not prevent the file from being recognized.
+        bool foundIndex = false;
+        for (size_t i = next; i < tokens.size(); i++)
+        {
+            if (tokens[i].size() && isdigit(tokens[i][0]))
+            {
+                index = stoi(tokens[i]);
                 foundIndex = true;
             }
         }
