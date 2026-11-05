@@ -7,6 +7,7 @@
  */
 
 #include "ISDFUFirmwareUpdater.h"
+#include "DfuResetThrottle.h"
 #include <fstream>
 #include <algorithm>
 #include <chrono>
@@ -864,8 +865,10 @@ dfu_error DFUDevice::open(bool resetDevice) {
     // (clean slate) but is pure overhead for a read-only identification pass, where abort()+waitForState
     // below already establish a known DFU state. Discovery opens with resetDevice=false to avoid paying
     // that cost on every device, every scan.
-    if (resetDevice)
+    if (resetDevice) {
+        dfuThrottleUsbReset();
         libusb_reset_device(usbHandle);
+    }
 
     // Claim with a short bounded retry: a claim can transiently fail with LIBUSB_ERROR_BUSY when a prior
     // handle on the same device (a just-finished discovery open, a sibling worker, or the kernel driver
@@ -2021,6 +2024,7 @@ int DFUDevice::detach(uint8_t timeout) {
  * @return
  */
 int DFUDevice::reset() {
+    dfuThrottleUsbReset();
     return libusb_reset_device(usbHandle);
 }
 
