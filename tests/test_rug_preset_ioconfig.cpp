@@ -118,12 +118,14 @@ const uint32_t kSeeds[] = { IO_CONFIG_DEFAULT, 0xFFFFFFFFu, 0u };   //!< stock, 
 } // namespace
 
 
-// Every preset 1-9 on every carrier: GNSS routing, G1/G2 function and SPI follow the preset; types follow the carrier.
+// Every preset on every carrier: GNSS routing, G1/G2 function and SPI follow the preset; types follow the carrier. RUG-4 includes preset 0
+// ("presets disabled"), which leaves GNSS routing DISABLED and so must clear stale sources from the seeds below; RUG-3's preset 0 preserves
+// whatever routing the user set, so it starts at 1 (see Rug3PresetZeroLeavesGnssSourcesAlone).
 TEST(RugPresetIoConfig, EveryPresetMapsGnssRoutingPinFunctionAndTypes) {
     for (const TypeExpect& t : kTypes) {
         const PresetExpect* table = (t.family == RUG3) ? kRug3 : kRug4;
         const uint32_t count = (t.family == RUG3) ? PLATFORM_CFG_RUG3_PRESET__COUNT : PLATFORM_CFG_RUG4_PRESET__COUNT;
-        for (uint32_t preset = 1; preset < count; preset++) {
+        for (uint32_t preset = (t.family == RUG4) ? 0 : 1; preset < count; preset++) {
             for (uint32_t seed : kSeeds) {
                 SCOPED_TRACE(label(t, preset) + " seed 0x" + std::to_string(seed));
                 const uint32_t io = mapIoConfig(t.family, t.type, preset, seed);
