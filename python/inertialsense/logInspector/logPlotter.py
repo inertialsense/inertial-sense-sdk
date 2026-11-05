@@ -43,6 +43,7 @@ MPS2UG   = 1E6/9.81 # m/s^2 to micro g
 GNSS_STATUS_FIX_MASK        = 0x00001F00
 GNSS_STATUS_FIX_BIT_OFFSET  = 8
 GNSS_STATUS_FLAGS_FIX_OK    = 0x00010000
+GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD = 0x00040000
 # Fix types that carry a usable 3D position: 3D, GNSS + dead reckoning, reference LLA, DGPS,
 # SBAS and RTK single/float/fix.  Excluded are no fix, dead reckoning only (no GNSS position),
 # 2D (no reliable altitude) and time only (no position).
@@ -2970,12 +2971,28 @@ class logPlot:
 
         ax = fig.subplots(n_plots, 1, sharex=True)
         fig.suptitle('RTK ' + name + ' Stats - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'GNSS Fix Type: 2=2D, 3=3D, 10=Single, 11=Float, 12=Fix', '')
+        self.configureSubplot(ax[0], 'GNSS Fix Type', '')
         self.configureSubplot(ax[1], 'Age of Differential', 's')
         self.configureSubplot(ax[2], 'AR Ratio', '')
         self.configureSubplot(ax[3], 'Base to Rover Distance', 'm')
         self.configureSubplot(ax[4], 'Base to Rover Heading', 'deg')
         self.configureSubplot(ax[5], 'Base to Rover Heading Accuracy', 'deg')
+
+        # Fix type codes a relative RTK solution can report.  relpos() only ever sets the solution
+        # status to none, float or fix, and the 2D and 3D codes do not apply to a relative solution
+        # at all, so the codes are drawn on consecutive levels.  Plotting the raw codes instead
+        # leaves every change confined to the top of the subplot.
+        # Fix and hold is reported as a flag beside the fix code rather than as a code of its own.
+        # It is only ever set together with a fix, because rtk.fix_status is recomputed every epoch
+        # (1 on float, 2 on fix, 3 once holdamb() has run), so it is drawn as the level above 'Fix'.
+        fixTypeCodes  = (0, 10, 11, 12)
+        fixTypeLabels = ['None', 'Single', 'Float', 'Fix', 'Fix & Hold']
+        fixAndHoldLevel = len(fixTypeCodes)
+        fixTypeOtherLevel = len(fixTypeLabels)                      # Unexpected codes draw above 'Fix & Hold'
+        fixTypeLevel = np.full(32, fixTypeOtherLevel, dtype=int)
+        for level, code in enumerate(fixTypeCodes):
+            fixTypeLevel[code] = level
+        fixTypeUnexpected = False
 
         for i, d in enumerate(self.active_devs):
             rtkRelTime = getTimeFromGpsTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
@@ -2995,10 +3012,14 @@ class logPlot:
 #                    fixType = self.getData(d, DID_GNSS2_POS, 'status') >> 8 & 0x1F
 #                    ax[0].plot(gnss2PosTime[indgnss], fixType[indgnss], label=self.log.serials[d])
 #            else:
-            fixType = self.getData(d, relDid, 'arRatio').copy()
-            fixType[(fixType > 3)] = 12
-            fixType[(fixType > 0) & (fixType < 3)] = 11
-            fixType[fixType == 0] = 10
+            # Fix type is taken from the solution status rather than inferred from the AR ratio.
+            # An AR ratio of zero means ambiguity resolution was not attempted or did not complete
+            # (for example when the LAMBDA search aborts), which is not a single point solution.
+            # The relative DIDs have no single point solution to report in any case.
+            rtkRelStatus = self.getData(d, relDid, 'status')
+            fixType = fixTypeLevel[(rtkRelStatus >> 8) & 0x1F]
+            fixTypeUnexpected |= bool(np.any(fixType[ind] >= fixTypeOtherLevel))
+            fixType = np.where((rtkRelStatus & GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD) != 0, fixAndHoldLevel, fixType)
             ax[0].plot(rtkRelTime[ind], fixType[ind], label=self.log.serials[d])
             ax[1].plot(rtkRelTime[ind], self.getData(d, relDid, 'differentialAge')[ind])
             if i == 0:
@@ -3013,6 +3034,10 @@ class logPlot:
 
         self.setPlotYSpanMin(ax[1], 0.5)    # Differential age
         self.setPlotYSpanMin(ax[3], 1.0)    # Distance to base
+
+        labels = list(fixTypeLabels) + (['Other'] if fixTypeUnexpected else [])
+        ax[0].set_yticks(range(len(labels)))
+        ax[0].set_yticklabels(labels)
 
         for a in ax:
             a.grid(True)
@@ -3075,44 +3100,37 @@ class logPlot:
     # RTK observations helper functions
 
     def merge_obs_epochs(self, gnss_data):
-        epochs = []
-        i = 0
-        while i < len(gnss_data):
-            obs = gnss_data[i]
-            ind = np.flatnonzero(obs['time']['time'])
-            if len(ind) == 0:
-                i += 1
-                continue
-            t = obs['time']['time'][ind[0]] + obs['time']['sec'][ind[0]]
+        if len(gnss_data) == 0:
+            return []
 
-            #merged = obs.copy()
+        # A message holds part of one epoch, so rows sharing an observation time belong together.
+        # The messages are flattened once and the rows grouped by that time, rather than walking
+        # the messages one at a time and concatenating each epoch separately.
+        chunks = list(gnss_data)
+        # The dtype is passed explicitly.  Without it concatenate promotes the structured dtype
+        # pairwise across every message, which costs more than the copy itself.  Should the messages
+        # not all share one format, promotion is left to concatenate.
+        dtype = chunks[0].dtype
+        if any(c.dtype != dtype for c in chunks):
+            dtype = None
+        obs_all = np.concatenate(chunks, dtype=dtype)
+        obs_all = obs_all[obs_all['time']['time'] != 0]     # Trim invalid rows
+        if len(obs_all) == 0:
+            return []
 
-            # collect chunks in a list
-            parts = [obs]
-            i += 1
+        t_row = obs_all['time']['time'] + obs_all['time']['sec']
+        start = np.flatnonzero(np.concatenate(([True], np.abs(np.diff(t_row)) > 1e-6)))
+        stop = np.concatenate((start[1:], [len(t_row)]))
+        epochs = [(float(t_row[a]), obs_all[a:b]) for a, b in zip(start, stop)]
 
-            while i < len(gnss_data):
-                obs_next = gnss_data[i]
-                ind2 = np.flatnonzero(obs_next['time']['time'])
-                if len(ind2) == 0:
-                    i += 1
-                    continue
-                t2 = obs_next['time']['time'][ind2[0]] + obs_next['time']['sec'][ind2[0]]
+        # Drop epochs whose observation time belongs to a different time domain.  Observations
+        # logged before the receiver has resolved the GPS week carry a time near the GPS epoch,
+        # which stretches the x axis of every plot built from these epochs and compresses the rest
+        # of the log into a vertical line at the right hand edge.
+        if len(epochs) > 1:
+            keep = getValidTimeInd(np.array([t for t, _ in epochs]))
+            epochs = [epoch for epoch, valid in zip(epochs, keep) if valid]
 
-                if abs(t2 - t) > 1e-6:
-                    break
-
-                #merged = np.append(merged, obs_next)
-                # append to Python list
-                parts.append(obs_next)                
-                i += 1
-
-            # concatenate once
-            merged = np.concatenate(parts)
-            # trim invalid rows immediately
-            ind = np.flatnonzero(merged['time']['time'])
-            merged = merged[ind]
-            epochs.append((t, merged))
         return epochs
 
 
@@ -3121,57 +3139,40 @@ class logPlot:
         if len(epochs) == 0:
             return None
         Nf = len(epochs[0][1]['P'][0])
-
-        # Discover all satellites
-        sat_set = set()
-        for _, obs in epochs:
-            for s in obs['sat']:
-                sat_set.add(int(s))
-        sat = np.array(sorted(sat_set), dtype=int)
-        sat_map = {s: i for i, s in enumerate(sat)}
-        Nsat = len(sat)
         Nt = len(epochs)
 
-        t = np.empty(Nt)
+        # Flatten the epochs into a single set of rows, each tagged with the epoch it came from, so
+        # that the matrices are filled by indexed assignment instead of by iterating over every
+        # observation of every epoch.
+        obs_all = np.concatenate([obs for _, obs in epochs], dtype=epochs[0][1].dtype)
+        row_epoch = np.repeat(np.arange(Nt), [len(obs) for _, obs in epochs])
+        t = np.array([t_epoch for t_epoch, _ in epochs], dtype=float)
+
+        # Satellite columns.  Every satellite present is given a column, including one seen only in
+        # rows that are skipped below, so that the column layout does not depend on the data.
+        sat_all = obs_all['sat'].astype(int)
+        sat = np.unique(sat_all)
+        Nsat = len(sat)
+        row_sat = np.searchsorted(sat, sat_all)
+
+        P_all = obs_all['P']
+        L_all = obs_all['L']
+        D_all = obs_all['D']
+        LLI_all = obs_all['LLI']
+
+        # Skip observations with missing L1
+        row_keep = (P_all[:, 0] != 0) & (L_all[:, 0] != 0)
+
         P = np.full((Nf, Nsat, Nt), np.nan)
         L = np.full((Nf, Nsat, Nt), np.nan)
         D = np.full((Nf, Nsat, Nt), np.nan)
         LLI = np.zeros((Nf, Nsat, Nt))
 
-        # Fill matrices
-        for it, (t_epoch, obs) in enumerate(epochs):
-
-            t[it] = t_epoch
-            sats = obs['sat']
-
-            P_ = obs['P']
-            L_ = obs['L']
-            D_ = obs['D']
-            LLI_ = obs['LLI']
-
-            for row, sat_i in enumerate(sats):
-
-                P_i = P_[row]
-                L_i = L_[row]
-                D_i = D_[row]
-                LLI_i = LLI_[row]
-
-                # skip observations with missing L1
-                if P_i[0] == 0 or L_i[0] == 0:
-                    continue
-
-                isat = sat_map[int(sat_i)]
-
-                valid = P_i != 0
-                P[valid, isat, it] = P_i[valid]
-
-                valid = L_i != 0
-                L[valid, isat, it] = L_i[valid]
-
-                valid = D_i != 0
-                D[valid, isat, it] = D_i[valid]
-
-                LLI[:, isat, it] = LLI_i
+        for f in range(Nf):
+            for dst, src in ((P, P_all), (L, L_all), (D, D_all)):
+                valid = row_keep & (src[:, f] != 0)
+                dst[f, row_sat[valid], row_epoch[valid]] = src[valid, f]
+            LLI[f, row_sat[row_keep], row_epoch[row_keep]] = LLI_all[row_keep, f]
 
         return t, sat, P, L, D, LLI
     
@@ -4952,6 +4953,7 @@ class logPlot:
         self.configureSubplot(ax[0,1], 'bias acc X', 'm/s^2')
         self.configureSubplot(ax[1,1], 'bias acc Y', 'm/s^2')
         self.configureSubplot(ax[2,1], 'bias acc Z', 'm/s^2')
+        self.configureSubplot(ax[3,1], 'mag declination', 'deg')
         fig.suptitle('EKF Biases - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromGpsTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'), True)
@@ -4963,6 +4965,7 @@ class logPlot:
             ax[0,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 0], label=self.log.serials[d])
             ax[1,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 1])
             ax[2,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 2])
+            ax[3,1].plot(time, self.getData(d, DID_INL2_STATES, 'magDec')*180.0/np.pi, label=self.log.serials[d])
 
         self.legends_add(ax[0,0].legend(ncol=2))
         for a in ax:
@@ -4971,6 +4974,89 @@ class logPlot:
 
         self.setup_and_wire_legend()
         return self.saveFigJoinAxes(ax, axs, fig, 'ekfBiases')
+
+    def ekfSigma(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(3, 3, sharex=True)
+        self.configureSubplot(ax[0,0], 'sigma att roll', 'deg')
+        self.configureSubplot(ax[0,1], 'sigma att pitch', 'deg')
+        self.configureSubplot(ax[0,2], 'sigma att yaw', 'deg')
+
+        self.configureSubplot(ax[1,0], 'sigma vel N', 'm/s')
+        self.configureSubplot(ax[1,1], 'sigma vel E', 'm/s')
+        self.configureSubplot(ax[1,2], 'sigma vel D', 'm/s')
+
+        self.configureSubplot(ax[2,0], 'sigma pos N', 'm')
+        self.configureSubplot(ax[2,1], 'sigma pos E', 'm')
+        self.configureSubplot(ax[2,2], 'sigma pos D', 'm')
+        fig.suptitle('EKF Sigma - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            timeMs = self.getData(d, DID_INL2_VARIANCE, 'timeOfWeekMs')
+            if len(timeMs) == 0:
+                continue
+            time = getTimeFromGpsTowMs(timeMs, True)
+            sigmaPos = self.getData(d, DID_INL2_VARIANCE, 'StdPosNed')
+            sigmaVel = self.getData(d, DID_INL2_VARIANCE, 'StdVelNed')
+            sigmaAtt = self.getData(d, DID_INL2_VARIANCE, 'StdAttNed')*180.0/np.pi
+            ax[0,0].plot(time, sigmaAtt[:, 0], label=self.log.serials[d])
+            ax[0,1].plot(time, sigmaAtt[:, 1])
+            ax[0,2].plot(time, sigmaAtt[:, 2])
+
+            ax[1,0].plot(time, sigmaVel[:, 0])
+            ax[1,1].plot(time, sigmaVel[:, 1])
+            ax[1,2].plot(time, sigmaVel[:, 2])
+
+            ax[2,0].plot(time, sigmaPos[:, 0])
+            ax[2,1].plot(time, sigmaPos[:, 1])
+            ax[2,2].plot(time, sigmaPos[:, 2])
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, axs, fig, 'ekfSigma')
+
+    def ekfSigmaBiases(self, fig=None, axs=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(4, 2, sharex=True)
+        self.configureSubplot(ax[0,0], 'sigma bias P', 'deg/s')
+        self.configureSubplot(ax[1,0], 'sigma bias Q', 'deg/s')
+        self.configureSubplot(ax[2,0], 'sigma bias R', 'deg/s')
+        self.configureSubplot(ax[3,0], 'sigma bias Barometer', 'm')
+
+        self.configureSubplot(ax[0,1], 'sigma bias acc X', 'm/s^2')
+        self.configureSubplot(ax[1,1], 'sigma bias acc Y', 'm/s^2')
+        self.configureSubplot(ax[2,1], 'sigma bias acc Z', 'm/s^2')
+        self.configureSubplot(ax[3,1], 'sigma mag declination', 'deg')
+        fig.suptitle('EKF Sigma Biases - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            timeMs = self.getData(d, DID_INL2_VARIANCE, 'timeOfWeekMs')
+            if len(timeMs) == 0:
+                continue
+            time = getTimeFromGpsTowMs(timeMs, True)
+            sigmaGyrBias = self.getData(d, DID_INL2_VARIANCE, 'StdGyrBias')*180.0/np.pi
+            sigmaAccBias = self.getData(d, DID_INL2_VARIANCE, 'StdAccBias')
+            ax[0,0].plot(time, sigmaGyrBias[:, 0], label=self.log.serials[d])
+            ax[1,0].plot(time, sigmaGyrBias[:, 1])
+            ax[2,0].plot(time, sigmaGyrBias[:, 2])
+            ax[3,0].plot(time, self.getData(d, DID_INL2_VARIANCE, 'StdBarBias'))
+
+            ax[0,1].plot(time, sigmaAccBias[:, 0])
+            ax[1,1].plot(time, sigmaAccBias[:, 1])
+            ax[2,1].plot(time, sigmaAccBias[:, 2])
+            ax[3,1].plot(time, self.getData(d, DID_INL2_VARIANCE, 'StdMagDeclination')*180.0/np.pi)
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+        self.setup_and_wire_legend()
+        return self.saveFigJoinAxes(ax, axs, fig, 'ekfSigmaBiases')
 
     def rtkResiduals(self, type, page, fig=None,  axs=None):
         if fig is None:

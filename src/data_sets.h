@@ -1600,6 +1600,8 @@ enum eSystemCommand
     SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                              = 1357924683,  //!< Manufacturing: enable ROM bootloader. SYS_CMD_MANF_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command. (uint32 inv: 2937042612)
     SYS_CMD_MANF_LED_ON                                             = 1357924684,  //!< Enable testbed LED on IMX (sysStatus) and GPX (hdwStatus). (uint32 inv: 2937042611)
     SYS_CMD_MANF_LED_OFF                                            = 1357924685,  //!< Disable testbed LED on IMX (sysStatus) and GPX (hdwStatus). (uint32 inv: 2937042610)
+    SYS_CMD_MANF_LED_GREEN                                          = 1357924686,  //!< GPX testbed LED: green on, red off. (uint32 inv: 2937042609)
+    SYS_CMD_MANF_LED_RED                                            = 1357924687,  //!< GPX testbed LED: red on, green off. (uint32 inv: 2937042608)
 
     SYS_CMD_FAULT_TEST_TRIG_MALLOC                                  = 57005,  //!< Fault injection test: trigger a malloc-related fault
     SYS_CMD_FAULT_TEST_TRIG_HARD_FAULT                              = 57006,  //!< Fault injection test: trigger a hard fault
@@ -1917,6 +1919,7 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_STATUS \
                                             | RMC_BITS_GPX_DEBUG_ARRAY \
                                             | RMC_BITS_INTERNAL_PPD \
+                                            | RMC_BITS_INL2_NED_SIGMA \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE\
                                             | RMC_BITS_EXT_AIDING_POS \
                                             | RMC_BITS_EXT_AIDING_VEL \

@@ -1257,6 +1257,14 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         if (!GetOverlappedResult(handle->platformHandle, &handle->ovWrite, &dwWritten, 1))
         {
             DWORD result = GetLastError();  // read this before we call CancelIo
+            if (result == ERROR_SEM_TIMEOUT)
+            {   // WriteTotalTimeoutConstant expired because the device stopped accepting data for a moment
+                // (e.g. a GPX that briefly isn't reading its USB OUT endpoint). The request has completed,
+                // so report it as a short write and leave errorCode alone: a set errorCode makes
+                // ISComManager::getData() close the port, which turns a transient stall into a dropped device.
+                log_warn(IS_LOG_PORT, "[%s] serialPortWrite():: Write timed out, %d of %d bytes written", portName(port), (int)dwWritten, (int)writeCount);
+                return (int)dwWritten;
+            }
             serialPort->errorCode = (int)result;   // SN-8697: real Win32 error, not errno -- see above
             serialPort->error = "GetOverlappedResult() failed";
             log_error(IS_LOG_PORT, "[%s] serialPortWrite():: Error fetching 'overlapped result': %s (%d)", portName(port), serialPort->error, serialPort->errorCode);
