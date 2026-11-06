@@ -1476,7 +1476,11 @@ void cltool_outputUsage()
     cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
     cout << boldOff << "                    Still sends the stop-broadcast command on start (use -lm to skip it)." << endlbOn;
+    #if defined(PLATFORM_IS_WINDOWS) || defined(PLATFORM_IS_LINUX)    // IS_LOG_DEFAULT_OUTPUT_PATH is only defined where msg_logger writes a file
     cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging to " << IS_LOG_DEFAULT_OUTPUT_PATH << ". Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
+    #else
+    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
+    #endif
     cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
     cout << endlbOn;
@@ -1564,7 +1568,7 @@ void cltool_outputUsage()
 	cout << "    -lmb=" << boldOff << "MB         File culling: Log drive usage limit in MB. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB << "). `-lmb=0 -lms=0` disables file culling." << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
-	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp (default), else use as is" << endlbOn;
+	cout << "    -lts=" << boldOff << "FOLDER     Log sub folder: 1 for timestamp (default), 0 or blank for none, else use FOLDER as is" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Reading from data log file)" << endl;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
