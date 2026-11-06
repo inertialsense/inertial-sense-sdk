@@ -771,7 +771,7 @@ uint64_t ISDevice::parseDeviceIdString(const std::string& str) {
  */
 std::string ISDevice::getName(const dev_info_t &devInfo, int flags) {
     // device serial no
-    std::string out = utils::string_format( !(flags & COMPACT_SERIALNO) ? "SN%09d (" : "SN%d (", devInfo.serialNumber);
+    std::string out = utils::string_format( !(flags & COMPACT_SERIALNO) ? "SN%09u (" : "SN%u (", devInfo.serialNumber);
 
     // hardware type & version
     const char *typeName = "\?\?\?";
