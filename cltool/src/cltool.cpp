@@ -1411,7 +1411,7 @@ void cltool_outputUsage()
 	cout << "EXAMPLES" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GNSS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << " # stream DID messages" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << " # stream same as line above" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4=5              " << EXAMPLE_SPACE_1 << " # stream DID_INS_1 at startupNavDtMs x 5" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << " # stream post processing data (PPD) with INS2" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << " # edit DID_FLASH_CONFIG message" << endlbOff;
@@ -1424,7 +1424,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << " # replay log files from a folder" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -get 12        "                                 << " # show first DID_FLASH_CONFIG value from a log" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp logs/20170117_222549 -list-dids     "                                 << " # list all DIDs found in log files" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password          # Connect to RTK NTRIP base" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=ntrip://user:password@192.168.1.100:7777/mount        # Connect to RTK NTRIP base" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get 1,4,13,DID_GNSS1_POS                                    # Return specific DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -get \"{DID_INS_1: {insStatus, theta}, DID_INS_2: {qn2b}}\"    # Return portion of two DIDs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[1]: 0.8}}\"          # Set one value in DID array" << endlbOff;
@@ -1432,6 +1432,8 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -nmea=ASCE,0,GxGGA,1                                         # Send NMEA message, display rx NMEA" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c tcp://192.168.1.100:7777 -nmea=ASCE                            " << EXAMPLE_SPACE_2 << "# Send NMEA query over TCP" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4 -nmea                                                " << EXAMPLE_SPACE_2 << "# Listen for NMEA on two ports" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -cbor-get \"{FLASH_CFG: {ser0BaudRate, insRotation}}\"         # Read fields over CBOR" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -cbor-set \"{FLASH_CFG: {gnss1AntOffset[1]: 0.8}}\"            # Set one value over CBOR" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
@@ -1439,7 +1441,8 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port(s). Options: single port (e.g., COM5 or /dev/ttyUSB0), multiple ports separated by ',' (e.g., COM2,COM4,COM5), \"*\" for all ports, or \"*4\" for first four ports." << endlbOn;
+	cout << "    -c " << boldOff << "DEVICE_PORT  Select port(s): serial port (e.g., /dev/ttyUSB0 or COM5), tcp://IP:port, or a comma-separated list of these." << endl;
+	cout << "                    Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four." << endlbOn;
     cout << "    -c " << boldOff << "spi:///DEVICE_PATH[OPTS]  Select SPI device (e.g., spi:///dev/spi0.0). Optional comma-separated OPTS in brackets:" << endlbOn;
     cout << "         " << boldOff << "  b<HZ>     SPI clock speed in Hz (default: " << SPI_PORT_DEFAULT_SPEED_HZ << " Hz = 1 MHz)." << endlbOn;
     cout << "         " << boldOff << "  d<GPIO>   GPIO number for data-ready input (omit to disable)." << endlbOn;
@@ -1447,6 +1450,7 @@ void cltool_outputUsage()
 	cout << "    -sn " << boldOff << "DEVICE_ID   Discover all devices and connect to the one matching the given identifier. Accepts: 129495, SN129495, or IMX-5.0:SN129495. Alternative to -c." << endlbOn;
 	cout << "    -device " << boldOff << "TYPE    Discover all devices and open only those matching TYPE. Options: imx, imx5, imx6, gpx. Implies -c * if no -c port is given." << endlbOn;
 	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPC` on close." << endlbOn;
+	cout << "    -dur=" << boldOff << "SECONDS    Run for SECONDS (decimals allowed), then exit." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
     cout << "    -use-mdns" << boldOff << "       Enable mDNS network discovery of remote devices (e.g., socat TCP-forwarded serial ports)." << endlbOn;
@@ -1472,13 +1476,12 @@ void cltool_outputUsage()
     cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
     cout << boldOff << "                    Still sends the stop-broadcast command on start (use -lm to skip it)." << endlbOn;
-    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
+    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging to " << IS_LOG_DEFAULT_OUTPUT_PATH << ". Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
     cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
     cout << endlbOn;
     cout << "OPTIONS (Special)" << endl;
-    cout << "    -cal-upload" << boldOff << "FILE_PATH      Upload calibration data from FILE_PATH file to the IMX." << endlbOn;
-    cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
+    cout << "    -cal-upload " << boldOff << "FILE_PATH     Upload calibration data from FILE_PATH file to the IMX." << endlbOn;
     cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
     cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
     if (g_internal)
@@ -1506,7 +1509,7 @@ void cltool_outputUsage()
     cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
     cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using FILEPATH (.hex for IMX-5, .bin for uINS-3/EVB-2) if version is old. Must be used with option -uf." << endlbOn;
     cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
-    cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -uv " << boldOff << "            Show verification progress for uINS-3/EVB-2 bootloader updates. Application firmware is not verified." << endlbOn;
     cout << "    -fw-set-policy " << boldOff << "POLICY[:PATTERN]  Set update policy (skip, if-newer, force)." << endlbOn;
     cout << "         " << boldOff << "                              Without :PATTERN, sets default for all targets." << endlbOn;
     cout << "         " << boldOff << "                              With :PATTERN, overrides policy for matching" << endlbOn;
@@ -1541,6 +1544,7 @@ void cltool_outputUsage()
 	cout << "    -edit [DID#<=PERIODMULT>]                     " << boldOff << "  Stream and edit 1 dataset." << endlbOff;
 	cout << "          Each DID# can be the DID number or name and appended with <=PERIODMULT> to decrease message frequency. " << endlbOff;
 	cout << "          Message period = source period x PERIODMULT. PERIODMULT is 1 if not specified." << endlbOff;
+	cout << "          DID_PIMU ignores PERIODMULT and always streams at the nav update period." << endlbOff;
 	cout << "          Common DIDs: DID_INS_1, DID_INS_2, DID_INS_4, DID_PIMU, DID_IMU, DID_GNSS1_POS," << endlbOff;
 	cout << "          DID_GNSS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
@@ -1555,12 +1559,12 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Writing to data log file)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, csv, kml or json" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lmb=" << boldOff << "MB         File culling: Log drive usage limit in MB. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB << "). `-lmb=0 -lms=0` disables file culling." << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
-	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
+	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp (default), else use as is" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Reading from data log file)" << endl;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
@@ -1584,11 +1588,11 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " \"-imxFlashCfg=insOffset[1]=1.2|ser2BaudRate=115200\"  " << boldOff << "# Set multiple values" << endlbOn;
 	cout << endl;
 	cout << "OPTIONS (RTK Rover / Base)" << endlbOn;
-	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
+	cout << "    -rover=" << boldOff << "URL" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
-	cout << "            -rover=ntrip://192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
+	cout << "            -rover=ntrip://username:password@192.168.1.100:7777/mountpoint   (NTRIP, username:password@ optional)" << endl;
 	cout << "            -rover=tcp://192.168.1.100:7777                                  (raw RTCM3 over TCP)" << endl;
-	cout << "            -rover=/dev/" << EXAMPLE_PORT << ":57600        (port, baud rate)" << endlbOn;
+	cout << "            -rover=" << EXAMPLE_PORT << "                   (serial port, baud rate from -baud=, which also sets the -c port baud rate)" << endlbOn;
 	cout << "    -base=" << boldOff << "tcp://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
 	cout << "            -base=tcp://:7777                           (IP is optional)" << endl;
 	cout << "            -base=tcp://192.168.1.43:7777" << endl;
