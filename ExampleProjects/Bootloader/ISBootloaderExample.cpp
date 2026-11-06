@@ -90,9 +90,9 @@ static void bootloaderStatusText(const std::any& obj, eLogLevel level, const cha
 
     if (isblPtr) {
         if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
-            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+            printf("    | %s (SN%u):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
         } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
-            printf("    | (SN%d):", isblPtr->m_sn);
+            printf("    | (SN%u):", isblPtr->m_sn);
         } else if (isblPtr->m_port_name.size() != 0) {
             printf("    | %s:", isblPtr->m_port_name.c_str());
         } else {

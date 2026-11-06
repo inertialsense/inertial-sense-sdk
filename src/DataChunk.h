@@ -119,7 +119,7 @@ struct sChunkHeader
         logStats("       dataSize:  %d\n", dataSize);
         logStats("    invDataSize:  %d\n", invDataSize);
         logStats("         grpNum:  %d\n", grpNum);
-        logStats("   devSerialNum:  %d\n", devSerialNum);
+        logStats("   devSerialNum:  %u\n", devSerialNum);
         logStats("        port:  %d\n", port);
         logStats("       reserved:  %d\n", reserved);
     #else
@@ -133,7 +133,7 @@ struct sChunkHeader
         logStats("       dataSize:  %d\n", dataSize);
         logStats("    invDataSize:  %d\n", invDataSize);
         logStats("         grpNum:  %d\n", grpNum);
-        logStats("   devSerialNum:  %d\n", devSerialNum);
+        logStats("   devSerialNum:  %u\n", devSerialNum);
         #ifndef port_handle_t
         logStats("        pHandle:  %d\n", pHandle);
         #else

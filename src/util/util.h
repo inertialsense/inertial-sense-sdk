@@ -337,6 +337,24 @@ namespace utils {
     std::string deviceIdString(uint16_t hdwId, uint64_t serial);
 
     /**
+     * Renders a serial number for display as "SN<n>" (unsigned decimal, zero-padded to minDigits). An unset serial
+     * (0 or 0xFFFFFFFF, see serialNumberIsSet()) renders as "SN-unset".
+     * @param serialNumber the uint32 serial number
+     * @param minDigits minimum digits, zero-padded (0 for none)
+     * @return the rendered string
+     */
+    std::string serialNumberToString(uint32_t serialNumber, int minDigits = 0);
+
+    /**
+     * Strictly parses a serial number from decimal digits as an unsigned 32-bit value. Rejects empty strings, signs, spaces,
+     * non-digits and values above 0xFFFFFFFF.
+     * @param str the digits to parse (without an "SN" prefix)
+     * @param serialNumber [out] the parsed value, left unchanged on failure
+     * @return true if str was a valid in-range serial number
+     */
+    bool parseSerialNumber(const std::string& str, uint32_t& serialNumber);
+
+    /**
      * Renders the hardware type-major-minor portion of devInfo, e.g. "IMX-5.0", optionally
      * appended with the sub-rev components (hardwareVer[2..3]) when showRev is true and they are
      * non-zero.

@@ -1390,7 +1390,7 @@ bool cltool_extractEventData()
             }
 
             if (++count % 5000 == 0)
-                printf("Read %d msgs from SN-%d\n", count, dl->SerialNumber());
+                printf("Read %d msgs from SN-%u\n", count, dl->SerialNumber());
 
         }
     }

@@ -160,9 +160,10 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
     printf("\n");
 }
 
-void TestParseFileName(string filename, int rSerialNum, string rDate, string rTime, int rIndex, bool rResults=true)
+void TestParseFileName(string filename, uint32_t rSerialNum, string rDate, string rTime, int rIndex, bool rResults=true)
 {
-    int serialNum, index; 
+    uint32_t serialNum;
+    int index;
     string date, time;
     bool results = cISLogger::ParseFilename(filename, serialNum, date, time, index);
     EXPECT_EQ(results, rResults);
@@ -187,6 +188,9 @@ TEST(ISLogger, parse_filename)
     TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1, false);
     TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1, false);
     TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1, false);
+    TestParseFileName("LOG_SN2147483648_20240311_132545_0001.RAW", 2147483648u, "20240311", "132545", 1);   // SN-8985: 0x80000000
+    TestParseFileName("LOG_SN4294967294_20240311_132545_0001.RAW", 4294967294u, "20240311", "132545", 1);
+    TestParseFileName("LOG_SN4294967296_20240311_132545_0001.RAW", 0, "", "", -1, false);                  // out of uint32 range: rejected
     TestParseFileName("00000000.RAW", 0, "", "", 0);
     TestParseFileName("00000001.RAW", 0, "", "", 1);
     TestParseFileName("00000002.raw", 0, "", "", 2);

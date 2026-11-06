@@ -280,6 +280,22 @@ std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
     return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
 }
 
+std::string utils::serialNumberToString(uint32_t serialNumber, int minDigits) {
+    if (!serialNumberIsSet(serialNumber))
+        return "SN-unset";
+    return utils::string_format("SN%0*u", minDigits < 0 ? 0 : minDigits, static_cast<unsigned>(serialNumber));
+}
+
+bool utils::parseSerialNumber(const std::string& str, uint32_t& serialNumber) {
+    if (str.empty() || str.size() > 10 || str.find_first_not_of("0123456789") != std::string::npos)
+        return false;
+    unsigned long long v = strtoull(str.c_str(), nullptr, 10);
+    if (v > SERIAL_NUMBER_UNSET)
+        return false;
+    serialNumber = static_cast<uint32_t>(v);
+    return true;
+}
+
 std::string utils::getHardwareAsString(const dev_info_t& devInfo, uint16_t flags) {
     // Type-major-minor portion comes from the canonical packed-id renderer.
     // The dev_info_t carries two extra sub-rev bytes (hardwareVer[2..3]) that
@@ -658,7 +674,7 @@ std::string utils::devInfoToString(const dev_info_t& devInfo, uint16_t flags) {
     // device serial no
 
     if (flags & DV_BIT_SERIALNO)
-        out += utils::string_format("SN%06d:", devInfo.serialNumber);
+        out += utils::serialNumberToString(devInfo.serialNumber, 6) + ":";
     if (flags & DV_BIT_HARDWARE_INFO)
         out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo, flags);
     if (flags & DV_BIT_FIRMWARE_VER)
