@@ -1632,6 +1632,34 @@ static void PopulateMapMagCal(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("declination", &mag_cal_t::declination, DATA_TYPE_F32, SYM_DEG, "Magnetic declination estimate", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
 }
 
+static void PopulateMapMagCalCoverage(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<mag_cal_coverage_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &mag_cal_coverage_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("cellScheme", &mag_cal_coverage_t::cellScheme, DATA_TYPE_UINT8, "", "Cell layout: 0=128 equal-area cells (8 z bands x 16 longitude sectors)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("lifecycle", &mag_cal_coverage_t::lifecycle, DATA_TYPE_UINT8, "", "Lifecycle: 0=not calibrated, 1=collecting, 2=fitting, 3=complete, 4=aborted, 5=not supported, 6=calibrated (idle)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("mode", &mag_cal_coverage_t::mode, DATA_TYPE_UINT8, "", "Recalibration mode: 1=multi-axis, 2=single-axis", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reason", &mag_cal_coverage_t::reason, DATA_TYPE_UINT8, "", "Why not advancing: 0=none, 1=rotation slow, 2=wrong axis, 3=field unsteady, 4=region full, 5=fit rejected, 6=norm check, 7=mode unsupported", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("quality", &mag_cal_coverage_t::quality, DATA_TYPE_UINT8, "", "Calibration quality: 0=none, 1=poor, 2=degraded, 3=good, 255=unknown", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("progressPct", &mag_cal_coverage_t::progressPct, DATA_TYPE_UINT8, "%", "Required coverage reached (0-100). 100 only once the calibration is applied", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("coveragePct", &mag_cal_coverage_t::coveragePct, DATA_TYPE_UINT8, "%", "Percent of all cells covered (informational)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("flags", &mag_cal_coverage_t::flags, DATA_TYPE_UINT8, "", "0x1=coverage valid, 0x2=required valid, 0x4=auto recal, 0x8=field steady, 0x10=quality held (turning fast), 0x20=gravity valid", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("fitQuality", &mag_cal_coverage_t::fitQuality, DATA_TYPE_F32, "", "Calibration quality metric Tcal (lower is better)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("sampleCount", &mag_cal_coverage_t::sampleCount, DATA_TYPE_UINT32, "", "Samples in the least-squares accumulator", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("poseDir", &mag_cal_coverage_t::poseDir, DATA_TYPE_INT8, 3, {""}, {"Guidance pose: body-frame unit vector x127 of the part of the device that should point at the FLOOR"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("guidePhase", &mag_cal_coverage_t::guidePhase, DATA_TYPE_UINT8, "", "Guidance phase: 0=none, 1=aim poseDir at the floor, 2=turn slowly about the vertical", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("fieldDir", &mag_cal_coverage_t::fieldDir, DATA_TYPE_INT8, 3, {""}, {"Current field direction in the sensor frame (unit vector x127)"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("fitStage", &mag_cal_coverage_t::fitStage, DATA_TYPE_UINT8, "", "Diagnostic: which check rejected the last fit: 1 few samples, 2 r2<=0, 3 no +eigenvalue, 4 bad eigenvector, 5 not ellipsoid, 6 not pos-def, 7 sphere failed, 8 norm tolerance, 9 single-axis", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("poseErrDeg", &mag_cal_coverage_t::poseErrDeg, DATA_TYPE_UINT8, SYM_DEG, "Angle between the floor and poseDir: how far still to tilt", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("ringPct", &mag_cal_coverage_t::ringPct, DATA_TYPE_UINT8, "%", "Share of this pose's ring already covered", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("gravDir", &mag_cal_coverage_t::gravDir, DATA_TYPE_INT8, 3, {""}, {"Direction of the floor in the sensor frame (unit vector x127)"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("inclSin", &mag_cal_coverage_t::inclSin, DATA_TYPE_INT8, "", "sin(inclination) x127: the firmware estimate of field . floor", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("qualityWhy", &mag_cal_coverage_t::qualityWhy, DATA_TYPE_UINT8, "", "Why the quality is not GOOD (eMagCalQualityWhy)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("normErrPct", &mag_cal_coverage_t::normErrPct, DATA_TYPE_UINT8, "%", "Calibrated field magnitude error vs 1.0", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("required", &mag_cal_coverage_t::required, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 8, {""}, {"Required-cell bit mask (1 bit per cell, LSB first)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray("cells", &mag_cal_coverage_t::cells, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 2, {""}, {"4-bit saturating sample count per cell (even cell = low nibble)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+}
+
 static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<infield_cal_t> mapper(data_set, did);
@@ -2843,7 +2871,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EXT_AIDING_HEADING",           // 110
     "DID_EXT_AIDING_ATTITUDE",          // 111
     "DID_EXT_IMU",                      // 112
-    "UNUSED_113",                       // 113
+    "DID_MAG_CAL_COVERAGE",             // 113
     "UNUSED_114",                       // 114
     "UNUSED_115",                       // 115
     "UNUSED_116",                       // 116
@@ -2959,6 +2987,7 @@ cISDataMappings::cISDataMappings()
 
     // CALIBRATION
     PopulateMapMagCal(m_data_set, DID_MAG_CAL);
+    PopulateMapMagCalCoverage(m_data_set, DID_MAG_CAL_COVERAGE);
     PopulateMapInfieldCal(m_data_set, DID_INFIELD_CAL);
     PopulateMapGroundVehicle(m_data_set, DID_GROUND_VEHICLE);
     

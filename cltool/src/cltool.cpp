@@ -1459,7 +1459,7 @@ void cltool_outputUsage()
     cout << boldOff << "                    IS_RELAY_CLIENT_NAME, IS_RELAY_CLIENT_PURPOSE, IS_RELAY_CLIENT_PRIORITY and IS_RELAY_CLIENT_LINK." << endlbOn;
     cout << "    -lm" << boldOff << "             Listen mode for ISB. Does not send the stop-broadcast command on start, so the device's current output" << endlbOn;
     cout << boldOff << "                    is left unchanged. Disables device validation (-vd). Requests such as -did and -edit are still sent." << endlbOn;
-    cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
+    cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers (n is sent as DID_MAG_CAL.state): 1=multi-axis (holds until the sphere fit reaches 70%), 2=single-axis, 3=multi-axis extended (holds until the sphere fit reaches 85%), 4=multi-axis manual (holds until released with 102), 5=multi-axis classic (the documented procedure: no sphere-fit hold)" << endlbOn;
     cout << "    -nmea=[s]" << boldOff << "       Send stop-broadcast command `$STPC`, then NMEA message s with added checksum footer. Display rx NMEA. (`-nmea=ASCE,0,GxGGA,1`) With s empty (`-nmea=`), only sends `$STPC`." << endlbOn;
     cout << "    -nmea" << boldOff << "           Listen mode for NMEA. Displays rx NMEA and sends nothing to the device." << endlbOn;
     cout << boldOff << "                    Only rx NMEA with a valid checksum is displayed, timestamped. Works with any -c port type. Runs until 'q' or -dur." << endlbOn;
