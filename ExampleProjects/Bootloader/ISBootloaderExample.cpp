@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISBootloaderThread.h"
 #include "../../src/ISBootloaderBase.h"
 #include "../../src/PortFactory.h"
+#include "../../src/util/util.h"
 
 using namespace ISBootloader;
 using namespace std;
@@ -90,9 +91,9 @@ static void bootloaderStatusText(const std::any& obj, eLogLevel level, const cha
 
     if (isblPtr) {
         if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
-            printf("    | %s (SN%u):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+            printf("    | %s (%s):", isblPtr->m_port_name.c_str(), utils::serialNumberToString(isblPtr->m_sn).c_str());
         } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
-            printf("    | (SN%u):", isblPtr->m_sn);
+            printf("    | (%s):", utils::serialNumberToString(isblPtr->m_sn).c_str());
         } else if (isblPtr->m_port_name.size() != 0) {
             printf("    | %s:", isblPtr->m_port_name.c_str());
         } else {

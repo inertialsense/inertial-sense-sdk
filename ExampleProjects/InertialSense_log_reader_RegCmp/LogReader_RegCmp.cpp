@@ -838,7 +838,7 @@ int main(int argc, char* argv[])
             }
 
             if (++count % 5000 == 0)
-                printf("Read %d msgs from SN-%u\n", count, dl->SerialNumber());
+                printf("Read %d msgs from %s\n", count, utils::serialNumberToString(dl->SerialNumber()).c_str());
 
         }
     }
