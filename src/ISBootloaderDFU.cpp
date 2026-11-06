@@ -500,8 +500,10 @@ is_operation_result cISBootloaderDFU::reboot()
     if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     // Reset USB device
-    dfuThrottleUsbReset();
-    ret_libusb = libusb_reset_device(m_dfu.handle_libusb);
+    {
+        DfuUsbResetGate resetGate;
+        ret_libusb = libusb_reset_device(m_dfu.handle_libusb);
+    }
     if (ret_libusb < LIBUSB_SUCCESS)  { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     libusb_release_interface(m_dfu.handle_libusb, 0);

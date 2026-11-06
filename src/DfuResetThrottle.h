@@ -10,31 +10,48 @@
 #ifndef DFU_RESET_THROTTLE_H
 #define DFU_RESET_THROTTLE_H
 
-#include <algorithm>
 #include <chrono>
 #include <mutex>
 #include <thread>
 
-#define DFU_USB_RESET_SPACING_MS    250     // (ms) minimum time between USB resets of DFU devices
+#define DFU_USB_RESET_SPACING_MS    250     // (ms) minimum quiet time between USB resets of DFU devices
 
 /**
- * Blocks until this caller's turn to issue a USB reset. The slot is reserved under the lock but the wait
- * happens outside it, so a burst of N callers takes (N-1) * DFU_USB_RESET_SPACING_MS and a lone caller
- * does not wait at all.
+ * Scoped gate around any operation that makes a DFU device reset and re-enumerate. Construction blocks until
+ * this caller's turn; the operation runs while the gate is held, and destruction starts the spacing interval.
+ *
+ * Holding the lock through the operation is deliberate: pre-reserved time slots only space out the deadlines,
+ * so callers delayed past theirs (scheduling, or an earlier reset running long) could still reset back-to-back.
+ * Measuring from when the operation actually finished guarantees the spacing. A lone caller does not wait.
+ *
+ * Keep the scope to the reset-triggering call only: everything else waits on the shared lock meanwhile. The lock
+ * is not recursive, so never nest gates.
  */
-inline void dfuThrottleUsbReset()
+class DfuUsbResetGate
 {
-    using clock = std::chrono::steady_clock;
-    static std::mutex mutex;
-    static clock::time_point nextSlot;
+public:
+    DfuUsbResetGate() : m_lock(state().mutex) { std::this_thread::sleep_until(state().nextAllowed); }
+    ~DfuUsbResetGate() { state().nextAllowed = clock::now() + std::chrono::milliseconds(DFU_USB_RESET_SPACING_MS); }
 
-    clock::time_point slot;
+    DfuUsbResetGate(const DfuUsbResetGate&) = delete;
+    DfuUsbResetGate& operator=(const DfuUsbResetGate&) = delete;
+
+private:
+    using clock = std::chrono::steady_clock;
+
+    struct State
     {
-        std::lock_guard<std::mutex> lock(mutex);
-        slot = std::max(clock::now(), nextSlot);
-        nextSlot = slot + std::chrono::milliseconds(DFU_USB_RESET_SPACING_MS);
+        std::mutex mutex;
+        clock::time_point nextAllowed;
+    };
+
+    static State& state()
+    {
+        static State s;
+        return s;
     }
-    std::this_thread::sleep_until(slot);
-}
+
+    std::lock_guard<std::mutex> m_lock;
+};
 
 #endif // DFU_RESET_THROTTLE_H
