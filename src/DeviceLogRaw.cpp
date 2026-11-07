@@ -208,7 +208,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors) {
                     if (m_comm.rxErrorCount > 1) {
-                        printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
+                        printf("%s SaveData() parse errors: %d\n", utils::serialNumberToString(m_devSerialNo).c_str(), m_comm.rxErrorCount);
                     }
                 }
                 break;
@@ -436,7 +436,7 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
-                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
+                    if (m_comm.rxErrorCount > 1) { printf("%s ReadDataFromChunk() parse errors: %d\n", utils::serialNumberToString(m_devSerialNo).c_str(), m_comm.rxErrorCount); }
                 }
                 break;
 

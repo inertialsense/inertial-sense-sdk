@@ -656,6 +656,14 @@ enum eBuildFlags {
     BUILD_FLAGS_DIRTY   = 0x2,  //!< Firmware was built from a working tree with uncommitted local changes
 };
 
+/** @brief Serial numbers are uint32_t. An unprogrammed OTP serial reads 0xFFFFFFFF; 0 is treated as unset as well. Never print a serial with %d/%i: use PRIu32/%u, or utils::serialNumberToString() in C++. */
+#define SERIAL_NUMBER_UNSET     0xFFFFFFFFu
+
+static inline int serialNumberIsSet(uint32_t serialNumber)
+{
+    return serialNumber != 0 && serialNumber != SERIAL_NUMBER_UNSET;
+}
+
 /**
  * @brief (DID_DEV_INFO) Device information: identifies the connected device's hardware, firmware
  * build, and manufacturer. Reported once at connection and after firmware updates; use

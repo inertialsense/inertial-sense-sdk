@@ -2249,7 +2249,7 @@ std::string cInertialSenseDisplay::DataToStringEvent(const did_event_t &event, c
 
     // print Serial number */
     // event.senderSN;
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%d\n", event.senderSN);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "Sender SN:%s\n", utils::serialNumberToString(event.senderSN).c_str());
 
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
     // event.senderHdwId;

@@ -1185,9 +1185,9 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
 
     if (isblPtr) {
         if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
-            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+            printf("    | %s (%s):", isblPtr->m_port_name.c_str(), utils::serialNumberToString(isblPtr->m_sn).c_str());
         } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
-            printf("    | (SN%d):", isblPtr->m_sn);
+            printf("    | (%s):", utils::serialNumberToString(isblPtr->m_sn).c_str());
         } else if (isblPtr->m_port_name.size() != 0) {
             printf("    | %s:", isblPtr->m_port_name.c_str());
         } else {

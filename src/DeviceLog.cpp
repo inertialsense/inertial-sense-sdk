@@ -368,10 +368,10 @@ std::string cDeviceLog::GetNewBaseFileName(uint32_t serialNumber, uint32_t fileC
         timeStamp = (sep == std::string::npos) ? "" : timeStamp.substr(sep + 1);
     }
 
-    return utils::string_format("%s/%s%d_%s_%04d%s",
+    return utils::string_format("%s/%s%u_%s_%04d%s",
                                 m_directory.c_str(),
                                 IS_LOG_FILE_PREFIX,
-                                (int)serialNumber,
+                                (unsigned)serialNumber,
                                 timeStamp.c_str(),
                                 (int)(fileCount % 10000),
                                 (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str())

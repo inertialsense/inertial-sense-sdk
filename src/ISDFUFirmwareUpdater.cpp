@@ -1599,8 +1599,8 @@ dfu_error DFUDevice::close() {
  */
 const char *DFUDevice::getDescription() {
     thread_local char buff[64];
-    if (sn != 0xFFFFFFFF)
-        snprintf(buff, sizeof(buff), "%s-%d.%d:SN-%05d", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), sn);
+    if (sn != SERIAL_NUMBER_UNSET)
+        snprintf(buff, sizeof(buff), "%s-%d.%d:SN-%05u", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), sn);
     else
         snprintf(buff, sizeof(buff), "%s-%d.%d:DFU-%s", g_isHardwareTypeNames[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
     return buff;

@@ -511,7 +511,10 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
             std::smatch match;
             if (std::regex_search(fileName, match, rx) && match.size() > 1)
             {
-                info->devSerialNum = std::stoi(match[1].str());
+                // Serial numbers are uint32; out-of-range digits leave devSerialNum unset rather than throwing (stoi) or wrapping.
+                uint32_t sn = 0;
+                if (utils::parseSerialNumber(match[1].str(), sn))
+                    info->devSerialNum = sn;
             }
 
             // Date from filename (e.g., ..._YYYYMMDD_...)
@@ -1087,7 +1090,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
     // std::string hwType = std::string(typeName) + "-" + std::to_string(devInfo.hardwareVer[0]) + "." + std::to_string(devInfo.hardwareVer[1]);
     std::string hwType = utils::getHardwareAsString(devInfo);
 
-    log_info(IS_LOG_CALIBRATION, "[%s] Fetching calibration from DB for %s SN%ld", ISDevice::getIdAsString(devInfo).c_str(), hwType.c_str(), devInfo.serialNumber);
+    log_info(IS_LOG_CALIBRATION, "[%s] Fetching calibration from DB for %s %s", ISDevice::getIdAsString(devInfo).c_str(), hwType.c_str(), utils::serialNumberToString(devInfo.serialNumber).c_str());
 
     // Step 1: Fetch device calibration list
     std::string deviceUrl = restBaseUrl + "/api/calibration/device/" + hwType + "/" + std::to_string(devInfo.serialNumber);
