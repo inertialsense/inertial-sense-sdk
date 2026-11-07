@@ -18,24 +18,10 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <chrono>
 #include <thread>
 #include <vector>
 
-#ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    typedef SOCKET socket_t;
-    #define CLOSE_SOCKET closesocket
-    #define SOCKET_INVALID INVALID_SOCKET
-#else
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <unistd.h>
-    #include <arpa/inet.h>
-    typedef int socket_t;
-    #define CLOSE_SOCKET close
-    #define SOCKET_INVALID (-1)
-#endif
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
@@ -46,6 +32,7 @@
 #include "IS_calibration_convert.h"
 #include "data_sets.h"
 #include "json.hpp"
+#include "httplib.h"
 #include "util/util.h"
 
 using json = nlohmann::json;
@@ -648,84 +635,35 @@ TEST_F(test_ISDeviceCal, makeIdentity_fillsFromDevInfoAndManufacturingInfo)
 
 // ---- SN-8984: ISDeviceCal::loadFromURL against a mocked calibration DB ----
 
-// Minimal HTTP server that answers GETs from a path -> (status, body) table and records every request path.
+// Loopback HTTP server (cpp-httplib, as test_RelayPortFactory.cpp uses) that answers any request from a path -> (status, body) table
+// (404 for an unknown path) and records every request's path, method and body.
 class RoutedHttpServer {
 public:
     void addRoute(const std::string& path, int status, const std::string& body) { m_routes[path] = {status, body}; }
 
     bool start()
     {
-#ifdef _WIN32
-        WSADATA wsa; WSAStartup(MAKEWORD(2, 2), &wsa);
-#endif
-        m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_listenFd == SOCKET_INVALID) return false;
-        int opt = 1;
-        setsockopt(m_listenFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
-        sockaddr_in addr = {};
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-        addr.sin_port = 0;      // let the OS pick a free port
-        if (bind(m_listenFd, (sockaddr*)&addr, sizeof(addr)) != 0 || listen(m_listenFd, 8) != 0) return false;
-        socklen_t len = sizeof(addr);
-        getsockname(m_listenFd, (sockaddr*)&addr, &len);
-        m_port = ntohs(addr.sin_port);
+        m_port = m_server.bind_to_any_port("127.0.0.1");        // an ephemeral port: tests can run in parallel
+        if (m_port <= 0) return false;
 
-        m_thread = std::thread([this]() {
-            for (;;)
-            {
-                socket_t fd = accept(m_listenFd, nullptr, nullptr);
-                if (fd == SOCKET_INVALID) return;
-                std::string req;
-                char buf[4096];
-                while (req.find("\r\n\r\n") == std::string::npos)
-                {
-                    int n = recv(fd, buf, sizeof(buf), 0);
-                    if (n <= 0) break;
-                    req.append(buf, n);
-                }
-                size_t sp1 = req.find(' '), sp2 = req.find(' ', sp1 + 1);
-                std::string method = (sp1 != std::string::npos) ? req.substr(0, sp1) : "";
-                std::string path = (sp1 != std::string::npos && sp2 != std::string::npos) ? req.substr(sp1 + 1, sp2 - sp1 - 1) : "";
+        auto handler = [this](const httplib::Request& req, httplib::Response& res) {
+            { std::lock_guard<std::mutex> lock(m_mutex); m_requests.push_back(req.path); m_methods.push_back(req.method); m_bodies[req.path] = req.body; }
+            auto it = m_routes.find(req.path);
+            res.status = (it != m_routes.end()) ? it->second.first : 404;
+            res.set_content((it != m_routes.end()) ? it->second.second : "{}", "application/json");
+        };
+        m_server.Get(".*", handler);
+        m_server.Put(".*", handler);
+        m_server.Post(".*", handler);
 
-                // Read the rest of a request body (PUT/POST)
-                size_t headerEnd = req.find("\r\n\r\n");
-                size_t clPos = req.find("Content-Length:");
-                if (clPos == std::string::npos) clPos = req.find("content-length:");
-                if (headerEnd != std::string::npos && clPos != std::string::npos)
-                {
-                    size_t want = (size_t)std::stoul(req.substr(clPos + 15));
-                    while (req.size() - (headerEnd + 4) < want)
-                    {
-                        int n = recv(fd, buf, sizeof(buf), 0);
-                        if (n <= 0) break;
-                        req.append(buf, n);
-                    }
-                }
-                std::string body = (headerEnd != std::string::npos) ? req.substr(headerEnd + 4) : "";
-                { std::lock_guard<std::mutex> lock(m_mutex); m_requests.push_back(path); m_methods.push_back(method); m_bodies[path] = body; }
-
-                int status = 404; std::string respBody = "{}";
-                auto it = m_routes.find(path);
-                if (it != m_routes.end()) { status = it->second.first; respBody = it->second.second; }
-                std::string resp = "HTTP/1.1 " + std::to_string(status) + " X\r\nContent-Type: application/json\r\nContent-Length: " +
-                                   std::to_string(respBody.size()) + "\r\nConnection: close\r\n\r\n" + respBody;
-                send(fd, resp.data(), (int)resp.size(), 0);
-                CLOSE_SOCKET(fd);
-            }
-        });
+        m_thread = std::thread([this] { m_server.listen_after_bind(); });
+        while (!m_server.is_running()) std::this_thread::sleep_for(std::chrono::milliseconds(5));
         return true;
     }
 
     ~RoutedHttpServer()
     {
-        if (m_listenFd != SOCKET_INVALID)
-        {
-#ifndef _WIN32
-            shutdown(m_listenFd, SHUT_RDWR);        // wakes accept() on Linux
-#endif
-            CLOSE_SOCKET(m_listenFd);
-        }
+        m_server.stop();
         if (m_thread.joinable()) m_thread.join();
     }
 
@@ -735,12 +673,12 @@ public:
     std::string lastBody(const std::string& path) { std::lock_guard<std::mutex> lock(m_mutex); auto it = m_bodies.find(path); return it == m_bodies.end() ? "" : it->second; }
 
 private:
+    httplib::Server m_server;
     std::map<std::string, std::pair<int, std::string>> m_routes;
     std::vector<std::string> m_requests, m_methods;
     std::map<std::string, std::string> m_bodies;
     std::mutex m_mutex;
     std::thread m_thread;
-    socket_t m_listenFd = SOCKET_INVALID;
     int m_port = 0;
 };
 
