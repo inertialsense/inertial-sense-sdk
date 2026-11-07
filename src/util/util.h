@@ -760,6 +760,34 @@ namespace utils {
      * @return UUID string formatted as "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
      */
     std::string generateUUIDv4();
+
+    /**
+     * Generates a UUID v7 string (RFC 9562): a 48-bit Unix millisecond timestamp followed by random bits.
+     * Used for calibration UUIDs so the calibration-db key is time-ordered.
+     * @param unixTimeMs time, in milliseconds since the Unix epoch (UTC), to embed in the UUID
+     * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
+     */
+    std::string generateUUIDv7(uint64_t unixTimeMs);
+
+    /**
+     * Renders the full 128-bit manufacturing UID as the 32 lowercase hex digits used by the calibration-db
+     * (`manfUid`): the 16 bytes of uid[4] in memory order, each word little-endian. This is the same byte
+     * sequence the serial number is derived from. The reserved 4th word is always included.
+     * Example: uid = {0x001D0028, 0x41465006, 0x20363841, 0} -> "28001d00065046414138362000000000"
+     * @param uid the 4 words of manufacturing_info_t.uid
+     * @return 32 lowercase hex digits
+     */
+    std::string manfUidToString(const uint32_t uid[4]);
+
+    /**
+     * Converts the manufacturing date written by EvalTool (manufacturing_info_t.date, "YYYYMMDDHHMMSSZ", UTC)
+     * to RFC 3339 UTC ("YYYY-MM-DDTHH:MM:SSZ"). Dates written before the explicit "Z" marker existed are 14 digits in
+     * the station's local time, which is not known here, so they are rejected rather than guessed.
+     * @param date the 16-byte manufacturing_info_t.date field (need not be NUL terminated)
+     * @param rfc3339 receives the converted time when true is returned
+     * @return true if date is a valid UTC "YYYYMMDDHHMMSSZ" value
+     */
+    bool manfDateToRfc3339(const char date[16], std::string& rfc3339);
 };
 
 /**

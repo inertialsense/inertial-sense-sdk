@@ -1608,7 +1608,12 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 {
 
     ISDeviceCal cal{};
-    ISHttpRequest::Response calResp = cal.loadFromURL(restBaseUrl, devInfo);
+    manufacturing_info_t manf = {};
+    // The manufacturing UID identifies this unit among any that share its serial; without it only the serial-only lookup is possible
+    const bool haveManf = manufacturingInfo(manf, 1000);
+    if (!haveManf)
+        log_warn(IS_LOG_ISDEVICE, "[%s] Manufacturing info not available; looking up calibration by serial number only", getIdAsString().c_str());
+    ISHttpRequest::Response calResp = cal.loadFromURL(restBaseUrl, devInfo, haveManf ? &manf : nullptr);
     switch (calResp.statusCode) {
         case -2:
             log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration response.", getIdAsString().c_str());
@@ -1631,6 +1636,23 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
     }
 
     return UploadImxCalibration(cal) ? 200 : -1;
+}
+
+ISHttpRequest::Response ISDevice::RegisterManufacturingInfoToDb(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t& manfInfo)
+{
+    ISHttpRequest::Response resp;
+    if (!manufacturing_info_isWritten(&manfInfo))
+    {
+        resp.statusCode = 412;
+        resp.statusMessage = utils::string_format("[%s] OTP manufacturing info is not written; not registering the device", getIdAsString(devInfo).c_str());
+        log_error(IS_LOG_ISDEVICE, "%s", resp.statusMessage.c_str());
+        return resp;
+    }
+
+    sCalDeviceIdentity identity = ISDeviceCal::makeIdentity(devInfo, manfInfo, 0, 0);
+    resp = ISHttpRequest::put(restBaseUrl + "/api/device", ISDeviceCal::buildDeviceJson(identity).dump());
+    log_info(IS_LOG_ISDEVICE, "[%s] Register in Manufacturing Database: HTTP %d", getIdAsString(devInfo).c_str(), resp.statusCode);
+    return resp;
 }
 
 bool ISDevice::softwareReset() {

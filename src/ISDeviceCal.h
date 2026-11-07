@@ -225,6 +225,22 @@ struct sOrthoCal
  * from/to JSON files, including sensor calibration info, temperature compensation,
  * and motion calibration (orthonormalization).
  */
+/**
+ * Device identity and manufacturing details recorded in the calibration `info` stanza, using the keys of the
+ * Manufacturing Database contract (SN-8984): hwType, devSerialNum, manfUid, manfLot, manfDateTime,
+ * manfHardwareId, manfOtpWriteCount, manfPlatformType, manfReserved, plus calDateTime, calUuid and calBitStatus.
+ * The same stanza is written to the calibration file on disk and uploaded to the DB, so the two cannot differ.
+ */
+struct sCalDeviceIdentity
+{
+    std::string             hwType;                 //!< Hardware type as the device reports it, e.g. "IMX-6.0" (utils::getHardwareAsString())
+    uint32_t                serialNumber = 0;       //!< Device serial number (dev_info_t::serialNumber)
+    manufacturing_info_t    manf = {};              //!< DID_MANUFACTURING_INFO as read from the device (uid, lot, date, OTP write count, ...)
+    uint32_t                calBitStatus = 0;       //!< Calibration BIT status
+    int64_t                 calDateTimeMs = 0;      //!< Calibration time, ms since the Unix epoch (UTC); 0 omits calDateTime and the generated calUuid
+    std::string             calUuid;                //!< Calibration UUID; empty means a UUIDv7 is generated from calDateTimeMs
+};
+
 class ISDeviceCal : public sensor_cal_t
 {
 public:
@@ -259,14 +275,20 @@ public:
 
     /**
      * @brief Fetch the most recent calibration for a device from a REST calibration database and
-     * populate this object with it. Looks up the device by hardware type + serial number, finds the
-     * calibration entry with the latest calDateTime, then downloads and parses that entry.
+     * populate this object with it. The manufacturing UID (when manfInfo is given) identifies the unit, so
+     * /api/calibration/device/{hwType}/{serial}/{manfUid} is tried first. If the DB has no record under that UID
+     * (a legacy device), the serial-only route is used, but a calibration is applied only when exactly one
+     * device record holds the serial; with several it refuses, since it cannot tell which is this unit. A
+     * calibration whose serial, hardware type or manfUid does not match the connected device is refused.
      * @param restBaseUrl Base URL of the calibration REST API (e.g. "https://cal.example.com").
      * @param devInfo Target device info; used to build the hardware-type/serial-number lookup.
+     * @param manfInfo The device's manufacturing info (for the UID), or NULL to look up by serial only.
      * @return the HTTP response from the final calibration fetch. statusCode == 200 on success;
-     *         -1 indicates a connection/parse failure, 404 that the device has no calibration on file.
+     *         -1 indicates a connection/parse failure, 404 that the device has no calibration on file,
+     *         400 that the device has no valid serial number, 409 that the DB holds several devices with
+     *         this serial or that the calibration belongs to a different device.
      */
-    ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo);
+    ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t* manfInfo = NULL);
 
 
     /**
@@ -340,6 +362,7 @@ public:
      * @param tcal Pointer to temperature compensation calibration (can be NULL)
      * @param mcal Pointer to motion calibration (can be NULL)
      * @param pose Current pose value (default -1)
+     * @param identity Device identity and manufacturing details to record in the info stanza (can be NULL)
      * @return true if calibration was successfully saved, false otherwise
      */
     static bool saveCalibrationToJsonObj(const std::string& filePath, 
@@ -347,7 +370,47 @@ public:
                                      sensor_cal_info_t* info = NULL, 
                                      sensor_tcal_group_t* tcal = NULL, 
                                      sensor_mcal_group_t* mcal = NULL, 
-                                     int pose = -1);
+                                     int pose = -1,
+                                     const sCalDeviceIdentity* identity = NULL);
+
+    /**
+     * @brief Build the calibration JSON that saveCalibrationToJsonObj() writes to a file, without writing it.
+     * The calibration DB upload uses this directly, so the uploaded stream and the saved file are identical.
+     *
+     * @param filePath Path recorded in the motion calibration comment line (can be empty)
+     * @param cal Pointer to orthonormalization calibration data (can be NULL)
+     * @param info Pointer to sensor calibration info (can be NULL)
+     * @param tcal Pointer to temperature compensation calibration (can be NULL)
+     * @param mcal Pointer to motion calibration (can be NULL)
+     * @param pose Current pose value (default -1)
+     * @param identity Device identity and manufacturing details to record in the info stanza (can be NULL)
+     * @return the calibration JSON object
+     */
+    static json buildCalibrationJson(const std::string& filePath,
+                                     sOrthoCal* cal,
+                                     sensor_cal_info_t* info = NULL,
+                                     sensor_tcal_group_t* tcal = NULL,
+                                     sensor_mcal_group_t* mcal = NULL,
+                                     int pose = -1,
+                                     const sCalDeviceIdentity* identity = NULL);
+
+    /**
+     * @brief Build the body of PUT /api/device that registers a device in the Manufacturing Database: hwType, devSerialNum and
+     * manfUid, plus the manufacturing fields (manfLot, manfDateTime, manfHardwareId, manfOtpWriteCount, manfPlatformType,
+     * manfReserved), with the same keys and values as the calibration info stanza. manfDateTime is left out for a legacy
+     * zone-less date. The call is an upsert keyed on (hwType, devSerialNum, manfUid), so it is safe after every OTP write.
+     * @param identity the device identity (see makeIdentity()); the calibration fields are not used
+     */
+    static json buildDeviceJson(const sCalDeviceIdentity& identity);
+
+    /**
+     * @brief Fill an sCalDeviceIdentity from the device's dev_info_t and manufacturing_info_t.
+     * @param devInfo the device's dev_info_t
+     * @param manf the device's manufacturing_info_t (DID_MANUFACTURING_INFO)
+     * @param calBitStatus the calibration BIT status
+     * @param calDateTimeMs the calibration time in ms since the Unix epoch (UTC)
+     */
+    static sCalDeviceIdentity makeIdentity(const dev_info_t& devInfo, const manufacturing_info_t& manf, uint32_t calBitStatus, int64_t calDateTimeMs);
 
     /**
      * @brief Load motion calibration from JSON object
