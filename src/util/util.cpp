@@ -13,6 +13,8 @@
 #include <cctype>
 #include <cstring>
 #include <memory>
+#include <mutex>
+#include <random>
 #include <regex>
 #include <stdexcept>
 // #include <acc_prof.h>
@@ -1204,6 +1206,69 @@ std::string utils::generateUUIDv4() {
              bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
 
     return std::string(buf);
+}
+
+std::string utils::generateUUIDv7(uint64_t unixTimeMs) {
+    static std::mt19937_64 rng{std::random_device{}()};
+    static std::mutex rngMutex;
+
+    uint8_t bytes[16];
+    {
+        std::lock_guard<std::mutex> lock(rngMutex);
+        uint64_t r0 = rng(), r1 = rng();
+        for (int i = 0; i < 8; i++) {
+            bytes[8 + i] = (uint8_t)(r0 >> (8 * i));
+        }
+        bytes[6] = (uint8_t)(r1);
+        bytes[7] = (uint8_t)(r1 >> 8);
+    }
+
+    // 48-bit big-endian millisecond timestamp
+    for (int i = 0; i < 6; i++)
+        bytes[i] = (uint8_t)(unixTimeMs >> (8 * (5 - i)));
+
+    bytes[6] = (bytes[6] & 0x0F) | 0x70;  // version 7
+    bytes[8] = (bytes[8] & 0x3F) | 0x80;  // variant 10xx
+
+    char buf[48];
+    snprintf(buf, sizeof(buf),
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+             bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+    return std::string(buf);
+}
+
+std::string utils::manfUidToString(const uint32_t uid[4]) {
+    static const char hex[] = "0123456789abcdef";
+    std::string out;
+    out.reserve(32);
+    for (int w = 0; w < 4; w++) {
+        for (int b = 0; b < 4; b++) {      // little-endian: least significant byte first
+            uint8_t v = (uint8_t)(uid[w] >> (8 * b));
+            out.push_back(hex[v >> 4]);
+            out.push_back(hex[v & 0x0F]);
+        }
+    }
+    return out;
+}
+
+bool utils::manfDateToRfc3339(const char date[16], std::string& rfc3339) {
+    // "YYYYMMDDHHMMSSZ": 14 digits, then 'Z', then NUL padding
+    for (int i = 0; i < 14; i++)
+        if (date[i] < '0' || date[i] > '9')
+            return false;
+    if (date[14] != 'Z' || (date[15] != '\0'))
+        return false;
+
+    auto num = [&](int pos, int len) { int v = 0; for (int i = 0; i < len; i++) v = v * 10 + (date[pos + i] - '0'); return v; };
+    int year = num(0, 4), month = num(4, 2), day = num(6, 2), hour = num(8, 2), minute = num(10, 2), second = num(12, 2);
+    if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59)
+        return false;
+
+    char buf[24];
+    snprintf(buf, sizeof(buf), "%04d-%02d-%02dT%02d:%02d:%02dZ", year, month, day, hour, minute, second);
+    rfc3339 = buf;
+    return true;
 }
 
 std::string utils::globToRegex(const std::string& globs) {
