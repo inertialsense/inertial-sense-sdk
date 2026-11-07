@@ -770,6 +770,12 @@ namespace utils {
     std::string generateUUIDv7(uint64_t unixTimeMs);
 
     /**
+     * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z".
+     * @param unixMs time in milliseconds since the Unix epoch (UTC)
+     */
+    std::string unixMsToRfc3339(int64_t unixMs);
+
+    /**
      * Renders the full 128-bit manufacturing UID as the 32 lowercase hex digits used by the calibration-db
      * (`manfUid`): the 16 bytes of uid[4] in memory order, each word little-endian. This is the same byte
      * sequence the serial number is derived from. The reserved 4th word is always included.

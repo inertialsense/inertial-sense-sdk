@@ -535,3 +535,11 @@ TEST(test_manfDateToRfc3339, rejectsLegacyAndMalformed)
     EXPECT_FALSE(utils::manfDateToRfc3339(empty, out));
     EXPECT_EQ(out, "unchanged");
 }
+
+TEST(test_unixMsToRfc3339, formatsUtcWithMilliseconds)
+{
+    EXPECT_EQ(utils::unixMsToRfc3339(0), "1970-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531000ll), "2026-10-20T15:02:11.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531250ll), "2026-10-20T15:02:11.250Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-1), "1969-12-31T23:59:59.999Z");
+}

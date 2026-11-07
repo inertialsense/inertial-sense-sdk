@@ -1238,6 +1238,19 @@ std::string utils::generateUUIDv7(uint64_t unixTimeMs) {
     return std::string(buf);
 }
 
+std::string utils::unixMsToRfc3339(int64_t unixMs) {
+    time_t secs = (time_t)(unixMs / 1000);
+    int ms = (int)(unixMs % 1000);
+    if (ms < 0) { ms += 1000; secs -= 1; }
+    struct tm tmUtc = {};
+#ifdef _WIN32
+    gmtime_s(&tmUtc, &secs);
+#else
+    gmtime_r(&secs, &tmUtc);
+#endif
+    return utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tmUtc.tm_year + 1900, tmUtc.tm_mon + 1, tmUtc.tm_mday, tmUtc.tm_hour, tmUtc.tm_min, tmUtc.tm_sec, ms);
+}
+
 std::string utils::manfUidToString(const uint32_t uid[4]) {
     static const char hex[] = "0123456789abcdef";
     std::string out;
