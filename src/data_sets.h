@@ -5683,7 +5683,18 @@ void profiler_start(runtime_profile_t *p, uint32_t timeUs);
 void profiler_stop(runtime_profile_t *p, uint32_t timeUs);
 void profiler_maintenance_1s(runtime_profiler_t *p);
 
-int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo);
+int manufacturing_info_checkRequirementsToWrite(const manufacturing_info_t *newInfo);
+
+/**
+ * @brief Whether a device's manufacturing info shows that its OTP has been written with a usable record: at least one OTP
+ * write (key), a valid serial number (see serialNumberIsSet()), the lot, hardware id and date that
+ * manufacturing_info_checkRequirementsToWrite() requires, and a UID that is not all zeros or all ones.
+ * A device must pass this before it is registered in the Manufacturing Database, which needs its UID.
+ *
+ * @param info manufacturing info as read from the device (DID_MANUFACTURING_INFO)
+ * @return 1 if the OTP has been written with a usable record, 0 otherwise
+ */
+int manufacturing_info_isWritten(const manufacturing_info_t *info);
 
 
 #ifdef __cplusplus

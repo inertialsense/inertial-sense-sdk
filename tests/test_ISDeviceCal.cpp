@@ -41,6 +41,7 @@
 #include "gtest_helpers.h"
 
 #include "ISDeviceCal.h"
+#include "ISDevice.h"
 #include "ISLogFile.h"
 #include "IS_calibration_convert.h"
 #include "data_sets.h"
@@ -684,14 +685,31 @@ public:
                     req.append(buf, n);
                 }
                 size_t sp1 = req.find(' '), sp2 = req.find(' ', sp1 + 1);
+                std::string method = (sp1 != std::string::npos) ? req.substr(0, sp1) : "";
                 std::string path = (sp1 != std::string::npos && sp2 != std::string::npos) ? req.substr(sp1 + 1, sp2 - sp1 - 1) : "";
-                { std::lock_guard<std::mutex> lock(m_mutex); m_requests.push_back(path); }
 
-                int status = 404; std::string body = "{}";
+                // Read the rest of a request body (PUT/POST)
+                size_t headerEnd = req.find("\r\n\r\n");
+                size_t clPos = req.find("Content-Length:");
+                if (clPos == std::string::npos) clPos = req.find("content-length:");
+                if (headerEnd != std::string::npos && clPos != std::string::npos)
+                {
+                    size_t want = (size_t)std::stoul(req.substr(clPos + 15));
+                    while (req.size() - (headerEnd + 4) < want)
+                    {
+                        int n = recv(fd, buf, sizeof(buf), 0);
+                        if (n <= 0) break;
+                        req.append(buf, n);
+                    }
+                }
+                std::string body = (headerEnd != std::string::npos) ? req.substr(headerEnd + 4) : "";
+                { std::lock_guard<std::mutex> lock(m_mutex); m_requests.push_back(path); m_methods.push_back(method); m_bodies[path] = body; }
+
+                int status = 404; std::string respBody = "{}";
                 auto it = m_routes.find(path);
-                if (it != m_routes.end()) { status = it->second.first; body = it->second.second; }
+                if (it != m_routes.end()) { status = it->second.first; respBody = it->second.second; }
                 std::string resp = "HTTP/1.1 " + std::to_string(status) + " X\r\nContent-Type: application/json\r\nContent-Length: " +
-                                   std::to_string(body.size()) + "\r\nConnection: close\r\n\r\n" + body;
+                                   std::to_string(respBody.size()) + "\r\nConnection: close\r\n\r\n" + respBody;
                 send(fd, resp.data(), (int)resp.size(), 0);
                 CLOSE_SOCKET(fd);
             }
@@ -713,10 +731,13 @@ public:
 
     std::string url() const { return "http://127.0.0.1:" + std::to_string(m_port); }
     std::vector<std::string> requests() { std::lock_guard<std::mutex> lock(m_mutex); return m_requests; }
+    std::vector<std::string> methods() { std::lock_guard<std::mutex> lock(m_mutex); return m_methods; }
+    std::string lastBody(const std::string& path) { std::lock_guard<std::mutex> lock(m_mutex); auto it = m_bodies.find(path); return it == m_bodies.end() ? "" : it->second; }
 
 private:
     std::map<std::string, std::pair<int, std::string>> m_routes;
-    std::vector<std::string> m_requests;
+    std::vector<std::string> m_requests, m_methods;
+    std::map<std::string, std::string> m_bodies;
     std::mutex m_mutex;
     std::thread m_thread;
     socket_t m_listenFd = SOCKET_INVALID;
@@ -878,5 +899,89 @@ TEST_F(test_ISDeviceCal_loadFromURL, invalidSerial_failsWithoutAnyRequest)
         ISDeviceCal cal;
         EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 400) << bad;
     }
+    EXPECT_TRUE(srv.requests().empty());
+}
+
+
+// ---- SN-8984: registering a device in the Manufacturing Database ----
+
+static manufacturing_info_t makeWrittenManf()
+{
+    manufacturing_info_t m = {};
+    m.serialNumber = 3054153446u;
+    m.uid[0] = 0x001D0028u; m.uid[1] = 0x41465006u; m.uid[2] = 0x20363841u;
+    m.lotNumber = 690;
+    m.hardwareId = 0x1040;
+    m.key = 2;
+    memcpy(m.date, "20261020144538Z", 15);
+    return m;
+}
+
+TEST(test_manufacturing_info_isWritten, requiresKeySerialRecordAndUid)
+{
+    manufacturing_info_t m = makeWrittenManf();
+    EXPECT_TRUE(manufacturing_info_isWritten(&m));
+
+    manufacturing_info_t x = m; x.key = 0;                              EXPECT_FALSE(manufacturing_info_isWritten(&x)) << "OTP never written";
+    x = m; x.serialNumber = 0;                                         EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; x.serialNumber = 0xFFFFFFFFu;                               EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; x.lotNumber = 0;                                            EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; x.hardwareId = 0;                                           EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; memset(x.date, 0, sizeof(x.date));                          EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; memset(x.uid, 0, sizeof(x.uid));                            EXPECT_FALSE(manufacturing_info_isWritten(&x)) << "all-zero UID";
+    x = m; memset(x.uid, 0xFF, sizeof(x.uid));                         EXPECT_FALSE(manufacturing_info_isWritten(&x)) << "all-ones UID";
+}
+
+TEST(test_ISDeviceCal_deviceJson, hasContractKeysAndNoLegacyOnes)
+{
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_GPX;
+    dev.hardwareVer[0] = 1;
+    dev.serialNumber = 3054153446u;
+    sCalDeviceIdentity id = ISDeviceCal::makeIdentity(dev, makeWrittenManf(), 0, 0);
+    json j = ISDeviceCal::buildDeviceJson(id);
+
+    EXPECT_EQ(j["hwType"], "GPX-1.0");
+    EXPECT_EQ(j["devSerialNum"].get<uint32_t>(), 3054153446u);
+    EXPECT_EQ(j["manfUid"], "28001d00065046414138362000000000");
+    EXPECT_EQ(j["manfLot"].get<uint32_t>(), 690u);
+    EXPECT_EQ(j["manfDateTime"], "2026-10-20T14:45:38Z");
+    EXPECT_EQ(j["manfHardwareId"].get<uint32_t>(), 0x1040u);
+    EXPECT_EQ(j["manfOtpWriteCount"].get<uint32_t>(), 2u);
+    ASSERT_TRUE(j["manfReserved"].is_array());
+    for (const char* gone : { "dev_stm32_uid", "manufacture_time", "last_qa_time", "last_qa_hdw_bit_status", "devUuid", "devSTM32UID", "calUuid", "calBitStatus" })
+        EXPECT_FALSE(j.contains(gone)) << gone;
+}
+
+TEST(test_ISDevice_registerToDb, putsContractBodyAndReturnsServerStatus)
+{
+    RoutedHttpServer srv;
+    srv.addRoute("/api/device", 201, "{\"uuid\":\"x\"}");
+    ASSERT_TRUE(srv.start());
+
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_GPX;
+    dev.hardwareVer[0] = 1;
+    dev.serialNumber = 3054153446u;
+    auto r = ISDevice::RegisterManufacturingInfoToDb(srv.url(), dev, makeWrittenManf());
+    EXPECT_EQ(r.statusCode, 201);
+    ASSERT_EQ(srv.requests().size(), 1u);
+    EXPECT_EQ(srv.methods()[0], "PUT");
+    json body = json::parse(srv.lastBody("/api/device"));
+    EXPECT_EQ(body["manfUid"], "28001d00065046414138362000000000");
+    EXPECT_EQ(body["devSerialNum"].get<uint32_t>(), 3054153446u);
+}
+
+TEST(test_ISDevice_registerToDb, sendsNothingWhenOtpNotWritten)
+{
+    RoutedHttpServer srv;
+    ASSERT_TRUE(srv.start());
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_GPX;
+    dev.hardwareVer[0] = 1;
+    dev.serialNumber = 3054153446u;
+    manufacturing_info_t m = makeWrittenManf();
+    m.key = 0;
+    EXPECT_EQ(ISDevice::RegisterManufacturingInfoToDb(srv.url(), dev, m).statusCode, 412);
     EXPECT_TRUE(srv.requests().empty());
 }

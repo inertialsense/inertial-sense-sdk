@@ -1638,6 +1638,23 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
     return UploadImxCalibration(cal) ? 200 : -1;
 }
 
+ISHttpRequest::Response ISDevice::RegisterManufacturingInfoToDb(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t& manfInfo)
+{
+    ISHttpRequest::Response resp;
+    if (!manufacturing_info_isWritten(&manfInfo))
+    {
+        resp.statusCode = 412;
+        resp.statusMessage = utils::string_format("[%s] OTP manufacturing info is not written; not registering the device", getIdAsString(devInfo).c_str());
+        log_error(IS_LOG_ISDEVICE, "%s", resp.statusMessage.c_str());
+        return resp;
+    }
+
+    sCalDeviceIdentity identity = ISDeviceCal::makeIdentity(devInfo, manfInfo, 0, 0);
+    resp = ISHttpRequest::put(restBaseUrl + "/api/device", ISDeviceCal::buildDeviceJson(identity).dump());
+    log_info(IS_LOG_ISDEVICE, "[%s] Register in Manufacturing Database: HTTP %d", getIdAsString(devInfo).c_str(), resp.statusCode);
+    return resp;
+}
+
 bool ISDevice::softwareReset() {
     std::lock_guard<std::recursive_mutex> lock(portMutex);
 

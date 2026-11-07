@@ -762,6 +762,32 @@ sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const ma
     return id;
 }
 
+/** Adds the identity and manufacturing keys shared by the calibration info stanza and the device registration body. */
+static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
+{
+    if (!identity.hwType.empty())
+        j["hwType"] = identity.hwType;
+    j["devSerialNum"] = identity.serialNumber;
+
+    const manufacturing_info_t& m = identity.manf;
+    j["manfUid"] = utils::manfUidToString(m.uid);
+    j["manfLot"] = (uint32_t)m.lotNumber;
+    std::string manfDate;
+    if (utils::manfDateToRfc3339(m.date, manfDate))
+        j["manfDateTime"] = manfDate;                           // legacy zone-less dates are left out rather than guessed
+    j["manfHardwareId"] = (uint32_t)m.hardwareId;
+    j["manfOtpWriteCount"] = m.key;
+    j["manfPlatformType"] = m.platformType;
+    j["manfReserved"] = json::array({ (uint32_t)m.reserved });  // every reserved word between platformType and uid, in order
+}
+
+json ISDeviceCal::buildDeviceJson(const sCalDeviceIdentity& identity)
+{
+    json j = json::object();
+    addIdentityKeys(j, identity);
+    return j;
+}
+
 json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose, const sCalDeviceIdentity* identity)
 {
     json jTop = json::object();
@@ -780,9 +806,7 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
 
         if (identity)
         {   // Manufacturing Database contract keys (camelCase). devUuid, devSTM32UID and calType are the server's to fill and are never written.
-            jInf["devSerialNum"] = identity->serialNumber;
-            if (!identity->hwType.empty())
-                jInf["hwType"] = identity->hwType;
+            addIdentityKeys(jInf, *identity);
             jInf["calBitStatus"] = identity->calBitStatus;
             if (identity->calDateTimeMs > 0)
             {
@@ -793,17 +817,6 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
             {
                 jInf["calUuid"] = identity->calUuid;
             }
-
-            const manufacturing_info_t& m = identity->manf;
-            jInf["manfUid"] = utils::manfUidToString(m.uid);
-            jInf["manfLot"] = (uint32_t)m.lotNumber;
-            std::string manfDate;
-            if (utils::manfDateToRfc3339(m.date, manfDate))
-                jInf["manfDateTime"] = manfDate;                        // legacy zone-less dates are left out rather than guessed
-            jInf["manfHardwareId"] = (uint32_t)m.hardwareId;
-            jInf["manfOtpWriteCount"] = m.key;
-            jInf["manfPlatformType"] = m.platformType;
-            jInf["manfReserved"] = json::array({ (uint32_t)m.reserved });   // every reserved word between platformType and uid, in order
         }
         jTop["info"] = jInf;
     }

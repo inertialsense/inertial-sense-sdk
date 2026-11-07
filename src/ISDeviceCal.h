@@ -395,6 +395,15 @@ public:
                                      const sCalDeviceIdentity* identity = NULL);
 
     /**
+     * @brief Build the body of PUT /api/device that registers a device in the Manufacturing Database: hwType, devSerialNum and
+     * manfUid, plus the manufacturing fields (manfLot, manfDateTime, manfHardwareId, manfOtpWriteCount, manfPlatformType,
+     * manfReserved), with the same keys and values as the calibration info stanza. manfDateTime is left out for a legacy
+     * zone-less date. The call is an upsert keyed on (hwType, devSerialNum, manfUid), so it is safe after every OTP write.
+     * @param identity the device identity (see makeIdentity()); the calibration fields are not used
+     */
+    static json buildDeviceJson(const sCalDeviceIdentity& identity);
+
+    /**
      * @brief Fill an sCalDeviceIdentity from the device's dev_info_t and manufacturing_info_t.
      * @param devInfo the device's dev_info_t
      * @param manf the device's manufacturing_info_t (DID_MANUFACTURING_INFO)
