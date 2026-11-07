@@ -24,6 +24,7 @@
 #include "IS_calibration_convert.h"
 #include "data_sets.h"
 #include "json.hpp"
+#include "util/util.h"
 
 using json = nlohmann::json;
 
@@ -480,4 +481,144 @@ TEST(ISDeviceCalUpload, AcceptsImx5AndImx6HardwareVersions)
     int state6 = 0;
     ISDeviceCal::cal_upload_ctx_t ctx6;
     EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state6, cal, imx6, ctx6));
+}
+
+
+// ---- SN-8984: unsigned serials and the Manufacturing Database info stanza ----
+
+// The GPX unit that shares legacy SN910564648 with another wafer
+static sCalDeviceIdentity makeGpxIdentity()
+{
+    sCalDeviceIdentity id;
+    id.hwType = "GPX-1.0";
+    id.serialNumber = 3054153446u;                 // v2 range: bit 31 set
+    id.manf.uid[0] = 0x001D0028u; id.manf.uid[1] = 0x41465006u; id.manf.uid[2] = 0x20363841u; id.manf.uid[3] = 0;
+    id.manf.lotNumber = 690;
+    id.manf.hardwareId = 0x1040;
+    id.manf.key = 2;
+    id.manf.platformType = 0;
+    id.manf.reserved = 7;
+    memcpy(id.manf.date, "20261020144538Z", 15);
+    id.calBitStatus = 65;
+    id.calDateTimeMs = 1792508531000ll;            // 2026-10-20T15:02:11Z
+    return id;
+}
+
+TEST_F(test_ISDeviceCal, serialAbove2G_writtenUnsignedAndRoundTrips)
+{
+    info.devSerialNum = 3054153446u;
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info);
+    ASSERT_TRUE(j["info"]["devSerialNum"].is_number_unsigned());
+    EXPECT_EQ(j["info"]["devSerialNum"].get<uint32_t>(), 3054153446u);
+
+    sensor_cal_info_t out = {};
+    sensor_data_info_t dout = {};
+    ASSERT_TRUE(ISDeviceCal::loadCalibrationFromJsonObj(j, nullptr, &out, &dout));
+    EXPECT_EQ(out.devSerialNum, 3054153446u);
+}
+
+TEST_F(test_ISDeviceCal, serialAbove2G_legacyNegativeFileStillLoads)
+{
+    // Files written before the fix hold serials >= 2^31 as negative numbers
+    json j = makeTestCalJson(12345);
+    j["info"]["devSerialNum"] = (int64_t)(int32_t)3054153446u;      // -1240813850
+    ASSERT_LT(j["info"]["devSerialNum"].get<int64_t>(), 0);
+
+    sensor_cal_info_t out = {};
+    sensor_data_info_t dout = {};
+    ASSERT_TRUE(ISDeviceCal::loadCalibrationFromJsonObj(j, nullptr, &out, &dout));
+    EXPECT_EQ(out.devSerialNum, 3054153446u);
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_usesDbContractKeys)
+{
+    info.devSerialNum = 12345;      // a stale value in the device cal info must not win over the device's serial
+    sCalDeviceIdentity id = makeGpxIdentity();
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    const json& i = j["info"];
+
+    EXPECT_EQ(i["devSerialNum"].get<uint32_t>(), 3054153446u);
+    EXPECT_EQ(i["hwType"], "GPX-1.0");
+    EXPECT_EQ(i["manfUid"], "28001d00065046414138362000000000");
+    EXPECT_EQ(i["manfLot"].get<uint32_t>(), 690u);
+    EXPECT_TRUE(i["manfLot"].is_number());
+    EXPECT_EQ(i["manfDateTime"], "2026-10-20T14:45:38Z");
+    EXPECT_EQ(i["manfHardwareId"].get<uint32_t>(), 0x1040u);
+    EXPECT_EQ(i["manfOtpWriteCount"].get<uint32_t>(), 2u);
+    EXPECT_EQ(i["manfPlatformType"].get<int32_t>(), 0);
+    ASSERT_TRUE(i["manfReserved"].is_array());
+    ASSERT_EQ(i["manfReserved"].size(), 1u);
+    EXPECT_EQ(i["manfReserved"][0].get<uint32_t>(), 7u);
+    EXPECT_EQ(i["calBitStatus"].get<uint32_t>(), 65u);
+    EXPECT_EQ(i["calDateTime"], "2026-10-20T15:02:11.000Z");
+
+    // Server-owned or retired keys are never sent
+    EXPECT_FALSE(i.contains("devUuid"));
+    EXPECT_FALSE(i.contains("devSTM32UID"));
+    EXPECT_FALSE(i.contains("manfInfoUid"));
+    EXPECT_FALSE(i.contains("calType"));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_calUuidIsV7FromCalDateTime)
+{
+    sCalDeviceIdentity id = makeGpxIdentity();
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    std::string u = j["info"]["calUuid"].get<std::string>();
+    ASSERT_EQ(u.size(), 36u);
+    EXPECT_EQ(u[14], '7');
+    char prefix[16];
+    snprintf(prefix, sizeof(prefix), "%08llx%04llx", (unsigned long long)((id.calDateTimeMs >> 16) & 0xFFFFFFFFull), (unsigned long long)(id.calDateTimeMs & 0xFFFFull));
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), std::string(prefix));
+
+    id.calUuid = "01a159d5-9138-7a3c-9e41-5b2d8f07c612";
+    j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_EQ(j["info"]["calUuid"], "01a159d5-9138-7a3c-9e41-5b2d8f07c612");
+
+    id.calUuid.clear();
+    id.calDateTimeMs = 0;
+    j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_FALSE(j["info"].contains("calUuid"));
+    EXPECT_FALSE(j["info"].contains("calDateTime"));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_legacyZonelessDateIsOmitted)
+{
+    sCalDeviceIdentity id = makeGpxIdentity();
+    memset(id.manf.date, 0, sizeof(id.manf.date));
+    memcpy(id.manf.date, "20261020144538", 14);                       // written before the UTC "Z" marker
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_FALSE(j["info"].contains("manfDateTime"));
+    EXPECT_TRUE(j["info"].contains("manfUid"));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_savedFileMatchesBuiltJson)
+{
+    info.devSerialNum = 3054153446u;
+    sCalDeviceIdentity id = makeGpxIdentity();
+    id.calUuid = "01a159d5-9138-7a3c-9e41-5b2d8f07c612";    // a generated calUuid has random bits, so two builds differ; callers build once and use that object for both
+    std::string path = "/tmp/test_cal_identity_stanza.json";
+    ASSERT_TRUE(ISDeviceCal::saveCalibrationToJsonObj(path, nullptr, &info, nullptr, nullptr, -1, &id));
+
+    std::ifstream f(path);
+    json fromFile = json::parse(f);
+    json built = ISDeviceCal::buildCalibrationJson(path, nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_EQ(fromFile, built) << "the uploaded stream and the saved file must be identical";
+    std::remove(path.c_str());
+}
+
+TEST_F(test_ISDeviceCal, makeIdentity_fillsFromDevInfoAndManufacturingInfo)
+{
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_IMX;
+    dev.hardwareVer[0] = 6;
+    dev.hardwareVer[1] = 0;
+    dev.serialNumber = 2404493367u;
+    manufacturing_info_t manf = {};
+    manf.lotNumber = 690;
+    sCalDeviceIdentity id = ISDeviceCal::makeIdentity(dev, manf, 65, 1000);
+    EXPECT_EQ(id.hwType, "IMX-6.0");
+    EXPECT_EQ(id.serialNumber, 2404493367u);
+    EXPECT_EQ(id.manf.lotNumber, 690u);
+    EXPECT_EQ(id.calBitStatus, 65u);
+    EXPECT_EQ(id.calDateTimeMs, 1000);
 }

@@ -225,6 +225,22 @@ struct sOrthoCal
  * from/to JSON files, including sensor calibration info, temperature compensation,
  * and motion calibration (orthonormalization).
  */
+/**
+ * Device identity and manufacturing details recorded in the calibration `info` stanza, using the keys of the
+ * Manufacturing Database contract (SN-8984): hwType, devSerialNum, manfUid, manfLot, manfDateTime,
+ * manfHardwareId, manfOtpWriteCount, manfPlatformType, manfReserved, plus calDateTime, calUuid and calBitStatus.
+ * The same stanza is written to the calibration file on disk and uploaded to the DB, so the two cannot differ.
+ */
+struct sCalDeviceIdentity
+{
+    std::string             hwType;                 //!< Hardware type as the device reports it, e.g. "IMX-6.0" (utils::getHardwareAsString())
+    uint32_t                serialNumber = 0;       //!< Device serial number (dev_info_t::serialNumber)
+    manufacturing_info_t    manf = {};              //!< DID_MANUFACTURING_INFO as read from the device (uid, lot, date, OTP write count, ...)
+    uint32_t                calBitStatus = 0;       //!< Calibration BIT status
+    int64_t                 calDateTimeMs = 0;      //!< Calibration time, ms since the Unix epoch (UTC); 0 omits calDateTime and the generated calUuid
+    std::string             calUuid;                //!< Calibration UUID; empty means a UUIDv7 is generated from calDateTimeMs
+};
+
 class ISDeviceCal : public sensor_cal_t
 {
 public:
@@ -340,6 +356,7 @@ public:
      * @param tcal Pointer to temperature compensation calibration (can be NULL)
      * @param mcal Pointer to motion calibration (can be NULL)
      * @param pose Current pose value (default -1)
+     * @param identity Device identity and manufacturing details to record in the info stanza (can be NULL)
      * @return true if calibration was successfully saved, false otherwise
      */
     static bool saveCalibrationToJsonObj(const std::string& filePath, 
@@ -347,7 +364,38 @@ public:
                                      sensor_cal_info_t* info = NULL, 
                                      sensor_tcal_group_t* tcal = NULL, 
                                      sensor_mcal_group_t* mcal = NULL, 
-                                     int pose = -1);
+                                     int pose = -1,
+                                     const sCalDeviceIdentity* identity = NULL);
+
+    /**
+     * @brief Build the calibration JSON that saveCalibrationToJsonObj() writes to a file, without writing it.
+     * The calibration DB upload uses this directly, so the uploaded stream and the saved file are identical.
+     *
+     * @param filePath Path recorded in the motion calibration comment line (can be empty)
+     * @param cal Pointer to orthonormalization calibration data (can be NULL)
+     * @param info Pointer to sensor calibration info (can be NULL)
+     * @param tcal Pointer to temperature compensation calibration (can be NULL)
+     * @param mcal Pointer to motion calibration (can be NULL)
+     * @param pose Current pose value (default -1)
+     * @param identity Device identity and manufacturing details to record in the info stanza (can be NULL)
+     * @return the calibration JSON object
+     */
+    static json buildCalibrationJson(const std::string& filePath,
+                                     sOrthoCal* cal,
+                                     sensor_cal_info_t* info = NULL,
+                                     sensor_tcal_group_t* tcal = NULL,
+                                     sensor_mcal_group_t* mcal = NULL,
+                                     int pose = -1,
+                                     const sCalDeviceIdentity* identity = NULL);
+
+    /**
+     * @brief Fill an sCalDeviceIdentity from the device's dev_info_t and manufacturing_info_t.
+     * @param devInfo the device's dev_info_t
+     * @param manf the device's manufacturing_info_t (DID_MANUFACTURING_INFO)
+     * @param calBitStatus the calibration BIT status
+     * @param calDateTimeMs the calibration time in ms since the Unix epoch (UTC)
+     */
+    static sCalDeviceIdentity makeIdentity(const dev_info_t& devInfo, const manufacturing_info_t& manf, uint32_t calBitStatus, int64_t calDateTimeMs);
 
     /**
      * @brief Load motion calibration from JSON object

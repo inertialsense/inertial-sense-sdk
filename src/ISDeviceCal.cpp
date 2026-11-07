@@ -493,7 +493,12 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
             }
             if (jInf.contains("devSerialNum"))
             {
-                info->devSerialNum = jInf["devSerialNum"].get<int>();
+                // Serials are uint32 (SN-8985). Files written before this fix hold serials >= 2^31 as negative numbers, so those wrap back.
+                const json& jSn = jInf["devSerialNum"];
+                if (jSn.is_number_unsigned())
+                    info->devSerialNum = jSn.get<uint32_t>();
+                else if (jSn.is_number_integer())
+                    info->devSerialNum = (uint32_t)jSn.get<int64_t>();
             }
         }
         else if (!filePath.empty())
@@ -732,26 +737,74 @@ static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
  * @param pose The current pose.
  * @return True if saving is successful, false otherwise.
  */
-bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose)
+/** Formats a Unix millisecond time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". */
+static std::string unixMsToRfc3339(int64_t unixMs)
 {
-    log_debug(IS_LOG_CALIBRATION, "saveCalibrationToJsonObj: %s\n", filePath.c_str());
+    time_t secs = (time_t)(unixMs / 1000);
+    int ms = (int)(unixMs % 1000);
+    struct tm tmUtc = {};
+#ifdef _WIN32
+    gmtime_s(&tmUtc, &secs);
+#else
+    gmtime_r(&secs, &tmUtc);
+#endif
+    return utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tmUtc.tm_year + 1900, tmUtc.tm_mon + 1, tmUtc.tm_mday, tmUtc.tm_hour, tmUtc.tm_min, tmUtc.tm_sec, ms);
+}
 
-    // Create parent directory if needed
-    std::string parentPath = getParentPath(filePath);
-    if (!parentPath.empty() && parentPath != ".") {
-        createDirectoryRecursive(parentPath);
-    }
+sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const manufacturing_info_t& manf, uint32_t calBitStatus, int64_t calDateTimeMs)
+{
+    sCalDeviceIdentity id;
+    id.hwType = utils::getHardwareAsString(devInfo);
+    id.serialNumber = devInfo.serialNumber;
+    id.manf = manf;
+    id.calBitStatus = calBitStatus;
+    id.calDateTimeMs = calDateTimeMs;
+    return id;
+}
 
+json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose, const sCalDeviceIdentity* identity)
+{
     json jTop = json::object();
 
     //  Calibration Info
-    if (info)
+    if (info || identity)
     {
         json jInf = json::object();
-        jInf["version"] = calInfoVersionToString(*info);
-        jInf["calDate"] = calInfoDateToString(*info);
-        jInf["calTime"] = calInfoTimeToString(*info);
-        jInf["devSerialNum"] = (int)(info->devSerialNum);
+        if (info)
+        {
+            jInf["version"] = calInfoVersionToString(*info);
+            jInf["calDate"] = calInfoDateToString(*info);
+            jInf["calTime"] = calInfoTimeToString(*info);
+            jInf["devSerialNum"] = (uint32_t)(info->devSerialNum);      // Serials are uint32 (SN-8985); a signed cast writes serials >= 2^31 as negative numbers
+        }
+
+        if (identity)
+        {   // Manufacturing Database contract keys (camelCase). devUuid, devSTM32UID and calType are the server's to fill and are never written.
+            jInf["devSerialNum"] = identity->serialNumber;
+            if (!identity->hwType.empty())
+                jInf["hwType"] = identity->hwType;
+            jInf["calBitStatus"] = identity->calBitStatus;
+            if (identity->calDateTimeMs > 0)
+            {
+                jInf["calDateTime"] = unixMsToRfc3339(identity->calDateTimeMs);
+                jInf["calUuid"] = identity->calUuid.empty() ? utils::generateUUIDv7((uint64_t)identity->calDateTimeMs) : identity->calUuid;
+            }
+            else if (!identity->calUuid.empty())
+            {
+                jInf["calUuid"] = identity->calUuid;
+            }
+
+            const manufacturing_info_t& m = identity->manf;
+            jInf["manfUid"] = utils::manfUidToString(m.uid);
+            jInf["manfLot"] = (uint32_t)m.lotNumber;
+            std::string manfDate;
+            if (utils::manfDateToRfc3339(m.date, manfDate))
+                jInf["manfDateTime"] = manfDate;                        // legacy zone-less dates are left out rather than guessed
+            jInf["manfHardwareId"] = (uint32_t)m.hardwareId;
+            jInf["manfOtpWriteCount"] = m.key;
+            jInf["manfPlatformType"] = m.platformType;
+            jInf["manfReserved"] = json::array({ (uint32_t)m.reserved });   // every reserved word between platformType and uid, in order
+        }
         jTop["info"] = jInf;
     }
 
@@ -766,6 +819,21 @@ bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCa
     {
         jTop["calibration"] = saveMcToJsonObj(filePath, pose, cal, mcal);
     }
+
+    return jTop;
+}
+
+bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose, const sCalDeviceIdentity* identity)
+{
+    log_debug(IS_LOG_CALIBRATION, "saveCalibrationToJsonObj: %s\n", filePath.c_str());
+
+    // Create parent directory if needed
+    std::string parentPath = getParentPath(filePath);
+    if (!parentPath.empty() && parentPath != ".") {
+        createDirectoryRecursive(parentPath);
+    }
+
+    json jTop = buildCalibrationJson(filePath, cal, info, tcal, mcal, pose, identity);
 
     // Save to file
     std::ofstream file(filePath);
