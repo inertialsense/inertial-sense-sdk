@@ -1608,7 +1608,12 @@ int ISDevice::UploadIMXCalibrationFromURL(const std::string& restBaseUrl)
 {
 
     ISDeviceCal cal{};
-    ISHttpRequest::Response calResp = cal.loadFromURL(restBaseUrl, devInfo);
+    manufacturing_info_t manf = {};
+    // The manufacturing UID identifies this unit among any that share its serial; without it only the serial-only lookup is possible
+    const bool haveManf = manufacturingInfo(manf, 1000);
+    if (!haveManf)
+        log_warn(IS_LOG_ISDEVICE, "[%s] Manufacturing info not available; looking up calibration by serial number only", getIdAsString().c_str());
+    ISHttpRequest::Response calResp = cal.loadFromURL(restBaseUrl, devInfo, haveManf ? &manf : nullptr);
     switch (calResp.statusCode) {
         case -2:
             log_error(IS_LOG_ISDEVICE, "[%s] Failed to parse calibration response.", getIdAsString().c_str());

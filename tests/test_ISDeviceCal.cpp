@@ -15,6 +15,27 @@
 #include <fstream>
 #include <cstring>
 #include <cstdio>
+#include <map>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    typedef SOCKET socket_t;
+    #define CLOSE_SOCKET closesocket
+    #define SOCKET_INVALID INVALID_SOCKET
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <unistd.h>
+    #include <arpa/inet.h>
+    typedef int socket_t;
+    #define CLOSE_SOCKET close
+    #define SOCKET_INVALID (-1)
+#endif
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
@@ -621,4 +642,241 @@ TEST_F(test_ISDeviceCal, makeIdentity_fillsFromDevInfoAndManufacturingInfo)
     EXPECT_EQ(id.manf.lotNumber, 690u);
     EXPECT_EQ(id.calBitStatus, 65u);
     EXPECT_EQ(id.calDateTimeMs, 1000);
+}
+
+
+// ---- SN-8984: ISDeviceCal::loadFromURL against a mocked calibration DB ----
+
+// Minimal HTTP server that answers GETs from a path -> (status, body) table and records every request path.
+class RoutedHttpServer {
+public:
+    void addRoute(const std::string& path, int status, const std::string& body) { m_routes[path] = {status, body}; }
+
+    bool start()
+    {
+#ifdef _WIN32
+        WSADATA wsa; WSAStartup(MAKEWORD(2, 2), &wsa);
+#endif
+        m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
+        if (m_listenFd == SOCKET_INVALID) return false;
+        int opt = 1;
+        setsockopt(m_listenFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
+        sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = 0;      // let the OS pick a free port
+        if (bind(m_listenFd, (sockaddr*)&addr, sizeof(addr)) != 0 || listen(m_listenFd, 8) != 0) return false;
+        socklen_t len = sizeof(addr);
+        getsockname(m_listenFd, (sockaddr*)&addr, &len);
+        m_port = ntohs(addr.sin_port);
+
+        m_thread = std::thread([this]() {
+            for (;;)
+            {
+                socket_t fd = accept(m_listenFd, nullptr, nullptr);
+                if (fd == SOCKET_INVALID) return;
+                std::string req;
+                char buf[4096];
+                while (req.find("\r\n\r\n") == std::string::npos)
+                {
+                    int n = recv(fd, buf, sizeof(buf), 0);
+                    if (n <= 0) break;
+                    req.append(buf, n);
+                }
+                size_t sp1 = req.find(' '), sp2 = req.find(' ', sp1 + 1);
+                std::string path = (sp1 != std::string::npos && sp2 != std::string::npos) ? req.substr(sp1 + 1, sp2 - sp1 - 1) : "";
+                { std::lock_guard<std::mutex> lock(m_mutex); m_requests.push_back(path); }
+
+                int status = 404; std::string body = "{}";
+                auto it = m_routes.find(path);
+                if (it != m_routes.end()) { status = it->second.first; body = it->second.second; }
+                std::string resp = "HTTP/1.1 " + std::to_string(status) + " X\r\nContent-Type: application/json\r\nContent-Length: " +
+                                   std::to_string(body.size()) + "\r\nConnection: close\r\n\r\n" + body;
+                send(fd, resp.data(), (int)resp.size(), 0);
+                CLOSE_SOCKET(fd);
+            }
+        });
+        return true;
+    }
+
+    ~RoutedHttpServer()
+    {
+        if (m_listenFd != SOCKET_INVALID)
+        {
+#ifndef _WIN32
+            shutdown(m_listenFd, SHUT_RDWR);        // wakes accept() on Linux
+#endif
+            CLOSE_SOCKET(m_listenFd);
+        }
+        if (m_thread.joinable()) m_thread.join();
+    }
+
+    std::string url() const { return "http://127.0.0.1:" + std::to_string(m_port); }
+    std::vector<std::string> requests() { std::lock_guard<std::mutex> lock(m_mutex); return m_requests; }
+
+private:
+    std::map<std::string, std::pair<int, std::string>> m_routes;
+    std::vector<std::string> m_requests;
+    std::mutex m_mutex;
+    std::thread m_thread;
+    socket_t m_listenFd = SOCKET_INVALID;
+    int m_port = 0;
+};
+
+class test_ISDeviceCal_loadFromURL : public ::testing::Test {
+protected:
+    void SetUp() override {
+        dev = {};
+        dev.hardwareType = IS_HARDWARE_TYPE_IMX;
+        dev.hardwareVer[0] = 6;
+        dev.serialNumber = 3054153446u;
+        manf = {};
+        manf.uid[0] = 0x001D0028u; manf.uid[1] = 0x41465006u; manf.uid[2] = 0x20363841u;
+        uidHex = "28001d00065046414138362000000000";
+        base = "/api/calibration/device/IMX-6.0/3054153446";
+    }
+
+    // The calibration the DB returns for calUuid "cal-1", with a matching identity unless overridden
+    std::string calBody(uint32_t serial = 3054153446u, const std::string& hw = "IMX-6.0", const std::string& uid = "28001d00065046414138362000000000")
+    {
+        json j = makeTestCalJson(serial);
+        j["info"]["devSerialNum"] = serial;
+        j["info"]["hwType"] = hw;
+        j["info"]["manfUid"] = uid;
+        return j.dump();
+    }
+    static std::string list(const std::vector<std::string>& deviceUuids)
+    {
+        json j = json::object();
+        for (const auto& d : deviceUuids)
+            j[d] = json::array({ json{{"calUuid", "cal-1"}, {"calDateTime", "2026-10-01T00:00:00Z"}} });
+        return j.dump();
+    }
+
+    dev_info_t dev;
+    manufacturing_info_t manf;
+    std::string uidHex, base;
+};
+
+TEST_F(test_ISDeviceCal_loadFromURL, uidRouteIsTriedFirst)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base + "/" + uidHex, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 200) << r.statusMessage;
+    EXPECT_EQ(cal.info.devSerialNum, 3054153446u);
+    auto reqs = srv.requests();
+    ASSERT_FALSE(reqs.empty());
+    EXPECT_EQ(reqs[0], base + "/" + uidHex);
+    for (const auto& q : reqs) EXPECT_NE(q, base) << "serial-only route must not be used when the UID route answers";
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, legacyDevice_singleRecord_fallsBackToSerialRoute)
+{
+    RoutedHttpServer srv;                                   // no route for the UID -> 404
+    srv.addRoute(base, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 200) << r.statusMessage;
+    auto reqs = srv.requests();
+    ASSERT_GE(reqs.size(), 2u);
+    EXPECT_EQ(reqs[0], base + "/" + uidHex);
+    EXPECT_EQ(reqs[1], base);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, ambiguousSerial_refusesAndFetchesNoCalibration)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A", "dev-B"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 409) << r.statusMessage;
+    EXPECT_EQ(cal.info.devSerialNum, 0u) << "nothing may be applied";
+    for (const auto& q : srv.requests()) EXPECT_NE(q, "/api/calibration/cal-1");
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, noManfInfo_usesSerialRouteOnly)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev).statusCode, 200);
+    EXPECT_EQ(srv.requests()[0], base);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, calibrationForAnotherSerialIsRefused)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base + "/" + uidHex, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody(910564648u));
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 409) << r.statusMessage;
+    EXPECT_EQ(cal.info.devSerialNum, 0u);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, calibrationForAnotherHardwareTypeIsRefused)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base + "/" + uidHex, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody(3054153446u, "IMX-5.0"));
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 409);
+    EXPECT_EQ(cal.info.devSerialNum, 0u);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, calibrationForAnotherUidIsRefused)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody(3054153446u, "IMX-6.0", "28001d00055046414138362000000000"));
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 409);
+    EXPECT_EQ(cal.info.devSerialNum, 0u);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, legacyCalibrationWithoutIdentityKeysStillLoads)
+{
+    // Calibrations stored before the identity keys existed carry only the legacy info stanza
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A"}));
+    json legacy = makeTestCalJson(3054153446u);
+    legacy["info"]["devSerialNum"] = 3054153446u;
+    srv.addRoute("/api/calibration/cal-1", 200, legacy.dump());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev).statusCode, 200);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, invalidSerial_failsWithoutAnyRequest)
+{
+    RoutedHttpServer srv;
+    ASSERT_TRUE(srv.start());
+    for (uint32_t bad : { 0u, 0xFFFFFFFFu })
+    {
+        dev.serialNumber = bad;
+        ISDeviceCal cal;
+        EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 400) << bad;
+    }
+    EXPECT_TRUE(srv.requests().empty());
 }

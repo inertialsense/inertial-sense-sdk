@@ -275,14 +275,20 @@ public:
 
     /**
      * @brief Fetch the most recent calibration for a device from a REST calibration database and
-     * populate this object with it. Looks up the device by hardware type + serial number, finds the
-     * calibration entry with the latest calDateTime, then downloads and parses that entry.
+     * populate this object with it. The manufacturing UID (when manfInfo is given) identifies the unit, so
+     * /api/calibration/device/{hwType}/{serial}/{manfUid} is tried first. If the DB has no record under that UID
+     * (a legacy device), the serial-only route is used, but a calibration is applied only when exactly one
+     * device record holds the serial; with several it refuses, since it cannot tell which is this unit. A
+     * calibration whose serial, hardware type or manfUid does not match the connected device is refused.
      * @param restBaseUrl Base URL of the calibration REST API (e.g. "https://cal.example.com").
      * @param devInfo Target device info; used to build the hardware-type/serial-number lookup.
+     * @param manfInfo The device's manufacturing info (for the UID), or NULL to look up by serial only.
      * @return the HTTP response from the final calibration fetch. statusCode == 200 on success;
-     *         -1 indicates a connection/parse failure, 404 that the device has no calibration on file.
+     *         -1 indicates a connection/parse failure, 404 that the device has no calibration on file,
+     *         400 that the device has no valid serial number, 409 that the DB holds several devices with
+     *         this serial or that the calibration belongs to a different device.
      */
-    ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo);
+    ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t* manfInfo = NULL);
 
 
     /**
