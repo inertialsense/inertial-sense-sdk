@@ -7,6 +7,7 @@
  */
 
 #include "ISDFUFirmwareUpdater.h"
+#include "DfuResetThrottle.h"
 #include <fstream>
 #include <algorithm>
 #include <chrono>
@@ -864,8 +865,10 @@ dfu_error DFUDevice::open(bool resetDevice) {
     // (clean slate) but is pure overhead for a read-only identification pass, where abort()+waitForState
     // below already establish a known DFU state. Discovery opens with resetDevice=false to avoid paying
     // that cost on every device, every scan.
-    if (resetDevice)
+    if (resetDevice) {
+        DfuUsbResetGate resetGate;
         libusb_reset_device(usbHandle);
+    }
 
     // Claim with a short bounded retry: a claim can transiently fail with LIBUSB_ERROR_BUSY when a prior
     // handle on the same device (a just-finished discovery open, a sibling worker, or the kernel driver
@@ -1409,7 +1412,10 @@ dfu_error DFUDevice::finalizeFirmware() {
         // STM32 DFU specs will reset the device immediately after writing to the Option Bytes. That
         // reset drops the USB device off the bus mid-transfer, so a disconnect-class libusb error here
         // is the EXPECTED, successful outcome (SN-8193); only a non-disconnect error is a real failure.
-        ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
+        {
+            DfuUsbResetGate resetGate;      // this write is the reset, so it counts against the fixture's reset spacing
+            ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
+        }
         if (ret_libusb < LIBUSB_SUCCESS && !isExpectedOptionByteResetError(ret_libusb))
             return libusbError(ret_libusb);
 
@@ -1466,7 +1472,10 @@ dfu_error DFUDevice::finalizeFirmware() {
         // STM32 DFU specs will reset the device immediately after writing to the Option Bytes. That
         // reset drops the USB device off the bus mid-transfer, so a disconnect-class libusb error here
         // is the EXPECTED, successful outcome (SN-8193); only a non-disconnect error is a real failure.
-        ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
+        {
+            DfuUsbResetGate resetGate;      // this write is the reset, so it counts against the fixture's reset spacing
+            ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
+        }
         if (ret_libusb < LIBUSB_SUCCESS && !isExpectedOptionByteResetError(ret_libusb))
             return libusbError(ret_libusb);
 
@@ -2021,6 +2030,7 @@ int DFUDevice::detach(uint8_t timeout) {
  * @return
  */
 int DFUDevice::reset() {
+    DfuUsbResetGate resetGate;
     return libusb_reset_device(usbHandle);
 }
 
