@@ -552,19 +552,19 @@ ISExpected<ISLogReader> ISLogReader::construct(std::unique_ptr<ISLogSource> rawS
                             // Poison sweep: pre-fix v2 .idx files baked the host's wall-clock value (~1.7e12 ms in 2026)
                             // into the timestamp field whenever a record had no internal time, courtesy of the old
                             // cISDataMappings::TimestampOrCurrentTime call in buildIndexFromScan. Those values overwhelm
-                            // valid GPS-ToW (max 604_800_000 ms) downstream consumers see, producing fold-back
+                            // valid GNSS-ToW (max 604_800_000 ms) downstream consumers see, producing fold-back
                             // rendering. Detect + rebuild.
                             //
                             // Threshold: 1_000_000_000_000 ms — far above any plausible PayloadToW or host-uptime, but
                             // well below 2031's wall-clock floor.
                             //
-                            // SN-8004: DID_GPS*_RAW records legitimately carry Unix-epoch-seconds timestamps via gtime_t
+                            // SN-8004: DID_GNSS*_RAW records legitimately carry Unix-epoch-seconds timestamps via gtime_t
                             // (cISDataMappings::Timestamp returns `obs.time.sec + obs.time.time` for those DIDs —
                             // that's seconds since 1970, ~1.7e9 in 2026, which becomes ~1.7e12 ms after the *1000
                             // conversion). Exclude them from the sweep — otherwise every RTK log ping-pongs between
                             // rebuild and re-flag-as-stale on each load.
                             //
-                            // @note D-112 / SN-7999 (introduced) + SN-8004 (GPS_RAW exclusion).
+                            // @note D-112 / SN-7999 (introduced) + SN-8004 (GNSS_RAW exclusion).
                             auto isGpsRawDid = [](uint32_t did) noexcept {
                                 return did == DID_GNSS1_RAW || did == DID_GNSS2_RAW || did == DID_GNSS_BASE_RAW;
                             };
@@ -1263,7 +1263,7 @@ void ISLogReader::populateReconTimeOffsets() {
               "%zu estimated",
               wrote, anchors.size(),
               domain == cISDataMappings::eTimestampDomain::TIMESTAMP_DOMAIN_GPS_TOW
-                  ? "GPS-ToW" : "uptime",
+                  ? "GNSS-ToW" : "uptime",
               estimated);
 }
 
@@ -1540,7 +1540,7 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
                 const auto& dataHdr = comm.rxPkt.dataHdr;
                 // D-112 / SN-7999 follow-up: use Timestamp(), NOT TimestampOrCurrentTime(). The legacy "OrCurrentTime"
                 // fallback returns the *host wall-clock* (1.7e9 sec since Unix epoch as of 2026) when a record has no
-                // internal timestamp. That value gets baked into the .idx and then mixed with valid GPS-ToW values from
+                // internal timestamp. That value gets baked into the .idx and then mixed with valid GNSS-ToW values from
                 // sibling records, producing chart fold-back rendering and broken `spanStart()`/`spanEnd()` extents.
                 // `Timestamp()` returns 0 for records without an internal time field — a clean sentinel downstream
                 // consumers (RawSeriesBuilder, ISDeviceLog::spanStart) can skip cleanly.
@@ -1557,12 +1557,12 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
                 rec.did       = dataHdr.id;
                 // SN-8629: mark WHICH time domain this record's timestamp came from. Before this,
                 // the rebuild hardcoded flags = 0, so HAS_TOW was clear on every record it ever
-                // produced -- including records whose timestamp demonstrably IS a GPS time-of-week.
+                // produced -- including records whose timestamp demonstrably IS a GNSS time-of-week.
                 // That matters because a rebuilt sidecar is persisted and then trusted on the next
                 // open, making the loss permanent for that log, and because ISLogWriter derives
                 // sync_point_count from this bit (so a baked derivative reported zero sync points).
                 //
-                // The bit's documented meaning is specifically "carried a real GPS time-of-week
+                // The bit's documented meaning is specifically "carried a real GNSS time-of-week
                 // field ... can be used as a sync anchor by ISTimeResolver", so it is gated on the
                 // DID's timestamp DOMAIN, not merely on having a timestamp. The live writer
                 // (DeviceLog.cpp) sets it whenever Timestamp() > 0, which over-claims for
@@ -1701,14 +1701,14 @@ void ISLogReader::buildIndexFromScan(const AnchorAnalysis* prev, bool collectAnc
 
         // With the per-record domains known, the file-level units/source are facts rather than
         // inferences. A rebuild that saw both domains is genuinely Mixed; one that saw only
-        // ToW-bearing records is GpsTowMs; one that saw none is host uptime.
+        // ToW-bearing records is GNSSTowMs; one that saw none is host uptime.
         const bool anyTow    = towRecords > 0;
         const bool anyNonTow = towRecords < records_.size();
         if (anyTow && anyNonTow) {
             header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::Mixed);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::Mixed);
         } else if (anyTow) {
-            header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::GpsTowMs);
+            header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::GNSSTowMs);
             header_.ts_source = static_cast<uint8_t>(idx::HeaderTimeSource::PayloadToW);
         } else {
             header_.ts_anchor  = static_cast<uint8_t>(idx::TimestampAnchor::UptimeMs);
