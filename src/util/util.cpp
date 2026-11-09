@@ -1241,7 +1241,10 @@ std::string utils::generateUUIDv7(uint64_t unixTimeMs) {
 std::string utils::unixMsToRfc3339(int64_t unixMs) {
     time_t secs = (time_t)(unixMs / 1000);
     int ms = (int)(unixMs % 1000);
-    if (ms < 0) { ms += 1000; secs -= 1; }
+    if (ms < 0) {
+        ms += 1000;
+        secs -= 1;
+    }
     struct tm tmUtc = {};
 #ifdef _WIN32
     gmtime_s(&tmUtc, &secs);
