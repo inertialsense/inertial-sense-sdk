@@ -469,3 +469,69 @@ TEST(test_generateUUIDv4, uniqueness)
     std::string uuid2 = utils::generateUUIDv4();
     EXPECT_NE(uuid1, uuid2);
 }
+// ---- manfUid / UUIDv7 / manufacturing date helpers (SN-8984) ----
+
+TEST(test_manfUidToString, gpxExample_memoryOrderLittleEndianWords)
+{
+    // The GPX unit that shares legacy SN910564648 with another wafer (see SN-8984)
+    const uint32_t uid[4] = { 0x001D0028u, 0x41465006u, 0x20363841u, 0u };
+    EXPECT_EQ(utils::manfUidToString(uid), "28001d00065046414138362000000000");
+}
+
+TEST(test_manfUidToString, includesReservedFourthWord)
+{
+    const uint32_t uid[4] = { 0x04030201u, 0x08070605u, 0x0C0B0A09u, 0xDDCCBBAAu };
+    EXPECT_EQ(utils::manfUidToString(uid), "0102030405060708090a0b0caabbccdd");
+}
+
+TEST(test_manfUidToString, zeroUid)
+{
+    const uint32_t uid[4] = { 0u, 0u, 0u, 0u };
+    EXPECT_EQ(utils::manfUidToString(uid), std::string(32, '0'));
+}
+
+TEST(test_generateUUIDv7, formatVersionVariantAndTimestamp)
+{
+    const uint64_t ms = 0x019FA9F91448ull;          // arbitrary 48-bit time
+    std::string u = utils::generateUUIDv7(ms);
+    ASSERT_EQ(u.size(), 36u);
+    EXPECT_EQ(u[8], '-'); EXPECT_EQ(u[13], '-'); EXPECT_EQ(u[18], '-'); EXPECT_EQ(u[23], '-');
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), "019fa9f91448");   // 48-bit timestamp, big-endian
+    EXPECT_EQ(u[14], '7');                                         // version 7
+    EXPECT_NE(std::string("89ab").find(u[19]), std::string::npos); // variant 10xx
+    for (char c : u) if (c != '-') EXPECT_TRUE(std::isxdigit((unsigned char)c) && !std::isupper((unsigned char)c)) << u;
+}
+
+TEST(test_generateUUIDv7, timeOrderedAndUnique)
+{
+    EXPECT_LT(utils::generateUUIDv7(1000), utils::generateUUIDv7(1001));
+    EXPECT_LT(utils::generateUUIDv7(1700000000000ull), utils::generateUUIDv7(1700000000001ull));
+    EXPECT_NE(utils::generateUUIDv7(5), utils::generateUUIDv7(5));   // same millisecond still differs
+}
+
+TEST(test_manfDateToRfc3339, validUtcDate)
+{
+    char date[16] = {};
+    memcpy(date, "20261105150004Z", 15);
+    std::string out;
+    ASSERT_TRUE(utils::manfDateToRfc3339(date, out));
+    EXPECT_EQ(out, "2026-11-05T15:00:04Z");
+}
+
+TEST(test_manfDateToRfc3339, rejectsLegacyAndMalformed)
+{
+    std::string out = "unchanged";
+    char legacy[16] = {};  memcpy(legacy, "20261105150004", 14);       // 14 digits, local time, no marker
+    EXPECT_FALSE(utils::manfDateToRfc3339(legacy, out));
+    char noNul[16];        memcpy(noNul, "20261105150004Zx", 16);        // junk past the marker
+    EXPECT_FALSE(utils::manfDateToRfc3339(noNul, out));
+    char badMonth[16] = {}; memcpy(badMonth, "20261305150004Z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(badMonth, out));
+    char badHour[16] = {};  memcpy(badHour, "20261105240004Z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(badHour, out));
+    char lower[16] = {};    memcpy(lower, "20261105150004z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(lower, out));
+    char empty[16] = {};
+    EXPECT_FALSE(utils::manfDateToRfc3339(empty, out));
+    EXPECT_EQ(out, "unchanged");
+}
