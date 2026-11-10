@@ -770,7 +770,8 @@ namespace utils {
     std::string generateUUIDv7(uint64_t unixTimeMs);
 
     /**
-     * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z".
+     * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". Times before 1970 are
+     * supported, on every platform.
      * @param unixMs time in milliseconds since the Unix epoch (UTC)
      */
     std::string unixMsToRfc3339(int64_t unixMs);
