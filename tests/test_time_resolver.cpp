@@ -1068,7 +1068,7 @@ TEST_F(TimeResolverTest, StatsAddUpToRecordCount) {
 
 // ---------------------------------------------------------------------------
 // SN-8107 / D0066: cross-domain bridge. A v2-.idx log mixes records in two
-// numeric domains (sync records carry GPS-ToW ms ≈ hundreds of millions;
+// numeric domains (sync records carry GNSS-ToW ms ≈ hundreds of millions;
 // non-sync records carry host uptime ms ≈ thousands). The resolver MUST
 // translate session-uptime queries into the ToW frame using the
 // `actualHostTimeMs` recovered during the byte scan from the most recent

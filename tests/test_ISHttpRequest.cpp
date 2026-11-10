@@ -535,3 +535,41 @@ TEST(test_manfDateToRfc3339, rejectsLegacyAndMalformed)
     EXPECT_FALSE(utils::manfDateToRfc3339(empty, out));
     EXPECT_EQ(out, "unchanged");
 }
+
+TEST(test_unixMsToRfc3339, formatsUtcWithMilliseconds) {
+    EXPECT_EQ(utils::unixMsToRfc3339(0), "1970-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531000ll), "2026-10-20T15:02:11.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531250ll), "2026-10-20T15:02:11.250Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-1), "1969-12-31T23:59:59.999Z");
+}
+
+TEST(test_unixMsToRfc3339, supportsTimesBefore1970) {
+    // gmtime_s rejects negative times on Windows, so this is computed without it and must agree everywhere.
+    EXPECT_EQ(utils::unixMsToRfc3339(-1000), "1969-12-31T23:59:59.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-86400000ll), "1969-12-31T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-86400001ll), "1969-12-30T23:59:59.999Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-2208988800000ll), "1900-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-62135596800000ll), "0001-01-01T00:00:00.000Z");
+}
+
+TEST(test_unixMsToRfc3339, calendarEdges) {
+    EXPECT_EQ(utils::unixMsToRfc3339(951782400000ll), "2000-02-29T00:00:00.000Z");  // 2000 is a leap year
+    EXPECT_EQ(utils::unixMsToRfc3339(951868800000ll), "2000-03-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(4107542400000ll), "2100-03-01T00:00:00.000Z");  // 2100 is not
+    EXPECT_EQ(utils::unixMsToRfc3339(1709164800000ll), "2024-02-29T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1798761599999ll), "2026-12-31T23:59:59.999Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1798761600000ll), "2027-01-01T00:00:00.000Z");
+}
+
+#ifndef _WIN32
+TEST(test_unixMsToRfc3339, agreesWithTheCLibraryForTimesItSupports) {
+    for (int64_t unixMs = 0; unixMs < 4102444800000ll; unixMs += 7919173321ll) {  // 1970 to 2100, about 500 samples
+        time_t secs = (time_t)(unixMs / 1000);
+        struct tm tmUtc = {};
+        gmtime_r(&secs, &tmUtc);
+        EXPECT_EQ(utils::unixMsToRfc3339(unixMs),
+                  utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tmUtc.tm_year + 1900, tmUtc.tm_mon + 1, tmUtc.tm_mday, tmUtc.tm_hour, tmUtc.tm_min, tmUtc.tm_sec, (int)(unixMs % 1000)))
+            << unixMs;
+    }
+}
+#endif

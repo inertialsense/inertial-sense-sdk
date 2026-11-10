@@ -1238,6 +1238,40 @@ std::string utils::generateUUIDv7(uint64_t unixTimeMs) {
     return std::string(buf);
 }
 
+std::string utils::unixMsToRfc3339(int64_t unixMs) {
+    constexpr int64_t MS_PER_DAY = 86400000;
+    constexpr int64_t MS_PER_HOUR = 3600000;
+    constexpr int64_t MS_PER_MINUTE = 60000;
+    constexpr int64_t MS_PER_SECOND = 1000;
+    constexpr int64_t DAYS_FROM_0000_03_01_TO_1970_01_01 = 719468;  // the civil calendar below counts from 0000-03-01
+
+    // Whole days since 1970-01-01 and the time within the day, rounded toward negative infinity so that times before 1970 work.
+    int64_t days = unixMs / MS_PER_DAY;
+    int64_t msOfDay = unixMs % MS_PER_DAY;
+    if (msOfDay < 0) {
+        msOfDay += MS_PER_DAY;
+        days -= 1;
+    }
+
+    // Calendar date from the day count (Howard Hinnant's civil_from_days). It does not use gmtime_s, which rejects negative times
+    // on Windows, so every platform gives the same answer.
+    days += DAYS_FROM_0000_03_01_TO_1970_01_01;
+    const int64_t era = (days >= 0 ? days : days - 146096) / 146097;
+    const int64_t dayOfEra = days - era * 146097;                                                         // [0, 146096]
+    const int64_t yearOfEra = (dayOfEra - dayOfEra / 1460 + dayOfEra / 36524 - dayOfEra / 146096) / 365;  // [0, 399]
+    const int64_t dayOfYear = dayOfEra - (365 * yearOfEra + yearOfEra / 4 - yearOfEra / 100);             // [0, 365], from March 1st
+    const int64_t monthIndex = (5 * dayOfYear + 2) / 153;                                                 // [0, 11], March is 0
+    const int day = (int)(dayOfYear - (153 * monthIndex + 2) / 5 + 1);
+    const int month = (int)(monthIndex < 10 ? monthIndex + 3 : monthIndex - 9);
+    const int year = (int)(yearOfEra + era * 400 + (month <= 2 ? 1 : 0));
+
+    const int hour = (int)(msOfDay / MS_PER_HOUR);
+    const int minute = (int)(msOfDay % MS_PER_HOUR / MS_PER_MINUTE);
+    const int second = (int)(msOfDay % MS_PER_MINUTE / MS_PER_SECOND);
+    const int ms = (int)(msOfDay % MS_PER_SECOND);
+    return utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month, day, hour, minute, second, ms);
+}
+
 std::string utils::manfUidToString(const uint32_t uid[4]) {
     static const char hex[] = "0123456789abcdef";
     std::string out;

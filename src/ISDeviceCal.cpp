@@ -737,20 +737,6 @@ static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
  * @param pose The current pose.
  * @return True if saving is successful, false otherwise.
  */
-/** Formats a Unix millisecond time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". */
-static std::string unixMsToRfc3339(int64_t unixMs)
-{
-    time_t secs = (time_t)(unixMs / 1000);
-    int ms = (int)(unixMs % 1000);
-    struct tm tmUtc = {};
-#ifdef _WIN32
-    gmtime_s(&tmUtc, &secs);
-#else
-    gmtime_r(&secs, &tmUtc);
-#endif
-    return utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tmUtc.tm_year + 1900, tmUtc.tm_mon + 1, tmUtc.tm_mday, tmUtc.tm_hour, tmUtc.tm_min, tmUtc.tm_sec, ms);
-}
-
 sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const manufacturing_info_t& manf, uint32_t calBitStatus, int64_t calDateTimeMs)
 {
     sCalDeviceIdentity id;
@@ -810,7 +796,7 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
             jInf["calBitStatus"] = identity->calBitStatus;
             if (identity->calDateTimeMs > 0)
             {
-                jInf["calDateTime"] = unixMsToRfc3339(identity->calDateTimeMs);
+                jInf["calDateTime"] = utils::unixMsToRfc3339(identity->calDateTimeMs);
                 jInf["calUuid"] = identity->calUuid.empty() ? utils::generateUUIDv7((uint64_t)identity->calDateTimeMs) : identity->calUuid;
             }
             else if (!identity->calUuid.empty())
