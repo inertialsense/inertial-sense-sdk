@@ -1,12 +1,18 @@
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget,QVBoxLayout
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import pyqtSlot, QTimer
 import sys, os
+
+# Shared error-indicator convention: motion_calibration.py / temperature_calibration.py call
+# ax.set_facecolor(ERROR_FACECOLOR) on any subplot whose data exceeds its threshold.
+ERROR_FACECOLOR = "mistyrose"
+_ERROR_FACECOLOR_RGBA = mcolors.to_rgba(ERROR_FACECOLOR)
 
 class plotWindow():
     # Lazy Qt instantiation: QApplication / MainWindow / per-tab widgets are
@@ -73,7 +79,8 @@ class plotWindow():
             self._close_timer.timeout.connect(self._poll_close_request)
             self._close_timer.start(250)
 
-        for title, figure, _threeD in self._pending_plots:
+        first_error_tab = None
+        for idx, (title, figure, _threeD) in enumerate(self._pending_plots):
             new_tab = QWidget()
             layout = QVBoxLayout()
             new_tab.setLayout(layout)
@@ -85,6 +92,14 @@ class plotWindow():
             self.toolbar_handles.append(new_toolbar)
             self.canvases.append(new_canvas)
             self.tab_handles.append(new_tab)
+
+            if first_error_tab is None and any(
+                ax.get_facecolor() == _ERROR_FACECOLOR_RGBA for ax in figure.get_axes()
+            ):
+                first_error_tab = idx
+
+        if first_error_tab is not None:
+            self.tabs.setCurrentIndex(first_error_tab)
 
         self.MainWindow.show()
         return self.app.exec()

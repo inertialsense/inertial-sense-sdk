@@ -439,7 +439,16 @@ void LogReader::ins1ToIns2(int device_id) {
 }
 
 void LogReader::exitHack(int exit_code) {
-    // Nasty hack
+    // Nasty hack. Python's sys.stdout/stderr are buffered independently of the C stdio streams
+    // that exit() flushes, so anything still sitting in Python's own buffer (e.g. a print() with
+    // no explicit flush) is silently lost once the pipe EvalTool reads from closes. Flush them
+    // through Python itself first.
+    try {
+        py::module_::import("sys").attr("stdout").attr("flush")();
+        py::module_::import("sys").attr("stderr").attr("flush")();
+    } catch (...) {
+        // best-effort; fall through to exit() regardless
+    }
     exit(exit_code);
 }
 
