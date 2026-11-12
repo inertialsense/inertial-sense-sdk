@@ -1057,6 +1057,31 @@ bool utils::validDomainName(const std::string& domainName) {
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
 }
 
+std::string utils::percentDecode(const std::string& s) {
+    auto hexVal = [](char c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return -1;
+    };
+
+    std::string out;
+    out.reserve(s.size());
+    for (size_t i = 0; i < s.size(); i++) {
+        if (s[i] == '%' && i + 2 < s.size()) {
+            const int hi = hexVal(s[i + 1]);
+            const int lo = hexVal(s[i + 2]);
+            if (hi >= 0 && lo >= 0) {
+                out += static_cast<char>((hi << 4) | lo);
+                i += 2;
+                continue;
+            }
+        }
+        out += s[i];
+    }
+    return out;
+}
+
 utils::UriParts utils::parseUri(const std::string& uriStr) {
     UriParts out;
     const FIX8::uri uri{uriStr};
@@ -1084,10 +1109,12 @@ utils::UriParts utils::parseUri(const std::string& uriStr) {
         }
     }
 
+    // Userinfo must be percent-encoded in a URI (e.g. a password containing '@', ':' or '/'), but callers
+    // need the actual credentials (e.g. for HTTP Basic auth), so decode it here.
     if (uri.has_user())
-        out.user.assign(uri.get_user());
+        out.user = percentDecode(std::string{uri.get_user()});
     if (uri.has_password())
-        out.password.assign(uri.get_password());
+        out.password = percentDecode(std::string{uri.get_password()});
     if (uri.has_path())
         out.path.assign(uri.get_path());
     if (uri.has_query())
