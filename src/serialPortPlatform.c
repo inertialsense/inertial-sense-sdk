@@ -621,7 +621,8 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialPort->errorCode = errno;
         serialPort->error = strerror(serialPort->errorCode);
         serialPort->base.perror = PORT_ERROR__OPEN_FAILURE;
-        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", port, serialPort->error, serialPort->errorCode);
+        log_error(IS_LOG_PORT, "[%s] serialPortOpenPlatform():: Error configuring port: %s (%d)", portName, serialPort->error, serialPort->errorCode);
+        close(fd);      // the handle was never assigned, so nothing else will close this fd
         return 0;
     }
 
