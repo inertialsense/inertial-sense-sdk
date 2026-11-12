@@ -184,17 +184,22 @@ void CorrectionService::sendData(const uint8_t *inputBuffer, const uint32_t inpu
     std::vector<port_handle_t> deadPorts;
 
     for (const auto port: ports) {
-        switch (portWrite(port, inputBuffer, inputLength)) {
-            case PORT_ERROR__INVALID:
-                deadPorts.push_back(port);  // invalid port - did the device reboot?
-                break;
+        const int result = portWrite(port, inputBuffer, inputLength);
+        // A negative result with a port that is no longer valid is a fatal write error (e.g. a TCP client that reset the connection), which
+        // portWrite() reports as -errno rather than PORT_ERROR__INVALID.  Transient errors (a full send buffer) leave the port valid.
+        if ((result == PORT_ERROR__INVALID) || ((result < 0) && !portIsValid(port))) {
+            deadPorts.push_back(port);  // invalid port - did the device reboot?
         }
     }
 
     // cleanup dead ports...
     for (const auto port: deadPorts) {
-        removePort(port);
+        removeFailedPort(port);
     }
+}
+
+void CorrectionService::removeFailedPort(port_handle_t port) {
+    removePort(port);
 }
 
 void CorrectionService::setSourcePort(port_handle_t srcPort) {
