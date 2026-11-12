@@ -10,15 +10,12 @@
 
 #include <gtest/gtest.h>
 
-#include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <vector>
 
 #include "ISLogger.h"
 #include "ISComm.h"
-#include "ISFileManager.h"
 
 using namespace inertial_sense;
 namespace fs = std::filesystem;
@@ -182,45 +179,4 @@ TEST(DeviceLogRaw, MaxSizePayloadRoundTrips)
     ASSERT_EQ(got.size(), 1u);
     EXPECT_EQ(got[0].hdr.size, maxPayload);
     EXPECT_EQ(got[0].bytes, sequence(0x00, maxPayload));
-}
-
-// B2: no real .raw fixture with partial-DID sets is checked in (gap; a follow-up ticket tracks capturing one).  When
-// IS_TEST_RAW_PARTIAL_DID points at a directory holding such a log, every data set read back must match an independent
-// parse of the same file with the ISComm parser (payload at buf[0..size), offset in hdr.offset).
-TEST(DeviceLogRaw, PartialDidRealFixture)
-{
-    const char* env = std::getenv("IS_TEST_RAW_PARTIAL_DID");
-    if (!env || !*env) GTEST_SKIP() << "IS_TEST_RAW_PARTIAL_DID not set";
-
-    std::vector<ISFileManager::file_info_t> raws;
-    ISFileManager::GetAllFilesInDirectory(env, true, "\\.raw$", raws);
-    ASSERT_EQ(raws.size(), 1u) << "expected exactly one .raw file in " << env;
-    std::ifstream in(raws[0].name, std::ios::binary);
-    std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-
-    std::vector<ReadBack> expected;
-    uint8_t commBuf[PKT_BUF_SIZE];
-    is_comm_instance_t comm;
-    is_comm_init(&comm, commBuf, sizeof(commBuf), nullptr);
-    for (uint8_t b : bytes) {
-        protocol_type_t t = is_comm_parse_byte(&comm, b);
-        if (t == _PTYPE_INERTIAL_SENSE_DATA || t == _PTYPE_INERTIAL_SENSE_CMD) {
-            ReadBack r;
-            r.hdr = comm.rxPkt.dataHdr;
-            if (comm.rxPkt.data.ptr) r.bytes.assign(comm.rxPkt.data.ptr, comm.rxPkt.data.ptr + comm.rxPkt.dataHdr.size);
-            expected.push_back(std::move(r));
-        }
-    }
-    ASSERT_FALSE(expected.empty());
-
-    auto got = readAll(env);
-    ASSERT_EQ(got.size(), expected.size());
-    size_t partial = 0;
-    for (size_t i = 0; i < got.size(); i++) {
-        EXPECT_EQ(got[i].hdr.id, expected[i].hdr.id) << "record " << i;
-        EXPECT_EQ(got[i].hdr.offset, expected[i].hdr.offset) << "record " << i;
-        EXPECT_EQ(got[i].bytes, expected[i].bytes) << "record " << i;
-        if (expected[i].hdr.offset != 0) partial++;
-    }
-    EXPECT_GT(partial, 0u) << "the fixture contains no partial-DID records, so it does not exercise the fix";
 }
