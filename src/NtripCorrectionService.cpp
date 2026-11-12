@@ -132,6 +132,15 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
         std::string auth = uri.user + ":" + uri.password;
         requestMsg += "Authorization: Basic " + base64Encode((const unsigned char*)auth.data(), (int)auth.length()) + "\r\n";
     }
+    // Custom headers from setConnectionRequestHeaders(). Entries that would break the request framing (CR/LF,
+    // or a malformed name) are skipped rather than allowed to inject extra header lines.
+    for (const auto& [name, value] : headers) {
+        if (name.empty() || name.find_first_of(":\r\n \t") != std::string::npos || value.find_first_of("\r\n") != std::string::npos) {
+            log_warn(IS_LOG_PORT, "NTRIP: ignoring invalid request header \"%s\"", name.c_str());
+            continue;
+        }
+        requestMsg += name + ": " + value + "\r\n";
+    }
     requestMsg += "Accept: */*\r\nConnection: close\r\n\r\n";
 
     // extract the host & port, and make the socket/port connection
