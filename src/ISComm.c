@@ -1322,7 +1322,12 @@ int is_comm_free(is_comm_instance_t* c)
 protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, uint32_t timeMs)
 {
     // Reset buffer if needed.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
-    is_comm_free(c);
+    if (is_comm_free(c) <= 0)
+    {   // Still no room: the buffer is full of not-yet-scanned data and no packet is in progress, which is_comm_free()
+        // does not reclaim.  Flush it rather than write the byte past rxBuf.end.
+        reportParseError(c, EPARSE_RXBUFFER_FLUSHED);
+        is_comm_reset_buffer(c);
+    }
 
     // Add byte to buffer
     *(c->rxBuf.tail) = byte;
