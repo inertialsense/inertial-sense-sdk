@@ -233,7 +233,10 @@ void TcpServerPortFactory::shutdownAllClients() {
 #else
         shutdown(ks.socket, SHUT_RDWR);
 #endif
-        portClose(ks.port);
+        if (ks.port)
+            portClose(ks.port);
+        else
+            closeSocket(ks.socket);     // never bound to a port, so portClose() has nothing to act on
     }
 }
 
@@ -257,6 +260,13 @@ bool TcpServerPortFactory::processPendingConnections(std::function<void(const so
         // accept: wait for a connection request
         clientfd = accept(listen_fd, (struct sockaddr *) &clientaddr, &clientlen);
         if (clientfd >= 0) {
+            // Enforce the connection cap: refuse the connection by closing it at accept.
+            if ((int)knownSockets.size() >= factoryOptions.maxConnections) {
+                closeSocket(clientfd);
+                log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory rejected an incoming TCP connection: %d connections already open (maximum).", factoryOptions.maxConnections);
+                continue;
+            }
+
             // getnameinfo: determine who has connected
             if (getnameinfo((struct sockaddr *) &clientaddr, clientlen, hostaddrp, sizeof(hostaddrp), nullptr, 0, NI_NUMERICHOST) == 0) {
                 std::string tcpPortName = utils::string_format("tcp://%s:%d", hostaddrp, ntohs(clientaddr.sin_port));
