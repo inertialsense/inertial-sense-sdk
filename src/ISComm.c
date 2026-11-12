@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAX_MSG_LENGTH_ISB          PKT_BUF_SIZE
 #define MAX_MSG_LENGTH_NMEA         200
 #define MAX_MSG_LENGTH_RTCM         1023  // RTCM3 standard
-#define MAX_MSG_LENGTH_UBX          1024
+#define MAX_MSG_LENGTH_UBX          8192  // Whole packet. Fits the largest common messages, e.g. RXM-RAWX with 255 measurements (8184 bytes)
 #define MAX_MSG_LENGTH_SONY         4090
 #define PKT_PARSER_TIMEOUT_MS       100   // Set to 0 to disable timeout
 
@@ -857,7 +857,16 @@ static protocol_type_t processUbloxPkt(void* v)
 
         // Parse header
         ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(c->rxBuf.head);
-        p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;        // Header + payload + footer (checksum)
+        int size = (int)sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;  // Header + payload + footer (checksum)
+
+        // Validate packet length (before storing it in the 16-bit p->size, where it could wrap). A corrupt
+        // length would otherwise keep the parser waiting for a packet that cannot fit, swallowing all
+        // following data until the RX buffer gets flushed.
+        if (size > MAX_MSG_LENGTH_UBX || size > (int)c->rxBuf.size)
+        {   // Corrupt data
+            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+        }
+        p->size = size;
         p->state++;
         return _PTYPE_NONE;
 
