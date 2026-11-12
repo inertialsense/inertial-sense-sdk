@@ -60,7 +60,16 @@ ISHttpRequest::Response ISHttpRequest::parseResponse(port_handle_t port, int tim
     }
     size_t secondSpace = statusLine.find(' ', firstSpace + 1);
     std::string codeStr = statusLine.substr(firstSpace + 1, secondSpace - firstSpace - 1);
-    resp.statusCode = std::stoi(codeStr);
+    try
+    {
+        resp.statusCode = std::stoi(codeStr);
+    }
+    catch (const std::exception&)
+    {   // non-numeric or out-of-range status code
+        log_error(IS_LOG_HTTP_REQUEST, "Malformed HTTP status code: %s", codeStr.c_str());
+        resp.statusCode = -1;
+        return resp;
+    }
     if (secondSpace != std::string::npos)
     {
         resp.statusMessage = statusLine.substr(secondSpace + 1);
@@ -103,7 +112,10 @@ ISHttpRequest::Response ISHttpRequest::parseResponse(port_handle_t port, int tim
             std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), ::tolower);
 
             if (keyLower == "content-length")
-                contentLength = std::stoi(value);
+            {
+                try { contentLength = std::stoi(value); }
+                catch (const std::exception&) { log_error(IS_LOG_HTTP_REQUEST, "Malformed Content-Length: %s", value.c_str()); }  // treat as unknown
+            }
             else if (keyLower == "transfer-encoding")
             {
                 std::string valueLower = value;
@@ -257,12 +269,38 @@ ISHttpRequest::Response ISHttpRequest::sendRequest(const std::string& url, const
         return resp;
     }
 
-    // Build and send request
+    // Build and send request. The port is non-blocking, so portWrite() accepts only what fits in the socket send buffer
+    // (and returns 0 when it is full); keep writing until the whole request has been sent. The timeout restarts whenever
+    // data is accepted, so a large upload over a slow link succeeds as long as it keeps making progress.
     std::string request = buildRequest(method, host, path, contentType, body);
-    int bytesSent = portWrite(tcpPort, (uint8_t*)request.data(), (int)request.length());
-    if ((size_t)bytesSent != request.length())
+    size_t totalSent = 0;
+    uint32_t lastProgressMs = current_timeMs();
+    bool sendFailed = false;
+    while (totalSent < request.length())
     {
-        log_error(IS_LOG_HTTP_REQUEST, "Failed to send request to %s", url.c_str());
+        int n = portWrite(tcpPort, (const uint8_t*)request.data() + totalSent, (unsigned int)(request.length() - totalSent));
+        if (n < 0)
+        {   // hard failure (connection reset, port invalidated, ...)
+            sendFailed = true;
+            break;
+        }
+        if (n > 0)
+        {
+            totalSent += (size_t)n;
+            lastProgressMs = current_timeMs();
+            continue;
+        }
+        // Nothing accepted (send buffer full): wait for the peer to drain it, up to timeoutMs without progress
+        if ((current_timeMs() - lastProgressMs) >= (uint32_t)timeoutMs)
+        {
+            sendFailed = true;
+            break;
+        }
+        SLEEP_MS(1);
+    }
+    if (sendFailed)
+    {
+        log_error(IS_LOG_HTTP_REQUEST, "Failed to send request to %s (%d of %d bytes sent)", url.c_str(), (int)totalSent, (int)request.length());
         portClose(tcpPort);
         TcpPortFactory::getInstance().releasePort(tcpPort);
         return resp;
