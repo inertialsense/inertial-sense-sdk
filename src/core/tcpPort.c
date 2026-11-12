@@ -564,12 +564,14 @@ void tcpPortInit(port_handle_t port, int id, const char* name, const struct sock
 }
 
 /**
- * Deinitializes a tcp port and clears and zeros it's allocated memory
+ * Deinitializes a tcp port, closing it if still open, and zeros its allocated memory
  * @param port The port handle to deinitialize
  */
 void tcpPortDelete(port_handle_t port) {
     if (!port)
         return;
+    if (portFlagsIsSet(port, PORT_FLAG__VALID) && (TCP_PORT(port)->socket >= 0))
+        tcpPortClose(port);
     memset(port, 0, sizeof(tcp_port_t));
 }
 
