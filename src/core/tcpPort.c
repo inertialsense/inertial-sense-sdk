@@ -34,6 +34,14 @@
 #define SOCKET_ERR_AGAIN        EAGAIN
 #endif
 
+// Keep-alive probing parameters. A dropped mobile/LTE link does not produce any socket error: the peer
+// simply goes silent, and without probing the connection survives until the kernel's retransmission
+// budget runs out (~15 min on Linux), during which a correction stream is dead but looks healthy.
+#define TCP_PORT_KEEPALIVE_IDLE_SEC     10      //!< idle seconds before the first keep-alive probe
+#define TCP_PORT_KEEPALIVE_INTVL_SEC    5       //!< seconds between keep-alive probes
+#define TCP_PORT_KEEPALIVE_COUNT        3       //!< unanswered probes before the connection is dropped
+#define TCP_PORT_USER_TIMEOUT_MS        30000   //!< max time unacknowledged TX data may remain outstanding
+
 static int tcpPortHandleError(port_handle_t port);
 
 // Reports the current socket error through tcpPortHandleError() and returns it to the caller. Kept as a
@@ -102,6 +110,49 @@ static int tcpPortHandleError(port_handle_t port) {
     portFlagsClear(port, PORT_FLAG__OPENED);
     tcpPort->base.perror = err;
     return -err;
+}
+
+/**
+ * Enables TCP keep-alive probing and a bounded transmit timeout on a freshly connected socket.
+ *
+ * Without these a silent link loss (LTE dropout, upstream NAT eviction) leaves the socket in a state
+ * where neither read nor write reports an error; the stream simply never delivers another byte. Probing
+ * turns that into a real socket error within roughly
+ * TCP_PORT_KEEPALIVE_IDLE_SEC + (TCP_PORT_KEEPALIVE_COUNT * TCP_PORT_KEEPALIVE_INTVL_SEC) seconds, which
+ * tcpPortHandleError() then converts into a closed, reopenable port.
+ *
+ * Failures are deliberately ignored: the socket is fully usable without them, and platforms vary in which
+ * of these options they implement.
+ * @param port the port whose socket was just connected
+ */
+static void tcpPortEnableKeepAlive(port_handle_t port) {
+    tcp_port_t* tcpPort = TCP_PORT(port);
+    if (tcpPort->socket < 0)
+        return;
+
+    int enable = 1;
+    SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable));
+
+#ifndef PLATFORM_IS_WINDOWS
+#ifdef TCP_KEEPIDLE
+    int idle = TCP_PORT_KEEPALIVE_IDLE_SEC;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+#endif
+#ifdef TCP_KEEPINTVL
+    int intvl = TCP_PORT_KEEPALIVE_INTVL_SEC;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
+#endif
+#ifdef TCP_KEEPCNT
+    int count = TCP_PORT_KEEPALIVE_COUNT;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
+#endif
+#ifdef TCP_USER_TIMEOUT
+    // Must be set at IPPROTO_TCP: at SOL_SOCKET this option number is SO_RCVLOWAT, so the wrong level
+    // silently configures something unrelated instead of failing.
+    unsigned int userTimeout = TCP_PORT_USER_TIMEOUT_MS;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_USER_TIMEOUT, &userTimeout, sizeof(userTimeout));
+#endif
+#endif
 }
 
 /**
@@ -195,6 +246,7 @@ int tcpPortOpen(port_handle_t port) {
 
     // Connection established -- apply the caller's desired blocking mode.
     tcpPortSetBlocking(port, tcpPort->blocking);
+    tcpPortEnableKeepAlive(port);
 
     portFlagsSet(port, PORT_FLAG__OPENED);
     tcpPort->base.perror = 0;
