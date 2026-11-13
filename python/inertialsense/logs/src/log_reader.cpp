@@ -122,7 +122,9 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
     oss << logger_.DeviceCount() << " device(s):";
 
-    std::vector<int> serialNumbers;
+    // Serials are uint32_t (SN-8985): a signed vector here would narrow any serial >= 2^31 into
+    // a negative value (e.g. 2210147133 -> -2084820163) by the time it reaches Python.
+    std::vector<uint32_t> serialNumbers;
     for (auto dev : logger_.DeviceLogs()) {
         oss << (serialNumbers.empty() ? " " : ", ") << dev->SerialNumber();
         serialNumbers.push_back(dev->SerialNumber());

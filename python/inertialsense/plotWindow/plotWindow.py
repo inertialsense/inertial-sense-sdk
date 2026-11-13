@@ -14,6 +14,12 @@ import sys, os
 ERROR_FACECOLOR = "mistyrose"
 _ERROR_FACECOLOR_RGBA = mcolors.to_rgba(ERROR_FACECOLOR)
 
+
+def figureHasError(figure):
+    """True if any axis in this figure was marked with ERROR_FACECOLOR (i.e. plotErrThresh()
+    flagged it as exceeding its threshold)."""
+    return any(ax.get_facecolor() == _ERROR_FACECOLOR_RGBA for ax in figure.get_axes())
+
 class plotWindow():
     # Lazy Qt instantiation: QApplication / MainWindow / per-tab widgets are
     # not constructed in __init__. They are deferred to show() so that scripts
@@ -93,9 +99,7 @@ class plotWindow():
             self.canvases.append(new_canvas)
             self.tab_handles.append(new_tab)
 
-            if first_error_tab is None and any(
-                ax.get_facecolor() == _ERROR_FACECOLOR_RGBA for ax in figure.get_axes()
-            ):
+            if first_error_tab is None and figureHasError(figure):
                 first_error_tab = idx
 
         if first_error_tab is not None:
@@ -122,8 +126,15 @@ class plotWindow():
         directory = os.path.dirname(filepath)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        fig.savefig(os.path.join(filepath + '.' + format), bbox_inches='tight')
+        savedPath = os.path.join(filepath + '.' + format)
+        fig.savefig(savedPath, bbox_inches='tight')
         fig.set_size_inches(restoreSize)
+
+        # Printed so a caller that never builds the interactive window (EvalTool's automated
+        # pipeline) can still find the specific saved image(s) that actually show a problem, and
+        # open just those -- not every figure, and not the containing folder.
+        if figureHasError(fig):
+            print(f"[ERROR_FIGURE] {savedPath}", flush=True)
 
 if __name__ == '__main__':
     import numpy as np
