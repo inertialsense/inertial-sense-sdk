@@ -14,7 +14,6 @@
 #define ssize_t SSIZE_T
 // Use WSAGetLastError() directly instead of redefining errno
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, (const char*)(optval), optlen)
-#define HANDLE_SOCKET_ERROR(tcpPort) do{ tcpPort->base.perror = WSAGetLastError(); return -WSAGetLastError(); } while(0)
 // Winsock reports through WSAGetLastError() rather than errno; these let the read loop below be written
 // once for both platforms instead of duplicated per #ifdef.
 #define SOCKET_LAST_ERROR()     WSAGetLastError()
@@ -29,13 +28,25 @@
 #include <sys/socket.h>
 #include <poll.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
-// Records the error as the port's (negative) socket value. Any descriptor still held is closed first, otherwise overwriting it would forget the only reference to an open fd.
-#define HANDLE_SOCKET_ERROR(tcpPort) do { int hse_err = errno; if ((tcpPort)->socket >= 0) close((tcpPort)->socket); (tcpPort)->socket = -hse_err; (tcpPort)->base.perror = hse_err; return -hse_err; } while(0)
 #define SOCKET_LAST_ERROR()     errno
 #define SOCKET_ERR_INTR         EINTR
 #define SOCKET_ERR_WOULDBLOCK   EWOULDBLOCK
 #define SOCKET_ERR_AGAIN        EAGAIN
 #endif
+
+// Keep-alive probing parameters. A dropped mobile/LTE link does not produce any socket error: the peer
+// simply goes silent, and without probing the connection survives until the kernel's retransmission
+// budget runs out (~15 min on Linux), during which a correction stream is dead but looks healthy.
+#define TCP_PORT_KEEPALIVE_IDLE_SEC     10      //!< idle seconds before the first keep-alive probe
+#define TCP_PORT_KEEPALIVE_INTVL_SEC    5       //!< seconds between keep-alive probes
+#define TCP_PORT_KEEPALIVE_COUNT        3       //!< unanswered probes before the connection is dropped
+#define TCP_PORT_USER_TIMEOUT_MS        30000   //!< max time unacknowledged TX data may remain outstanding
+
+static int tcpPortHandleError(port_handle_t port);
+
+// Reports the current socket error through tcpPortHandleError() and returns it to the caller. Kept as a
+// macro so the (many) existing early-return call sites read unchanged.
+#define HANDLE_SOCKET_ERROR(tcpPort) do { (void)(tcpPort); return tcpPortHandleError(port); } while(0)
 
 /**
  * Waits up to timeoutMs for the socket to become readable (or otherwise report an event).
@@ -62,6 +73,86 @@ static int tcpPortWaitReadable(int sock, uint32_t timeoutMs) {
     tv.tv_usec = (long)((timeoutMs % 1000) * 1000);
     // First argument is ignored by Winsock, and must be highest-fd+1 on POSIX.
     return select(sock + 1, &readSet, NULL, NULL, &tv);
+}
+
+/**
+ * Records a socket error on the port, closing the underlying socket when the error ended the connection.
+ *
+ * This used to store -errno into tcpPort->socket and leave PORT_FLAG__OPENED set. portIsOpened() therefore
+ * kept reporting a connection that could no longer carry data, so every reconnect path built on it
+ * (CorrectionService::step() and friends) was skipped and the port stayed dead for the life of the
+ * process. tcpPortClose() could not clear the flag either, because it returns early while socket < 0.
+ * Closing here restores the invariant that a port which failed fatally is not "opened", which is what
+ * lets a subsequent portOpen() reconnect.
+ *
+ * Transient conditions (EAGAIN/EWOULDBLOCK/EINTR) are recorded only; the socket stays usable.
+ *
+ * @param port the port which encountered the error
+ * @return the negated socket error code
+ */
+static int tcpPortHandleError(port_handle_t port) {
+    tcp_port_t* tcpPort = TCP_PORT(port);
+    const int err = SOCKET_LAST_ERROR();
+
+    tcpPort->base.perror = err;
+    if ((err == SOCKET_ERR_AGAIN) || (err == SOCKET_ERR_WOULDBLOCK) || (err == SOCKET_ERR_INTR))
+        return -err;
+
+    if (tcpPort->socket >= 0) {
+#ifdef PLATFORM_IS_WINDOWS
+        shutdown(tcpPort->socket, SD_BOTH);
+#else
+        shutdown(tcpPort->socket, SHUT_RDWR);
+#endif
+        close(tcpPort->socket);
+    }
+    tcpPort->socket = -EBADF;
+    portFlagsClear(port, PORT_FLAG__OPENED);
+    tcpPort->base.perror = err;
+    return -err;
+}
+
+/**
+ * Enables TCP keep-alive probing and a bounded transmit timeout on a freshly connected socket.
+ *
+ * Without these a silent link loss (LTE dropout, upstream NAT eviction) leaves the socket in a state
+ * where neither read nor write reports an error; the stream simply never delivers another byte. Probing
+ * turns that into a real socket error within roughly
+ * TCP_PORT_KEEPALIVE_IDLE_SEC + (TCP_PORT_KEEPALIVE_COUNT * TCP_PORT_KEEPALIVE_INTVL_SEC) seconds, which
+ * tcpPortHandleError() then converts into a closed, reopenable port.
+ *
+ * Failures are deliberately ignored: the socket is fully usable without them, and platforms vary in which
+ * of these options they implement.
+ * @param port the port whose socket was just connected
+ */
+static void tcpPortEnableKeepAlive(port_handle_t port) {
+    tcp_port_t* tcpPort = TCP_PORT(port);
+    if (tcpPort->socket < 0)
+        return;
+
+    int enable = 1;
+    SETSOCKOPT(tcpPort->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable));
+
+#ifndef PLATFORM_IS_WINDOWS
+#ifdef TCP_KEEPIDLE
+    int idle = TCP_PORT_KEEPALIVE_IDLE_SEC;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+#endif
+#ifdef TCP_KEEPINTVL
+    int intvl = TCP_PORT_KEEPALIVE_INTVL_SEC;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
+#endif
+#ifdef TCP_KEEPCNT
+    int count = TCP_PORT_KEEPALIVE_COUNT;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
+#endif
+#ifdef TCP_USER_TIMEOUT
+    // Must be set at IPPROTO_TCP: at SOL_SOCKET this option number is SO_RCVLOWAT, so the wrong level
+    // silently configures something unrelated instead of failing.
+    unsigned int userTimeout = TCP_PORT_USER_TIMEOUT_MS;
+    SETSOCKOPT(tcpPort->socket, IPPROTO_TCP, TCP_USER_TIMEOUT, &userTimeout, sizeof(userTimeout));
+#endif
+#endif
 }
 
 /**
@@ -149,12 +240,13 @@ int tcpPortOpen(port_handle_t port) {
         }
         if (!connected) {
             portFlagsClear(port, PORT_FLAG__OPENED);
-            HANDLE_SOCKET_ERROR(tcpPort);   // this will override our socket... do we really want to do that?
+            HANDLE_SOCKET_ERROR(tcpPort);
         }
     }
 
     // Connection established -- apply the caller's desired blocking mode.
     tcpPortSetBlocking(port, tcpPort->blocking);
+    tcpPortEnableKeepAlive(port);
 
     portFlagsSet(port, PORT_FLAG__OPENED);
     tcpPort->base.perror = 0;
