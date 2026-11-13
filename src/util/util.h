@@ -703,8 +703,8 @@ namespace utils {
         std::string scheme;     //!< URI scheme as provided (e.g. "tcp", "ntrip"); empty if absent
         std::string host;       //!< host with IPv6 brackets stripped; empty if absent
         int         port = -1;  //!< port number 1..65535, or -1 if absent/malformed/out-of-range
-        std::string user;       //!< userinfo username; empty if absent
-        std::string password;   //!< userinfo password; empty if absent
+        std::string user;       //!< userinfo username, percent-decoded; empty if absent
+        std::string password;   //!< userinfo password, percent-decoded; empty if absent
         std::string path;       //!< path component (e.g. an NTRIP mountpoint); empty if absent
         std::string query;      //!< query component; empty if absent
 
@@ -717,6 +717,14 @@ namespace utils {
         /** @return true if userinfo was present */
         bool hasUserinfo() const { return !user.empty() || !password.empty(); }
     };
+
+    /**
+     * @brief Decode RFC 3986 percent-encoding ("%40" -> "@"). Malformed sequences (e.g. "%G1", a trailing "%")
+     * are kept literally, and '+' is not treated as a space (that is form encoding, not URI encoding).
+     * @param s the percent-encoded string
+     * @return the decoded string
+     */
+    std::string percentDecode(const std::string& s);
 
     /**
      * @brief Parse a URI string into its normalized components.
