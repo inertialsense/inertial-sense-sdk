@@ -108,7 +108,7 @@ class plotWindow():
         self.MainWindow.show()
         return self.app.exec()
 
-    def saveFig(self, fig, filepath, format='svg', sizeInches=[]):
+    def saveFig(self, fig, filepath, format='svg', sizeInches=[], reportError=True):
         if fig == None:
             return
         allaxes = fig.get_axes()
@@ -132,8 +132,11 @@ class plotWindow():
 
         # Printed so a caller that never builds the interactive window (EvalTool's automated
         # pipeline) can still find the specific saved image(s) that actually show a problem, and
-        # open just those -- not every figure, and not the containing folder.
-        if figureHasError(fig):
+        # open just those -- not every figure, and not the containing folder. reportError=False
+        # (passed for the combined-sensor figures) opts a figure out even if it's flagged: the
+        # per-IMU figure covering the same data already triggers the viewer, and EvalTool should
+        # only pop up the individual-IMU plots, not the combined ones too.
+        if reportError and figureHasError(fig):
             print(f"[ERROR_FIGURE] {savedPath}", flush=True)
 
 if __name__ == '__main__':
