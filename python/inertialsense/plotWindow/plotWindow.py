@@ -1,12 +1,24 @@
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget,QVBoxLayout
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import pyqtSlot, QTimer
 import sys, os
+
+# Shared error-indicator convention: motion_calibration.py / temperature_calibration.py call
+# ax.set_facecolor(ERROR_FACECOLOR) on any subplot whose data exceeds its threshold.
+ERROR_FACECOLOR = "mistyrose"
+_ERROR_FACECOLOR_RGBA = mcolors.to_rgba(ERROR_FACECOLOR)
+
+
+def figureHasError(figure):
+    """True if any axis in this figure was marked with ERROR_FACECOLOR (i.e. plotErrThresh()
+    flagged it as exceeding its threshold)."""
+    return any(ax.get_facecolor() == _ERROR_FACECOLOR_RGBA for ax in figure.get_axes())
 
 class plotWindow():
     # Lazy Qt instantiation: QApplication / MainWindow / per-tab widgets are
@@ -73,7 +85,8 @@ class plotWindow():
             self._close_timer.timeout.connect(self._poll_close_request)
             self._close_timer.start(250)
 
-        for title, figure, _threeD in self._pending_plots:
+        first_error_tab = None
+        for idx, (title, figure, _threeD) in enumerate(self._pending_plots):
             new_tab = QWidget()
             layout = QVBoxLayout()
             new_tab.setLayout(layout)
@@ -86,10 +99,16 @@ class plotWindow():
             self.canvases.append(new_canvas)
             self.tab_handles.append(new_tab)
 
+            if first_error_tab is None and figureHasError(figure):
+                first_error_tab = idx
+
+        if first_error_tab is not None:
+            self.tabs.setCurrentIndex(first_error_tab)
+
         self.MainWindow.show()
         return self.app.exec()
 
-    def saveFig(self, fig, filepath, format='svg', sizeInches=[]):
+    def saveFig(self, fig, filepath, format='svg', sizeInches=[], reportError=True):
         if fig == None:
             return
         allaxes = fig.get_axes()
@@ -107,8 +126,18 @@ class plotWindow():
         directory = os.path.dirname(filepath)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        fig.savefig(os.path.join(filepath + '.' + format), bbox_inches='tight')
+        savedPath = os.path.join(filepath + '.' + format)
+        fig.savefig(savedPath, bbox_inches='tight')
         fig.set_size_inches(restoreSize)
+
+        # Printed so a caller that never builds the interactive window (EvalTool's automated
+        # pipeline) can still find the specific saved image(s) that actually show a problem, and
+        # open just those -- not every figure, and not the containing folder. reportError=False
+        # (passed for the combined-sensor figures) opts a figure out even if it's flagged: the
+        # per-IMU figure covering the same data already triggers the viewer, and EvalTool should
+        # only pop up the individual-IMU plots, not the combined ones too.
+        if reportError and figureHasError(fig):
+            print(f"[ERROR_FIGURE] {savedPath}", flush=True)
 
 if __name__ == '__main__':
     import numpy as np
