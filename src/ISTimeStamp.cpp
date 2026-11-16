@@ -36,9 +36,9 @@ std::string fmtSessionSeconds(uint64_t ms) {
     return std::string(buf.data());
 }
 
-// GpsToW: value as ms within the GPS week. "DDD HH:MM:SS.mmm" where
+// GNSSToW: value as ms within the GPS week. "DDD HH:MM:SS.mmm" where
 // DDD is day-of-week (0=Sunday, GPS convention).
-std::string fmtGpsToW(uint64_t ms) {
+std::string fmtGNSSToW(uint64_t ms) {
     const uint64_t day  = ms / kMsPerDay;
     const uint64_t rem1 = ms % kMsPerDay;
     const uint64_t hour = rem1 / kMsPerHour;
@@ -94,7 +94,7 @@ std::string fmtHostReceivedMs(uint64_t ms) {
 std::string toString(const TimeStamp& ts, TimeFormat fmt) {
     switch (fmt) {
         case TimeFormat::SessionSeconds:  return fmtSessionSeconds(ts.value);
-        case TimeFormat::GpsToW:          return fmtGpsToW(ts.value);
+        case TimeFormat::GNSSToW:          return fmtGNSSToW(ts.value);
         case TimeFormat::UtcIso8601:      return fmtUtcIso8601(ts.value);
         case TimeFormat::HostReceivedMs:  return fmtHostReceivedMs(ts.value);
     }

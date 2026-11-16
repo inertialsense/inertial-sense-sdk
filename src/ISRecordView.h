@@ -130,7 +130,7 @@ public:
     /**
      * Returns the `IS_LOG_IDX_REC_FLAG_*` bitmask from the source
      * `.idx` record. Bit 0 (`HAS_TOW`) indicates the record's payload
-     * carried a real GPS time-of-week field — used by D-07's
+     * carried a real GNSS time-of-week field — used by D-07's
      * `ISTimeResolver` as a sync anchor and by D-08's `ISLogWriter`
      * to preserve the flag through bake/trim.
      *

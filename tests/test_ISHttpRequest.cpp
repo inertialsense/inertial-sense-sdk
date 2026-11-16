@@ -469,3 +469,107 @@ TEST(test_generateUUIDv4, uniqueness)
     std::string uuid2 = utils::generateUUIDv4();
     EXPECT_NE(uuid1, uuid2);
 }
+// ---- manfUid / UUIDv7 / manufacturing date helpers (SN-8984) ----
+
+TEST(test_manfUidToString, gpxExample_memoryOrderLittleEndianWords)
+{
+    // The GPX unit that shares legacy SN910564648 with another wafer (see SN-8984)
+    const uint32_t uid[4] = { 0x001D0028u, 0x41465006u, 0x20363841u, 0u };
+    EXPECT_EQ(utils::manfUidToString(uid), "28001d00065046414138362000000000");
+}
+
+TEST(test_manfUidToString, includesReservedFourthWord)
+{
+    const uint32_t uid[4] = { 0x04030201u, 0x08070605u, 0x0C0B0A09u, 0xDDCCBBAAu };
+    EXPECT_EQ(utils::manfUidToString(uid), "0102030405060708090a0b0caabbccdd");
+}
+
+TEST(test_manfUidToString, zeroUid)
+{
+    const uint32_t uid[4] = { 0u, 0u, 0u, 0u };
+    EXPECT_EQ(utils::manfUidToString(uid), std::string(32, '0'));
+}
+
+TEST(test_generateUUIDv7, formatVersionVariantAndTimestamp)
+{
+    const uint64_t ms = 0x019FA9F91448ull;          // arbitrary 48-bit time
+    std::string u = utils::generateUUIDv7(ms);
+    ASSERT_EQ(u.size(), 36u);
+    EXPECT_EQ(u[8], '-'); EXPECT_EQ(u[13], '-'); EXPECT_EQ(u[18], '-'); EXPECT_EQ(u[23], '-');
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), "019fa9f91448");   // 48-bit timestamp, big-endian
+    EXPECT_EQ(u[14], '7');                                         // version 7
+    EXPECT_NE(std::string("89ab").find(u[19]), std::string::npos); // variant 10xx
+    for (char c : u) if (c != '-') EXPECT_TRUE(std::isxdigit((unsigned char)c) && !std::isupper((unsigned char)c)) << u;
+}
+
+TEST(test_generateUUIDv7, timeOrderedAndUnique)
+{
+    EXPECT_LT(utils::generateUUIDv7(1000), utils::generateUUIDv7(1001));
+    EXPECT_LT(utils::generateUUIDv7(1700000000000ull), utils::generateUUIDv7(1700000000001ull));
+    EXPECT_NE(utils::generateUUIDv7(5), utils::generateUUIDv7(5));   // same millisecond still differs
+}
+
+TEST(test_manfDateToRfc3339, validUtcDate)
+{
+    char date[16] = {};
+    memcpy(date, "20261105150004Z", 15);
+    std::string out;
+    ASSERT_TRUE(utils::manfDateToRfc3339(date, out));
+    EXPECT_EQ(out, "2026-11-05T15:00:04Z");
+}
+
+TEST(test_manfDateToRfc3339, rejectsLegacyAndMalformed)
+{
+    std::string out = "unchanged";
+    char legacy[16] = {};  memcpy(legacy, "20261105150004", 14);       // 14 digits, local time, no marker
+    EXPECT_FALSE(utils::manfDateToRfc3339(legacy, out));
+    char noNul[16];        memcpy(noNul, "20261105150004Zx", 16);        // junk past the marker
+    EXPECT_FALSE(utils::manfDateToRfc3339(noNul, out));
+    char badMonth[16] = {}; memcpy(badMonth, "20261305150004Z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(badMonth, out));
+    char badHour[16] = {};  memcpy(badHour, "20261105240004Z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(badHour, out));
+    char lower[16] = {};    memcpy(lower, "20261105150004z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(lower, out));
+    char empty[16] = {};
+    EXPECT_FALSE(utils::manfDateToRfc3339(empty, out));
+    EXPECT_EQ(out, "unchanged");
+}
+
+TEST(test_unixMsToRfc3339, formatsUtcWithMilliseconds) {
+    EXPECT_EQ(utils::unixMsToRfc3339(0), "1970-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531000ll), "2026-10-20T15:02:11.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531250ll), "2026-10-20T15:02:11.250Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-1), "1969-12-31T23:59:59.999Z");
+}
+
+TEST(test_unixMsToRfc3339, supportsTimesBefore1970) {
+    // gmtime_s rejects negative times on Windows, so this is computed without it and must agree everywhere.
+    EXPECT_EQ(utils::unixMsToRfc3339(-1000), "1969-12-31T23:59:59.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-86400000ll), "1969-12-31T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-86400001ll), "1969-12-30T23:59:59.999Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-2208988800000ll), "1900-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-62135596800000ll), "0001-01-01T00:00:00.000Z");
+}
+
+TEST(test_unixMsToRfc3339, calendarEdges) {
+    EXPECT_EQ(utils::unixMsToRfc3339(951782400000ll), "2000-02-29T00:00:00.000Z");  // 2000 is a leap year
+    EXPECT_EQ(utils::unixMsToRfc3339(951868800000ll), "2000-03-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(4107542400000ll), "2100-03-01T00:00:00.000Z");  // 2100 is not
+    EXPECT_EQ(utils::unixMsToRfc3339(1709164800000ll), "2024-02-29T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1798761599999ll), "2026-12-31T23:59:59.999Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1798761600000ll), "2027-01-01T00:00:00.000Z");
+}
+
+#ifndef _WIN32
+TEST(test_unixMsToRfc3339, agreesWithTheCLibraryForTimesItSupports) {
+    for (int64_t unixMs = 0; unixMs < 4102444800000ll; unixMs += 7919173321ll) {  // 1970 to 2100, about 500 samples
+        time_t secs = (time_t)(unixMs / 1000);
+        struct tm tmUtc = {};
+        gmtime_r(&secs, &tmUtc);
+        EXPECT_EQ(utils::unixMsToRfc3339(unixMs),
+                  utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tmUtc.tm_year + 1900, tmUtc.tm_mon + 1, tmUtc.tm_mday, tmUtc.tm_hour, tmUtc.tm_min, tmUtc.tm_sec, (int)(unixMs % 1000)))
+            << unixMs;
+    }
+}
+#endif

@@ -8,6 +8,14 @@
 
 #include <gtest/gtest.h>
 #include "ISDFUFirmwareUpdater.h"
+#include "DfuResetThrottle.h"
+
+#include <algorithm>
+#include <chrono>
+#include <mutex>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // --- rdpVerdict(): raw FLASH_OPTR RDP byte -> dfu_error verdict ---
 
@@ -104,4 +112,46 @@ TEST(ISDFUFirmwareUpdater_Finalize, LibusbErrorName_NamesDistinctCodes) {
 TEST(ISDFUFirmwareUpdater_LibUsbInit, GetNumDevices_BeforeInit_ReturnsZeroInsteadOfCrashing) {
     EXPECT_EQ(0, ISDFUFirmwareUpdater::getNumDevices());
     EXPECT_EQ(0, ISDFUFirmwareUpdater::getNumDevices(0x1234, 0x5678));
+}
+
+// --- DfuUsbResetGate: resets across threads stay spaced, even when one runs long ---
+
+namespace {
+using ThrottleClock = std::chrono::steady_clock;
+const auto RESET_SPACING = std::chrono::milliseconds(DFU_USB_RESET_SPACING_MS);
+}
+
+// A reset slower than the spacing is what pre-reserved slots got wrong: the next caller's slot came due while
+// the prior reset was still in progress, so the two ran together. The spacing must run from actual completion.
+TEST(DfuUsbResetGate, SlowResets_NeverOverlapAndKeepSpacing) {
+    const auto resetDuration = RESET_SPACING + std::chrono::milliseconds(50);
+    std::mutex spansMutex;
+    std::vector<std::pair<ThrottleClock::time_point, ThrottleClock::time_point>> spans;
+
+    std::vector<std::thread> workers;
+    for (int i = 0; i < 3; i++) {
+        workers.emplace_back([&] {
+            DfuUsbResetGate gate;
+            auto start = ThrottleClock::now();
+            std::this_thread::sleep_for(resetDuration);
+            std::lock_guard<std::mutex> lock(spansMutex);
+            spans.emplace_back(start, ThrottleClock::now());
+        });
+    }
+    for (auto& worker : workers)
+        worker.join();
+
+    ASSERT_EQ(3u, spans.size());
+    std::sort(spans.begin(), spans.end());
+    for (size_t i = 1; i < spans.size(); i++)
+        EXPECT_GE(spans[i].first - spans[i - 1].second, RESET_SPACING) << "resets " << i - 1 << " and " << i << " were too close";
+}
+
+TEST(DfuUsbResetGate, LoneCallerAfterSpacingElapsed_DoesNotWait) {
+    { DfuUsbResetGate gate; }
+    std::this_thread::sleep_for(RESET_SPACING);
+
+    auto start = ThrottleClock::now();
+    { DfuUsbResetGate gate; }
+    EXPECT_LT(ThrottleClock::now() - start, RESET_SPACING);
 }

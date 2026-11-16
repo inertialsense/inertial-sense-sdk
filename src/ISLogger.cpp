@@ -407,7 +407,7 @@ bool nextStreamDigit(stringstream &ss, string &str)
 
 // Return true for valid filenames, only if they contain 1.) a serial number and an index number,
 // optionally with a date and time, or 2.) only an index number.
-bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
+bool cISLogger::ParseFilename(string filename, uint32_t &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
     date.clear();
@@ -431,7 +431,8 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
 
         // Read serial number
         if (!nextStreamDigit(ss, str) || str.size()==0) { return false; }
-        serialNum = stoi(str);
+        // Serial numbers are uint32; stoi() would throw for 2^31 and above.
+        if (!utils::parseSerialNumber(str, serialNum)) { return false; }
 
         vector<string> tokens;
         while (getline(ss, str, '_'))
@@ -508,7 +509,8 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
         return false;
     }
 
-    int serialNum, index;
+    uint32_t serialNum;
+    int index;
     string date, time;
 
     for (size_t i = 0; i < files.size(); i++)
@@ -869,7 +871,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 #if LOG_DEBUG_GEN == 2
         // Don't print status here
 #elif LOG_DEBUG_GEN || DEBUG_PRINT
-        printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev + 1, log.DeviceCount());
+        printf("cISLogger::CopyLog %s type %d, (%d of %d)\n", utils::serialNumberToString(devInfo->serialNumber).c_str(), logType, dev + 1, log.DeviceCount());
 #endif
 
         // Set KML configuration

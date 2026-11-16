@@ -92,9 +92,10 @@ public:
      *  will match all device types.
      * @param timeoutMs the number of milliseconds to allow for each device to complete discovery before failing.
      * @param options a bitmask of misc options that will can affect the discovery behavior.
+     * @param onlyPorts if not null, only these ports are considered, and all others are left untouched.
      * @return true if one more more devices were discovered, otherwise false
      */
-    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS);
+    bool discoverDevices(uint16_t hdwId = IS_HARDWARE_ANY, uint32_t timeoutMs = 0, uint32_t options = OPTIONS_USE_DEFAULTS, const std::vector<port_handle_t>* onlyPorts = nullptr);
 
     /**
      * Iterates through all registered factories attempting to identify a discoverable device on the specified port.

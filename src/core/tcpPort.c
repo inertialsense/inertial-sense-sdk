@@ -29,7 +29,8 @@
 #include <sys/socket.h>
 #include <poll.h>
 #define SETSOCKOPT(sock, level, optname, optval, optlen) setsockopt(sock, level, optname, optval, optlen)
-#define HANDLE_SOCKET_ERROR(tcpPort) do { tcpPort->socket = -errno; tcpPort->base.perror = errno; return -errno; } while(0)
+// Records the error as the port's (negative) socket value. Any descriptor still held is closed first, otherwise overwriting it would forget the only reference to an open fd.
+#define HANDLE_SOCKET_ERROR(tcpPort) do { int hse_err = errno; if ((tcpPort)->socket >= 0) close((tcpPort)->socket); (tcpPort)->socket = -hse_err; (tcpPort)->base.perror = hse_err; return -hse_err; } while(0)
 #define SOCKET_LAST_ERROR()     errno
 #define SOCKET_ERR_INTR         EINTR
 #define SOCKET_ERR_WOULDBLOCK   EWOULDBLOCK
@@ -464,11 +465,16 @@ int tcpPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
 #endif
     ssize_t retval = send(tcpPort->socket, buf, len, MSG_NOSIGNAL);
     if (retval < 0) {
-        if (errno == EPIPE) {
-            tcpPortClose(port); // remote has disconnected, so force this socket closed.
-            portInvalidate(port);   // since we can't re-establish to the client (because TCP), invalidate the port
+        const int err = SOCKET_LAST_ERROR();
+        if ((err == SOCKET_ERR_AGAIN) || (err == SOCKET_ERR_WOULDBLOCK) || (err == SOCKET_ERR_INTR)) {
+            return 0;   // transient (e.g. the send buffer is full on a non-blocking socket): nothing was sent, but the connection is still usable
         }
-        HANDLE_SOCKET_ERROR(tcpPort);   // This will invalidate our socket
+        // Any other error (EPIPE, ECONNRESET, ETIMEDOUT, ...) is fatal for a TCP connection: close the socket so the descriptor isn't
+        // leaked, and invalidate the port since we can't re-establish to the client.
+        tcpPortClose(port);
+        portInvalidate(port);
+        tcpPort->base.perror = err;
+        return -err;
     }
 
     return retval;
@@ -564,12 +570,16 @@ void tcpPortInit(port_handle_t port, int id, const char* name, const struct sock
 }
 
 /**
- * Deinitializes a tcp port and clears and zeros it's allocated memory
+ * Deinitializes a tcp port, closing it if still open, and zeros its allocated memory
  * @param port The port handle to deinitialize
  */
 void tcpPortDelete(port_handle_t port) {
     if (!port)
         return;
+    // Only a port that was actually initialized as a tcp port holds a socket; a zeroed struct has socket == 0, which would be stdin.
+    // (Initialization, not PORT_FLAG__VALID, is the test: a port invalidated by a failed operation may still hold its descriptor.)
+    if ((TCP_PORT(port)->base.portClose == tcpPortClose) && (TCP_PORT(port)->socket >= 0))
+        tcpPortClose(port);
     memset(port, 0, sizeof(tcp_port_t));
 }
 

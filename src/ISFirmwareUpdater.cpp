@@ -1473,7 +1473,7 @@ void ISFirmwareUpdater::cmd_UploadImage(ISFwUpdaterCmd& cmd) {
                         nextStartAttempt = current_timeMs() + attemptInterval;
                         if (fwUpdate_requestUpdate()) {
                             startAttempts++;
-                            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName(port), devInfo->serialNumber, startAttempts);
+                            LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_DEBUG, "[%s : %s] :: Requesting Firmware Update start (Attempt %d)", portName(port), utils::serialNumberToString(devInfo->serialNumber).c_str(), startAttempts);
                         } else {
                             LOG_FWUPDATE_STATUS(IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
                         }

@@ -101,8 +101,13 @@ public:
     ~TcpServerPortFactory() {
         stopListening();
         shutdownAllClients();
-        for (auto& se : knownSockets) {
-            releasePort(se.port);
+        // releasePort() erases its entry from knownSockets, so iterate over a copy.
+        const std::vector<socket_entry_t> entries(knownSockets.begin(), knownSockets.end());
+        for (const auto& se : entries) {
+            if (se.port)
+                releasePort(se.port);
+            else
+                closeSocket(se.socket);     // accepted, but never bound to a port, so nothing else will close it
         }
         knownSockets.clear();
 #ifdef PLATFORM_IS_WINDOWS
@@ -226,6 +231,15 @@ protected:
     /** Closes the listening socket (if open) and resets it to the not-listening state. */
     void stopListening();
 
+    /** @return true if @p port is a client port created by (and still owned by) this factory. */
+    bool ownsPort(port_handle_t port) {
+        for (const auto& ks : knownSockets) {
+            if (ks.port == port)
+                return true;
+        }
+        return false;
+    }
+
     /** @return the number of currently-accepted client connections. */
     int getClientConnectionCount() {
         return (int)knownSockets.size();
@@ -255,6 +269,15 @@ private:
      * @param context the eTcpListenErrorContext step that failed
      */
     void recordListenError(eTcpListenErrorContext context);
+
+    /** Closes a raw socket descriptor. */
+    static void closeSocket(int sock) {
+#ifdef PLATFORM_IS_WINDOWS
+        closesocket(sock);
+#else
+        close(sock);
+#endif
+    }
 
     std::set<socket_entry_t> knownSockets;
     std::set<socket_entry_t> prevSockets;

@@ -15,15 +15,25 @@
 #include <fstream>
 #include <cstring>
 #include <cstdio>
+#include <map>
+#include <mutex>
+#include <string>
+#include <chrono>
+#include <thread>
+#include <vector>
+
 
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
 
 #include "ISDeviceCal.h"
+#include "ISDevice.h"
 #include "ISLogFile.h"
 #include "IS_calibration_convert.h"
 #include "data_sets.h"
 #include "json.hpp"
+#include "httplib.h"
+#include "util/util.h"
 
 using json = nlohmann::json;
 
@@ -480,4 +490,436 @@ TEST(ISDeviceCalUpload, AcceptsImx5AndImx6HardwareVersions)
     int state6 = 0;
     ISDeviceCal::cal_upload_ctx_t ctx6;
     EXPECT_NE(-1, ISDeviceCal::uploadSensorCalStep(nullptr, state6, cal, imx6, ctx6));
+}
+
+
+// ---- SN-8984: unsigned serials and the Manufacturing Database info stanza ----
+
+// The GPX unit that shares legacy SN910564648 with another wafer
+static sCalDeviceIdentity makeGpxIdentity()
+{
+    sCalDeviceIdentity id;
+    id.hwType = "GPX-1.0";
+    id.serialNumber = 3054153446u;                 // v2 range: bit 31 set
+    id.manf.uid[0] = 0x001D0028u; id.manf.uid[1] = 0x41465006u; id.manf.uid[2] = 0x20363841u; id.manf.uid[3] = 0;
+    id.manf.lotNumber = 690;
+    id.manf.hardwareId = 0x1040;
+    id.manf.key = 2;
+    id.manf.platformType = 0;
+    id.manf.reserved = 7;
+    memcpy(id.manf.date, "20261020144538Z", 15);
+    id.calBitStatus = 65;
+    id.calDateTimeMs = 1792508531000ll;            // 2026-10-20T15:02:11Z
+    return id;
+}
+
+TEST_F(test_ISDeviceCal, serialAbove2G_writtenUnsignedAndRoundTrips)
+{
+    info.devSerialNum = 3054153446u;
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info);
+    ASSERT_TRUE(j["info"]["devSerialNum"].is_number_unsigned());
+    EXPECT_EQ(j["info"]["devSerialNum"].get<uint32_t>(), 3054153446u);
+
+    sensor_cal_info_t out = {};
+    sensor_data_info_t dout = {};
+    ASSERT_TRUE(ISDeviceCal::loadCalibrationFromJsonObj(j, nullptr, &out, &dout));
+    EXPECT_EQ(out.devSerialNum, 3054153446u);
+}
+
+TEST_F(test_ISDeviceCal, serialAbove2G_legacyNegativeFileStillLoads)
+{
+    // Files written before the fix hold serials >= 2^31 as negative numbers
+    json j = makeTestCalJson(12345);
+    j["info"]["devSerialNum"] = (int64_t)(int32_t)3054153446u;      // -1240813850
+    ASSERT_LT(j["info"]["devSerialNum"].get<int64_t>(), 0);
+
+    sensor_cal_info_t out = {};
+    sensor_data_info_t dout = {};
+    ASSERT_TRUE(ISDeviceCal::loadCalibrationFromJsonObj(j, nullptr, &out, &dout));
+    EXPECT_EQ(out.devSerialNum, 3054153446u);
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_usesDbContractKeys)
+{
+    info.devSerialNum = 12345;      // a stale value in the device cal info must not win over the device's serial
+    sCalDeviceIdentity id = makeGpxIdentity();
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    const json& i = j["info"];
+
+    EXPECT_EQ(i["devSerialNum"].get<uint32_t>(), 3054153446u);
+    EXPECT_EQ(i["hwType"], "GPX-1.0");
+    EXPECT_EQ(i["manfUid"], "28001d00065046414138362000000000");
+    EXPECT_EQ(i["manfLot"].get<uint32_t>(), 690u);
+    EXPECT_TRUE(i["manfLot"].is_number());
+    EXPECT_EQ(i["manfDateTime"], "2026-10-20T14:45:38Z");
+    EXPECT_EQ(i["manfHardwareId"].get<uint32_t>(), 0x1040u);
+    EXPECT_EQ(i["manfOtpWriteCount"].get<uint32_t>(), 2u);
+    EXPECT_EQ(i["manfPlatformType"].get<int32_t>(), 0);
+    ASSERT_TRUE(i["manfReserved"].is_array());
+    ASSERT_EQ(i["manfReserved"].size(), 1u);
+    EXPECT_EQ(i["manfReserved"][0].get<uint32_t>(), 7u);
+    EXPECT_EQ(i["calBitStatus"].get<uint32_t>(), 65u);
+    EXPECT_EQ(i["calDateTime"], "2026-10-20T15:02:11.000Z");
+
+    // Server-owned or retired keys are never sent
+    EXPECT_FALSE(i.contains("devUuid"));
+    EXPECT_FALSE(i.contains("devSTM32UID"));
+    EXPECT_FALSE(i.contains("manfInfoUid"));
+    EXPECT_FALSE(i.contains("calType"));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_calUuidIsV7FromCalDateTime)
+{
+    sCalDeviceIdentity id = makeGpxIdentity();
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    std::string u = j["info"]["calUuid"].get<std::string>();
+    ASSERT_EQ(u.size(), 36u);
+    EXPECT_EQ(u[14], '7');
+    char prefix[16];
+    snprintf(prefix, sizeof(prefix), "%08llx%04llx", (unsigned long long)((id.calDateTimeMs >> 16) & 0xFFFFFFFFull), (unsigned long long)(id.calDateTimeMs & 0xFFFFull));
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), std::string(prefix));
+
+    id.calUuid = "01a159d5-9138-7a3c-9e41-5b2d8f07c612";
+    j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_EQ(j["info"]["calUuid"], "01a159d5-9138-7a3c-9e41-5b2d8f07c612");
+
+    id.calUuid.clear();
+    id.calDateTimeMs = 0;
+    j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_FALSE(j["info"].contains("calUuid"));
+    EXPECT_FALSE(j["info"].contains("calDateTime"));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_legacyZonelessDateIsOmitted)
+{
+    sCalDeviceIdentity id = makeGpxIdentity();
+    memset(id.manf.date, 0, sizeof(id.manf.date));
+    memcpy(id.manf.date, "20261020144538", 14);                       // written before the UTC "Z" marker
+    json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_FALSE(j["info"].contains("manfDateTime"));
+    EXPECT_TRUE(j["info"].contains("manfUid"));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_savedFileMatchesBuiltJson)
+{
+    info.devSerialNum = 3054153446u;
+    sCalDeviceIdentity id = makeGpxIdentity();
+    id.calUuid = "01a159d5-9138-7a3c-9e41-5b2d8f07c612";    // a generated calUuid has random bits, so two builds differ; callers build once and use that object for both
+    std::string path = "/tmp/test_cal_identity_stanza.json";
+    ASSERT_TRUE(ISDeviceCal::saveCalibrationToJsonObj(path, nullptr, &info, nullptr, nullptr, -1, &id));
+
+    std::ifstream f(path);
+    json fromFile = json::parse(f);
+    json built = ISDeviceCal::buildCalibrationJson(path, nullptr, &info, nullptr, nullptr, -1, &id);
+    EXPECT_EQ(fromFile, built) << "the uploaded stream and the saved file must be identical";
+    std::remove(path.c_str());
+}
+
+TEST_F(test_ISDeviceCal, makeIdentity_fillsFromDevInfoAndManufacturingInfo)
+{
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_IMX;
+    dev.hardwareVer[0] = 6;
+    dev.hardwareVer[1] = 0;
+    dev.serialNumber = 2404493367u;
+    manufacturing_info_t manf = {};
+    manf.lotNumber = 690;
+    sCalDeviceIdentity id = ISDeviceCal::makeIdentity(dev, manf, 65, 1000);
+    EXPECT_EQ(id.hwType, "IMX-6.0");
+    EXPECT_EQ(id.serialNumber, 2404493367u);
+    EXPECT_EQ(id.manf.lotNumber, 690u);
+    EXPECT_EQ(id.calBitStatus, 65u);
+    EXPECT_EQ(id.calDateTimeMs, 1000);
+}
+
+
+// ---- SN-8984: ISDeviceCal::loadFromURL against a mocked calibration DB ----
+
+// Loopback HTTP server (cpp-httplib, as test_RelayPortFactory.cpp uses) that answers any request from a path -> (status, body) table
+// (404 for an unknown path) and records every request's path, method and body.
+class RoutedHttpServer {
+public:
+    void addRoute(const std::string& path, int status, const std::string& body) { m_routes[path] = {status, body}; }
+
+    bool start()
+    {
+        m_port = m_server.bind_to_any_port("127.0.0.1");        // an ephemeral port: tests can run in parallel
+        if (m_port <= 0) return false;
+
+        auto handler = [this](const httplib::Request& req, httplib::Response& res) {
+            { std::lock_guard<std::mutex> lock(m_mutex); m_requests.push_back(req.path); m_methods.push_back(req.method); m_bodies[req.path] = req.body; }
+            auto it = m_routes.find(req.path);
+            res.status = (it != m_routes.end()) ? it->second.first : 404;
+            res.set_content((it != m_routes.end()) ? it->second.second : "{}", "application/json");
+        };
+        m_server.Get(".*", handler);
+        m_server.Put(".*", handler);
+        m_server.Post(".*", handler);
+
+        m_thread = std::thread([this] { m_server.listen_after_bind(); });
+        while (!m_server.is_running()) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        return true;
+    }
+
+    ~RoutedHttpServer()
+    {
+        m_server.stop();
+        if (m_thread.joinable()) m_thread.join();
+    }
+
+    std::string url() const { return "http://127.0.0.1:" + std::to_string(m_port); }
+    std::vector<std::string> requests() { std::lock_guard<std::mutex> lock(m_mutex); return m_requests; }
+    std::vector<std::string> methods() { std::lock_guard<std::mutex> lock(m_mutex); return m_methods; }
+    std::string lastBody(const std::string& path) { std::lock_guard<std::mutex> lock(m_mutex); auto it = m_bodies.find(path); return it == m_bodies.end() ? "" : it->second; }
+
+private:
+    httplib::Server m_server;
+    std::map<std::string, std::pair<int, std::string>> m_routes;
+    std::vector<std::string> m_requests, m_methods;
+    std::map<std::string, std::string> m_bodies;
+    std::mutex m_mutex;
+    std::thread m_thread;
+    int m_port = 0;
+};
+
+class test_ISDeviceCal_loadFromURL : public ::testing::Test {
+protected:
+    void SetUp() override {
+        dev = {};
+        dev.hardwareType = IS_HARDWARE_TYPE_IMX;
+        dev.hardwareVer[0] = 6;
+        dev.serialNumber = 3054153446u;
+        manf = {};
+        manf.uid[0] = 0x001D0028u; manf.uid[1] = 0x41465006u; manf.uid[2] = 0x20363841u;
+        uidHex = "28001d00065046414138362000000000";
+        base = "/api/calibration/device/IMX-6.0/3054153446";
+    }
+
+    // The calibration the DB returns for calUuid "cal-1", with a matching identity unless overridden
+    std::string calBody(uint32_t serial = 3054153446u, const std::string& hw = "IMX-6.0", const std::string& uid = "28001d00065046414138362000000000")
+    {
+        json j = makeTestCalJson(serial);
+        j["info"]["devSerialNum"] = serial;
+        j["info"]["hwType"] = hw;
+        j["info"]["manfUid"] = uid;
+        return j.dump();
+    }
+    static std::string list(const std::vector<std::string>& deviceUuids)
+    {
+        json j = json::object();
+        for (const auto& d : deviceUuids)
+            j[d] = json::array({ json{{"calUuid", "cal-1"}, {"calDateTime", "2026-10-01T00:00:00Z"}} });
+        return j.dump();
+    }
+
+    dev_info_t dev;
+    manufacturing_info_t manf;
+    std::string uidHex, base;
+};
+
+TEST_F(test_ISDeviceCal_loadFromURL, uidRouteIsTriedFirst)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base + "/" + uidHex, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 200) << r.statusMessage;
+    EXPECT_EQ(cal.info.devSerialNum, 3054153446u);
+    auto reqs = srv.requests();
+    ASSERT_FALSE(reqs.empty());
+    EXPECT_EQ(reqs[0], base + "/" + uidHex);
+    for (const auto& q : reqs) EXPECT_NE(q, base) << "serial-only route must not be used when the UID route answers";
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, legacyDevice_singleRecord_fallsBackToSerialRoute)
+{
+    RoutedHttpServer srv;                                   // no route for the UID -> 404
+    srv.addRoute(base, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 200) << r.statusMessage;
+    auto reqs = srv.requests();
+    ASSERT_GE(reqs.size(), 2u);
+    EXPECT_EQ(reqs[0], base + "/" + uidHex);
+    EXPECT_EQ(reqs[1], base);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, ambiguousSerial_refusesAndFetchesNoCalibration)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A", "dev-B"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 409) << r.statusMessage;
+    EXPECT_EQ(cal.info.devSerialNum, 0u) << "nothing may be applied";
+    for (const auto& q : srv.requests()) EXPECT_NE(q, "/api/calibration/cal-1");
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, noManfInfo_usesSerialRouteOnly)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev).statusCode, 200);
+    EXPECT_EQ(srv.requests()[0], base);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, calibrationForAnotherSerialIsRefused)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base + "/" + uidHex, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody(910564648u));
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    auto r = cal.loadFromURL(srv.url(), dev, &manf);
+    EXPECT_EQ(r.statusCode, 409) << r.statusMessage;
+    EXPECT_EQ(cal.info.devSerialNum, 0u);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, calibrationForAnotherHardwareTypeIsRefused)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base + "/" + uidHex, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody(3054153446u, "IMX-5.0"));
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 409);
+    EXPECT_EQ(cal.info.devSerialNum, 0u);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, calibrationForAnotherUidIsRefused)
+{
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A"}));
+    srv.addRoute("/api/calibration/cal-1", 200, calBody(3054153446u, "IMX-6.0", "28001d00055046414138362000000000"));
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 409);
+    EXPECT_EQ(cal.info.devSerialNum, 0u);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, legacyCalibrationWithoutIdentityKeysStillLoads)
+{
+    // Calibrations stored before the identity keys existed carry only the legacy info stanza
+    RoutedHttpServer srv;
+    srv.addRoute(base, 200, list({"dev-A"}));
+    json legacy = makeTestCalJson(3054153446u);
+    legacy["info"]["devSerialNum"] = 3054153446u;
+    srv.addRoute("/api/calibration/cal-1", 200, legacy.dump());
+    ASSERT_TRUE(srv.start());
+
+    ISDeviceCal cal;
+    EXPECT_EQ(cal.loadFromURL(srv.url(), dev).statusCode, 200);
+}
+
+TEST_F(test_ISDeviceCal_loadFromURL, invalidSerial_failsWithoutAnyRequest)
+{
+    RoutedHttpServer srv;
+    ASSERT_TRUE(srv.start());
+    for (uint32_t bad : { 0u, 0xFFFFFFFFu })
+    {
+        dev.serialNumber = bad;
+        ISDeviceCal cal;
+        EXPECT_EQ(cal.loadFromURL(srv.url(), dev, &manf).statusCode, 400) << bad;
+    }
+    EXPECT_TRUE(srv.requests().empty());
+}
+
+
+// ---- SN-8984: registering a device in the Manufacturing Database ----
+
+static manufacturing_info_t makeWrittenManf()
+{
+    manufacturing_info_t m = {};
+    m.serialNumber = 3054153446u;
+    m.uid[0] = 0x001D0028u; m.uid[1] = 0x41465006u; m.uid[2] = 0x20363841u;
+    m.lotNumber = 690;
+    m.hardwareId = 0x1040;
+    m.key = 2;
+    memcpy(m.date, "20261020144538Z", 15);
+    return m;
+}
+
+TEST(test_manufacturing_info_isWritten, requiresKeySerialRecordAndUid)
+{
+    manufacturing_info_t m = makeWrittenManf();
+    EXPECT_TRUE(manufacturing_info_isWritten(&m));
+
+    manufacturing_info_t x = m; x.key = 0;                              EXPECT_FALSE(manufacturing_info_isWritten(&x)) << "OTP never written";
+    x = m; x.serialNumber = 0;                                         EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; x.serialNumber = 0xFFFFFFFFu;                               EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; x.lotNumber = 0;                                            EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; x.hardwareId = 0;                                           EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; memset(x.date, 0, sizeof(x.date));                          EXPECT_FALSE(manufacturing_info_isWritten(&x));
+    x = m; memset(x.uid, 0, sizeof(x.uid));                            EXPECT_FALSE(manufacturing_info_isWritten(&x)) << "all-zero UID";
+    x = m; memset(x.uid, 0xFF, sizeof(x.uid));                         EXPECT_FALSE(manufacturing_info_isWritten(&x)) << "all-ones UID";
+}
+
+TEST(test_ISDeviceCal_deviceJson, hasContractKeysAndNoLegacyOnes)
+{
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_GPX;
+    dev.hardwareVer[0] = 1;
+    dev.serialNumber = 3054153446u;
+    sCalDeviceIdentity id = ISDeviceCal::makeIdentity(dev, makeWrittenManf(), 0, 0);
+    json j = ISDeviceCal::buildDeviceJson(id);
+
+    EXPECT_EQ(j["hwType"], "GPX-1.0");
+    EXPECT_EQ(j["devSerialNum"].get<uint32_t>(), 3054153446u);
+    EXPECT_EQ(j["manfUid"], "28001d00065046414138362000000000");
+    EXPECT_EQ(j["manfLot"].get<uint32_t>(), 690u);
+    EXPECT_EQ(j["manfDateTime"], "2026-10-20T14:45:38Z");
+    EXPECT_EQ(j["manfHardwareId"].get<uint32_t>(), 0x1040u);
+    EXPECT_EQ(j["manfOtpWriteCount"].get<uint32_t>(), 2u);
+    ASSERT_TRUE(j["manfReserved"].is_array());
+    for (const char* gone : { "dev_stm32_uid", "manufacture_time", "last_qa_time", "last_qa_hdw_bit_status", "devUuid", "devSTM32UID", "calUuid", "calBitStatus" })
+        EXPECT_FALSE(j.contains(gone)) << gone;
+}
+
+TEST(test_ISDevice_registerToDb, putsContractBodyAndReturnsServerStatus)
+{
+    RoutedHttpServer srv;
+    srv.addRoute("/api/device", 201, "{\"uuid\":\"x\"}");
+    ASSERT_TRUE(srv.start());
+
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_GPX;
+    dev.hardwareVer[0] = 1;
+    dev.serialNumber = 3054153446u;
+    auto r = ISDevice::RegisterManufacturingInfoToDb(srv.url(), dev, makeWrittenManf());
+    EXPECT_EQ(r.statusCode, 201);
+    ASSERT_EQ(srv.requests().size(), 1u);
+    EXPECT_EQ(srv.methods()[0], "PUT");
+    json body = json::parse(srv.lastBody("/api/device"));
+    EXPECT_EQ(body["manfUid"], "28001d00065046414138362000000000");
+    EXPECT_EQ(body["devSerialNum"].get<uint32_t>(), 3054153446u);
+}
+
+TEST(test_ISDevice_registerToDb, sendsNothingWhenOtpNotWritten)
+{
+    RoutedHttpServer srv;
+    ASSERT_TRUE(srv.start());
+    dev_info_t dev = {};
+    dev.hardwareType = IS_HARDWARE_TYPE_GPX;
+    dev.hardwareVer[0] = 1;
+    dev.serialNumber = 3054153446u;
+    manufacturing_info_t m = makeWrittenManf();
+    m.key = 0;
+    EXPECT_EQ(ISDevice::RegisterManufacturingInfoToDb(srv.url(), dev, m).statusCode, 412);
+    EXPECT_TRUE(srv.requests().empty());
 }

@@ -142,7 +142,7 @@ PYBIND11_NUMPY_DTYPE(ion_model_utc_alm_t, ion_gps, ion_gal, ion_qzs, ion_cmp, io
 // PYBIND11_NUMPY_DTYPE(imu1_t, pqr, acc, mag);
 // PYBIND11_NUMPY_DTYPE(sensor_bias_t, timeOfWeekMs, pqr, acc, mslBar, magI, magB);
 // PYBIND11_NUMPY_DTYPE(hdw_param_imu_t, pqrDev, accDev, pqrSigma, accSigma, mean);
-// PYBIND11_NUMPY_DTYPE(hdw_params_t, timeOfWeekMs, I, update, gpsCnoSigma, gpsCnoMean);
+// PYBIND11_NUMPY_DTYPE(hdw_params_t, timeOfWeekMs, I, update, gnssCnoSigma, gnssCnoMean);
 // PYBIND11_NUMPY_DTYPE(nvr_manage_t, flash_write_needed, flash_write_count);
 // PYBIND11_NUMPY_DTYPE(inl2_misc_t, gps_time_last_valid);
 // PYBIND11_NUMPY_DTYPE(rtk_debug_2_t, time, satBiasFloat, satBiasFix, qualL, sat, satBiasStd, satLockCnt, num_biases, reserved);

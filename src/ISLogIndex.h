@@ -78,7 +78,7 @@ enum class TimestampAnchor : uint8_t {
     /// value comes from the DEVICE's own payload uptime field and no host is involved at
     /// all, and even on the live path the anchor is log-open rather than system boot.
     UptimeMs       = 0,
-    GpsTowMs       = 1,  ///< GPS time-of-week in ms (resets every Sunday 00:00:00 UTC).
+    GNSSTowMs      = 1,  ///< GNSS time-of-week in ms (resets every Sunday 00:00:00 UTC).
     UnixEpochMs    = 2,  ///< Milliseconds since 1970-01-01T00:00:00Z.
     Mixed          = 3,  ///< Mixed across records — readers must check per-record `flags`.
 };
@@ -101,7 +101,7 @@ enum class HeaderTimeSource : uint8_t {
  *
  * `first_timestamp_ms` and `last_timestamp_ms` are whatever the first/last
  * record's payload-derived timestamp happened to be — which DID landed on
- * that edge decides the domain (e.g. host-uptime vs GPS time-of-week), and
+ * that edge decides the domain (e.g. host-uptime vs GNSS time-of-week), and
  * that can differ between two segments of the very same log (D0066: `.idx`
  * is mixed-domain by design). `firstMs > lastMs` is direct, in-band proof
  * that a domain mismatch landed on one of this segment's edges — a
@@ -121,7 +121,7 @@ inline constexpr bool timestampsLookMixedDomain(uint64_t firstMs, uint64_t lastM
 
 // ----- Record flag bits ----------------------------------------------------
 
-/// Bit 0: this record's payload carried a real GPS time-of-week field
+/// Bit 0: this record's payload carried a real GNSS time-of-week field
 /// (i.e. it can be used as a sync anchor by `ISTimeResolver`, D-07).
 inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_HAS_TOW = 1u << 0;
 
@@ -154,7 +154,7 @@ inline constexpr uint16_t IS_LOG_IDX_REC_FLAG_RECONSTRUCTED_TIME_OFFSET = 1u << 
  * the field is **null, not zero** — the DID carried no time field at all.
  *
  * Needed because `timestamp == 0` is genuinely ambiguous and always has been:
- *   - 0 is a legal GPS time-of-week (exactly Sunday 00:00:00 UTC),
+ *   - 0 is a legal GNSS time-of-week (exactly Sunday 00:00:00 UTC),
  *   - 0 is a legal uptime (the first millisecond after boot),
  *   - and 0 is what `cISDataMappings::Timestamp()` returns to mean "this DID has none".
  *
@@ -231,7 +231,7 @@ inline constexpr uint8_t IS_LOG_IDX_HDR_FLAG_DECLARES_TS_VALIDITY = 1u << 3;
  * those extrema come from the records. The two formulas agree on a single-domain log — where
  * the transcription and the uptime minimum are the same record — and diverge as soon as a
  * ToW-bearing record sits at the boundary. Measured on such a segment: the transcription was
- * `342227671` (a GPS time-of-week) against an uptime minimum of `10000`, so the naive sum
+ * `342227671` (a GNSS time-of-week) against an uptime minimum of `10000`, so the naive sum
  * overshot by 342,217,671 ms — about four days.
  * `test_anchor_analysis.cpp` keeps both cases as standing guards.
  *
@@ -296,7 +296,7 @@ struct is_log_idx_header_t {
  * **Never interpolated**: an absent one stays absent, because inventing a value here would be
  * fabricating a claim the device never made. `IS_LOG_IDX_REC_FLAG_HAS_TIMESTAMP` says whether
  * there is a value at all (0 is a legal value, so absence needs its own bit), and
- * `IS_LOG_IDX_REC_FLAG_HAS_TOW` says whether that value is a GPS time-of-week.
+ * `IS_LOG_IDX_REC_FLAG_HAS_TOW` says whether that value is a GNSS time-of-week.
  * *[the burned-in time rendered into the frame — in some frames, not others, and only as
  * trustworthy as whatever clock drew it.]*
  *

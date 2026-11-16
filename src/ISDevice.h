@@ -906,6 +906,19 @@ public:
      */
     int UploadIMXCalibrationFromURL(const std::string& restBaseUrl);
 
+    /**
+     * @brief Register a device in the Manufacturing Database (PUT /api/device) from its manufacturing info. The call is an upsert
+     * keyed on (hwType, serial, manfUid), so it is safe to call after every OTP write. A calibration upload never creates a device,
+     * so a device must be registered first.
+     * Nothing is sent unless manufacturing_info_isWritten() says the OTP holds a usable record; a device whose OTP is not written
+     * has no UID or serial to register under.
+     * @param restBaseUrl - Base URL of the Manufacturing Database REST API
+     * @param devInfo - the device's dev_info_t (hardware type and serial number)
+     * @param manfInfo - the device's manufacturing info as read from DID_MANUFACTURING_INFO
+     * @return the HTTP response: 201 for a new device, 200 for one already registered, 412 if the OTP is not written (nothing sent), -1 on a connection error
+     */
+    static ISHttpRequest::Response RegisterManufacturingInfoToDb(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t& manfInfo);
+
     /** @brief Declared but not currently defined anywhere in the SDK; SaveImxFlashConfigToFile()/SaveGpxFlashConfigToFile() are the implemented equivalents. */
     void SaveFlashConfigFile(std::string path);
 

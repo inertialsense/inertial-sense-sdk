@@ -200,7 +200,7 @@ TEST_F(LogReaderTest, HeaderAndCountsMatchFixture) {
     EXPECT_FALSE(dids.empty());
     EXPECT_TRUE(std::is_sorted(dids.begin(), dids.end()));
 
-    // The synthetic generator emits at least PIMU + INS + GPS + a handful of others — so at least 4 distinct DIDs.
+    // The synthetic generator emits at least PIMU + INS + GNSS + a handful of others — so at least 4 distinct DIDs.
     EXPECT_GE(dids.size(), 4u);
 }
 

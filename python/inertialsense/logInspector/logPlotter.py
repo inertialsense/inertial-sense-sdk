@@ -1999,7 +1999,7 @@ class logPlot:
                 sumDelta = None
                 sumCount = 1
                 for d in self.active_devs:
-                    time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
                     qn2b = self.getData(d, DID_INS_2, 'qn2b')
                     if len(time) == 0 or len(qn2b) == 0:
                         continue
@@ -2051,7 +2051,12 @@ class logPlot:
                     resInsHdg = self.angle_wrap(intInsHdg - refRtkHdg)
                     ax[1,1].plot(refRtkTime, resInsHdg*RAD2DEG)
                 if not (refInsTime is None) and self.log.serials[d] != 'Ref INS': 
-                    unwrapEuler = self.vec3_unwrap(euler)
+                    # Remove the attitude mount bias, as was done when refEuler was computed
+                    # above.  The magnetic residual and the heading trace deliberately keep the
+                    # uncorrected attitude: the mount bias is defined relative to the fleet mean
+                    # and does not belong in a single device comparison against its magnetometer.
+                    mountBiasEuler = quat2euler(mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], qn2b))
+                    unwrapEuler = self.vec3_unwrap(mountBiasEuler)
                     intEuler = np.empty_like(refEuler)
                     for i in range(3):
                         intEuler[:,i] = np.interp(refInsTime, insTime, unwrapEuler[:,i], right=np.nan, left=np.nan)

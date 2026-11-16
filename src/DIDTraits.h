@@ -90,7 +90,7 @@ IS_DEFINE_DID_TRAITS(DID_INS_4,             ins_4_t,        "DID_INS_4");
 IS_DEFINE_DID_TRAITS(DID_IMU,               imu_t,          "DID_IMU");
 IS_DEFINE_DID_TRAITS(DID_PIMU,              pimu_t,         "DID_PIMU");
 
-// GPS position + velocity (1- and 2-receiver variants).
+// GNSS position + velocity (1- and 2-receiver variants).
 IS_DEFINE_DID_TRAITS(DID_GNSS1_POS,          gnss_pos_t,      "DID_GNSS1_POS");
 IS_DEFINE_DID_TRAITS(DID_GNSS2_POS,          gnss_pos_t,      "DID_GNSS2_POS");
 IS_DEFINE_DID_TRAITS(DID_GNSS1_VEL,          gnss_vel_t,      "DID_GNSS1_VEL");

@@ -149,6 +149,23 @@ std::string renderVariableAndStatsToString(const data_info_t& info, std::any val
 
 
 /**
+ * @brief a custom data renderer for serialNumber fields (SN-8985): unsigned decimal, with an unprogrammed serial (0 or 0xFFFFFFFF)
+ * shown as the "SN-unset" marker instead of 4294967295. Only renderExtended uses it; renderBasic stays numeric for CSV/log output.
+ */
+std::string renderSerialNumber(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4))
+        return "";
+    try {
+        uint32_t serialNumber = std::any_cast<uint32_t>(value);
+        return serialNumberIsSet(serialNumber) ? utils::string_format("%u", serialNumber) : std::string("SN-unset");
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
  * @brief a custom data renderer for DID_SYS_PARAMS::
  * @param info
  * @param value
@@ -540,9 +557,9 @@ std::string renderGnssStatusBits(const data_info_t& info, std::any value, int ar
     // SN-7919 (D-53): delegates to the GNSS status decode table (key "gnssStatus" — the on-wire
     // field name "status" is shared with GPX, so this renderer requests its specific variant).
     try {
-        uint32_t gpsStatusBits = std::any_cast<uint32_t>(value);
+        uint32_t gnssStatusBits = std::any_cast<uint32_t>(value);
         const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
-        return dec ? RenderStatusFromDecode(*dec, gpsStatusBits) : std::string();
+        return dec ? RenderStatusFromDecode(*dec, gnssStatusBits) : std::string();
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -954,7 +971,7 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("buildFlags", &dev_info_t::buildFlags, DATA_TYPE_UINT8, "", "Build flags: 0x1=debug mode, 0x2=dirty", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareState", &dev_info_t::hdwRunState, DATA_TYPE_UINT8, "", "Hardware state: APP, BOOTLOADER, ", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY).renderExtended = renderSerialNumber;
     mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 3, {""}, {"Hardware version"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareVariant", &dev_info_t::hardwareVariant, DATA_TYPE_UINT8, {""}, {"Hardware variant"}, DATA_FLAGS_READ_ONLY);
     mapper.AddArray("firmwareVer", &dev_info_t::firmwareVer, DATA_TYPE_UINT8, 4, {""}, {"Firmware version"}, DATA_FLAGS_READ_ONLY);
@@ -976,7 +993,7 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<manufacturing_info_t> mapper(data_set, did);
-    mapper.AddMember("serialNumber", &manufacturing_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("serialNumber", &manufacturing_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY).renderExtended = renderSerialNumber;
     mapper.AddMember("hardwareId", &manufacturing_info_t::hardwareId, DATA_TYPE_UINT16, "", "Hardware Id", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("lotNumber", &manufacturing_info_t::lotNumber, DATA_TYPE_UINT16, "", "Lot number", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("date", &manufacturing_info_t::date, DATA_TYPE_STRING, "", "Manufacturing date (YYYYMMDDHHMMSS)", DATA_FLAGS_READ_ONLY);
@@ -1460,7 +1477,7 @@ element_identity_t cISDataMappings::ElementIdentity(const array_struct_info_t& i
     return info.identity(recordBuf, slot);
 }
 
-static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssSat(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_sat_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_sat_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
@@ -1486,12 +1503,12 @@ static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
         });
 }
 
-static void PopulateMapGpsSig(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssSig(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_sig_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_sig_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("numSigs", &gnss_sig_t::numSigs, DATA_TYPE_UINT32, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
-    // See PopulateMapGpsSat: the per-signal array is exposed as "sig.<field>" rather than flat.
+    // See PopulateMapGnssSat: the per-signal array is exposed as "sig.<field>" rather than flat.
     mapper.AddMember2("sig", offsetof(gnss_sig_t, sig), DATA_TYPE_BINARY, "", "Per-signal array; expanded as sig.<field> across all tracked signals", DATA_FLAGS_READ_ONLY, 1.0, (uint32_t)(MAX_NUM_SAT_SIGNALS * sizeof(gnss_sig_sv_t)));
 
     registerArrayStruct(data_set[did], did, "sig",
@@ -2963,10 +2980,10 @@ cISDataMappings::cISDataMappings()
     // the old flat model emitted ~300/600 entries per DID; the array-of-struct model exposes
     // each inner field once as "sat.<field>"/"sig.<field>" (6 entries/DID) and fans out across
     // satellites at plot time, keyed by PRN identity.
-    PopulateMapGpsSat(m_data_set, DID_GNSS1_SAT);
-    PopulateMapGpsSat(m_data_set, DID_GNSS2_SAT);
-    PopulateMapGpsSig(m_data_set, DID_GNSS1_SIG);
-    PopulateMapGpsSig(m_data_set, DID_GNSS2_SIG);
+    PopulateMapGnssSat(m_data_set, DID_GNSS1_SAT);
+    PopulateMapGnssSat(m_data_set, DID_GNSS2_SAT);
+    PopulateMapGnssSig(m_data_set, DID_GNSS1_SIG);
+    PopulateMapGnssSig(m_data_set, DID_GNSS2_SIG);
 
     PopulateMapGnssVersion(m_data_set, DID_GNSS1_VERSION);
     PopulateMapGnssVersion(m_data_set, DID_GNSS2_VERSION);

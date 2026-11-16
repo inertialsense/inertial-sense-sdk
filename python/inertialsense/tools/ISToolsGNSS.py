@@ -67,10 +67,17 @@ def getTimeFromGpsTowMs(ms, fixTimeBeforeGnss=False, week=None):
             # modified, and the unsigned integer timestamps underflow when written back.
             ms = np.array(ms, dtype=float)
             dms = np.diff(ms)
-            ind = np.flatnonzero(abs(dms - dms[-1]) > 0.1)
-            if len(ind) > 0:
-                for i in reversed(range(ind[-1]+1)):
-                    ms[i] = ms[i+1] - dms[-1]
+            if len(dms) > 0:
+                # Reference the median interval rather than the last one: the final interval may
+                # itself be a dropped-sample gap, in which case the test would be inverted and would
+                # flag every nominal sample. The threshold must exceed the largest plausible burst
+                # of dropped samples, which is a small multiple of the message period, while staying
+                # well below a GNSS ToW offset, which is on the order of hours or days.
+                dt_nom = np.median(dms)
+                ind = np.flatnonzero(abs(dms - dt_nom) > 10000) # jump in time stamp due to GNSS ToW offset
+                if len(ind) > 0:
+                    for i in reversed(range(ind[-1]+1)):
+                        ms[i] = ms[i+1] - dt_nom
         gpsTime = ms * 0.001
 
     if showUtcTime:
@@ -93,10 +100,13 @@ def getTimeFromGpsTow(s, fixTimeBeforeGnss=False, week=None):
             # Work on a copy: the caller passes a view of the log data, which must not be modified.
             s = np.array(s, dtype=float)
             ds = np.diff(s)
-            ind = np.flatnonzero(abs(ds - ds[-1]) > 10) # jump in time stamp due to GNSS ToW offset
-            if len(ind) > 0:
-                for i in reversed(range(ind[-1]+1)):
-                    s[i] = s[i+1] - ds[-1]
+            if len(ds) > 0:
+                # Reference the median interval rather than the last one. See getTimeFromGpsTowMs.
+                dt_nom = np.median(ds)
+                ind = np.flatnonzero(abs(ds - dt_nom) > 10) # jump in time stamp due to GNSS ToW offset
+                if len(ind) > 0:
+                    for i in reversed(range(ind[-1]+1)):
+                        s[i] = s[i+1] - dt_nom
         gpsTime = s
     
     if showUtcTime:
