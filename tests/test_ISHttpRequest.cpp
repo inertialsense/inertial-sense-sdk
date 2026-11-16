@@ -418,6 +418,161 @@ TEST(test_ISHttpRequest, putMultipart_200)
     server.stop();
 }
 
+// ---- SN-9029: large requests / malformed responses ----
+
+/**
+ * One-shot HTTP server on an ephemeral port that reads the request deliberately slowly (or not at all), so a large request
+ * overruns the client's socket send buffer.  Records how much of the declared body arrived.
+ */
+class SlowReadServer {
+public:
+    /** @param startDelayMs wait this long after accept() before reading anything; @param stall if true, never read (hold the connection open until stop()) */
+    SlowReadServer(int startDelayMs, bool stall = false) : m_startDelayMs(startDelayMs), m_stall(stall) {}
+    ~SlowReadServer() { stop(); }
+
+    bool start()
+    {
+        m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
+        if (m_listenFd == SOCKET_INVALID) return false;
+        struct sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = 0;
+        if (bind(m_listenFd, (struct sockaddr*)&addr, sizeof(addr)) != 0 || listen(m_listenFd, 1) != 0) return false;
+        socklen_t len = sizeof(addr);
+        getsockname(m_listenFd, (struct sockaddr*)&addr, &len);
+        m_port = ntohs(addr.sin_port);
+
+        m_thread = std::thread([this]() {
+            socket_t clientFd = accept(m_listenFd, nullptr, nullptr);
+            if (clientFd == SOCKET_INVALID) return;
+            SLEEP_MS(m_startDelayMs);
+
+            if (m_stall)
+            {
+                while (!m_stopping) SLEEP_MS(10);
+                CLOSE_SOCKET(clientFd);
+                return;
+            }
+
+            std::string received;
+            char buf[65536];
+            size_t headerEnd = std::string::npos;
+            long long contentLength = -1;
+            while (true)
+            {
+                int n = recv(clientFd, buf, sizeof(buf), 0);
+                if (n <= 0) break;
+                received.append(buf, n);
+                if (headerEnd == std::string::npos && (headerEnd = received.find("\r\n\r\n")) != std::string::npos)
+                {
+                    size_t cl = received.find("Content-Length: ");
+                    if (cl != std::string::npos) contentLength = std::stoll(received.substr(cl + 16));
+                }
+                if (headerEnd != std::string::npos && contentLength >= 0 && (long long)(received.size() - (headerEnd + 4)) >= contentLength)
+                    break;
+                SLEEP_MS(1);    // slow reader
+            }
+            m_declaredLength = contentLength;
+            m_bodyBytes = (headerEnd == std::string::npos) ? 0 : (long long)(received.size() - (headerEnd + 4));
+            m_bodyTail = received.size() > 40 ? received.substr(received.size() - 40) : received;
+
+            const std::string resp = makeHttpResponse(201, "Created", "{}");
+            send(clientFd, resp.data(), (int)resp.size(), 0);
+            SLEEP_MS(50);
+            CLOSE_SOCKET(clientFd);
+        });
+        return true;
+    }
+
+    void stop()
+    {
+        m_stopping = true;
+        if (m_listenFd != SOCKET_INVALID) { CLOSE_SOCKET(m_listenFd); m_listenFd = SOCKET_INVALID; }
+        if (m_thread.joinable()) m_thread.join();
+    }
+
+    int port() const { return m_port; }
+    long long declaredLength() const { return m_declaredLength; }
+    long long bodyBytes() const { return m_bodyBytes; }
+    const std::string& bodyTail() const { return m_bodyTail; }
+
+private:
+    int m_startDelayMs;
+    bool m_stall;
+    int m_port = 0;
+    socket_t m_listenFd = SOCKET_INVALID;
+    std::atomic<bool> m_stopping{false};
+    std::thread m_thread;
+    std::atomic<long long> m_declaredLength{-1};
+    std::atomic<long long> m_bodyBytes{0};
+    std::string m_bodyTail;
+};
+
+TEST(test_ISHttpRequest, LargeRequestIsSentCompletely)
+{
+    SlowReadServer server(300);     // the server only starts reading after the client has filled its send buffer
+    ASSERT_TRUE(server.start());
+
+    // 16 MB archive part: far larger than any loopback socket send buffer, like a real calibration archive
+    std::string archive(16 * 1024 * 1024, '\0');
+    for (size_t i = 0; i < archive.size(); i++) archive[i] = (char)(i * 31 + 7);
+
+    std::vector<ISHttpRequest::MultipartField> fields;
+    fields.push_back({"data", "application/json", "{\"info\":{\"calUuid\":\"big\"}}"});
+    fields.push_back({"archive", "application/zip", archive});
+
+    auto resp = ISHttpRequest::putMultipart("http://127.0.0.1:" + std::to_string(server.port()) + "/api/calibration", fields, 10000);
+    server.stop();
+
+    EXPECT_EQ(resp.statusCode, 201) << "the client never got the server's reply";
+    EXPECT_GT(server.declaredLength(), (long long)archive.size());
+    EXPECT_EQ(server.bodyBytes(), server.declaredLength()) << "the request body was cut short";
+    EXPECT_NE(server.bodyTail().find("----ISHttpRequestBoundary--\r\n"), std::string::npos) << "the final multipart boundary never arrived";
+}
+
+TEST(test_ISHttpRequest, StalledPeerTimesOut)
+{
+    SlowReadServer server(0, true);     // accepts, then never reads
+    ASSERT_TRUE(server.start());
+
+    const std::string body(16 * 1024 * 1024, 'x');
+    const uint32_t startMs = current_timeMs();
+    auto resp = ISHttpRequest::put("http://127.0.0.1:" + std::to_string(server.port()) + "/api/device", body, 500);
+    const uint32_t elapsedMs = current_timeMs() - startMs;
+    server.stop();
+
+    EXPECT_EQ(resp.statusCode, -1);
+    EXPECT_GE(elapsedMs, 500u) << "gave up before the no-progress timeout";
+    EXPECT_LT(elapsedMs, 5000u) << "did not give up after the no-progress timeout";
+}
+
+TEST(test_ISHttpRequest, malformedStatusCode_returnsMinusOne)
+{
+    int port = 18309;
+    MockHttpServer server(port, "HTTP/1.1 abc Nope\r\nContent-Length: 0\r\n\r\n");
+    ASSERT_TRUE(server.start());
+    SLEEP_MS(100);
+
+    ISHttpRequest::Response resp;
+    EXPECT_NO_THROW(resp = ISHttpRequest::get("http://127.0.0.1:" + std::to_string(port) + "/x", 2000));
+    EXPECT_EQ(resp.statusCode, -1);
+    server.stop();
+}
+
+TEST(test_ISHttpRequest, malformedContentLength_isIgnored)
+{
+    int port = 18310;
+    MockHttpServer server(port, "HTTP/1.1 200 OK\r\nContent-Length: abc\r\nConnection: close\r\n\r\n");
+    ASSERT_TRUE(server.start());
+    SLEEP_MS(100);
+
+    ISHttpRequest::Response resp;
+    EXPECT_NO_THROW(resp = ISHttpRequest::get("http://127.0.0.1:" + std::to_string(port) + "/x", 2000));
+    EXPECT_EQ(resp.statusCode, 200);
+    server.stop();
+}
+
 // ---- UID Encoding Tests ----
 
 #include "util/util.h"
