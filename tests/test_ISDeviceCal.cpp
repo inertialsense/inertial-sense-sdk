@@ -923,3 +923,28 @@ TEST(test_ISDevice_registerToDb, sendsNothingWhenOtpNotWritten)
     EXPECT_EQ(ISDevice::RegisterManufacturingInfoToDb(srv.url(), dev, m).statusCode, 412);
     EXPECT_TRUE(srv.requests().empty());
 }
+
+// StringToMatrix() must stay dimension-aware: loading a legacy-sized string (e.g. the pre-SN-8833
+// 3x144 mag Y/Xhat the magnetometer least-squares ocal used to carry) into a now-narrower
+// destination (e.g. 3x36, after NUM_HEADINGS_PER_POSE 8->2) must map each source row onto the
+// same-index destination row, truncating columns as needed -- never flatten across row
+// boundaries. A flat fill would spill legacy row 0's own later columns into destination rows 1
+// and 2, discarding legacy rows 1 and 2 entirely and silently corrupting any re-save.
+TEST(test_StringToMatrix, narrowerDestinationPreservesRowCorrespondence)
+{
+    const int legacyRows = 3, legacyCols = 144;
+    std::vector<float> legacy(legacyRows * legacyCols);
+    for (int r = 0; r < legacyRows; r++)
+        for (int c = 0; c < legacyCols; c++)
+            legacy[r * legacyCols + c] = (float)(r * 1000 + c);   // distinguishable per-row values
+    std::string str = MatrixToString(legacy.data(), legacyRows, legacyCols);
+
+    const int newRows = 3, newCols = 36;
+    std::vector<float> dest(newRows * newCols, -1.0f);
+    StringToMatrix(str, dest.data(), newRows, newCols);
+
+    for (int r = 0; r < newRows; r++)
+        for (int c = 0; c < newCols; c++)
+            EXPECT_FLOAT_EQ(dest[r * newCols + c], (float)(r * 1000 + c))
+                << "row " << r << " col " << c;
+}
