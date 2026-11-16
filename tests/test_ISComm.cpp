@@ -2057,3 +2057,118 @@ TEST(ISComm, SpartnFrameLargerThanRxBufferRejectedWithoutFlush)
     ProtocolParser p(_PTYPE_SPARTN, 512);
     expectRejectedAsInvalidSize(p, buildSpartnFrame(100), buildSpartnFrame(1000));
 }
+
+
+// SN-9020: is_comm_parse_byte() / is_comm_parse_byte_timeout() must never write outside [rxBuf.start, rxBuf.end).
+// Reported by Petr Belohlavek (@petrbel), PR #1378.
+namespace
+{
+constexpr int RX_OVERFLOW_BUF_SIZE = 64;
+constexpr int RX_OVERFLOW_GUARD_SIZE = 16;
+constexpr uint8_t RX_OVERFLOW_GUARD = 0xA5;
+
+/**
+ * Comm instance whose RX buffer is filled to capacity the documented bulk way (write at rxBuf.tail, advance tail) without parsing it,
+ * so the buffer is full of not-yet-scanned data with no packet in progress: the state is_comm_free() reports as 0 free bytes but does not reset.
+ */
+struct FullRxBuffer
+{
+    uint8_t mem[RX_OVERFLOW_BUF_SIZE + RX_OVERFLOW_GUARD_SIZE];
+    is_comm_instance_t comm;
+
+    FullRxBuffer()
+    {
+        is_comm_init(&comm, mem, RX_OVERFLOW_BUF_SIZE, NULL);
+        memset(mem + RX_OVERFLOW_BUF_SIZE, RX_OVERFLOW_GUARD, RX_OVERFLOW_GUARD_SIZE);
+        EXPECT_EQ(is_comm_free(&comm), RX_OVERFLOW_BUF_SIZE);
+        memset(comm.rxBuf.tail, 0x00, RX_OVERFLOW_BUF_SIZE);        // payload that matches no protocol preamble
+        comm.rxBuf.tail += RX_OVERFLOW_BUF_SIZE;
+        EXPECT_EQ(comm.rxBuf.tail, comm.rxBuf.end);
+    }
+    FullRxBuffer(const FullRxBuffer&) = delete;
+    FullRxBuffer& operator=(const FullRxBuffer&) = delete;
+
+    void expectGuardIntact()
+    {
+        for (int i = 0; i < RX_OVERFLOW_GUARD_SIZE; i++)
+            EXPECT_EQ(mem[RX_OVERFLOW_BUF_SIZE + i], RX_OVERFLOW_GUARD) << "byte written " << i << " past the RX buffer end";
+        EXPECT_LE(comm.rxBuf.tail, comm.rxBuf.end);
+    }
+};
+}
+
+TEST(ISComm, ParseByteOnFullBufferDoesNotWritePastEnd)
+{
+    FullRxBuffer b;
+    is_comm_parse_byte(&b.comm, 0x42);
+
+    b.expectGuardIntact();
+    // The stale data was flushed and the new byte stored at the start of the buffer.
+    EXPECT_EQ(b.comm.rxBuf.tail, b.comm.rxBuf.start + 1);
+    EXPECT_EQ(b.mem[0], 0x42);
+}
+
+TEST(ISComm, ParseByteTimeoutOnFullBufferDoesNotWritePastEnd)
+{
+    FullRxBuffer b;
+    is_comm_parse_byte_timeout(&b.comm, 0x42, 1234);    // non-zero time, the entry point is_comm_parse_byte() wraps
+
+    b.expectGuardIntact();
+    EXPECT_EQ(b.comm.rxBuf.tail, b.comm.rxBuf.start + 1);
+    EXPECT_EQ(b.mem[0], 0x42);
+}
+
+TEST(ISComm, ParseByteOnFullBufferReportsFlushed)
+{
+    FullRxBuffer b;
+    b.comm.rxErrorState = 0;        // errors are suppressed until the first valid packet; count this one
+    is_comm_parse_byte(&b.comm, 0x42);
+    EXPECT_EQ(b.comm.rxErrorTypeCount[EPARSE_RXBUFFER_FLUSHED], 1u);
+    EXPECT_EQ(b.comm.rxErrorType, EPARSE_RXBUFFER_FLUSHED);
+}
+
+TEST(ISComm, ParseByteWithRoomDoesNotReportFlushed)
+{
+    uint8_t mem[RX_OVERFLOW_BUF_SIZE];
+    is_comm_instance_t comm;
+    is_comm_init(&comm, mem, sizeof(mem), NULL);
+    comm.rxErrorState = 0;
+    for (int i = 0; i < RX_OVERFLOW_BUF_SIZE * 3; i++)      // plenty of bytes, parsed as they arrive, so the buffer never fills
+        is_comm_parse_byte(&comm, 0x00);
+    EXPECT_EQ(comm.rxErrorTypeCount[EPARSE_RXBUFFER_FLUSHED], 0u);
+}
+
+TEST(ISComm, ParseAfterFullBufferFlushStillFindsPackets)
+{
+    // Mixed bulk-fill / byte-wise use of one instance with an undersized buffer, then a clean stream of packets from several protocols.
+    FullRxBuffer b;
+    for (int round = 0; round < 3; round++)
+    {
+        is_comm_parse_byte(&b.comm, 0x42);                  // flushes, stores the byte at the start
+        int room = is_comm_free(&b.comm);
+        memset(b.comm.rxBuf.tail, 0x00, room);              // bulk-fill again without parsing
+        b.comm.rxBuf.tail += room;
+        b.expectGuardIntact();
+    }
+
+    uint8_t isbBuf[64];
+    uint8_t commScratch[PKT_BUF_SIZE];
+    is_comm_instance_t txComm;
+    is_comm_init(&txComm, commScratch, sizeof(commScratch), NULL);
+    uint8_t payload[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    const int isbLen = is_comm_data_to_buf(isbBuf, sizeof(isbBuf), &txComm, DID_FLASH_CONFIG, sizeof(payload), 0, payload);
+    ASSERT_GT(isbLen, 0);
+    const std::vector<uint8_t> ubx = buildUbxFrame(8);
+
+    int isb = 0, ubxCount = 0;
+    for (int i = 0; i < 5; i++)
+    {
+        for (int j = 0; j < isbLen; j++)
+            isb += (is_comm_parse_byte(&b.comm, isbBuf[j]) == _PTYPE_INERTIAL_SENSE_DATA);
+        for (uint8_t c : ubx)
+            ubxCount += (is_comm_parse_byte(&b.comm, c) == _PTYPE_UBLOX);
+    }
+    b.expectGuardIntact();
+    EXPECT_EQ(isb, 5);
+    EXPECT_EQ(ubxCount, 5);
+}
