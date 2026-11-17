@@ -154,6 +154,11 @@ std::string legacyRenderSysStatusReference(uint32_t sysStatus)
     BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
     BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
     BIT_MSG(sysStatus, SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH    , "0x00000008 - GNSS1 and GNSS2 report different firmware versions.");
+    BIT_MSG(sysStatus, 0x00000010                               , "0x00000010 - IMU1 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000020                               , "0x00000020 - IMU2 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000040                               , "0x00000040 - IMU3 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000080                               , "0x00000080 - IMU4 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000100                               , "0x00000100 - IMU5 accelerometer reporting from its high-g range.");
 #undef BIT_MSG
     return buff.str();
 }

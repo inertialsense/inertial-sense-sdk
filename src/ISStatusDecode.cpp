@@ -278,7 +278,8 @@ status_field_decode_t buildHdwStatusDecode()
 }
 
 /**
- * @brief sysStatus decode table (eSysStatusFlags). Two informational bits and one error state.
+ * @brief sysStatus decode table (eSysStatusFlags). Informational bits, including one per IMU for the
+ *        accelerometer high-g switch, and one error state.
  */
 status_field_decode_t buildSysStatusDecode()
 {
@@ -291,6 +292,16 @@ status_field_decode_t buildSysStatusDecode()
         "0x00000004 - NMEA source is GNSS2."));
     d.subfields.push_back(bitField("Dual GNSS version mismatch", SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH, true,
         "0x00000008 - GNSS1 and GNSS2 report different firmware versions."));
+    d.subfields.push_back(bitField("IMU1 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 0), false,
+        "0x00000010 - IMU1 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU2 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 1), false,
+        "0x00000020 - IMU2 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU3 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 2), false,
+        "0x00000040 - IMU3 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU4 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 3), false,
+        "0x00000080 - IMU4 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU5 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 4), false,
+        "0x00000100 - IMU5 accelerometer reporting from its high-g range."));
     return d;
 }
 
