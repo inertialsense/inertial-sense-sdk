@@ -162,6 +162,12 @@ TEST(test_PortFactory, tcpServerPortFactory) {
 
     portClose(serverPort);
     serverFactory.releasePort(serverPort);
+
+    // The ports and factory above are about to be destroyed, but PortManager is a process-wide singleton that still lists the port (and points at the
+    // stack-local factory). Left alone, ~PortManager() reads that freed port at process exit, and so does any forked death test whose body calls exit()
+    // (TcpServerLifecycle.DestructorWithClientsDoesNotCrash). Whether that read is harmless depends on what reused the freed memory.
+    pm.clear();
+    pm.clearPortFactories();
 }
 
 // SN-8473: SerialPortFactory::getComPorts() is now the single OS-enumeration implementation for
