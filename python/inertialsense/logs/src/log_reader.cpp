@@ -122,7 +122,9 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
     oss << logger_.DeviceCount() << " device(s):";
 
-    std::vector<int> serialNumbers;
+    // Serials are uint32_t (SN-8985): a signed vector here would narrow any serial >= 2^31 into
+    // a negative value (e.g. 2210147133 -> -2084820163) by the time it reaches Python.
+    std::vector<uint32_t> serialNumbers;
     for (auto dev : logger_.DeviceLogs()) {
         oss << (serialNumbers.empty() ? " " : ", ") << dev->SerialNumber();
         serialNumbers.push_back(dev->SerialNumber());
@@ -439,7 +441,16 @@ void LogReader::ins1ToIns2(int device_id) {
 }
 
 void LogReader::exitHack(int exit_code) {
-    // Nasty hack
+    // Nasty hack. Python's sys.stdout/stderr are buffered independently of the C stdio streams
+    // that exit() flushes, so anything still sitting in Python's own buffer (e.g. a print() with
+    // no explicit flush) is silently lost once the pipe EvalTool reads from closes. Flush them
+    // through Python itself first.
+    try {
+        py::module_::import("sys").attr("stdout").attr("flush")();
+        py::module_::import("sys").attr("stderr").attr("flush")();
+    } catch (...) {
+        // best-effort; fall through to exit() regardless
+    }
     exit(exit_code);
 }
 
