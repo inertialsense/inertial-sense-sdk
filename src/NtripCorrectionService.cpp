@@ -135,7 +135,7 @@ bool NtripCorrectionService::connect(const std::string& connectUrl, std::string 
     requestMsg += "Accept: */*\r\nConnection: close\r\n\r\n";
 
     // extract the host & port, and make the socket/port connection
-    std::string serverUrl = "tcp://" + host + ":" + std::to_string(port);
+    serverUrl = "tcp://" + host + ":" + std::to_string(port);
     source = TcpPortFactory::getInstance().bindPort(serverUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
 
     // Remember, binding a port doesn't open it - it just creates the underlying instance that references the underlying hardware.
@@ -286,6 +286,17 @@ NtripCorrectionService::eNtripResult NtripCorrectionService::classifyResponse(
     return NTRIP_RESULT_OK;
 }
 
+void NtripCorrectionService::rebindSourcePort() {
+    port_handle_t replacement = TcpPortFactory::getInstance().bindPort(serverUrl, PORT_TYPE__TCP | PORT_TYPE__COMM);
+    if (!replacement) {
+        lastConnAttemptTs = current_timeMs() + NTRIP_RECONNECT_BACKOFF_MS;
+        return;
+    }
+    port_handle_t old = source;
+    source = replacement;   // setSourcePort() runs once the mount point is renegotiated
+    TcpPortFactory::getInstance().releasePort(old);
+}
+
 int NtripCorrectionService::step() {
     if (!portIsOpened(source)) {
         // The NTRIP TCP stream is down (initial connect failed, or the caster dropped us). Reconnecting
@@ -293,6 +304,8 @@ int NtripCorrectionService::step() {
         // request, so we must re-negotiate it. CorrectionService::step() would only reopen the socket and
         // leave us connected-but-silent. The TCP (re)connect is non-blocking (portOpen() is polled across
         // successive step() calls, just like the base class), so we don't stall the caller here.
+        if (source && !portIsValid(source) && !serverUrl.empty() && (lastConnAttemptTs < current_timeMs()))
+            rebindSourcePort();
         if (source && !requestMsg.empty() && (lastConnAttemptTs < current_timeMs())) {
             if (portOpen(source) < PORT_ERROR__NONE) {
                 lastConnAttemptTs = current_timeMs() + NTRIP_RECONNECT_BACKOFF_MS;   // hard failure -> back off
