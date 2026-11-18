@@ -156,6 +156,14 @@ class NtripCorrectionService : public CorrectionService {
         bool negotiateMountPoint();
 
         /**
+         * @brief Replaces an invalidated source port with a freshly bound one.
+         *
+         * A fatal send error (e.g. EPIPE on a GGA update) invalidates the TCP port, and an invalidated
+         * port can never be reopened; it has to be released and bound again.
+         */
+        void rebindSourcePort();
+
+        /**
          * @brief Records the outcome of a negotiation attempt.
          * @param result the classified result
          * @param message human-readable description; must not contain credentials
@@ -168,6 +176,7 @@ class NtripCorrectionService : public CorrectionService {
         std::string requestMsg;                      //!< Cached mount-point HTTP GET request, built in connect(), re-sent by negotiateMountPoint() on (re)connect
         std::string casterUrl;                       //!< Cached caster URL as supplied, including any credentials; never log or display this -- use casterUrlSafe
         std::string casterUrlSafe;                   //!< Cached caster URL with any userinfo replaced by "[hidden]"; safe for logs and UI
+        std::string serverUrl;                       //!< "tcp://host:port" the source port is bound to; used to bind a replacement when the port is invalidated
         eNtripResult lastResult = NTRIP_RESULT_OK;   //!< Outcome of the most recent negotiateMountPoint()
         std::string lastResultStr;                   //!< Human-readable form of lastResult; empty on success
 };
