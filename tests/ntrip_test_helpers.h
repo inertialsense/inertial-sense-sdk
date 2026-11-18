@@ -11,32 +11,12 @@
 #ifndef IS_SDK_NTRIP_TEST_HELPERS_H
 #define IS_SDK_NTRIP_TEST_HELPERS_H
 
-#if !defined(_WIN32)
-
-#include <netinet/in.h>
-#include <poll.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#include <atomic>
-#include <chrono>
 #include <cstdint>
-#include <cstdio>
-#include <string>
-#include <thread>
 #include <vector>
 
 #include "ISComm.h"
 
 namespace ntrip_test {
-
-/** A network fault the caster can inflict on the connection it is serving. */
-enum class Fault {
-    NONE,       //!< Behave.
-    RESET,      //!< close() with SO_LINGER{1,0}: the client sees an RST and ECONNRESET.
-    FIN,        //!< Ordinary close(): the client sees an orderly shutdown.
-    STALL,      //!< Keep the socket open but stop sending: no error is ever raised.
-};
 
 /**
  * Builds one syntactically valid RTCM3 frame: 0xD3, 6 reserved bits, a 10-bit payload length, the payload, then a CRC-24Q over everything before it.
@@ -62,6 +42,35 @@ inline std::vector<uint8_t> buildRtcm3Frame(uint16_t messageNumber, uint16_t pay
     frame.push_back(static_cast<uint8_t>(crc & 0xFF));
     return frame;
 }
+
+}  // namespace ntrip_test
+
+#if !defined(_WIN32)
+
+#include <netinet/in.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <atomic>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <string>
+#include <thread>
+#include <vector>
+
+#include "ISComm.h"
+
+namespace ntrip_test {
+
+/** A network fault the caster can inflict on the connection it is serving. */
+enum class Fault {
+    NONE,   //!< Behave.
+    RESET,  //!< close() with SO_LINGER{1,0}: the client sees an RST and ECONNRESET.
+    FIN,    //!< Ordinary close(): the client sees an orderly shutdown.
+    STALL,  //!< Keep the socket open but stop sending: no error is ever raised.
+};
 
 /** @return a fixed NMEA GGA sentence with a correct XOR checksum. Real VRS mount points stop streaming unless the rover keeps reporting its position. */
 inline std::string buildGgaSentence() {
@@ -242,7 +251,7 @@ private:
     std::atomic<int> handshakes_{0};
 };
 
-}   // namespace ntrip_test
+}  // namespace ntrip_test
 
 #endif  // !_WIN32
 #endif  // IS_SDK_NTRIP_TEST_HELPERS_H
