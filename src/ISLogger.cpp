@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <algorithm>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <functional>
@@ -607,9 +608,19 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
             cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo().serialNumber) + ".txt", "a");
-            std::string msg = (((diag_msg_t *)dataBuf)->message);
+            // The packet holds only the bytes the device sent: dataHdr->size of them, starting at struct offset dataHdr->offset. The message may be shorter
+            // than its 256-byte field and need not carry a terminator, so take the text from those bytes alone rather than trusting a NUL.
+            std::string msg;
+            const uint32_t msgOffset = offsetof(diag_msg_t, message);
+            const uint32_t packetEnd = dataHdr->offset + dataHdr->size;
+            if (dataHdr->offset <= msgOffset && packetEnd > msgOffset)
+            {
+                const char *text = (const char *)dataBuf + (msgOffset - dataHdr->offset);
+                const size_t available = std::min<size_t>(packetEnd - msgOffset, sizeof(((diag_msg_t *)0)->message));
+                msg.assign(text, strnlen(text, available));
+            }
             outfile->write(msg.c_str(), msg.length());
-            if (msg.length() > 0 && *msg.end() != '\n')
+            if (msg.length() > 0 && msg.back() != '\n')
             {
                 outfile->putch('\n');
             }
