@@ -591,8 +591,17 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
     }
     if (dinfo)
     {   // Recompute data info size and checksum
+        // The checksum covers the whole payload (dinfo, tcal, mcal laid out back to back), but the caller passes the three as independent pointers and
+        // dinfo is only the 8-byte header. Checksumming sizeof(sensor_cal_data_t) bytes from dinfo would read past it, and for any caller whose tcal/mcal
+        // do not happen to follow dinfo it would checksum unrelated memory. So build the contiguous payload from what was supplied; a group the
+        // caller did not supply contributes zeros.
+        sensor_cal_data_t payload = {};
+        if (tcal)
+            payload.tcal = *tcal;
+        if (mcal)
+            payload.mcal = *mcal;
         dinfo->size = sizeof(sensor_cal_data_t);
-        dinfo->checksum = flashChecksum32(dinfo, dinfo->size);
+        dinfo->checksum = flashChecksum32(&payload, dinfo->size);
     }
 
     return true;
