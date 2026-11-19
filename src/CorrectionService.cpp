@@ -16,6 +16,11 @@
 #include "PortManager.h"
 #include "message_stats.h"
 
+namespace {
+/** Offset of the text within a framed RTCM3 message 1029: the 3-byte RTCM3 header plus the 9-byte message 1029 header. A frame shorter than this has no text field. */
+constexpr uint32_t RTCM3_MSG_1029_TEXT_OFFSET = 12;
+}  // namespace
+
 CorrectionService::CorrectionService(const std::string& portName, const std::vector<PortFactory*>& factories) {
     PortManager* portManager = &PortManager::getInstance();
     std::vector<PortFactory*> localFactories = factories.empty() ? portManager->getPortFactories() : factories;
@@ -155,9 +160,8 @@ int CorrectionService::finalPacketFilter(const uint8_t *inputBuffer, const uint3
                     }
                     packetsProcessed++;
 
-                    if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
-                    {
-                        std::string msg = std::string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
+                    if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size >= RTCM3_MSG_1029_TEXT_OFFSET) && (comm->rxPkt.data.size < 1024)) {
+                        std::string msg = std::string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + RTCM3_MSG_1029_TEXT_OFFSET), comm->rxPkt.data.size - RTCM3_MSG_1029_TEXT_OFFSET);
                         for (const tRTCM3Msg1029ListenerCallback& callback: rtcm3Msg1029Listeners) {
                             callback(msg);
                         }
@@ -244,9 +248,9 @@ int CorrectionService::onRtcm3Handler(const unsigned char* msg, int msgSize, por
 
     if (msgStats) MessageStats::append("", *msgStats, _PTYPE_RTCM3, COMM_PORT(source)->comm.rxPkt.id, COMM_PORT(source)->comm.rxPkt.data.size, rtcm3PacketLastMs);
 
-    if ((COMM_PORT(source)->comm.rxPkt.id == 1029) && (COMM_PORT(source)->comm.rxPkt.data.size < 1024))
-    {
-        const std::string notice = std::string().assign(reinterpret_cast<char*>(COMM_PORT(source)->comm.rxPkt.data.ptr + 12), COMM_PORT(source)->comm.rxPkt.data.size - 12);
+    if ((COMM_PORT(source)->comm.rxPkt.id == 1029) && (COMM_PORT(source)->comm.rxPkt.data.size >= RTCM3_MSG_1029_TEXT_OFFSET) && (COMM_PORT(source)->comm.rxPkt.data.size < 1024)) {
+        const std::string notice =
+            std::string().assign(reinterpret_cast<char*>(COMM_PORT(source)->comm.rxPkt.data.ptr + RTCM3_MSG_1029_TEXT_OFFSET), COMM_PORT(source)->comm.rxPkt.data.size - RTCM3_MSG_1029_TEXT_OFFSET);
         for (const tRTCM3Msg1029ListenerCallback& callback: rtcm3Msg1029Listeners) {
             callback(notice);
         }
