@@ -278,8 +278,9 @@ status_field_decode_t buildHdwStatusDecode()
 }
 
 /**
- * @brief sysStatus decode table (eSysStatusFlags). Informational bits, including one per IMU for the
- *        accelerometer high-g switch, and one error state.
+ * @brief sysStatus decode table (eSysStatusFlags).
+ *
+ * Informational bits, including one per IMU for the accelerometer high-g switch, and one error state.
  */
 status_field_decode_t buildSysStatusDecode()
 {
