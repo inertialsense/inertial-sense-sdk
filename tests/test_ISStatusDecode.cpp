@@ -27,9 +27,13 @@
 namespace {
 
 /**
- * @brief Oracle: a faithful copy of the original (pre-SN-7919) `renderInsStatus` body, sans the
- *        data_info_t type guard. Equality with `RenderStatusFromDecode` proves the table-driven
- *        renderer reproduces legacy output exactly.
+ * @brief Oracle: a faithful copy of the original (pre-SN-7919) `renderInsStatus` body, sans the data_info_t
+ * type guard.
+ *
+ * Equality with `RenderStatusFromDecode` proves the table-driven renderer reproduces legacy output exactly.
+ *
+ * @param insStatus  value to render
+ * @return rendered text
  */
 std::string legacyRenderInsStatusReference(uint32_t insStatus)
 {
@@ -90,7 +94,12 @@ std::string legacyRenderInsStatusReference(uint32_t insStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original (pre-SN-7919) `renderHdwStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original (pre-SN-7919) `renderHdwStatus` body.
+ *
+ * @param hdwStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
 {
     std::stringstream buff;
@@ -146,7 +155,12 @@ std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderSysStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderSysStatus` body.
+ *
+ * @param sysStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderSysStatusReference(uint32_t sysStatus)
 {
     std::stringstream buff;
@@ -154,11 +168,21 @@ std::string legacyRenderSysStatusReference(uint32_t sysStatus)
     BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
     BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
     BIT_MSG(sysStatus, SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH    , "0x00000008 - GNSS1 and GNSS2 report different firmware versions.");
+    BIT_MSG(sysStatus, 0x00000010                               , "0x00000010 - IMU1 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000020                               , "0x00000020 - IMU2 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000040                               , "0x00000040 - IMU3 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000080                               , "0x00000080 - IMU4 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000100                               , "0x00000100 - IMU5 accelerometer reporting from its high-g range.");
 #undef BIT_MSG
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGenFaultCode` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGenFaultCode` body.
+ *
+ * @param genFault  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
 {
     std::stringstream buff;
@@ -197,7 +221,12 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGnssStatusBits` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGnssStatusBits` body.
+ *
+ * @param gnssStatusBits  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGnssStatusBitsReference(uint32_t gnssStatusBits)
 {
     std::stringstream buff;
@@ -258,7 +287,12 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gnssStatusBits)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxStatus_status` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxStatus_status` body.
+ *
+ * @param status  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxStatusReference(uint32_t status)
 {
     std::stringstream buff;
@@ -297,7 +331,12 @@ std::string legacyRenderGpxStatusReference(uint32_t status)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxStatus_hdwStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxStatus_hdwStatus` body.
+ *
+ * @param hdwStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxHdwStatusReference(uint32_t hdwStatus)
 {
     std::stringstream buff;
@@ -381,7 +420,12 @@ std::string legacyRenderGnssFwUpdateStateReference(uint8_t v)
     return "";
 }
 
-/** @brief Oracle: faithful copy of the original `renderImxHdwBitStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderImxHdwBitStatus` body.
+ *
+ * @param hdwBitStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderImxHdwBitReference(uint32_t hdwBitStatus)
 {
     std::stringstream buff;
@@ -406,7 +450,12 @@ std::string legacyRenderImxHdwBitReference(uint32_t hdwBitStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderImxCalBitStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderImxCalBitStatus` body.
+ *
+ * @param calBitStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderImxCalBitReference(uint32_t calBitStatus)
 {
     std::stringstream buff;
@@ -440,7 +489,12 @@ std::string legacyRenderImxCalBitReference(uint32_t calBitStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxBitResults` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxBitResults` body.
+ *
+ * @param results  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxBitResultsReference(uint32_t results)
 {
     std::stringstream buff;
@@ -457,7 +511,12 @@ std::string legacyRenderGpxBitResultsReference(uint32_t results)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxBitState` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxBitState` body.
+ *
+ * @param state  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxBitStateReference(uint8_t state)
 {
     std::stringstream buff;
@@ -475,7 +534,12 @@ std::string legacyRenderGpxBitStateReference(uint8_t state)
     return buff.str();
 }
 
-/** @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms. */
+/**
+ * @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms.
+ *
+ * @param[in,out] s  generator state
+ * @return next value
+ */
 uint32_t xorshift32(uint32_t& s)
 {
     s ^= s << 13; s ^= s >> 17; s ^= s << 5;

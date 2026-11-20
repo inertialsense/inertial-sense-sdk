@@ -439,6 +439,17 @@ enum eSysStatusFlags
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2         = (int)0x00000004,  //!< 0 = GNSS1 is the primary NMEA GNSS source, 1 = GNSS2 is the primary NMEA GNSS source
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,                //!< Bit offset of SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2 within sysStatus
     SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH           = (int)0x00000008,  //!< GNSS1 and GNSS2 report different firmware versions (see DID_GNSS1_VERSION, DID_GNSS2_VERSION). Only where both are configured with a comparable receiver type; not latched.
+
+    /**
+     * Per-IMU accelerometer high-g switch indication, one bit per IMU.
+     *
+     * Bit SYS_STATUS_ACC_HIGH_G_OFFSET + n is IMU n. On IMUs with a second, extended-range accelerometer, an axis whose standard-range reading reaches
+     * saturation is reported from the extended-range accelerometer instead, through the same IMU outputs.
+     * A bit is set while IMU n reports any axis that way and stays set for 1 s afterwards, so that a short
+     * event is still visible at a low DID_SYS_PARAMS rate. Not set on IMUs without extended range.
+     */
+    SYS_STATUS_ACC_HIGH_G_MASK                      = (int)0x000001F0,  //!< Mask of the per-IMU accelerometer high-g switch bits
+    SYS_STATUS_ACC_HIGH_G_OFFSET                    = 4,                //!< Bit offset of SYS_STATUS_ACC_HIGH_G_MASK within sysStatus
 };
 
 // Used to validate GNSS position (and velocity)
@@ -640,7 +651,7 @@ static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEP
 #define BOARD_IS_GPX    1
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
-/// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
+/** Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1). */
 extern const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT];
 
 /** @brief Device run state, stored in dev_info_t.hdwRunState. Indicates whether the device is executing the bootloader or the main application firmware. */
@@ -3000,9 +3011,9 @@ enum eSensorConfig
     SENSOR_CFG_ACC_FS_4G                        = (int)0x00000001,  //!< Accelerometer full-scale range: +-4 g (m/s^2)
     SENSOR_CFG_ACC_FS_8G                        = (int)0x00000002,  //!< Accelerometer full-scale range: +-8 g (m/s^2)
     SENSOR_CFG_ACC_FS_16G                       = (int)0x00000003,  //!< Accelerometer full-scale range: +-16 g (m/s^2)
-    SENSOR_CFG_ACC_FS_32G                       = (int)0x00000004,  //!< Accelerometer full-scale range: +-32 g (m/s^2)
+    SENSOR_CFG_ACC_FS_32G                       = (int)0x00000004,  //!< Accelerometer full-scale range: +-32 g (m/s^2). On IMUs with a second, extended-range accelerometer: standard range +-16 g, extended range +-32 g.
     // SENSOR_CFG_ACC_FS_80G              = (int)0x00000005, Unsupported at this time (available in future; contact sales for more information)
-    SENSOR_CFG_ACC_FS_MAX                       = (int)0x00000007,  //!< Accelerometer full-scale range: use individual sensor's max range
+    SENSOR_CFG_ACC_FS_MAX                       = (int)0x00000007,  //!< Accelerometer full-scale range: use individual sensor's max range, including its extended-range accelerometer where it has one
     SENSOR_CFG_ACC_FS_MASK                      = (int)0x00000070,  //!< Mask for accelerometer full-scale range field
     SENSOR_CFG_ACC_FS_OFFSET                    = (int)4,           //!< Bit offset of SENSOR_CFG_ACC_FS_MASK within sensorConfig
 
@@ -3072,6 +3083,24 @@ enum eSensorConfig
     SENSOR_CFG_IMU_FAULT_DETECT_OFFLINE         = 0,  //!< (Disabled/reserved, would be (int)0x04000000) One or more IMUs is offline or stuck
     SENSOR_CFG_IMU_FAULT_DETECT_LARGE_BIAS      = 0,  //!< (Disabled/reserved, would be (int)0x08000000) IMU large-bias fault detection
     SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,  //!< (Disabled/reserved, would be (int)0x10000000) IMU excessive-noise fault detection
+};
+
+/**
+ * Extended-range (high-g) accelerometer full-scale range, used with nvm_flash_cfg_t.accHighGRange (DID_FLASH_CONFIG).
+ *
+ * Applies to IMUs with a second, extended-range accelerometer, which reports an axis from it when the standard-range
+ * accelerometer saturates on that axis. Any other value than ACC_HIGH_G_RANGE_AUTO sets the extended range on its own,
+ * and the standard range then comes from SENSOR_CFG_ACC_FS, limited to the standard accelerometer's maximum. IMUs
+ * without an extended-range accelerometer ignore this setting. System reset required.
+ */
+enum eAccHighGRange
+{
+    ACC_HIGH_G_RANGE_AUTO                       = 0,    //!< Follow SENSOR_CFG_ACC_FS: SENSOR_CFG_ACC_FS_32G gives +-32 g, SENSOR_CFG_ACC_FS_MAX the sensor's widest, any other range disables the extended range
+    ACC_HIGH_G_RANGE_OFF                        = 1,    //!< Extended-range accelerometer disabled
+    ACC_HIGH_G_RANGE_32G                        = 2,    //!< Extended range +-32 g
+    ACC_HIGH_G_RANGE_64G                        = 3,    //!< Extended range +-64 g
+    ACC_HIGH_G_RANGE_128G                       = 4,    //!< Extended range +-128 g
+    ACC_HIGH_G_RANGE_256G                       = 5,    //!< Extended range +-256 g
 };
 
 /** @brief General-purpose I/O pin function configuration, used with nvm_flash_cfg_t.ioConfig (DID_FLASH_CONFIG). Each shared GPIO pin (or pin group, e.g. G1/G2) has a small multi-bit field selecting which of its mutually-exclusive alternate functions is active (strobe I/O, serial port, CAN, I2C, SPI, quadrature encoder, GNSS timepulse); the fields are packed together into a single 32-bit ioConfig value along with GNSS receiver source/type selection and per-IMU disable flags. Use the associated _MASK/_OFFSET pairs and helper macros to read/write individual fields without disturbing the others. */
@@ -3669,9 +3698,9 @@ typedef struct PACKED
 
     uint8_t                 deadReckoningTimeout;               //!< (s) Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.
 
-    uint8_t                 reserved1;                          //!< Reserved for future use
+    uint8_t                 accHighGRange;                      //!< Extended-range (high-g) accelerometer full-scale range (see eAccHighGRange). 0 = follow the sensorConfig accelerometer range.
 
-    uint16_t                reserved2;                          //!< Reserved for future use
+    uint16_t                reserved2;                         //!< Reserved for future use
 
     uint32_t                reserved3;                          //!< Reserved for future use
 
@@ -4463,9 +4492,9 @@ typedef struct
 } survey_in_t;
 
 
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 //  GPX
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 
 /** @brief GPX system configuration bits, used with DID_GPX_FLASH_CFG::sysCfgBits (gpx_flash_cfg_t.sysCfgBits). Controls VCC_RF power switching and the brownout reset threshold. GPX_SYS_CFG_BITS_BOR_LEVEL_x are raw 2-bit codes (0-3), not pre-shifted bit flags -- shift the desired code left by GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET and mask with GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK before ORing it into sysCfgBits. */
 enum eGpxSysConfigBits
@@ -4727,9 +4756,9 @@ typedef struct
 } gpx_status_t;
 
 
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 //  EVB
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 
 /** @brief (DID_EVB_STATUS) EVB status flags, reported in evb_status_t.evbStatus. Reports SD card logger readiness/state, SD card fault conditions, WiFi and XBee radio link state, in-progress flash writes, and manufacturing unlock state. */
 enum eEvbStatus
