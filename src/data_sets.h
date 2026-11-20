@@ -651,7 +651,7 @@ static const is_hardware_t IS_HDW_SEPTENTRIO_M3  = ENCODE_HDW_ID(IS_HDW_GNSS_SEP
 #define BOARD_IS_GPX    1
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
-/// Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1).
+/** Names for the peripheral GNSS hardware types, indexed by (type - IS_HDW_TYPE_PERIPHERAL - 1). */
 extern const char* g_isGnssHardwareNames[IS_HDW_GNSS_TYPE_COUNT];
 
 /** @brief Device run state, stored in dev_info_t.hdwRunState. Indicates whether the device is executing the bootloader or the main application firmware. */
@@ -4474,9 +4474,9 @@ typedef struct
 } survey_in_t;
 
 
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 //  GPX
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 
 /** @brief GPX system configuration bits, used with DID_GPX_FLASH_CFG::sysCfgBits (gpx_flash_cfg_t.sysCfgBits). Controls VCC_RF power switching and the brownout reset threshold. GPX_SYS_CFG_BITS_BOR_LEVEL_x are raw 2-bit codes (0-3), not pre-shifted bit flags -- shift the desired code left by GPX_SYS_CFG_BITS_BOR_THRESHOLD_OFFSET and mask with GPX_SYS_CFG_BITS_BOR_THRESHOLD_MASK before ORing it into sysCfgBits. */
 enum eGpxSysConfigBits
@@ -4738,9 +4738,9 @@ typedef struct
 } gpx_status_t;
 
 
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 //  EVB
-//////////////////////////////////////////////////////////////////////////
+// -----------------------------------------------------------------------
 
 /** @brief (DID_EVB_STATUS) EVB status flags, reported in evb_status_t.evbStatus. Reports SD card logger readiness/state, SD card fault conditions, WiFi and XBee radio link state, in-progress flash writes, and manufacturing unlock state. */
 enum eEvbStatus

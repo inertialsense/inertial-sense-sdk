@@ -1,7 +1,8 @@
 /**
  * @file ISStatusDecode.cpp
  * @brief Structured status-field decode tables + table-driven renderer.
- *        See ISStatusDecode.h.
+ *
+ * See ISStatusDecode.h.
  *
  * @note D-53 / SN-7919.
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
@@ -17,7 +18,12 @@
 
 namespace {
 
-/** @brief Trailing-zero count of `mask` — the right-shift that lands a sub-field at bit 0. */
+/**
+ * @brief Trailing-zero count of `mask`: the right-shift that lands a sub-field at bit 0.
+ *
+ * @param mask  sub-field mask
+ * @return shift
+ */
 uint32_t maskShift(uint32_t mask)
 {
     if (mask == 0) return 0;
@@ -27,9 +33,12 @@ uint32_t maskShift(uint32_t mask)
 }
 
 /**
- * @brief Index of the highest set bit of `mask` (0 if `mask` is 0). Portable bit-scan -- avoids
- *        `__builtin_clz`, which doesn't exist on MSVC and broke the Windows CI build (SN-8491,
- *        2026-08-13).
+ * @brief Index of the highest set bit of `mask` (0 if `mask` is 0).
+ *
+ * Portable bit-scan; avoids `__builtin_clz`, which MSVC does not provide.
+ *
+ * @param mask  sub-field mask
+ * @return bit index
  */
 uint32_t maskHighBit(uint32_t mask)
 {
@@ -38,7 +47,15 @@ uint32_t maskHighBit(uint32_t mask)
     return h;
 }
 
-/** @brief Build a single on/off-bit sub-field descriptor. */
+/**
+ * @brief Build a single on/off-bit sub-field descriptor.
+ *
+ * @param name     sub-field name
+ * @param mask     bit mask
+ * @param isError  true if the bit indicates an error
+ * @param legacy   verbose line the legacy renderer emitted; empty to use name
+ * @return sub-field descriptor
+ */
 status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const char* legacy)
 {
     status_subfield_t s;
@@ -53,9 +70,13 @@ status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const 
 }
 
 /**
- * @brief insStatus decode table (eInsStatusFlags). Sub-fields are listed in the exact order the
- *        legacy `renderInsStatus` emitted them so `RenderStatusFromDecode` reproduces it byte-for-byte.
- *        All masks/shifts/values derive from the data_sets.h symbols — no transcribed hex.
+ * @brief insStatus decode table (eInsStatusFlags).
+ *
+ * Sub-fields are listed in the exact order the legacy `renderInsStatus` emitted them so
+ * `RenderStatusFromDecode` reproduces it byte-for-byte. All masks/shifts/values derive from the data_sets.h
+ * symbols — no transcribed hex.
+ *
+ * @return decode table
  */
 status_field_decode_t buildInsStatusDecode()
 {
@@ -161,9 +182,13 @@ status_field_decode_t buildInsStatusDecode()
 }
 
 /**
- * @brief hdwStatus decode table (eHdwStatusFlags). Sub-fields in legacy `renderHdwStatus` emission
- *        order. Exercises all three kinds: bits, a Count (COM parse-error count), and two Enums
- *        (built-in-test state, reset cause). isError follows HDW_STATUS_ERROR_MASK membership.
+ * @brief hdwStatus decode table (eHdwStatusFlags).
+ *
+ * Sub-fields in legacy `renderHdwStatus` emission order. Exercises all three kinds: bits, a Count (COM
+ * parse-error count), and two Enums (built-in-test state, reset cause). isError follows HDW_STATUS_ERROR_MASK
+ * membership.
+ *
+ * @return decode table
  */
 status_field_decode_t buildHdwStatusDecode()
 {
@@ -281,6 +306,8 @@ status_field_decode_t buildHdwStatusDecode()
  * @brief sysStatus decode table (eSysStatusFlags).
  *
  * Informational bits, including one per IMU for the accelerometer high-g switch, and one error state.
+ *
+ * @return decode table
  */
 status_field_decode_t buildSysStatusDecode()
 {
@@ -307,9 +334,12 @@ status_field_decode_t buildSysStatusDecode()
 }
 
 /**
- * @brief genFaultCode decode table (eGenFaultCodes). All defined bits are fault conditions, so
- *        every subfield isError=true and errorMask = OR of all bits. Note the verbatim legacy
- *        text quirk on GNSS2 init ("init>").
+ * @brief genFaultCode decode table (eGenFaultCodes).
+ *
+ * All defined bits are fault conditions, so every subfield isError=true and errorMask = OR of all bits. Note
+ * the verbatim legacy text quirk on GNSS2 init ("init>").
+ *
+ * @return decode table
  */
 status_field_decode_t buildGenFaultCodeDecode()
 {
@@ -384,9 +414,12 @@ status_field_decode_t buildGenFaultCodeDecode()
 }
 
 /**
- * @brief GNSS pos/vel `status` decode table (eGnssStatus). Registered under the unambiguous key
- *        "gnssStatus" (the on-wire field name "status" is shared with GPX — see GetStatusDecode).
- *        Sub-fields in legacy `renderGnssStatusBits` emission order.
+ * @brief GNSS pos/vel `status` decode table (eGnssStatus).
+ *
+ * Registered under the unambiguous key "gnssStatus" (the on-wire field name "status" is shared with GPX — see
+ * GetStatusDecode). Sub-fields in legacy `renderGnssStatusBits` emission order.
+ *
+ * @return decode table
  */
 status_field_decode_t buildGnssStatusDecode()
 {
@@ -514,8 +547,12 @@ status_field_decode_t buildGnssStatusDecode()
 
 /**
  * @brief GNSS pos/vel `status2` decode table (eGnssStatus2): jam/spoof interference flags on
- *        `gnss_pos_t.status2` (DID_GNSS1_POS / DID_GNSS2_POS). "status2" is unambiguous on the
- *        wire, so it is registered and looked up directly under that key (see GetStatusDecode).
+ * `gnss_pos_t.status2` (DID_GNSS1_POS / DID_GNSS2_POS).
+ *
+ * "status2" is unambiguous on the wire, so it is registered and looked up directly under that key (see
+ * GetStatusDecode).
+ *
+ * @return decode table
  */
 status_field_decode_t buildGnssStatus2Decode()
 {
@@ -535,7 +572,13 @@ status_field_decode_t buildGnssStatus2Decode()
     return d;
 }
 
-/** @brief GPX status decode table (eGpxStatus). Registered under key "gpxStatus" (field "status"). */
+/**
+ * @brief GPX status decode table (eGpxStatus).
+ *
+ * Registered under key "gpxStatus" (field "status").
+ *
+ * @return decode table
+ */
 status_field_decode_t buildGpxStatusDecode()
 {
     using K = eStatusSubfieldKind;
@@ -603,11 +646,14 @@ status_field_decode_t buildGpxStatusDecode()
 }
 
 /**
- * @brief GPX hdwStatus decode table (eGPXHdwStatusFlags). Registered under key "gpxHdwStatus".
- *        All flat bits in legacy order — including the BIT running/passed/fault and reset-cause,
- *        which the legacy renderer tests individually (not as switches). isError is derived from
- *        GPX_HDW_STATUS_ERROR_MASK, with BIT_FAULT forced true (a failed self-test is an error
- *        even though the BIT bits aren't in the SDK error mask).
+ * @brief GPX hdwStatus decode table (eGPXHdwStatusFlags).
+ *
+ * Registered under key "gpxHdwStatus". All flat bits in legacy order — including the BIT running/passed/fault
+ * and reset-cause, which the legacy renderer tests individually (not as switches). isError is derived from
+ * GPX_HDW_STATUS_ERROR_MASK, with BIT_FAULT forced true (a failed self-test is an error even though the BIT
+ * bits aren't in the SDK error mask).
+ *
+ * @return decode table
  */
 status_field_decode_t buildGpxHdwStatusDecode()
 {
@@ -677,8 +723,14 @@ status_field_decode_t buildGpxHdwStatusDecode()
 }
 
 /**
- * @brief Build a scalar-enum decode (single UINT8 value -> bare label, no newline) from a name
- *        array. `count` may be fewer than the array length to reproduce a legacy bound.
+ * @brief Build a scalar-enum decode (single UINT8 value -> bare label, no newline) from a name array.
+ *
+ * `count` may be fewer than the array length to reproduce a legacy bound.
+ *
+ * @param fieldName  field name, also used as the sub-field name
+ * @param names      value names, indexed by value
+ * @param count      number of names to decode
+ * @return decode table
  */
 status_field_decode_t makeScalarEnum(const char* fieldName, const char* const* names, uint32_t count)
 {
@@ -903,9 +955,12 @@ status_field_decode_t buildGpxBitStateDecode()
 }
 
 /**
- * @brief imu_t / pimu_t `status` decode table (eImuStatus). Registered under the key "imuStatus";
- *        the on-wire field name "status" is shared across many DIDs, so GetStatusDecode routes the
- *        IMU/PIMU DIDs here explicitly. All masks derive from the data_sets.h symbols.
+ * @brief imu_t / pimu_t `status` decode table (eImuStatus).
+ *
+ * Registered under the key "imuStatus"; the on-wire field name "status" is shared across many DIDs, so
+ * GetStatusDecode routes the IMU/PIMU DIDs here explicitly. All masks derive from the data_sets.h symbols.
+ *
+ * @return decode table
  */
 status_field_decode_t buildImuStatusDecode()
 {
@@ -947,14 +1002,16 @@ status_field_decode_t buildImuStatusDecode()
 // eDynamicModel / eSysConfigBits symbols in data_sets.h (see test_ISStatusDecode.cpp).
 
 /**
- * @brief gnssSatSigConst decode table (eGnssSatSigConst). Shared verbatim by nvm_flash_cfg_t and
- *        gpx_flash_cfg_t -- both fields are documented as using this same enum (see the
- *        gpx_flash_cfg_t doc comment in data_sets.h), and the unused, GPX-only-in-name
- *        eGpxGnssSatSigConst enum is dead code (never referenced by any field). Registered under
- *        the unambiguous key "gnssSatSigConst"; each per-constellation value is a multi-bit mask
- *        (e.g. GPS spans 2 bits) but is decoded as a single Bit-kind flag -- "any bit in this
- *        constellation's mask set" means "this constellation is enabled", matching how the field
- *        was already hand-documented (e.g. "0x0003=GPS").
+ * @brief gnssSatSigConst decode table (eGnssSatSigConst).
+ *
+ * Shared verbatim by nvm_flash_cfg_t and gpx_flash_cfg_t -- both fields are documented as using this same
+ * enum (see the gpx_flash_cfg_t doc comment in data_sets.h), and the unused, GPX-only-in-name
+ * eGpxGnssSatSigConst enum is dead code (never referenced by any field). Registered under the unambiguous key
+ * "gnssSatSigConst"; each per-constellation value is a multi-bit mask (e.g. GPS spans 2 bits) but is decoded
+ * as a single Bit-kind flag -- "any bit in this constellation's mask set" means "this constellation is
+ * enabled", matching how the field was already hand-documented (e.g. "0x0003=GPS").
+ *
+ * @return decode table
  */
 status_field_decode_t buildGnssSatSigConstDecode()
 {
@@ -974,9 +1031,12 @@ status_field_decode_t buildGnssSatSigConstDecode()
 }
 
 /**
- * @brief dynamicModel decode table (eDynamicModel). Shared verbatim by nvm_flash_cfg_t and
- *        gpx_flash_cfg_t (same enum). A scalar enum: DYNAMIC_MODEL_* values are contiguous
- *        0..DYNAMIC_MODEL_COUNT-1, so makeScalarEnum's index->name mapping applies directly.
+ * @brief dynamicModel decode table (eDynamicModel).
+ *
+ * Shared verbatim by nvm_flash_cfg_t and gpx_flash_cfg_t (same enum). A scalar enum: DYNAMIC_MODEL_* values
+ * are contiguous 0..DYNAMIC_MODEL_COUNT-1, so makeScalarEnum's index->name mapping applies directly.
+ *
+ * @return decode table
  */
 status_field_decode_t buildDynamicModelDecode()
 {
@@ -988,11 +1048,13 @@ status_field_decode_t buildDynamicModelDecode()
 }
 
 /**
- * @brief IMX sysCfgBits decode table (eSysConfigBits), used with nvm_flash_cfg_t.sysCfgBits. A
- *        configuration bitfield, not a status field -- errorMask stays 0. Two multi-bit Enum
- *        sub-fields (mag recal mode, brownout-reset threshold) use maskShift like the GNSS status
- *        fix-type field above. UNUSED1 (bit 0) is a reserved/unused bit and is deliberately not
- *        decoded (nothing to tell the user).
+ * @brief IMX sysCfgBits decode table (eSysConfigBits), used with nvm_flash_cfg_t.sysCfgBits.
+ *
+ * A configuration bitfield, not a status field -- errorMask stays 0. Two multi-bit Enum sub-fields (mag recal
+ * mode, brownout-reset threshold) use maskShift like the GNSS status fix-type field above. UNUSED1 (bit 0) is
+ * a reserved/unused bit and is deliberately not decoded (nothing to tell the user).
+ *
+ * @return decode table
  */
 status_field_decode_t buildImxSysCfgBitsDecode()
 {
@@ -1076,23 +1138,24 @@ status_field_decode_t buildImxSysCfgBitsDecode()
 }
 
 /**
- * @brief rmc_t::options decode table (RMC_OPTIONS_*), used with both DID_RMC and DID_GPX_RMC
- *        (one shared table/renderer, same as gnssSatSigConst/dynamicModel -- see PopulateMapRmc).
- *        Registered under the internal key "rmcOptions"; nmea_msgs_t::options shares the same
- *        RMC_OPTIONS_* semantics but is a different field/DID, out of this ticket's scope, so this
- *        table is looked up only via a hardcoded key from renderRmcOptions, never through the
- *        ambiguous "options" on-wire name.
+ * @brief rmc_t::options decode table (RMC_OPTIONS_*), used with both DID_RMC and DID_GPX_RMC (one shared
+ * table/renderer, same as gnssSatSigConst/dynamicModel -- see PopulateMapRmc).
  *
- *        Port selection (SER0/SER1/SER2/USB) is 4 independent Bit subfields covering the
- *        meaningful low nibble of RMC_OPTIONS_PORT_MASK; the upper nibble (0x10-0x80) is
- *        undocumented/unused and, like sysCfgBits' UNUSED1, is deliberately not decoded.
- *        RMC_OPTIONS_PORT_CURRENT (0x00, no port bit set) intentionally renders nothing -- a port
- *        selection of "current" is the default/unremarkable case, consistent with how the rest of
- *        this table's Bit subfields render silence for "off".
+ * Registered under the internal key "rmcOptions"; nmea_msgs_t::options shares the same RMC_OPTIONS_*
+ * semantics but is a different field/DID and is not covered here, so this table is looked up only via a
+ * hardcoded key from renderRmcOptions, never through the ambiguous "options" on-wire name.
  *
- *        NMEA_SPEED_FILTER is a 2-bit Enum with only 2 of its 4 possible values defined
- *        (Enable=1, Disable=2); 0 ("not specified") and 3 (undefined) render nothing, unlike
- *        sysCfgBits' mag-recal-mode Enum where 0 was itself a meaningful "Disabled" state.
+ * Port selection (SER0/SER1/SER2/USB) is 4 independent Bit subfields covering the meaningful low nibble of
+ * RMC_OPTIONS_PORT_MASK; the upper nibble (0x10-0x80) is undocumented/unused and, like sysCfgBits' UNUSED1,
+ * is deliberately not decoded. RMC_OPTIONS_PORT_CURRENT (0x00, no port bit set) intentionally renders nothing
+ * -- a port selection of "current" is the default/unremarkable case, consistent with how the rest of this
+ * table's Bit subfields render silence for "off".
+ *
+ * NMEA_SPEED_FILTER is a 2-bit Enum with only 2 of its 4 possible values defined (Enable=1, Disable=2); 0
+ * ("not specified") and 3 (undefined) render nothing, unlike sysCfgBits' mag-recal-mode Enum where 0 was
+ * itself a meaningful "Disabled" state.
+ *
+ * @return decode table
  */
 status_field_decode_t buildRmcOptionsDecode()
 {
@@ -1129,15 +1192,18 @@ status_field_decode_t buildRmcOptionsDecode()
 }
 
 /**
- * @brief nvm_flash_cfg_t::ioConfig decode table (eIoConfig). IMX-only -- gpx_flash_cfg_t has no
- *        equivalent field. The largest table in this file: 5 small multi-bit Enum pin-function
- *        fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
- *        GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local
- *        helper to avoid duplicating the value list and risking the two copies drifting), and 6
- *        independent Bit flags (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT,
- *        IMU_1/2/3_DISABLE). Undefined/reserved values within a multi-bit field's range (e.g.
- *        raw 0 in the G6G7 field, which has no named ..._DEFAULT-distinct-from-COM1 state) render
- *        nothing for that sub-field, same convention as sysCfgBits/ioConfig2.
+ * @brief nvm_flash_cfg_t::ioConfig decode table (eIoConfig).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. The largest table in this file: 5 small multi-bit Enum
+ * pin-function fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
+ * GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local helper to avoid
+ * duplicating the value list and risking the two copies drifting), and 6 independent Bit flags
+ * (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT, IMU_1/2/3_DISABLE). Undefined/reserved values
+ * within a multi-bit field's range (e.g. raw 0 in the G6G7 field, which has no named
+ * ..._DEFAULT-distinct-from-COM1 state) render nothing for that sub-field, same convention as
+ * sysCfgBits/ioConfig2.
+ *
+ * @return decode table
  */
 status_field_decode_t buildIoConfigDecode()
 {
@@ -1300,11 +1366,14 @@ status_field_decode_t buildIoConfigDecode()
 }
 
 /**
- * @brief nvm_flash_cfg_t::ioConfig2 decode table (eIoConfig2). IMX-only -- gpx_flash_cfg_t has no
- *        equivalent field. Four small multi-bit Enum sub-fields, each a mutually-exclusive pin
- *        function choice (every pin always has SOME function selected, so -- like sysCfgBits'
- *        mag-recal-mode/brownout-threshold -- these always render a line, never silence) plus one
- *        independent Bit flag (USE_GNSS2_AS_SOURCE).
+ * @brief nvm_flash_cfg_t::ioConfig2 decode table (eIoConfig2).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. Four small multi-bit Enum sub-fields, each a
+ * mutually-exclusive pin function choice (every pin always has SOME function selected, so -- like sysCfgBits'
+ * mag-recal-mode/brownout-threshold -- these always render a line, never silence) plus one independent Bit
+ * flag (USE_GNSS2_AS_SOURCE).
+ *
+ * @return decode table
  */
 status_field_decode_t buildIoConfig2Decode()
 {
@@ -1378,15 +1447,17 @@ status_field_decode_t buildIoConfig2Decode()
 }
 
 /**
- * @brief nvm_flash_cfg_t::sensorConfig decode table (eSensorConfig). IMX-only -- gpx_flash_cfg_t
- *        has no equivalent field. Five multi-bit Enum sub-fields (gyro/accel full-scale range,
- *        gyro/accel DLPF bandwidth, sensor mounting rotation) plus 4 independent Bit flags
- *        (disable magnetometer/barometer, IMU gyro/accel fault-detect enable). Every Enum value
- *        this table lists has an explicit name in the source enum (including 0 -- e.g. 250 deg/s
- *        is a real, meaningful gyro full-scale setting, not "unset"), so -- like ioConfig's GNSS
- *        source/type fields -- all five always render a line, never silence. IMU_FAULT_DETECT_
- *        OFFLINE/LARGE_BIAS/SENSOR_NOISE are explicitly disabled/reserved (defined as 0 in the
- *        enum, "would be" comments only) and are not decoded.
+ * @brief nvm_flash_cfg_t::sensorConfig decode table (eSensorConfig).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. Five multi-bit Enum sub-fields (gyro/accel full-scale
+ * range, gyro/accel DLPF bandwidth, sensor mounting rotation) plus 4 independent Bit flags (disable
+ * magnetometer/barometer, IMU gyro/accel fault-detect enable). Every Enum value this table lists has an
+ * explicit name in the source enum (including 0 -- e.g. 250 deg/s is a real, meaningful gyro full-scale
+ * setting, not "unset"), so -- like ioConfig's GNSS source/type fields -- all five always render a line,
+ * never silence. IMU_FAULT_DETECT_OFFLINE/LARGE_BIAS/SENSOR_NOISE are explicitly disabled/reserved (defined
+ * as 0 in the enum, "would be" comments only) and are not decoded.
+ *
+ * @return decode table
  */
 status_field_decode_t buildSensorConfigDecode()
 {
@@ -1489,10 +1560,13 @@ status_field_decode_t buildSensorConfigDecode()
 }
 
 /**
- * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits). GPX-only -- a much smaller
- *        enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"), and NOT
- *        the same enum despite the identical on-wire field name; registered under its own key
- *        "gpxSysCfgBits" (see the GetStatusDecode DID-based guard added alongside the IMX table).
+ * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits).
+ *
+ * GPX-only -- a much smaller enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"),
+ * and NOT the same enum despite the identical on-wire field name; registered under its own key
+ * "gpxSysCfgBits" (see the GetStatusDecode DID-based guard added alongside the IMX table).
+ *
+ * @return decode table
  */
 status_field_decode_t buildGpxSysCfgBitsDecode()
 {
@@ -1526,7 +1600,13 @@ status_field_decode_t buildGpxSysCfgBitsDecode()
     return d;
 }
 
-/** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
+/**
+ * @brief Process-wide registry of decode tables, keyed by an unambiguous internal key.
+ *
+ * Built once.
+ *
+ * @return decode tables by key
+ */
 const std::map<std::string, status_field_decode_t>& registry()
 {
     static const std::map<std::string, status_field_decode_t> r = [] {
