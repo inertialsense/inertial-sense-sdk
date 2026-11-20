@@ -1600,7 +1600,6 @@ void cltool_outputUsage()
 	cout << "    -base=" << boldOff << "tcp://[IP]:[port]   As a Base (server), send RTK corrections.  Examples:" << endl;
 	cout << "            -base=tcp://:7777                           (IP is optional)" << endl;
 	cout << "            -base=tcp://192.168.1.43:7777" << endl;
-	cout << "            -base=tcp://[::1]:7777                      (IPv6 host in brackets)" << endl;
 	cout << endlbOn;	
 	cout << "CLTool - " << boldOff << cltool_version() << endl;
 

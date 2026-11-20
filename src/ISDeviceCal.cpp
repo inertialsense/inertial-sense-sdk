@@ -204,13 +204,16 @@ void StringToMatrix(const std::string& str, float* mat, int rows, int cols) {
         }
     }
     std::vector<std::string> rowStrs = split(normalized, ';');
-    int idx = 0;
-    for (const auto& rowStr : rowStrs) {
-        std::vector<std::string> vals = split(rowStr, ' ');
-        for (const auto& val : vals) {
-            if (idx < rows * cols) {
-                mat[idx++] = std::stof(val);
-            }
+    // Dimension-aware: each source row (as delimited by the string itself) fills exactly one
+    // destination row, truncating/zero-padding columns as needed, rather than flattening every
+    // value across row boundaries into whatever the destination's rows*cols happens to be. A
+    // flat fill corrupts the result whenever the destination is smaller than the string encodes
+    // (e.g. loading a legacy wider matrix into a narrower current one): values spill from one
+    // source row into the next destination row instead of just being truncated within their own.
+    for (int r = 0; r < rows && r < (int)rowStrs.size(); r++) {
+        std::vector<std::string> vals = split(rowStrs[r], ' ');
+        for (int c = 0; c < cols && c < (int)vals.size(); c++) {
+            mat[r * cols + c] = std::stof(vals[c]);
         }
     }
 }
@@ -588,8 +591,17 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
     }
     if (dinfo)
     {   // Recompute data info size and checksum
+        // The checksum covers the whole payload (dinfo, tcal, mcal laid out back to back), but the caller passes the three as independent pointers and
+        // dinfo is only the 8-byte header. Checksumming sizeof(sensor_cal_data_t) bytes from dinfo would read past it, and for any caller whose tcal/mcal
+        // do not happen to follow dinfo it would checksum unrelated memory. So build the contiguous payload from what was supplied; a group the
+        // caller did not supply contributes zeros.
+        sensor_cal_data_t payload = {};
+        if (tcal)
+            payload.tcal = *tcal;
+        if (mcal)
+            payload.mcal = *mcal;
         dinfo->size = sizeof(sensor_cal_data_t);
-        dinfo->checksum = flashChecksum32(dinfo, dinfo->size);
+        dinfo->checksum = flashChecksum32(&payload, dinfo->size);
     }
 
     return true;

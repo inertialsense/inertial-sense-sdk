@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <algorithm>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <functional>
@@ -521,53 +522,50 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
             continue;
         }
 
-        if (serialNum >= 0)
+        string serialNumber = to_string(serialNum);
+
+        // if we don't have a timestamp yet, see if we can parse it from the filename, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
+        if (m_timeStamp.length() == 0)
         {
-            string serialNumber = to_string(serialNum);
+            m_timeStamp = date;
+            m_timeStamp += (m_timeStamp.size() ? "_" : "") + time;
+        }
 
-            // if we don't have a timestamp yet, see if we can parse it from the filename, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
-            if (m_timeStamp.length() == 0)
+        // check for unique serial numbers
+        if (serialNumbers.find(serialNumber) == serialNumbers.end())
+        {
+            bool emptySerialsList = serials.size() == 0;
+            bool inSerialsList = find(serials.begin(), serials.end(), serialNumber) != serials.end();
+            bool useAll = find(serials.begin(), serials.end(), "ALL") != serials.end();
+
+            if (emptySerialsList || inSerialsList || useAll) // and that it is a serial number we want to use
             {
-                m_timeStamp = date;
-                m_timeStamp += (m_timeStamp.size() ? "_" : "") + time;
-            }
+                serialNumbers.insert(serialNumber);
 
-            // check for unique serial numbers
-            if (serialNumbers.find(serialNumber) == serialNumbers.end())
-            {
-                bool emptySerialsList = serials.size() == 0;
-                bool inSerialsList = find(serials.begin(), serials.end(), serialNumber) != serials.end();
-                bool useAll = find(serials.begin(), serials.end(), "ALL") != serials.end();
-
-                if (emptySerialsList || inSerialsList || useAll) // and that it is a serial number we want to use
+                // Add devices
                 {
-                    serialNumbers.insert(serialNumber);
-
-                    // Add devices
+                    LOCK_MUTEX();
+                    std::shared_ptr<cDeviceLog> deviceLog;
+                    switch (logType)
                     {
-                        LOCK_MUTEX();
-                        std::shared_ptr<cDeviceLog> deviceLog;
-                        switch (logType)
-                        {
-                        default:
-                        case cISLogger::LOGTYPE_DAT:    deviceLog = make_shared<cDeviceLogSerial>(0, serialNum); break;
-                        case cISLogger::LOGTYPE_RAW:    deviceLog = make_shared<cDeviceLogRaw>(0, serialNum); break;
+                    default:
+                    case cISLogger::LOGTYPE_DAT:    deviceLog = make_shared<cDeviceLogSerial>(0, serialNum); break;
+                    case cISLogger::LOGTYPE_RAW:    deviceLog = make_shared<cDeviceLogRaw>(0, serialNum); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-                        case cISLogger::LOGTYPE_CSV:    deviceLog = make_shared<cDeviceLogCSV>(0, serialNum); break;
-                        case cISLogger::LOGTYPE_JSON:   deviceLog = make_shared<cDeviceLogJSON>(0, serialNum); break;
+                    case cISLogger::LOGTYPE_CSV:    deviceLog = make_shared<cDeviceLogCSV>(0, serialNum); break;
+                    case cISLogger::LOGTYPE_JSON:   deviceLog = make_shared<cDeviceLogJSON>(0, serialNum); break;
 #endif
-                        }
-                        deviceLog->SetupReadInfo(directory, serialNumber, m_timeStamp);
-                        m_devices[serialNum] = deviceLog;
-                        UNLOCK_MUTEX();
                     }
+                    deviceLog->SetupReadInfo(directory, serialNumber, m_timeStamp);
+                    m_devices[serialNum] = deviceLog;
+                    UNLOCK_MUTEX();
+                }
 
 #if (LOG_DEBUG_GEN == 2)
-                    PrintProgress();
+                PrintProgress();
 #elif LOG_DEBUG_GEN
-                    printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
+                printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
 #endif
-                }
             }
         }
     }
@@ -610,9 +608,19 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
             cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo().serialNumber) + ".txt", "a");
-            std::string msg = (((diag_msg_t *)dataBuf)->message);
+            // The packet holds only the bytes the device sent: dataHdr->size of them, starting at struct offset dataHdr->offset. The message may be shorter
+            // than its 256-byte field and need not carry a terminator, so take the text from those bytes alone rather than trusting a NUL.
+            std::string msg;
+            const uint32_t msgOffset = offsetof(diag_msg_t, message);
+            const uint32_t packetEnd = dataHdr->offset + dataHdr->size;
+            if (dataHdr->offset <= msgOffset && packetEnd > msgOffset)
+            {
+                const char *text = (const char *)dataBuf + (msgOffset - dataHdr->offset);
+                const size_t available = std::min<size_t>(packetEnd - msgOffset, sizeof(((diag_msg_t *)0)->message));
+                msg.assign(text, strnlen(text, available));
+            }
             outfile->write(msg.c_str(), msg.length());
-            if (msg.length() > 0 && *msg.end() != '\n')
+            if (msg.length() > 0 && msg.back() != '\n')
             {
                 outfile->putch('\n');
             }

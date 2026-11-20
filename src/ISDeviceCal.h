@@ -20,8 +20,13 @@
 #include "ISHttpRequest.h"
 
 #define NUM_POSES                           18
-#define NUM_RATES_PER_POSE                  3       // rates per pose, each stage has a rate
-#define NUM_HEADINGS_PER_POSE               8       // headings per pose, each stage has a rate
+#define NUM_HEADINGS_PER_POSE               2       // headings per pose; sizes the legacy mag least-squares buffer below. The magnetometer is no
+                                                      // longer calibrated per device (SN-7966 golden matrix; SN-8833 stopped sampling it), and
+                                                      // nothing reads the historical per-sample mag data back out of old calibration files, so
+                                                      // this no longer needs to match MC_HEADINGS_PER_POSE's pre-SN-8833 value (was 8) for
+                                                      // backward compatibility -- verified against real calibration JSON and all load/plot/
+                                                      // upload call sites in EvalTool and the Python calibration scripts.
+#define NUM_RATES_PER_POSE                  3       // rates per pose (-RATE_FAST, 0, +RATE_FAST); sizes the legacy gyro least-squares buffer below -- verified against on-disk calibration JSON (18*3=54 columns), do not change without migrating existing files
 #define NUM_PQR_SAMPLES                     (NUM_POSES*NUM_RATES_PER_POSE)
 #define NUM_HDG_SAMPLES                     (NUM_POSES*NUM_HEADINGS_PER_POSE)
 
