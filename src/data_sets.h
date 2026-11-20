@@ -3085,6 +3085,24 @@ enum eSensorConfig
     SENSOR_CFG_IMU_FAULT_DETECT_SENSOR_NOISE    = 0,  //!< (Disabled/reserved, would be (int)0x10000000) IMU excessive-noise fault detection
 };
 
+/**
+ * Extended-range (high-g) accelerometer full-scale range, used with nvm_flash_cfg_t.accHighGRange (DID_FLASH_CONFIG).
+ *
+ * Applies to IMUs with a second, extended-range accelerometer, which reports an axis from it when the standard-range
+ * accelerometer saturates on that axis. Any other value than ACC_HIGH_G_RANGE_AUTO sets the extended range on its own,
+ * and the standard range then comes from SENSOR_CFG_ACC_FS, limited to the standard accelerometer's maximum. IMUs
+ * without an extended-range accelerometer ignore this setting. System reset required.
+ */
+enum eAccHighGRange
+{
+    ACC_HIGH_G_RANGE_AUTO                       = 0,    //!< Follow SENSOR_CFG_ACC_FS: SENSOR_CFG_ACC_FS_32G gives +-32 g, SENSOR_CFG_ACC_FS_MAX the sensor's widest, any other range disables the extended range
+    ACC_HIGH_G_RANGE_OFF                        = 1,    //!< Extended-range accelerometer disabled
+    ACC_HIGH_G_RANGE_32G                        = 2,    //!< Extended range +-32 g
+    ACC_HIGH_G_RANGE_64G                        = 3,    //!< Extended range +-64 g
+    ACC_HIGH_G_RANGE_128G                       = 4,    //!< Extended range +-128 g
+    ACC_HIGH_G_RANGE_256G                       = 5,    //!< Extended range +-256 g
+};
+
 /** @brief General-purpose I/O pin function configuration, used with nvm_flash_cfg_t.ioConfig (DID_FLASH_CONFIG). Each shared GPIO pin (or pin group, e.g. G1/G2) has a small multi-bit field selecting which of its mutually-exclusive alternate functions is active (strobe I/O, serial port, CAN, I2C, SPI, quadrature encoder, GNSS timepulse); the fields are packed together into a single 32-bit ioConfig value along with GNSS receiver source/type selection and per-IMU disable flags. Use the associated _MASK/_OFFSET pairs and helper macros to read/write individual fields without disturbing the others. */
 enum eIoConfig
 {
@@ -3680,9 +3698,9 @@ typedef struct PACKED
 
     uint8_t                 deadReckoningTimeout;               //!< (s) Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.
 
-    uint8_t                 reserved1;                          //!< Reserved for future use
+    uint8_t                 accHighGRange;                      //!< Extended-range (high-g) accelerometer full-scale range (see eAccHighGRange). 0 = follow the sensorConfig accelerometer range.
 
-    uint16_t                reserved2;                          //!< Reserved for future use
+    uint16_t                reserved2;                         //!< Reserved for future use
 
     uint32_t                reserved3;                          //!< Reserved for future use
 

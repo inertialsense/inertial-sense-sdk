@@ -1847,7 +1847,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("imuShockDeltaGyroHighThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroHighThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Min angular rate difference between the 3 IMUs to detect start of a shock.");
     mapper.AddMember("imuShockDeltaGyroLowThreshold", &nvm_flash_cfg_t::imuShockDeltaGyroLowThreshold, DATA_TYPE_UINT8, "deg/s", "IMU shock detection. Max angular rate difference between the 3 IMUs within the latch time to detect end of a shock.");
     mapper.AddMember("deadReckoningTimeout", &nvm_flash_cfg_t::deadReckoningTimeout, DATA_TYPE_UINT8, "s", "Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.");
-    mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("accHighGRange", &nvm_flash_cfg_t::accHighGRange, DATA_TYPE_UINT8, "", "Extended-range (high-g) accelerometer range: 0 = follow sensorConfig, 1 = off, 2 = 32 g, 3 = 64 g, 4 = 128 g, 5 = 256 g (see eAccHighGRange). System reset required.");
     mapper.AddMember("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT16, "", "", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved3", &nvm_flash_cfg_t::reserved3, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved4", &nvm_flash_cfg_t::reserved4, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
