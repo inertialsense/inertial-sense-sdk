@@ -21,6 +21,7 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#include <memory>
 
 
 #include <gtest/gtest.h>
@@ -195,6 +196,59 @@ TEST_F(test_ISDeviceCal, loadFromJsonObj_noInfoNoFilePath)
     // Without filePath and no "info" in JSON, info fields should not be populated from filename
     // The info size and checksum should still be computed
     EXPECT_EQ(info.size, sizeof(sensor_cal_info_t));
+}
+
+// ---- data checksum (SN-9072) ----
+//
+// dinfo->checksum covers the whole calibration data payload, which on the device is dinfo, tcal and mcal laid out back to back (sensor_cal_data_t).
+// The loaders take the three as independent pointers, so the checksum must be built from the tcal/mcal supplied rather than from whatever memory
+// follows dinfo. The fixture above hides this because its dinfo, tcal and mcal members happen to be adjacent.
+
+/** @return the XOR of the little-endian 32-bit words of @p a followed by @p b, computed here rather than by the library under test */
+static uint32_t xorWords(const void* a, size_t aLen, const void* b, size_t bLen)
+{
+    std::vector<uint8_t> bytes(aLen + bLen);
+    memcpy(bytes.data(), a, aLen);
+    memcpy(bytes.data() + aLen, b, bLen);
+    uint32_t sum = 0;
+    for (size_t i = 0; i + 4 <= bytes.size(); i += 4)
+    {
+        uint32_t w;
+        memcpy(&w, &bytes[i], 4);
+        sum ^= w;
+    }
+    return sum;
+}
+
+TEST_F(test_ISDeviceCal, loadFromJsonObj_dataChecksumCoversSuppliedTcalAndMcalNotAdjacentMemory)
+{
+    // Separate allocations: nothing about the memory after the 8-byte dinfo is related to tcal and mcal.
+    auto dout = std::make_unique<sensor_data_info_t>();
+    auto tout = std::make_unique<sensor_tcal_group_t>();
+    auto mout = std::make_unique<sensor_mcal_group_t>();
+    memset(dout.get(), 0, sizeof(*dout));
+    memset(tout.get(), 0, sizeof(*tout));
+    memset(mout.get(), 0, sizeof(*mout));
+
+    ASSERT_TRUE(ISDeviceCal::loadCalibrationFromJsonObj(makeTestCalJson(88002), NULL, &info, dout.get(), tout.get(), mout.get()));
+    ASSERT_EQ(tout->gyr[0].numPts, 2u) << "the fixture JSON should have populated tcal, otherwise the checksum below proves little";
+
+    EXPECT_EQ(dout->size, sizeof(sensor_cal_data_t));
+    EXPECT_EQ(dout->checksum, xorWords(tout.get(), sizeof(*tout), mout.get(), sizeof(*mout)));
+    EXPECT_NE(dout->checksum, 0u);
+}
+
+TEST_F(test_ISDeviceCal, loadFromJsonObj_dataChecksumMatchesWholeStructWhenEmbedded)
+{
+    // The layout every in-library caller uses: dinfo, tcal and mcal are the members of one sensor_cal_data_t. The checksum must be exactly what the
+    // device computes over the whole struct.
+    sensor_cal_data_t data = {};
+
+    ASSERT_TRUE(ISDeviceCal::loadCalibrationFromJsonObj(makeTestCalJson(88003), NULL, &info, &data.dinfo, &data.tcal, &data.mcal));
+
+    EXPECT_EQ(data.dinfo.size, sizeof(sensor_cal_data_t));
+    EXPECT_EQ(data.dinfo.checksum, flashChecksum32(&data, sizeof(data)));
+    EXPECT_NE(data.dinfo.checksum, 0u);
 }
 
 // ---- loadCalibrationFromJsonString tests ----

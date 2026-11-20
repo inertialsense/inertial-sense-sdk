@@ -150,6 +150,17 @@ bool TcpServerPortFactory::startListening() {
 
     lastListenError = { TCP_LISTEN_CTX__NONE, 0 };  // fresh attempt; recordListenError() repopulates this on failure
 
+    if (factoryOptions.listeningAddr.sin_addr.s_addr == INADDR_NONE) {
+        // configure() could not parse the requested address.  Refuse to listen rather than fall back to every interface.
+#ifdef PLATFORM_IS_WINDOWS
+        WSASetLastError(WSAEADDRNOTAVAIL);
+#else
+        errno = EADDRNOTAVAIL;
+#endif
+        recordListenError(TCP_LISTEN_CTX__BIND);
+        return false;
+    }
+
     // socket: create the parent socket
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd < 0) {
@@ -195,7 +206,7 @@ bool TcpServerPortFactory::startListening() {
     // build the server's Internet address
     memset((char *) &serveraddr, 0, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;                                            // this is an Internet address
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);                             // let the system figure out our IP address
+    serveraddr.sin_addr = factoryOptions.listeningAddr.sin_addr;                // the configured interface address (0.0.0.0 listens on every interface)
     serveraddr.sin_port = htons((unsigned short)factoryOptions.listenerPort);   // this is the port we will listen on
 
     // bind: associate the parent socket with a port
