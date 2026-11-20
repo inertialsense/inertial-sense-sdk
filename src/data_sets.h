@@ -440,11 +440,15 @@ enum eSysStatusFlags
     SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2_offest  = 2,                //!< Bit offset of SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2 within sysStatus
     SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH           = (int)0x00000008,  //!< GNSS1 and GNSS2 report different firmware versions (see DID_GNSS1_VERSION, DID_GNSS2_VERSION). Only where both are configured with a comparable receiver type; not latched.
 
-    /** Per-IMU accelerometer high-g switch indication, one bit per IMU (bit SYS_STATUS_ACC_HIGH_G_OFFSET + n
-    for IMU n). On IMUs with a second, extended-range accelerometer, an axis whose standard-range reading
-    reaches saturation is reported from the extended-range accelerometer instead, through the same IMU
-    outputs. A bit is set while IMU n reports any axis that way and stays set for 1 s afterwards, so that
-    a short event is still visible at a low DID_SYS_PARAMS rate. Not set on IMUs without extended range. */
+    /**
+     * Per-IMU accelerometer high-g switch indication, one bit per IMU (bit SYS_STATUS_ACC_HIGH_G_OFFSET + n
+     * for IMU n).
+     *
+     * On IMUs with a second, extended-range accelerometer, an axis whose standard-range reading reaches
+     * saturation is reported from the extended-range accelerometer instead, through the same IMU outputs.
+     * A bit is set while IMU n reports any axis that way and stays set for 1 s afterwards, so that a short
+     * event is still visible at a low DID_SYS_PARAMS rate. Not set on IMUs without extended range.
+     */
     SYS_STATUS_ACC_HIGH_G_MASK                      = (int)0x000001F0,  //!< Mask of the per-IMU accelerometer high-g switch bits
     SYS_STATUS_ACC_HIGH_G_OFFSET                    = 4,                //!< Bit offset of SYS_STATUS_ACC_HIGH_G_MASK within sysStatus
 };
