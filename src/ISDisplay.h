@@ -534,6 +534,11 @@ public:
     /** Sets the device associated with this display, used for device-specific formatting. @param activeDevice handle of the active device */
     void setDevice(device_handle_t activeDevice) { m_device = activeDevice; }
 
+    /** Terminal bells owed by DID_MAG_CAL_COVERAGE in pretty mode, consumed by the caller that prints the screen (each rings once).
+     * @return the bells as a string of BEL characters (empty when none are owed)
+     */
+    std::string TakePendingBells() { std::string s((size_t)m_pendingBells, '\a'); m_pendingBells = 0; return s; }
+
 private:
     std::string VectorToString();
     void DataToVector(const p_data_t* data);
@@ -542,6 +547,7 @@ private:
     std::vector<std::string> m_didMsgs;
     mag_cal_coverage_t m_lastMagCalCov = {};     // last DID_MAG_CAL_COVERAGE shown, to decide when to ring the terminal bell
     bool m_lastMagCalCoverValid = false;
+    int m_pendingBells = 0;                      // pretty mode: bells not yet rung (the screen is redrawn from cached text, so they are kept out of it)
     eDisplayMode m_displayMode = DMODE_QUIET;
     uint32_t m_startMs = 0;
     device_handle_t m_device = NULL;

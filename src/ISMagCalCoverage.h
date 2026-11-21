@@ -43,7 +43,7 @@ static inline unsigned magCalCellIndex(const float v[3])
 static inline int magCalCellIndexOfVector(const float v[3], unsigned *index)
 {
     float n2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
-    if (!(n2 > 1.0e-12f) || n2 != n2) { *index = 0; return 0; }
+    if (!(n2 > 1.0e-12f) || !is_finite_f(n2)) { *index = 0; return 0; }
     float inv = 1.0f / sqrtf(n2), u[3] = { v[0] * inv, v[1] * inv, v[2] * inv };
     *index = magCalCellIndex(u);
     return 1;
@@ -259,8 +259,9 @@ static inline int magCalChoosePose(const mag_cal_coverage_t *m, const float g[3]
     return c.found;
 }
 
+#ifdef __cplusplus
 // Terminal bell policy: one chime when the instruction changes to a new pose/phase (so a user fighting cabling knows to move on),
-// three when the calibration completes. 'prev' is the last status seen (prevValid=false on the first one: no chime).
+// three when the calibration completes. 'prev' is the last status seen (prevValid=false on the first one: no chime). Host only (C++).
 static inline int magCalChimeCount(const mag_cal_coverage_t &prev, bool prevValid, const mag_cal_coverage_t &cur)
 {
     if (!prevValid) return 0;
@@ -271,6 +272,7 @@ static inline int magCalChimeCount(const mag_cal_coverage_t &prev, bool prevVali
     const bool samePose = prev.poseDir[0] == cur.poseDir[0] && prev.poseDir[1] == cur.poseDir[1] && prev.poseDir[2] == cur.poseDir[2];
     return (prev.guidePhase != cur.guidePhase || !samePose) ? 1 : 0;
 }
+#endif
 
 /** sin(inclination) the pose ring is sized with. Uses the firmware's own estimate when it reports one; otherwise falls back to the instantaneous
  *  field . floor from the two direction vectors (noisier: it moves with the centre estimate). Returns 0 when neither can be formed. */
@@ -336,13 +338,14 @@ static inline float magCalSphereFitPct(const uint8_t *cells, const uint8_t *requ
                     int z = iz + dz, l = ((il + dl) % MAG_CAL_CELL_LON_SECTORS + MAG_CAL_CELL_LON_SECTORS) % MAG_CAL_CELL_LON_SECTORS;
                     if (z < 0 || z >= MAG_CAL_CELL_Z_BANDS) continue;
                     unsigned cell = (unsigned)(z * MAG_CAL_CELL_LON_SECTORS + l);
-                    const int req = required ? ((required[cell >> 3] >> (cell & 7)) & 1) : 1;
-                    double f = req ? (double)magCalCellsGet(cells, cell) / (double)MAG_CAL_COVERAGE_MIN_COUNT : 1.0;   // a cell that is not required is as good as full
+                    n++;
+                    if (required && !((required[cell >> 3] >> (cell & 7)) & 1)) continue;      // only required cells shape a corner; the others only reduce its weight
+                    double f = (double)magCalCellsGet(cells, cell) / (double)MAG_CAL_COVERAGE_MIN_COUNT;
                     if (f > 1.0) f = 1.0;
-                    sf += f; sr += req ? 1.0 : 0.0; if (f < mn) mn = f; n++;
+                    sf += f; sr += 1.0; if (f < mn) mn = f;
                 }
-            if (!n) continue;
-            const double shape = 0.5 * (sf / n + mn), req = sr / n;
+            if (!sr) continue;
+            const double shape = 0.5 * (sf / sr + mn), req = sr / n;
             sum += wz * req * shape; wsum += wz * req;
         }
     }
@@ -358,10 +361,17 @@ static inline float magCalSphereFitPctOf(const mag_cal_coverage_t *c)
  *  that covers half the sphere can still read GOOD. A host uses magCalCoverageLimited() to say so; it is information only and never blocks anything. */
 #define MAG_CAL_FIT_ADEQUATE_PCT    MAG_CAL_HOLD_BASIC_PCT       // the same number the basic multi-axis hold uses
 
-/** True when the coverage map is known and its sphere fit is below MAG_CAL_FIT_ADEQUATE_PCT. False (= say nothing) when the map is unknown, e.g. a calibration restored from an older firmware. */
+/** Sphere fit (percent) of the WHOLE sphere, whatever the required mask: how much of all directions the calibration has seen. A single-axis band can be complete
+ *  (magCalSphereFitPctOf() 100%) while covering only part of the sphere. */
+static inline float magCalWholeSphereFitPctOf(const mag_cal_coverage_t *c)
+{
+    return magCalSphereFitPct(c->cells, NULL);
+}
+
+/** True when the coverage map is known and its whole-sphere fit is below MAG_CAL_FIT_ADEQUATE_PCT. False (= say nothing) when the map is unknown, e.g. a calibration restored from an older firmware. */
 static inline int magCalCoverageLimited(const mag_cal_coverage_t *c)
 {
-    return (c->flags & MAG_CAL_FLAG_COVERAGE_VALID) && magCalSphereFitPctOf(c) < (float)MAG_CAL_FIT_ADEQUATE_PCT;
+    return (c->flags & MAG_CAL_FLAG_COVERAGE_VALID) && magCalWholeSphereFitPctOf(c) < (float)MAG_CAL_FIT_ADEQUATE_PCT;
 }
 
 /** Why the calibration is not advancing, as a short phrase (empty when there is nothing to say). */
@@ -393,7 +403,8 @@ static inline void magCalInstruction(const mag_cal_coverage_t *cover, char *out,
     const int haveGuide = magCalHaveGuide(cover);
     if (cover->reason != MAG_CAL_REASON_NONE && cover->reason < 9 && cover->reason != MAG_CAL_REASON_REGION_FULL)
     {
-        if (fitProblem && !haveGuide) { snprintf(tmp, sizeof(tmp), "%s - the map is complete, more rotation will not help", magCalReasonText(cover->reason)); magCalAppend(out, cap, &il, "; ", tmp); }   // only when nothing is left to cover
+        const int mapComplete = (cover->flags & MAG_CAL_FLAG_COVERAGE_VALID) && cover->coveragePct >= 100;
+        if (fitProblem && !haveGuide && mapComplete) { snprintf(tmp, sizeof(tmp), "%s - the map is complete, more rotation will not help", magCalReasonText(cover->reason)); magCalAppend(out, cap, &il, "; ", tmp); }   // only when nothing is left to cover
         else magCalAppend(out, cap, &il, "; ", magCalReasonText(cover->reason));
     }
     if (haveGuide)

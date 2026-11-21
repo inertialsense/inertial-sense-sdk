@@ -713,7 +713,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
         else
             std::cout << Connected() << std::endl;
 
-        std::cout << VectorToString();
+        std::cout << TakePendingBells() << VectorToString();
         return true;
 
     case DMODE_EDIT:
@@ -1532,14 +1532,19 @@ static char magCalCellGlyph(const mag_cal_coverage_t &cover, unsigned cell)
     return '#';
 }
 
-std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_coverage_t &cover, const p_data_hdr_t& hdr)
+std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_coverage_t &coverIn, const p_data_hdr_t& hdr)
 {
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
-    // Terminal bell: the instruction changed (move to the next face) or the calibration completed. BEL is non-printing, so the layout is unaffected.
-    for (int i = magCalChimeCount(m_lastMagCalCov, m_lastMagCalCoverValid, cover); i > 0 && ptr < ptrEnd - 1; i--) *ptr++ = '\a';
-    m_lastMagCalCov = cover; m_lastMagCalCoverValid = true;
+    // Terminal bell: the instruction changed (move to the next face) or the calibration completed. Pretty mode redraws the screen from cached text, so its bells are
+    // kept out of the text and rung once by the redraw (TakePendingBells()); elsewhere the text is printed once and carries them (BEL is non-printing).
+    const int bells = magCalChimeCount(m_lastMagCalCov, m_lastMagCalCoverValid, coverIn);
+    if (m_displayMode == DMODE_PRETTY) m_pendingBells += bells;
+    else for (int i = bells; i > 0 && ptr < ptrEnd - 1; i--) *ptr++ = '\a';
+    m_lastMagCalCov = coverIn; m_lastMagCalCoverValid = true;
+    mag_cal_coverage_t cover = coverIn;
+    if (!(cover.flags & MAG_CAL_FLAG_REQUIRED_VALID)) magCalRequireAll(&cover);      // the wire contract: an unknown required mask means every cell is required
     ptr += SNPRINTF_ID_NAME(hdr.id);
 
     static const char *lifecycle[] = { "NOT CALIBRATED", "COLLECTING", "FITTING", "COMPLETE", "ABORTED", "NOT SUPPORTED", "CALIBRATED" };
@@ -1557,11 +1562,24 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
     SNPRINTF(detail, sizeof(detail), "map %u%%  quality %s%s  Tcal %.1f  samples %u%s%s", cover.coveragePct, qualityStr, (cover.flags & MAG_CAL_FLAG_QUALITY_HELD) ? " (held: turning fast)" : "", cover.fitQuality, cover.sampleCount,
         (cover.fitStage && cover.fitStage < 10 && cover.lifecycle == MAG_CAL_LC_FITTING) ? "  fit: " : "", (cover.fitStage && cover.fitStage < 10 && cover.lifecycle == MAG_CAL_LC_FITTING) ? fitStageName[cover.fitStage] : "");
 
-    // Instruction text: shared with EvalTool so every front end says the same thing
+    // Instruction text: shared with EvalTool so every front end says the same thing. Pretty mode gives it two lines of 74 columns, filled part by part ("; " separated),
+    // so the guidance after a long reason is never cut off.
     char instr[160] = "";
     magCalInstruction(&cover, instr, sizeof(instr));
     const bool haveGuide = magCalHaveGuide(&cover) != 0;
-    if (strlen(instr) > 74) instr[74] = 0;   // never wider than the line it sits on
+    std::string instrLine[2];
+    {
+        std::string rest = instr; int line = 0;
+        while (!rest.empty() && line < 2)
+        {
+            const size_t sep = rest.find("; ");
+            const std::string part = rest.substr(0, sep);
+            rest = (sep == std::string::npos) ? std::string() : rest.substr(sep + 2);
+            if (!instrLine[line].empty() && instrLine[line].size() + 2 + part.size() > 74) line++;
+            if (line > 1) break;
+            instrLine[line] += (instrLine[line].empty() ? "" : "; ") + part;
+        }
+    }
 
     // The ring the turn sweeps (cells marked '*' that it will fill): the circle round the floor direction (while turning) or round the pose face (while aiming)
     bool ringOn = false; uint8_t ringMask[MAG_CAL_RING_MASK_BYTES] = { 0 };
@@ -1579,8 +1597,9 @@ std::string cInertialSenseDisplay::DataToStringMagCalCoverage(const mag_cal_cove
 
     if (m_displayMode == DMODE_PRETTY)
     {   // Map: rows = latitude band (top = +Z in the sensor frame), columns = longitude sector (atan2(y,x), -180 to +180 deg)
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  %-78s\n", detail);
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  > %-74s\n", instr);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  %-78.78s\n", detail);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "  > %-74.74s\n", instrLine[0].c_str());
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "    %-74.74s\n", instrLine[1].c_str());
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  . missing  : thin  o ok  O good  # full  - n/a  @ now  * this turn fills\n");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "  lon:      -180             0            +180\n");
         for (int z = MAG_CAL_CELL_Z_BANDS - 1; z >= 0; z--)

@@ -295,7 +295,7 @@ TEST(MagCalCoverage, DisplayShowsLifecycleReasonAndMap)
     EXPECT_NE(s.find("map 0%"), std::string::npos) << s;
     EXPECT_NE(s.find(": o O #"), std::string::npos) << s;           // cells 0..3 glyphs: thin, ok, good, full
     // Constant layout: status, instruction, legend, longitude header, then one row per latitude band
-    const int expectedLines = 1 + 1 + 1 + 1 + 1 + MAG_CAL_CELL_Z_BANDS;   // status, detail, instruction, legend, lon header, rows
+    const int expectedLines = 1 + 1 + 2 + 1 + 1 + MAG_CAL_CELL_Z_BANDS;   // status, detail, instruction (two lines), legend, lon header, rows
     EXPECT_EQ(std::count(s.begin(), s.end(), '\n'), expectedLines) << s;
     // No line may be long enough to wrap on an ordinary terminal: a wrapped line changes the line count and the screen jumps
     size_t start = 0; int lineNo = 0;
@@ -404,7 +404,10 @@ TEST(MagCalCoverage, DisplayEmitsTheBellOnlyWhenTheInstructionChanges)
     p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
     mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
     m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.guidePhase = MAG_CAL_PHASE_AIM; m.poseDir[2] = 127;
-    auto bells = [&](const mag_cal_coverage_t &c) { std::string s = d.DataToStringMagCalCoverage(c, hdr); return (int)std::count(s.begin(), s.end(), '\a'); };
+    auto bells = [&](const mag_cal_coverage_t &c) {
+        std::string s = d.DataToStringMagCalCoverage(c, hdr);
+        EXPECT_EQ(std::count(s.begin(), s.end(), '\a'), 0) << "pretty mode redraws the cached text: the bell must not be in it";
+        s = d.TakePendingBells(); return (int)std::count(s.begin(), s.end(), '\a'); };
     EXPECT_EQ(bells(m), 0);
     EXPECT_EQ(bells(m), 0);
     m.guidePhase = MAG_CAL_PHASE_TURN;
@@ -473,6 +476,79 @@ TEST(MagCalCoverage, HoldingHasWordsAndIsShownAsTheInstruction)
     mag_cal_coverage_t m = blank(); m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.reason = MAG_CAL_REASON_HOLDING; m.flags = MAG_CAL_FLAG_COVERAGE_VALID;
     char buf[200]; magCalInstruction(&m, buf, sizeof buf);
     EXPECT_NE(std::string(buf).find("keep covering the sphere"), std::string::npos) << buf;
+}
+
+// ---- imx/SDK PR review (Copilot, 2026-11-21) --------------------------------------------------------------------------------
+TEST(MagCalCoverage, IndexRejectsNonFiniteVectors)
+{
+    unsigned idx = 99;
+    float inf[3] = { INFINITY, 0, 0 }, nan[3] = { NAN, 0, 0 };
+    EXPECT_FALSE(magCalCellIndexOfVector(inf, &idx)); EXPECT_EQ(idx, 0u);
+    EXPECT_FALSE(magCalCellIndexOfVector(nan, &idx));
+}
+
+TEST(MagCalCoverage, SphereFitOfAnEmptySparseMaskIsZero)
+{
+    mag_cal_coverage_t m = blank(); m.flags = MAG_CAL_FLAG_REQUIRED_VALID | MAG_CAL_FLAG_COVERAGE_VALID;
+    magCalCellSetRequired(&m, 3 * MAG_CAL_CELL_LON_SECTORS + 5, 1);          // one non-polar cell required, nothing collected
+    EXPECT_FLOAT_EQ(magCalSphereFitPctOf(&m), 0.0f);
+    magCalCellSet(&m, 3 * MAG_CAL_CELL_LON_SECTORS + 5, 15);
+    EXPECT_FLOAT_EQ(magCalSphereFitPctOf(&m), 100.0f) << "the only required cell is full";
+}
+
+TEST(MagCalCoverage, AFullSingleAxisBandIsStillLimitedCoverageOfTheSphere)
+{
+    mag_cal_coverage_t m = blank(); m.flags = MAG_CAL_FLAG_REQUIRED_VALID | MAG_CAL_FLAG_COVERAGE_VALID;
+    for (unsigned i = 0; i < 32; i++) { magCalCellSetRequired(&m, 64 + i, 1); magCalCellSet(&m, 64 + i, 15); }
+    EXPECT_FLOAT_EQ(magCalSphereFitPctOf(&m), 100.0f) << "progress against the band is complete";
+    EXPECT_LT(magCalWholeSphereFitPctOf(&m), (float)MAG_CAL_FIT_ADEQUATE_PCT);
+    EXPECT_TRUE(magCalCoverageLimited(&m)) << "but the band is only part of the sphere";
+}
+
+TEST(MagCalCoverage, AFitFailureWithoutGuidanceOnlySaysTheMapIsCompleteWhenItIs)
+{
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
+    m.flags = MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID; m.lifecycle = MAG_CAL_LC_FITTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.reason = MAG_CAL_REASON_FIT_REJECTED; m.coveragePct = 31;
+    char buf[200]; magCalInstruction(&m, buf, sizeof buf);
+    EXPECT_NE(std::string(buf).find("fit not accepted yet"), std::string::npos) << buf;
+    EXPECT_EQ(std::string(buf).find("will not help"), std::string::npos) << buf;
+    m.flags &= ~MAG_CAL_FLAG_COVERAGE_VALID; m.coveragePct = 100;
+    magCalInstruction(&m, buf, sizeof buf);
+    EXPECT_EQ(std::string(buf).find("will not help"), std::string::npos) << "an unknown map is not a complete one: " << buf;
+}
+
+TEST(MagCalCoverage, DisplayTreatsAnUnknownRequiredMaskAsAllRequired)
+{
+    mag_cal_coverage_t m = blank(); m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.flags = MAG_CAL_FLAG_COVERAGE_VALID;      // REQUIRED_VALID clear, mask zero
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    std::string s = d.DataToStringMagCalCoverage(m, hdr);
+    const size_t rows = s.find("z +"); ASSERT_NE(rows, std::string::npos);
+    EXPECT_EQ(s.find(" - ", rows), std::string::npos) << "no cell may read n/a ('-')\n" << s;     // glyphs are space separated; the row labels' minus signs are not
+}
+
+TEST(MagCalCoverage, DisplayKeepsTheGuidanceAfterALongReason)
+{
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
+    m.lifecycle = MAG_CAL_LC_COLLECTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.reason = MAG_CAL_REASON_HOLDING; m.flags = MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID;
+    m.guidePhase = MAG_CAL_PHASE_AIM; m.poseDir[2] = 127; m.poseErrDeg = 35;
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    std::string s = d.DataToStringMagCalCoverage(m, hdr);
+    EXPECT_NE(s.find("keep covering the sphere"), std::string::npos) << s;
+    EXPECT_NE(s.find("tilt the device until the marker points at the floor: 35 deg to go"), std::string::npos) << s;
+}
+
+TEST(MagCalCoverage, DisplayDetailLineNeverWraps)
+{
+    mag_cal_coverage_t m = blank(); magCalRequireAll(&m);
+    m.lifecycle = MAG_CAL_LC_FITTING; m.mode = MAG_CAL_STATE_MULTI_AXIS; m.coveragePct = 100; m.quality = MAG_CAL_QUALITY_DEGRADED; m.fitQuality = 2.0f; m.sampleCount = 2897; m.fitStage = 8;
+    m.flags = MAG_CAL_FLAG_COVERAGE_VALID | MAG_CAL_FLAG_REQUIRED_VALID | MAG_CAL_FLAG_QUALITY_HELD; m.reason = MAG_CAL_REASON_NORM_CHECK;
+    p_data_hdr_t hdr = {}; hdr.id = DID_MAG_CAL_COVERAGE;
+    cInertialSenseDisplay d; d.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
+    std::string s = d.DataToStringMagCalCoverage(m, hdr);
+    size_t start = 0; int lineNo = 0;
+    while (start < s.size()) { size_t nl = s.find('\n', start); if (nl == std::string::npos) nl = s.size(); EXPECT_LE(nl - start, 80u) << "line " << lineNo << ": " << s.substr(start, nl - start); start = nl + 1; lineNo++; }
 }
 
 } // namespace
