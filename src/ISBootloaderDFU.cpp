@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISBootloaderDFU.h"
+#include "DfuResetThrottle.h"
 #include "ihex.h"
 #include "ISUtilities.h"
 
@@ -471,8 +472,11 @@ is_operation_result cISBootloaderDFU::reboot_up()
     ret_dfu = dfu_set_address_pointer(&m_dfu.handle_libusb, 0x1FFF7800);
     if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
-    ret_libusb = dfu_DNLOAD(&m_dfu.handle_libusb, 2, bytes, sizeof(bytes));
-    dfu_wait_for_state(&m_dfu.handle_libusb, DFU_STATE_DNLOAD_IDLE);
+    {
+        DfuUsbResetGate resetGate;      // the device resets on this write, which it acts on when polled for status
+        ret_libusb = dfu_DNLOAD(&m_dfu.handle_libusb, 2, bytes, sizeof(bytes));
+        dfu_wait_for_state(&m_dfu.handle_libusb, DFU_STATE_DNLOAD_IDLE);
+    }
 
     // ret_libusb = libusb_reset_device(dev_handle);
     // if (ret_libusb < LIBUSB_SUCCESS) return IS_OP_ERROR; 
@@ -499,7 +503,10 @@ is_operation_result cISBootloaderDFU::reboot()
     if (ret_dfu < DFU_ERROR_NONE) { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     // Reset USB device
-    ret_libusb = libusb_reset_device(m_dfu.handle_libusb);
+    {
+        DfuUsbResetGate resetGate;
+        ret_libusb = libusb_reset_device(m_dfu.handle_libusb);
+    }
     if (ret_libusb < LIBUSB_SUCCESS)  { libusb_release_interface(m_dfu.handle_libusb, 0); return IS_OP_ERROR; }
 
     libusb_release_interface(m_dfu.handle_libusb, 0);

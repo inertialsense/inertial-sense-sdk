@@ -907,7 +907,7 @@ private:
     //! fix period. With anchorTowStart_ it bounds the plausible ToW window used
     //! to classify a resolve() input as ToW-domain vs uptime-domain.
     uint64_t                    anchorTowEnd_ = 0;
-    //! SN-8323 (uptime unification): authoritative uptime->GPS-ToW offset (ms),
+    //! SN-8323 (uptime unification): authoritative uptime->GNSS-ToW offset (ms),
     //! derived from DID_SYS_PARAMS (timeOfWeekMs - upTime) during build(). Kyle
     //! 2026-07-23: SYS_PARAMS.upTime is the definitive relative uptime; session-
     //! only records (magnetometer, imu) and pre-sync "real clock" records (whose

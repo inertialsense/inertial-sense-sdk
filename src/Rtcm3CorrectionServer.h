@@ -171,6 +171,14 @@ public:
     // re-expose the listener-error forensic accessor (TcpServerPortFactory is inherited as protected)
     using TcpServerPortFactory::getLastListenError;
 
+protected:
+    /** @brief Stops forwarding to a failed client and releases the client port (closing its socket and dropping it from the connection count). */
+    void removeFailedPort(port_handle_t port) override {
+        CorrectionService::removeFailedPort(port);
+        if (ownsPort(port))
+            releasePort(port);
+    }
+
 private:
     uint64_t        srcDeviceId = 0;             //!< selected device UID (derived from hdwId + SN)
     device_handle_t sourceDevice = nullptr;      //!< device currently bound as the correction source, or nullptr if none

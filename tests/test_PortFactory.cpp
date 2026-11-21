@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -161,6 +162,12 @@ TEST(test_PortFactory, tcpServerPortFactory) {
 
     portClose(serverPort);
     serverFactory.releasePort(serverPort);
+
+    // The ports and factory above are about to be destroyed, but PortManager is a process-wide singleton that still lists the port (and points at the
+    // stack-local factory). Left alone, ~PortManager() reads that freed port at process exit, and so does any forked death test whose body calls exit()
+    // (TcpServerLifecycle.DestructorWithClientsDoesNotCrash). Whether that read is harmless depends on what reused the freed memory.
+    pm.clear();
+    pm.clearPortFactories();
 }
 
 // SN-8473: SerialPortFactory::getComPorts() is now the single OS-enumeration implementation for
@@ -387,6 +394,23 @@ TEST(test_PortFactory, symlinkedPort_isValidatedAndLocated) {
     const std::vector<std::string> viaAlias = located(link);
     ASSERT_EQ(viaAlias.size(), 1u);
     EXPECT_EQ(viaAlias.front(), canonical);   // reported under its canonical name, not the alias
+}
+
+// --- SN-8661 -------------------------------------------------------------------------------------
+//
+// OpenPorts() hands the caller's string to discoverPorts() verbatim; cltool's -ufpkg re-discovery escapes it with utils::globToRegex() first,
+// so "/dev/imx5.0" becomes "/dev/imx5\\.0" -- no longer a path, and resolvePortName() (which only resolves real symlinks) declines it. cltool
+// therefore resolves each -c entry before escaping (cltoolResolvePortAliases() in cltool_main.cpp, which these tests cannot reach).
+
+// The asymmetry that makes that necessary: the literal alias resolves, its escaped form names no file and does not.
+TEST(test_PortFactory, SN8661_escapedDottedAlias_doesNotResolve_literalDoes) {
+    TempDir dir; ASSERT_TRUE(dir.valid());
+    const std::string target = dir.file("ttyFAKE0");
+    const std::string alias = dir.link("imx5.0", "ttyFAKE0");
+    ASSERT_FALSE(alias.empty());
+    EXPECT_EQ(SerialPortFactory::resolvePortName(alias), realOf(target));
+    EXPECT_EQ(SerialPortFactory::resolvePortName(utils::globToRegex(alias)), utils::globToRegex(alias))
+        << "the escaped form names no file, which is why cltool must resolve before escaping";
 }
 
 #endif // PLATFORM_IS_LINUX

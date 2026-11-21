@@ -352,9 +352,9 @@ status_field_decode_t buildGenFaultCodeDecode()
         "0x00800000 - Fault: I2C initialization."));
     d.subfields.push_back(bitField("Chip erase invalid", GFC_CHIP_ERASE_INVALID, true,
         "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time."));
-    d.subfields.push_back(bitField("EKF GPS time fault", GFC_EKF_GNSS_TIME_FAULT, true,
+    d.subfields.push_back(bitField("EKF GNSS time fault", GFC_EKF_GNSS_TIME_FAULT, true,
         "0x02000000 - Fault: EKF GNSS time fault."));
-    d.subfields.push_back(bitField("GPS receiver time fault", GFC_GNSS_RECEIVER_TIME, true,
+    d.subfields.push_back(bitField("GNSS receiver time fault", GFC_GNSS_RECEIVER_TIME, true,
         "0x04000000 - Fault: GNSS receiver time fault."));
     d.subfields.push_back(bitField("GNSS general fault", GFC_GNSS_GENERAL_FAULT, true,
         "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags)."));
@@ -746,7 +746,7 @@ status_field_decode_t buildImxHdwBitDecode()
 
     d.subfields.push_back(bitField("Passed all", HDW_BIT_PASSED_ALL, false,
         "0x00000001 - Passed all tests"));
-    d.subfields.push_back(bitField("Passed without GPS", HDW_BIT_PASSED_NO_GNSS, false,
+    d.subfields.push_back(bitField("Passed without GNSS", HDW_BIT_PASSED_NO_GNSS, false,
         "0x00000002 - Passed without valid GNSS signal"));
     {
         const uint32_t mask = (uint32_t)HDW_BIT_MODE_MASK;
@@ -767,11 +767,11 @@ status_field_decode_t buildImxHdwBitDecode()
         "0x00000400 - FAULT: Magnetometer"));
     d.subfields.push_back(bitField("FAULT: barometer", HDW_BIT_FAULT_BAROMETER, true,
         "0x00000800 - FAULT: Barometer"));
-    d.subfields.push_back(bitField("FAULT: no GPS comms", HDW_BIT_FAULT_GNSS_NO_COM, true,
+    d.subfields.push_back(bitField("FAULT: no GNSS comms", HDW_BIT_FAULT_GNSS_NO_COM, true,
         "0x00001000 - FAULT: No GNSS serial communications"));
-    d.subfields.push_back(bitField("FAULT: poor GPS C/No", HDW_BIT_FAULT_GNSS_POOR_CNO, true,
+    d.subfields.push_back(bitField("FAULT: poor GNSS C/No", HDW_BIT_FAULT_GNSS_POOR_CNO, true,
         "0x00002000 - FAULT: Poor GNSS signal strength"));
-    d.subfields.push_back(bitField("FAULT: poor GPS accuracy", HDW_BIT_FAULT_GNSS_POOR_ACCURACY, true,
+    d.subfields.push_back(bitField("FAULT: poor GNSS accuracy", HDW_BIT_FAULT_GNSS_POOR_ACCURACY, true,
         "0x00004000 - FAULT: GNSS poor accuracy"));
     d.subfields.push_back(bitField("FAULT: GNSS noise", HDW_BIT_FAULT_GNSS_NOISE, true,
         "0x00008000 - FAULT: GNSS noise"));
@@ -858,7 +858,7 @@ status_field_decode_t buildGpxBitResultsDecode()
     d.subfields.push_back(bitField("PPS2 passed", GPXBit_resultsBit_PPS2, false,     "0x02 - PPS2 test passed"));
     d.subfields.push_back(bitField("UART passed", GPXBit_resultsBit_UART, false,     "0x04 - UART test passed"));
     d.subfields.push_back(bitField("IO passed",   GPXBit_resultsBit_IO,   false,     "0x08 - IO test passed"));
-    d.subfields.push_back(bitField("GPS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GNSS test passed"));
+    d.subfields.push_back(bitField("GNSS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GNSS test passed"));
     d.subfields.push_back(bitField("Finished",    GPXBit_resultsBit_FINISHED, false, "0x20 - Test finished"));
     d.subfields.push_back(bitField("Canceled",    GPXBit_resultsBit_CANCELED, false, "0x40 - Test canceled"));
     d.subfields.push_back(bitField("Error",       GPXBit_resultsBit_ERROR, true,     "0x80 - Test error"));
@@ -883,7 +883,7 @@ status_field_decode_t buildGpxBitStateDecode()
         { 3, "Manuf UART",  "MANUF_UART",   false },
         { 4, "Manuf IO",    "MANUF_IO",     false },
         { 5, "Manuf PPS",   "MANUF_PPS",    false },
-        { 6, "Manuf GPS",   "MANUF_GPS",    false },
+        { 6, "Manuf GNSS",  "MANUF_GNSS",    false },
         { 7, "Manuf report","MANUF_REPORT", false },
     };
     d.subfields.push_back(std::move(s));

@@ -418,6 +418,161 @@ TEST(test_ISHttpRequest, putMultipart_200)
     server.stop();
 }
 
+// ---- SN-9029: large requests / malformed responses ----
+
+/**
+ * One-shot HTTP server on an ephemeral port that reads the request deliberately slowly (or not at all), so a large request
+ * overruns the client's socket send buffer.  Records how much of the declared body arrived.
+ */
+class SlowReadServer {
+public:
+    /** @param startDelayMs wait this long after accept() before reading anything; @param stall if true, never read (hold the connection open until stop()) */
+    SlowReadServer(int startDelayMs, bool stall = false) : m_startDelayMs(startDelayMs), m_stall(stall) {}
+    ~SlowReadServer() { stop(); }
+
+    bool start()
+    {
+        m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
+        if (m_listenFd == SOCKET_INVALID) return false;
+        struct sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = 0;
+        if (bind(m_listenFd, (struct sockaddr*)&addr, sizeof(addr)) != 0 || listen(m_listenFd, 1) != 0) return false;
+        socklen_t len = sizeof(addr);
+        getsockname(m_listenFd, (struct sockaddr*)&addr, &len);
+        m_port = ntohs(addr.sin_port);
+
+        m_thread = std::thread([this]() {
+            socket_t clientFd = accept(m_listenFd, nullptr, nullptr);
+            if (clientFd == SOCKET_INVALID) return;
+            SLEEP_MS(m_startDelayMs);
+
+            if (m_stall)
+            {
+                while (!m_stopping) SLEEP_MS(10);
+                CLOSE_SOCKET(clientFd);
+                return;
+            }
+
+            std::string received;
+            char buf[65536];
+            size_t headerEnd = std::string::npos;
+            long long contentLength = -1;
+            while (true)
+            {
+                int n = recv(clientFd, buf, sizeof(buf), 0);
+                if (n <= 0) break;
+                received.append(buf, n);
+                if (headerEnd == std::string::npos && (headerEnd = received.find("\r\n\r\n")) != std::string::npos)
+                {
+                    size_t cl = received.find("Content-Length: ");
+                    if (cl != std::string::npos) contentLength = std::stoll(received.substr(cl + 16));
+                }
+                if (headerEnd != std::string::npos && contentLength >= 0 && (long long)(received.size() - (headerEnd + 4)) >= contentLength)
+                    break;
+                SLEEP_MS(1);    // slow reader
+            }
+            m_declaredLength = contentLength;
+            m_bodyBytes = (headerEnd == std::string::npos) ? 0 : (long long)(received.size() - (headerEnd + 4));
+            m_bodyTail = received.size() > 40 ? received.substr(received.size() - 40) : received;
+
+            const std::string resp = makeHttpResponse(201, "Created", "{}");
+            send(clientFd, resp.data(), (int)resp.size(), 0);
+            SLEEP_MS(50);
+            CLOSE_SOCKET(clientFd);
+        });
+        return true;
+    }
+
+    void stop()
+    {
+        m_stopping = true;
+        if (m_listenFd != SOCKET_INVALID) { CLOSE_SOCKET(m_listenFd); m_listenFd = SOCKET_INVALID; }
+        if (m_thread.joinable()) m_thread.join();
+    }
+
+    int port() const { return m_port; }
+    long long declaredLength() const { return m_declaredLength; }
+    long long bodyBytes() const { return m_bodyBytes; }
+    const std::string& bodyTail() const { return m_bodyTail; }
+
+private:
+    int m_startDelayMs;
+    bool m_stall;
+    int m_port = 0;
+    socket_t m_listenFd = SOCKET_INVALID;
+    std::atomic<bool> m_stopping{false};
+    std::thread m_thread;
+    std::atomic<long long> m_declaredLength{-1};
+    std::atomic<long long> m_bodyBytes{0};
+    std::string m_bodyTail;
+};
+
+TEST(test_ISHttpRequest, LargeRequestIsSentCompletely)
+{
+    SlowReadServer server(300);     // the server only starts reading after the client has filled its send buffer
+    ASSERT_TRUE(server.start());
+
+    // 16 MB archive part: far larger than any loopback socket send buffer, like a real calibration archive
+    std::string archive(16 * 1024 * 1024, '\0');
+    for (size_t i = 0; i < archive.size(); i++) archive[i] = (char)(i * 31 + 7);
+
+    std::vector<ISHttpRequest::MultipartField> fields;
+    fields.push_back({"data", "application/json", "{\"info\":{\"calUuid\":\"big\"}}"});
+    fields.push_back({"archive", "application/zip", archive});
+
+    auto resp = ISHttpRequest::putMultipart("http://127.0.0.1:" + std::to_string(server.port()) + "/api/calibration", fields, 10000);
+    server.stop();
+
+    EXPECT_EQ(resp.statusCode, 201) << "the client never got the server's reply";
+    EXPECT_GT(server.declaredLength(), (long long)archive.size());
+    EXPECT_EQ(server.bodyBytes(), server.declaredLength()) << "the request body was cut short";
+    EXPECT_NE(server.bodyTail().find("----ISHttpRequestBoundary--\r\n"), std::string::npos) << "the final multipart boundary never arrived";
+}
+
+TEST(test_ISHttpRequest, StalledPeerTimesOut)
+{
+    SlowReadServer server(0, true);     // accepts, then never reads
+    ASSERT_TRUE(server.start());
+
+    const std::string body(16 * 1024 * 1024, 'x');
+    const uint32_t startMs = current_timeMs();
+    auto resp = ISHttpRequest::put("http://127.0.0.1:" + std::to_string(server.port()) + "/api/device", body, 500);
+    const uint32_t elapsedMs = current_timeMs() - startMs;
+    server.stop();
+
+    EXPECT_EQ(resp.statusCode, -1);
+    EXPECT_GE(elapsedMs, 500u) << "gave up before the no-progress timeout";
+    EXPECT_LT(elapsedMs, 5000u) << "did not give up after the no-progress timeout";
+}
+
+TEST(test_ISHttpRequest, malformedStatusCode_returnsMinusOne)
+{
+    int port = 18309;
+    MockHttpServer server(port, "HTTP/1.1 abc Nope\r\nContent-Length: 0\r\n\r\n");
+    ASSERT_TRUE(server.start());
+    SLEEP_MS(100);
+
+    ISHttpRequest::Response resp;
+    EXPECT_NO_THROW(resp = ISHttpRequest::get("http://127.0.0.1:" + std::to_string(port) + "/x", 2000));
+    EXPECT_EQ(resp.statusCode, -1);
+    server.stop();
+}
+
+TEST(test_ISHttpRequest, malformedContentLength_isIgnored)
+{
+    int port = 18310;
+    MockHttpServer server(port, "HTTP/1.1 200 OK\r\nContent-Length: abc\r\nConnection: close\r\n\r\n");
+    ASSERT_TRUE(server.start());
+    SLEEP_MS(100);
+
+    ISHttpRequest::Response resp;
+    EXPECT_NO_THROW(resp = ISHttpRequest::get("http://127.0.0.1:" + std::to_string(port) + "/x", 2000));
+    EXPECT_EQ(resp.statusCode, 200);
+    server.stop();
+}
+
 // ---- UID Encoding Tests ----
 
 #include "util/util.h"
@@ -469,3 +624,107 @@ TEST(test_generateUUIDv4, uniqueness)
     std::string uuid2 = utils::generateUUIDv4();
     EXPECT_NE(uuid1, uuid2);
 }
+// ---- manfUid / UUIDv7 / manufacturing date helpers (SN-8984) ----
+
+TEST(test_manfUidToString, gpxExample_memoryOrderLittleEndianWords)
+{
+    // The GPX unit that shares legacy SN910564648 with another wafer (see SN-8984)
+    const uint32_t uid[4] = { 0x001D0028u, 0x41465006u, 0x20363841u, 0u };
+    EXPECT_EQ(utils::manfUidToString(uid), "28001d00065046414138362000000000");
+}
+
+TEST(test_manfUidToString, includesReservedFourthWord)
+{
+    const uint32_t uid[4] = { 0x04030201u, 0x08070605u, 0x0C0B0A09u, 0xDDCCBBAAu };
+    EXPECT_EQ(utils::manfUidToString(uid), "0102030405060708090a0b0caabbccdd");
+}
+
+TEST(test_manfUidToString, zeroUid)
+{
+    const uint32_t uid[4] = { 0u, 0u, 0u, 0u };
+    EXPECT_EQ(utils::manfUidToString(uid), std::string(32, '0'));
+}
+
+TEST(test_generateUUIDv7, formatVersionVariantAndTimestamp)
+{
+    const uint64_t ms = 0x019FA9F91448ull;          // arbitrary 48-bit time
+    std::string u = utils::generateUUIDv7(ms);
+    ASSERT_EQ(u.size(), 36u);
+    EXPECT_EQ(u[8], '-'); EXPECT_EQ(u[13], '-'); EXPECT_EQ(u[18], '-'); EXPECT_EQ(u[23], '-');
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), "019fa9f91448");   // 48-bit timestamp, big-endian
+    EXPECT_EQ(u[14], '7');                                         // version 7
+    EXPECT_NE(std::string("89ab").find(u[19]), std::string::npos); // variant 10xx
+    for (char c : u) if (c != '-') EXPECT_TRUE(std::isxdigit((unsigned char)c) && !std::isupper((unsigned char)c)) << u;
+}
+
+TEST(test_generateUUIDv7, timeOrderedAndUnique)
+{
+    EXPECT_LT(utils::generateUUIDv7(1000), utils::generateUUIDv7(1001));
+    EXPECT_LT(utils::generateUUIDv7(1700000000000ull), utils::generateUUIDv7(1700000000001ull));
+    EXPECT_NE(utils::generateUUIDv7(5), utils::generateUUIDv7(5));   // same millisecond still differs
+}
+
+TEST(test_manfDateToRfc3339, validUtcDate)
+{
+    char date[16] = {};
+    memcpy(date, "20261105150004Z", 15);
+    std::string out;
+    ASSERT_TRUE(utils::manfDateToRfc3339(date, out));
+    EXPECT_EQ(out, "2026-11-05T15:00:04Z");
+}
+
+TEST(test_manfDateToRfc3339, rejectsLegacyAndMalformed)
+{
+    std::string out = "unchanged";
+    char legacy[16] = {};  memcpy(legacy, "20261105150004", 14);       // 14 digits, local time, no marker
+    EXPECT_FALSE(utils::manfDateToRfc3339(legacy, out));
+    char noNul[16];        memcpy(noNul, "20261105150004Zx", 16);        // junk past the marker
+    EXPECT_FALSE(utils::manfDateToRfc3339(noNul, out));
+    char badMonth[16] = {}; memcpy(badMonth, "20261305150004Z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(badMonth, out));
+    char badHour[16] = {};  memcpy(badHour, "20261105240004Z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(badHour, out));
+    char lower[16] = {};    memcpy(lower, "20261105150004z", 15);
+    EXPECT_FALSE(utils::manfDateToRfc3339(lower, out));
+    char empty[16] = {};
+    EXPECT_FALSE(utils::manfDateToRfc3339(empty, out));
+    EXPECT_EQ(out, "unchanged");
+}
+
+TEST(test_unixMsToRfc3339, formatsUtcWithMilliseconds) {
+    EXPECT_EQ(utils::unixMsToRfc3339(0), "1970-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531000ll), "2026-10-20T15:02:11.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1792508531250ll), "2026-10-20T15:02:11.250Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-1), "1969-12-31T23:59:59.999Z");
+}
+
+TEST(test_unixMsToRfc3339, supportsTimesBefore1970) {
+    // gmtime_s rejects negative times on Windows, so this is computed without it and must agree everywhere.
+    EXPECT_EQ(utils::unixMsToRfc3339(-1000), "1969-12-31T23:59:59.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-86400000ll), "1969-12-31T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-86400001ll), "1969-12-30T23:59:59.999Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-2208988800000ll), "1900-01-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(-62135596800000ll), "0001-01-01T00:00:00.000Z");
+}
+
+TEST(test_unixMsToRfc3339, calendarEdges) {
+    EXPECT_EQ(utils::unixMsToRfc3339(951782400000ll), "2000-02-29T00:00:00.000Z");  // 2000 is a leap year
+    EXPECT_EQ(utils::unixMsToRfc3339(951868800000ll), "2000-03-01T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(4107542400000ll), "2100-03-01T00:00:00.000Z");  // 2100 is not
+    EXPECT_EQ(utils::unixMsToRfc3339(1709164800000ll), "2024-02-29T00:00:00.000Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1798761599999ll), "2026-12-31T23:59:59.999Z");
+    EXPECT_EQ(utils::unixMsToRfc3339(1798761600000ll), "2027-01-01T00:00:00.000Z");
+}
+
+#ifndef _WIN32
+TEST(test_unixMsToRfc3339, agreesWithTheCLibraryForTimesItSupports) {
+    for (int64_t unixMs = 0; unixMs < 4102444800000ll; unixMs += 7919173321ll) {  // 1970 to 2100, about 500 samples
+        time_t secs = (time_t)(unixMs / 1000);
+        struct tm tmUtc = {};
+        gmtime_r(&secs, &tmUtc);
+        EXPECT_EQ(utils::unixMsToRfc3339(unixMs),
+                  utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", tmUtc.tm_year + 1900, tmUtc.tm_mon + 1, tmUtc.tm_mday, tmUtc.tm_hour, tmUtc.tm_min, tmUtc.tm_sec, (int)(unixMs % 1000)))
+            << unixMs;
+    }
+}
+#endif

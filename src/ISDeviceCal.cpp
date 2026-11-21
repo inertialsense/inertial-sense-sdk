@@ -204,13 +204,16 @@ void StringToMatrix(const std::string& str, float* mat, int rows, int cols) {
         }
     }
     std::vector<std::string> rowStrs = split(normalized, ';');
-    int idx = 0;
-    for (const auto& rowStr : rowStrs) {
-        std::vector<std::string> vals = split(rowStr, ' ');
-        for (const auto& val : vals) {
-            if (idx < rows * cols) {
-                mat[idx++] = std::stof(val);
-            }
+    // Dimension-aware: each source row (as delimited by the string itself) fills exactly one
+    // destination row, truncating/zero-padding columns as needed, rather than flattening every
+    // value across row boundaries into whatever the destination's rows*cols happens to be. A
+    // flat fill corrupts the result whenever the destination is smaller than the string encodes
+    // (e.g. loading a legacy wider matrix into a narrower current one): values spill from one
+    // source row into the next destination row instead of just being truncated within their own.
+    for (int r = 0; r < rows && r < (int)rowStrs.size(); r++) {
+        std::vector<std::string> vals = split(rowStrs[r], ' ');
+        for (int c = 0; c < cols && c < (int)vals.size(); c++) {
+            mat[r * cols + c] = std::stof(vals[c]);
         }
     }
 }
@@ -493,7 +496,12 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
             }
             if (jInf.contains("devSerialNum"))
             {
-                info->devSerialNum = jInf["devSerialNum"].get<int>();
+                // Serials are uint32 (SN-8985). Files written before this fix hold serials >= 2^31 as negative numbers, so those wrap back.
+                const json& jSn = jInf["devSerialNum"];
+                if (jSn.is_number_unsigned())
+                    info->devSerialNum = jSn.get<uint32_t>();
+                else if (jSn.is_number_integer())
+                    info->devSerialNum = (uint32_t)jSn.get<int64_t>();
             }
         }
         else if (!filePath.empty())
@@ -511,7 +519,10 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
             std::smatch match;
             if (std::regex_search(fileName, match, rx) && match.size() > 1)
             {
-                info->devSerialNum = std::stoi(match[1].str());
+                // Serial numbers are uint32; out-of-range digits leave devSerialNum unset rather than throwing (stoi) or wrapping.
+                uint32_t sn = 0;
+                if (utils::parseSerialNumber(match[1].str(), sn))
+                    info->devSerialNum = sn;
             }
 
             // Date from filename (e.g., ..._YYYYMMDD_...)
@@ -580,8 +591,17 @@ bool ISDeviceCal::loadCalibrationFromJsonObj(const json& jObj, sOrthoCal *ocal, 
     }
     if (dinfo)
     {   // Recompute data info size and checksum
+        // The checksum covers the whole payload (dinfo, tcal, mcal laid out back to back), but the caller passes the three as independent pointers and
+        // dinfo is only the 8-byte header. Checksumming sizeof(sensor_cal_data_t) bytes from dinfo would read past it, and for any caller whose tcal/mcal
+        // do not happen to follow dinfo it would checksum unrelated memory. So build the contiguous payload from what was supplied; a group the
+        // caller did not supply contributes zeros.
+        sensor_cal_data_t payload = {};
+        if (tcal)
+            payload.tcal = *tcal;
+        if (mcal)
+            payload.mcal = *mcal;
         dinfo->size = sizeof(sensor_cal_data_t);
-        dinfo->checksum = flashChecksum32(dinfo, dinfo->size);
+        dinfo->checksum = flashChecksum32(&payload, dinfo->size);
     }
 
     return true;
@@ -729,26 +749,73 @@ static json saveTcToJsonObj(sensor_tcal_group_t* tcal)
  * @param pose The current pose.
  * @return True if saving is successful, false otherwise.
  */
-bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose)
+sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const manufacturing_info_t& manf, uint32_t calBitStatus, int64_t calDateTimeMs)
 {
-    log_debug(IS_LOG_CALIBRATION, "saveCalibrationToJsonObj: %s\n", filePath.c_str());
+    sCalDeviceIdentity id;
+    id.hwType = utils::getHardwareAsString(devInfo);
+    id.serialNumber = devInfo.serialNumber;
+    id.manf = manf;
+    id.calBitStatus = calBitStatus;
+    id.calDateTimeMs = calDateTimeMs;
+    return id;
+}
 
-    // Create parent directory if needed
-    std::string parentPath = getParentPath(filePath);
-    if (!parentPath.empty() && parentPath != ".") {
-        createDirectoryRecursive(parentPath);
-    }
+/** Adds the identity and manufacturing keys shared by the calibration info stanza and the device registration body. */
+static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
+{
+    if (!identity.hwType.empty())
+        j["hwType"] = identity.hwType;
+    j["devSerialNum"] = identity.serialNumber;
 
+    const manufacturing_info_t& m = identity.manf;
+    j["manfUid"] = utils::manfUidToString(m.uid);
+    j["manfLot"] = (uint32_t)m.lotNumber;
+    std::string manfDate;
+    if (utils::manfDateToRfc3339(m.date, manfDate))
+        j["manfDateTime"] = manfDate;                           // legacy zone-less dates are left out rather than guessed
+    j["manfHardwareId"] = (uint32_t)m.hardwareId;
+    j["manfOtpWriteCount"] = m.key;
+    j["manfPlatformType"] = m.platformType;
+    j["manfReserved"] = json::array({ (uint32_t)m.reserved });  // every reserved word between platformType and uid, in order
+}
+
+json ISDeviceCal::buildDeviceJson(const sCalDeviceIdentity& identity)
+{
+    json j = json::object();
+    addIdentityKeys(j, identity);
+    return j;
+}
+
+json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose, const sCalDeviceIdentity* identity)
+{
     json jTop = json::object();
 
     //  Calibration Info
-    if (info)
+    if (info || identity)
     {
         json jInf = json::object();
-        jInf["version"] = calInfoVersionToString(*info);
-        jInf["calDate"] = calInfoDateToString(*info);
-        jInf["calTime"] = calInfoTimeToString(*info);
-        jInf["devSerialNum"] = (int)(info->devSerialNum);
+        if (info)
+        {
+            jInf["version"] = calInfoVersionToString(*info);
+            jInf["calDate"] = calInfoDateToString(*info);
+            jInf["calTime"] = calInfoTimeToString(*info);
+            jInf["devSerialNum"] = (uint32_t)(info->devSerialNum);      // Serials are uint32 (SN-8985); a signed cast writes serials >= 2^31 as negative numbers
+        }
+
+        if (identity)
+        {   // Manufacturing Database contract keys (camelCase). devUuid, devSTM32UID and calType are the server's to fill and are never written.
+            addIdentityKeys(jInf, *identity);
+            jInf["calBitStatus"] = identity->calBitStatus;
+            if (identity->calDateTimeMs > 0)
+            {
+                jInf["calDateTime"] = utils::unixMsToRfc3339(identity->calDateTimeMs);
+                jInf["calUuid"] = identity->calUuid.empty() ? utils::generateUUIDv7((uint64_t)identity->calDateTimeMs) : identity->calUuid;
+            }
+            else if (!identity->calUuid.empty())
+            {
+                jInf["calUuid"] = identity->calUuid;
+            }
+        }
         jTop["info"] = jInf;
     }
 
@@ -763,6 +830,21 @@ bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCa
     {
         jTop["calibration"] = saveMcToJsonObj(filePath, pose, cal, mcal);
     }
+
+    return jTop;
+}
+
+bool ISDeviceCal::saveCalibrationToJsonObj(const std::string& filePath, sOrthoCal* cal, sensor_cal_info_t* info, sensor_tcal_group_t* tcal, sensor_mcal_group_t* mcal, int pose, const sCalDeviceIdentity* identity)
+{
+    log_debug(IS_LOG_CALIBRATION, "saveCalibrationToJsonObj: %s\n", filePath.c_str());
+
+    // Create parent directory if needed
+    std::string parentPath = getParentPath(filePath);
+    if (!parentPath.empty() && parentPath != ".") {
+        createDirectoryRecursive(parentPath);
+    }
+
+    json jTop = buildCalibrationJson(filePath, cal, info, tcal, mcal, pose, identity);
 
     // Save to file
     std::ofstream file(filePath);
@@ -1071,43 +1153,122 @@ ISDeviceCal::AsyncState ISDeviceCal::uploadSensorCalStep(port_handle_t port, int
 }
 
 
-ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo)
+/** What the calibration list for a serial (or a serial and UID) holds: how many device records, and the newest calibration. */
+struct sCalListSummary
+{
+    int         deviceCount = 0;
+    std::string bestUuid;
+    std::string bestDateTime;
+};
+
+static void scanCalList(const json& calArray, sCalListSummary& out)
+{
+    for (const auto& cal : calArray)
+    {
+        std::string calUuid;
+        if (cal.contains("calUuid"))
+            calUuid = cal["calUuid"].get<std::string>();
+        else if (cal.contains("uuid"))
+            calUuid = cal["uuid"].get<std::string>();
+        else
+            continue;
+
+        std::string dateTime;
+        if (cal.contains("calDateTime"))
+            dateTime = cal["calDateTime"].get<std::string>();
+
+        if (out.bestUuid.empty() || dateTime > out.bestDateTime)
+        {
+            out.bestUuid = calUuid;
+            out.bestDateTime = dateTime;
+        }
+    }
+}
+
+static sCalListSummary summarizeCalList(const json& listJson)
+{
+    sCalListSummary sum;
+
+    // API returns { "<deviceUuid>": [ {calUuid, calDateTime, ...}, ... ] }, one key per device record holding the serial
+    if (listJson.is_object())
+    {
+        for (auto& [devUuid, calArray] : listJson.items())
+        {
+            if (!calArray.is_array())
+                continue;
+            sum.deviceCount++;
+            scanCalList(calArray, sum);
+        }
+    }
+    else if (listJson.is_array())
+    {   // Fallback: top-level array of calibration entries, from a single device
+        sum.deviceCount = 1;
+        scanCalList(listJson, sum);
+    }
+    return sum;
+}
+
+/** Reads a serial from the calibration JSON info stanza: unsigned, or a negative value written before serials were unsigned. */
+static bool readInfoSerial(const json& info, uint32_t& serial)
+{
+    if (!info.contains("devSerialNum"))
+        return false;
+    const json& jSn = info["devSerialNum"];
+    if (jSn.is_number_unsigned()) { serial = jSn.get<uint32_t>(); return true; }
+    if (jSn.is_number_integer())  { serial = (uint32_t)jSn.get<int64_t>(); return true; }
+    return false;
+}
+
+ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t* manfInfo)
 {
     using json = nlohmann::json;
     ISHttpRequest::Response resp;
 
-    // // Build hardware type string (e.g., "IMX-5.0")
-    // const char *typeName = "???";
-    // switch (devInfo.hardwareType) {
-    //     case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
-    //     case IS_HARDWARE_TYPE_IMX:  typeName = "IMX"; break;
-    //     case IS_HARDWARE_TYPE_GPX:  typeName = "GPX"; break;
-    //     default: break;
-    // }
-    // std::string hwType = std::string(typeName) + "-" + std::to_string(devInfo.hardwareVer[0]) + "." + std::to_string(devInfo.hardwareVer[1]);
     std::string hwType = utils::getHardwareAsString(devInfo);
+    const std::string devId = ISDevice::getIdAsString(devInfo);
 
-    log_info(IS_LOG_CALIBRATION, "[%s] Fetching calibration from DB for %s SN%ld", ISDevice::getIdAsString(devInfo).c_str(), hwType.c_str(), devInfo.serialNumber);
+    if (!serialNumberIsSet(devInfo.serialNumber))
+    {
+        resp.statusCode = 400;
+        resp.statusMessage = utils::string_format("[%s] Device has no valid serial number, so it has no calibration in the DB", devId.c_str());
+        log_error(IS_LOG_CALIBRATION, "%s", resp.statusMessage.c_str());
+        return resp;
+    }
 
-    // Step 1: Fetch device calibration list
-    std::string deviceUrl = restBaseUrl + "/api/calibration/device/" + hwType + "/" + std::to_string(devInfo.serialNumber);
-    ISHttpRequest::Response listResp = ISHttpRequest::get(deviceUrl);
+    log_info(IS_LOG_CALIBRATION, "[%s] Fetching calibration from DB for %s %s", devId.c_str(), hwType.c_str(), utils::serialNumberToString(devInfo.serialNumber).c_str());
+
+    // Step 1: Fetch the device's calibration list. The manufacturing UID identifies a unit; a serial alone may be shared by several
+    // (collisions are accepted, SN-8984), so try the UID route first and use the serial-only route only for devices the DB has no UID for.
+    const std::string serialUrl = restBaseUrl + "/api/calibration/device/" + hwType + "/" + std::to_string(devInfo.serialNumber);
+    const std::string manfUid = manfInfo ? utils::manfUidToString(manfInfo->uid) : std::string();
+    ISHttpRequest::Response listResp;
+    std::string deviceUrl;
+    if (manfInfo)
+    {
+        deviceUrl = serialUrl + "/" + manfUid;
+        listResp = ISHttpRequest::get(deviceUrl);
+    }
+    if (!manfInfo || listResp.statusCode == 404)
+    {
+        deviceUrl = serialUrl;
+        listResp = ISHttpRequest::get(deviceUrl);
+    }
 
     if (listResp.statusCode == -1)
     {
-        log_error(IS_LOG_CALIBRATION, "[%s] Failed to connect to calibration DB at %s", ISDevice::getIdAsString(devInfo).c_str(), deviceUrl.c_str());
+        log_error(IS_LOG_CALIBRATION, "[%s] Failed to connect to calibration DB at %s", devId.c_str(), deviceUrl.c_str());
         return listResp;
     }
 
     if (listResp.statusCode == 404)
     {
-        log_warn(IS_LOG_CALIBRATION, "[%s] Device not found in calibration DB (HTTP 404)", ISDevice::getIdAsString(devInfo).c_str());
+        log_warn(IS_LOG_CALIBRATION, "[%s] Device not found in calibration DB (HTTP 404)", devId.c_str());
         return listResp;
     }
 
     if (listResp.statusCode != 200)
     {
-        log_error(IS_LOG_CALIBRATION, "[%s] Calibration DB returned HTTP %d: %s", ISDevice::getIdAsString(devInfo).c_str(), listResp.statusCode, listResp.statusMessage.c_str());
+        log_error(IS_LOG_CALIBRATION, "[%s] Calibration DB returned HTTP %d: %s", devId.c_str(), listResp.statusCode, listResp.statusMessage.c_str());
         return listResp;
     }
 
@@ -1119,72 +1280,25 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
         { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("Failed to parse calibration list JSON: %s", e.what()); return r; }
     }
 
-    // Find most recent calibration by calDateTime
-    std::string bestUuid;
-    std::string bestDateTime;
+    sCalListSummary sum = summarizeCalList(listJson);
 
-    // API returns { "<deviceUuid>": [ {calUuid, calDateTime, ...}, ... ] }
-    // Iterate all values in the top-level object to find calibration entries
-    if (listJson.is_object())
+    // More than one device record holds this serial: applying any of them could load another unit's calibration, so refuse
+    if (sum.deviceCount > 1)
     {
-        for (auto& [devUuid, calArray] : listJson.items())
-        {
-            if (!calArray.is_array())
-                continue;
-
-            for (const auto& cal : calArray)
-            {
-                std::string calUuid;
-                if (cal.contains("calUuid"))
-                    calUuid = cal["calUuid"].get<std::string>();
-                else if (cal.contains("uuid"))
-                    calUuid = cal["uuid"].get<std::string>();
-                else
-                    continue;
-
-                std::string dateTime;
-                if (cal.contains("calDateTime"))
-                    dateTime = cal["calDateTime"].get<std::string>();
-
-                if (bestUuid.empty() || dateTime > bestDateTime)
-                {
-                    bestUuid = calUuid;
-                    bestDateTime = dateTime;
-                }
-            }
-        }
+        std::string msg = utils::string_format("[%s] Calibration DB holds %d devices with %s and cannot tell which is this unit; refusing to load a calibration", devId.c_str(), sum.deviceCount, utils::serialNumberToString(devInfo.serialNumber).c_str());
+        log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
+        { ISHttpRequest::Response r; r.statusCode = 409; r.statusMessage = msg; return r; }
     }
-    else if (listJson.is_array())
-    {
-        // Fallback: top-level array of calibration entries
-        for (const auto& cal : listJson)
-        {
-            std::string calUuid;
-            if (cal.contains("calUuid"))
-                calUuid = cal["calUuid"].get<std::string>();
-            else if (cal.contains("uuid"))
-                calUuid = cal["uuid"].get<std::string>();
-            else
-                continue;
 
-            std::string dateTime;
-            if (cal.contains("calDateTime"))
-                dateTime = cal["calDateTime"].get<std::string>();
-
-            if (bestUuid.empty() || dateTime > bestDateTime)
-            {
-                bestUuid = calUuid;
-                bestDateTime = dateTime;
-            }
-        }
-    }
+    const std::string& bestUuid = sum.bestUuid;
+    const std::string& bestDateTime = sum.bestDateTime;
 
     if (bestUuid.empty())
     {
         { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = "Received valid JSON response from server, but no suitable calibration found (Has this device ever been calibrated?)."; return r; }
     }
 
-    log_info(IS_LOG_CALIBRATION, "[%s] Found calibration UUID: %s (date: %s)", ISDevice::getIdAsString(devInfo).c_str(), bestUuid.c_str(), bestDateTime.c_str());
+    log_info(IS_LOG_CALIBRATION, "[%s] Found calibration UUID: %s (date: %s)", devId.c_str(), bestUuid.c_str(), bestDateTime.c_str());
 
     // Step 3: Fetch full calibration JSON
     std::string calUrl = restBaseUrl + "/api/calibration/" + bestUuid;
@@ -1192,19 +1306,19 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
 
     if (calResp.statusCode == -1)
     {
-        std::string msg = utils::string_format("[%s] Failed to fetch calibration data from %s", ISDevice::getIdAsString(devInfo).c_str(), calUrl.c_str());
+        std::string msg = utils::string_format("[%s] Failed to fetch calibration data from %s", devId.c_str(), calUrl.c_str());
         log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
         { ISHttpRequest::Response r; r.statusCode = 404; r.statusMessage = msg; return r; }
     }
 
     if (calResp.statusCode != 200)
     {
-        std::string msg = utils::string_format("[%s] Calibration DB returned HTTP %d for UUID %s: %s", ISDevice::getIdAsString(devInfo).c_str(), calResp.statusCode, bestUuid.c_str(), calResp.statusMessage.c_str());
+        std::string msg = utils::string_format("[%s] Calibration DB returned HTTP %d for UUID %s: %s", devId.c_str(), calResp.statusCode, bestUuid.c_str(), calResp.statusMessage.c_str());
         log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
         { ISHttpRequest::Response r; r.statusCode = calResp.statusCode; r.statusMessage = msg; return r; }
     }
 
-    // Step 4: Parse and upload calibration
+    // Step 4: Parse the calibration, check that it belongs to this device, and load it
     json calJson;
     try {
         calJson = json::parse(calResp.body);
@@ -1212,12 +1326,31 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
         { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("Failed to parse calibration data from %s", calUrl.c_str()); return r; }
     }
 
-    if (!loadCalibrationFromJsonObj(calJson,  &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose))
+    if (calJson.is_object() && calJson.contains("info") && calJson["info"].is_object())
     {
-        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", ISDevice::getIdAsString(devInfo).c_str()); return r; }
+        const json& jInf = calJson["info"];
+        std::string mismatch;
+        uint32_t calSerial = 0;
+        if (readInfoSerial(jInf, calSerial) && calSerial != devInfo.serialNumber)
+            mismatch = utils::string_format("serial %s, not %s", utils::serialNumberToString(calSerial).c_str(), utils::serialNumberToString(devInfo.serialNumber).c_str());
+        else if (jInf.contains("hwType") && jInf["hwType"].is_string() && jInf["hwType"].get<std::string>() != hwType)
+            mismatch = utils::string_format("hardware %s, not %s", jInf["hwType"].get<std::string>().c_str(), hwType.c_str());
+        else if (manfInfo && jInf.contains("manfUid") && jInf["manfUid"].is_string() && jInf["manfUid"].get<std::string>() != manfUid)
+            mismatch = utils::string_format("manufacturing UID %s, not %s", jInf["manfUid"].get<std::string>().c_str(), manfUid.c_str());
+        if (!mismatch.empty())
+        {
+            std::string msg = utils::string_format("[%s] Calibration %s is for %s; refusing to load it", devId.c_str(), bestUuid.c_str(), mismatch.c_str());
+            log_error(IS_LOG_CALIBRATION, "%s", msg.c_str());
+            { ISHttpRequest::Response r; r.statusCode = 409; r.statusMessage = msg; return r; }
+        }
     }
 
-    std::string msg = utils::string_format("[%s] Successfully parsed calibration from DB (UUID: %s)", ISDevice::getIdAsString(devInfo).c_str(), bestUuid.c_str());
+    if (!loadCalibrationFromJsonObj(calJson,  &ocal, &info, &data.dinfo, &data.tcal, &data.mcal, &pose))
+    {
+        { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", devId.c_str()); return r; }
+    }
+
+    std::string msg = utils::string_format("[%s] Successfully parsed calibration from DB (UUID: %s)", devId.c_str(), bestUuid.c_str());
     log_info(IS_LOG_CALIBRATION, "%s", msg.c_str());
     { ISHttpRequest::Response r; r.statusCode = 200; r.statusMessage = msg; return r; }
 }

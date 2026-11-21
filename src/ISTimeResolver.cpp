@@ -32,7 +32,7 @@ namespace inertial_sense {
 
 namespace {
 
-//! DIDs whose payloads carry a usable GPS time-of-week field. Used by
+//! DIDs whose payloads carry a usable GNSS time-of-week field. Used by
 //! `detectSyncPoints` as the candidate set when scanning a segment.
 //! `cISDataMappings::Timestamp(...)` is consulted on each candidate to
 //! extract the actual ToW (returns 0 if the field is absent / zero,
@@ -159,7 +159,7 @@ int64_t medianOf(std::vector<int64_t> v) {
 /**
  * @brief The uptime<->ToW bridge pair out of a dual-domain payload — audit B1.
  *
- * `DID_SYS_PARAMS` (IMX) and `DID_GPX_STATUS` (GPX) each carry a GPS time-of-week AND the
+ * `DID_SYS_PARAMS` (IMX) and `DID_GPX_STATUS` (GPX) each carry a GNSS time-of-week AND the
  * device's own uptime in one payload, which is what makes the offset between the two domains
  * recoverable without correlating neighbours.
  *
@@ -180,7 +180,7 @@ int64_t medianOf(std::vector<int64_t> v) {
  * yields a bogus offset that corrupts the median bridge.
  */
 struct BridgePair {
-    uint64_t towMs = 0;      //!< Claimed GPS time-of-week, ms.
+    uint64_t towMs = 0;      //!< Claimed GNSS time-of-week, ms.
     uint64_t upMs  = 0;      //!< The device's own uptime, ms.
     double   upSec = 0.0;    //!< Same uptime in seconds, for the reboot test.
     bool     towValid = false;
@@ -1156,7 +1156,7 @@ TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
                                       int64_t uptimeOffsetMs,
                                       bool haveOffset) const {
     // SN-8115: idempotency / already-anchored guard. Legitimate raw inputs are
-    // either a GPS time-of-week (always < one week, 604,800,000 ms) or a
+    // either a GNSS time-of-week (always < one week, 604,800,000 ms) or a
     // session-uptime (ms since session start — at most hours). Neither can
     // reach the GPS Unix epoch (1980-01-06 = 315,964,800,000 ms). An input at
     // or beyond that is therefore ALREADY an absolute Unix-ms timestamp — a
@@ -1235,7 +1235,7 @@ TimeStamp ISTimeResolver::resolveImpl(uint64_t hostTimeMs, uint64_t deviceId,
     }
 
     // SN-8107 / D0066: cross-domain bridge. v2 .idx puts sync records'
-    // timestamp field in the GPS-ToW domain (hundreds of millions of ms
+    // timestamp field in the GNSS-ToW domain (hundreds of millions of ms
     // into the GPS week) while non-sync records' timestamp field is host
     // uptime (small ms since session start). An input hostTimeMs that's
     // dramatically smaller than the first sync's ToW is a session-uptime
@@ -1646,7 +1646,7 @@ AbsTimeResult ISTimeResolver::resolveCore(const ISDeviceLog& log,
         return out;
     }
     if (domain == TsDomain::TIMESTAMP_DOMAIN_GPS_TOW && !logHasFix) {
-        out.hints.emplace_back("this DID declares a GPS time of week, but the log never reached "
+        out.hints.emplace_back("this DID declares a GNSS time of week, but the log never reached "
                                "week " + std::to_string(kGnssFixWeekThreshold) +
                                " so the field is not a real time of week; treated as uptime");
     }
@@ -1798,7 +1798,7 @@ AbsTimeResult ISTimeResolver::resolveCore(const ISDeviceLog& log,
         out.anchorSource = AbsAnchorSource::Filename;   // refined below if a better one applies
         out.hints.emplace_back("segment offset maps directly to absolute time; no week applied");
     } else {
-        // ---- Step 3: the value is in the GPS time-of-week frame, so it needs a week. This is the
+        // ---- Step 3: the value is in the GNSS time-of-week frame, so it needs a week. This is the
         // step nothing else in the codebase performs, and why 661 of 709 segments report a span in
         // the ToW frame.
         out.towMs     = static_cast<uint64_t>(mapped);

@@ -214,6 +214,14 @@ protected:
     std::vector<port_handle_t> ports;          //!< Downstream ports to which correction data is forwarded
     uint32_t lastConnAttemptTs = 0;            //!< timestamp (ms) after which the next source (re)connection attempt is allowed (reconnect backoff)
 
+    /**
+     * Called by sendData() for a downstream port whose write failed fatally (the port is no longer valid, e.g. the remote client reset the
+     * connection). The base implementation just stops forwarding to it (removePort()); subclasses that own their downstream ports override
+     * this to also release them.
+     * @param port the failed downstream port
+     */
+    virtual void removeFailedPort(port_handle_t port);
+
 private:
     inline static const std::vector<PortFactory*>& nullFactories = {};    //!< Empty factory list, used as the default argument for the portName-based constructor
     std::vector<tRTCM3Msg1029ListenerCallback> rtcm3Msg1029Listeners;      //!< Registered callbacks notified on every RTCM3 Msg 1029

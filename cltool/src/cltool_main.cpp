@@ -109,6 +109,30 @@ static cltool_relay_identity_t cltoolRelayIdentity(bool isFwUpdate)
 }
 
 /**
+ * Replaces each comma-separated entry of the -c port specifier that is a udev-style symlink with its canonical device path, so that
+ * utils::globToRegex() -- which escapes regex metacharacters -- cannot turn an alias such as "/dev/imx5.0" into "/dev/imx5\.0", which names no
+ * file and so can no longer be resolved by SerialPortFactory::locatePorts(). Entries that are not symlinks ("*", "/dev/ttyACM*", URIs, an empty
+ * entry) are left exactly as written. (SN-8661)
+ * Only cltool needs this: EvalTool and InertialSense::OpenPorts() pass their pattern to discoverPorts() unescaped, where locatePorts() resolves a
+ * literal alias itself (SN-8575).
+ */
+static std::string cltoolResolvePortAliases(const std::string& specifier)
+{
+    std::string out;
+    for (size_t start = 0; start <= specifier.size(); ) {
+        const size_t comma = specifier.find(',', start);
+        const std::string entry = specifier.substr(start, (comma == std::string::npos) ? std::string::npos : comma - start);
+        if (start > 0)
+            out += ',';
+        out += entry.empty() ? entry : SerialPortFactory::resolvePortName(entry);
+        if (comma == std::string::npos)
+            break;
+        start = comma + 1;
+    }
+    return out;
+}
+
+/**
  * Annotates each relay connection cltool holds, so the relay shows who holds the device and why (see
  * cltoolRelayIdentity()). High priority during a firmware update protects the connection from an unforced
  * operator eject.
@@ -737,6 +761,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {
         // Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.state: 200=in progress, 201=done).
         inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
+        // Also stream the coverage map, lifecycle and failure reason (DID_MAG_CAL_COVERAGE) so progress can be explained, not just counted.
+        inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL_COVERAGE, 200);
         // Enable mag recal
         inertialSenseInterface.SendData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, state));
     }
@@ -1161,9 +1187,9 @@ void cltool_bootloadUpdateInfo(const std::any& obj, eLogLevel level, const char*
 
     if (isblPtr) {
         if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1) && (isblPtr->m_port_name.size() != 0)) {
-            printf("    | %s (SN%d):", isblPtr->m_port_name.c_str(), isblPtr->m_sn);
+            printf("    | %s (%s):", isblPtr->m_port_name.c_str(), utils::serialNumberToString(isblPtr->m_sn).c_str());
         } else if ((isblPtr->m_sn != 0) && (isblPtr->m_sn != -1)) {
-            printf("    | (SN%d):", isblPtr->m_sn);
+            printf("    | (%s):", utils::serialNumberToString(isblPtr->m_sn).c_str());
         } else if (isblPtr->m_port_name.size() != 0) {
             printf("    | %s:", isblPtr->m_port_name.c_str());
         } else {
@@ -1639,7 +1665,7 @@ static int cltool_dataStreaming()
                 // per port"). Passing the resolved comPort scopes the periodic check to
                 // the target we actually care about.
                 if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && (current_timeMs() > nextPortCheck)) {
-                    PortManager::getInstance().discoverPorts(utils::globToRegex(g_commandLineOptions.comPort));
+                    PortManager::getInstance().discoverPorts(utils::globToRegex(cltoolResolvePortAliases(g_commandLineOptions.comPort)));
                     nextPortCheck = current_timeMs() + 1500;
                 }
 

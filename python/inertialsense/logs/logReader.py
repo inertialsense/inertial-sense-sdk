@@ -26,6 +26,8 @@ RESET = '\u001b[0m'
 INS_STATUS_NAV_MODE                         = 0x00001000
 GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED  = 0x00100000
 GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED   = 0x00400000
+GNSS_STATUS_FIX_MASK                          = 0x00001F00
+GNSS_STATUS_FIX_BIT_OFFSET                    = 8
 
 class Log:
     def __init__(self):
@@ -643,12 +645,12 @@ class Log:
         self.passRMS = self.tmpPassRMS
         return self.passRMS < 1
 
-    def arRatioToFixType(self, ar_ratio):
-        fix_type = ar_ratio.copy()
-        fix_type[(fix_type > 3)] = 12
-        fix_type[(fix_type > 0) & (fix_type < 3)] = 11
-        fix_type[fix_type == 0] = 10
-        return fix_type
+    def statusToFixType(self, status):
+        # Fix type is taken from the solution status rather than inferred from the AR ratio.  An AR
+        # ratio of zero means ambiguity resolution was not attempted or did not complete (for
+        # example when the LAMBDA search aborts), which is not a loss of the float solution and
+        # must not be counted against the time in fix.
+        return (status >> GNSS_STATUS_FIX_BIT_OFFSET) & (GNSS_STATUS_FIX_MASK >> GNSS_STATUS_FIX_BIT_OFFSET)
 
     def runGpxPerformanceReport(self, params={}):
         self.data = np.array(self.data)        
@@ -690,7 +692,7 @@ class Log:
 
             if ref_time is None:
                 # Find reference time and yaw starting at first fix
-                fix_type = self.arRatioToFixType(self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio'])
+                fix_type = self.statusToFixType(self.data[d, DID_GNSS2_RTK_CMP_REL]['status'])
                 first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
                 ref_time = time[first_fix_index:]
                 ref_yaw = np.copy(yaw[first_fix_index:])
@@ -713,13 +715,14 @@ class Log:
             time_ms = self.data[d, DID_GNSS2_RTK_CMP_REL]['timeOfWeekMs']
             yaw = self.data[d, DID_GNSS2_RTK_CMP_REL]['baseToRoverHeading']
             ar_ratio = self.data[d, DID_GNSS2_RTK_CMP_REL]['arRatio']
+            status = self.data[d, DID_GNSS2_RTK_CMP_REL]['status']
 
             success = False
             str = "SN%6d    (no data)" % serial_number
 
             if len(time_ms):
                 # Fix type
-                fix_type = self.arRatioToFixType(ar_ratio)
+                fix_type = self.statusToFixType(status)
                 # First time to fix
                 first_fix_index = next((i for i, val in enumerate(fix_type) if val >= 12), None)
                 str = "SN%6d    (no fix)" % serial_number

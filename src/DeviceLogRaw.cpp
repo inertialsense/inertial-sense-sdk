@@ -208,7 +208,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors) {
                     if (m_comm.rxErrorCount > 1) {
-                        printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
+                        printf("%s SaveData() parse errors: %d\n", utils::serialNumberToString(m_devSerialNo).c_str(), m_comm.rxErrorCount);
                     }
                 }
                 break;
@@ -436,7 +436,7 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
-                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
+                    if (m_comm.rxErrorCount > 1) { printf("%s ReadDataFromChunk() parse errors: %d\n", utils::serialNumberToString(m_devSerialNo).c_str(), m_comm.rxErrorCount); }
                 }
                 break;
 
@@ -453,7 +453,13 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
                 m_logStats.LogData(ptype, m_comm.rxPkt.id, m_comm.rxPkt.size, cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
 
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
-                memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
+                // rxPkt.data.ptr already points at the payload (past the 2-byte offset field of a partial-DID packet).
+                // dataHdr.offset is where that payload belongs within the DID (the p_data_buf_t convention, see
+                // copyDataPToStructP2()), not a position in the source buffer, so it must not be added to the source pointer.
+                if (m_comm.rxPkt.data.ptr && (m_comm.rxPkt.dataHdr.size <= sizeof(m_pData.buf)))
+                    memcpy(m_pData.buf, m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
+                else
+                    m_pData.hdr.size = 0;
             }
             return &m_comm.rxPkt;
         }

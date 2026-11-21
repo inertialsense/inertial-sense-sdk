@@ -157,6 +157,8 @@ class logInspectorInternal(LogInspectorWindow):
     def createListIns(self):
         super(logInspectorInternal, self).createListIns()
         self.addListItem('EKF Biases', 'ekfBiases')
+        self.addListItem('EKF Sigma', 'ekfSigma')
+        self.addListItem('EKF Sigma Biases', 'ekfSigmaBiases')
 
     def createListSensors(self):
         self.addListItem('IMUs Uncal Gyro',  'imusUncalPqr')
