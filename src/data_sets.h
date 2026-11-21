@@ -2370,7 +2370,7 @@ enum eMagCalState
 
     MAG_CAL_STATE_ABORT                     = (int)101,  //!< COMMAND: Stop mag recalibration and do not save results
 
-    MAG_CAL_STATE_FINISH                    = (int)102,  //!< COMMAND: Release an extended/manual hold: the calibration completes as soon as the algorithm's own criteria are met
+    MAG_CAL_STATE_FINISH                    = (int)102,  //!< COMMAND: Accept whatever has been collected, even nothing: it is fitted without the acceptance checks (the full fit if the samples determine one, else hard iron only, else the samples' centre and spread, else no correction), applied, saved to flash and the state goes to MAG_CAL_STATE_RECAL_COMPLETE. A host should confirm with the user first when coverage is low
 
     MAG_CAL_STATE_RECAL_RUNNING             = (int)200,  //!< STATUS: Mag recalibration is in progress
 
