@@ -406,8 +406,7 @@ public:
      * @param fn    Called with each matching record; return false to stop.
      * @return      The number of records @p fn was called with.
      */
-    std::size_t forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids,
-                              const std::function<bool(const ISRecordView&)>& fn) const;
+    std::size_t forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& fn) const;
 
     /**
      * Like forEachRecord(), with the span in the log's own uptime: `ISRecordView::logTimeOffsetMs()`, which every
@@ -419,8 +418,7 @@ public:
      * @param fn      Called with each matching record; return false to stop.
      * @return        The number of records @p fn was called with.
      */
-    std::size_t forEachRecordInLogTime(uint32_t fromMs, uint32_t toMs, std::initializer_list<did_t> dids,
-                                       const std::function<bool(const ISRecordView&)>& fn) const;
+    std::size_t forEachRecordInLogTime(uint32_t fromMs, uint32_t toMs, std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& fn) const;
 
     /**
      * Like forEachRecord(), with the span as positions in arrival order (`ISRecordView::arrivalIndex()`), for a span
@@ -432,15 +430,8 @@ public:
      * @param fn     Called with each matching record; return false to stop.
      * @return       The number of records @p fn was called with.
      */
-    std::size_t forEachRecordInArrival(uint64_t first, uint64_t last, std::initializer_list<did_t> dids,
-                                       const std::function<bool(const ISRecordView&)>& fn) const;
+    std::size_t forEachRecordInArrival(uint64_t first, uint64_t last, std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& fn) const;
 
-private:
-    /** The one walk behind the forEachRecord family: records in arrival order that are in @p dids and satisfy @p inSpan. */
-    std::size_t forEachMatching(std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& inSpan,
-                                const std::function<bool(const ISRecordView&)>& fn) const;
-
-public:
     // ----- Optional segment-boundary callback ------------------------
 
     /**
@@ -486,6 +477,16 @@ private:
     std::function<void(std::size_t)>   onSegmentBoundary_;
 
     friend class RangeIterator;
+
+    /**
+     * The one walk behind the forEachRecord family: tests every record in arrival order and calls @p fn for those that are in @p dids and satisfy @p inSpan.
+     *
+     * @param dids    DIDs to pass; empty means every DID.
+     * @param inSpan  Whether a record is inside the span being walked.
+     * @param fn      Called with each matching record; return false to stop.
+     * @return        The number of records @p fn was called with.
+     */
+    std::size_t forEachMatching(std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& inSpan, const std::function<bool(const ISRecordView&)>& fn) const;
 };
 
 } // namespace inertial_sense
