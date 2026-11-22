@@ -395,6 +395,11 @@ public:
      * `value` only) and whose DID is one of @p dids. Every record is tested, so a log whose timestamps are not
      * monotonic is walked correctly, unlike `Range::in_time`.
      *
+     * @note A raw log's `TimeStamp::value` is in the record's own clock: a record that carries a GPS time of week
+     *       has it, and one that does not has the log's uptime. A span in `value` is therefore only meaningful on a
+     *       log whose records share one clock (or after time resolution); for a span of an unresolved log use
+     *       forEachRecordInLogTime() or forEachRecordInArrival().
+     *
      * @param from  Inclusive start.
      * @param to    Inclusive end.
      * @param dids  DIDs to pass to @p fn; empty means every DID.
@@ -404,6 +409,38 @@ public:
     std::size_t forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids,
                               const std::function<bool(const ISRecordView&)>& fn) const;
 
+    /**
+     * Like forEachRecord(), with the span in the log's own uptime: `ISRecordView::logTimeOffsetMs()`, which every
+     * record has and which is one clock for the whole log.
+     *
+     * @param fromMs  Inclusive start, ms since the log opened.
+     * @param toMs    Inclusive end.
+     * @param dids    DIDs to pass to @p fn; empty means every DID.
+     * @param fn      Called with each matching record; return false to stop.
+     * @return        The number of records @p fn was called with.
+     */
+    std::size_t forEachRecordInLogTime(uint32_t fromMs, uint32_t toMs, std::initializer_list<did_t> dids,
+                                       const std::function<bool(const ISRecordView&)>& fn) const;
+
+    /**
+     * Like forEachRecord(), with the span as positions in arrival order (`ISRecordView::arrivalIndex()`), for a span
+     * that is bounded by other records, such as two markers.
+     *
+     * @param first  Inclusive first arrival index.
+     * @param last   Exclusive last arrival index.
+     * @param dids   DIDs to pass to @p fn; empty means every DID.
+     * @param fn     Called with each matching record; return false to stop.
+     * @return       The number of records @p fn was called with.
+     */
+    std::size_t forEachRecordInArrival(uint64_t first, uint64_t last, std::initializer_list<did_t> dids,
+                                       const std::function<bool(const ISRecordView&)>& fn) const;
+
+private:
+    /** The one walk behind the forEachRecord family: records in arrival order that are in @p dids and satisfy @p inSpan. */
+    std::size_t forEachMatching(std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& inSpan,
+                                const std::function<bool(const ISRecordView&)>& fn) const;
+
+public:
     // ----- Optional segment-boundary callback ------------------------
 
     /**

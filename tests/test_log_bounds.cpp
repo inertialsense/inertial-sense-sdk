@@ -626,6 +626,18 @@ TEST_F(LogBoundsTest, ForEachRecordFiltersBySpanAndDid) {
     std::size_t seen = 0;
     EXPECT_EQ(log->forEachRecord(lo, hi, { DID_INS_2 }, [&](const ISRecordView& r) { EXPECT_EQ(r.did(), (uint32_t)DID_INS_2); return ++seen < 2; }), 2u);   // false stops the walk
     EXPECT_EQ(seen, 2u);
+
+    // A span by arrival position is exact, whatever clock each record's timestamp is in.
+    std::vector<uint64_t> arrivals;
+    EXPECT_EQ(log->forEachRecordInArrival(1, 3, {}, [&](const ISRecordView& r) { arrivals.push_back(r.arrivalIndex()); return true; }), 2u);
+    EXPECT_EQ(arrivals, (std::vector<uint64_t>{ 1, 2 }));
+    EXPECT_EQ(log->forEachRecordInArrival(0, UINT64_MAX, { DID_INS_2 }, [](const ISRecordView&) { return true; }), 3u);
+
+    // A span by log time passes exactly the records whose log offset is inside it.
+    uint32_t maxOffset = 0;
+    for (const ISRecordView& r : log->allRecords()) maxOffset = std::max(maxOffset, r.logTimeOffsetMs());
+    EXPECT_EQ(log->forEachRecordInLogTime(0, maxOffset, {}, [](const ISRecordView&) { return true; }), log->allRecords().size());
+    EXPECT_EQ(log->forEachRecordInLogTime(maxOffset + 1, UINT32_MAX, {}, [](const ISRecordView&) { return true; }), 0u);
 }
 
 }  // namespace

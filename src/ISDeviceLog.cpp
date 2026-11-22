@@ -463,19 +463,32 @@ ISDeviceLog::RangeIterator
     return RangeIterator{ this, &all_, all_.size() };
 }
 
-std::size_t ISDeviceLog::forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids,
-                                       const std::function<bool(const ISRecordView&)>& fn) const {
+std::size_t ISDeviceLog::forEachMatching(std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& inSpan,
+                                         const std::function<bool(const ISRecordView&)>& fn) const {
     std::size_t called = 0;
     for (std::size_t i = 0; i < all_.size(); ++i) {
-        const Locator& loc = all_[i];
-        const ISRecordView raw = segments_[loc.segment].recordAt(loc.record);
-        const uint64_t ts = raw.timestamp().value;
-        if (ts < from.value || ts > to.value) continue;
-        if (dids.size() != 0 && std::find(dids.begin(), dids.end(), static_cast<did_t>(raw.did())) == dids.end()) continue;
+        const ISRecordView view = *RangeIterator{ this, &all_, i };   // the iterator's view carries the arrival index
+        if (dids.size() != 0 && std::find(dids.begin(), dids.end(), static_cast<did_t>(view.did())) == dids.end()) continue;
+        if (!inSpan(view)) continue;
         ++called;
-        if (!fn(*RangeIterator{ this, &all_, i })) break;   // the iterator's view carries the arrival index
+        if (!fn(view)) break;
     }
     return called;
+}
+
+std::size_t ISDeviceLog::forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids,
+                                       const std::function<bool(const ISRecordView&)>& fn) const {
+    return forEachMatching(dids, [&](const ISRecordView& v) { return v.timestamp().value >= from.value && v.timestamp().value <= to.value; }, fn);
+}
+
+std::size_t ISDeviceLog::forEachRecordInLogTime(uint32_t fromMs, uint32_t toMs, std::initializer_list<did_t> dids,
+                                                const std::function<bool(const ISRecordView&)>& fn) const {
+    return forEachMatching(dids, [&](const ISRecordView& v) { return v.logTimeOffsetMs() >= fromMs && v.logTimeOffsetMs() <= toMs; }, fn);
+}
+
+std::size_t ISDeviceLog::forEachRecordInArrival(uint64_t first, uint64_t last, std::initializer_list<did_t> dids,
+                                                const std::function<bool(const ISRecordView&)>& fn) const {
+    return forEachMatching(dids, [&](const ISRecordView& v) { return v.arrivalIndex() >= first && v.arrivalIndex() < last; }, fn);
 }
 
 ISRecordView ISDeviceLog::RangeIterator::operator*() const noexcept {
