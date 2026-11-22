@@ -463,6 +463,21 @@ ISDeviceLog::RangeIterator
     return RangeIterator{ this, &all_, all_.size() };
 }
 
+std::size_t ISDeviceLog::forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids,
+                                       const std::function<bool(const ISRecordView&)>& fn) const {
+    std::size_t called = 0;
+    for (std::size_t i = 0; i < all_.size(); ++i) {
+        const Locator& loc = all_[i];
+        const ISRecordView raw = segments_[loc.segment].recordAt(loc.record);
+        const uint64_t ts = raw.timestamp().value;
+        if (ts < from.value || ts > to.value) continue;
+        if (dids.size() != 0 && std::find(dids.begin(), dids.end(), static_cast<did_t>(raw.did())) == dids.end()) continue;
+        ++called;
+        if (!fn(*RangeIterator{ this, &all_, i })) break;   // the iterator's view carries the arrival index
+    }
+    return called;
+}
+
 ISRecordView ISDeviceLog::RangeIterator::operator*() const noexcept {
     if (!parent_ || !locators_ || pos_ >= locators_->size()) return {};
     const Locator& loc = (*locators_)[pos_];

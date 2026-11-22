@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <string>
 #include <unordered_map>
@@ -388,6 +389,20 @@ public:
      *                `allRecords().end()` if no record satisfies.
      */
     RangeIterator seek(TimeStamp target) const noexcept;
+
+    /**
+     * Calls @p fn for every record in arrival order whose timestamp lies in [from, to] (inclusive, compared by
+     * `value` only) and whose DID is one of @p dids. Every record is tested, so a log whose timestamps are not
+     * monotonic is walked correctly, unlike `Range::in_time`.
+     *
+     * @param from  Inclusive start.
+     * @param to    Inclusive end.
+     * @param dids  DIDs to pass to @p fn; empty means every DID.
+     * @param fn    Called with each matching record; return false to stop.
+     * @return      The number of records @p fn was called with.
+     */
+    std::size_t forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids,
+                              const std::function<bool(const ISRecordView&)>& fn) const;
 
     // ----- Optional segment-boundary callback ------------------------
 
