@@ -19,3 +19,5 @@ Run `/pre-pr-check` (`.claude/skills/pre-pr-check/SKILL.md`) and fix everything 
 ## clang-format
 
 In the Hephaestus bridge image it is at `/opt/zephyr-venv/bin/` (`clang-format`, `clang-format-diff.py`, `git-clang-format`), which is not on `PATH`. A developer machine uses its own clang-format. Format new files whole and modified files on changed lines only; the check's step 3 has the commands.
+
+`clang-format-diff.py -i` can reformat existing lines next to yours, for example the aligned members beside a declaration you inserted. Read the hunks it reports: if it touches lines you did not write, move your insertion (for example to the end of the class after a blank line) or apply only the hunks for your own lines. Some `.clang-format` files end without a newline, so the step-3 command that appends `SortIncludes: Never` must put a newline first, as the skill's version does.
