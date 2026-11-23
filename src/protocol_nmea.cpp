@@ -1,3 +1,10 @@
+/**
+ * @file protocol_nmea.cpp
+ * @brief NMEA 0183 sentence encoding (IS data structures to NMEA) and parsing (NMEA to IS data structures), including the $ASCE broadcast-enable command.
+ *
+ * @copyright Copyright (c) 2014-2026 Inertial Sense, Inc. All rights reserved.
+ */
+
 #include <stdint.h>
 #include <stdarg.h>
 #include <cctype>
@@ -1177,8 +1184,81 @@ int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
     return nmea_sprint_footer(a, aSize, n);
 }
 
+namespace {
+
+/**
+ * @brief Appends the GNSS position/velocity fields shared by $PGPSP and $PGNSSP (fields 1-17, see nmea_pgnssp()) to a sentence whose header is already written.
+ *
+ * @param a - output buffer holding the sentence being built
+ * @param aSize - size of output buffer
+ * @param n - number of characters already written to a
+ * @param pos - GNSS position data (gnss_pos_t) to encode
+ * @param vel - GNSS velocity data (gnss_vel_t) to encode
+ *
+ * @return number of characters written to a after the fields are appended
+ */
+int nmea_gnss_pos_vel_fields(char a[], const int aSize, int n, const gnss_pos_t& pos, const gnss_vel_t& vel) {
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.timeOfWeekMs);  // 1
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.week);          // 2
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.status);        // 3
+
+    nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[0]);  // 4
+    nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[1]);  // 5
+    nmea_sprint(a, aSize, n, ",%.2lf", pos.lla[2]);  // 6
+
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.hMSL);  // 7
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.pDop);  // 8
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.hAcc);  // 9
+    nmea_sprint_f(a, aSize, n, ",%.2f", pos.vAcc);  // 10
+
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[0]);  // 11
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[1]);  // 12
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[2]);  // 13
+    nmea_sprint_f(a, aSize, n, ",%.2f", vel.sAcc);    // 14
+
+    nmea_sprint_f(a, aSize, n, ",%.1f", pos.cnoMean);          // 15
+    nmea_sprint(a, aSize, n, ",%.4lf", pos.towOffset);         // 16
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.leapS);  // 17
+
+    return n;
+}
+
+}  // namespace
+
+/**
+ * @brief Builds a $PGNSSP proprietary NMEA message reporting the GNSS position and velocity solution. Carries every gnss_pos_t field except ecef (which is
+ * derivable from lla), plus the gnss_vel_t velocity and speed accuracy. Fields 1-17 match $PGPSP, which this sentence replaces.
+ *
+ * @param a - output buffer
+ * @param aSize - size of output buffer
+ * @param pos - GNSS position data (gnss_pos_t) to encode
+ * @param vel - GNSS velocity data (gnss_vel_t) to encode
+ *
+ * @note output message format:
+ *  0   Message ID $PGNSSP
+ *  1-17  Same as $PGPSP, see nmea_pgpsp()
+ *  18  Number of satellites used in the solution (satsUsed)
+ *  19  Standard deviation of cnoMean over the past 5 seconds (cnoMeanSigma), dB-Hz x10
+ *  20  Secondary GNSS status (status2), see eGnssStatus2 in data_sets.h:
+ *        bits[3:0]   = spoofing/jamming status (GNSS_STATUS2_FLAGS_JAM_SPOOF_MASK)
+ *        bits[7:4]   = unused
+ *  21  Checksum, begins with *
+ *
+ * @return length of the generated NMEA sentence, including the checksum trailer
+ */
+int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t& pos, const gnss_vel_t& vel) {
+    int n = ssnprintf(a, aSize, "$PGNSSP");
+    n = nmea_gnss_pos_vel_fields(a, aSize, n, pos, vel);              // 1-17
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.satsUsed);      // 18
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.cnoMeanSigma);  // 19
+    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.status2);       // 20
+
+    return nmea_sprint_footer(a, aSize, n);
+}
+
 /**
  * @brief Builds a $PGPSP proprietary NMEA message reporting the raw GNSS position and velocity solution (with accuracy/DOP metrics).
+ * @deprecated Use nmea_pgnssp(). $PGNSSP carries these fields plus satsUsed, cnoMeanSigma and status2.
  *
  * @param a[] - output buffer
  * @param aSize - size of output buffer
@@ -1238,28 +1318,8 @@ int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 int nmea_pgpsp(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel)
 {
     int n = ssnprintf(a, aSize, "$PGPSP");
-    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.timeOfWeekMs);    // 1
-    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.week);            // 2
-    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.status);          // 3
+    n = nmea_gnss_pos_vel_fields(a, aSize, n, pos, vel);  // 1-17
 
-    nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[0]);                     // 4
-    nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[1]);                     // 5
-    nmea_sprint(a, aSize, n, ",%.2lf", pos.lla[2]);                     // 6
-    
-    nmea_sprint_f(a, aSize, n, ",%.2f", pos.hMSL);                      // 7
-    nmea_sprint_f(a, aSize, n, ",%.2f", pos.pDop);                      // 8
-    nmea_sprint_f(a, aSize, n, ",%.2f", pos.hAcc);                      // 9
-    nmea_sprint_f(a, aSize, n, ",%.2f", pos.vAcc);                      // 10
-
-    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[0]);                    // 11
-    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[1]);                    // 12
-    nmea_sprint_f(a, aSize, n, ",%.2f", vel.vel[2]);                    // 13
-    nmea_sprint_f(a, aSize, n, ",%.2f", vel.sAcc);                      // 14
-
-    nmea_sprint_f(a, aSize, n, ",%.1f", pos.cnoMean);                   // 15
-    nmea_sprint(a, aSize, n, ",%.4lf", pos.towOffset);                  // 16
-    nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.leapS);           // 17
-    
     return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -3043,21 +3103,19 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize)
     return 0;
 }
 
-/**
- * @brief Parses a $PGPSP proprietary NMEA message into a GNSS position/velocity solution. See nmea_pgpsp() for the wire field order and status bitfield layout.
- *
- * @param gnssPos - [out] parsed GNSS position (gnss_pos_t): timeOfWeekMs/week (fields 1-2), status (field 3, see eGnssStatus - fix type in bits[12:8], flags in bits[28:13]; satsUsed is also derived from status's low byte), lla[3] (fields 4-6), hMSL (field 7), pDop/hAcc/vAcc (fields 8-10), cnoMean (field 15), towOffset (field 16), leapS (field 17)
- * @param gnssVel - [out] parsed GNSS velocity (gnss_vel_t): timeOfWeekMs (copied from gnssPos), vel[3] (fields 11-13), sAcc (field 14)
- * @param a[] - incoming NMEA sentence buffer
- * @param aSize - size of a[] (unused)
- *
- * @return 0 always
- */
-int nmea_parse_pgpsp(gnss_pos_t &gnssPos, gnss_vel_t &gnssVel, const char a[], const int aSize)
-{
-    (void)aSize;
-    char *ptr = (char *)&a[7];    // $PGPSP,
+namespace {
 
+/**
+ * @brief Parses the GNSS position/velocity fields shared by $PGPSP and $PGNSSP (fields 1-17, see nmea_pgnssp()).
+ *
+ * @param gnssPos - [out] parsed GNSS position (gnss_pos_t): timeOfWeekMs/week (fields 1-2), status (field 3, see eGnssStatus - fix type in bits[12:8], flags in bits[28:13]; satsUsed is also derived
+ * from status's low byte), lla[3] (fields 4-6), hMSL (field 7), pDop/hAcc/vAcc (fields 8-10), cnoMean (field 15), towOffset (field 16), leapS (field 17)
+ * @param gnssVel - [out] parsed GNSS velocity (gnss_vel_t): timeOfWeekMs (copied from gnssPos), vel[3] (fields 11-13), sAcc (field 14)
+ * @param ptr - pointer to the start of field 1, just past the talker's comma
+ *
+ * @return pointer to the start of field 18
+ */
+char* nmea_parse_gnss_pos_vel_fields(gnss_pos_t& gnssPos, gnss_vel_t& gnssVel, char* ptr) {
     // GPS timeOfWeekMs, week
     ptr = ASCII_to_u32(&(gnssPos.timeOfWeekMs), ptr);
     ptr = ASCII_to_u32(&(gnssPos.week), ptr);
@@ -3086,6 +3144,47 @@ int nmea_parse_pgpsp(gnss_pos_t &gnssPos, gnss_vel_t &gnssVel, const char a[], c
     // Time of Week offset, leapS
     ptr = ASCII_to_f64(&(gnssPos.towOffset), ptr);
     ptr = ASCII_to_u8(&(gnssPos.leapS), ptr);
+
+    return ptr;
+}
+
+}  // namespace
+
+/**
+ * @brief Parses a $PGPSP proprietary NMEA message into a GNSS position/velocity solution. See nmea_pgpsp() for the wire field order and status bitfield layout.
+ * @deprecated Use nmea_parse_pgnssp(). Kept so hosts can still read $PGPSP from older firmware.
+ *
+ * @param gnssPos - [out] parsed GNSS position (gnss_pos_t), see nmea_parse_gnss_pos_vel_fields(). satsUsed comes from status's low byte; cnoMeanSigma and status2 are not set.
+ * @param gnssVel - [out] parsed GNSS velocity (gnss_vel_t), see nmea_parse_gnss_pos_vel_fields()
+ * @param a - incoming NMEA sentence buffer
+ * @param aSize - size of a[] (unused)
+ *
+ * @return 0 always
+ */
+int nmea_parse_pgpsp(gnss_pos_t& gnssPos, gnss_vel_t& gnssVel, const char a[], const int aSize) {
+    (void)aSize;
+    nmea_parse_gnss_pos_vel_fields(gnssPos, gnssVel, (char*)&a[7]);  // $PGPSP,
+
+    return 0;
+}
+
+/**
+ * @brief Parses a $PGNSSP proprietary NMEA message into a GNSS position/velocity solution. See nmea_pgnssp() for the wire field order.
+ *
+ * @param gnssPos - [out] parsed GNSS position (gnss_pos_t): fields 1-17 as in nmea_parse_gnss_pos_vel_fields(), then satsUsed (field 18), cnoMeanSigma (field 19), status2 (field 20)
+ * @param gnssVel - [out] parsed GNSS velocity (gnss_vel_t), see nmea_parse_gnss_pos_vel_fields()
+ * @param a - incoming NMEA sentence buffer
+ * @param aSize - size of a[] (unused)
+ *
+ * @return 0 always
+ */
+int nmea_parse_pgnssp(gnss_pos_t& gnssPos, gnss_vel_t& gnssVel, const char a[], const int aSize) {
+    (void)aSize;
+    char* ptr = nmea_parse_gnss_pos_vel_fields(gnssPos, gnssVel, (char*)&a[8]);  // $PGNSSP,
+
+    ptr = ASCII_to_u8(&(gnssPos.satsUsed), ptr);
+    ptr = ASCII_to_u8(&(gnssPos.cnoMeanSigma), ptr);
+    ptr = ASCII_to_u8(&(gnssPos.status2), ptr);
 
     return 0;
 }
@@ -4392,6 +4491,8 @@ std::string nmeaMsgIdToTalker(int msgId)
         case NMEA_MSG_ID_PINS1: return "PINS1";
         case NMEA_MSG_ID_PINS2: return "PINS2";
         case NMEA_MSG_ID_PGPSP: return "PGPSP";
+        case NMEA_MSG_ID_PGNSSP:
+            return "PGNSSP";
         case NMEA_MSG_ID_GNGGA: return "GNGGA";
         case NMEA_MSG_ID_GNGLL: return "GNGLL";
         case NMEA_MSG_ID_GNGSA: return "GNGSA";

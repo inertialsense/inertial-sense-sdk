@@ -85,6 +85,7 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_NMEA_INTEL, "NMEA_INTEL" },
     { CBOR_DID_NMEA_POWGPS, "NMEA_POWGPS" },
     { CBOR_DID_NMEA_POWTLV, "NMEA_POWTLV" },
+    { CBOR_DID_NMEA_PGNSSP, "NMEA_PGNSSP" },
     { CBOR_DID_CAPABILITIES, "CAPABILITIES" },
     { CBOR_DID_RMC_STORED, "RMC_STORED" },
     { CBOR_DID_RMC, "RMC" },

@@ -50,6 +50,7 @@ extern "C" {
 #define CBOR_DID_NMEA_INTEL                          0x3F11   //!< NMEA_INTEL: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_POWGPS                         0x3F12   //!< NMEA_POWGPS: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_POWTLV                         0x3F13   //!< NMEA_POWTLV: NMEA sentence pseudo-DID
+#define CBOR_DID_NMEA_PGNSSP                         0x3F14   //!< NMEA_PGNSSP: NMEA sentence pseudo-DID
 #define CBOR_DID_CAPABILITIES                        0x7FFC   //!< CAPABILITIES: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_RMC_STORED                          0x7FFD   //!< RMC_STORED: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_RMC                                 0x7FFE   //!< RMC: CBOR-only DID, served by IMX-5, IMX-6, GPX-1

@@ -344,7 +344,18 @@ int nmea_pins2(char a[], const int aSize, ins_2_t &ins2);
 int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe);
 
 /**
+ * @brief Encode a $PGNSSP proprietary GNSS position and velocity sentence (every gnss_pos_t field except ecef, plus velocity).
+ * @param a    Output buffer.
+ * @param aSize Capacity of @p a.
+ * @param pos  GNSS position data to encode.
+ * @param vel  GNSS velocity data to encode.
+ * @return Number of bytes written, or negative on failure.
+ */
+int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t& pos, const gnss_vel_t& vel);
+
+/**
  * @brief Encode a $PGPSP proprietary GNSS position and velocity sentence.
+ * @deprecated Use nmea_pgnssp().
  * @param a    Output buffer.
  * @param aSize Capacity of @p a.
  * @param pos  GNSS position data to encode.
@@ -536,6 +547,7 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 
 /**
  * @brief Parse a $PGPSP sentence into gnss_pos_t and gnss_vel_t structures.
+ * @deprecated Use nmea_parse_pgnssp(). Kept so hosts can still read $PGPSP from older firmware.
  * @param gnssPos Output: GNSS position data.
  * @param gnssVel Output: GNSS velocity data.
  * @param a       Input NMEA sentence buffer.
@@ -543,6 +555,16 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
  * @return 0 on success, non-zero on parse error.
  */
 int nmea_parse_pgpsp(gnss_pos_t &gnssPos, gnss_vel_t &gnssVel, const char a[], const int aSize);
+
+/**
+ * @brief Parse a $PGNSSP sentence into gnss_pos_t and gnss_vel_t structures.
+ * @param gnssPos Output: GNSS position data (every field except ecef).
+ * @param gnssVel Output: GNSS velocity data.
+ * @param a       Input NMEA sentence buffer.
+ * @param aSize   Length of @p a.
+ * @return 0 on success, non-zero on parse error.
+ */
+int nmea_parse_pgnssp(gnss_pos_t& gnssPos, gnss_vel_t& gnssVel, const char a[], const int aSize);
 
 /**
  * @brief Parse a $ASCE sentence and update an rmci_t configuration array.

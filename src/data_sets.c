@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -727,6 +727,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
         NMEA_RMC_BITS_POWTLV |
         NMEA_RMC_BITS_INTEL |
         NMEA_RMC_BITS_PGPSP |
+        NMEA_RMC_BITS_PGNSSP |
         NMEA_RMC_BITS_GNGGA |
         NMEA_RMC_BITS_GNGLL |
         NMEA_RMC_BITS_GNGSA |
@@ -739,6 +740,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
         NMEA_RMC_BITS_POWTLV |
         NMEA_RMC_BITS_INTEL |
         NMEA_RMC_BITS_PGPSP |
+        NMEA_RMC_BITS_PGNSSP |
         NMEA_RMC_BITS_GNGGA |
         NMEA_RMC_BITS_GNGLL |
         NMEA_RMC_BITS_GNGSA |
@@ -1033,6 +1035,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
         else if (UINT32_MATCH(talker,"PINS"))       { return (cptr[5]=='1' ? NMEA_MSG_ID_PINS1 : NMEA_MSG_ID_PINS2); }
         else if (UINT32_MATCH(talker,"PERS"))       { return NMEA_MSG_ID_PERS;  }
         else if (UINT32_MATCH(talker,"PGPS"))       { return NMEA_MSG_ID_PGPSP; }
+        else if (UINT32_MATCH(talker,"PGNS"))       { return NMEA_MSG_ID_PGNSSP; }
         else if (UINT32_MATCH(talker,"PPIM"))       { return NMEA_MSG_ID_PPIMU; }
         else if (UINT32_MATCH(talker,"PRIM"))       { return NMEA_MSG_ID_PRIMU; }
         else if (UINT32_MATCH(talker,"PASH"))       { return NMEA_MSG_ID_PASHR; }
@@ -1080,6 +1083,7 @@ int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
     case NMEA_MSG_ID_INTEL:     memcpy(buf, "INTEL", n = 5);    break;
     case NMEA_MSG_ID_POWGPS:    memcpy(buf, "POWGPS", n = 6);   break;
     case NMEA_MSG_ID_POWTLV:    memcpy(buf, "POWTLV", n = 6);   break;
+    case NMEA_MSG_ID_PGNSSP:    memcpy(buf, "PGNSSP", n = 6);   break;
 
     case NMEA_MSG_ID_ASCE:      memcpy(buf, "ASCE", n = 4);     break;
     case NMEA_MSG_ID_BLEN:      memcpy(buf, "BLEN", n = 4);     break;

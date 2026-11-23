@@ -12,5 +12,5 @@
 
 _Static_assert(DID_CBOR == 129, "registry transport.isb_did does not match DID_CBOR");
 _Static_assert((NUM_CIDS) == 27, "registry constant NUM_CIDS does not match the C definition");
-_Static_assert((NMEA_MSG_ID_COUNT) == 20, "registry constant NMEA_MSG_ID_COUNT does not match the C definition");
+_Static_assert((NMEA_MSG_ID_COUNT) == 21, "registry constant NMEA_MSG_ID_COUNT does not match the C definition");
 _Static_assert((ISB_MAX_DATASET_SIZE) == 2040, "registry constant ISB_MAX_DATASET_SIZE does not match the C definition");
