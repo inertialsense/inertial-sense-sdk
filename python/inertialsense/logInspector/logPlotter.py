@@ -193,10 +193,24 @@ IMU_TYPE_BY_HDW_VARIANT = {
 }
 
 
-def imuTypesForHdwVariant(variant, n_imu):
+# IMU part number for hardware generations that don't use the hardwareVariant table above (that
+# table is IMX-6 only). IMX-5 always populates ISM330 parts, and reports hardwareVariant 0, which
+# would otherwise be mislabeled as the IMX-6 variant 0 part. Duplicated from IMU_TYPE_BY_HDW_MAJOR
+# in python/src/imuCalibration/temperature_calibration.py -- keep the two in sync.
+IMU_TYPE_BY_HDW_MAJOR = {
+    5:  'ISM330DHCX',
+}
+
+
+def imuTypesForHdwVariant(variant, n_imu, hdw_major=None):
     """List of n_imu IMU part-number strings (one per slot 0..n_imu-1) for a hardwareVariant value,
-    per IMU_TYPE_BY_HDW_VARIANT, or 'unknown' entries if the variant isn't recognized."""
-    types = IMU_TYPE_BY_HDW_VARIANT.get(int(variant))
+    per IMU_TYPE_BY_HDW_VARIANT, or 'unknown' entries if the variant isn't recognized. hdw_major
+    (hardwareVer[0]), when given, takes precedence for generations listed in IMU_TYPE_BY_HDW_MAJOR."""
+    types = None
+    if hdw_major is not None:
+        types = IMU_TYPE_BY_HDW_MAJOR.get(int(hdw_major))
+    if types is None:
+        types = IMU_TYPE_BY_HDW_VARIANT.get(int(variant))
     if types is None:
         return ['unknown'] * n_imu
     if isinstance(types, str):
@@ -687,7 +701,7 @@ class logPlot:
             # id is a separate DID_DEV_INFO field, hardwareVariant, not a 4th hardwareVer entry.
             hdw_version = [int(x) for x in hdw_data[-1]]
             hdw_variant = int(variant_data[-1])
-            imu_type = imuTypesForHdwVariant(hdw_variant, n_slots)
+            imu_type = imuTypesForHdwVariant(hdw_variant, n_slots, hdw_major=hdw_version[0])
 
             device_node = data.setdefault(str(int(self.log.serials[d])), {})
             device_node['hdw_version'] = hdw_version
