@@ -1,3 +1,10 @@
+/**
+ * @file test_protocol_nmea.cpp
+ * @brief Unit tests for protocol_nmea: NMEA sentence encode/parse round trips, talker/ID lookup and $ASCE parsing.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ */
+
 #include <gtest/gtest.h>
 #include <vector>
 
@@ -793,6 +800,152 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
         compareGnssPos(pos, resultPos);
         compareGnssVel(vel, resultVel);
     }
+}
+
+namespace {
+
+/**
+ * @brief Fills a GNSS position/velocity pair with non-zero values in every field $PGNSSP carries, so a dropped field fails the comparison.
+ *
+ * @param pos - [out] GNSS position to fill
+ * @param vel - [out] GNSS velocity to fill
+ */
+void fillPgnsspTestData(gnss_pos_t& pos, gnss_vel_t& vel) {
+    pos = {};
+    vel = {};
+    pos.week = 2309;
+    pos.timeOfWeekMs = vel.timeOfWeekMs = 370659600;
+    pos.satsUsed = 45;
+    pos.status = (GNSS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed) | GNSS_STATUS_FIX_RTK_FIX | GNSS_STATUS_FLAGS_FIX_OK;
+    for (int i = 0; i < 3; i++) {
+        vel.vel[i] = 40.0f + i;
+    }
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = POS_LON_DEG;
+    pos.lla[2] = POS_ALT_M;
+    pos.hMSL = 89;
+    pos.hAcc = 123;
+    pos.vAcc = 45;
+    pos.pDop = 6;
+    pos.cnoMean = 78;
+    pos.towOffset = 9;
+    pos.leapS = LEAP_SEC;
+    pos.cnoMeanSigma = 37;
+    pos.status2 = GNSS_STATUS2_FLAGS_GNSS_JAM_DETECTED | GNSS_STATUS2_FLAGS_GNSS_SPOOF_DETECTED;
+    vel.sAcc = 345;
+}
+
+}  // namespace
+
+TEST(protocol_nmea, PGNSSP) {
+    gnss_pos_t pos;
+    gnss_vel_t vel;
+    fillPgnsspTestData(pos, vel);
+
+    char abuf[ASCII_BUF_LEN] = {0};
+    int n = nmea_pgnssp(abuf, ASCII_BUF_LEN, pos, vel);
+    ASSERT_GT(n, 0);
+    EXPECT_EQ(0, strncmp(abuf, "$PGNSSP,", 8)) << "abuf: " << abuf;
+
+    gnss_pos_t resultPos = {};
+    gnss_vel_t resultVel = {};
+    nmea_parse_pgnssp(resultPos, resultVel, abuf, n);
+
+    compareGnssPos(pos, resultPos);
+    compareGnssVel(vel, resultVel);
+}
+
+TEST(protocol_nmea, PGNSSP_satsUsed_independent_of_status) {
+    // satsUsed travels in its own field, so it survives a status whose low byte disagrees with it.
+    gnss_pos_t pos;
+    gnss_vel_t vel;
+    fillPgnsspTestData(pos, vel);
+    pos.status &= ~GNSS_STATUS_NUM_SATS_USED_MASK;
+    pos.satsUsed = 52;
+
+    char abuf[ASCII_BUF_LEN] = {0};
+    int n = nmea_pgnssp(abuf, ASCII_BUF_LEN, pos, vel);
+    gnss_pos_t resultPos = {};
+    gnss_vel_t resultVel = {};
+    nmea_parse_pgnssp(resultPos, resultVel, abuf, n);
+
+    EXPECT_EQ(pos.status, resultPos.status);
+    EXPECT_EQ(52, resultPos.satsUsed);
+}
+
+TEST(protocol_nmea, PGNSSP_fields_1_to_17_match_PGPSP) {
+    gnss_pos_t pos;
+    gnss_vel_t vel;
+    fillPgnsspTestData(pos, vel);
+
+    char pgpsp[ASCII_BUF_LEN] = {0};
+    char pgnssp[ASCII_BUF_LEN] = {0};
+    nmea_pgpsp(pgpsp, ASCII_BUF_LEN, pos, vel);
+    nmea_pgnssp(pgnssp, ASCII_BUF_LEN, pos, vel);
+
+    // Body of $PGPSP without its checksum, compared against the start of $PGNSSP's body.
+    std::string pgpspBody(pgpsp + strlen("$PGPSP"), strchr(pgpsp, '*'));
+    std::string pgnsspBody(pgnssp + strlen("$PGNSSP"));
+    EXPECT_EQ(0, pgnsspBody.compare(0, pgpspBody.size(), pgpspBody)) << "PGPSP: " << pgpsp << "PGNSSP: " << pgnssp;
+}
+
+TEST(protocol_nmea, PGNSSP_sweep_operating_range) {
+    double invTowMsMax = 1.0 / (double)C_MILLISECONDS_PER_WEEK;
+
+    // Cycle through entire range of time of week in milliseconds
+    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500) {  // Scale will transition from 0.0 to 1.0
+        double scale = ((double)towMs) * invTowMsMax;
+
+        gnss_pos_t pos;
+        gnss_vel_t vel;
+        fillPgnsspTestData(pos, vel);
+        pos.timeOfWeekMs = vel.timeOfWeekMs = towMs;
+        pos.hMSL = (float)(-100 + 50000 * scale);
+        pos.lla[0] = -90.0 + 180.0 * scale;
+        pos.lla[1] = -180.0 + 230.0 * scale;
+        pos.lla[2] = pos.hMSL - 18.8;
+        pos.satsUsed = (uint8_t)(towMs / 500);
+        pos.status = (pos.status & ~GNSS_STATUS_NUM_SATS_USED_MASK) | pos.satsUsed;
+        pos.cnoMeanSigma = (uint8_t)(towMs / 1000);
+        pos.status2 = (uint8_t)(towMs / 500);
+
+        char abuf[ASCII_BUF_LEN] = {0};
+        int n = nmea_pgnssp(abuf, ASCII_BUF_LEN, pos, vel);
+        gnss_pos_t resultPos = {};
+        gnss_vel_t resultVel = {};
+        nmea_parse_pgnssp(resultPos, resultVel, abuf, n);
+
+        compareGnssPos(pos, resultPos);
+        compareGnssVel(vel, resultVel);
+    }
+}
+
+TEST(protocol_nmea, PGNSSP_talker_and_id) {
+    const char pgnssp[] = "$PGNSSP,0*00";
+    const char pgpsp[] = "$PGPSP,0*00";
+    EXPECT_EQ(NMEA_MSG_ID_PGNSSP, getNmeaMsgId(pgnssp, (int)strlen(pgnssp)));
+    EXPECT_EQ(NMEA_MSG_ID_PGPSP, getNmeaMsgId(pgpsp, (int)strlen(pgpsp)));
+
+    char talker[16] = {0};
+    ASSERT_EQ(0, nmeaMsgIdToTalker(NMEA_MSG_ID_PGNSSP, talker, sizeof(talker)));
+    EXPECT_STREQ("PGNSSP", talker);
+
+    EXPECT_NE(0u, g_didToNmeaRmcBit[DID_GNSS1_POS] & NMEA_RMC_BITS_PGNSSP);
+    EXPECT_NE(0u, g_didToNmeaRmcBit[DID_GNSS2_POS] & NMEA_RMC_BITS_PGNSSP);
+}
+
+TEST(protocol_nmea, PGNSSP_asce_enable_by_name) {
+    char a[ASCII_BUF_LEN];
+    int n = 0;
+    asce_build(a, ASCII_BUF_LEN, n, "0,PGNSSP,3");
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t*> out = {&rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5]};
+    nmea_parse_asce(TEST0_PORT, a, n, out);
+
+    const rmci_t& rx = rmci[portId(TEST0_PORT)];
+    EXPECT_EQ((uint32_t)NMEA_RMC_BITS_PGNSSP, rx.rmcNmea.nmeaBits);
+    EXPECT_EQ(3, rx.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PGNSSP]);
 }
 
 TEST(protocol_nmea, GGA)
