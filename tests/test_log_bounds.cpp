@@ -601,7 +601,8 @@ TEST_F(LogBoundsTest, W3_ClosedLogHasNoTruncatedFinalRecord) {
 
 TEST_F(LogBoundsTest, ForEachRecordFiltersBySpanAndDid) {
     std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
-    for (double tow : {100.0, 110.0, 120.0}) recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    // The first record is later than the other two, so a walk that stopped at the first record outside the span (as the contiguous Range::in_time does) would miss both.
+    for (double tow : {120.0, 100.0, 110.0}) recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
     imu_t imu{};
     imu.time = 1.0;
     recs.emplace_back(DID_IMU, bytesOf(imu));

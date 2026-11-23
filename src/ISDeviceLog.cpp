@@ -465,8 +465,10 @@ ISDeviceLog::RangeIterator
 
 std::size_t ISDeviceLog::forEachMatching(std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& inSpan, const std::function<bool(const ISRecordView&)>& fn) const {
     std::size_t called = 0;
-    for (std::size_t i = 0; i < all_.size(); ++i) {
-        const ISRecordView view = *RangeIterator{this, &all_, i};  // the iterator's view carries the arrival index
+    // One iterator for the whole walk: operator++ is what tells a registered segment-boundary consumer that a segment has ended, including when the record that follows is filtered out.
+    const RangeIterator end{this, &all_, all_.size()};
+    for (RangeIterator it{this, &all_, 0}; it != end; ++it) {
+        const ISRecordView view = *it;  // the iterator's view carries the arrival index
         if (dids.size() != 0 && std::find(dids.begin(), dids.end(), static_cast<did_t>(view.did())) == dids.end()) continue;
         if (!inSpan(view)) continue;
         ++called;

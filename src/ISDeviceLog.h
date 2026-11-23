@@ -398,7 +398,8 @@ public:
      * @note A raw log's `TimeStamp::value` is in the record's own clock: a record that carries a GPS time of week
      *       has it, and one that does not has the log's uptime. A span in `value` is therefore only meaningful on a
      *       log whose records share one clock (or after time resolution); for a span of an unresolved log use
-     *       forEachRecordInLogTime() or forEachRecordInArrival().
+     *       forEachRecordInLogTime() when its offsets share a log-wide origin (see there), and otherwise
+     *       forEachRecordInArrival().
      *
      * @param from  Inclusive start.
      * @param to    Inclusive end.
@@ -409,8 +410,15 @@ public:
     std::size_t forEachRecord(TimeStamp from, TimeStamp to, std::initializer_list<did_t> dids, const std::function<bool(const ISRecordView&)>& fn) const;
 
     /**
-     * Like forEachRecord(), with the span in the log's own uptime: `ISRecordView::logTimeOffsetMs()`, which every
-     * record has and which is one clock for the whole log.
+     * Like forEachRecord(), with the span in `ISRecordView::logTimeOffsetMs()`, the record's offset from the start of
+     * the log.
+     *
+     * @note The offsets share one origin for the whole log only when the reader recorded them against a log-wide
+     *       uptime zero. `ISLogReader::populateReconTimeOffsets()` can reconstruct offsets relative to each segment
+     *       (when it has no log uptime zero, and for a segment dominated by GPS time of week), and an offset that is
+     *       unavailable reads as zero. A span can then select the same relative interval from several segments
+     *       instead of one interval of the recording. When valid, common-origin offsets are not available, use
+     *       forEachRecordInArrival().
      *
      * @param fromMs  Inclusive start, ms since the log opened.
      * @param toMs    Inclusive end.
