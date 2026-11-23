@@ -1945,6 +1945,12 @@ typedef struct PACKED
 #define RMC_PRESET_IMX_PPD_IMUS_RAW         (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_IMUS_RAW \
                                             | RMC_BITS_PIMU)
+// Post processing data with per-device IMU integrals (DID_IMUS) at the navigation rate.  DID_IMUS
+// supersedes DID_IMUS_RAW for per-device analysis at a fraction of the bandwidth, so this preset
+// suppresses the DID_IMUS_RAW that a PPD preset otherwise enables (see
+// setRmciPresetPeriodMultipleDefault).
+#define RMC_PRESET_IMX_PPD_IMUS             (RMC_PRESET_IMX_PPD \
+                                            | RMC_BITS_IMUS)
 #define RMC_PRESET_IMX_PPD_IMUS_UNCAL       (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_IMUS_UNCAL \
                                             | RMC_BITS_PIMU)
