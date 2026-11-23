@@ -14,6 +14,8 @@
  * up on.
  *
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>

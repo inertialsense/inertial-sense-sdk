@@ -1,6 +1,8 @@
 /**
  * @file test_device_log.cpp
  * @brief D-05 / SN-7896 — ISDeviceLog composition tests.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>

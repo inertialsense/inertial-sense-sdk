@@ -13,6 +13,8 @@
  * as `ISLogReader`.
  *
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #pragma once
