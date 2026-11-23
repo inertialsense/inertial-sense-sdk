@@ -1911,31 +1911,43 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_IMUS_PERIOD_MULT     255     // uint8
 
 // Preset: Post Processing Data
-#define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
-                                            | RMC_BITS_INS2 \
-                                            | RMC_BITS_BAROMETER \
-                                            | RMC_BITS_MAGNETOMETER \
+#define RMC_PRESET_GNSS                     (RMC_BITS_PRESET \
                                             | RMC_BITS_GNSS1_POS \
                                             | RMC_BITS_GNSS2_POS \
                                             | RMC_BITS_GNSS1_VEL \
                                             | RMC_BITS_GNSS2_VEL \
+                                            | RMC_BITS_GNSS1_RTK_POS_REL \
+                                            | RMC_BITS_GNSS1_RTK_HDG_REL \
+                                            | RMC_BITS_GPX_STATUS\
+                                            | RMC_BITS_GPX_SYS_FAULT \
+                                            | RMC_BITS_TIME)
+#define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
+                                            | RMC_PRESET_GNSS \
                                             | RMC_BITS_GNSS1_RAW \
                                             | RMC_BITS_GNSS2_RAW \
                                             | RMC_BITS_GNSS_BASE_RAW \
-                                            | RMC_BITS_GNSS1_RTK_POS_REL \
-                                            | RMC_BITS_GNSS1_RTK_HDG_REL \
-                                            | RMC_BITS_GPX_STATUS \
-                                            | RMC_BITS_GPX_DEBUG_ARRAY \
-                                            | RMC_BITS_INTERNAL_PPD \
-                                            | RMC_BITS_INL2_NED_SIGMA \
-                                            | RMC_BITS_DIAGNOSTIC_MESSAGE\
-                                            | RMC_BITS_EXT_AIDING_POS \
+                                            | RMC_BITS_GPX_PORT_MON \
+                                            | RMC_BITS_EVENT)
+#define RMC_PRESET_IMX_EXT_AIDING           (RMC_BITS_EXT_AIDING_POS \
                                             | RMC_BITS_EXT_AIDING_VEL \
                                             | RMC_BITS_EXT_AIDING_SPEED \
                                             | RMC_BITS_EXT_AIDING_DIR_SPEED \
                                             | RMC_BITS_EXT_AIDING_HEADING \
-                                            | RMC_BITS_EXT_AIDING_ATTITUDE \
-                                            | RMC_BITS_GPX_SYS_FAULT \
+                                            | RMC_BITS_EXT_AIDING_ATTITUDE)
+#define RMC_PRESET_IMX_LOW_BW               (RMC_BITS_PRESET \
+                                            | RMC_BITS_INS2 \
+                                            | RMC_BITS_BAROMETER \
+                                            | RMC_BITS_MAGNETOMETER \
+                                            | RMC_PRESET_GPX_PPD \
+                                            | RMC_PRESET_IMX_EXT_AIDING \
+                                            | RMC_BITS_TIME)
+#define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
+                                            | RMC_PRESET_IMX_LOW_BW \
+                                            | RMC_BITS_BAROMETER \
+                                            | RMC_BITS_MAGNETOMETER \
+                                            | RMC_BITS_INTERNAL_PPD \
+                                            | RMC_BITS_INL2_NED_SIGMA \
+                                            | RMC_BITS_DIAGNOSTIC_MESSAGE\
                                             | RMC_BITS_TIME)
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
@@ -1972,24 +1984,6 @@ typedef struct PACKED
 #define RMC_PRESET_ALLAN_VARIANCE_IMUS      (RMC_BITS_PRESET \
                                             | RMC_BITS_IMU \
                                             | RMC_BITS_IMUS)
-#define RMC_PRESET_GNSS (RMC_BITS_PRESET \
-                                            | RMC_BITS_GNSS1_POS \
-                                            | RMC_BITS_GNSS2_POS \
-                                            | RMC_BITS_GNSS1_VEL \
-                                            | RMC_BITS_GNSS2_VEL \
-                                            | RMC_BITS_GNSS1_RTK_POS_REL \
-                                            | RMC_BITS_GNSS1_RTK_HDG_REL \
-                                            | RMC_BITS_GPX_DEBUG_ARRAY \
-                                            | RMC_BITS_GPX_PORT_MON \
-                                            | RMC_BITS_EVENT \
-                                            | RMC_BITS_GPX_STATUS\
-                                            | RMC_BITS_GPX_SYS_FAULT \
-                                            | RMC_BITS_TIME)
-#define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
-                                            | RMC_PRESET_GNSS \
-                                            | RMC_BITS_GNSS1_RAW \
-                                            | RMC_BITS_GNSS2_RAW \
-                                            | RMC_BITS_GNSS_BASE_RAW)
 
 /** @brief (DID_RMC, DID_GPX_RMC) Realtime Message Controller (RMC) enable state. Selects which data sets are broadcast and on which port(s); see the RMC description above and the RMC_BITS_... / RMC_OPTIONS_... defines for the full bit layout. Also embedded as the live broadcast-enable state inside @ref rmci_t and @ref grmci_t. IMU and Integrated IMU (PIMU) data transmit period is set separately using DID_SYS_PARAMS.navPeriodMs, not by this struct. */
 typedef struct PACKED
