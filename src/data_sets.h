@@ -1921,8 +1921,7 @@ typedef struct PACKED
                                             | RMC_BITS_GNSS1_RTK_POS_REL \
                                             | RMC_BITS_GNSS1_RTK_HDG_REL \
                                             | RMC_BITS_GPX_STATUS\
-                                            | RMC_BITS_GPX_SYS_FAULT \
-                                            | RMC_BITS_TIME)
+                                            | RMC_BITS_GPX_SYS_FAULT)
 #define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
                                             | RMC_PRESET_GNSS \
                                             | RMC_BITS_GNSS1_RAW \
@@ -1936,21 +1935,20 @@ typedef struct PACKED
                                             | RMC_BITS_EXT_AIDING_DIR_SPEED \
                                             | RMC_BITS_EXT_AIDING_HEADING \
                                             | RMC_BITS_EXT_AIDING_ATTITUDE)
-#define RMC_PRESET_IMX_LOW_BW               (RMC_BITS_PRESET \
+// IMX-6: ~1 KB/s, IMX-5: ~1 KB/s
+#define RMC_PRESET_IMX_LOW_BANDWIDTH        (RMC_BITS_PRESET \
                                             | RMC_BITS_INS2 \
-                                            | RMC_BITS_BAROMETER \
-                                            | RMC_BITS_MAGNETOMETER \
                                             | RMC_PRESET_GPX_PPD \
-                                            | RMC_PRESET_IMX_EXT_AIDING \
-                                            | RMC_BITS_TIME)
+                                            | RMC_PRESET_IMX_EXT_AIDING)
 #define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
-                                            | RMC_PRESET_IMX_LOW_BW \
+                                            | RMC_PRESET_IMX_LOW_BANDWIDTH \
                                             | RMC_BITS_BAROMETER \
                                             | RMC_BITS_MAGNETOMETER \
                                             | RMC_BITS_INTERNAL_PPD \
                                             | RMC_BITS_INL2_NED_SIGMA \
                                             | RMC_BITS_DIAGNOSTIC_MESSAGE\
                                             | RMC_BITS_TIME)
+// IMX-6: ~14 KB/s, IMX-5: ~14 KB/s
 #define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
                                             | RMC_BITS_PIMU \
                                             | RMC_BITS_REFERENCE_PIMU)
@@ -1967,7 +1965,7 @@ typedef struct PACKED
                                             | RMC_BITS_IMUS_UNCAL \
                                             | RMC_BITS_PIMU)
 #define RMC_PRESET_INS                      (RMC_BITS_INS2 \
-                                            | RMC_BITS_GNSS1_POS \
+                                            | RMC_PRESET_GNSS \
                                             | RMC_BITS_PRESET)
 #define RMC_PRESET_IMX_PPD_RTK_DBG          (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_RTK_STATE \
