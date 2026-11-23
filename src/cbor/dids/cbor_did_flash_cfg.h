@@ -70,7 +70,7 @@ extern "C" {
 #define CBOR_FLASH_CFG__IMUSHOCKDELTAGYROLOWTHRESHOLD 48       //!< imuShockDeltaGyroLowThreshold: uint8, default 12
 #define CBOR_FLASH_CFG__IOCONFIG2                    49       //!< ioConfig2: uint8, default set by the firmware
 #define CBOR_FLASH_CFG__DEADRECKONINGTIMEOUT         50       //!< deadReckoningTimeout: uint8, default 30
-#define CBOR_FLASH_CFG__ACCHIGHGRANGE                51       //!< accHighGRange: uint8, default 0
+#define CBOR_FLASH_CFG__SENSORCONFIG2                51       //!< sensorConfig2: uint32, default 0
 /** @} */
 
 #define CBOR_FLASH_CFG_NAME_COUNT                    52       //!< entries in g_cborNames_FLASH_CFG

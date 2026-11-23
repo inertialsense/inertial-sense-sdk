@@ -1197,8 +1197,8 @@ status_field_decode_t buildRmcOptionsDecode()
  * IMX-only -- gpx_flash_cfg_t has no equivalent field. The largest table in this file: 5 small multi-bit Enum
  * pin-function fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
  * GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local helper to avoid
- * duplicating the value list and risking the two copies drifting), and 6 independent Bit flags
- * (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT, IMU_1/2/3_DISABLE). Undefined/reserved values
+ * duplicating the value list and risking the two copies drifting), and 4 independent Bit flags
+ * (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT). Undefined/reserved values
  * within a multi-bit field's range (e.g. raw 0 in the G6G7 field, which has no named
  * ..._DEFAULT-distinct-from-COM1 state) render nothing for that sub-field, same convention as
  * sysCfgBits/ioConfig2.
@@ -1355,12 +1355,6 @@ status_field_decode_t buildIoConfigDecode()
 
     d.subfields.push_back(bitField("GNSS2 skip init", IO_CONFIG_GNSS2_NO_INIT, false,
         "0x10000000 - Skip GNSS2 initialization"));
-    d.subfields.push_back(bitField("IMU1 disabled", IO_CONFIG_IMU_1_DISABLE, false,
-        "0x20000000 - IMU 1 disable"));
-    d.subfields.push_back(bitField("IMU2 disabled", IO_CONFIG_IMU_2_DISABLE, false,
-        "0x40000000 - IMU 2 disable"));
-    d.subfields.push_back(bitField("IMU3 disabled", IO_CONFIG_IMU_3_DISABLE, false,
-        "0x80000000 - IMU 3 disable"));
 
     return d;
 }
@@ -1560,6 +1554,47 @@ status_field_decode_t buildSensorConfigDecode()
 }
 
 /**
+ * @brief nvm_flash_cfg_t::sensorConfig2 decode table (eSensorConfig2).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. One multi-bit Enum sub-field (extended-range
+ * accelerometer full-scale range, whose 0 is a named "disabled" state and so always renders a line) plus 5
+ * independent Bit flags (IMU 1-5 disable).
+ *
+ * @return decode table
+ */
+status_field_decode_t buildSensorConfig2Decode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sensorConfig2";
+    d.errorMask = 0;
+
+    {
+        // SENSOR_CFG2_ACC_HG_FS_* are pre-shift index values, like SENSOR_CFG_ACC_FS_*.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG2_ACC_HG_FS_MASK << SENSOR_CFG2_ACC_HG_FS_OFFSET;
+        status_subfield_t s;
+        s.name = "High-g accel full-scale range"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)SENSOR_CFG2_ACC_HG_FS_OFFSET;
+        s.values = {
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_DISABLED, "High-g accel FS: disabled",   "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_32G,      "High-g accel FS: 32g",        "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_64G,      "High-g accel FS: 64g",        "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_128G,     "High-g accel FS: 128g",       "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_256G,     "High-g accel FS: 256g",       "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_MAX,      "High-g accel FS: sensor max", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("IMU1 disabled", SENSOR_CFG2_IMU_1_DISABLE, false, "0x00000100 - IMU 1 disable"));
+    d.subfields.push_back(bitField("IMU2 disabled", SENSOR_CFG2_IMU_2_DISABLE, false, "0x00000200 - IMU 2 disable"));
+    d.subfields.push_back(bitField("IMU3 disabled", SENSOR_CFG2_IMU_3_DISABLE, false, "0x00000400 - IMU 3 disable"));
+    d.subfields.push_back(bitField("IMU4 disabled", SENSOR_CFG2_IMU_4_DISABLE, false, "0x00000800 - IMU 4 disable"));
+    d.subfields.push_back(bitField("IMU5 disabled", SENSOR_CFG2_IMU_5_DISABLE, false, "0x00001000 - IMU 5 disable"));
+
+    return d;
+}
+
+/**
  * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits).
  *
  * GPX-only -- a much smaller enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"),
@@ -1635,6 +1670,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("ioConfig2",          buildIoConfig2Decode());
         m.emplace("ioConfig",           buildIoConfigDecode());
         m.emplace("sensorConfig",       buildSensorConfigDecode());
+        m.emplace("sensorConfig2",      buildSensorConfig2Decode());
         m.emplace("gpxSysCfgBits",      buildGpxSysCfgBitsDecode());
         return m;
     }();

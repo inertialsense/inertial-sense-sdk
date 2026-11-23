@@ -1714,18 +1714,32 @@ TEST(ISStatusDecode, IoConfig_Gnss1AndGnss2TypeDoNotCrossContaminate)
     EXPECT_EQ(rendered.find("GNSS2 type: UBLOX"), std::string::npos);
 }
 
-TEST(ISStatusDecode, IoConfig_ImuDisableBitsIndependent)
+TEST(ISStatusDecode, SensorConfig2_ImuDisableBitsIndependent)
 {
-    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig2");
     ASSERT_NE(dec, nullptr);
-    const std::string imu1 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_1_DISABLE);
-    const std::string imu2 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_2_DISABLE);
-    const std::string imu3 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_3_DISABLE);
-    EXPECT_NE(imu1.find("IMU 1 disable"), std::string::npos);
-    EXPECT_NE(imu2.find("IMU 2 disable"), std::string::npos);
-    EXPECT_NE(imu3.find("IMU 3 disable"), std::string::npos);
-    EXPECT_NE(imu1, imu2);
-    EXPECT_NE(imu2, imu3);
+    const uint32_t bits[] = { (uint32_t)SENSOR_CFG2_IMU_1_DISABLE, (uint32_t)SENSOR_CFG2_IMU_2_DISABLE,
+        (uint32_t)SENSOR_CFG2_IMU_3_DISABLE, (uint32_t)SENSOR_CFG2_IMU_4_DISABLE, (uint32_t)SENSOR_CFG2_IMU_5_DISABLE };
+    std::string prev;
+    for (int i = 0; i < 5; i++)
+    {
+        EXPECT_EQ(bits[i], 1u << (SENSOR_CFG2_IMU_DISABLE_OFFSET + i));
+        const std::string text = RenderStatusFromDecode(*dec, bits[i]);
+        EXPECT_NE(text.find("IMU " + std::to_string(i + 1) + " disable"), std::string::npos) << text;
+        EXPECT_NE(text, prev);
+        prev = text;
+    }
+}
+
+TEST(ISStatusDecode, SensorConfig2_HighGRange)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig2");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_NE(RenderStatusFromDecode(*dec, 0).find("High-g accel FS: disabled"), std::string::npos);
+    EXPECT_NE(RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG2_ACC_HG_FS_64G).find("High-g accel FS: 64g"), std::string::npos);
+    const std::string both = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG2_ACC_HG_FS_MAX | (uint32_t)SENSOR_CFG2_IMU_2_DISABLE);
+    EXPECT_NE(both.find("High-g accel FS: sensor max"), std::string::npos);
+    EXPECT_NE(both.find("IMU 2 disable"), std::string::npos);
 }
 
 TEST(ISStatusDecode, IoConfig_AllBitsSetDoesNotCrash)
