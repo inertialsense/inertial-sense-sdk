@@ -91,6 +91,8 @@ git diff -U0 "$MB" -- '*.h' '*.hpp' '*.c' '*.cpp' | grep -E '^\+[^+]' | awk 'len
 
 Review the formatting changes before committing them. They're part of your diff. If clang-format-diff.py reformats lines you didn't write, which happens when an inserted declaration sits next to aligned members, don't accept it: move your insertion (for example to the end of the class, after a blank line) or apply only the hunks for your own lines.
 
+A renamed or moved file must be passed with both its old and its new path (`git diff -U0 -M "$MB" -- <old> <new>`). With only the new path git shows the whole file as added, and `clang-format-diff.py -i` then reformats all of it, burying the real change. Check `git diff --stat` after formatting: a file with far more changed lines than you wrote was reformatted whole, so revert it and run again with both paths.
+
 **Report:** `clang-format: N new files formatted whole, M modified files formatted on changed lines; re-check clean; 0 added lines over 200 columns.`
 
 ## Step 4 — Naming and language rules (style guide §3–4)
