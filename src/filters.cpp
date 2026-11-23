@@ -365,7 +365,7 @@ static void integrateDeltaThetaVelRoscoe(
 #endif
 
 
-void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
+void integratePimuMethod(pimu_t *output, imu_t *imu, imu_t *imuLast, ePimuIntegration method)
 {
     output->time = imu->time;
     output->status |= imu->status;                                                      // Bitwise OR to preserve IMU status
@@ -373,14 +373,26 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
 
     float dti = (float)(imu->time - imuLast->time); // integration time
 
-    // Numerical integration of coning and sculling integrals using Bortz's rotation vector formula
-    integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), dti);
+    if (method == PIMU_INTEGRATION_BORTZ)
+    {   // Numerical integration of coning and sculling integrals using Bortz's rotation vector formula
+        integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), dti);
+    }
+    else
+    {   // Rectangular sum of angular rate and specific force. The omitted coning and sculling
+        // corrections are of relative order |w|*T over an integration interval T, and vanish
+        // identically at zero angular rate.
+        ixVector3 tmp3;
+        mul_Vec3_X(tmp3, imu->I.pqr, dti);
+        add_Vec3_Vec3(output->theta, output->theta, tmp3);
+        mul_Vec3_X(tmp3, imu->I.acc, dti);
+        add_Vec3_Vec3(output->vel, output->vel, tmp3);
+    }
 
     output->dt += dti;
 
     // Update history
     copyImu(imuLast, imu);
-            
+
     //  // Roscoe integral
     //  static ixVector3 alpha_last = { 0 };
     //  static ixVector3 veloc_last = { 0 };
@@ -389,13 +401,21 @@ void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
     //  integrateDeltaThetaVelRoscoe(output, imu, imu, alpha_last, veloc_last, delta_alpha_last, delta_veloc_last, dti);
 }
 
-/** 
+
+void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast)
+{
+    integratePimuMethod(output, imu, imuLast, PIMU_INTEGRATION_BORTZ);
+}
+
+
+/**
  * \brief Integrate IMUs (imus_t) into array of preintegrated IMUs (PIMUs).
  * \param pimuArray      Array of preintegrated IMU outputs to be updated.  Should be initialized to zero and maintained across calls to this function.
  * \param arraySize      Number of PIMUs to integrate (should be equal to number of IMUs).
  * \param imuLastArray   Array of previous IMU readings for each IMU.  Should be initialized to zero and maintained across calls to this function.
+ * \param method         Integration method applied to every device (see ePimuIntegration).
  */
-void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES])
+void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES], ePimuIntegration method)
 {
     imu_t imu = {0};
     imu.time = imusIn->time;
@@ -405,9 +425,10 @@ void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arr
         // Extract per-IMU status bits and preserve both OK and saturation flags
         const uint32_t perImuOk = IMU_STATUS_IMU_OK_MASK & (imusIn->status >> (i * IMUS_STATUS_IMU_OK_BITSIZE));
         imu.status = perImuOk | (imusIn->status & IMUS_STATUS_SATURATION_MASK);
-        integratePimu(&pimuArray[i], &imu, &imuLastArray[i]);
+        integratePimuMethod(&pimuArray[i], &imu, &imuLastArray[i], method);
     }
 }
+
 
 float deltaThetaDeltaVelRiemannSum(pimu_t *output, imu_t *imu, imu_t *imuLast)
 {
