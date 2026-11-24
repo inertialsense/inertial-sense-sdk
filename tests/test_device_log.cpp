@@ -1,6 +1,8 @@
 /**
  * @file test_device_log.cpp
  * @brief D-05 / SN-7896 — ISDeviceLog composition tests.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>
@@ -22,6 +24,7 @@
 #include <filesystem>
 #include <fstream>
 #include <list>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -211,6 +214,34 @@ TEST(ISDeviceLog, SegmentBoundaryCallbackFires) {
     for ([[maybe_unused]] ISRecordView v : dl->allRecords()) { /* drain */ }
     // For N segments we expect (N-1) boundary crossings.
     EXPECT_EQ(boundaryHits.load(), dl->segmentCount() - 1);
+
+    teardown(f);
+}
+
+// The span walkers notify a segment-boundary consumer as an iteration does, whether or not the records that follow the boundary pass the filter.
+TEST(ISDeviceLog, SpanWalkersFireTheSegmentBoundaryCallback) {
+    auto f = buildSingleDeviceFixture("walker_boundary", kSerialA, 1.0f, 256 * 1024);
+    ASSERT_GE(f.segmentsA.size(), 2u);
+
+    auto dl = ISDeviceLog::fromSegments(f.segmentsA);
+    ASSERT_TRUE(dl.has_value());
+
+    std::atomic<std::size_t> boundaryHits{0};
+    dl->setOnSegmentBoundary([&](std::size_t) { ++boundaryHits; });
+    const auto none = [](const ISRecordView&) { return true; };
+    const std::size_t crossings = dl->segmentCount() - 1;
+
+    // Every record passes.
+    dl->forEachRecord(TimeStamp::fromPayloadToW(0, 0), TimeStamp::fromPayloadToW(UINT64_MAX, 0), {}, none);
+    EXPECT_EQ(boundaryHits.load(), crossings);
+
+    // No record passes, so every record after a boundary is filtered out.
+    boundaryHits = 0;
+    dl->forEachRecordInLogTime(UINT32_MAX, UINT32_MAX, {}, none);
+    EXPECT_EQ(boundaryHits.load(), crossings);
+    boundaryHits = 0;
+    dl->forEachRecordInArrival(UINT64_MAX - 1, UINT64_MAX, {}, none);
+    EXPECT_EQ(boundaryHits.load(), crossings);
 
     teardown(f);
 }
@@ -491,4 +522,87 @@ TEST(DeviceInfoSidecar, NoDviWhenNoDeviceBound) {
     EXPECT_TRUE(dviFiles.empty()) << "no bound ISDevice -- must not create a .dvi";
 
     ISFileManager::DeleteDirectory(dir);
+}
+
+// ---------------------------------------------------------------------------------------------
+// DID_DIAGNOSTIC_MESSAGE text log (SN-9073)
+//
+// cISLogger::LogData() appends the message of every DID_DIAGNOSTIC_MESSAGE to diagnostic_<serial>.txt. The packet only has to carry the bytes the device
+// sent (header.size starting at header.offset), so the message may be shorter than the 256-byte field and need not contain its NUL terminator. Each
+// payload below is followed by bytes that are NOT part of the packet, so a reader that trusts a terminator reports them.
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+
+constexpr uint32_t DIAG_MSG_OFFSET = offsetof(diag_msg_t, message);    //!< Struct offset at which the message text starts.
+
+/**
+ * Logs one DID_DIAGNOSTIC_MESSAGE packet and returns the diagnostic text file it produced.
+ * @param payload the packet bytes, the first @p packetSize of which are sent; the rest is out-of-packet memory
+ * @param packetSize the p_data_hdr_t size
+ * @return the contents of diagnostic_<serial>.txt, empty if it was not created
+ */
+std::string logDiagnosticPacket(const std::vector<uint8_t>& payload, uint32_t packetSize) {
+    char dirBuf[256];
+    std::snprintf(dirBuf, sizeof(dirBuf), "/tmp/test_device_log_diag_%d_%ld", ::getpid(), static_cast<long>(::time(nullptr)));
+    const fs::path directory = dirBuf;
+    ISFileManager::DeleteDirectory(directory.string());
+
+    dev_info_t devInfo{};
+    devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
+    devInfo.serialNumber = 71504u;
+    auto device = std::make_shared<ISDevice>(devInfo);
+
+    std::string text;
+    {
+        cISLogger logger;
+        cISLogger::sSaveOptions opts;
+        opts.logType = cISLogger::LOGTYPE_DAT;
+        opts.useSubFolderTimestamp = false;
+        if (logger.InitSave(directory.string(), opts)) {
+            auto devLogger = logger.registerDevice(device);
+            logger.EnableLogging(true);
+            p_data_hdr_t hdr{};
+            hdr.id = DID_DIAGNOSTIC_MESSAGE;
+            hdr.size = packetSize;
+            hdr.offset = 0;
+            logger.LogData(devLogger, &hdr, payload.data());
+            logger.CloseAllFiles();
+        }
+    }
+
+    std::ifstream in(directory / "diagnostic_71504.txt", std::ios::binary);
+    text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    ISFileManager::DeleteDirectory(directory.string());
+    return text;
+}
+
+/** @return an 8-byte diag_msg_t header followed by @p tail */
+std::vector<uint8_t> diagPayload(const std::string& tail) {
+    std::vector<uint8_t> bytes(DIAG_MSG_OFFSET, 0);
+    bytes.insert(bytes.end(), tail.begin(), tail.end());
+    return bytes;
+}
+
+} // namespace
+
+TEST(DiagnosticMessageLog, UnterminatedMessageIsLoggedFromTheBytesReceivedOnly) {
+    // The packet is the header plus "abcd", 12 bytes, with no terminator. "X" and the NUL after it are not part of the packet.
+    const std::string tail("abcdX\0", 6);
+    EXPECT_EQ("abcd\n", logDiagnosticPacket(diagPayload(tail), DIAG_MSG_OFFSET + 4));
+}
+
+TEST(DiagnosticMessageLog, MessageEndingInNewlineIsNotGivenAnother) {
+    const std::string tail("hi\n\0", 4);
+    EXPECT_EQ("hi\n", logDiagnosticPacket(diagPayload(tail), DIAG_MSG_OFFSET + static_cast<uint32_t>(tail.size())));
+}
+
+TEST(DiagnosticMessageLog, TerminatedMessageGetsOneNewline) {
+    const std::string tail("hello\0junk", 10);
+    EXPECT_EQ("hello\n", logDiagnosticPacket(diagPayload(tail), DIAG_MSG_OFFSET + 6));
+}
+
+TEST(DiagnosticMessageLog, PacketWithNoMessageBytesLogsNothing) {
+    // Only the 8-byte header was sent. What follows it in memory is not a message.
+    EXPECT_EQ("", logDiagnosticPacket(diagPayload(std::string("XXXX\0", 5)), DIAG_MSG_OFFSET));
 }

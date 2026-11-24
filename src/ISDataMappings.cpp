@@ -149,6 +149,23 @@ std::string renderVariableAndStatsToString(const data_info_t& info, std::any val
 
 
 /**
+ * @brief a custom data renderer for serialNumber fields (SN-8985): unsigned decimal, with an unprogrammed serial (0 or 0xFFFFFFFF)
+ * shown as the "SN-unset" marker instead of 4294967295. Only renderExtended uses it; renderBasic stays numeric for CSV/log output.
+ */
+std::string renderSerialNumber(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4))
+        return "";
+    try {
+        uint32_t serialNumber = std::any_cast<uint32_t>(value);
+        return serialNumberIsSet(serialNumber) ? utils::string_format("%u", serialNumber) : std::string("SN-unset");
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
+/**
  * @brief a custom data renderer for DID_SYS_PARAMS::
  * @param info
  * @param value
@@ -540,9 +557,9 @@ std::string renderGnssStatusBits(const data_info_t& info, std::any value, int ar
     // SN-7919 (D-53): delegates to the GNSS status decode table (key "gnssStatus" — the on-wire
     // field name "status" is shared with GPX, so this renderer requests its specific variant).
     try {
-        uint32_t gpsStatusBits = std::any_cast<uint32_t>(value);
+        uint32_t gnssStatusBits = std::any_cast<uint32_t>(value);
         const status_field_decode_t* dec = GetStatusDecodeByField("gnssStatus");
-        return dec ? RenderStatusFromDecode(*dec, gpsStatusBits) : std::string();
+        return dec ? RenderStatusFromDecode(*dec, gnssStatusBits) : std::string();
     } catch (std::bad_any_cast& e) {
         (void)e;
         return "";
@@ -925,6 +942,30 @@ std::string renderSensorConfig(const data_info_t& info, std::any value, int arra
     }
 }
 
+/**
+ * Custom data renderer for nvm_flash_cfg_t::sensorConfig2 (eSensorConfig2). IMX-only.
+ *
+ * @param info      field description
+ * @param value     field value
+ * @param arrayIdx  unused
+ * @param flags     unused
+ * @return decoded text, or empty if info is not sensorConfig2
+ */
+std::string renderSensorConfig2(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sensorConfig2"))
+        return "";
+
+    try {
+        uint32_t sensorConfig2 = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig2");
+        return dec ? RenderStatusFromDecode(*dec, sensorConfig2) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -954,7 +995,7 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("buildFlags", &dev_info_t::buildFlags, DATA_TYPE_UINT8, "", "Build flags: 0x1=debug mode, 0x2=dirty", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareState", &dev_info_t::hdwRunState, DATA_TYPE_UINT8, "", "Hardware state: APP, BOOTLOADER, ", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY).renderExtended = renderSerialNumber;
     mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 3, {""}, {"Hardware version"}, DATA_FLAGS_READ_ONLY);
     mapper.AddMember("hardwareVariant", &dev_info_t::hardwareVariant, DATA_TYPE_UINT8, {""}, {"Hardware variant"}, DATA_FLAGS_READ_ONLY);
     mapper.AddArray("firmwareVer", &dev_info_t::firmwareVer, DATA_TYPE_UINT8, 4, {""}, {"Firmware version"}, DATA_FLAGS_READ_ONLY);
@@ -976,7 +1017,7 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<manufacturing_info_t> mapper(data_set, did);
-    mapper.AddMember("serialNumber", &manufacturing_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("serialNumber", &manufacturing_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY).renderExtended = renderSerialNumber;
     mapper.AddMember("hardwareId", &manufacturing_info_t::hardwareId, DATA_TYPE_UINT16, "", "Hardware Id", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("lotNumber", &manufacturing_info_t::lotNumber, DATA_TYPE_UINT16, "", "Lot number", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("date", &manufacturing_info_t::date, DATA_TYPE_STRING, "", "Manufacturing date (YYYYMMDDHHMMSS)", DATA_FLAGS_READ_ONLY);
@@ -1460,7 +1501,7 @@ element_identity_t cISDataMappings::ElementIdentity(const array_struct_info_t& i
     return info.identity(recordBuf, slot);
 }
 
-static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssSat(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_sat_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_sat_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
@@ -1486,12 +1527,12 @@ static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
         });
 }
 
-static void PopulateMapGpsSig(data_set_t data_set[DID_COUNT], uint32_t did)
+static void PopulateMapGnssSig(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gnss_sig_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gnss_sig_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("numSigs", &gnss_sig_t::numSigs, DATA_TYPE_UINT32, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
-    // See PopulateMapGpsSat: the per-signal array is exposed as "sig.<field>" rather than flat.
+    // See PopulateMapGnssSat: the per-signal array is exposed as "sig.<field>" rather than flat.
     mapper.AddMember2("sig", offsetof(gnss_sig_t, sig), DATA_TYPE_BINARY, "", "Per-signal array; expanded as sig.<field> across all tracked signals", DATA_FLAGS_READ_ONLY, 1.0, (uint32_t)(MAX_NUM_SAT_SIGNALS * sizeof(gnss_sig_sv_t)));
 
     registerArrayStruct(data_set[did], did, "sig",
@@ -1630,6 +1671,34 @@ static void PopulateMapMagCal(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("state", &mag_cal_t::state, DATA_TYPE_UINT32, "", "Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState)");
     mapper.AddMember("progress", &mag_cal_t::progress, DATA_TYPE_F32, "%", "Mag recalibration progress indicator: 0-100 %", DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("declination", &mag_cal_t::declination, DATA_TYPE_F32, SYM_DEG, "Magnetic declination estimate", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+}
+
+static void PopulateMapMagCalCoverage(data_set_t data_set[DID_COUNT], uint32_t did)
+{
+    DataMapper<mag_cal_coverage_t> mapper(data_set, did);
+    mapper.AddMember("timeOfWeekMs", &mag_cal_coverage_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("cellScheme", &mag_cal_coverage_t::cellScheme, DATA_TYPE_UINT8, "", "Cell layout: 0=128 equal-area cells (8 z bands x 16 longitude sectors)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("lifecycle", &mag_cal_coverage_t::lifecycle, DATA_TYPE_UINT8, "", "Lifecycle: 0=not calibrated, 1=collecting, 2=fitting, 3=complete, 4=aborted, 5=not supported, 6=calibrated (idle)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("mode", &mag_cal_coverage_t::mode, DATA_TYPE_UINT8, "", "Recalibration mode: 1=multi-axis, 2=single-axis", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("reason", &mag_cal_coverage_t::reason, DATA_TYPE_UINT8, "", "Why not advancing: 0=none, 1=rotation slow, 2=wrong axis, 3=field unsteady, 4=region full, 5=fit rejected, 6=norm check, 7=mode unsupported", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("quality", &mag_cal_coverage_t::quality, DATA_TYPE_UINT8, "", "Calibration quality: 0=none, 1=poor, 2=degraded, 3=good, 255=unknown", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("progressPct", &mag_cal_coverage_t::progressPct, DATA_TYPE_UINT8, "%", "Required coverage reached (0-100). 100 only once the calibration is applied", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("coveragePct", &mag_cal_coverage_t::coveragePct, DATA_TYPE_UINT8, "%", "Percent of all cells covered (informational)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("flags", &mag_cal_coverage_t::flags, DATA_TYPE_UINT8, "", "0x1=coverage valid, 0x2=required valid, 0x4=auto recal, 0x8=field steady, 0x10=quality held (turning fast), 0x20=gravity valid", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("fitQuality", &mag_cal_coverage_t::fitQuality, DATA_TYPE_F32, "", "Calibration quality metric Tcal (lower is better)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("sampleCount", &mag_cal_coverage_t::sampleCount, DATA_TYPE_UINT32, "", "Samples in the least-squares accumulator", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("poseDir", &mag_cal_coverage_t::poseDir, DATA_TYPE_INT8, 3, {""}, {"Guidance pose: body-frame unit vector x127 of the part of the device that should point at the FLOOR"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("guidePhase", &mag_cal_coverage_t::guidePhase, DATA_TYPE_UINT8, "", "Guidance phase: 0=none, 1=aim poseDir at the floor, 2=turn slowly about the vertical", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("fieldDir", &mag_cal_coverage_t::fieldDir, DATA_TYPE_INT8, 3, {""}, {"Current field direction in the sensor frame (unit vector x127)"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("fitStage", &mag_cal_coverage_t::fitStage, DATA_TYPE_UINT8, "", "Diagnostic: which check rejected the last fit: 1 few samples, 2 r2<=0, 3 no +eigenvalue, 4 bad eigenvector, 5 not ellipsoid, 6 not pos-def, 7 sphere failed, 8 norm tolerance, 9 single-axis", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("poseErrDeg", &mag_cal_coverage_t::poseErrDeg, DATA_TYPE_UINT8, SYM_DEG, "Angle between the floor and poseDir: how far still to tilt", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("ringPct", &mag_cal_coverage_t::ringPct, DATA_TYPE_UINT8, "%", "Share of this pose's ring already covered", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("gravDir", &mag_cal_coverage_t::gravDir, DATA_TYPE_INT8, 3, {""}, {"Direction of the floor in the sensor frame (unit vector x127)"}, DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("inclSin", &mag_cal_coverage_t::inclSin, DATA_TYPE_INT8, "", "sin(inclination) x127: the firmware estimate of field . floor", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("qualityWhy", &mag_cal_coverage_t::qualityWhy, DATA_TYPE_UINT8, "", "Why the quality is not GOOD (eMagCalQualityWhy)", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("normErrPct", &mag_cal_coverage_t::normErrPct, DATA_TYPE_UINT8, "%", "Calibrated field magnitude error vs 1.0", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("required", &mag_cal_coverage_t::required, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 8, {""}, {"Required-cell bit mask (1 bit per cell, LSB first)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddArray("cells", &mag_cal_coverage_t::cells, DATA_TYPE_UINT8, MAG_CAL_CELL_COUNT / 2, {""}, {"4-bit saturating sample count per cell (even cell = low nibble)"}, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
 
 static void PopulateMapInfieldCal(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1789,7 +1858,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
-    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig;
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig;
     mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig2;
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
@@ -1832,7 +1901,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("deadReckoningTimeout", &nvm_flash_cfg_t::deadReckoningTimeout, DATA_TYPE_UINT8, "s", "Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.");
     mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT16, "", "", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved3", &nvm_flash_cfg_t::reserved3, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("sensorConfig2", &nvm_flash_cfg_t::sensorConfig2, DATA_TYPE_UINT32, "", "High-g accel FS 0x7:[0=disabled, 1=32g, 2=64g, 3=128g, 4=256g, 7=max], IMU 1-5 disable 0x1F00 (see enum eSensorConfig2)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderSensorConfig2;
     mapper.AddMember("reserved4", &nvm_flash_cfg_t::reserved4, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
 
     // Keep at end
@@ -2843,7 +2912,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EXT_AIDING_HEADING",           // 110
     "DID_EXT_AIDING_ATTITUDE",          // 111
     "DID_EXT_IMU",                      // 112
-    "UNUSED_113",                       // 113
+    "DID_MAG_CAL_COVERAGE",             // 113
     "UNUSED_114",                       // 114
     "UNUSED_115",                       // 115
     "UNUSED_116",                       // 116
@@ -2935,10 +3004,10 @@ cISDataMappings::cISDataMappings()
     // the old flat model emitted ~300/600 entries per DID; the array-of-struct model exposes
     // each inner field once as "sat.<field>"/"sig.<field>" (6 entries/DID) and fans out across
     // satellites at plot time, keyed by PRN identity.
-    PopulateMapGpsSat(m_data_set, DID_GNSS1_SAT);
-    PopulateMapGpsSat(m_data_set, DID_GNSS2_SAT);
-    PopulateMapGpsSig(m_data_set, DID_GNSS1_SIG);
-    PopulateMapGpsSig(m_data_set, DID_GNSS2_SIG);
+    PopulateMapGnssSat(m_data_set, DID_GNSS1_SAT);
+    PopulateMapGnssSat(m_data_set, DID_GNSS2_SAT);
+    PopulateMapGnssSig(m_data_set, DID_GNSS1_SIG);
+    PopulateMapGnssSig(m_data_set, DID_GNSS2_SIG);
 
     PopulateMapGnssVersion(m_data_set, DID_GNSS1_VERSION);
     PopulateMapGnssVersion(m_data_set, DID_GNSS2_VERSION);
@@ -2959,6 +3028,7 @@ cISDataMappings::cISDataMappings()
 
     // CALIBRATION
     PopulateMapMagCal(m_data_set, DID_MAG_CAL);
+    PopulateMapMagCalCoverage(m_data_set, DID_MAG_CAL_COVERAGE);
     PopulateMapInfieldCal(m_data_set, DID_INFIELD_CAL);
     PopulateMapGroundVehicle(m_data_set, DID_GROUND_VEHICLE);
     

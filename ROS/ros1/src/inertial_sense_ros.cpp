@@ -561,7 +561,7 @@ bool InertialSenseROS::connect(float timeout)
         }
         else 
         {
-            ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            ROS_INFO("InertialSenseROS: Connected to IMX %s on \"%s\", at %d baud", utils::serialNumberToString(IS_.DeviceInfo().serialNumber).c_str(), cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }

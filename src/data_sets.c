@@ -1110,7 +1110,7 @@ unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
  * @param newInfo
  * @return int
  */
-int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo)
+int manufacturing_info_checkRequirementsToWrite(const manufacturing_info_t *newInfo)
 {
     // Only valid lot numbers
     if (newInfo->lotNumber == 0 || newInfo->lotNumber == 0xFFFF) return 0;
@@ -1122,4 +1122,23 @@ int manufacturing_info_checkRequirementsToWrite(manufacturing_info_t *newInfo)
     if (newInfo->date[0] == 0 || newInfo->date[0] == (char)0xFF) return 0;
 
     return 1;
+}
+
+int manufacturing_info_isWritten(const manufacturing_info_t *info)
+{
+    // key is the number of times the OTP has been written
+    if (info->key == 0) return 0;
+
+    if (!serialNumberIsSet(info->serialNumber)) return 0;
+
+    if (!manufacturing_info_checkRequirementsToWrite(info)) return 0;
+
+    // A UID that is all zeros (some firmware reported one) or all ones cannot identify a unit
+    int allZero = 1, allOnes = 1;
+    for (int i = 0; i < 4; i++)
+    {
+        if (info->uid[i] != 0) allZero = 0;
+        if (info->uid[i] != 0xFFFFFFFFu) allOnes = 0;
+    }
+    return !(allZero || allOnes);
 }

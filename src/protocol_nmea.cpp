@@ -396,7 +396,7 @@ char *ASCII_to_u16(uint16_t *val, char *ptr)
  */
 char *ASCII_to_u32(uint32_t *val, char *ptr)
 {
-    val[0] = (uint32_t)atoi(ptr);   ptr = ASCII_find_next_field(ptr);
+    val[0] = (uint32_t)strtoll(ptr, NULL, 10);   ptr = ASCII_find_next_field(ptr);    // not atoi(): values >= 2^31 (e.g. serial numbers) overflow int, and long is 32-bit on Windows
     return ptr;
 }
 
@@ -783,7 +783,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 {
     int n = ssnprintf(a, aSize, "$INFO"
-        ",%d"                   // 1
+        ",%u"                   // 1
         ",%d.%d.%d.%d"          // 2
         ",%d.%d.%d.%d"          // 3
         ",%d"                   // 4
@@ -798,7 +798,7 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
         ",%c"                   // 13
         ",%d"                   // 14
 
-        , (int)info.serialNumber                                                                // 1
+        , (unsigned)info.serialNumber                                                           // 1
         , info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVariant   // 2
         , info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3]    // 3
         , (int)info.buildNumber                                                                 // 4

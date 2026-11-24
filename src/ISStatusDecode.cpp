@@ -1,7 +1,8 @@
 /**
  * @file ISStatusDecode.cpp
  * @brief Structured status-field decode tables + table-driven renderer.
- *        See ISStatusDecode.h.
+ *
+ * See ISStatusDecode.h.
  *
  * @note D-53 / SN-7919.
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
@@ -17,7 +18,12 @@
 
 namespace {
 
-/** @brief Trailing-zero count of `mask` — the right-shift that lands a sub-field at bit 0. */
+/**
+ * @brief Trailing-zero count of `mask`: the right-shift that lands a sub-field at bit 0.
+ *
+ * @param mask  sub-field mask
+ * @return shift
+ */
 uint32_t maskShift(uint32_t mask)
 {
     if (mask == 0) return 0;
@@ -27,9 +33,12 @@ uint32_t maskShift(uint32_t mask)
 }
 
 /**
- * @brief Index of the highest set bit of `mask` (0 if `mask` is 0). Portable bit-scan -- avoids
- *        `__builtin_clz`, which doesn't exist on MSVC and broke the Windows CI build (SN-8491,
- *        2026-08-13).
+ * @brief Index of the highest set bit of `mask` (0 if `mask` is 0).
+ *
+ * Portable bit-scan; avoids `__builtin_clz`, which MSVC does not provide.
+ *
+ * @param mask  sub-field mask
+ * @return bit index
  */
 uint32_t maskHighBit(uint32_t mask)
 {
@@ -38,7 +47,15 @@ uint32_t maskHighBit(uint32_t mask)
     return h;
 }
 
-/** @brief Build a single on/off-bit sub-field descriptor. */
+/**
+ * @brief Build a single on/off-bit sub-field descriptor.
+ *
+ * @param name     sub-field name
+ * @param mask     bit mask
+ * @param isError  true if the bit indicates an error
+ * @param legacy   verbose line the legacy renderer emitted; empty to use name
+ * @return sub-field descriptor
+ */
 status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const char* legacy)
 {
     status_subfield_t s;
@@ -53,9 +70,13 @@ status_subfield_t bitField(const char* name, uint32_t mask, bool isError, const 
 }
 
 /**
- * @brief insStatus decode table (eInsStatusFlags). Sub-fields are listed in the exact order the
- *        legacy `renderInsStatus` emitted them so `RenderStatusFromDecode` reproduces it byte-for-byte.
- *        All masks/shifts/values derive from the data_sets.h symbols — no transcribed hex.
+ * @brief insStatus decode table (eInsStatusFlags).
+ *
+ * Sub-fields are listed in the exact order the legacy `renderInsStatus` emitted them so
+ * `RenderStatusFromDecode` reproduces it byte-for-byte. All masks/shifts/values derive from the data_sets.h
+ * symbols — no transcribed hex.
+ *
+ * @return decode table
  */
 status_field_decode_t buildInsStatusDecode()
 {
@@ -161,9 +182,13 @@ status_field_decode_t buildInsStatusDecode()
 }
 
 /**
- * @brief hdwStatus decode table (eHdwStatusFlags). Sub-fields in legacy `renderHdwStatus` emission
- *        order. Exercises all three kinds: bits, a Count (COM parse-error count), and two Enums
- *        (built-in-test state, reset cause). isError follows HDW_STATUS_ERROR_MASK membership.
+ * @brief hdwStatus decode table (eHdwStatusFlags).
+ *
+ * Sub-fields in legacy `renderHdwStatus` emission order. Exercises all three kinds: bits, a Count (COM
+ * parse-error count), and two Enums (built-in-test state, reset cause). isError follows HDW_STATUS_ERROR_MASK
+ * membership.
+ *
+ * @return decode table
  */
 status_field_decode_t buildHdwStatusDecode()
 {
@@ -278,7 +303,11 @@ status_field_decode_t buildHdwStatusDecode()
 }
 
 /**
- * @brief sysStatus decode table (eSysStatusFlags). Two informational bits and one error state.
+ * @brief sysStatus decode table (eSysStatusFlags).
+ *
+ * Informational bits, including one per IMU for the accelerometer high-g switch, and one error state.
+ *
+ * @return decode table
  */
 status_field_decode_t buildSysStatusDecode()
 {
@@ -291,13 +320,26 @@ status_field_decode_t buildSysStatusDecode()
         "0x00000004 - NMEA source is GNSS2."));
     d.subfields.push_back(bitField("Dual GNSS version mismatch", SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH, true,
         "0x00000008 - GNSS1 and GNSS2 report different firmware versions."));
+    d.subfields.push_back(bitField("IMU1 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 0), false,
+        "0x00000010 - IMU1 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU2 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 1), false,
+        "0x00000020 - IMU2 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU3 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 2), false,
+        "0x00000040 - IMU3 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU4 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 3), false,
+        "0x00000080 - IMU4 accelerometer reporting from its high-g range."));
+    d.subfields.push_back(bitField("IMU5 accel high-g", 1u << (SYS_STATUS_ACC_HIGH_G_OFFSET + 4), false,
+        "0x00000100 - IMU5 accelerometer reporting from its high-g range."));
     return d;
 }
 
 /**
- * @brief genFaultCode decode table (eGenFaultCodes). All defined bits are fault conditions, so
- *        every subfield isError=true and errorMask = OR of all bits. Note the verbatim legacy
- *        text quirk on GNSS2 init ("init>").
+ * @brief genFaultCode decode table (eGenFaultCodes).
+ *
+ * All defined bits are fault conditions, so every subfield isError=true and errorMask = OR of all bits. Note
+ * the verbatim legacy text quirk on GNSS2 init ("init>").
+ *
+ * @return decode table
  */
 status_field_decode_t buildGenFaultCodeDecode()
 {
@@ -352,9 +394,9 @@ status_field_decode_t buildGenFaultCodeDecode()
         "0x00800000 - Fault: I2C initialization."));
     d.subfields.push_back(bitField("Chip erase invalid", GFC_CHIP_ERASE_INVALID, true,
         "0x01000000 - Fault: Chip erase line toggled but did not meet required hold time."));
-    d.subfields.push_back(bitField("EKF GPS time fault", GFC_EKF_GNSS_TIME_FAULT, true,
+    d.subfields.push_back(bitField("EKF GNSS time fault", GFC_EKF_GNSS_TIME_FAULT, true,
         "0x02000000 - Fault: EKF GNSS time fault."));
-    d.subfields.push_back(bitField("GPS receiver time fault", GFC_GNSS_RECEIVER_TIME, true,
+    d.subfields.push_back(bitField("GNSS receiver time fault", GFC_GNSS_RECEIVER_TIME, true,
         "0x04000000 - Fault: GNSS receiver time fault."));
     d.subfields.push_back(bitField("GNSS general fault", GFC_GNSS_GENERAL_FAULT, true,
         "0x08000000 - Fault: GNSS receiver general fault (See the corresponding GNSS status fault flags)."));
@@ -372,9 +414,12 @@ status_field_decode_t buildGenFaultCodeDecode()
 }
 
 /**
- * @brief GNSS pos/vel `status` decode table (eGnssStatus). Registered under the unambiguous key
- *        "gnssStatus" (the on-wire field name "status" is shared with GPX — see GetStatusDecode).
- *        Sub-fields in legacy `renderGnssStatusBits` emission order.
+ * @brief GNSS pos/vel `status` decode table (eGnssStatus).
+ *
+ * Registered under the unambiguous key "gnssStatus" (the on-wire field name "status" is shared with GPX — see
+ * GetStatusDecode). Sub-fields in legacy `renderGnssStatusBits` emission order.
+ *
+ * @return decode table
  */
 status_field_decode_t buildGnssStatusDecode()
 {
@@ -502,8 +547,12 @@ status_field_decode_t buildGnssStatusDecode()
 
 /**
  * @brief GNSS pos/vel `status2` decode table (eGnssStatus2): jam/spoof interference flags on
- *        `gnss_pos_t.status2` (DID_GNSS1_POS / DID_GNSS2_POS). "status2" is unambiguous on the
- *        wire, so it is registered and looked up directly under that key (see GetStatusDecode).
+ * `gnss_pos_t.status2` (DID_GNSS1_POS / DID_GNSS2_POS).
+ *
+ * "status2" is unambiguous on the wire, so it is registered and looked up directly under that key (see
+ * GetStatusDecode).
+ *
+ * @return decode table
  */
 status_field_decode_t buildGnssStatus2Decode()
 {
@@ -523,7 +572,13 @@ status_field_decode_t buildGnssStatus2Decode()
     return d;
 }
 
-/** @brief GPX status decode table (eGpxStatus). Registered under key "gpxStatus" (field "status"). */
+/**
+ * @brief GPX status decode table (eGpxStatus).
+ *
+ * Registered under key "gpxStatus" (field "status").
+ *
+ * @return decode table
+ */
 status_field_decode_t buildGpxStatusDecode()
 {
     using K = eStatusSubfieldKind;
@@ -591,11 +646,14 @@ status_field_decode_t buildGpxStatusDecode()
 }
 
 /**
- * @brief GPX hdwStatus decode table (eGPXHdwStatusFlags). Registered under key "gpxHdwStatus".
- *        All flat bits in legacy order — including the BIT running/passed/fault and reset-cause,
- *        which the legacy renderer tests individually (not as switches). isError is derived from
- *        GPX_HDW_STATUS_ERROR_MASK, with BIT_FAULT forced true (a failed self-test is an error
- *        even though the BIT bits aren't in the SDK error mask).
+ * @brief GPX hdwStatus decode table (eGPXHdwStatusFlags).
+ *
+ * Registered under key "gpxHdwStatus". All flat bits in legacy order — including the BIT running/passed/fault
+ * and reset-cause, which the legacy renderer tests individually (not as switches). isError is derived from
+ * GPX_HDW_STATUS_ERROR_MASK, with BIT_FAULT forced true (a failed self-test is an error even though the BIT
+ * bits aren't in the SDK error mask).
+ *
+ * @return decode table
  */
 status_field_decode_t buildGpxHdwStatusDecode()
 {
@@ -665,8 +723,14 @@ status_field_decode_t buildGpxHdwStatusDecode()
 }
 
 /**
- * @brief Build a scalar-enum decode (single UINT8 value -> bare label, no newline) from a name
- *        array. `count` may be fewer than the array length to reproduce a legacy bound.
+ * @brief Build a scalar-enum decode (single UINT8 value -> bare label, no newline) from a name array.
+ *
+ * `count` may be fewer than the array length to reproduce a legacy bound.
+ *
+ * @param fieldName  field name, also used as the sub-field name
+ * @param names      value names, indexed by value
+ * @param count      number of names to decode
+ * @return decode table
  */
 status_field_decode_t makeScalarEnum(const char* fieldName, const char* const* names, uint32_t count)
 {
@@ -746,7 +810,7 @@ status_field_decode_t buildImxHdwBitDecode()
 
     d.subfields.push_back(bitField("Passed all", HDW_BIT_PASSED_ALL, false,
         "0x00000001 - Passed all tests"));
-    d.subfields.push_back(bitField("Passed without GPS", HDW_BIT_PASSED_NO_GNSS, false,
+    d.subfields.push_back(bitField("Passed without GNSS", HDW_BIT_PASSED_NO_GNSS, false,
         "0x00000002 - Passed without valid GNSS signal"));
     {
         const uint32_t mask = (uint32_t)HDW_BIT_MODE_MASK;
@@ -767,11 +831,11 @@ status_field_decode_t buildImxHdwBitDecode()
         "0x00000400 - FAULT: Magnetometer"));
     d.subfields.push_back(bitField("FAULT: barometer", HDW_BIT_FAULT_BAROMETER, true,
         "0x00000800 - FAULT: Barometer"));
-    d.subfields.push_back(bitField("FAULT: no GPS comms", HDW_BIT_FAULT_GNSS_NO_COM, true,
+    d.subfields.push_back(bitField("FAULT: no GNSS comms", HDW_BIT_FAULT_GNSS_NO_COM, true,
         "0x00001000 - FAULT: No GNSS serial communications"));
-    d.subfields.push_back(bitField("FAULT: poor GPS C/No", HDW_BIT_FAULT_GNSS_POOR_CNO, true,
+    d.subfields.push_back(bitField("FAULT: poor GNSS C/No", HDW_BIT_FAULT_GNSS_POOR_CNO, true,
         "0x00002000 - FAULT: Poor GNSS signal strength"));
-    d.subfields.push_back(bitField("FAULT: poor GPS accuracy", HDW_BIT_FAULT_GNSS_POOR_ACCURACY, true,
+    d.subfields.push_back(bitField("FAULT: poor GNSS accuracy", HDW_BIT_FAULT_GNSS_POOR_ACCURACY, true,
         "0x00004000 - FAULT: GNSS poor accuracy"));
     d.subfields.push_back(bitField("FAULT: GNSS noise", HDW_BIT_FAULT_GNSS_NOISE, true,
         "0x00008000 - FAULT: GNSS noise"));
@@ -858,7 +922,7 @@ status_field_decode_t buildGpxBitResultsDecode()
     d.subfields.push_back(bitField("PPS2 passed", GPXBit_resultsBit_PPS2, false,     "0x02 - PPS2 test passed"));
     d.subfields.push_back(bitField("UART passed", GPXBit_resultsBit_UART, false,     "0x04 - UART test passed"));
     d.subfields.push_back(bitField("IO passed",   GPXBit_resultsBit_IO,   false,     "0x08 - IO test passed"));
-    d.subfields.push_back(bitField("GPS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GNSS test passed"));
+    d.subfields.push_back(bitField("GNSS passed",  GPXBit_resultsBit_GNSS, false,     "0x10 - GNSS test passed"));
     d.subfields.push_back(bitField("Finished",    GPXBit_resultsBit_FINISHED, false, "0x20 - Test finished"));
     d.subfields.push_back(bitField("Canceled",    GPXBit_resultsBit_CANCELED, false, "0x40 - Test canceled"));
     d.subfields.push_back(bitField("Error",       GPXBit_resultsBit_ERROR, true,     "0x80 - Test error"));
@@ -883,7 +947,7 @@ status_field_decode_t buildGpxBitStateDecode()
         { 3, "Manuf UART",  "MANUF_UART",   false },
         { 4, "Manuf IO",    "MANUF_IO",     false },
         { 5, "Manuf PPS",   "MANUF_PPS",    false },
-        { 6, "Manuf GPS",   "MANUF_GPS",    false },
+        { 6, "Manuf GNSS",  "MANUF_GNSS",    false },
         { 7, "Manuf report","MANUF_REPORT", false },
     };
     d.subfields.push_back(std::move(s));
@@ -891,9 +955,12 @@ status_field_decode_t buildGpxBitStateDecode()
 }
 
 /**
- * @brief imu_t / pimu_t `status` decode table (eImuStatus). Registered under the key "imuStatus";
- *        the on-wire field name "status" is shared across many DIDs, so GetStatusDecode routes the
- *        IMU/PIMU DIDs here explicitly. All masks derive from the data_sets.h symbols.
+ * @brief imu_t / pimu_t `status` decode table (eImuStatus).
+ *
+ * Registered under the key "imuStatus"; the on-wire field name "status" is shared across many DIDs, so
+ * GetStatusDecode routes the IMU/PIMU DIDs here explicitly. All masks derive from the data_sets.h symbols.
+ *
+ * @return decode table
  */
 status_field_decode_t buildImuStatusDecode()
 {
@@ -935,14 +1002,16 @@ status_field_decode_t buildImuStatusDecode()
 // eDynamicModel / eSysConfigBits symbols in data_sets.h (see test_ISStatusDecode.cpp).
 
 /**
- * @brief gnssSatSigConst decode table (eGnssSatSigConst). Shared verbatim by nvm_flash_cfg_t and
- *        gpx_flash_cfg_t -- both fields are documented as using this same enum (see the
- *        gpx_flash_cfg_t doc comment in data_sets.h), and the unused, GPX-only-in-name
- *        eGpxGnssSatSigConst enum is dead code (never referenced by any field). Registered under
- *        the unambiguous key "gnssSatSigConst"; each per-constellation value is a multi-bit mask
- *        (e.g. GPS spans 2 bits) but is decoded as a single Bit-kind flag -- "any bit in this
- *        constellation's mask set" means "this constellation is enabled", matching how the field
- *        was already hand-documented (e.g. "0x0003=GPS").
+ * @brief gnssSatSigConst decode table (eGnssSatSigConst).
+ *
+ * Shared verbatim by nvm_flash_cfg_t and gpx_flash_cfg_t -- both fields are documented as using this same
+ * enum (see the gpx_flash_cfg_t doc comment in data_sets.h), and the unused, GPX-only-in-name
+ * eGpxGnssSatSigConst enum is dead code (never referenced by any field). Registered under the unambiguous key
+ * "gnssSatSigConst"; each per-constellation value is a multi-bit mask (e.g. GPS spans 2 bits) but is decoded
+ * as a single Bit-kind flag -- "any bit in this constellation's mask set" means "this constellation is
+ * enabled", matching how the field was already hand-documented (e.g. "0x0003=GPS").
+ *
+ * @return decode table
  */
 status_field_decode_t buildGnssSatSigConstDecode()
 {
@@ -962,9 +1031,12 @@ status_field_decode_t buildGnssSatSigConstDecode()
 }
 
 /**
- * @brief dynamicModel decode table (eDynamicModel). Shared verbatim by nvm_flash_cfg_t and
- *        gpx_flash_cfg_t (same enum). A scalar enum: DYNAMIC_MODEL_* values are contiguous
- *        0..DYNAMIC_MODEL_COUNT-1, so makeScalarEnum's index->name mapping applies directly.
+ * @brief dynamicModel decode table (eDynamicModel).
+ *
+ * Shared verbatim by nvm_flash_cfg_t and gpx_flash_cfg_t (same enum). A scalar enum: DYNAMIC_MODEL_* values
+ * are contiguous 0..DYNAMIC_MODEL_COUNT-1, so makeScalarEnum's index->name mapping applies directly.
+ *
+ * @return decode table
  */
 status_field_decode_t buildDynamicModelDecode()
 {
@@ -976,11 +1048,13 @@ status_field_decode_t buildDynamicModelDecode()
 }
 
 /**
- * @brief IMX sysCfgBits decode table (eSysConfigBits), used with nvm_flash_cfg_t.sysCfgBits. A
- *        configuration bitfield, not a status field -- errorMask stays 0. Two multi-bit Enum
- *        sub-fields (mag recal mode, brownout-reset threshold) use maskShift like the GNSS status
- *        fix-type field above. UNUSED1 (bit 0) is a reserved/unused bit and is deliberately not
- *        decoded (nothing to tell the user).
+ * @brief IMX sysCfgBits decode table (eSysConfigBits), used with nvm_flash_cfg_t.sysCfgBits.
+ *
+ * A configuration bitfield, not a status field -- errorMask stays 0. Two multi-bit Enum sub-fields (mag recal
+ * mode, brownout-reset threshold) use maskShift like the GNSS status fix-type field above. UNUSED1 (bit 0) is
+ * a reserved/unused bit and is deliberately not decoded (nothing to tell the user).
+ *
+ * @return decode table
  */
 status_field_decode_t buildImxSysCfgBitsDecode()
 {
@@ -1064,23 +1138,24 @@ status_field_decode_t buildImxSysCfgBitsDecode()
 }
 
 /**
- * @brief rmc_t::options decode table (RMC_OPTIONS_*), used with both DID_RMC and DID_GPX_RMC
- *        (one shared table/renderer, same as gnssSatSigConst/dynamicModel -- see PopulateMapRmc).
- *        Registered under the internal key "rmcOptions"; nmea_msgs_t::options shares the same
- *        RMC_OPTIONS_* semantics but is a different field/DID, out of this ticket's scope, so this
- *        table is looked up only via a hardcoded key from renderRmcOptions, never through the
- *        ambiguous "options" on-wire name.
+ * @brief rmc_t::options decode table (RMC_OPTIONS_*), used with both DID_RMC and DID_GPX_RMC (one shared
+ * table/renderer, same as gnssSatSigConst/dynamicModel -- see PopulateMapRmc).
  *
- *        Port selection (SER0/SER1/SER2/USB) is 4 independent Bit subfields covering the
- *        meaningful low nibble of RMC_OPTIONS_PORT_MASK; the upper nibble (0x10-0x80) is
- *        undocumented/unused and, like sysCfgBits' UNUSED1, is deliberately not decoded.
- *        RMC_OPTIONS_PORT_CURRENT (0x00, no port bit set) intentionally renders nothing -- a port
- *        selection of "current" is the default/unremarkable case, consistent with how the rest of
- *        this table's Bit subfields render silence for "off".
+ * Registered under the internal key "rmcOptions"; nmea_msgs_t::options shares the same RMC_OPTIONS_*
+ * semantics but is a different field/DID and is not covered here, so this table is looked up only via a
+ * hardcoded key from renderRmcOptions, never through the ambiguous "options" on-wire name.
  *
- *        NMEA_SPEED_FILTER is a 2-bit Enum with only 2 of its 4 possible values defined
- *        (Enable=1, Disable=2); 0 ("not specified") and 3 (undefined) render nothing, unlike
- *        sysCfgBits' mag-recal-mode Enum where 0 was itself a meaningful "Disabled" state.
+ * Port selection (SER0/SER1/SER2/USB) is 4 independent Bit subfields covering the meaningful low nibble of
+ * RMC_OPTIONS_PORT_MASK; the upper nibble (0x10-0x80) is undocumented/unused and, like sysCfgBits' UNUSED1,
+ * is deliberately not decoded. RMC_OPTIONS_PORT_CURRENT (0x00, no port bit set) intentionally renders nothing
+ * -- a port selection of "current" is the default/unremarkable case, consistent with how the rest of this
+ * table's Bit subfields render silence for "off".
+ *
+ * NMEA_SPEED_FILTER is a 2-bit Enum with only 2 of its 4 possible values defined (Enable=1, Disable=2); 0
+ * ("not specified") and 3 (undefined) render nothing, unlike sysCfgBits' mag-recal-mode Enum where 0 was
+ * itself a meaningful "Disabled" state.
+ *
+ * @return decode table
  */
 status_field_decode_t buildRmcOptionsDecode()
 {
@@ -1117,15 +1192,18 @@ status_field_decode_t buildRmcOptionsDecode()
 }
 
 /**
- * @brief nvm_flash_cfg_t::ioConfig decode table (eIoConfig). IMX-only -- gpx_flash_cfg_t has no
- *        equivalent field. The largest table in this file: 5 small multi-bit Enum pin-function
- *        fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
- *        GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local
- *        helper to avoid duplicating the value list and risking the two copies drifting), and 6
- *        independent Bit flags (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT,
- *        IMU_1/2/3_DISABLE). Undefined/reserved values within a multi-bit field's range (e.g.
- *        raw 0 in the G6G7 field, which has no named ..._DEFAULT-distinct-from-COM1 state) render
- *        nothing for that sub-field, same convention as sysCfgBits/ioConfig2.
+ * @brief nvm_flash_cfg_t::ioConfig decode table (eIoConfig).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. The largest table in this file: 5 small multi-bit Enum
+ * pin-function fields (G1G2, G9, G6G7, G5G8, GNSS1 PPS source), a GNSS1/GNSS2 source Enum pair and a
+ * GNSS1/GNSS2 type Enum pair (each pair sharing the same value set -- built via a local helper to avoid
+ * duplicating the value list and risking the two copies drifting), and 4 independent Bit flags
+ * (STROBE_TRIGGER_HIGH, G15_STROBE_INPUT, GNSS1/2_NO_INIT). Undefined/reserved values
+ * within a multi-bit field's range (e.g. raw 0 in the G6G7 field, which has no named
+ * ..._DEFAULT-distinct-from-COM1 state) render nothing for that sub-field, same convention as
+ * sysCfgBits/ioConfig2.
+ *
+ * @return decode table
  */
 status_field_decode_t buildIoConfigDecode()
 {
@@ -1277,22 +1355,19 @@ status_field_decode_t buildIoConfigDecode()
 
     d.subfields.push_back(bitField("GNSS2 skip init", IO_CONFIG_GNSS2_NO_INIT, false,
         "0x10000000 - Skip GNSS2 initialization"));
-    d.subfields.push_back(bitField("IMU1 disabled", IO_CONFIG_IMU_1_DISABLE, false,
-        "0x20000000 - IMU 1 disable"));
-    d.subfields.push_back(bitField("IMU2 disabled", IO_CONFIG_IMU_2_DISABLE, false,
-        "0x40000000 - IMU 2 disable"));
-    d.subfields.push_back(bitField("IMU3 disabled", IO_CONFIG_IMU_3_DISABLE, false,
-        "0x80000000 - IMU 3 disable"));
 
     return d;
 }
 
 /**
- * @brief nvm_flash_cfg_t::ioConfig2 decode table (eIoConfig2). IMX-only -- gpx_flash_cfg_t has no
- *        equivalent field. Four small multi-bit Enum sub-fields, each a mutually-exclusive pin
- *        function choice (every pin always has SOME function selected, so -- like sysCfgBits'
- *        mag-recal-mode/brownout-threshold -- these always render a line, never silence) plus one
- *        independent Bit flag (USE_GNSS2_AS_SOURCE).
+ * @brief nvm_flash_cfg_t::ioConfig2 decode table (eIoConfig2).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. Four small multi-bit Enum sub-fields, each a
+ * mutually-exclusive pin function choice (every pin always has SOME function selected, so -- like sysCfgBits'
+ * mag-recal-mode/brownout-threshold -- these always render a line, never silence) plus one independent Bit
+ * flag (USE_GNSS2_AS_SOURCE).
+ *
+ * @return decode table
  */
 status_field_decode_t buildIoConfig2Decode()
 {
@@ -1366,15 +1441,17 @@ status_field_decode_t buildIoConfig2Decode()
 }
 
 /**
- * @brief nvm_flash_cfg_t::sensorConfig decode table (eSensorConfig). IMX-only -- gpx_flash_cfg_t
- *        has no equivalent field. Five multi-bit Enum sub-fields (gyro/accel full-scale range,
- *        gyro/accel DLPF bandwidth, sensor mounting rotation) plus 4 independent Bit flags
- *        (disable magnetometer/barometer, IMU gyro/accel fault-detect enable). Every Enum value
- *        this table lists has an explicit name in the source enum (including 0 -- e.g. 250 deg/s
- *        is a real, meaningful gyro full-scale setting, not "unset"), so -- like ioConfig's GNSS
- *        source/type fields -- all five always render a line, never silence. IMU_FAULT_DETECT_
- *        OFFLINE/LARGE_BIAS/SENSOR_NOISE are explicitly disabled/reserved (defined as 0 in the
- *        enum, "would be" comments only) and are not decoded.
+ * @brief nvm_flash_cfg_t::sensorConfig decode table (eSensorConfig).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. Five multi-bit Enum sub-fields (gyro/accel full-scale
+ * range, gyro/accel DLPF bandwidth, sensor mounting rotation) plus 4 independent Bit flags (disable
+ * magnetometer/barometer, IMU gyro/accel fault-detect enable). Every Enum value this table lists has an
+ * explicit name in the source enum (including 0 -- e.g. 250 deg/s is a real, meaningful gyro full-scale
+ * setting, not "unset"), so -- like ioConfig's GNSS source/type fields -- all five always render a line,
+ * never silence. IMU_FAULT_DETECT_OFFLINE/LARGE_BIAS/SENSOR_NOISE are explicitly disabled/reserved (defined
+ * as 0 in the enum, "would be" comments only) and are not decoded.
+ *
+ * @return decode table
  */
 status_field_decode_t buildSensorConfigDecode()
 {
@@ -1477,10 +1554,54 @@ status_field_decode_t buildSensorConfigDecode()
 }
 
 /**
- * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits). GPX-only -- a much smaller
- *        enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"), and NOT
- *        the same enum despite the identical on-wire field name; registered under its own key
- *        "gpxSysCfgBits" (see the GetStatusDecode DID-based guard added alongside the IMX table).
+ * @brief nvm_flash_cfg_t::sensorConfig2 decode table (eSensorConfig2).
+ *
+ * IMX-only -- gpx_flash_cfg_t has no equivalent field. One multi-bit Enum sub-field (extended-range
+ * accelerometer full-scale range, whose 0 is a named "disabled" state and so always renders a line) plus 5
+ * independent Bit flags (IMU 1-5 disable).
+ *
+ * @return decode table
+ */
+status_field_decode_t buildSensorConfig2Decode()
+{
+    using K = eStatusSubfieldKind;
+    status_field_decode_t d;
+    d.fieldName = "sensorConfig2";
+    d.errorMask = 0;
+
+    {
+        // SENSOR_CFG2_ACC_HG_FS_* are pre-shift index values, like SENSOR_CFG_ACC_FS_*.
+        const uint32_t mask  = (uint32_t)SENSOR_CFG2_ACC_HG_FS_MASK << SENSOR_CFG2_ACC_HG_FS_OFFSET;
+        status_subfield_t s;
+        s.name = "High-g accel full-scale range"; s.kind = K::Enum; s.mask = mask; s.shift = (uint32_t)SENSOR_CFG2_ACC_HG_FS_OFFSET;
+        s.values = {
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_DISABLED, "High-g accel FS: disabled",   "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_32G,      "High-g accel FS: 32g",        "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_64G,      "High-g accel FS: 64g",        "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_128G,     "High-g accel FS: 128g",       "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_256G,     "High-g accel FS: 256g",       "", false },
+            { (uint32_t)SENSOR_CFG2_ACC_HG_FS_MAX,      "High-g accel FS: sensor max", "", false },
+        };
+        d.subfields.push_back(std::move(s));
+    }
+
+    d.subfields.push_back(bitField("IMU1 disabled", SENSOR_CFG2_IMU_1_DISABLE, false, "0x00000100 - IMU 1 disable"));
+    d.subfields.push_back(bitField("IMU2 disabled", SENSOR_CFG2_IMU_2_DISABLE, false, "0x00000200 - IMU 2 disable"));
+    d.subfields.push_back(bitField("IMU3 disabled", SENSOR_CFG2_IMU_3_DISABLE, false, "0x00000400 - IMU 3 disable"));
+    d.subfields.push_back(bitField("IMU4 disabled", SENSOR_CFG2_IMU_4_DISABLE, false, "0x00000800 - IMU 4 disable"));
+    d.subfields.push_back(bitField("IMU5 disabled", SENSOR_CFG2_IMU_5_DISABLE, false, "0x00001000 - IMU 5 disable"));
+
+    return d;
+}
+
+/**
+ * @brief gpx_flash_cfg_t::sysCfgBits decode table (eGpxSysConfigBits).
+ *
+ * GPX-only -- a much smaller enum than the IMX counterpart (nvm_flash_cfg_t::sysCfgBits, key "sysCfgBits"),
+ * and NOT the same enum despite the identical on-wire field name; registered under its own key
+ * "gpxSysCfgBits" (see the GetStatusDecode DID-based guard added alongside the IMX table).
+ *
+ * @return decode table
  */
 status_field_decode_t buildGpxSysCfgBitsDecode()
 {
@@ -1514,7 +1635,13 @@ status_field_decode_t buildGpxSysCfgBitsDecode()
     return d;
 }
 
-/** @brief Process-wide registry of decode tables, keyed by an unambiguous internal key. Built once. */
+/**
+ * @brief Process-wide registry of decode tables, keyed by an unambiguous internal key.
+ *
+ * Built once.
+ *
+ * @return decode tables by key
+ */
 const std::map<std::string, status_field_decode_t>& registry()
 {
     static const std::map<std::string, status_field_decode_t> r = [] {
@@ -1543,6 +1670,7 @@ const std::map<std::string, status_field_decode_t>& registry()
         m.emplace("ioConfig2",          buildIoConfig2Decode());
         m.emplace("ioConfig",           buildIoConfigDecode());
         m.emplace("sensorConfig",       buildSensorConfigDecode());
+        m.emplace("sensorConfig2",      buildSensorConfig2Decode());
         m.emplace("gpxSysCfgBits",      buildGpxSysCfgBitsDecode());
         return m;
     }();

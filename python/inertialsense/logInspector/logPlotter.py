@@ -193,10 +193,24 @@ IMU_TYPE_BY_HDW_VARIANT = {
 }
 
 
-def imuTypesForHdwVariant(variant, n_imu):
+# IMU part number for hardware generations that don't use the hardwareVariant table above (that
+# table is IMX-6 only). IMX-5 always populates ISM330 parts, and reports hardwareVariant 0, which
+# would otherwise be mislabeled as the IMX-6 variant 0 part. Duplicated from IMU_TYPE_BY_HDW_MAJOR
+# in python/src/imuCalibration/temperature_calibration.py -- keep the two in sync.
+IMU_TYPE_BY_HDW_MAJOR = {
+    5:  'ISM330DHCX',
+}
+
+
+def imuTypesForHdwVariant(variant, n_imu, hdw_major=None):
     """List of n_imu IMU part-number strings (one per slot 0..n_imu-1) for a hardwareVariant value,
-    per IMU_TYPE_BY_HDW_VARIANT, or 'unknown' entries if the variant isn't recognized."""
-    types = IMU_TYPE_BY_HDW_VARIANT.get(int(variant))
+    per IMU_TYPE_BY_HDW_VARIANT, or 'unknown' entries if the variant isn't recognized. hdw_major
+    (hardwareVer[0]), when given, takes precedence for generations listed in IMU_TYPE_BY_HDW_MAJOR."""
+    types = None
+    if hdw_major is not None:
+        types = IMU_TYPE_BY_HDW_MAJOR.get(int(hdw_major))
+    if types is None:
+        types = IMU_TYPE_BY_HDW_VARIANT.get(int(variant))
     if types is None:
         return ['unknown'] * n_imu
     if isinstance(types, str):
@@ -687,7 +701,7 @@ class logPlot:
             # id is a separate DID_DEV_INFO field, hardwareVariant, not a 4th hardwareVer entry.
             hdw_version = [int(x) for x in hdw_data[-1]]
             hdw_variant = int(variant_data[-1])
-            imu_type = imuTypesForHdwVariant(hdw_variant, n_slots)
+            imu_type = imuTypesForHdwVariant(hdw_variant, n_slots, hdw_major=hdw_version[0])
 
             device_node = data.setdefault(str(int(self.log.serials[d])), {})
             device_node['hdw_version'] = hdw_version
@@ -1999,7 +2013,7 @@ class logPlot:
                 sumDelta = None
                 sumCount = 1
                 for d in self.active_devs:
-                    time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    time = getTimeFromGpsTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
                     qn2b = self.getData(d, DID_INS_2, 'qn2b')
                     if len(time) == 0 or len(qn2b) == 0:
                         continue
@@ -2051,7 +2065,12 @@ class logPlot:
                     resInsHdg = self.angle_wrap(intInsHdg - refRtkHdg)
                     ax[1,1].plot(refRtkTime, resInsHdg*RAD2DEG)
                 if not (refInsTime is None) and self.log.serials[d] != 'Ref INS': 
-                    unwrapEuler = self.vec3_unwrap(euler)
+                    # Remove the attitude mount bias, as was done when refEuler was computed
+                    # above.  The magnetic residual and the heading trace deliberately keep the
+                    # uncorrected attitude: the mount bias is defined relative to the fleet mean
+                    # and does not belong in a single device comparison against its magnetometer.
+                    mountBiasEuler = quat2euler(mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], qn2b))
+                    unwrapEuler = self.vec3_unwrap(mountBiasEuler)
                     intEuler = np.empty_like(refEuler)
                     for i in range(3):
                         intEuler[:,i] = np.interp(refInsTime, insTime, unwrapEuler[:,i], right=np.nan, left=np.nan)

@@ -13,6 +13,8 @@
 #include <cctype>
 #include <cstring>
 #include <memory>
+#include <mutex>
+#include <random>
 #include <regex>
 #include <stdexcept>
 // #include <acc_prof.h>
@@ -278,6 +280,22 @@ std::string utils::hdwIdToString(uint16_t hdwId) {
 
 std::string utils::deviceIdString(uint16_t hdwId, uint64_t serial) {
     return utils::hdwIdToString(hdwId) + "::SN" + std::to_string(serial);
+}
+
+std::string utils::serialNumberToString(uint32_t serialNumber, int minDigits) {
+    if (!serialNumberIsSet(serialNumber))
+        return "SN-unset";
+    return utils::string_format("SN%0*u", minDigits < 0 ? 0 : minDigits, static_cast<unsigned>(serialNumber));
+}
+
+bool utils::parseSerialNumber(const std::string& str, uint32_t& serialNumber) {
+    if (str.empty() || str.size() > 10 || str.find_first_not_of("0123456789") != std::string::npos)
+        return false;
+    unsigned long long v = strtoull(str.c_str(), nullptr, 10);
+    if (v > SERIAL_NUMBER_UNSET)
+        return false;
+    serialNumber = static_cast<uint32_t>(v);
+    return true;
 }
 
 std::string utils::getHardwareAsString(const dev_info_t& devInfo, uint16_t flags) {
@@ -658,7 +676,7 @@ std::string utils::devInfoToString(const dev_info_t& devInfo, uint16_t flags) {
     // device serial no
 
     if (flags & DV_BIT_SERIALNO)
-        out += utils::string_format("SN%06d:", devInfo.serialNumber);
+        out += utils::serialNumberToString(devInfo.serialNumber, 6) + ":";
     if (flags & DV_BIT_HARDWARE_INFO)
         out += (out.empty() ? "" : " ") + utils::getHardwareAsString(devInfo, flags);
     if (flags & DV_BIT_FIRMWARE_VER)
@@ -1075,6 +1093,31 @@ bool utils::validDomainName(const std::string& domainName) {
     return (domainName.length() < 255) && std::regex_match(domainName, match, regexp);
 }
 
+std::string utils::percentDecode(const std::string& s) {
+    auto hexVal = [](char c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return -1;
+    };
+
+    std::string out;
+    out.reserve(s.size());
+    for (size_t i = 0; i < s.size(); i++) {
+        if (s[i] == '%' && i + 2 < s.size()) {
+            const int hi = hexVal(s[i + 1]);
+            const int lo = hexVal(s[i + 2]);
+            if (hi >= 0 && lo >= 0) {
+                out += static_cast<char>((hi << 4) | lo);
+                i += 2;
+                continue;
+            }
+        }
+        out += s[i];
+    }
+    return out;
+}
+
 utils::UriParts utils::parseUri(const std::string& uriStr) {
     UriParts out;
     const FIX8::uri uri{uriStr};
@@ -1102,10 +1145,12 @@ utils::UriParts utils::parseUri(const std::string& uriStr) {
         }
     }
 
+    // Userinfo must be percent-encoded in a URI (e.g. a password containing '@', ':' or '/'), but callers
+    // need the actual credentials (e.g. for HTTP Basic auth), so decode it here.
     if (uri.has_user())
-        out.user.assign(uri.get_user());
+        out.user = percentDecode(std::string{uri.get_user()});
     if (uri.has_password())
-        out.password.assign(uri.get_password());
+        out.password = percentDecode(std::string{uri.get_password()});
     if (uri.has_path())
         out.path.assign(uri.get_path());
     if (uri.has_query())
@@ -1188,6 +1233,103 @@ std::string utils::generateUUIDv4() {
              bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
 
     return std::string(buf);
+}
+
+std::string utils::generateUUIDv7(uint64_t unixTimeMs) {
+    static std::mt19937_64 rng{std::random_device{}()};
+    static std::mutex rngMutex;
+
+    uint8_t bytes[16];
+    {
+        std::lock_guard<std::mutex> lock(rngMutex);
+        uint64_t r0 = rng(), r1 = rng();
+        for (int i = 0; i < 8; i++) {
+            bytes[8 + i] = (uint8_t)(r0 >> (8 * i));
+        }
+        bytes[6] = (uint8_t)(r1);
+        bytes[7] = (uint8_t)(r1 >> 8);
+    }
+
+    // 48-bit big-endian millisecond timestamp
+    for (int i = 0; i < 6; i++)
+        bytes[i] = (uint8_t)(unixTimeMs >> (8 * (5 - i)));
+
+    bytes[6] = (bytes[6] & 0x0F) | 0x70;  // version 7
+    bytes[8] = (bytes[8] & 0x3F) | 0x80;  // variant 10xx
+
+    char buf[48];
+    snprintf(buf, sizeof(buf),
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+             bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+    return std::string(buf);
+}
+
+std::string utils::unixMsToRfc3339(int64_t unixMs) {
+    constexpr int64_t MS_PER_DAY = 86400000;
+    constexpr int64_t MS_PER_HOUR = 3600000;
+    constexpr int64_t MS_PER_MINUTE = 60000;
+    constexpr int64_t MS_PER_SECOND = 1000;
+    constexpr int64_t DAYS_FROM_0000_03_01_TO_1970_01_01 = 719468;  // the civil calendar below counts from 0000-03-01
+
+    // Whole days since 1970-01-01 and the time within the day, rounded toward negative infinity so that times before 1970 work.
+    int64_t days = unixMs / MS_PER_DAY;
+    int64_t msOfDay = unixMs % MS_PER_DAY;
+    if (msOfDay < 0) {
+        msOfDay += MS_PER_DAY;
+        days -= 1;
+    }
+
+    // Calendar date from the day count (Howard Hinnant's civil_from_days). It does not use gmtime_s, which rejects negative times
+    // on Windows, so every platform gives the same answer.
+    days += DAYS_FROM_0000_03_01_TO_1970_01_01;
+    const int64_t era = (days >= 0 ? days : days - 146096) / 146097;
+    const int64_t dayOfEra = days - era * 146097;                                                         // [0, 146096]
+    const int64_t yearOfEra = (dayOfEra - dayOfEra / 1460 + dayOfEra / 36524 - dayOfEra / 146096) / 365;  // [0, 399]
+    const int64_t dayOfYear = dayOfEra - (365 * yearOfEra + yearOfEra / 4 - yearOfEra / 100);             // [0, 365], from March 1st
+    const int64_t monthIndex = (5 * dayOfYear + 2) / 153;                                                 // [0, 11], March is 0
+    const int day = (int)(dayOfYear - (153 * monthIndex + 2) / 5 + 1);
+    const int month = (int)(monthIndex < 10 ? monthIndex + 3 : monthIndex - 9);
+    const int year = (int)(yearOfEra + era * 400 + (month <= 2 ? 1 : 0));
+
+    const int hour = (int)(msOfDay / MS_PER_HOUR);
+    const int minute = (int)(msOfDay % MS_PER_HOUR / MS_PER_MINUTE);
+    const int second = (int)(msOfDay % MS_PER_MINUTE / MS_PER_SECOND);
+    const int ms = (int)(msOfDay % MS_PER_SECOND);
+    return utils::string_format("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month, day, hour, minute, second, ms);
+}
+
+std::string utils::manfUidToString(const uint32_t uid[4]) {
+    static const char hex[] = "0123456789abcdef";
+    std::string out;
+    out.reserve(32);
+    for (int w = 0; w < 4; w++) {
+        for (int b = 0; b < 4; b++) {      // little-endian: least significant byte first
+            uint8_t v = (uint8_t)(uid[w] >> (8 * b));
+            out.push_back(hex[v >> 4]);
+            out.push_back(hex[v & 0x0F]);
+        }
+    }
+    return out;
+}
+
+bool utils::manfDateToRfc3339(const char date[16], std::string& rfc3339) {
+    // "YYYYMMDDHHMMSSZ": 14 digits, then 'Z', then NUL padding
+    for (int i = 0; i < 14; i++)
+        if (date[i] < '0' || date[i] > '9')
+            return false;
+    if (date[14] != 'Z' || (date[15] != '\0'))
+        return false;
+
+    auto num = [&](int pos, int len) { int v = 0; for (int i = 0; i < len; i++) v = v * 10 + (date[pos + i] - '0'); return v; };
+    int year = num(0, 4), month = num(4, 2), day = num(6, 2), hour = num(8, 2), minute = num(10, 2), second = num(12, 2);
+    if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59)
+        return false;
+
+    char buf[24];
+    snprintf(buf, sizeof(buf), "%04d-%02d-%02dT%02d:%02d:%02dZ", year, month, day, hour, minute, second);
+    rfc3339 = buf;
+    return true;
 }
 
 std::string utils::globToRegex(const std::string& globs) {

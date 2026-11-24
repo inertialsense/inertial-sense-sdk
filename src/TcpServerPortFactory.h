@@ -72,7 +72,8 @@ public:
      * drive it via locatePorts()). Performs one-time platform setup (ignores SIGPIPE on Linux,
      * calls WSAStartup on Windows).
      * @param listenPort the tcp port to listen for incoming connections on
-     * @param listenAddr the local interface address to bind to; accepts "<address>" or "<address> (<name>)", defaults to 127.0.0.1
+     * @param listenAddr the local interface address to bind to; accepts "<address>" or "<address> (<name>)", defaults to 127.0.0.1; an address that cannot be parsed as IPv4 makes startListening()
+     * fail (see getLastListenError()), and "0.0.0.0" listens on every interface
      * @param maxConnections the maximum number of connections that can be kept open
      * @param portDefaultBlocking if true, created tcpPorts will be configured for blocking by default
      * @param backgroundListener if true, a thread will be set up to process incoming connections (the listener only, not the connections themselves)
@@ -101,8 +102,13 @@ public:
     ~TcpServerPortFactory() {
         stopListening();
         shutdownAllClients();
-        for (auto& se : knownSockets) {
-            releasePort(se.port);
+        // releasePort() erases its entry from knownSockets, so iterate over a copy.
+        const std::vector<socket_entry_t> entries(knownSockets.begin(), knownSockets.end());
+        for (const auto& se : entries) {
+            if (se.port)
+                releasePort(se.port);
+            else
+                closeSocket(se.socket);     // accepted, but never bound to a port, so nothing else will close it
         }
         knownSockets.clear();
 #ifdef PLATFORM_IS_WINDOWS
@@ -208,8 +214,8 @@ protected:
 
         struct in_addr addr = {};
         if (inet_pton(AF_INET, ipAddr.c_str(), &addr) <= 0) {
-            // Handle error: invalid address or address not supported
-            factoryOptions.listeningAddr.sin_addr.s_addr = INADDR_NONE; // A common error indicator for in_addr_t
+            // Invalid or unsupported (e.g. IPv6) address: mark it invalid so startListening() fails instead of listening on every interface
+            addr.s_addr = INADDR_NONE;
         }
         factoryOptions.listeningAddr.sin_addr = addr;
     }
@@ -225,6 +231,15 @@ protected:
 
     /** Closes the listening socket (if open) and resets it to the not-listening state. */
     void stopListening();
+
+    /** @return true if @p port is a client port created by (and still owned by) this factory. */
+    bool ownsPort(port_handle_t port) {
+        for (const auto& ks : knownSockets) {
+            if (ks.port == port)
+                return true;
+        }
+        return false;
+    }
 
     /** @return the number of currently-accepted client connections. */
     int getClientConnectionCount() {
@@ -255,6 +270,15 @@ private:
      * @param context the eTcpListenErrorContext step that failed
      */
     void recordListenError(eTcpListenErrorContext context);
+
+    /** Closes a raw socket descriptor. */
+    static void closeSocket(int sock) {
+#ifdef PLATFORM_IS_WINDOWS
+        closesocket(sock);
+#else
+        close(sock);
+#endif
+    }
 
     std::set<socket_entry_t> knownSockets;
     std::set<socket_entry_t> prevSockets;

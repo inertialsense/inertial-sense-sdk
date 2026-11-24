@@ -18,7 +18,7 @@ namespace inertial_sense {
 
 /**
  * @brief One sync anchor — a record carrying both a host-side timestamp
- *        and a payload-derived GPS time-of-week.
+ *        and a payload-derived GNSS time-of-week.
  *
  * **v2 `.idx` schema note.** In the writer (`cDeviceLog`), a record
  * with the `IS_LOG_IDX_REC_FLAG_HAS_TOW` bit set has its `.idx`
@@ -35,7 +35,7 @@ struct ISSyncPoint {
     //! `.raw`-recovered host-time at sync is on `actualHostTimeMs`.
     uint64_t hostTimeMs;
 
-    //! Payload's GPS time-of-week, in ms.
+    //! Payload's GNSS time-of-week, in ms.
     uint64_t payloadToWMs;
 
     //! Source device's serial number.

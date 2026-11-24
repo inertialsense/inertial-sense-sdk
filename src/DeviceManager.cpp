@@ -6,6 +6,7 @@
  * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
  */
 
+#include <algorithm>
 #include "DeviceManager.h"
 
 /**
@@ -15,7 +16,7 @@
  *
  * Total discovery time is bounded by max(factory timeout) rather than (num_ports * num_factories * timeout).
  */
-bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t options) {
+bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t options, const std::vector<port_handle_t>* onlyPorts) {
     // mutex is taken only around the state it guards, never across port I/O, a factory callback, or a
     // reach-in to a device (SN-8663).
     //
@@ -63,6 +64,9 @@ bool DeviceManager::discoverDevices(uint16_t hdwId, uint32_t timeoutMs, uint32_t
     // Phase 1: For each port, ask each factory to beginValidation
     for (auto port : portManager.locked_range()) {
         if (!portIsValid(port))
+            continue;
+
+        if (onlyPorts && (std::find(onlyPorts->begin(), onlyPorts->end(), port) == onlyPorts->end()))
             continue;
 
         // Check if port is already associated with a known device

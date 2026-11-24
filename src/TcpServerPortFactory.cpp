@@ -150,6 +150,17 @@ bool TcpServerPortFactory::startListening() {
 
     lastListenError = { TCP_LISTEN_CTX__NONE, 0 };  // fresh attempt; recordListenError() repopulates this on failure
 
+    if (factoryOptions.listeningAddr.sin_addr.s_addr == INADDR_NONE) {
+        // configure() could not parse the requested address.  Refuse to listen rather than fall back to every interface.
+#ifdef PLATFORM_IS_WINDOWS
+        WSASetLastError(WSAEADDRNOTAVAIL);
+#else
+        errno = EADDRNOTAVAIL;
+#endif
+        recordListenError(TCP_LISTEN_CTX__BIND);
+        return false;
+    }
+
     // socket: create the parent socket
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd < 0) {
@@ -195,7 +206,7 @@ bool TcpServerPortFactory::startListening() {
     // build the server's Internet address
     memset((char *) &serveraddr, 0, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;                                            // this is an Internet address
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);                             // let the system figure out our IP address
+    serveraddr.sin_addr = factoryOptions.listeningAddr.sin_addr;                // the configured interface address (0.0.0.0 listens on every interface)
     serveraddr.sin_port = htons((unsigned short)factoryOptions.listenerPort);   // this is the port we will listen on
 
     // bind: associate the parent socket with a port
@@ -233,7 +244,10 @@ void TcpServerPortFactory::shutdownAllClients() {
 #else
         shutdown(ks.socket, SHUT_RDWR);
 #endif
-        portClose(ks.port);
+        if (ks.port)
+            portClose(ks.port);
+        else
+            closeSocket(ks.socket);     // never bound to a port, so portClose() has nothing to act on
     }
 }
 
@@ -257,6 +271,13 @@ bool TcpServerPortFactory::processPendingConnections(std::function<void(const so
         // accept: wait for a connection request
         clientfd = accept(listen_fd, (struct sockaddr *) &clientaddr, &clientlen);
         if (clientfd >= 0) {
+            // Enforce the connection cap: refuse the connection by closing it at accept.
+            if ((int)knownSockets.size() >= factoryOptions.maxConnections) {
+                closeSocket(clientfd);
+                log_warn(IS_LOG_PORT_FACTORY, "tcpServerPortFactory rejected an incoming TCP connection: %d connections already open (maximum).", factoryOptions.maxConnections);
+                continue;
+            }
+
             // getnameinfo: determine who has connected
             if (getnameinfo((struct sockaddr *) &clientaddr, clientlen, hostaddrp, sizeof(hostaddrp), nullptr, 0, NI_NUMERICHOST) == 0) {
                 std::string tcpPortName = utils::string_format("tcp://%s:%d", hostaddrp, ntohs(clientaddr.sin_port));

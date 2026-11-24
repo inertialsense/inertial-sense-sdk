@@ -46,7 +46,7 @@ namespace {
 
 is_log_idx_header_t makeRoundTripHeader() {
     auto h = makeDefaultHeader(0x02010000u,
-                               TimestampAnchor::GpsTowMs,
+                               TimestampAnchor::GNSSTowMs,
                                HeaderTimeSource::PayloadToW);
     h.total_records       = 42;
     h.first_timestamp_ms  = 100ULL;
@@ -685,8 +685,8 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     }
 
     // -- Sanity: at least one record carries a payload-ToW timestamp
-    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GPS
-    // messages with real GPS-ToW fields, which the writer's payload-ToW
+    // (HAS_TOW flag set). GenerateRawLogData produces DID_INS_2 / GNSS
+    // messages with real GNSS-ToW fields, which the writer's payload-ToW
     // path is supposed to capture.
     bool sawTowFlag = false;
     for (const auto& r : allIdxRecords) {
@@ -694,7 +694,7 @@ TEST(IdxIntegration, ISLoggerEndToEndProducesViableIdx) {
     }
     EXPECT_TRUE(sawTowFlag)
         << "expected at least one indexed record to carry a payload-ToW "
-           "timestamp from a GPS/INS DID";
+           "timestamp from a GNSS/INS DID";
 
     // -- One-line summary of what the framework actually produced.
     std::printf("[idx-e2e] %zu source msgs -> %zu .raw seg(s), %zu .idx record(s), "
@@ -811,7 +811,7 @@ TEST(IdxIntegration, ISLoggerMultiSegmentRotationProducesValidIdxPerSegment) {
 // ---------------------------------------------------------------------------
 // SN-8629: ISDeviceLog::fromSegments composed segments out of order because
 // it sorted on header.first_timestamp_ms verbatim -- a raw, unqualified value
-// whose domain (host-uptime vs GPS time-of-week) depends on which DID
+// whose domain (host-uptime vs GNSS time-of-week) depends on which DID
 // happened to be the first/last record written to a given segment (D0066).
 // Two fixes, both covered below:
 //   (1) The comparator in ISDeviceLog::fromSegments must not let a
@@ -832,7 +832,7 @@ TEST(TimestampsLookMixedDomain, DetectsInversionOnly) {
 }
 
 TEST(IdxIntegration, WriterFlagsMixedDomainWhenFirstExceedsLast) {
-    // First record is DID_INS_2 (payload timeOfWeek, GPS-ToW domain, ~590M ms)
+    // First record is DID_INS_2 (payload timeOfWeek, GNSS-ToW domain, ~590M ms)
     // and the last is DID_IMUS_RAW (payload time, host-uptime domain, ~101K
     // ms) -- the exact shape of the real SN-63736 capture that reproduced the
     // bug: the header's first_timestamp_ms ends up numerically LARGER than

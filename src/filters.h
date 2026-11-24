@@ -581,8 +581,41 @@ float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast )
  */
 float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
 
+/** @brief Integration method used to accumulate a preintegrated IMU (PIMU) interval. */
+typedef enum
+{
+    /** Rectangular sum of angular rate and specific force over the sample interval. The coning and
+        sculling corrections are omitted. They vanish identically where the angular rate is zero
+        across the integration interval; otherwise the omitted terms are of relative order |w|*T,
+        where T is the integration interval rather than the sample period. Coning additionally
+        requires the direction of the angular rate to change: a constant angular rate vector
+        produces none, since the accumulated rotation is then parallel to the rate. */
+    PIMU_INTEGRATION_RIEMANN = 0,
+
+    /** Fourth-order Runge-Kutta integration of Bortz's rotation vector differential equation,
+        with the sculling correction formed from the resulting rotation vector. Required wherever
+        the integral is propagated through the navigation filter. */
+    PIMU_INTEGRATION_BORTZ,
+
+} ePimuIntegration;
+
+/**
+ * @brief Accumulate a preintegrated IMU interval from gyro and accelerometer samples.
+ *
+ * Maintains the interval's time, elapsed period and status fields independently of the
+ * integration method, so the choice of method affects only the theta and vel integrals.
+ *
+ * @param output        Preintegrated IMU interval to accumulate into
+ * @param imu           Gyro and accelerometer sample.
+ * @param imuLast       Previous gyro and accelerometer sample.
+ * @param method        Integration method (see ePimuIntegration).
+ */
+void integratePimuMethod(pimu_t *output, imu_t *imu, imu_t *imuLast, ePimuIntegration method);
+
 /**
  * @brief Compute coning and sculling integrals from gyro and accelerometer samples.
+ *
+ * Equivalent to integratePimuMethod() with PIMU_INTEGRATION_BORTZ.
  *
  * @param output        Coning and sculling integral
  * @param imu           Gyro and accelerometer sample.
@@ -591,14 +624,15 @@ float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast 
 void integratePimu(pimu_t *output, imu_t *imu, imu_t *imuLast);
 
 /**
- * @brief Compute coning and sculling integrals from multiple gyro and accelerometer samples.
+ * @brief Accumulate per-device preintegrated IMU intervals from multiple gyro and accelerometer samples.
  *
- * @param pimuArray     Coning and sculling integral output array
+ * @param pimuArray     Per-device preintegrated IMU output array
  * @param arraySize     Number of elements in pimuArray
  * @param imusIn        Array of gyro and accelerometer samples.
  * @param imuLastArray  Array of previous gyro and accelerometer samples.
+ * @param method        Integration method applied to every device (see ePimuIntegration).
  */
-void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES]);
+void integrateImusIntoPimuArray(pimu_t pimuArray[MAX_IMU_DEVICES], const int arraySize, const imus_t *imusIn, imu_t imuLastArray[MAX_IMU_DEVICES], ePimuIntegration method);
 
 /**
  * @brief Zero out a preintegrated IMU sample's integral, time, and status fields.

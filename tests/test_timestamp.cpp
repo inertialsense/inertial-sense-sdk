@@ -97,13 +97,13 @@ TEST(ISTimeStamp, FormatterSessionSeconds) {
     EXPECT_EQ(toString(zero, TimeFormat::SessionSeconds), std::string{"0.000 s"});
 }
 
-TEST(ISTimeStamp, FormatterGpsToW) {
+TEST(ISTimeStamp, FormatterGNSSToW) {
     // Day 2 (Tuesday in GPS), 03:04:05.006 → ms =
     //   2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5 * 1000 + 6
     //   = 172_800_000 + 10_800_000 + 240_000 + 5_000 + 6
     //   = 183_845_006
     const auto ts = TimeStamp::fromPayloadToW(183'845'006ULL, 1);
-    EXPECT_EQ(toString(ts, TimeFormat::GpsToW), std::string{"2 03:04:05.006"});
+    EXPECT_EQ(toString(ts, TimeFormat::GNSSToW), std::string{"2 03:04:05.006"});
 }
 
 TEST(ISTimeStamp, FormatterUtcIso8601) {

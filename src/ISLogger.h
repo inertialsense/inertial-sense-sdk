@@ -468,7 +468,7 @@ public:
      * @param[out] index parsed file index; -1 if parsing failed before reaching it.
      * @return true if @p filename matched one of the two recognized forms, false otherwise.
      */
-    static bool ParseFilename(std::string filename, int &serialNum, std::string &date, std::string &time, int &index);
+    static bool ParseFilename(std::string filename, uint32_t &serialNum, std::string &date, std::string &time, int &index);
 
     /** @brief Print per-device message statistics. @note currently a no-op; retained as a hook for future diagnostics. */
     void PrintStatistics();

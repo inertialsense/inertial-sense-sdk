@@ -27,9 +27,13 @@
 namespace {
 
 /**
- * @brief Oracle: a faithful copy of the original (pre-SN-7919) `renderInsStatus` body, sans the
- *        data_info_t type guard. Equality with `RenderStatusFromDecode` proves the table-driven
- *        renderer reproduces legacy output exactly.
+ * @brief Oracle: a faithful copy of the original (pre-SN-7919) `renderInsStatus` body, sans the data_info_t
+ * type guard.
+ *
+ * Equality with `RenderStatusFromDecode` proves the table-driven renderer reproduces legacy output exactly.
+ *
+ * @param insStatus  value to render
+ * @return rendered text
  */
 std::string legacyRenderInsStatusReference(uint32_t insStatus)
 {
@@ -90,7 +94,12 @@ std::string legacyRenderInsStatusReference(uint32_t insStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original (pre-SN-7919) `renderHdwStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original (pre-SN-7919) `renderHdwStatus` body.
+ *
+ * @param hdwStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
 {
     std::stringstream buff;
@@ -146,7 +155,12 @@ std::string legacyRenderHdwStatusReference(uint32_t hdwStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderSysStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderSysStatus` body.
+ *
+ * @param sysStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderSysStatusReference(uint32_t sysStatus)
 {
     std::stringstream buff;
@@ -154,11 +168,21 @@ std::string legacyRenderSysStatusReference(uint32_t sysStatus)
     BIT_MSG(sysStatus, SYS_STATUS_TBED3_LEDS_ENABLED            , "0x00000001 - IMX to drive Testbed-3 status LEDs.");
     BIT_MSG(sysStatus, SYS_STATUS_PRIMARY_GNSS_SOURCE_IS_GNSS2  , "0x00000004 - NMEA source is GNSS2.");
     BIT_MSG(sysStatus, SYS_STATUS_DUAL_GNSS_VERSION_MISMATCH    , "0x00000008 - GNSS1 and GNSS2 report different firmware versions.");
+    BIT_MSG(sysStatus, 0x00000010                               , "0x00000010 - IMU1 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000020                               , "0x00000020 - IMU2 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000040                               , "0x00000040 - IMU3 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000080                               , "0x00000080 - IMU4 accelerometer reporting from its high-g range.");
+    BIT_MSG(sysStatus, 0x00000100                               , "0x00000100 - IMU5 accelerometer reporting from its high-g range.");
 #undef BIT_MSG
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGenFaultCode` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGenFaultCode` body.
+ *
+ * @param genFault  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
 {
     std::stringstream buff;
@@ -197,20 +221,25 @@ std::string legacyRenderGenFaultCodeReference(uint32_t genFault)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGnssStatusBits` body. */
-std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
+/**
+ * @brief Oracle: faithful copy of the original `renderGnssStatusBits` body.
+ *
+ * @param gnssStatusBits  value to render
+ * @return rendered text
+ */
+std::string legacyRenderGnssStatusBitsReference(uint32_t gnssStatusBits)
 {
     std::stringstream buff;
 #define BIT_MSG(_F_, _B_, _M_)    if (_F_ & _B_) { buff << _M_ << std::endl; }
 
-    uint8_t satCount = (gpsStatusBits & GNSS_STATUS_NUM_SATS_USED_MASK);
+    uint8_t satCount = (gnssStatusBits & GNSS_STATUS_NUM_SATS_USED_MASK);
     {
         char b[256];
         std::snprintf(b, sizeof(b), "0x000000%02X - %d satellites used in solution (deprecated)", satCount, satCount);
         buff << b << std::endl;
     }
 
-    switch (gpsStatusBits & GNSS_STATUS_FIX_MASK) {
+    switch (gnssStatusBits & GNSS_STATUS_FIX_MASK) {
         case GNSS_STATUS_FIX_NONE                : buff << "0x00000000 - No GNSS" << std::endl; break;
         case GNSS_STATUS_FIX_DEAD_RECKONING_ONLY : buff << "0x00000100 - GNSS Dead Reckoning Only" << std::endl; break;
         case GNSS_STATUS_FIX_2D                  : buff << "0x00000200 - 2D Fix" << std::endl; break;
@@ -226,39 +255,44 @@ std::string legacyRenderGnssStatusBitsReference(uint32_t gpsStatusBits)
         case GNSS_STATUS_FIX_RTK_FIX             : buff << "0x00000C00 - RTK Fix" << std::endl; break;
     }
 
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_FIX_OK                          , "0x00010000 - within limits (e.g. DOP & accuracy)");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_DGPS_USED                       , "0x00020000 - Differential GPS (DGPS) used.");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD                , "0x00040000 - RTK feedback on the integer solutions to drive the float biases towards the resolved integers");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_1                        , "0x00080000 - << UNUSED >>");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED       , "0x00100000 - GNSS1 RTK precision positioning mode enabled");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_STATIC_MODE                     , "0x00200000 - Static mode");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED        , "0x00400000 - GNSS2 RTK moving base mode enabled");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR     , "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_FIX_OK                          , "0x00010000 - within limits (e.g. DOP & accuracy)");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_DGPS_USED                       , "0x00020000 - Differential GPS (DGPS) used.");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD                , "0x00040000 - RTK feedback on the integer solutions to drive the float biases towards the resolved integers");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_1                        , "0x00080000 - << UNUSED >>");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED       , "0x00100000 - GNSS1 RTK precision positioning mode enabled");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_STATIC_MODE                     , "0x00200000 - Static mode");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED        , "0x00400000 - GNSS2 RTK moving base mode enabled");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GNSS_DATA_ERROR     , "0x00800000 - GNSS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)");
 
-    uint32_t rtkError = (gpsStatusBits & GNSS_STATUS_FLAGS_ERROR_MASK);
+    uint32_t rtkError = (gnssStatusBits & GNSS_STATUS_FLAGS_ERROR_MASK);
     switch (rtkError) {
         case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING        : buff << "0x01000000 - GNSS1 RTK error: Either base observations or antenna position have not been received." << std::endl; break;
         case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING     : buff << "0x02000000 - GNSS1 RTK error: base position moved when it should be stationary" << std::endl; break;
         case GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID    : buff << "0x03000000 - GNSS1 RTK error: base position is invalid or not surveyed well" << std::endl; break;
     }
 
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID         , "0x04000000 - GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities.");
-    if (gpsStatusBits & GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK) {
-        BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID          , "0x08000000 - GNSS2 RTK moving base heading valid and available in DID_GNSS2_RTK_CMP_REL.");
-        BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD   , "0x00002000 - GNSS2 RTK Compassing Baseline distance is invalid");
-        BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET , "0x00004000 - GNSS2 RTK Compassing Baseline distance is unset (must be > 0)");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID         , "0x04000000 - GNSS1 RTK precision position and carrier phase range solution with fixed ambiguities.");
+    if (gnssStatusBits & GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK) {
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID          , "0x08000000 - GNSS2 RTK moving base heading valid and available in DID_GNSS2_RTK_CMP_REL.");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD   , "0x00002000 - GNSS2 RTK Compassing Baseline distance is invalid");
+        BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET , "0x00004000 - GNSS2 RTK Compassing Baseline distance is unset (must be > 0)");
     }
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF).");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GNSS PPS.");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                   , "0x00008000 - Data from NMEA message. GNSS velocity is NED (not ECEF).");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC                , "0x10000000 - Time is synchronized by GNSS PPS.");
 
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID       , "0x20000000 - RTK ECEF covariance matrix is valid (if provided by RTK REL message).");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_3                        , "0x40000000 - <<UNUSED>>");
-    BIT_MSG(gpsStatusBits, GNSS_STATUS_FLAGS_UNUSED_4                        , "0x80000000 - <<UNUSED>>");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_RTK_COV_ECEF_PACKED_VALID       , "0x20000000 - RTK ECEF covariance matrix is valid (if provided by RTK REL message).");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_3                        , "0x40000000 - <<UNUSED>>");
+    BIT_MSG(gnssStatusBits, GNSS_STATUS_FLAGS_UNUSED_4                        , "0x80000000 - <<UNUSED>>");
 #undef BIT_MSG
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxStatus_status` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxStatus_status` body.
+ *
+ * @param status  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxStatusReference(uint32_t status)
 {
     std::stringstream buff;
@@ -297,7 +331,12 @@ std::string legacyRenderGpxStatusReference(uint32_t status)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxStatus_hdwStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxStatus_hdwStatus` body.
+ *
+ * @param hdwStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxHdwStatusReference(uint32_t hdwStatus)
 {
     std::stringstream buff;
@@ -381,7 +420,12 @@ std::string legacyRenderGnssFwUpdateStateReference(uint8_t v)
     return "";
 }
 
-/** @brief Oracle: faithful copy of the original `renderImxHdwBitStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderImxHdwBitStatus` body.
+ *
+ * @param hdwBitStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderImxHdwBitReference(uint32_t hdwBitStatus)
 {
     std::stringstream buff;
@@ -406,7 +450,12 @@ std::string legacyRenderImxHdwBitReference(uint32_t hdwBitStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderImxCalBitStatus` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderImxCalBitStatus` body.
+ *
+ * @param calBitStatus  value to render
+ * @return rendered text
+ */
 std::string legacyRenderImxCalBitReference(uint32_t calBitStatus)
 {
     std::stringstream buff;
@@ -440,7 +489,12 @@ std::string legacyRenderImxCalBitReference(uint32_t calBitStatus)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxBitResults` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxBitResults` body.
+ *
+ * @param results  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxBitResultsReference(uint32_t results)
 {
     std::stringstream buff;
@@ -457,7 +511,12 @@ std::string legacyRenderGpxBitResultsReference(uint32_t results)
     return buff.str();
 }
 
-/** @brief Oracle: faithful copy of the original `renderGpxBitState` body. */
+/**
+ * @brief Oracle: faithful copy of the original `renderGpxBitState` body.
+ *
+ * @param state  value to render
+ * @return rendered text
+ */
 std::string legacyRenderGpxBitStateReference(uint8_t state)
 {
     std::stringstream buff;
@@ -468,14 +527,19 @@ std::string legacyRenderGpxBitStateReference(uint8_t state)
         case 3: buff << "MANUF_UART" << std::endl; break;
         case 4: buff << "MANUF_IO" << std::endl; break;
         case 5: buff << "MANUF_PPS" << std::endl; break;
-        case 6: buff << "MANUF_GPS" << std::endl; break;
+        case 6: buff << "MANUF_GNSS" << std::endl; break;
         case 7: buff << "MANUF_REPORT" << std::endl; break;
         default: buff << "UNKNOWN(" << (int)state << ")" << std::endl; break;
     }
     return buff.str();
 }
 
-/** @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms. */
+/**
+ * @brief Deterministic xorshift32 so the sweep is reproducible across runs/platforms.
+ *
+ * @param[in,out] s  generator state
+ * @return next value
+ */
 uint32_t xorshift32(uint32_t& s)
 {
     s ^= s << 13; s ^= s >> 17; s ^= s << 5;
@@ -1650,18 +1714,32 @@ TEST(ISStatusDecode, IoConfig_Gnss1AndGnss2TypeDoNotCrossContaminate)
     EXPECT_EQ(rendered.find("GNSS2 type: UBLOX"), std::string::npos);
 }
 
-TEST(ISStatusDecode, IoConfig_ImuDisableBitsIndependent)
+TEST(ISStatusDecode, SensorConfig2_ImuDisableBitsIndependent)
 {
-    const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig2");
     ASSERT_NE(dec, nullptr);
-    const std::string imu1 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_1_DISABLE);
-    const std::string imu2 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_2_DISABLE);
-    const std::string imu3 = RenderStatusFromDecode(*dec, (uint32_t)IO_CONFIG_IMU_3_DISABLE);
-    EXPECT_NE(imu1.find("IMU 1 disable"), std::string::npos);
-    EXPECT_NE(imu2.find("IMU 2 disable"), std::string::npos);
-    EXPECT_NE(imu3.find("IMU 3 disable"), std::string::npos);
-    EXPECT_NE(imu1, imu2);
-    EXPECT_NE(imu2, imu3);
+    const uint32_t bits[] = { (uint32_t)SENSOR_CFG2_IMU_1_DISABLE, (uint32_t)SENSOR_CFG2_IMU_2_DISABLE,
+        (uint32_t)SENSOR_CFG2_IMU_3_DISABLE, (uint32_t)SENSOR_CFG2_IMU_4_DISABLE, (uint32_t)SENSOR_CFG2_IMU_5_DISABLE };
+    std::string prev;
+    for (int i = 0; i < 5; i++)
+    {
+        EXPECT_EQ(bits[i], 1u << (SENSOR_CFG2_IMU_DISABLE_OFFSET + i));
+        const std::string text = RenderStatusFromDecode(*dec, bits[i]);
+        EXPECT_NE(text.find("IMU " + std::to_string(i + 1) + " disable"), std::string::npos) << text;
+        EXPECT_NE(text, prev);
+        prev = text;
+    }
+}
+
+TEST(ISStatusDecode, SensorConfig2_HighGRange)
+{
+    const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig2");
+    ASSERT_NE(dec, nullptr);
+    EXPECT_NE(RenderStatusFromDecode(*dec, 0).find("High-g accel FS: disabled"), std::string::npos);
+    EXPECT_NE(RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG2_ACC_HG_FS_64G).find("High-g accel FS: 64g"), std::string::npos);
+    const std::string both = RenderStatusFromDecode(*dec, (uint32_t)SENSOR_CFG2_ACC_HG_FS_MAX | (uint32_t)SENSOR_CFG2_IMU_2_DISABLE);
+    EXPECT_NE(both.find("High-g accel FS: sensor max"), std::string::npos);
+    EXPECT_NE(both.find("IMU 2 disable"), std::string::npos);
 }
 
 TEST(ISStatusDecode, IoConfig_AllBitsSetDoesNotCrash)

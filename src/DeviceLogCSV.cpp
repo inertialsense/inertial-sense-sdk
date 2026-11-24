@@ -52,7 +52,7 @@ void cDeviceLogCSV::InitDeviceForReading()
         if (dataSet != NULL)
         {
             string dataSetRegex = string(dataSet) + "\\.csv$";
-            if (m_devSerialNo > 0 && m_devSerialNo < 4294967295)    // < 0xFFFFFFFF
+            if (serialNumberIsSet(m_devSerialNo))
             {   // Include serial number if valid
                 dataSetRegex = "LOG_SN" + to_string(m_devSerialNo) + ".*?" + dataSetRegex;
             }

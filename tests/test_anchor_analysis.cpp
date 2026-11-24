@@ -1088,7 +1088,7 @@ TEST_F(AnchorSegmentTest, RebuiltHeaderUnitsMatchTheRecordsPresent) {
         EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::Mixed));
         EXPECT_EQ(h.ts_source, static_cast<uint8_t>(idx::HeaderTimeSource::Mixed));
     } else if (anyTow) {
-        EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::GpsTowMs));
+        EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::GNSSTowMs));
     } else {
         EXPECT_EQ(h.ts_anchor, static_cast<uint8_t>(idx::TimestampAnchor::UptimeMs));
     }

@@ -160,7 +160,7 @@ static_assert(std::is_trivially_copyable_v<TimeStamp>,
  */
 enum class TimeFormat : uint8_t {
     SessionSeconds,     ///< "12.345 s"  (value treated as session-relative ms).
-    GpsToW,             ///< "DDD HH:MM:SS.mmm" (value treated as GPS time-of-week ms; DDD = day-of-week).
+    GNSSToW,             ///< "DDD HH:MM:SS.mmm" (value treated as GNSS time-of-week ms; DDD = day-of-week).
     UtcIso8601,         ///< "2026-04-28T20:45:23.123Z" (value treated as Unix-epoch ms).
     HostReceivedMs,     ///< "1234567 ms" (raw ms, no calendar interpretation).
 };

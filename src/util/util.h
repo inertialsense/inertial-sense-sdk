@@ -337,6 +337,24 @@ namespace utils {
     std::string deviceIdString(uint16_t hdwId, uint64_t serial);
 
     /**
+     * Renders a serial number for display as "SN<n>" (unsigned decimal, zero-padded to minDigits). An unset serial
+     * (0 or 0xFFFFFFFF, see serialNumberIsSet()) renders as "SN-unset".
+     * @param serialNumber the uint32 serial number
+     * @param minDigits minimum digits, zero-padded (0 for none)
+     * @return the rendered string
+     */
+    std::string serialNumberToString(uint32_t serialNumber, int minDigits = 0);
+
+    /**
+     * Strictly parses a serial number from decimal digits as an unsigned 32-bit value. Rejects empty strings, signs, spaces,
+     * non-digits and values above 0xFFFFFFFF.
+     * @param str the digits to parse (without an "SN" prefix)
+     * @param serialNumber [out] the parsed value, left unchanged on failure
+     * @return true if str was a valid in-range serial number
+     */
+    bool parseSerialNumber(const std::string& str, uint32_t& serialNumber);
+
+    /**
      * Renders the hardware type-major-minor portion of devInfo, e.g. "IMX-5.0", optionally
      * appended with the sub-rev components (hardwareVer[2..3]) when showRev is true and they are
      * non-zero.
@@ -685,8 +703,8 @@ namespace utils {
         std::string scheme;     //!< URI scheme as provided (e.g. "tcp", "ntrip"); empty if absent
         std::string host;       //!< host with IPv6 brackets stripped; empty if absent
         int         port = -1;  //!< port number 1..65535, or -1 if absent/malformed/out-of-range
-        std::string user;       //!< userinfo username; empty if absent
-        std::string password;   //!< userinfo password; empty if absent
+        std::string user;       //!< userinfo username, percent-decoded; empty if absent
+        std::string password;   //!< userinfo password, percent-decoded; empty if absent
         std::string path;       //!< path component (e.g. an NTRIP mountpoint); empty if absent
         std::string query;      //!< query component; empty if absent
 
@@ -699,6 +717,14 @@ namespace utils {
         /** @return true if userinfo was present */
         bool hasUserinfo() const { return !user.empty() || !password.empty(); }
     };
+
+    /**
+     * @brief Decode RFC 3986 percent-encoding ("%40" -> "@"). Malformed sequences (e.g. "%G1", a trailing "%")
+     * are kept literally, and '+' is not treated as a space (that is form encoding, not URI encoding).
+     * @param s the percent-encoded string
+     * @return the decoded string
+     */
+    std::string percentDecode(const std::string& s);
 
     /**
      * @brief Parse a URI string into its normalized components.
@@ -742,6 +768,41 @@ namespace utils {
      * @return UUID string formatted as "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
      */
     std::string generateUUIDv4();
+
+    /**
+     * Generates a UUID v7 string (RFC 9562): a 48-bit Unix millisecond timestamp followed by random bits.
+     * Used for calibration UUIDs so the calibration-db key is time-ordered.
+     * @param unixTimeMs time, in milliseconds since the Unix epoch (UTC), to embed in the UUID
+     * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
+     */
+    std::string generateUUIDv7(uint64_t unixTimeMs);
+
+    /**
+     * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". Times before 1970 are
+     * supported, on every platform.
+     * @param unixMs time in milliseconds since the Unix epoch (UTC)
+     */
+    std::string unixMsToRfc3339(int64_t unixMs);
+
+    /**
+     * Renders the full 128-bit manufacturing UID as the 32 lowercase hex digits used by the calibration-db
+     * (`manfUid`): the 16 bytes of uid[4] in memory order, each word little-endian. This is the same byte
+     * sequence the serial number is derived from. The reserved 4th word is always included.
+     * Example: uid = {0x001D0028, 0x41465006, 0x20363841, 0} -> "28001d00065046414138362000000000"
+     * @param uid the 4 words of manufacturing_info_t.uid
+     * @return 32 lowercase hex digits
+     */
+    std::string manfUidToString(const uint32_t uid[4]);
+
+    /**
+     * Converts the manufacturing date written by EvalTool (manufacturing_info_t.date, "YYYYMMDDHHMMSSZ", UTC)
+     * to RFC 3339 UTC ("YYYY-MM-DDTHH:MM:SSZ"). Dates written before the explicit "Z" marker existed are 14 digits in
+     * the station's local time, which is not known here, so they are rejected rather than guessed.
+     * @param date the 16-byte manufacturing_info_t.date field (need not be NUL terminated)
+     * @param rfc3339 receives the converted time when true is returned
+     * @return true if date is a valid UTC "YYYYMMDDHHMMSSZ" value
+     */
+    bool manfDateToRfc3339(const char date[16], std::string& rfc3339);
 };
 
 /**

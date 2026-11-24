@@ -12,6 +12,10 @@
  * exact. Bounds here are the RESOLVED bounds (what a consumer sees), computed
  * via ISTimeResolver over the records — that is the surface the anomalies show
  * up on.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>
@@ -593,6 +597,60 @@ TEST_F(LogBoundsTest, W3_ClosedLogHasNoTruncatedFinalRecord) {
     for (auto rv : log.value().allRecords()) { lastDid = rv.did(); ++n; }
     EXPECT_EQ(n, 4u) << "final record must not be dropped by close";
     EXPECT_EQ(lastDid, static_cast<uint32_t>(DID_INS_1)) << "final record read back intact";
+}
+
+// -------------------- forEachRecord: span + DID filter + callback --------------------
+
+TEST_F(LogBoundsTest, ForEachRecordFiltersBySpanAndDid) {
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> recs;
+    // The first record is later than the other two, so a walk that stopped at the first record outside the span (as the contiguous Range::in_time does) would miss both.
+    for (double tow : {120.0, 100.0, 110.0}) recs.emplace_back(DID_INS_2, bytesOf(makeIns2(tow)));
+    imu_t imu{};
+    imu.time = 1.0;
+    recs.emplace_back(DID_IMU, bytesOf(imu));
+    f = buildFixture("foreach_record", recs);
+    ASSERT_FALSE(f.rawFile.empty());
+    auto log = ISDeviceLog::fromSegments({f.rawFile});
+    ASSERT_TRUE(log.has_value());
+
+    std::vector<uint64_t> ins;  // timestamps of the INS_2 records, in arrival order
+    for (const ISRecordView& r : log->records(DID_INS_2)) ins.push_back(r.timestamp().value);
+    ASSERT_EQ(ins.size(), 3u);
+
+    const TimeStamp lo = TimeStamp::fromPayloadToW(0, 0);
+    const TimeStamp hi = TimeStamp::fromPayloadToW(UINT64_MAX, 0);
+    auto count = [&](TimeStamp a, TimeStamp b, std::initializer_list<ISDeviceLog::did_t> dids) { return log->forEachRecord(a, b, dids, [](const ISRecordView&) { return true; }); };
+
+    EXPECT_EQ(count(lo, hi, {}), log->allRecords().size());  // empty DID list passes everything
+    EXPECT_EQ(count(lo, hi, {DID_INS_2}), 3u);               // DID filter
+    EXPECT_EQ(count(lo, hi, {DID_INS_2, DID_IMU}), 3u + log->records(DID_IMU).size());
+    EXPECT_EQ(count(TimeStamp::fromPayloadToW(ins[1], 0), TimeStamp::fromPayloadToW(ins[2], 0), {DID_INS_2}), 2u);  // span is inclusive
+
+    std::size_t seen = 0;
+    EXPECT_EQ(log->forEachRecord(lo, hi, {DID_INS_2},
+                                 [&](const ISRecordView& r) {
+                                     EXPECT_EQ(r.did(), (uint32_t)DID_INS_2);
+                                     return ++seen < 2;
+                                 }),
+              2u);  // false stops the walk
+    EXPECT_EQ(seen, 2u);
+
+    // A span by arrival position is exact, whatever clock each record's timestamp is in.
+    std::vector<uint64_t> arrivals;
+    EXPECT_EQ(log->forEachRecordInArrival(1, 3, {},
+                                          [&](const ISRecordView& r) {
+                                              arrivals.push_back(r.arrivalIndex());
+                                              return true;
+                                          }),
+              2u);
+    EXPECT_EQ(arrivals, (std::vector<uint64_t>{1, 2}));
+    EXPECT_EQ(log->forEachRecordInArrival(0, UINT64_MAX, {DID_INS_2}, [](const ISRecordView&) { return true; }), 3u);
+
+    // A span by log time passes exactly the records whose log offset is inside it.
+    uint32_t maxOffset = 0;
+    for (const ISRecordView& r : log->allRecords()) maxOffset = std::max(maxOffset, r.logTimeOffsetMs());
+    EXPECT_EQ(log->forEachRecordInLogTime(0, maxOffset, {}, [](const ISRecordView&) { return true; }), log->allRecords().size());
+    EXPECT_EQ(log->forEachRecordInLogTime(maxOffset + 1, UINT32_MAX, {}, [](const ISRecordView&) { return true; }), 0u);
 }
 
 }  // namespace
