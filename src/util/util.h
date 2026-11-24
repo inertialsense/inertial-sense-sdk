@@ -1,9 +1,9 @@
 /**
- * @file util.h 
+ * @file util.h
  * @brief General Utility functions. Most of these functions should be static, as we don't want/need a "Util" instance running around.
  *
  * @author Kyle Mallory on 3/14/24.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #ifndef IS_SDK__UTIL_H
@@ -771,11 +771,37 @@ namespace utils {
 
     /**
      * Generates a UUID v7 string (RFC 9562): a 48-bit Unix millisecond timestamp followed by random bits.
-     * Used for calibration UUIDs so the calibration-db key is time-ordered.
+     * Two calls never return the same UUID, so it suits records that are new each time, such as test runs. A calibration uses
+     * deterministicCalUuid() instead.
      * @param unixTimeMs time, in milliseconds since the Unix epoch (UTC), to embed in the UUID
      * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
      */
     std::string generateUUIDv7(uint64_t unixTimeMs);
+
+    /**
+     * Derives a calibration's UUID from the calibration itself: a UUID v7 carrying the calibration time, with the random bits
+     * replaced by a SipHash-1-3 of the time and the serial number. The same calibration always gets the same UUID, so uploading
+     * it again is refused as a duplicate. This is the UUID the Manufacturing Database assigns a calibration that arrives without
+     * one (`deterministic_cal_uuid` in calibration-db), and the two must stay identical.
+     * @param unixTimeMs calibration time, in milliseconds since the Unix epoch (UTC)
+     * @param serialNumber device serial number
+     * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
+     */
+    std::string deterministicCalUuid(int64_t unixTimeMs, uint32_t serialNumber);
+
+    /**
+     * Converts a wall-clock time in this computer's time zone to a Unix time. In the autumn repeated hour the earlier instant is
+     * returned; a time in the spring gap, which never happened, is rejected.
+     * @param year four-digit year
+     * @param month 1 to 12
+     * @param day 1 to 31
+     * @param hour 0 to 23
+     * @param minute 0 to 59
+     * @param second 0 to 59
+     * @param[out] unixMs the time in milliseconds since the Unix epoch (UTC), on success
+     * @return false if the time does not exist in the local time zone
+     */
+    bool localTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs);
 
     /**
      * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". Times before 1970 are

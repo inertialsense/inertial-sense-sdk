@@ -1,9 +1,9 @@
 /**
- * @file util.cpp 
- * @brief ${BRIEF_DESC}
+ * @file util.cpp
+ * @brief General utility functions: string formatting, hardware and serial-number names, UUIDs, and time conversions.
  *
  * @author Kyle Mallory on 3/14/24.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include "util.h"
@@ -1263,6 +1263,138 @@ std::string utils::generateUUIDv7(uint64_t unixTimeMs) {
              bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
              bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
     return std::string(buf);
+}
+
+namespace {
+
+// SipHash initial state for a zero key: the constant "somepseudorandomlygeneratedbytes", XORed with the key
+constexpr uint64_t SIPHASH_V0 = 0x736f6d6570736575ull;  //!< "somepseu"
+constexpr uint64_t SIPHASH_V1 = 0x646f72616e646f6dull;  //!< "dorandom"
+constexpr uint64_t SIPHASH_V2 = 0x6c7967656e657261ull;  //!< "lygenera"
+constexpr uint64_t SIPHASH_V3 = 0x7465646279746573ull;  //!< "tedbytes"
+
+/**
+ * Rotates a 64-bit word left.
+ * @param x the word
+ * @param b the number of bits, 1 to 63
+ * @return the rotated word
+ */
+inline uint64_t rotl64(uint64_t x, int b) { return (x << b) | (x >> (64 - b)); }
+
+/**
+ * SipHash-1-3 with a zero key, the algorithm behind Rust's `std::hash::DefaultHasher::new()`. The calibration-db derives
+ * calibration UUIDs with it, so this must produce the same value for the same bytes.
+ * @param data the bytes to hash
+ * @param len the number of bytes
+ * @return the 64-bit hash
+ */
+uint64_t sipHash13(const uint8_t* data, size_t len) {
+    uint64_t v0 = SIPHASH_V0, v1 = SIPHASH_V1, v2 = SIPHASH_V2, v3 = SIPHASH_V3;
+    auto sipRound = [&]() {
+        v0 += v1;
+        v1 = rotl64(v1, 13);
+        v1 ^= v0;
+        v0 = rotl64(v0, 32);
+        v2 += v3;
+        v3 = rotl64(v3, 16);
+        v3 ^= v2;
+        v0 += v3;
+        v3 = rotl64(v3, 21);
+        v3 ^= v0;
+        v2 += v1;
+        v1 = rotl64(v1, 17);
+        v1 ^= v2;
+        v2 = rotl64(v2, 32);
+    };
+    auto loadLe = [](const uint8_t* p, size_t n) {
+        uint64_t m = 0;
+        for (size_t i = 0; i < n; i++) m |= (uint64_t)p[i] << (8 * i);
+        return m;
+    };
+
+    const size_t whole = len & ~(size_t)7;
+    for (size_t i = 0; i < whole; i += 8) {
+        const uint64_t m = loadLe(data + i, 8);
+        v3 ^= m;
+        sipRound();
+        v0 ^= m;
+    }
+    const uint64_t last = loadLe(data + whole, len - whole) | ((uint64_t)(len & 0xFF) << 56);
+    v3 ^= last;
+    sipRound();
+    v0 ^= last;
+    v2 ^= 0xFF;
+    sipRound();
+    sipRound();
+    sipRound();
+    return v0 ^ v1 ^ v2 ^ v3;
+}
+
+/**
+ * Writes a value's low bytes in little-endian order, which is how Rust's `Hash` feeds an integer to the hasher.
+ * @param out the destination, at least n bytes
+ * @param v the value
+ * @param n the number of bytes
+ */
+void storeLe(uint8_t* out, uint64_t v, int n) {
+    for (int i = 0; i < n; i++) out[i] = (uint8_t)(v >> (8 * i));
+}
+
+}  // namespace
+
+std::string utils::deterministicCalUuid(int64_t unixTimeMs, uint32_t serialNumber) {
+    // The Rust derivation hashes (unix_ms as i64, serial as u32) to h1, then h1 to h2.
+    uint8_t seed[12];
+    storeLe(seed, (uint64_t)unixTimeMs, 8);
+    storeLe(seed + 8, serialNumber, 4);
+    const uint64_t h1 = sipHash13(seed, sizeof(seed));
+    uint8_t seed2[8];
+    storeLe(seed2, h1, 8);
+    const uint64_t h2 = sipHash13(seed2, sizeof(seed2));
+
+    uint8_t bytes[16];
+    for (int i = 0; i < 6; i++) bytes[i] = (uint8_t)((uint64_t)unixTimeMs >> (8 * (5 - i)));  // 48-bit big-endian millisecond timestamp
+    bytes[6] = (uint8_t)(0x70 | ((h1 >> 8) & 0x0F));                                          // version 7
+    bytes[7] = (uint8_t)h1;
+    bytes[8] = (uint8_t)(0x80 | ((h1 >> 16) & 0x3F));  // variant 10xx
+    bytes[9] = (uint8_t)(h1 >> 24);
+    bytes[10] = (uint8_t)(h1 >> 32);
+    bytes[11] = (uint8_t)(h1 >> 40);
+    storeLe(bytes + 12, h2, 4);
+
+    char buf[48];
+    snprintf(buf, sizeof(buf), "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x", bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8],
+             bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+    return std::string(buf);
+}
+
+bool utils::localTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs) {
+    // mktime() applies the local zone. Each DST interpretation is kept only if it maps back to the same wall-clock time, so a
+    // time in the autumn repeated hour gets its earlier instant and a time in the spring gap is rejected.
+    bool found = false;
+    for (int isDst = 0; isDst <= 1; isDst++) {
+        struct tm t = {};
+        t.tm_year = year - 1900;
+        t.tm_mon = month - 1;
+        t.tm_mday = day;
+        t.tm_hour = hour;
+        t.tm_min = minute;
+        t.tm_sec = second;
+        t.tm_isdst = isDst;
+        const time_t tt = mktime(&t);
+        if (tt == (time_t)-1) continue;
+        struct tm back = {};
+#ifdef _WIN32
+        localtime_s(&back, &tt);
+#else
+        localtime_r(&tt, &back);
+#endif
+        if (back.tm_year != year - 1900 || back.tm_mon != month - 1 || back.tm_mday != day || back.tm_hour != hour || back.tm_min != minute || back.tm_sec != second) continue;
+        const int64_t ms = (int64_t)tt * 1000;
+        if (!found || ms < unixMs) unixMs = ms;
+        found = true;
+    }
+    return found;
 }
 
 std::string utils::unixMsToRfc3339(int64_t unixMs) {

@@ -11,7 +11,7 @@
  * JSON calibration files.
  *
  * @author Inertial Sense, Inc.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include "ISDeviceCal.h"
@@ -760,6 +760,14 @@ sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const ma
     return id;
 }
 
+bool ISDeviceCal::calInfoToUnixMs(const sensor_cal_info_t& info, int64_t& unixMs) {
+    const int year = info.calDate[0] + 2000;
+    const int month = info.calDate[1], day = info.calDate[2];
+    const int hour = info.calTime[0], minute = info.calTime[1], second = info.calTime[2];
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return false;
+    return utils::localTimeToUnixMs(year, month, day, hour, minute, second, unixMs);
+}
+
 /** Adds the identity and manufacturing keys shared by the calibration info stanza and the device registration body. */
 static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
 {
@@ -809,7 +817,7 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
             if (identity->calDateTimeMs > 0)
             {
                 jInf["calDateTime"] = utils::unixMsToRfc3339(identity->calDateTimeMs);
-                jInf["calUuid"] = identity->calUuid.empty() ? utils::generateUUIDv7((uint64_t)identity->calDateTimeMs) : identity->calUuid;
+                jInf["calUuid"] = identity->calUuid.empty() ? utils::deterministicCalUuid(identity->calDateTimeMs, identity->serialNumber) : identity->calUuid;
             }
             else if (!identity->calUuid.empty())
             {
@@ -1350,6 +1358,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
         { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", devId.c_str()); return r; }
     }
 
+    dbCalUuid_ = bestUuid;
     std::string msg = utils::string_format("[%s] Successfully parsed calibration from DB (UUID: %s)", devId.c_str(), bestUuid.c_str());
     log_info(IS_LOG_CALIBRATION, "%s", msg.c_str());
     { ISHttpRequest::Response r; r.statusCode = 200; r.statusMessage = msg; return r; }

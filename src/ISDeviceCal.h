@@ -7,7 +7,7 @@
  *       This file is kept here for historical reasons but may be removed in the future.
  *
  * @author Inertial Sense, Inc.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #ifndef IS_SDK_ISDEVICECAL_H
@@ -235,6 +235,9 @@ struct sOrthoCal
  * Manufacturing Database contract (SN-8984): hwType, devSerialNum, manfUid, manfLot, manfDateTime,
  * manfHardwareId, manfOtpWriteCount, manfPlatformType, manfReserved, plus calDateTime, calUuid and calBitStatus.
  * The same stanza is written to the calibration file on disk and uploaded to the DB, so the two cannot differ.
+ *
+ * calDateTimeMs is the calibration's own time (ISDeviceCal::calInfoToUnixMs()), never the time it is saved or uploaded. An empty
+ * calUuid is derived from it and the serial number by utils::deterministicCalUuid(), so every copy of one calibration has one calUuid.
  */
 struct sCalDeviceIdentity
 {
@@ -295,6 +298,11 @@ public:
      */
     ISHttpRequest::Response loadFromURL(const std::string& restBaseUrl, const dev_info_t& devInfo, const manufacturing_info_t* manfInfo = NULL);
 
+    /**
+     * @brief The calUuid of the calibration loadFromURL() loaded.
+     * @return the calUuid, or empty if this calibration did not come from the DB
+     */
+    const std::string& dbCalUuid() const { return dbCalUuid_; }
 
     /**
      * @brief Load calibration data from a JSON file
@@ -413,9 +421,20 @@ public:
      * @param devInfo the device's dev_info_t
      * @param manf the device's manufacturing_info_t (DID_MANUFACTURING_INFO)
      * @param calBitStatus the calibration BIT status
-     * @param calDateTimeMs the calibration time in ms since the Unix epoch (UTC)
+     * @param calDateTimeMs the calibration time in ms since the Unix epoch (UTC), from calInfoToUnixMs(); 0 if it is not known
+     * @return the identity
      */
     static sCalDeviceIdentity makeIdentity(const dev_info_t& devInfo, const manufacturing_info_t& manf, uint32_t calBitStatus, int64_t calDateTimeMs);
+
+    /**
+     * @brief The calibration's own time as a Unix time: the calDate and calTime of its info, which the calibration station records
+     * in its local time, converted to UTC with this computer's time zone. This is the time the calibration's calDateTime and
+     * calUuid are derived from, so the same calibration gets the same calUuid however often it is saved or uploaded.
+     * @param info the calibration info
+     * @param[out] unixMs the calibration time in ms since the Unix epoch (UTC), on success
+     * @return false if the info holds no valid date and time, for example a blank calibration
+     */
+    static bool calInfoToUnixMs(const sensor_cal_info_t& info, int64_t& unixMs);
 
     /**
      * @brief Load motion calibration from JSON object
@@ -483,6 +502,7 @@ public:
 protected:
     sOrthoCal ocal = {};                //!< orthonormalization calibration data
     int pose = -1;                      //!< Current pose value
+    std::string dbCalUuid_;             //!< calUuid of the calibration loaded from the DB, see dbCalUuid()
 };
 
 
