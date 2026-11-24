@@ -942,6 +942,30 @@ std::string renderSensorConfig(const data_info_t& info, std::any value, int arra
     }
 }
 
+/**
+ * Custom data renderer for nvm_flash_cfg_t::sensorConfig2 (eSensorConfig2). IMX-only.
+ *
+ * @param info      field description
+ * @param value     field value
+ * @param arrayIdx  unused
+ * @param flags     unused
+ * @return decoded text, or empty if info is not sensorConfig2
+ */
+std::string renderSensorConfig2(const data_info_t& info, std::any value, int arrayIdx, int flags) {
+    (void)arrayIdx; (void)flags;
+    if ((info.type != DATA_TYPE_UINT32) || (info.size != 4) || (info.name != "sensorConfig2"))
+        return "";
+
+    try {
+        uint32_t sensorConfig2 = std::any_cast<uint32_t>(value);
+        const status_field_decode_t* dec = GetStatusDecodeByField("sensorConfig2");
+        return dec ? RenderStatusFromDecode(*dec, sensorConfig2) : std::string();
+    } catch (std::bad_any_cast& e) {
+        (void)e;
+        return "";
+    }
+}
+
 
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
@@ -1834,7 +1858,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "baseOut{G1(b=Ubx,c=Rtcm)/G2(d=Ubx,e=Rtcm)=";    // RTCM (c != 0x0)  0x000#00
     str += "[S0=0x1,S1=0x2,S2=0x4,USB=0x8]})";              // Ser0 (x == 0x1)  0x000100
     mapper.AddMember("RTKCfgBits", &nvm_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX).renderExtended = renderRTKCfgBits;
-    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig;
+    mapper.AddMember("ioConfig",  &nvm_flash_cfg_t::ioConfig, DATA_TYPE_UINT32, "", "(see enum eIoConfig)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig;
     mapper.AddMember("ioConfig2", &nvm_flash_cfg_t::ioConfig2, DATA_TYPE_UINT8, "", "GNSS2 PPS/Strobe configuration. (see enum eIoConfig2)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderIoConfig2;
     mapper.AddMember("platformConfig", &nvm_flash_cfg_t::platformConfig, DATA_TYPE_UINT32, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
@@ -1877,7 +1901,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("deadReckoningTimeout", &nvm_flash_cfg_t::deadReckoningTimeout, DATA_TYPE_UINT8, "s", "Time without any position, velocity, or wheel/kinematic aiding after which the INS drops from NAV to AHRS mode.  0 = never time out.");
     mapper.AddMember("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT16, "", "", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("reserved3", &nvm_flash_cfg_t::reserved3, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("sensorConfig2", &nvm_flash_cfg_t::sensorConfig2, DATA_TYPE_UINT32, "", "High-g accel FS 0x7:[0=disabled, 1=32g, 2=64g, 3=128g, 4=256g, 7=max], IMU 1-5 disable 0x1F00 (see enum eSensorConfig2)", DATA_FLAGS_DISPLAY_HEX).renderExtended = renderSensorConfig2;
     mapper.AddMember("reserved4", &nvm_flash_cfg_t::reserved4, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
 
     // Keep at end
