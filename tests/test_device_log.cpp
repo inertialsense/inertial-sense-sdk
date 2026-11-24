@@ -1,6 +1,8 @@
 /**
  * @file test_device_log.cpp
  * @brief D-05 / SN-7896 — ISDeviceLog composition tests.
+ *
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>
@@ -212,6 +214,34 @@ TEST(ISDeviceLog, SegmentBoundaryCallbackFires) {
     for ([[maybe_unused]] ISRecordView v : dl->allRecords()) { /* drain */ }
     // For N segments we expect (N-1) boundary crossings.
     EXPECT_EQ(boundaryHits.load(), dl->segmentCount() - 1);
+
+    teardown(f);
+}
+
+// The span walkers notify a segment-boundary consumer as an iteration does, whether or not the records that follow the boundary pass the filter.
+TEST(ISDeviceLog, SpanWalkersFireTheSegmentBoundaryCallback) {
+    auto f = buildSingleDeviceFixture("walker_boundary", kSerialA, 1.0f, 256 * 1024);
+    ASSERT_GE(f.segmentsA.size(), 2u);
+
+    auto dl = ISDeviceLog::fromSegments(f.segmentsA);
+    ASSERT_TRUE(dl.has_value());
+
+    std::atomic<std::size_t> boundaryHits{0};
+    dl->setOnSegmentBoundary([&](std::size_t) { ++boundaryHits; });
+    const auto none = [](const ISRecordView&) { return true; };
+    const std::size_t crossings = dl->segmentCount() - 1;
+
+    // Every record passes.
+    dl->forEachRecord(TimeStamp::fromPayloadToW(0, 0), TimeStamp::fromPayloadToW(UINT64_MAX, 0), {}, none);
+    EXPECT_EQ(boundaryHits.load(), crossings);
+
+    // No record passes, so every record after a boundary is filtered out.
+    boundaryHits = 0;
+    dl->forEachRecordInLogTime(UINT32_MAX, UINT32_MAX, {}, none);
+    EXPECT_EQ(boundaryHits.load(), crossings);
+    boundaryHits = 0;
+    dl->forEachRecordInArrival(UINT64_MAX - 1, UINT64_MAX, {}, none);
+    EXPECT_EQ(boundaryHits.load(), crossings);
 
     teardown(f);
 }
