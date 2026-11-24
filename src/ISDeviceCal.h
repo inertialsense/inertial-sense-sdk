@@ -237,7 +237,7 @@ struct sOrthoCal
  * The same stanza is written to the calibration file on disk and uploaded to the DB, so the two cannot differ.
  *
  * calDateTimeMs is the calibration's own time (ISDeviceCal::calInfoToUnixMs()), never the time it is saved or uploaded. An empty
- * calUuid is derived from it and the serial number by utils::deterministicCalUuid(), so every copy of one calibration has one calUuid.
+ * calUuid is derived from it and the device identity (hwType, serial, manfUid) by utils::deterministicCalUuid(), so every copy of one calibration has one calUuid.
  */
 struct sCalDeviceIdentity
 {

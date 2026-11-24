@@ -817,7 +817,8 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
             if (identity->calDateTimeMs > 0)
             {
                 jInf["calDateTime"] = utils::unixMsToRfc3339(identity->calDateTimeMs);
-                jInf["calUuid"] = identity->calUuid.empty() ? utils::deterministicCalUuid(identity->calDateTimeMs, identity->serialNumber) : identity->calUuid;
+                jInf["calUuid"] = identity->calUuid.empty() ? utils::deterministicCalUuid(identity->calDateTimeMs, identity->hwType, identity->serialNumber, utils::manfUidToString(identity->manf.uid))
+                                                            : identity->calUuid;
             }
             else if (!identity->calUuid.empty())
             {

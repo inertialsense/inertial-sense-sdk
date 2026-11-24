@@ -628,7 +628,7 @@ TEST_F(test_ISDeviceCal, identityStanza_calUuidIsDerivedFromCalDateTime) {
     sCalDeviceIdentity id = makeGpxIdentity();
     json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
     std::string u = j["info"]["calUuid"].get<std::string>();
-    EXPECT_EQ(u, utils::deterministicCalUuid(id.calDateTimeMs, id.serialNumber));  // what the Manufacturing Database derives
+    EXPECT_EQ(u, utils::deterministicCalUuid(id.calDateTimeMs, id.hwType, id.serialNumber, utils::manfUidToString(id.manf.uid)));  // what the Manufacturing Database derives
     EXPECT_EQ(u, ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id)["info"]["calUuid"].get<std::string>());
     ASSERT_EQ(u.size(), 36u);
     EXPECT_EQ(u[14], '7');
@@ -692,23 +692,26 @@ static const char* const MOUNTAIN_TZ = "MST7MDT";
 static const char* const MOUNTAIN_TZ = "MST7MDT,M3.2.0,M11.1.0";
 #endif
 
-// calUuids the Manufacturing Database assigned: the first is calibration-db's own test vector (identity.rs), the others were
-// imported by the nightly converter in 2026-11.
+// The vectors calibration-db checks (identity.rs, converter device.rs) and specifies for clients in CLIENT_API.md
+static const char* const SN522807_UID = "16002b0016504b533339312000000000";
+
 TEST(test_deterministicCalUuid, matchesManufacturingDatabase) {
-    EXPECT_EQ(utils::deterministicCalUuid(1786028482000ll, 826418224u), "019fd797-ddd0-7327-b88c-ba8a92d64f42");   // 2026-08-06T15:01:22Z
-    EXPECT_EQ(utils::deterministicCalUuid(1795052042000ll, 3112949119u), "01a1f170-7710-7cf4-9025-484d411245b0");  // 2026-11-19T01:34:02Z
-    EXPECT_EQ(utils::deterministicCalUuid(1795052029000ll, 944781636u), "01a1f170-4448-7f5e-a678-dccc6fa03c97");   // 2026-11-19T01:33:49Z
-    EXPECT_EQ(utils::deterministicCalUuid(1795196963000ll, 2423819988u), "01a1fa13-c8b8-7cf2-8ade-f032f36b48a3");  // 2026-11-20T17:49:23Z
+    const int64_t ms = 1786028482000ll;  // 2026-08-06T15:01:22Z
+    EXPECT_EQ(utils::deterministicCalUuid(ms, "IMX-5.0", 522807u, SN522807_UID), "019fd797-ddd0-7593-b168-58830a0216d6");
+    EXPECT_EQ(utils::deterministicCalUuid(ms, "IMX-5.0", 522807u, ""), "019fd797-ddd0-70e2-ad25-dea78befac37");  // legacy device, no UID
+    EXPECT_EQ(utils::deterministicCalUuid(ms, "IMX-6.0", 522807u, SN522807_UID), "019fd797-ddd0-7fdb-a0fc-573bb6284ed8");
 }
 
 TEST(test_deterministicCalUuid, sameInputsSameUuidAndEachInputMatters) {
-    const std::string u = utils::deterministicCalUuid(1795152136000ll, 944779286u);
-    EXPECT_EQ(u, utils::deterministicCalUuid(1795152136000ll, 944779286u));
-    EXPECT_NE(u, utils::deterministicCalUuid(1795152137000ll, 944779286u));
-    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, 944779287u));
-    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), "01a1f767c740");     // 48-bit timestamp, big-endian
-    EXPECT_EQ(u[14], '7');                                          // version 7
-    EXPECT_NE(std::string("89ab").find(u[19]), std::string::npos);  // variant 10xx
+    const std::string u = utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779286u, SN522807_UID);
+    EXPECT_EQ(u, utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779286u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152137000ll, "IMX-5.0", 944779286u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779287u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, "IMX-6.0", 944779286u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779286u, "28001d00065046414138362000000000"));  // a serial collision
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), "01a1f767c740");                                                             // 48-bit timestamp, big-endian
+    EXPECT_EQ(u[14], '7');                                                                                                  // version 7
+    EXPECT_NE(std::string("89ab").find(u[19]), std::string::npos);                                                          // variant 10xx
 }
 
 /**
@@ -773,7 +776,7 @@ TEST_F(test_ISDeviceCal, identityStanza_sameCalibrationSameCalUuidWhenSavedOrUpl
 
     EXPECT_EQ(first["info"]["calUuid"], second["info"]["calUuid"]);
     EXPECT_EQ(first["info"]["calDateTime"], "2026-11-20T05:22:16.000Z");
-    EXPECT_EQ(first["info"]["calUuid"], "01a1f767-c740-7b7b-bdde-5e95cba0a111");  // the calibration-db derivation for these inputs
+    EXPECT_EQ(first["info"]["calUuid"], "01a1f767-c740-7300-b84e-ebc91af5f15a");  // the calibration-db derivation for these inputs
 }
 
 TEST_F(test_ISDeviceCal, identityStanza_legacyZonelessDateIsOmitted)

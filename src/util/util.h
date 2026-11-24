@@ -779,15 +779,18 @@ namespace utils {
     std::string generateUUIDv7(uint64_t unixTimeMs);
 
     /**
-     * Derives a calibration's UUID from the calibration itself: a UUID v7 carrying the calibration time, with the random bits
-     * replaced by a SipHash-1-3 of the time and the serial number. The same calibration always gets the same UUID, so uploading
-     * it again is refused as a duplicate. This is the UUID the Manufacturing Database assigns a calibration that arrives without
-     * one (`deterministic_cal_uuid` in calibration-db), and the two must stay identical.
+     * Derives a calibration's UUID from the calibration itself: a UUID v7 carrying the calibration time, with its other bits from
+     * MD5 of "{hwType}:{serial}:{manfUid}:{unix ms}", the device's identity followed by the calibration time. The same calibration
+     * of the same device always gets the same UUID, so uploading it again is refused as a duplicate. The Manufacturing Database
+     * derives the same UUID for a calibration that arrives without one (`deterministic_cal_uuid` in calibration-db, specified in
+     * its CLIENT_API.md), and the two must stay identical.
      * @param unixTimeMs calibration time, in milliseconds since the Unix epoch (UTC)
+     * @param hwType hardware type as recorded in the calibration, e.g. "IMX-5.0"
      * @param serialNumber device serial number
+     * @param manfUid manufacturing UID as 32 lowercase hex digits (manfUidToString()), or empty if the device has none
      * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
      */
-    std::string deterministicCalUuid(int64_t unixTimeMs, uint32_t serialNumber);
+    std::string deterministicCalUuid(int64_t unixTimeMs, const std::string& hwType, uint32_t serialNumber, const std::string& manfUid);
 
     /**
      * Converts a wall-clock time in this computer's time zone to a Unix time. In the autumn repeated hour the earlier instant is
