@@ -110,6 +110,9 @@ extern "C" {
 /** CONFIG_CAN field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_CONFIG_CAN[CBOR_CONFIG_CAN_NAME_COUNT];
 
+/** The parent of each g_cborNames_CONFIG_CAN entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_CONFIG_CAN[CBOR_CONFIG_CAN_NAME_COUNT];
+
 /** CONFIG_CAN: one member per key, in registry types */
 typedef struct
 {

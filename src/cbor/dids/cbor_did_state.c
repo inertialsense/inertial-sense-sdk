@@ -73,3 +73,7 @@ const cbor_registry_name_t g_cborNames_STATE[CBOR_STATE_NAME_COUNT] = {
     { 0x0001, "solver" },
     { 0x0000, "dtd" },
 };
+
+const uint16_t g_cborNameParents_STATE[CBOR_STATE_NAME_COUNT] = {
+    0xFFFF, 0, 0, 0, 0xFFFF, 4, 5, 6, 6, 6, 5, 10,
+};

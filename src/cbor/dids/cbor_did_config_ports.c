@@ -96,3 +96,8 @@ const cbor_registry_name_t g_cborNames_CONFIG_PORTS[CBOR_CONFIG_PORTS_NAME_COUNT
     { 0x0000, "baudRate" },
     { 0x0001, "gsvBands" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_PORTS[CBOR_CONFIG_PORTS_NAME_COUNT] = {
+    0xFFFF, 0, 0, 0xFFFF, 3, 4, 4, 3, 7, 7, 3, 10, 10, 3, 13, 13,
+    3, 16, 16,
+};

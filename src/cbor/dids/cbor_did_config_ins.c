@@ -149,3 +149,9 @@ const cbor_registry_name_t g_cborNames_CONFIG_INS[CBOR_CONFIG_INS_NAME_COUNT] = 
     { 0x0004, "oKuvw" },
     { 0x0005, "oKlla" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_INS[CBOR_CONFIG_INS_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 9, 9, 9, 0xFFFF, 13, 13,
+    13, 13, 0xFFFF, 18, 18, 18, 18, 18, 18, 18, 18, 0xFFFF, 27, 27, 27, 27,
+    0xFFFF, 32, 32, 32, 32, 32, 32,
+};

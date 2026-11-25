@@ -54,3 +54,7 @@ const cbor_registry_name_t g_cborNames_CONFIG_SYSTEM[CBOR_CONFIG_SYSTEM_NAME_COU
     { 0x0002, "ioExpanderBits" },
     { 0x0006, "debug" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_SYSTEM[CBOR_CONFIG_SYSTEM_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 5, 5, 5, 0xFFFF,
+};

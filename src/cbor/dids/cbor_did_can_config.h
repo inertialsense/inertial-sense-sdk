@@ -30,6 +30,9 @@ extern "C" {
 /** CAN_CONFIG field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_CAN_CONFIG[CBOR_CAN_CONFIG_NAME_COUNT];
 
+/** The parent of each g_cborNames_CAN_CONFIG entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_CAN_CONFIG[CBOR_CAN_CONFIG_NAME_COUNT];
+
 /** Schema binding CAN_CONFIG's fields to can_config_t */
 extern const cbor_schema_t g_cborSchema_CAN_CONFIG;
 

@@ -244,6 +244,36 @@ TEST(CborFormat, YamlRoundTripOfAWrite)
     EXPECT_EQ(y["GPX_FLASH_CFG"]["ser2BaudRate"].as<uint32_t>(), 460800u);
 }
 
+TEST(CborFormat, NestedKeysAreNamedWithinTheirMap)
+{
+    // Keys are scoped to their map: key 0 is navPeriodMs at the top of CONFIG_SYSTEM and type inside platform
+    Bytes msg = Cbor().map(3).u(CBOR_MSG_TYPE).u(cbor_msg_reply_type(CBOR_MSG_TYPE_GET))
+                    .u(CBOR_DID_CONFIG_SYSTEM).map(2).u(CBOR_CONFIG_SYSTEM__NAVPERIODMS).u(5)
+                                                 .u(CBOR_CONFIG_SYSTEM__PLATFORM).map(1)
+                                                     .u(CBOR_CONFIG_SYSTEM__PLATFORM_TYPE).u(1)
+                    .u(CBOR_DID_CONFIG_PORTS).map(1).u(CBOR_CONFIG_PORTS__PORT).map(1)
+                                                 .u(CBOR_PORT_ID_SER2).map(1).u(0).u(460800).out();
+    YAML::Node y = cborToYaml(msg.data(), msg.size());
+    EXPECT_EQ(y["CONFIG_SYSTEM"]["navPeriodMs"].as<uint32_t>(), 5u);
+    EXPECT_EQ(y["CONFIG_SYSTEM"]["platform"]["type"].as<uint32_t>(), 1u);
+    EXPECT_FALSE(y["CONFIG_SYSTEM"]["platform"]["navPeriodMs"]);
+    // An instance map's entries are named by their enum symbol, and the key set's fields inside them
+    EXPECT_EQ(y["CONFIG_PORTS"]["Port"]["SER2"]["baudRate"].as<uint32_t>(), 460800u);
+    EXPECT_NE(cborToDiag(msg.data(), msg.size()).find("platform(5): {type(0): 1}"), std::string::npos)
+        << cborToDiag(msg.data(), msg.size());
+}
+
+TEST(CborFormat, NestedNamesWriteTheirOwnKeys)
+{
+    // timeSync.periodMs is key 0 inside timeSync, a different field from CONFIG_GNSS's own periodMs (key 0)
+    CborRequest req = request("{CONFIG_GNSS: {timeSync: {periodMs: 500}}, CONFIG_PORTS: {Port: {SER1: {baudRate: 115200}}}}",
+                              CBOR_MSG_TYPE_DATA);
+    Bytes msg = req.encode(9);
+    std::string diag = cborToDiag(msg.data(), msg.size(), false);
+    EXPECT_NE(diag.find("265: {2: {0: 500}}"), std::string::npos) << diag;
+    EXPECT_NE(diag.find("262: {1: {1: {0: 115200}}}"), std::string::npos) << diag;
+}
+
 /*-------------------------------------------------------------------------------------------- diagnostic notation */
 
 TEST(CborFormat, DiagnosticNotationWithNames)

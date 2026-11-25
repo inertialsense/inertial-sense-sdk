@@ -27,6 +27,9 @@ extern "C" {
 /** MAG_CAL_MAP field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_MAG_CAL_MAP[CBOR_MAG_CAL_MAP_NAME_COUNT];
 
+/** The parent of each g_cborNames_MAG_CAL_MAP entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_MAG_CAL_MAP[CBOR_MAG_CAL_MAP_NAME_COUNT];
+
 #ifdef __cplusplus
 }
 #endif

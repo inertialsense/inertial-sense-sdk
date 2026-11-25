@@ -17,3 +17,7 @@ const cbor_registry_name_t g_cborNames_ROUTE_FILTER[CBOR_ROUTE_FILTER_NAME_COUNT
     { 0x0002, "MATCH_DIDS" },
     { 0x0003, "ACTION" },
 };
+
+const uint16_t g_cborNameParents_ROUTE_FILTER[CBOR_ROUTE_FILTER_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+};

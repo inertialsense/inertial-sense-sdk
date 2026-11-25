@@ -54,3 +54,7 @@ const cbor_registry_name_t g_cborNames_CONFIG_MAG[CBOR_CONFIG_MAG_NAME_COUNT] = 
     { 0x0001, "estimate" },
     { 0x0002, "useWmm" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_MAG[CBOR_CONFIG_MAG_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 5, 5, 5,
+};

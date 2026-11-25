@@ -15,3 +15,7 @@ const cbor_registry_name_t g_cborNames_MAG_CAL_MAP[CBOR_MAG_CAL_MAP_NAME_COUNT] 
     { 0x0000, "cells" },
     { 0x0001, "sampleCount" },
 };
+
+const uint16_t g_cborNameParents_MAG_CAL_MAP[CBOR_MAG_CAL_MAP_NAME_COUNT] = {
+    0xFFFF, 0xFFFF,
+};

@@ -97,3 +97,8 @@ const cbor_registry_name_t g_cborNames_GPX_FLASH_CFG[CBOR_GPX_FLASH_CFG_NAME_COU
     { 0x000F, "sysCfgBits" },
     { 0x0010, "refLla" },
 };
+
+const uint16_t g_cborNameParents_GPX_FLASH_CFG[CBOR_GPX_FLASH_CFG_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF,
+};

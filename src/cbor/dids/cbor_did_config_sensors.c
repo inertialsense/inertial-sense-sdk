@@ -471,3 +471,13 @@ const cbor_registry_name_t g_cborNames_CONFIG_SENSORS[CBOR_CONFIG_SENSORS_NAME_C
     { 0x0000, "BARO1" },
     { 0x0000, "enabled" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_SENSORS[CBOR_CONFIG_SENSORS_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 1, 1, 3, 4, 4, 3, 7, 7, 1, 10, 11, 11, 10, 14,
+    14, 0xFFFF, 17, 18, 18, 20, 21, 21, 20, 24, 24, 18, 27, 28, 28, 27,
+    31, 31, 17, 34, 34, 36, 37, 37, 36, 40, 40, 34, 43, 44, 44, 43,
+    47, 47, 17, 50, 50, 52, 53, 53, 52, 56, 56, 50, 59, 60, 60, 59,
+    63, 63, 17, 66, 66, 68, 69, 69, 68, 72, 72, 66, 75, 76, 76, 75,
+    79, 79, 17, 82, 82, 84, 85, 85, 84, 88, 88, 82, 91, 92, 92, 91,
+    95, 95, 0xFFFF, 98, 0xFFFF, 100, 101, 0xFFFF, 103, 0xFFFF, 105, 106,
+};

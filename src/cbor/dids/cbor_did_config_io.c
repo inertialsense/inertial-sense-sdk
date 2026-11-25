@@ -95,3 +95,8 @@ const cbor_registry_name_t g_cborNames_CONFIG_IO[CBOR_CONFIG_IO_NAME_COUNT] = {
     { 0x0007, "G15" },
     { 0x0000, "function" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_IO[CBOR_CONFIG_IO_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 1, 2, 1, 4, 1, 6, 1, 8, 1, 10, 1, 12, 1, 14,
+    1, 16,
+};

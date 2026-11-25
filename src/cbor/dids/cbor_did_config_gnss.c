@@ -312,3 +312,12 @@ const cbor_registry_name_t g_cborNames_CONFIG_GNSS[CBOR_CONFIG_GNSS_NAME_COUNT] 
     { 0x0002, "ser2" },
     { 0x0003, "usb" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_GNSS[CBOR_CONFIG_GNSS_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 2, 2, 0xFFFF, 5, 0xFFFF, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 0xFFFF, 18, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 18, 30,
+    30, 30, 30, 30, 30, 30, 30, 30, 30, 0xFFFF, 41, 41, 41, 41, 0xFFFF, 46,
+    47, 47, 47, 47, 46, 52, 52, 52, 52, 0xFFFF, 57, 57, 57, 57, 57, 57,
+    57, 64, 65, 65, 65, 65, 64, 70, 70, 70, 70, 64, 75, 75, 75, 75,
+    64, 80, 80, 80, 80,
+};

@@ -42,3 +42,7 @@ const cbor_registry_name_t g_cborNames_CAN_CONFIG[CBOR_CAN_CONFIG_NAME_COUNT] = 
     { 0x0002, "can_setting" },
     { 0x0003, "can_receive_address" },
 };
+
+const uint16_t g_cborNameParents_CAN_CONFIG[CBOR_CAN_CONFIG_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+};

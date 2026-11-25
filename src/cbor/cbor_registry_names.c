@@ -15,27 +15,28 @@ typedef struct
 {
     uint16_t                    did;    //!< root DID key
     const cbor_registry_name_t *names;  //!< the DID's field names
+    const uint16_t             *parents; //!< the parent of each name, or 0xFFFF
     uint16_t                    count;  //!< entries in names
 } cbor_registry_did_names_t;
 
 static const cbor_registry_did_names_t s_dids[] = {
-    { CBOR_DID_FLASH_CFG, g_cborNames_FLASH_CFG, CBOR_FLASH_CFG_NAME_COUNT },
-    { CBOR_DID_CAN_CONFIG, g_cborNames_CAN_CONFIG, CBOR_CAN_CONFIG_NAME_COUNT },
-    { CBOR_DID_GPX_FLASH_CFG, g_cborNames_GPX_FLASH_CFG, CBOR_GPX_FLASH_CFG_NAME_COUNT },
-    { CBOR_DID_MAG_CAL_MAP, g_cborNames_MAG_CAL_MAP, CBOR_MAG_CAL_MAP_NAME_COUNT },
-    { CBOR_DID_CONFIG_SYSTEM, g_cborNames_CONFIG_SYSTEM, CBOR_CONFIG_SYSTEM_NAME_COUNT },
-    { CBOR_DID_CONFIG_INS, g_cborNames_CONFIG_INS, CBOR_CONFIG_INS_NAME_COUNT },
-    { CBOR_DID_CONFIG_MAG, g_cborNames_CONFIG_MAG, CBOR_CONFIG_MAG_NAME_COUNT },
-    { CBOR_DID_CONFIG_GROUND_VEHICLE, g_cborNames_CONFIG_GROUND_VEHICLE, CBOR_CONFIG_GROUND_VEHICLE_NAME_COUNT },
-    { CBOR_DID_CONFIG_PORTS, g_cborNames_CONFIG_PORTS, CBOR_CONFIG_PORTS_NAME_COUNT },
-    { CBOR_DID_CONFIG_SENSORS, g_cborNames_CONFIG_SENSORS, CBOR_CONFIG_SENSORS_NAME_COUNT },
-    { CBOR_DID_CONFIG_IO, g_cborNames_CONFIG_IO, CBOR_CONFIG_IO_NAME_COUNT },
-    { CBOR_DID_CONFIG_GNSS, g_cborNames_CONFIG_GNSS, CBOR_CONFIG_GNSS_NAME_COUNT },
-    { CBOR_DID_CONFIG_CAN, g_cborNames_CONFIG_CAN, CBOR_CONFIG_CAN_NAME_COUNT },
-    { CBOR_DID_STATE, g_cborNames_STATE, CBOR_STATE_NAME_COUNT },
-    { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
-    { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
-    { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
+    { CBOR_DID_FLASH_CFG, g_cborNames_FLASH_CFG, g_cborNameParents_FLASH_CFG, CBOR_FLASH_CFG_NAME_COUNT },
+    { CBOR_DID_CAN_CONFIG, g_cborNames_CAN_CONFIG, g_cborNameParents_CAN_CONFIG, CBOR_CAN_CONFIG_NAME_COUNT },
+    { CBOR_DID_GPX_FLASH_CFG, g_cborNames_GPX_FLASH_CFG, g_cborNameParents_GPX_FLASH_CFG, CBOR_GPX_FLASH_CFG_NAME_COUNT },
+    { CBOR_DID_MAG_CAL_MAP, g_cborNames_MAG_CAL_MAP, g_cborNameParents_MAG_CAL_MAP, CBOR_MAG_CAL_MAP_NAME_COUNT },
+    { CBOR_DID_CONFIG_SYSTEM, g_cborNames_CONFIG_SYSTEM, g_cborNameParents_CONFIG_SYSTEM, CBOR_CONFIG_SYSTEM_NAME_COUNT },
+    { CBOR_DID_CONFIG_INS, g_cborNames_CONFIG_INS, g_cborNameParents_CONFIG_INS, CBOR_CONFIG_INS_NAME_COUNT },
+    { CBOR_DID_CONFIG_MAG, g_cborNames_CONFIG_MAG, g_cborNameParents_CONFIG_MAG, CBOR_CONFIG_MAG_NAME_COUNT },
+    { CBOR_DID_CONFIG_GROUND_VEHICLE, g_cborNames_CONFIG_GROUND_VEHICLE, g_cborNameParents_CONFIG_GROUND_VEHICLE, CBOR_CONFIG_GROUND_VEHICLE_NAME_COUNT },
+    { CBOR_DID_CONFIG_PORTS, g_cborNames_CONFIG_PORTS, g_cborNameParents_CONFIG_PORTS, CBOR_CONFIG_PORTS_NAME_COUNT },
+    { CBOR_DID_CONFIG_SENSORS, g_cborNames_CONFIG_SENSORS, g_cborNameParents_CONFIG_SENSORS, CBOR_CONFIG_SENSORS_NAME_COUNT },
+    { CBOR_DID_CONFIG_IO, g_cborNames_CONFIG_IO, g_cborNameParents_CONFIG_IO, CBOR_CONFIG_IO_NAME_COUNT },
+    { CBOR_DID_CONFIG_GNSS, g_cborNames_CONFIG_GNSS, g_cborNameParents_CONFIG_GNSS, CBOR_CONFIG_GNSS_NAME_COUNT },
+    { CBOR_DID_CONFIG_CAN, g_cborNames_CONFIG_CAN, g_cborNameParents_CONFIG_CAN, CBOR_CONFIG_CAN_NAME_COUNT },
+    { CBOR_DID_STATE, g_cborNames_STATE, g_cborNameParents_STATE, CBOR_STATE_NAME_COUNT },
+    { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, g_cborNameParents_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
+    { CBOR_DID_RMC, g_cborNames_RMC, g_cborNameParents_RMC, CBOR_RMC_NAME_COUNT },
+    { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, g_cborNameParents_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
 };
 
 /**
@@ -67,6 +68,36 @@ int cbor_registry_field_key(uint16_t did, const char *name)
         if (strcmp(t->names[i].name, name) == 0)
             return t->names[i].key;
     return -1;
+}
+
+/** @return parent as stored in a name table: 0xFFFF for CBOR_REGISTRY_NO_PARENT */
+static uint16_t stored_parent(int parent)
+{
+    return parent < 0 ? 0xFFFF : (uint16_t)parent;
+}
+
+int cbor_registry_field_index(uint16_t did, int parent, uint16_t key)
+{
+    const cbor_registry_did_names_t *t = did_names(did);
+    for (uint16_t i = 0; t && i < t->count; i++)
+        if (t->parents[i] == stored_parent(parent) && t->names[i].key == key)
+            return i;
+    return -1;
+}
+
+int cbor_registry_field_index_by_name(uint16_t did, int parent, const char *name)
+{
+    const cbor_registry_did_names_t *t = did_names(did);
+    for (uint16_t i = 0; t && i < t->count; i++)
+        if (t->parents[i] == stored_parent(parent) && strcmp(t->names[i].name, name) == 0)
+            return i;
+    return -1;
+}
+
+const cbor_registry_name_t *cbor_registry_field_at(uint16_t did, int index)
+{
+    const cbor_registry_did_names_t *t = did_names(did);
+    return (t && index >= 0 && index < t->count) ? &t->names[index] : NULL;
 }
 
 /* Root DID keys and names */

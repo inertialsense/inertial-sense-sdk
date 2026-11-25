@@ -28,6 +28,9 @@ extern "C" {
 /** RMC_STORED field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_RMC_STORED[CBOR_RMC_STORED_NAME_COUNT];
 
+/** The parent of each g_cborNames_RMC_STORED entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_RMC_STORED[CBOR_RMC_STORED_NAME_COUNT];
+
 #ifdef __cplusplus
 }
 #endif

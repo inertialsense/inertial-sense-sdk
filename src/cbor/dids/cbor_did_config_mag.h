@@ -34,6 +34,9 @@ extern "C" {
 /** CONFIG_MAG field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_CONFIG_MAG[CBOR_CONFIG_MAG_NAME_COUNT];
 
+/** The parent of each g_cborNames_CONFIG_MAG entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_CONFIG_MAG[CBOR_CONFIG_MAG_NAME_COUNT];
+
 /** CONFIG_MAG.declination: one member per key, in registry types */
 typedef struct
 {

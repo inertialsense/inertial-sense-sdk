@@ -363,3 +363,12 @@ const cbor_registry_name_t g_cborNames_CONFIG_CAN[CBOR_CONFIG_CAN_NAME_COUNT] = 
     { 0x0000, "periodMultiple" },
     { 0x0001, "transmitAddress" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_CAN[CBOR_CONFIG_CAN_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 3, 4, 4, 3, 7, 7, 3, 10, 10, 3, 13, 13,
+    3, 16, 16, 3, 19, 19, 3, 22, 22, 3, 25, 25, 3, 28, 28, 3,
+    31, 31, 3, 34, 34, 3, 37, 37, 3, 40, 40, 3, 43, 43, 3, 46,
+    46, 3, 49, 49, 3, 52, 52, 3, 55, 55, 3, 58, 58, 3, 61, 61,
+    3, 64, 64, 3, 67, 67, 3, 70, 70, 3, 73, 73, 3, 76, 76, 3,
+    79, 79, 3, 82, 82,
+};

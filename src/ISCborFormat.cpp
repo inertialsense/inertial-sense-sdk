@@ -19,12 +19,31 @@
 
 namespace {
 
-/** Where a key sits: at the root, or inside a DID's entry at some map depth */
+int didKeyedDepth(int did);
+int indexedDepth(int did);
+
+/** Scope::parent of a map the registry's name tables cannot place, whose keys fall back to the DID-wide lookups */
+constexpr int SCOPE_PARENT_UNKNOWN = -2;
+
+/**
+ * Where a key sits: at the root, or inside a DID's entry at some map depth. Field keys are scoped to their map, so the
+ * scope also tracks which registry field the current map is (its name-table index), so each key is named within it.
+ */
 struct Scope
 {
     int     did = -1;       //!< root DID key of the entry, or -1 at the root
     int     depth = 0;      //!< map depth inside the entry (1 = the DID's own map)
+    int     parent = CBOR_REGISTRY_NO_PARENT;   //!< name-table index of the current map, NO_PARENT at a field-set root
 
+    /**
+     * The scope of the value at key in this map.
+     *
+     * A rule or port index, or a DID used as a key, starts a new field set, so the fields below it are roots again.
+     * A key the registry does not know leaves the scope unplaced, and the keys below it are named DID-wide.
+     *
+     * @param key  the key in this map
+     * @return the scope of its value
+     */
     Scope child(int key) const
     {
         Scope s = *this;
@@ -34,10 +53,20 @@ struct Scope
             {
                 s.did = key;
                 s.depth = 1;
+                s.parent = CBOR_REGISTRY_NO_PARENT;
             }
+            return s;
         }
+        s.depth++;
+        if (key < 0 || key >= 0x8000 || parent == SCOPE_PARENT_UNKNOWN)
+            s.parent = SCOPE_PARENT_UNKNOWN;
+        else if (depth == indexedDepth(did) || depth == didKeyedDepth(did))
+            s.parent = CBOR_REGISTRY_NO_PARENT;
         else
-            s.depth++;
+        {
+            int index = cbor_registry_field_index((uint16_t)did, parent, (uint16_t)key);
+            s.parent = index >= 0 ? index : SCOPE_PARENT_UNKNOWN;
+        }
         return s;
     }
 };
@@ -87,7 +116,12 @@ const char* keyName(const Scope& sc, int key)
         return cbor_registry_msg_key_name((uint16_t)key);
     if (key < 0x8000 && sc.depth == indexedDepth(sc.did))
         return nullptr;     // a rule or port index
-    const char* n = cbor_registry_field_name((uint16_t)sc.did, (uint16_t)key);
+    const char* n = nullptr;
+    if (sc.parent == SCOPE_PARENT_UNKNOWN)
+        n = cbor_registry_field_name((uint16_t)sc.did, (uint16_t)key);
+    else if (const cbor_registry_name_t* e = cbor_registry_field_at((uint16_t)sc.did,
+                 cbor_registry_field_index((uint16_t)sc.did, sc.parent, (uint16_t)key)))
+        n = e->name;
     if (!n && key < 0x8000 && sc.depth == didKeyedDepth(sc.did))
         n = didName(key);
     return n;
@@ -139,7 +173,13 @@ int keyFromString(const Scope& sc, const std::string& s)
         return k;
     if (sc.did < 0)
         return cborDidFromString(s);
-    k = cbor_registry_field_key((uint16_t)sc.did, s.c_str());
+    if (sc.parent == SCOPE_PARENT_UNKNOWN)
+        k = cbor_registry_field_key((uint16_t)sc.did, s.c_str());
+    else if (const cbor_registry_name_t* e = cbor_registry_field_at((uint16_t)sc.did,
+                 cbor_registry_field_index_by_name((uint16_t)sc.did, sc.parent, s.c_str())))
+        k = e->key;
+    else
+        k = -1;
     if (k < 0 && sc.depth == didKeyedDepth(sc.did))
         k = cborDidFromString(s);
     return k;

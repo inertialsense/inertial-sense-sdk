@@ -29,6 +29,9 @@ extern "C" {
 /** ROUTE_FILTER field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_ROUTE_FILTER[CBOR_ROUTE_FILTER_NAME_COUNT];
 
+/** The parent of each g_cborNames_ROUTE_FILTER entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_ROUTE_FILTER[CBOR_ROUTE_FILTER_NAME_COUNT];
+
 #ifdef __cplusplus
 }
 #endif

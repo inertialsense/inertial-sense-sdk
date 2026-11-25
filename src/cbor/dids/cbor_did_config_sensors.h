@@ -133,6 +133,9 @@ extern "C" {
 /** CONFIG_SENSORS field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_CONFIG_SENSORS[CBOR_CONFIG_SENSORS_NAME_COUNT];
 
+/** The parent of each g_cborNames_CONFIG_SENSORS entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_CONFIG_SENSORS[CBOR_CONFIG_SENSORS_NAME_COUNT];
+
 /** CONFIG_SENSORS: one member per key, in registry types */
 typedef struct
 {

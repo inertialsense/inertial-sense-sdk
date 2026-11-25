@@ -15,3 +15,7 @@ const cbor_registry_name_t g_cborNames_RMC[CBOR_RMC_NAME_COUNT] = {
     { 0x8001, "RMC_PRESET" },
     { 0x8002, "NMEA_SPEED_FILTER" },
 };
+
+const uint16_t g_cborNameParents_RMC[CBOR_RMC_NAME_COUNT] = {
+    0xFFFF, 0xFFFF,
+};

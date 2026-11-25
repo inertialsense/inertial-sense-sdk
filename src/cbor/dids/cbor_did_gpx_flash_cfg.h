@@ -43,6 +43,9 @@ extern "C" {
 /** GPX_FLASH_CFG field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_GPX_FLASH_CFG[CBOR_GPX_FLASH_CFG_NAME_COUNT];
 
+/** The parent of each g_cborNames_GPX_FLASH_CFG entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_GPX_FLASH_CFG[CBOR_GPX_FLASH_CFG_NAME_COUNT];
+
 /** Schema binding GPX_FLASH_CFG's fields to gpx_flash_cfg_t */
 extern const cbor_schema_t g_cborSchema_GPX_FLASH_CFG;
 

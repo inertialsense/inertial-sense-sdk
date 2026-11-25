@@ -69,3 +69,7 @@ const cbor_registry_name_t g_cborNames_CONFIG_GROUND_VEHICLE[CBOR_CONFIG_GROUND_
     { 0x0002, "reverseLeft" },
     { 0x0003, "reverseRight" },
 };
+
+const uint16_t g_cborNameParents_CONFIG_GROUND_VEHICLE[CBOR_CONFIG_GROUND_VEHICLE_NAME_COUNT] = {
+    0xFFFF, 0, 0, 0, 0, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 8, 8, 8, 8,
+};

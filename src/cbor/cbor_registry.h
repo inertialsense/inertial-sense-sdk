@@ -292,6 +292,38 @@ const char *cbor_registry_field_name(uint16_t did, uint16_t key);
  */
 int cbor_registry_field_key(uint16_t did, const char *name);
 
+#define CBOR_REGISTRY_NO_PARENT                      -1       //!< parent of a field at the root of a DID's field set
+
+/**
+ * @brief Finds a field by its key within the map it sits in (cbor_registry_names.c, SDK only).
+ *
+ * Field keys are scoped to their map, so key 0 can be a different field at every level. Walking a
+ * message from the DID down, each map's index is the parent of the fields inside it.
+ *
+ * @param did     root DID key
+ * @param parent  index of the enclosing map's entry, or CBOR_REGISTRY_NO_PARENT at the root of a field set
+ * @param key     field key within that map
+ * @return the field's index in the DID's name table, or -1 if the registry has no such field
+ */
+int cbor_registry_field_index(uint16_t did, int parent, uint16_t key);
+
+/**
+ * @brief Finds a field by its name within the map it sits in (cbor_registry_names.c, SDK only).
+ * @param did     root DID key
+ * @param parent  index of the enclosing map's entry, or CBOR_REGISTRY_NO_PARENT at the root of a field set
+ * @param name    field name
+ * @return the field's index in the DID's name table, or -1 if the registry has no such field
+ */
+int cbor_registry_field_index_by_name(uint16_t did, int parent, const char *name);
+
+/**
+ * @brief The key and name of an entry of a DID's name table (cbor_registry_names.c, SDK only).
+ * @param did    root DID key
+ * @param index  index from cbor_registry_field_index()
+ * @return the entry, or NULL for an index outside the table
+ */
+const cbor_registry_name_t *cbor_registry_field_at(uint16_t did, int index);
+
 /** A registry enum: its values and their names */
 typedef struct
 {
