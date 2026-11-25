@@ -1,14 +1,14 @@
 /**
- * @file cbor_did_rmc.h
- * @brief RMC: CBOR-only DID, served by IMX-5, IMX-6, GPX-1. Field keys.
+ * @file rmc.h
+ * @brief RMC: domain. Field keys.
  *
  * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
  *
  * @copyright Copyright (c) 2026 Inertial Sense, Inc.
  */
 
-#ifndef CBOR_DID_RMC_H
-#define CBOR_DID_RMC_H
+#ifndef CBOR_DOMAIN_RMC_H
+#define CBOR_DOMAIN_RMC_H
 
 #include "cbor/cbor_registry.h"
 
@@ -27,8 +27,11 @@ extern "C" {
 /** RMC field names, in registry order */
 extern const cbor_registry_name_t g_cborNames_RMC[CBOR_RMC_NAME_COUNT];
 
+/** The parent of each g_cborNames_RMC entry: the index of its enclosing map's entry, or 0xFFFF */
+extern const uint16_t g_cborNameParents_RMC[CBOR_RMC_NAME_COUNT];
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CBOR_DID_RMC_H */
+#endif /* CBOR_DOMAIN_RMC_H */

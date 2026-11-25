@@ -1,6 +1,6 @@
 /**
- * @file cbor_did_rmc_stored.c
- * @brief RMC_STORED: field names.
+ * @file rmc.c
+ * @brief RMC: field names.
  *
  * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
  *
@@ -11,8 +11,11 @@
 #include "cbor/cbor_registry.h"
 
 
-const cbor_registry_name_t g_cborNames_RMC_STORED[CBOR_RMC_STORED_NAME_COUNT] = {
-    { 0x8000, "RMC_SAVE_PORTS" },
+const cbor_registry_name_t g_cborNames_RMC[CBOR_RMC_NAME_COUNT] = {
     { 0x8001, "RMC_PRESET" },
     { 0x8002, "NMEA_SPEED_FILTER" },
+};
+
+const uint16_t g_cborNameParents_RMC[CBOR_RMC_NAME_COUNT] = {
+    0xFFFF, 0xFFFF,
 };

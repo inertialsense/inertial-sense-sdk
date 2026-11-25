@@ -1,5 +1,5 @@
 /**
- * @file cbor_did_route_filter.c
+ * @file route_filter.c
  * @brief ROUTE_FILTER: field names.
  *
  * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
@@ -16,4 +16,8 @@ const cbor_registry_name_t g_cborNames_ROUTE_FILTER[CBOR_ROUTE_FILTER_NAME_COUNT
     { 0x0001, "MATCH_MSG" },
     { 0x0002, "MATCH_DIDS" },
     { 0x0003, "ACTION" },
+};
+
+const uint16_t g_cborNameParents_ROUTE_FILTER[CBOR_ROUTE_FILTER_NAME_COUNT] = {
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
 };

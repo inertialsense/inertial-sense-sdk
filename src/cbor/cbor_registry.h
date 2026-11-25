@@ -1,7 +1,8 @@
 /**
  * @file cbor_registry.h
- * @brief CBOR key registry: DID keys, message keys and enums shared by every DID. Each DID's field keys, schema and
- *        defaults are in its own header under dids/, included at the end.
+ * @brief CBOR key registry: domain keys, message keys and enums shared by every domain. Each domain's field keys,
+ *        schemas and defaults are in its own header under domain/, included at the end. The mappings of legacy DID
+ *        structs to domains are under did/.
  *
  * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
  *
@@ -24,36 +25,42 @@ extern "C" {
 
 #define RMC_CFG_MAX_PORTS                            6        //!< protocol limit defined by the registry
 
-/** @name Root DID keys */
+/** @name Root keys: one per domain */
 /** @{ */
-#define CBOR_DID_FLASH_CFG                           0x000C   //!< FLASH_CFG: legacy DID_FLASH_CONFIG (nvm_flash_cfg_t), served by IMX-5, IMX-6
-#define CBOR_DID_CAN_CONFIG                          0x005A   //!< CAN_CONFIG: legacy DID_CAN_CONFIG (can_config_t), served by IMX-5, IMX-6
-#define CBOR_DID_GPX_FLASH_CFG                       0x0079   //!< GPX_FLASH_CFG: legacy DID_GPX_FLASH_CFG (gpx_flash_cfg_t), served by GPX-1
-#define CBOR_DID_CALIBRATION                         0x0100   //!< CALIBRATION: CBOR-only DID, reserved
-#define CBOR_DID_MAG_CAL_MAP                         0x0101   //!< MAG_CAL_MAP: CBOR-only DID
-#define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PINS1                          0x3F04   //!< NMEA_PINS1: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PINS2                          0x3F05   //!< NMEA_PINS2: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PGPSP                          0x3F06   //!< NMEA_PGPSP: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGGA                          0x3F07   //!< NMEA_GNGGA: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGLL                          0x3F08   //!< NMEA_GNGLL: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGSA                          0x3F09   //!< NMEA_GNGSA: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNRMC                          0x3F0A   //!< NMEA_GNRMC: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNZDA                          0x3F0B   //!< NMEA_GNZDA: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PASHR                          0x3F0C   //!< NMEA_PASHR: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PSTRB                          0x3F0D   //!< NMEA_PSTRB: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_INFO                           0x3F0E   //!< NMEA_INFO: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGSV                          0x3F0F   //!< NMEA_GNGSV: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNVTG                          0x3F10   //!< NMEA_GNVTG: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_INTEL                          0x3F11   //!< NMEA_INTEL: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_POWGPS                         0x3F12   //!< NMEA_POWGPS: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_POWTLV                         0x3F13   //!< NMEA_POWTLV: NMEA sentence pseudo-DID
-#define CBOR_DID_CAPABILITIES                        0x7FFC   //!< CAPABILITIES: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_RMC_STORED                          0x7FFD   //!< RMC_STORED: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_RMC                                 0x7FFE   //!< RMC: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_ROUTE_FILTER                        0x7FFF   //!< ROUTE_FILTER: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CALIBRATION                      0x0100   //!< CALIBRATION: domain, reserved
+#define CBOR_DOMAIN_CONFIG_SYSTEM                    0x0102   //!< CONFIG_SYSTEM: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_CONFIG_INS                       0x0103   //!< CONFIG_INS: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_MAG                       0x0104   //!< CONFIG_MAG: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_GROUND_VEHICLE            0x0105   //!< CONFIG_GROUND_VEHICLE: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_PORTS                     0x0106   //!< CONFIG_PORTS: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_CONFIG_SENSORS                   0x0107   //!< CONFIG_SENSORS: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_IO                        0x0108   //!< CONFIG_IO: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_GNSS                      0x0109   //!< CONFIG_GNSS: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_CONFIG_CAN                       0x010A   //!< CONFIG_CAN: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_STATE                            0x010B   //!< STATE: domain, served by IMX-5, IMX-6
+#define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PINS1                          0x3F04   //!< NMEA_PINS1: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PINS2                          0x3F05   //!< NMEA_PINS2: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PGPSP                          0x3F06   //!< NMEA_PGPSP: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGGA                          0x3F07   //!< NMEA_GNGGA: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGLL                          0x3F08   //!< NMEA_GNGLL: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGSA                          0x3F09   //!< NMEA_GNGSA: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNRMC                          0x3F0A   //!< NMEA_GNRMC: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNZDA                          0x3F0B   //!< NMEA_GNZDA: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PASHR                          0x3F0C   //!< NMEA_PASHR: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PSTRB                          0x3F0D   //!< NMEA_PSTRB: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_INFO                           0x3F0E   //!< NMEA_INFO: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGSV                          0x3F0F   //!< NMEA_GNGSV: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNVTG                          0x3F10   //!< NMEA_GNVTG: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_INTEL                          0x3F11   //!< NMEA_INTEL: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_POWGPS                         0x3F12   //!< NMEA_POWGPS: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_POWTLV                         0x3F13   //!< NMEA_POWTLV: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DOMAIN_CAPABILITIES                     0x7FFC   //!< CAPABILITIES: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_RMC_STORED                       0x7FFD   //!< RMC_STORED: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_RMC                              0x7FFE   //!< RMC: domain
+#define CBOR_DOMAIN_ROUTE_FILTER                     0x7FFF   //!< ROUTE_FILTER: domain, served by IMX-5, IMX-6
 /** @} */
 
 /** @name General message keys (MSG_*) */
@@ -70,7 +77,7 @@ extern "C" {
 #define CBOR_MSG_ERR_KEYS                            0xC009   //!< key_paths, default set by the protocol
 #define CBOR_MSG_FIELDS                              0xC00A   //!< key_paths, default set by the protocol
 #define CBOR_MSG_CURSOR                              0xC00B   //!< uint32, default set by the protocol, reserved
-#define CBOR_MSG_OPTION_NO_TIME                      0xC00C   //!< bool, default False
+#define CBOR_MSG_OPTION_NO_TIME                      0xC00C   //!< bool, default false
 /** @} */
 
 /** @name Message-type option keys */
@@ -78,8 +85,115 @@ extern "C" {
 #define CBOR_SUB_RATE_PERIOD                         0x9300   //!< SUBSCRIBE: uint32, default set by the protocol
 #define CBOR_SUB_RATE_MULTI                          0x9301   //!< SUBSCRIBE: uint32, default set by the protocol
 #define CBOR_SUB_PORTS                               0x9302   //!< SUBSCRIBE: array of uint8, up to 16, default set by the protocol, reserved
-#define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default False, reserved
+#define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default false, reserved
 /** @} */
+
+/** Registry enum `can_message` */
+typedef enum
+{
+    CBOR_CAN_MESSAGE_INS_TIME = 0,
+    CBOR_CAN_MESSAGE_INS_STATUS = 1,
+    CBOR_CAN_MESSAGE_INS_EULER = 2,
+    CBOR_CAN_MESSAGE_INS_QUATN2B = 3,
+    CBOR_CAN_MESSAGE_INS_QUATE2B = 4,
+    CBOR_CAN_MESSAGE_INS_UVW = 5,
+    CBOR_CAN_MESSAGE_INS_VE = 6,
+    CBOR_CAN_MESSAGE_INS_LAT = 7,
+    CBOR_CAN_MESSAGE_INS_LON = 8,
+    CBOR_CAN_MESSAGE_INS_ALT = 9,
+    CBOR_CAN_MESSAGE_INS_NORTH_EAST = 10,
+    CBOR_CAN_MESSAGE_INS_DOWN = 11,
+    CBOR_CAN_MESSAGE_INS_ECEF_X = 12,
+    CBOR_CAN_MESSAGE_INS_ECEF_Y = 13,
+    CBOR_CAN_MESSAGE_INS_ECEF_Z = 14,
+    CBOR_CAN_MESSAGE_INS_MSL = 15,
+    CBOR_CAN_MESSAGE_PREINT_PX = 16,
+    CBOR_CAN_MESSAGE_PREINT_QY = 17,
+    CBOR_CAN_MESSAGE_PREINT_RZ = 18,
+    CBOR_CAN_MESSAGE_DUAL_PX = 19,
+    CBOR_CAN_MESSAGE_DUAL_QY = 20,
+    CBOR_CAN_MESSAGE_DUAL_RZ = 21,
+    CBOR_CAN_MESSAGE_GNSS1_POS = 22,
+    CBOR_CAN_MESSAGE_GNSS2_POS = 23,
+    CBOR_CAN_MESSAGE_GNSS1_RTK_POS_REL = 24,
+    CBOR_CAN_MESSAGE_GNSS2_RTK_CMP_REL = 25,
+    CBOR_CAN_MESSAGE_ROLL_ROLLRATE = 26,
+} eCborCanMessage;
+
+/** Registry enum `receiver_id` */
+typedef enum
+{
+    CBOR_RECEIVER_ID_GNSS1 = 0,
+    CBOR_RECEIVER_ID_GNSS2 = 1,
+} eCborReceiverId;
+
+/** Registry enum `antenna_id` */
+typedef enum
+{
+    CBOR_ANTENNA_ID_ANT1 = 0,
+    CBOR_ANTENNA_ID_ANT2 = 1,
+} eCborAntennaId;
+
+/** Registry enum `base_stream` */
+typedef enum
+{
+    CBOR_BASE_STREAM_GNSS1_UBLOX = 0,
+    CBOR_BASE_STREAM_GNSS1_RTCM3 = 1,
+    CBOR_BASE_STREAM_GNSS2_UBLOX = 2,
+    CBOR_BASE_STREAM_GNSS2_RTCM3 = 3,
+} eCborBaseStream;
+
+/** Registry enum `pin_id` */
+typedef enum
+{
+    CBOR_PIN_ID_G1G2 = 0,
+    CBOR_PIN_ID_G5G8 = 1,
+    CBOR_PIN_ID_G6G7 = 2,
+    CBOR_PIN_ID_G9 = 3,
+    CBOR_PIN_ID_G11 = 4,
+    CBOR_PIN_ID_G12 = 5,
+    CBOR_PIN_ID_G13 = 6,
+    CBOR_PIN_ID_G15 = 7,
+} eCborPinId;
+
+/** Registry enum `imu_slot` */
+typedef enum
+{
+    CBOR_IMU_SLOT_IMU1 = 0,
+    CBOR_IMU_SLOT_IMU2 = 1,
+    CBOR_IMU_SLOT_IMU3 = 2,
+    CBOR_IMU_SLOT_IMU4 = 3,
+    CBOR_IMU_SLOT_IMU5 = 4,
+} eCborImuSlot;
+
+/** Registry enum `imu_channel` */
+typedef enum
+{
+    CBOR_IMU_CHANNEL_PRIMARY = 0,
+    CBOR_IMU_CHANNEL_HIGH_G = 1,
+} eCborImuChannel;
+
+/** Registry enum `mag_id` */
+typedef enum
+{
+    CBOR_MAG_ID_MAG1 = 0,
+} eCborMagId;
+
+/** Registry enum `baro_id` */
+typedef enum
+{
+    CBOR_BARO_ID_BARO1 = 0,
+} eCborBaroId;
+
+/** Registry enum `port_id` */
+typedef enum
+{
+    CBOR_PORT_ID_SER0 = 0,
+    CBOR_PORT_ID_SER1 = 1,
+    CBOR_PORT_ID_SER2 = 2,
+    CBOR_PORT_ID_USB = 3,
+    CBOR_PORT_ID_SPI = 4,
+} eCborPortId;
 
 /** Registry enum `msg_type` */
 typedef enum
@@ -175,6 +289,38 @@ const char *cbor_registry_field_name(uint16_t did, uint16_t key);
  */
 int cbor_registry_field_key(uint16_t did, const char *name);
 
+#define CBOR_REGISTRY_NO_PARENT                      -1       //!< parent of a field at the root of a DID's field set
+
+/**
+ * @brief Finds a field by its key within the map it sits in (cbor_registry_names.c, SDK only).
+ *
+ * Field keys are scoped to their map, so key 0 can be a different field at every level. Walking a
+ * message from the DID down, each map's index is the parent of the fields inside it.
+ *
+ * @param did     root DID key
+ * @param parent  index of the enclosing map's entry, or CBOR_REGISTRY_NO_PARENT at the root of a field set
+ * @param key     field key within that map
+ * @return the field's index in the DID's name table, or -1 if the registry has no such field
+ */
+int cbor_registry_field_index(uint16_t did, int parent, uint16_t key);
+
+/**
+ * @brief Finds a field by its name within the map it sits in (cbor_registry_names.c, SDK only).
+ * @param did     root DID key
+ * @param parent  index of the enclosing map's entry, or CBOR_REGISTRY_NO_PARENT at the root of a field set
+ * @param name    field name
+ * @return the field's index in the DID's name table, or -1 if the registry has no such field
+ */
+int cbor_registry_field_index_by_name(uint16_t did, int parent, const char *name);
+
+/**
+ * @brief The key and name of an entry of a DID's name table (cbor_registry_names.c, SDK only).
+ * @param did    root DID key
+ * @param index  index from cbor_registry_field_index()
+ * @return the entry, or NULL for an index outside the table
+ */
+const cbor_registry_name_t *cbor_registry_field_at(uint16_t did, int index);
+
 /** A registry enum: its values and their names */
 typedef struct
 {
@@ -186,13 +332,13 @@ typedef struct
 /**
  * @brief Looks up a DID's registry name (cbor_registry_names.c, SDK only).
  * @param did  root DID key
- * @return the name (e.g. "FLASH_CFG"), or NULL if the registry has no such DID
+ * @return the name (e.g. "CONFIG_SYSTEM"), or NULL if the registry has no such DID
  */
 const char *cbor_registry_did_name(uint16_t did);
 
 /**
  * @brief Looks up a DID's key by registry name (cbor_registry_names.c, SDK only).
- * @param name  registry name (e.g. "FLASH_CFG")
+ * @param name  registry name (e.g. "CONFIG_SYSTEM")
  * @return the root DID key, or -1 if the registry has no such DID
  */
 int cbor_registry_did_key(const char *name);
@@ -220,7 +366,7 @@ int cbor_registry_msg_key(const char *name);
 const cbor_registry_enum_t *cbor_registry_key_enum(uint16_t did, uint16_t key);
 
 /**
- * @brief Finds the schema of a DID bound to a legacy struct (cbor_registry_names.c, SDK only).
+ * @brief Finds the schema of a domain, over its view struct (cbor_registry_names.c, SDK only).
  * @param did  root DID key
  * @return the schema, or NULL if the DID has none
  */
@@ -230,12 +376,115 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 }
 #endif
 
-#include "cbor/dids/cbor_did_flash_cfg.h"
-#include "cbor/dids/cbor_did_can_config.h"
-#include "cbor/dids/cbor_did_gpx_flash_cfg.h"
-#include "cbor/dids/cbor_did_mag_cal_map.h"
-#include "cbor/dids/cbor_did_rmc_stored.h"
-#include "cbor/dids/cbor_did_rmc.h"
-#include "cbor/dids/cbor_did_route_filter.h"
+/* Shared key sets: each domain DID that uses one holds members of these types */
+
+/** Shared key set `mag_state.coverage`: one member per key */
+typedef struct
+{
+    uint8_t         grid;                   //!< key 0: uint8, default 0
+    uint8_t         counts[64];             //!< key 1: bytes, default 0
+    uint32_t        sampleCount;            //!< key 2: uint32, default 0
+} cbor_keyset_mag_state_coverage_t;
+
+/** Shared key set `mag_state.solver`: one member per key */
+typedef struct
+{
+    float           dtd[100];               //!< key 0: float32[100], default 0
+} cbor_keyset_mag_state_solver_t;
+
+/** Shared key set `mag_state`: one member per key */
+typedef struct
+{
+    cbor_keyset_mag_state_coverage_t coverage;  //!< key 0: map
+    cbor_keyset_mag_state_solver_t solver;  //!< key 1: map
+} cbor_keyset_mag_state_t;
+
+/** Shared key set `can_message`: one member per key */
+typedef struct
+{
+    uint16_t        periodMultiple;         //!< key 0: uint16, default 0
+    uint32_t        transmitAddress;        //!< key 1: uint32, default 0
+} cbor_keyset_can_message_t;
+
+/** Shared key set `receiver`: one member per key */
+typedef struct
+{
+    uint8_t         type;                   //!< key 0: uint8, default set by the firmware
+    uint8_t         port;                   //!< key 1: uint8, default set by the firmware
+    uint8_t         ppsPin;                 //!< key 2: uint8, default set by the firmware
+    uint8_t         configure;              //!< key 3: bool, default set by the firmware
+    uint8_t         fusionEnabled;          //!< key 4: bool, default true
+    uint16_t        satSignals;             //!< key 5: uint16, default 5119
+    float           minElevation;           //!< key 6: float32, default 0.17453292
+    uint8_t         cn0Min;                 //!< key 7: uint8, default 30
+    uint8_t         cn0DynOffset;           //!< key 8: uint8, default 20
+    uint8_t         dynamicModel;           //!< key 9: uint8, default 8
+} cbor_keyset_receiver_t;
+
+/** Shared key set `antenna`: one member per key */
+typedef struct
+{
+    uint8_t         receiver;               //!< key 0: uint8, default set by the firmware
+    float           offset[3];              //!< key 1: float32[3], default [0, 0, 0]
+    uint8_t         offsetEstimation;       //!< key 2: bool, default false
+    uint8_t         powerEnabled;           //!< key 3: bool, default true
+} cbor_keyset_antenna_t;
+
+/** Shared key set `base_output`: one member per key */
+typedef struct
+{
+    uint8_t         ser0;                   //!< key 0: bool, default false
+    uint8_t         ser1;                   //!< key 1: bool, default false
+    uint8_t         ser2;                   //!< key 2: bool, default false
+    uint8_t         usb;                    //!< key 3: bool, default false
+} cbor_keyset_base_output_t;
+
+/** Shared key set `pin`: one member per key */
+typedef struct
+{
+    uint8_t         function;               //!< key 0: uint8, default set by the firmware
+} cbor_keyset_pin_t;
+
+/** Shared key set `channel`: one member per key */
+typedef struct
+{
+    uint8_t         fullScale;              //!< key 0: uint8, default set by the firmware
+    uint8_t         dlpf;                   //!< key 1: uint8, default 0
+} cbor_keyset_channel_t;
+
+/** Shared key set `imu`: one member per key */
+typedef struct
+{
+    uint8_t         enabled;                //!< key 0: bool, default true
+    cbor_keyset_channel_t Gyr[2];  //!< key 1: map of channel by imu_channel
+    cbor_keyset_channel_t Acc[2];  //!< key 2: map of channel by imu_channel
+} cbor_keyset_imu_t;
+
+/** Shared key set `aux`: one member per key */
+typedef struct
+{
+    uint8_t         enabled;                //!< key 0: bool, default true
+} cbor_keyset_aux_t;
+
+/** Shared key set `port`: one member per key */
+typedef struct
+{
+    uint32_t        baudRate;               //!< key 0: uint32, default 921600
+    uint8_t         gsvBands[9];            //!< key 1: uint8[SAT_SV_GNSS_ID_COUNT], default set by the firmware
+} cbor_keyset_port_t;
+
+#include "cbor/domain/config_system.h"
+#include "cbor/domain/config_ins.h"
+#include "cbor/domain/config_mag.h"
+#include "cbor/domain/config_ground_vehicle.h"
+#include "cbor/domain/config_ports.h"
+#include "cbor/domain/config_sensors.h"
+#include "cbor/domain/config_io.h"
+#include "cbor/domain/config_gnss.h"
+#include "cbor/domain/config_can.h"
+#include "cbor/domain/state.h"
+#include "cbor/domain/rmc_stored.h"
+#include "cbor/domain/rmc.h"
+#include "cbor/domain/route_filter.h"
 
 #endif /* CBOR_REGISTRY_H */

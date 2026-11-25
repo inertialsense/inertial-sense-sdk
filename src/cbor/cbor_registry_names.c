@@ -15,17 +15,24 @@ typedef struct
 {
     uint16_t                    did;    //!< root DID key
     const cbor_registry_name_t *names;  //!< the DID's field names
+    const uint16_t             *parents; //!< the parent of each name, or 0xFFFF
     uint16_t                    count;  //!< entries in names
 } cbor_registry_did_names_t;
 
 static const cbor_registry_did_names_t s_dids[] = {
-    { CBOR_DID_FLASH_CFG, g_cborNames_FLASH_CFG, CBOR_FLASH_CFG_NAME_COUNT },
-    { CBOR_DID_CAN_CONFIG, g_cborNames_CAN_CONFIG, CBOR_CAN_CONFIG_NAME_COUNT },
-    { CBOR_DID_GPX_FLASH_CFG, g_cborNames_GPX_FLASH_CFG, CBOR_GPX_FLASH_CFG_NAME_COUNT },
-    { CBOR_DID_MAG_CAL_MAP, g_cborNames_MAG_CAL_MAP, CBOR_MAG_CAL_MAP_NAME_COUNT },
-    { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
-    { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
-    { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_SYSTEM, g_cborNames_CONFIG_SYSTEM, g_cborNameParents_CONFIG_SYSTEM, CBOR_CONFIG_SYSTEM_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_INS, g_cborNames_CONFIG_INS, g_cborNameParents_CONFIG_INS, CBOR_CONFIG_INS_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_MAG, g_cborNames_CONFIG_MAG, g_cborNameParents_CONFIG_MAG, CBOR_CONFIG_MAG_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_GROUND_VEHICLE, g_cborNames_CONFIG_GROUND_VEHICLE, g_cborNameParents_CONFIG_GROUND_VEHICLE, CBOR_CONFIG_GROUND_VEHICLE_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_PORTS, g_cborNames_CONFIG_PORTS, g_cborNameParents_CONFIG_PORTS, CBOR_CONFIG_PORTS_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_SENSORS, g_cborNames_CONFIG_SENSORS, g_cborNameParents_CONFIG_SENSORS, CBOR_CONFIG_SENSORS_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_IO, g_cborNames_CONFIG_IO, g_cborNameParents_CONFIG_IO, CBOR_CONFIG_IO_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_GNSS, g_cborNames_CONFIG_GNSS, g_cborNameParents_CONFIG_GNSS, CBOR_CONFIG_GNSS_NAME_COUNT },
+    { CBOR_DOMAIN_CONFIG_CAN, g_cborNames_CONFIG_CAN, g_cborNameParents_CONFIG_CAN, CBOR_CONFIG_CAN_NAME_COUNT },
+    { CBOR_DOMAIN_STATE, g_cborNames_STATE, g_cborNameParents_STATE, CBOR_STATE_NAME_COUNT },
+    { CBOR_DOMAIN_RMC_STORED, g_cborNames_RMC_STORED, g_cborNameParents_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
+    { CBOR_DOMAIN_RMC, g_cborNames_RMC, g_cborNameParents_RMC, CBOR_RMC_NAME_COUNT },
+    { CBOR_DOMAIN_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, g_cborNameParents_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
 };
 
 /**
@@ -59,13 +66,49 @@ int cbor_registry_field_key(uint16_t did, const char *name)
     return -1;
 }
 
+/** @return parent as stored in a name table: 0xFFFF for CBOR_REGISTRY_NO_PARENT */
+static uint16_t stored_parent(int parent)
+{
+    return parent < 0 ? 0xFFFF : (uint16_t)parent;
+}
+
+int cbor_registry_field_index(uint16_t did, int parent, uint16_t key)
+{
+    const cbor_registry_did_names_t *t = did_names(did);
+    for (uint16_t i = 0; t && i < t->count; i++)
+        if (t->parents[i] == stored_parent(parent) && t->names[i].key == key)
+            return i;
+    return -1;
+}
+
+int cbor_registry_field_index_by_name(uint16_t did, int parent, const char *name)
+{
+    const cbor_registry_did_names_t *t = did_names(did);
+    for (uint16_t i = 0; t && i < t->count; i++)
+        if (t->parents[i] == stored_parent(parent) && strcmp(t->names[i].name, name) == 0)
+            return i;
+    return -1;
+}
+
+const cbor_registry_name_t *cbor_registry_field_at(uint16_t did, int index)
+{
+    const cbor_registry_did_names_t *t = did_names(did);
+    return (t && index >= 0 && index < t->count) ? &t->names[index] : NULL;
+}
+
 /* Root DID keys and names */
 static const cbor_registry_name_t s_didNames[] = {
-    { CBOR_DID_FLASH_CFG, "FLASH_CFG" },
-    { CBOR_DID_CAN_CONFIG, "CAN_CONFIG" },
-    { CBOR_DID_GPX_FLASH_CFG, "GPX_FLASH_CFG" },
-    { CBOR_DID_CALIBRATION, "CALIBRATION" },
-    { CBOR_DID_MAG_CAL_MAP, "MAG_CAL_MAP" },
+    { CBOR_DOMAIN_CALIBRATION, "CALIBRATION" },
+    { CBOR_DOMAIN_CONFIG_SYSTEM, "CONFIG_SYSTEM" },
+    { CBOR_DOMAIN_CONFIG_INS, "CONFIG_INS" },
+    { CBOR_DOMAIN_CONFIG_MAG, "CONFIG_MAG" },
+    { CBOR_DOMAIN_CONFIG_GROUND_VEHICLE, "CONFIG_GROUND_VEHICLE" },
+    { CBOR_DOMAIN_CONFIG_PORTS, "CONFIG_PORTS" },
+    { CBOR_DOMAIN_CONFIG_SENSORS, "CONFIG_SENSORS" },
+    { CBOR_DOMAIN_CONFIG_IO, "CONFIG_IO" },
+    { CBOR_DOMAIN_CONFIG_GNSS, "CONFIG_GNSS" },
+    { CBOR_DOMAIN_CONFIG_CAN, "CONFIG_CAN" },
+    { CBOR_DOMAIN_STATE, "STATE" },
     { CBOR_DID_NMEA_PIMU, "NMEA_PIMU" },
     { CBOR_DID_NMEA_PPIMU, "NMEA_PPIMU" },
     { CBOR_DID_NMEA_PRIMU, "NMEA_PRIMU" },
@@ -85,10 +128,10 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_NMEA_INTEL, "NMEA_INTEL" },
     { CBOR_DID_NMEA_POWGPS, "NMEA_POWGPS" },
     { CBOR_DID_NMEA_POWTLV, "NMEA_POWTLV" },
-    { CBOR_DID_CAPABILITIES, "CAPABILITIES" },
-    { CBOR_DID_RMC_STORED, "RMC_STORED" },
-    { CBOR_DID_RMC, "RMC" },
-    { CBOR_DID_ROUTE_FILTER, "ROUTE_FILTER" },
+    { CBOR_DOMAIN_CAPABILITIES, "CAPABILITIES" },
+    { CBOR_DOMAIN_RMC_STORED, "RMC_STORED" },
+    { CBOR_DOMAIN_RMC, "RMC" },
+    { CBOR_DOMAIN_ROUTE_FILTER, "ROUTE_FILTER" },
 };
 
 /* Message keys and message-type option keys, with their names */
@@ -112,6 +155,83 @@ static const cbor_registry_name_t s_msgKeyNames[] = {
     { 0x9303, "SUB_OPTION_PERSIST" },
 };
 
+static const cbor_registry_name_t s_enum_can_message[] = {
+    { 0, "INS_TIME" },
+    { 1, "INS_STATUS" },
+    { 2, "INS_EULER" },
+    { 3, "INS_QUATN2B" },
+    { 4, "INS_QUATE2B" },
+    { 5, "INS_UVW" },
+    { 6, "INS_VE" },
+    { 7, "INS_LAT" },
+    { 8, "INS_LON" },
+    { 9, "INS_ALT" },
+    { 10, "INS_NORTH_EAST" },
+    { 11, "INS_DOWN" },
+    { 12, "INS_ECEF_X" },
+    { 13, "INS_ECEF_Y" },
+    { 14, "INS_ECEF_Z" },
+    { 15, "INS_MSL" },
+    { 16, "PREINT_PX" },
+    { 17, "PREINT_QY" },
+    { 18, "PREINT_RZ" },
+    { 19, "DUAL_PX" },
+    { 20, "DUAL_QY" },
+    { 21, "DUAL_RZ" },
+    { 22, "GNSS1_POS" },
+    { 23, "GNSS2_POS" },
+    { 24, "GNSS1_RTK_POS_REL" },
+    { 25, "GNSS2_RTK_CMP_REL" },
+    { 26, "ROLL_ROLLRATE" },
+};
+static const cbor_registry_name_t s_enum_receiver_id[] = {
+    { 0, "GNSS1" },
+    { 1, "GNSS2" },
+};
+static const cbor_registry_name_t s_enum_antenna_id[] = {
+    { 0, "ANT1" },
+    { 1, "ANT2" },
+};
+static const cbor_registry_name_t s_enum_base_stream[] = {
+    { 0, "GNSS1_UBLOX" },
+    { 1, "GNSS1_RTCM3" },
+    { 2, "GNSS2_UBLOX" },
+    { 3, "GNSS2_RTCM3" },
+};
+static const cbor_registry_name_t s_enum_pin_id[] = {
+    { 0, "G1G2" },
+    { 1, "G5G8" },
+    { 2, "G6G7" },
+    { 3, "G9" },
+    { 4, "G11" },
+    { 5, "G12" },
+    { 6, "G13" },
+    { 7, "G15" },
+};
+static const cbor_registry_name_t s_enum_imu_slot[] = {
+    { 0, "IMU1" },
+    { 1, "IMU2" },
+    { 2, "IMU3" },
+    { 3, "IMU4" },
+    { 4, "IMU5" },
+};
+static const cbor_registry_name_t s_enum_imu_channel[] = {
+    { 0, "PRIMARY" },
+    { 1, "HIGH_G" },
+};
+static const cbor_registry_name_t s_enum_mag_id[] = {
+    { 0, "MAG1" },
+};
+static const cbor_registry_name_t s_enum_baro_id[] = {
+    { 0, "BARO1" },
+};
+static const cbor_registry_name_t s_enum_port_id[] = {
+    { 0, "SER0" },
+    { 1, "SER1" },
+    { 2, "SER2" },
+    { 3, "USB" },
+    { 4, "SPI" },
+};
 static const cbor_registry_name_t s_enum_msg_type[] = {
     { 1, "DATA" },
     { 2, "GET" },
@@ -163,6 +283,16 @@ static const cbor_registry_name_t s_enum_nmea_speed_filter[] = {
 
 /* Every registry enum */
 static const cbor_registry_enum_t s_enums[] = {
+    { "can_message", s_enum_can_message, sizeof(s_enum_can_message) / sizeof(s_enum_can_message[0]) },
+    { "receiver_id", s_enum_receiver_id, sizeof(s_enum_receiver_id) / sizeof(s_enum_receiver_id[0]) },
+    { "antenna_id", s_enum_antenna_id, sizeof(s_enum_antenna_id) / sizeof(s_enum_antenna_id[0]) },
+    { "base_stream", s_enum_base_stream, sizeof(s_enum_base_stream) / sizeof(s_enum_base_stream[0]) },
+    { "pin_id", s_enum_pin_id, sizeof(s_enum_pin_id) / sizeof(s_enum_pin_id[0]) },
+    { "imu_slot", s_enum_imu_slot, sizeof(s_enum_imu_slot) / sizeof(s_enum_imu_slot[0]) },
+    { "imu_channel", s_enum_imu_channel, sizeof(s_enum_imu_channel) / sizeof(s_enum_imu_channel[0]) },
+    { "mag_id", s_enum_mag_id, sizeof(s_enum_mag_id) / sizeof(s_enum_mag_id[0]) },
+    { "baro_id", s_enum_baro_id, sizeof(s_enum_baro_id) / sizeof(s_enum_baro_id[0]) },
+    { "port_id", s_enum_port_id, sizeof(s_enum_port_id) / sizeof(s_enum_port_id[0]) },
     { "msg_type", s_enum_msg_type, sizeof(s_enum_msg_type) / sizeof(s_enum_msg_type[0]) },
     { "msg_type_flag", s_enum_msg_type_flag, sizeof(s_enum_msg_type_flag) / sizeof(s_enum_msg_type_flag[0]) },
     { "msg_status", s_enum_msg_status, sizeof(s_enum_msg_status) / sizeof(s_enum_msg_status[0]) },
@@ -181,17 +311,17 @@ typedef struct
 } key_enum_t;
 
 static const key_enum_t s_keyEnums[] = {
-    { 0xFFFF, 0xC000, 0 },
-    { 0xFFFF, 0xC004, 3 },
-    { 0xFFFF, 0xC008, 2 },
-    { CBOR_DID_RMC_STORED, 0x8001, 5 },
-    { CBOR_DID_RMC_STORED, 0x8002, 6 },
-    { CBOR_DID_RMC, 0x8001, 5 },
-    { CBOR_DID_RMC, 0x8002, 6 },
-    { CBOR_DID_ROUTE_FILTER, 0x0003, 4 },
+    { 0xFFFF, 0xC000, 10 },
+    { 0xFFFF, 0xC004, 13 },
+    { 0xFFFF, 0xC008, 12 },
+    { CBOR_DOMAIN_RMC_STORED, 0x8001, 15 },
+    { CBOR_DOMAIN_RMC_STORED, 0x8002, 16 },
+    { CBOR_DOMAIN_RMC, 0x8001, 15 },
+    { CBOR_DOMAIN_RMC, 0x8002, 16 },
+    { CBOR_DOMAIN_ROUTE_FILTER, 0x0003, 14 },
 };
 
-/* DIDs bound to a legacy struct, and their schemas */
+/* Domains with a schema, over their view structs */
 typedef struct
 {
     uint16_t                did;    //!< root DID key
@@ -199,9 +329,16 @@ typedef struct
 } did_schema_t;
 
 static const did_schema_t s_schemas[] = {
-    { CBOR_DID_FLASH_CFG, &g_cborSchema_FLASH_CFG },
-    { CBOR_DID_CAN_CONFIG, &g_cborSchema_CAN_CONFIG },
-    { CBOR_DID_GPX_FLASH_CFG, &g_cborSchema_GPX_FLASH_CFG },
+    { CBOR_DOMAIN_CONFIG_SYSTEM, &g_cborSchema_CONFIG_SYSTEM },
+    { CBOR_DOMAIN_CONFIG_INS, &g_cborSchema_CONFIG_INS },
+    { CBOR_DOMAIN_CONFIG_MAG, &g_cborSchema_CONFIG_MAG },
+    { CBOR_DOMAIN_CONFIG_GROUND_VEHICLE, &g_cborSchema_CONFIG_GROUND_VEHICLE },
+    { CBOR_DOMAIN_CONFIG_PORTS, &g_cborSchema_CONFIG_PORTS },
+    { CBOR_DOMAIN_CONFIG_SENSORS, &g_cborSchema_CONFIG_SENSORS },
+    { CBOR_DOMAIN_CONFIG_IO, &g_cborSchema_CONFIG_IO },
+    { CBOR_DOMAIN_CONFIG_GNSS, &g_cborSchema_CONFIG_GNSS },
+    { CBOR_DOMAIN_CONFIG_CAN, &g_cborSchema_CONFIG_CAN },
+    { CBOR_DOMAIN_STATE, &g_cborSchema_STATE },
 };
 
 #define COUNT(a)    (sizeof(a) / sizeof((a)[0]))

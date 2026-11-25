@@ -5,6 +5,7 @@
  *
  * Design: is-common/docs_internal/cbor/CBOR_PROTOCOL_DESIGN.md
  *
+ * @author Kyle Mallory on 2026-10-23
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
@@ -57,7 +58,7 @@ public:
     /**
      * @brief Adds a DATA entry: did: {key: value, ...} for the listed fields of a struct described by schema.
      * @param did     root DID key
-     * @param schema  schema of the struct (e.g. g_cborSchema_FLASH_CFG)
+     * @param schema  schema of the struct (e.g. g_cborSchema_CONFIG_SYSTEM over cbor_config_system_t)
      * @param values  the struct holding the values to send
      * @param keys    field keys to send (empty = every field)
      * @return this request

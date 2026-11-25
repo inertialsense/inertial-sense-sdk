@@ -4,7 +4,8 @@
  *        budget, the decoding rules (exact encodings accepted, meaning-changing ones rejected), the array overlap
  *        rule, all-or-nothing map decoding with error key paths, and the generated legacy DID schemas.
  *
- * @copyright Copyright (c) 2026 Inertial Sense, Inc.
+ * @author Kyle Mallory on 2026-10-23
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>
@@ -386,39 +387,35 @@ TEST(CborCodec, RejectsBadKeyPaths)
 }
 
 
-TEST(CborCodec, FlashConfigRoundTripsThroughItsSchema)
+TEST(CborCodec, ADomainRoundTripsThroughItsSchema)
 {
-    nvm_flash_cfg_t in = {}, out = {};
-    in.ser0BaudRate = 921600;
-    in.insRotation[0] = 0.25f;
-    in.insRotation[2] = -1.5f;
-    in.refLla[0] = 40.2518;
-    in.refLla[1] = -111.6493;
-    in.ioConfig = 0x12345678;
+    cbor_config_ins_t in = {}, out = {};
+    in.rotation[0] = 0.25f;
+    in.rotation[2] = -1.5f;
+    in.nedOrigin[0] = 40.2518;
+    in.nedOrigin[1] = -111.6493;
+    in.dynamicModel = 4;
+    in.fusion.mag = 1;
+    in.zeroVelocity.offset[1] = 0.125f;
 
     uint8_t buf[ISB_MAX_DATASET_SIZE];
     uint16_t tooLarge = 0;
-    int n = cbor_codec_encode_map(&g_cborSchema_FLASH_CFG, &in, nullptr, 0, buf, sizeof buf, &tooLarge);
+    int n = cbor_codec_encode_map(&g_cborSchema_CONFIG_INS, &in, nullptr, 0, buf, sizeof buf, &tooLarge);
     ASSERT_GT(n, 0);
     EXPECT_EQ(tooLarge, 0);
 
     nanocbor_value_t it;
     nanocbor_decoder_init(&it, buf, (size_t)n);
     cbor_decode_result_t res;
-    ASSERT_EQ(cbor_codec_decode_map(&it, &g_cborSchema_FLASH_CFG, &out, &res), CBOR_CODEC_OK);
-    EXPECT_EQ(res.appliedCount, g_cborSchema_FLASH_CFG.count);
-    for (uint16_t i = 0; i < g_cborSchema_FLASH_CFG.count; i++)
-    {
-        const cbor_field_t &f = g_cborSchema_FLASH_CFG.fields[i];
-        size_t len = (size_t)f.size * (f.count ? f.count : 1);
-        EXPECT_EQ(0, memcmp((uint8_t *)&in + f.offset, (uint8_t *)&out + f.offset, len)) << "field " << f.key;
-    }
+    ASSERT_EQ(cbor_codec_decode_map(&it, &g_cborSchema_CONFIG_INS, &out, &res), CBOR_CODEC_OK);
+    EXPECT_GT(res.appliedCount, 0);
+    EXPECT_EQ(0, memcmp(&in, &out, sizeof(in))) << "every key, nested maps included";
 }
 
 TEST(CborCodec, KeysTooLargeForUint16AreSkippedWithOnlyTheirValue)
 {
     // {0x10000: 1, <key of a known field>: <value>}: the oversized key must not swallow the next entry
-    const cbor_field_t &f = g_cborSchema_FLASH_CFG.fields[0];
+    const cbor_field_t &f = g_cborSchema_CONFIG_SYSTEM.fields[0];     // navPeriodMs, a uint32
     uint8_t buf[32];
     nanocbor_encoder_t enc;
     nanocbor_encoder_init(&enc, buf, sizeof(buf));
@@ -427,11 +424,11 @@ TEST(CborCodec, KeysTooLargeForUint16AreSkippedWithOnlyTheirValue)
     nanocbor_fmt_uint(&enc, 1);
     nanocbor_fmt_uint(&enc, f.key);
     nanocbor_fmt_uint(&enc, 3);
-    nvm_flash_cfg_t cfg = {};
+    cbor_config_system_t cfg = {};
     nanocbor_value_t it;
     nanocbor_decoder_init(&it, buf, nanocbor_encoded_len(&enc));
     cbor_decode_result_t res = {};
-    ASSERT_EQ(cbor_codec_decode_map(&it, &g_cborSchema_FLASH_CFG, &cfg, &res), CBOR_CODEC_OK);
+    ASSERT_EQ(cbor_codec_decode_map(&it, &g_cborSchema_CONFIG_SYSTEM, &cfg, &res), CBOR_CODEC_OK);
     EXPECT_EQ(res.appliedCount, 1);
     uint32_t v;
     memcpy(&v, (uint8_t *)&cfg + f.offset, sizeof(v));
