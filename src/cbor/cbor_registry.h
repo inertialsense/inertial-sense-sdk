@@ -36,6 +36,7 @@ extern "C" {
 #define CBOR_DID_CONFIG_MAG                          0x0104   //!< CONFIG_MAG: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -85,6 +86,35 @@ extern "C" {
 #define CBOR_SUB_PORTS                               0x9302   //!< SUBSCRIBE: array of uint8, up to 16, default set by the protocol, reserved
 #define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default false, reserved
 /** @} */
+
+/** Registry enum `imu_slot` */
+typedef enum
+{
+    CBOR_IMU_SLOT_IMU1 = 0,
+    CBOR_IMU_SLOT_IMU2 = 1,
+    CBOR_IMU_SLOT_IMU3 = 2,
+    CBOR_IMU_SLOT_IMU4 = 3,
+    CBOR_IMU_SLOT_IMU5 = 4,
+} eCborImuSlot;
+
+/** Registry enum `imu_channel` */
+typedef enum
+{
+    CBOR_IMU_CHANNEL_PRIMARY = 0,
+    CBOR_IMU_CHANNEL_HIGH_G = 1,
+} eCborImuChannel;
+
+/** Registry enum `mag_id` */
+typedef enum
+{
+    CBOR_MAG_ID_MAG1 = 0,
+} eCborMagId;
+
+/** Registry enum `baro_id` */
+typedef enum
+{
+    CBOR_BARO_ID_BARO1 = 0,
+} eCborBaroId;
 
 /** Registry enum `port_id` */
 typedef enum
@@ -247,6 +277,27 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 
 /* Shared key sets: each domain DID that uses one holds members of these types */
 
+/** Shared key set `channel`: one member per key */
+typedef struct
+{
+    uint8_t         fullScale;              //!< key 0: uint8, default set by the firmware
+    uint8_t         dlpf;                   //!< key 1: uint8, default 0
+} cbor_keyset_channel_t;
+
+/** Shared key set `imu`: one member per key */
+typedef struct
+{
+    uint8_t         enabled;                //!< key 0: bool, default true
+    cbor_keyset_channel_t Gyr[2];  //!< key 1: map of channel by imu_channel
+    cbor_keyset_channel_t Acc[2];  //!< key 2: map of channel by imu_channel
+} cbor_keyset_imu_t;
+
+/** Shared key set `aux`: one member per key */
+typedef struct
+{
+    uint8_t         enabled;                //!< key 0: bool, default true
+} cbor_keyset_aux_t;
+
 /** Shared key set `port`: one member per key */
 typedef struct
 {
@@ -263,6 +314,7 @@ typedef struct
 #include "cbor/dids/cbor_did_config_mag.h"
 #include "cbor/dids/cbor_did_config_ground_vehicle.h"
 #include "cbor/dids/cbor_did_config_ports.h"
+#include "cbor/dids/cbor_did_config_sensors.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"
