@@ -793,18 +793,21 @@ namespace utils {
     std::string deterministicCalUuid(int64_t unixTimeMs, const std::string& hwType, uint32_t serialNumber, const std::string& manfUid);
 
     /**
-     * Converts a wall-clock time in this computer's time zone to a Unix time. In the autumn repeated hour the earlier instant is
-     * returned; a time in the spring gap, which never happened, is rejected.
+     * Converts a wall-clock time in US Mountain time (America/Denver), the zone of the calibration stations, to a Unix time. The
+     * result does not depend on this computer's time zone. US daylight saving rules apply: from 2007, 02:00 on the second Sunday of
+     * March to 02:00 on the first Sunday of November; before 2007, the first Sunday of April to the last Sunday of October. In the
+     * autumn repeated hour the earlier, daylight-time instant is returned; a time in the spring gap, which never happened, is
+     * rejected.
      * @param year four-digit year
      * @param month 1 to 12
-     * @param day 1 to 31
+     * @param day 1 to the length of the month
      * @param hour 0 to 23
      * @param minute 0 to 59
      * @param second 0 to 59
      * @param[out] unixMs the time in milliseconds since the Unix epoch (UTC), on success
-     * @return false if the time does not exist in the local time zone
+     * @return false if the date or time is out of range, or does not exist in US Mountain time
      */
-    bool localTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs);
+    bool usMountainTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs);
 
     /**
      * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". Times before 1970 are
@@ -822,6 +825,14 @@ namespace utils {
      * @return 32 lowercase hex digits
      */
     std::string manfUidToString(const uint32_t uid[4]);
+
+    /**
+     * Whether a manufacturing UID is set. An unprogrammed or unreadable UID reads as all zeros or all ones, and is treated as no UID,
+     * as the Manufacturing Database does: such a device is a legacy device, identified by its hardware type and serial alone.
+     * @param uid the 4 words of manufacturing_info_t.uid
+     * @return false if every byte is 0x00, or every byte is 0xFF
+     */
+    bool manfUidIsSet(const uint32_t uid[4]);
 
     /**
      * Converts the manufacturing date written by EvalTool (manufacturing_info_t.date, "YYYYMMDDHHMMSSZ", UTC)

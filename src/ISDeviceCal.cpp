@@ -761,12 +761,14 @@ sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const ma
 }
 
 bool ISDeviceCal::calInfoToUnixMs(const sensor_cal_info_t& info, int64_t& unixMs) {
-    const int year = info.calDate[0] + 2000;
-    const int month = info.calDate[1], day = info.calDate[2];
-    const int hour = info.calTime[0], minute = info.calTime[1], second = info.calTime[2];
-    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return false;
-    return utils::localTimeToUnixMs(year, month, day, hour, minute, second, unixMs);
+    return utils::usMountainTimeToUnixMs(info.calDate[0] + 2000, info.calDate[1], info.calDate[2], info.calTime[0], info.calTime[1], info.calTime[2], unixMs);
 }
+
+/**
+ * The identity's manfUid as 32 lowercase hex digits, or empty for a device with no UID (see utils::manfUidIsSet()).
+ * @param identity the device identity
+ */
+static std::string identityManfUid(const sCalDeviceIdentity& identity) { return utils::manfUidIsSet(identity.manf.uid) ? utils::manfUidToString(identity.manf.uid) : std::string(); }
 
 /** Adds the identity and manufacturing keys shared by the calibration info stanza and the device registration body. */
 static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
@@ -776,7 +778,8 @@ static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
     j["devSerialNum"] = identity.serialNumber;
 
     const manufacturing_info_t& m = identity.manf;
-    j["manfUid"] = utils::manfUidToString(m.uid);
+    const std::string manfUid = identityManfUid(identity);
+    if (!manfUid.empty()) j["manfUid"] = manfUid;  // a device with no UID has no manfUid, as in the Manufacturing Database
     j["manfLot"] = (uint32_t)m.lotNumber;
     std::string manfDate;
     if (utils::manfDateToRfc3339(m.date, manfDate))
@@ -817,8 +820,8 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
             if (identity->calDateTimeMs > 0)
             {
                 jInf["calDateTime"] = utils::unixMsToRfc3339(identity->calDateTimeMs);
-                jInf["calUuid"] = identity->calUuid.empty() ? utils::deterministicCalUuid(identity->calDateTimeMs, identity->hwType, identity->serialNumber, utils::manfUidToString(identity->manf.uid))
-                                                            : identity->calUuid;
+                jInf["calUuid"] =
+                    identity->calUuid.empty() ? utils::deterministicCalUuid(identity->calDateTimeMs, identity->hwType, identity->serialNumber, identityManfUid(*identity)) : identity->calUuid;
             }
             else if (!identity->calUuid.empty())
             {

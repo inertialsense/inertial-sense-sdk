@@ -1284,33 +1284,70 @@ std::string utils::deterministicCalUuid(int64_t unixTimeMs, const std::string& h
     return std::string(buf);
 }
 
-bool utils::localTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs) {
-    // mktime() applies the local zone. Each DST interpretation is kept only if it maps back to the same wall-clock time, so a
-    // time in the autumn repeated hour gets its earlier instant and a time in the spring gap is rejected.
-    bool found = false;
-    for (int isDst = 0; isDst <= 1; isDst++) {
-        struct tm t = {};
-        t.tm_year = year - 1900;
-        t.tm_mon = month - 1;
-        t.tm_mday = day;
-        t.tm_hour = hour;
-        t.tm_min = minute;
-        t.tm_sec = second;
-        t.tm_isdst = isDst;
-        const time_t tt = mktime(&t);
-        if (tt == (time_t)-1) continue;
-        struct tm back = {};
-#ifdef _WIN32
-        localtime_s(&back, &tt);
-#else
-        localtime_r(&tt, &back);
-#endif
-        if (back.tm_year != year - 1900 || back.tm_mon != month - 1 || back.tm_mday != day || back.tm_hour != hour || back.tm_min != minute || back.tm_sec != second) continue;
-        const int64_t ms = (int64_t)tt * 1000;
-        if (!found || ms < unixMs) unixMs = ms;
-        found = true;
+/**
+ * Days from 1970-01-01 to a date in the proleptic Gregorian calendar (Howard Hinnant's days_from_civil).
+ * @param year four-digit year
+ * @param month 1 to 12
+ * @param day day of the month
+ * @return the day count, negative before 1970
+ */
+static int64_t daysFromCivil(int year, int month, int day) {
+    year -= (month <= 2) ? 1 : 0;
+    const int64_t era = (year >= 0 ? year : year - 399) / 400;
+    const int64_t yearOfEra = year - era * 400;
+    const int64_t dayOfYear = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+    const int64_t dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
+    return era * 146097 + dayOfEra - 719468;
+}
+
+/**
+ * The number of days in a month.
+ * @param year four-digit year
+ * @param month 1 to 12
+ */
+static int daysInMonth(int year, int month) {
+    static const int DAYS[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    const bool leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+    return (month == 2 && leap) ? 29 : DAYS[month - 1];
+}
+
+/**
+ * The day of the month of a month's n-th Sunday, or of its last Sunday.
+ * @param year four-digit year
+ * @param month 1 to 12
+ * @param n 1 for the first Sunday, 2 for the second, ...; 0 for the last
+ */
+static int sundayOfMonth(int year, int month, int n) {
+    auto weekday = [](int64_t days) { return (int)(((days % 7) + 11) % 7); };  // 0 = Sunday; 1970-01-01 was a Thursday
+    if (n > 0) return 1 + (7 - weekday(daysFromCivil(year, month, 1))) % 7 + 7 * (n - 1);
+    const int last = daysInMonth(year, month);
+    return last - weekday(daysFromCivil(year, month, last));
+}
+
+bool utils::usMountainTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs) {
+    if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month) || hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return false;
+
+    const bool rules2007 = (year >= 2007);
+    const int startMonth = rules2007 ? 3 : 4;
+    const int endMonth = rules2007 ? 11 : 10;
+    const int start = startMonth * 100 + sundayOfMonth(year, startMonth, rules2007 ? 2 : 1);
+    const int end = endMonth * 100 + sundayOfMonth(year, endMonth, rules2007 ? 1 : 0);
+    const int date = month * 100 + day;
+
+    bool daylight;
+    if (date == start) {
+        if (hour == 2) return false;  // 02:00 jumps to 03:00
+        daylight = (hour >= 3);
+    } else if (date == end) {
+        daylight = (hour < 2);  // 01:00-01:59 happens twice; the first time is daylight time
+    } else {
+        daylight = (date > start && date < end);
     }
-    return found;
+
+    const int64_t utcOffsetSeconds = (daylight ? -6 : -7) * 3600;
+    const int64_t localSeconds = daysFromCivil(year, month, day) * 86400 + hour * 3600 + minute * 60 + second;
+    unixMs = (localSeconds - utcOffsetSeconds) * 1000;
+    return true;
 }
 
 std::string utils::unixMsToRfc3339(int64_t unixMs) {
@@ -1359,6 +1396,15 @@ std::string utils::manfUidToString(const uint32_t uid[4]) {
         }
     }
     return out;
+}
+
+bool utils::manfUidIsSet(const uint32_t uid[4]) {
+    bool anyNonZero = false, anyNotOnes = false;
+    for (int w = 0; w < 4; w++) {
+        anyNonZero |= (uid[w] != 0);
+        anyNotOnes |= (uid[w] != 0xFFFFFFFFu);
+    }
+    return anyNonZero && anyNotOnes;
 }
 
 bool utils::manfDateToRfc3339(const char date[16], std::string& rfc3339) {

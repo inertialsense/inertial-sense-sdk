@@ -238,6 +238,8 @@ struct sOrthoCal
  *
  * calDateTimeMs is the calibration's own time (ISDeviceCal::calInfoToUnixMs()), never the time it is saved or uploaded. An empty
  * calUuid is derived from it and the device identity (hwType, serial, manfUid) by utils::deterministicCalUuid(), so every copy of one calibration has one calUuid.
+ * A device whose UID is unset (all zeros or all ones, utils::manfUidIsSet()) has no manfUid: the key is left out and the calUuid is
+ * derived with an empty UID, as the Manufacturing Database does for a legacy device.
  */
 struct sCalDeviceIdentity
 {
@@ -428,8 +430,10 @@ public:
 
     /**
      * @brief The calibration's own time as a Unix time: the calDate and calTime of its info, which the calibration station records
-     * in its local time, converted to UTC with this computer's time zone. This is the time the calibration's calDateTime and
-     * calUuid are derived from, so the same calibration gets the same calUuid however often it is saved or uploaded.
+     * in its local time, US Mountain time, converted to UTC (utils::usMountainTimeToUnixMs()). The result does not depend on this
+     * computer's time zone, and matches the Manufacturing Database's reading of the same fields. This is the time the calibration's
+     * calDateTime and calUuid are derived from, so the same calibration gets the same calUuid wherever and however often it is saved
+     * or uploaded.
      * @param info the calibration info
      * @param[out] unixMs the calibration time in ms since the Unix epoch (UTC), on success
      * @return false if the info holds no valid date and time, for example a blank calibration
