@@ -741,8 +741,8 @@ int getNmeaMsgId(const void* msg, int msgSize);
  *
  * @param msgId NMEA ID (eNmeaMsgId)
  * @param buf Talker id string output
- * @param bufSize Max size of buffer talker string will be written to.  Must be 5 or larger.
- * @return int 0 on success, -1 on failure.
+ * @param bufSize Size of buf. Must hold the talker and its null terminator: 7 bytes holds every talker.
+ * @return int 0 on success, -1 if msgId is unknown or buf is too small (buf is then not written).
  */
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize);
 

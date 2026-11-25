@@ -946,6 +946,24 @@ TEST(protocol_nmea, PGNSSP_talker_and_id) {
     ASSERT_EQ(0, nmeaMsgIdToTalker(NMEA_MSG_ID_PGNSSP, talker, sizeof(talker)));
     EXPECT_STREQ("PGNSSP", talker);
 
+    // Exactly enough room for the talker and its terminator, and one byte less. The guard bytes must not be written.
+    char exact[7 + 1];
+    memset(exact, 'x', sizeof(exact));
+    ASSERT_EQ(0, nmeaMsgIdToTalker(NMEA_MSG_ID_PGNSSP, exact, 7));
+    EXPECT_STREQ("PGNSSP", exact);
+    EXPECT_EQ('x', exact[7]);
+    for (int size = 0; size <= 6; size++) {
+        memset(exact, 'x', sizeof(exact));
+        EXPECT_EQ(-1, nmeaMsgIdToTalker(NMEA_MSG_ID_PGNSSP, exact, size)) << "size " << size;
+        EXPECT_EQ('x', exact[0]) << "size " << size;
+    }
+    char five[5 + 1];
+    memset(five, 'x', sizeof(five));
+    EXPECT_EQ(-1, nmeaMsgIdToTalker(NMEA_MSG_ID_PPIMU, five, 5));  // 5 characters needs 6 bytes
+    EXPECT_EQ('x', five[5]);
+    ASSERT_EQ(0, nmeaMsgIdToTalker(NMEA_MSG_ID_PPIMU, five, 6));
+    EXPECT_STREQ("PPIMU", five);
+
     EXPECT_NE(0u, g_didToNmeaRmcBit[DID_GNSS1_POS] & NMEA_RMC_BITS_PGNSSP);
     EXPECT_NE(0u, g_didToNmeaRmcBit[DID_GNSS2_POS] & NMEA_RMC_BITS_PGNSSP);
 }

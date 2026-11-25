@@ -1055,48 +1055,50 @@ int getNmeaMsgId(const void *msg, int msgSize)
 
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
 {
-    if (bufSize < 5)
-    {
-        return -1;
-    }
-
-    int n = 0;
+    const char* talker;
+    // clang-format off
     switch (msgId)
     {
     default: return -1;
-    case NMEA_MSG_ID_PIMU:      memcpy(buf, "PIMU",  n = 4);    break;
-    case NMEA_MSG_ID_PPIMU:     memcpy(buf, "PPIMU", n = 5);    break;
-    case NMEA_MSG_ID_PRIMU:     memcpy(buf, "PRIMU", n = 5);    break;
-    case NMEA_MSG_ID_PINS1:     memcpy(buf, "PINS1", n = 5);    break;
-    case NMEA_MSG_ID_PINS2:     memcpy(buf, "PINS2", n = 5);    break;
-    case NMEA_MSG_ID_PGPSP:     memcpy(buf, "PGPSP", n = 5);    break;
-    case NMEA_MSG_ID_GNGGA:     memcpy(buf, "GNGGA", n = 5);    break;
-    case NMEA_MSG_ID_GNGLL:     memcpy(buf, "GNGLL", n = 5);    break;
-    case NMEA_MSG_ID_GNGSA:     memcpy(buf, "GNGSA", n = 5);    break;
-    case NMEA_MSG_ID_GNRMC:     memcpy(buf, "GNRMC", n = 5);    break;
-    case NMEA_MSG_ID_GNZDA:     memcpy(buf, "GNZDA", n = 5);    break;
-    case NMEA_MSG_ID_PASHR:     memcpy(buf, "PASHR", n = 5);    break;
-    case NMEA_MSG_ID_PSTRB:     memcpy(buf, "PSTRB", n = 5);    break;
-    case NMEA_MSG_ID_INFO:      memcpy(buf, "INFO",  n = 4);    break;
-    case NMEA_MSG_ID_GNGSV:     memcpy(buf, "GNGSV", n = 5);    break;
-    case NMEA_MSG_ID_GNVTG:     memcpy(buf, "GNVTG", n = 5);    break;
-    case NMEA_MSG_ID_INTEL:     memcpy(buf, "INTEL", n = 5);    break;
-    case NMEA_MSG_ID_POWGPS:    memcpy(buf, "POWGPS", n = 6);   break;
-    case NMEA_MSG_ID_POWTLV:    memcpy(buf, "POWTLV", n = 6);   break;
-    case NMEA_MSG_ID_PGNSSP:    memcpy(buf, "PGNSSP", n = 6);   break;
+    case NMEA_MSG_ID_PIMU:    talker = "PIMU";    break;
+    case NMEA_MSG_ID_PPIMU:   talker = "PPIMU";   break;
+    case NMEA_MSG_ID_PRIMU:   talker = "PRIMU";   break;
+    case NMEA_MSG_ID_PINS1:   talker = "PINS1";   break;
+    case NMEA_MSG_ID_PINS2:   talker = "PINS2";   break;
+    case NMEA_MSG_ID_PGPSP:   talker = "PGPSP";   break;
+    case NMEA_MSG_ID_GNGGA:   talker = "GNGGA";   break;
+    case NMEA_MSG_ID_GNGLL:   talker = "GNGLL";   break;
+    case NMEA_MSG_ID_GNGSA:   talker = "GNGSA";   break;
+    case NMEA_MSG_ID_GNRMC:   talker = "GNRMC";   break;
+    case NMEA_MSG_ID_GNZDA:   talker = "GNZDA";   break;
+    case NMEA_MSG_ID_PASHR:   talker = "PASHR";   break;
+    case NMEA_MSG_ID_PSTRB:   talker = "PSTRB";   break;
+    case NMEA_MSG_ID_INFO:    talker = "INFO";    break;
+    case NMEA_MSG_ID_GNGSV:   talker = "GNGSV";   break;
+    case NMEA_MSG_ID_GNVTG:   talker = "GNVTG";   break;
+    case NMEA_MSG_ID_INTEL:   talker = "INTEL";   break;
+    case NMEA_MSG_ID_POWGPS:  talker = "POWGPS";  break;
+    case NMEA_MSG_ID_POWTLV:  talker = "POWTLV";  break;
+    case NMEA_MSG_ID_PGNSSP:  talker = "PGNSSP";  break;
 
-    case NMEA_MSG_ID_ASCE:      memcpy(buf, "ASCE", n = 4);     break;
-    case NMEA_MSG_ID_BLEN:      memcpy(buf, "BLEN", n = 4);     break;
-    case NMEA_MSG_ID_EBLE:      memcpy(buf, "EBLE", n = 4);     break;
-    case NMEA_MSG_ID_NELB:      memcpy(buf, "NELB", n = 4);     break;
-    case NMEA_MSG_ID_PERS:      memcpy(buf, "PERS", n = 4);     break;
-    case NMEA_MSG_ID_SRST:      memcpy(buf, "SRST", n = 4);     break;
-    case NMEA_MSG_ID_STPB:      memcpy(buf, "STPB", n = 4);     break;
-    case NMEA_MSG_ID_STPC:      memcpy(buf, "STPC", n = 4);     break;
+    case NMEA_MSG_ID_ASCE:    talker = "ASCE";    break;
+    case NMEA_MSG_ID_BLEN:    talker = "BLEN";    break;
+    case NMEA_MSG_ID_EBLE:    talker = "EBLE";    break;
+    case NMEA_MSG_ID_NELB:    talker = "NELB";    break;
+    case NMEA_MSG_ID_PERS:    talker = "PERS";    break;
+    case NMEA_MSG_ID_SRST:    talker = "SRST";    break;
+    case NMEA_MSG_ID_STPB:    talker = "STPB";    break;
+    case NMEA_MSG_ID_STPC:    talker = "STPC";    break;
     }
-    // Null terminate
-    ((uint8_t*)buf)[n] = 0;
+    // clang-format on
 
+    // The talker and its null terminator must fit
+    int n = (int)strlen(talker);
+    if (bufSize < n + 1) {
+        return -1;
+    }
+
+    memcpy(buf, talker, n + 1);
     return 0;
 }
 
