@@ -39,6 +39,7 @@ extern "C" {
 #define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_GNSS                         0x0109   //!< CONFIG_GNSS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_CONFIG_CAN                          0x010A   //!< CONFIG_CAN: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -88,6 +89,38 @@ extern "C" {
 #define CBOR_SUB_PORTS                               0x9302   //!< SUBSCRIBE: array of uint8, up to 16, default set by the protocol, reserved
 #define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default false, reserved
 /** @} */
+
+/** Registry enum `can_message` */
+typedef enum
+{
+    CBOR_CAN_MESSAGE_INS_TIME = 0,
+    CBOR_CAN_MESSAGE_INS_STATUS = 1,
+    CBOR_CAN_MESSAGE_INS_EULER = 2,
+    CBOR_CAN_MESSAGE_INS_QUATN2B = 3,
+    CBOR_CAN_MESSAGE_INS_QUATE2B = 4,
+    CBOR_CAN_MESSAGE_INS_UVW = 5,
+    CBOR_CAN_MESSAGE_INS_VE = 6,
+    CBOR_CAN_MESSAGE_INS_LAT = 7,
+    CBOR_CAN_MESSAGE_INS_LON = 8,
+    CBOR_CAN_MESSAGE_INS_ALT = 9,
+    CBOR_CAN_MESSAGE_INS_NORTH_EAST = 10,
+    CBOR_CAN_MESSAGE_INS_DOWN = 11,
+    CBOR_CAN_MESSAGE_INS_ECEF_X = 12,
+    CBOR_CAN_MESSAGE_INS_ECEF_Y = 13,
+    CBOR_CAN_MESSAGE_INS_ECEF_Z = 14,
+    CBOR_CAN_MESSAGE_INS_MSL = 15,
+    CBOR_CAN_MESSAGE_PREINT_PX = 16,
+    CBOR_CAN_MESSAGE_PREINT_QY = 17,
+    CBOR_CAN_MESSAGE_PREINT_RZ = 18,
+    CBOR_CAN_MESSAGE_DUAL_PX = 19,
+    CBOR_CAN_MESSAGE_DUAL_QY = 20,
+    CBOR_CAN_MESSAGE_DUAL_RZ = 21,
+    CBOR_CAN_MESSAGE_GNSS1_POS = 22,
+    CBOR_CAN_MESSAGE_GNSS2_POS = 23,
+    CBOR_CAN_MESSAGE_GNSS1_RTK_POS_REL = 24,
+    CBOR_CAN_MESSAGE_GNSS2_RTK_CMP_REL = 25,
+    CBOR_CAN_MESSAGE_ROLL_ROLLRATE = 26,
+} eCborCanMessage;
 
 /** Registry enum `receiver_id` */
 typedef enum
@@ -315,6 +348,13 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 
 /* Shared key sets: each domain DID that uses one holds members of these types */
 
+/** Shared key set `can_message`: one member per key */
+typedef struct
+{
+    uint16_t        periodMultiple;         //!< key 0: uint16, default 0
+    uint32_t        transmitAddress;        //!< key 1: uint32, default 0
+} cbor_keyset_can_message_t;
+
 /** Shared key set `receiver`: one member per key */
 typedef struct
 {
@@ -394,6 +434,7 @@ typedef struct
 #include "cbor/dids/cbor_did_config_sensors.h"
 #include "cbor/dids/cbor_did_config_io.h"
 #include "cbor/dids/cbor_did_config_gnss.h"
+#include "cbor/dids/cbor_did_config_can.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"

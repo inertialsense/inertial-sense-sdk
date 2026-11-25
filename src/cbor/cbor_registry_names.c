@@ -31,6 +31,7 @@ static const cbor_registry_did_names_t s_dids[] = {
     { CBOR_DID_CONFIG_SENSORS, g_cborNames_CONFIG_SENSORS, CBOR_CONFIG_SENSORS_NAME_COUNT },
     { CBOR_DID_CONFIG_IO, g_cborNames_CONFIG_IO, CBOR_CONFIG_IO_NAME_COUNT },
     { CBOR_DID_CONFIG_GNSS, g_cborNames_CONFIG_GNSS, CBOR_CONFIG_GNSS_NAME_COUNT },
+    { CBOR_DID_CONFIG_CAN, g_cborNames_CONFIG_CAN, CBOR_CONFIG_CAN_NAME_COUNT },
     { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
     { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
     { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
@@ -82,6 +83,7 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_CONFIG_SENSORS, "CONFIG_SENSORS" },
     { CBOR_DID_CONFIG_IO, "CONFIG_IO" },
     { CBOR_DID_CONFIG_GNSS, "CONFIG_GNSS" },
+    { CBOR_DID_CONFIG_CAN, "CONFIG_CAN" },
     { CBOR_DID_NMEA_PIMU, "NMEA_PIMU" },
     { CBOR_DID_NMEA_PPIMU, "NMEA_PPIMU" },
     { CBOR_DID_NMEA_PRIMU, "NMEA_PRIMU" },
@@ -128,6 +130,35 @@ static const cbor_registry_name_t s_msgKeyNames[] = {
     { 0x9303, "SUB_OPTION_PERSIST" },
 };
 
+static const cbor_registry_name_t s_enum_can_message[] = {
+    { 0, "INS_TIME" },
+    { 1, "INS_STATUS" },
+    { 2, "INS_EULER" },
+    { 3, "INS_QUATN2B" },
+    { 4, "INS_QUATE2B" },
+    { 5, "INS_UVW" },
+    { 6, "INS_VE" },
+    { 7, "INS_LAT" },
+    { 8, "INS_LON" },
+    { 9, "INS_ALT" },
+    { 10, "INS_NORTH_EAST" },
+    { 11, "INS_DOWN" },
+    { 12, "INS_ECEF_X" },
+    { 13, "INS_ECEF_Y" },
+    { 14, "INS_ECEF_Z" },
+    { 15, "INS_MSL" },
+    { 16, "PREINT_PX" },
+    { 17, "PREINT_QY" },
+    { 18, "PREINT_RZ" },
+    { 19, "DUAL_PX" },
+    { 20, "DUAL_QY" },
+    { 21, "DUAL_RZ" },
+    { 22, "GNSS1_POS" },
+    { 23, "GNSS2_POS" },
+    { 24, "GNSS1_RTK_POS_REL" },
+    { 25, "GNSS2_RTK_CMP_REL" },
+    { 26, "ROLL_ROLLRATE" },
+};
 static const cbor_registry_name_t s_enum_receiver_id[] = {
     { 0, "GNSS1" },
     { 1, "GNSS2" },
@@ -227,6 +258,7 @@ static const cbor_registry_name_t s_enum_nmea_speed_filter[] = {
 
 /* Every registry enum */
 static const cbor_registry_enum_t s_enums[] = {
+    { "can_message", s_enum_can_message, sizeof(s_enum_can_message) / sizeof(s_enum_can_message[0]) },
     { "receiver_id", s_enum_receiver_id, sizeof(s_enum_receiver_id) / sizeof(s_enum_receiver_id[0]) },
     { "antenna_id", s_enum_antenna_id, sizeof(s_enum_antenna_id) / sizeof(s_enum_antenna_id[0]) },
     { "base_stream", s_enum_base_stream, sizeof(s_enum_base_stream) / sizeof(s_enum_base_stream[0]) },
@@ -254,14 +286,14 @@ typedef struct
 } key_enum_t;
 
 static const key_enum_t s_keyEnums[] = {
-    { 0xFFFF, 0xC000, 9 },
-    { 0xFFFF, 0xC004, 12 },
-    { 0xFFFF, 0xC008, 11 },
-    { CBOR_DID_RMC_STORED, 0x8001, 14 },
-    { CBOR_DID_RMC_STORED, 0x8002, 15 },
-    { CBOR_DID_RMC, 0x8001, 14 },
-    { CBOR_DID_RMC, 0x8002, 15 },
-    { CBOR_DID_ROUTE_FILTER, 0x0003, 13 },
+    { 0xFFFF, 0xC000, 10 },
+    { 0xFFFF, 0xC004, 13 },
+    { 0xFFFF, 0xC008, 12 },
+    { CBOR_DID_RMC_STORED, 0x8001, 15 },
+    { CBOR_DID_RMC_STORED, 0x8002, 16 },
+    { CBOR_DID_RMC, 0x8001, 15 },
+    { CBOR_DID_RMC, 0x8002, 16 },
+    { CBOR_DID_ROUTE_FILTER, 0x0003, 14 },
 };
 
 /* DIDs with a schema: those bound to a legacy struct, and domain DIDs (over their view structs) */
@@ -283,6 +315,7 @@ static const did_schema_t s_schemas[] = {
     { CBOR_DID_CONFIG_SENSORS, &g_cborSchema_CONFIG_SENSORS },
     { CBOR_DID_CONFIG_IO, &g_cborSchema_CONFIG_IO },
     { CBOR_DID_CONFIG_GNSS, &g_cborSchema_CONFIG_GNSS },
+    { CBOR_DID_CONFIG_CAN, &g_cborSchema_CONFIG_CAN },
 };
 
 #define COUNT(a)    (sizeof(a) / sizeof((a)[0]))
