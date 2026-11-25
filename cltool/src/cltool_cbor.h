@@ -3,6 +3,7 @@
  * @brief cltool over CBOR messaging (DID_CBOR): -cbor-get / -cbor-set (the -get / -set YAML form), -cbor-out, and
  *        -flashCfg / -gpxFlashCfg through CBOR on devices that serve those DIDs.
  *
+ * @author Kyle Mallory on 2026-10-23
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
@@ -33,26 +34,5 @@ void cltool_cborOut(const char* direction, const uint8_t* msg, size_t len);
  * @param device  the device
  */
 void cltool_cborWatch(ISDevice& device);
-
-/**
- * @brief -flashCfg over CBOR: reads or writes FLASH_CFG when the device serves it, with the output of the legacy path.
- * @param device  the IMX
- * @param str     the -flashCfg argument (key list, or key=value pairs separated by ',')
- * @param handled [out] false if the device does not serve FLASH_CFG over CBOR, so the caller uses the legacy DID
- * @return false on failure (a message has been printed)
- */
-bool cltool_cborImxFlashCfg(ISDevice& device, const std::string& str, bool& handled);
-
-/**
- * @brief -gpxFlashCfg over CBOR: reads GPX_FLASH_CFG from the GPX (directly, or behind an IMX). A write goes to a GPX
- *        connected directly, or to the IMX for a GPX behind it, which proxies it: it applies the change to its copy
- *        of the GPX's configuration, keeping its own values for the fields its flash config sets, and re-sends it.
- *        The write is then read back from the GPX and the written fields printed.
- * @param device  the IMX or GPX the host is connected to
- * @param str     the -gpxFlashCfg argument
- * @param handled [out] false if the caller should use the legacy DID
- * @return false on failure (a message has been printed)
- */
-bool cltool_cborGpxFlashCfg(ISDevice& device, const std::string& str, bool& handled);
 
 #endif // CLTOOL_CBOR_H

@@ -1432,8 +1432,8 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -nmea=ASCE,0,GxGGA,1                                         # Send NMEA message, display rx NMEA" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c tcp://192.168.1.100:7777 -nmea=ASCE                            " << EXAMPLE_SPACE_2 << "# Send NMEA query over TCP" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c COM2,COM4 -nmea                                                " << EXAMPLE_SPACE_2 << "# Listen for NMEA on two ports" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -cbor-get \"{FLASH_CFG: {ser0BaudRate, insRotation}}\"         # Read fields over CBOR" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -cbor-set \"{FLASH_CFG: {gnss1AntOffset[1]: 0.8}}\"            # Set one value over CBOR" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -cbor-get \"{CONFIG_INS: {dynamicModel, rotation}}\"           # Read fields over CBOR" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -cbor-set \"{CONFIG_INS: {rotation[1]: 0.8}}\"                 # Set one value over CBOR" << endlbOff;
 	cout << endlbOn;
 	cout << "EXAMPLES (Firmware Update)" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << endlbOff;
@@ -1531,11 +1531,11 @@ void cltool_outputUsage()
     cout << "                                            " << boldOff << " Examples: -set \"{DID_FLASH_CONFIG: {gnss1AntOffset: [0.8, 0.0, 1.2]}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{DID_FLASH_CONFIG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -set \"{12: {ioConfig: 0x1a2b012c, ser2BaudRate: 921600}}\"" << endlbOn;
-    cout << "    -cbor-get \"{<DID>: {<FIELD1>,<FIELD2>,...}}\"" << boldOff << " As -get, over CBOR (DID_CBOR). DID: registry name (FLASH_CFG), DID_ name or number." << endlbOn;
-    cout << "                                            " << boldOff << " Examples: -cbor-get FLASH_CFG" << endlbOn;
-    cout << "                                            " << boldOff << "           -cbor-get \"{GPX_FLASH_CFG: {ser2BaudRate}}\" -cbor-dst=GPX" << endlbOn;
-    cout << "    -cbor-set \"{<DID>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " As -set, over CBOR. Numeric keys (incl. MSG_* keys) are sent as given." << endlbOn;
-    cout << "                                            " << boldOff << " Examples: -cbor-set \"{FLASH_CFG: {gnss1AntOffset[2]: 1.2}}\"" << endlbOn;
+    cout << "    -cbor-get \"{<DOMAIN>: {<FIELD1>,<FIELD2>,...}}\"" << boldOff << " As -get, over CBOR (DID_CBOR). Root keys are domains: registry name (CONFIG_SYSTEM) or number." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -cbor-get CONFIG_SYSTEM" << endlbOn;
+    cout << "                                            " << boldOff << "           -cbor-get \"{CONFIG_PORTS: {Port}}\" -cbor-dst=GPX" << endlbOn;
+    cout << "    -cbor-set \"{<DOMAIN>: {<FIELD1>: <VALUE>, ...}}\"" << boldOff << " As -set, over CBOR. Numeric keys (incl. MSG_* keys) are sent as given." << endlbOn;
+    cout << "                                            " << boldOff << " Examples: -cbor-set \"{CONFIG_INS: {rotation[2]: 1.2}}\"" << endlbOn;
     cout << "                                            " << boldOff << "           -cbor-set \"{RMC_STORED: {0: {RMC_PRESET: INS}}}\"" << endlbOn;
     cout << "    -cbor-dst=<FILTER>  " << boldOff << "  Device(s) a -cbor-get/-cbor-set addresses: TYPE[-MAJOR[.MINOR]][::SN], parts left out match any" << endlbOn;
     cout << "                        " << boldOff << "  (GPX, GPX-1.0, IMX-5.0::SN62797), or all." << endlbOn;
@@ -1613,13 +1613,6 @@ void cltool_outputHelp()
 
 bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-    if (!inertialSenseInterface.getDevices().empty())
-    {   // over CBOR when the device serves FLASH_CFG
-        bool handled;
-        bool ok = cltool_cborImxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
-        if (handled)
-            return ok;
-    }
     if (!inertialSenseInterface.WaitForImxFlashCfgSynced())
     {
         cout << "Failed to sync IMX flash config." << endl;
@@ -1660,13 +1653,6 @@ bool cltool_updateImxFlashCfg(InertialSense& inertialSenseInterface, string flas
 
 bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-    if (!inertialSenseInterface.getDevices().empty())
-    {   // over CBOR when the GPX serves GPX_FLASH_CFG; a write for a GPX behind an IMX goes to the IMX, which proxies it
-        bool handled;
-        bool ok = cltool_cborGpxFlashCfg(*inertialSenseInterface.getDevices().front(), flashCfgString, handled);
-        if (handled)
-            return ok;
-    }
     if (!inertialSenseInterface.WaitForGpxFlashCfgSynced())
     {
         cout << "Failed to sync GPX flash config." << endl;

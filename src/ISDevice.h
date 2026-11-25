@@ -6,7 +6,7 @@
  * that only ever talks to one device can use a standalone ISDevice directly without DeviceManager.
  *
  * @author Kyle Mallory on 2/24/24.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2024-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #ifndef INERTIALSENSESDK_ISDEVICE_H
@@ -700,10 +700,10 @@ public:
                                        bool collectAll = false);
 
     /**
-     * @brief Reads a struct-backed DID (blocking), re-requesting any fields a reply marked RESP_TOO_LARGE until every
-     *        field has been read or a round brings nothing new.
-     * @param did        root DID key (e.g. CBOR_DID_FLASH_CFG)
-     * @param schema     schema of the struct (e.g. g_cborSchema_FLASH_CFG)
+     * @brief Reads a domain into its view struct (blocking), re-requesting any fields a reply marked RESP_TOO_LARGE until
+     *        every field has been read or a round brings nothing new.
+     * @param did        root key of the domain (e.g. CBOR_DID_CONFIG_SYSTEM)
+     * @param schema     schema of the view struct (e.g. g_cborSchema_CONFIG_SYSTEM, or a family's g_cborSchema_CONFIG_SYSTEM_imx)
      * @param data       the struct to fill
      * @param dst        MSG_DST_DEV_FILTER for a device behind this one (e.g. its GPX), or none for this device
      * @param timeoutMs  time allowed for each reply

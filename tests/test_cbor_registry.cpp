@@ -3,7 +3,8 @@
  * @brief The SDK side of the CBOR key registry: DID_CBOR is registered, and the generated key constants and name
  *        tables agree with each other.
  *
- * @copyright Copyright (c) 2026 Inertial Sense, Inc.
+ * @author Kyle Mallory on 2026-10-23
+ * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <gtest/gtest.h>
@@ -20,21 +21,23 @@ TEST(CborRegistry, CborDidIsRegistered)
 
 TEST(CborRegistry, FieldNamesAndKeysRoundTrip)
 {
-    EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_FLASH_CFG, CBOR_FLASH_CFG__SER0BAUDRATE), "ser0BaudRate");
-    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_FLASH_CFG, "ser0BaudRate"), CBOR_FLASH_CFG__SER0BAUDRATE);
-    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_GPX_FLASH_CFG, "ser0BaudRate"), CBOR_GPX_FLASH_CFG__SER0BAUDRATE);
+    EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_CONFIG_INS, CBOR_CONFIG_INS__DYNAMICMODEL), "dynamicModel");
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_CONFIG_INS, "dynamicModel"), CBOR_CONFIG_INS__DYNAMICMODEL);
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_CONFIG_SYSTEM, "navPeriodMs"), CBOR_CONFIG_SYSTEM__NAVPERIODMS);
     EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_RMC_STORED, CBOR_RMC_STORED__RMC_PRESET), "RMC_PRESET");
 }
 
 TEST(CborRegistry, UnknownFieldsAreNotFound)
 {
-    EXPECT_EQ(cbor_registry_field_name(CBOR_DID_FLASH_CFG, 0x7FFF), nullptr);
-    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_FLASH_CFG, "noSuchField"), -1);
+    EXPECT_EQ(cbor_registry_field_name(CBOR_DID_CONFIG_INS, 0x7FFF), nullptr);
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_CONFIG_INS, "noSuchField"), -1);
+    EXPECT_EQ(cbor_registry_did_key("FLASH_CFG"), -1) << "the flash block's schemas are not domains";
 }
 
-TEST(CborRegistry, LegacySchemasAreInKeyOrder)
+TEST(CborRegistry, DomainSchemasAreInKeyOrder)
 {
-    for (const cbor_schema_t* s : { &g_cborSchema_FLASH_CFG, &g_cborSchema_CAN_CONFIG, &g_cborSchema_GPX_FLASH_CFG })
+    for (const cbor_schema_t* s : { &g_cborSchema_CONFIG_SYSTEM, &g_cborSchema_CONFIG_INS, &g_cborSchema_CONFIG_GNSS,
+                                    &g_cborSchema_CONFIG_PORTS, &g_cborSchema_CONFIG_CAN, &g_cborSchema_STATE })
         for (uint16_t i = 1; i < s->count; i++)
             EXPECT_LT(s->fields[i - 1].key, s->fields[i].key);
 }

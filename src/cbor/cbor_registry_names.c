@@ -20,9 +20,6 @@ typedef struct
 } cbor_registry_did_names_t;
 
 static const cbor_registry_did_names_t s_dids[] = {
-    { CBOR_DID_FLASH_CFG, g_cborNames_FLASH_CFG, g_cborNameParents_FLASH_CFG, CBOR_FLASH_CFG_NAME_COUNT },
-    { CBOR_DID_CAN_CONFIG, g_cborNames_CAN_CONFIG, g_cborNameParents_CAN_CONFIG, CBOR_CAN_CONFIG_NAME_COUNT },
-    { CBOR_DID_GPX_FLASH_CFG, g_cborNames_GPX_FLASH_CFG, g_cborNameParents_GPX_FLASH_CFG, CBOR_GPX_FLASH_CFG_NAME_COUNT },
     { CBOR_DID_MAG_CAL_MAP, g_cborNames_MAG_CAL_MAP, g_cborNameParents_MAG_CAL_MAP, CBOR_MAG_CAL_MAP_NAME_COUNT },
     { CBOR_DID_CONFIG_SYSTEM, g_cborNames_CONFIG_SYSTEM, g_cborNameParents_CONFIG_SYSTEM, CBOR_CONFIG_SYSTEM_NAME_COUNT },
     { CBOR_DID_CONFIG_INS, g_cborNames_CONFIG_INS, g_cborNameParents_CONFIG_INS, CBOR_CONFIG_INS_NAME_COUNT },
@@ -102,9 +99,6 @@ const cbor_registry_name_t *cbor_registry_field_at(uint16_t did, int index)
 
 /* Root DID keys and names */
 static const cbor_registry_name_t s_didNames[] = {
-    { CBOR_DID_FLASH_CFG, "FLASH_CFG" },
-    { CBOR_DID_CAN_CONFIG, "CAN_CONFIG" },
-    { CBOR_DID_GPX_FLASH_CFG, "GPX_FLASH_CFG" },
     { CBOR_DID_CALIBRATION, "CALIBRATION" },
     { CBOR_DID_MAG_CAL_MAP, "MAG_CAL_MAP" },
     { CBOR_DID_CONFIG_SYSTEM, "CONFIG_SYSTEM" },
@@ -329,7 +323,7 @@ static const key_enum_t s_keyEnums[] = {
     { CBOR_DID_ROUTE_FILTER, 0x0003, 14 },
 };
 
-/* DIDs with a schema: those bound to a legacy struct, and domain DIDs (over their view structs) */
+/* Domains with a schema, over their view structs */
 typedef struct
 {
     uint16_t                did;    //!< root DID key
@@ -337,9 +331,6 @@ typedef struct
 } did_schema_t;
 
 static const did_schema_t s_schemas[] = {
-    { CBOR_DID_FLASH_CFG, &g_cborSchema_FLASH_CFG },
-    { CBOR_DID_CAN_CONFIG, &g_cborSchema_CAN_CONFIG },
-    { CBOR_DID_GPX_FLASH_CFG, &g_cborSchema_GPX_FLASH_CFG },
     { CBOR_DID_CONFIG_SYSTEM, &g_cborSchema_CONFIG_SYSTEM },
     { CBOR_DID_CONFIG_INS, &g_cborSchema_CONFIG_INS },
     { CBOR_DID_CONFIG_MAG, &g_cborSchema_CONFIG_MAG },

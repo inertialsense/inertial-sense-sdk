@@ -1,7 +1,8 @@
 /**
  * @file cbor_registry.h
- * @brief CBOR key registry: DID keys, message keys and enums shared by every DID. Each DID's field keys, schema and
- *        defaults are in its own header under dids/, included at the end.
+ * @brief CBOR key registry: domain keys, message keys and enums shared by every domain. Each domain's field keys,
+ *        schemas and defaults are in its own header under domain/, included at the end. The mappings of legacy DID
+ *        structs to domains are under did/.
  *
  * Generated from the CBOR key registry by is-common scripts/cbor_registry.py -- do not edit.
  *
@@ -24,46 +25,43 @@ extern "C" {
 
 #define RMC_CFG_MAX_PORTS                            6        //!< protocol limit defined by the registry
 
-/** @name Root DID keys */
+/** @name Root keys: one per domain */
 /** @{ */
-#define CBOR_DID_FLASH_CFG                           0x000C   //!< FLASH_CFG: legacy DID_FLASH_CONFIG (nvm_flash_cfg_t), served by IMX-5, IMX-6
-#define CBOR_DID_CAN_CONFIG                          0x005A   //!< CAN_CONFIG: legacy DID_CAN_CONFIG (can_config_t), served by IMX-5, IMX-6
-#define CBOR_DID_GPX_FLASH_CFG                       0x0079   //!< GPX_FLASH_CFG: legacy DID_GPX_FLASH_CFG (gpx_flash_cfg_t), served by GPX-1
-#define CBOR_DID_CALIBRATION                         0x0100   //!< CALIBRATION: CBOR-only DID, reserved
-#define CBOR_DID_MAG_CAL_MAP                         0x0101   //!< MAG_CAL_MAP: CBOR-only DID
-#define CBOR_DID_CONFIG_SYSTEM                       0x0102   //!< CONFIG_SYSTEM: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_CONFIG_INS                          0x0103   //!< CONFIG_INS: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_MAG                          0x0104   //!< CONFIG_MAG: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_GNSS                         0x0109   //!< CONFIG_GNSS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_CONFIG_CAN                          0x010A   //!< CONFIG_CAN: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_STATE                               0x010B   //!< STATE: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PINS1                          0x3F04   //!< NMEA_PINS1: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PINS2                          0x3F05   //!< NMEA_PINS2: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PGPSP                          0x3F06   //!< NMEA_PGPSP: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGGA                          0x3F07   //!< NMEA_GNGGA: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGLL                          0x3F08   //!< NMEA_GNGLL: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGSA                          0x3F09   //!< NMEA_GNGSA: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNRMC                          0x3F0A   //!< NMEA_GNRMC: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNZDA                          0x3F0B   //!< NMEA_GNZDA: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PASHR                          0x3F0C   //!< NMEA_PASHR: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_PSTRB                          0x3F0D   //!< NMEA_PSTRB: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_INFO                           0x3F0E   //!< NMEA_INFO: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNGSV                          0x3F0F   //!< NMEA_GNGSV: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_GNVTG                          0x3F10   //!< NMEA_GNVTG: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_INTEL                          0x3F11   //!< NMEA_INTEL: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_POWGPS                         0x3F12   //!< NMEA_POWGPS: NMEA sentence pseudo-DID
-#define CBOR_DID_NMEA_POWTLV                         0x3F13   //!< NMEA_POWTLV: NMEA sentence pseudo-DID
-#define CBOR_DID_CAPABILITIES                        0x7FFC   //!< CAPABILITIES: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_RMC_STORED                          0x7FFD   //!< RMC_STORED: CBOR-only DID, served by IMX-5, IMX-6
-#define CBOR_DID_RMC                                 0x7FFE   //!< RMC: CBOR-only DID
-#define CBOR_DID_ROUTE_FILTER                        0x7FFF   //!< ROUTE_FILTER: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_CALIBRATION                         0x0100   //!< CALIBRATION: domain, reserved
+#define CBOR_DID_MAG_CAL_MAP                         0x0101   //!< MAG_CAL_MAP: domain
+#define CBOR_DID_CONFIG_SYSTEM                       0x0102   //!< CONFIG_SYSTEM: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_CONFIG_INS                          0x0103   //!< CONFIG_INS: domain, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_MAG                          0x0104   //!< CONFIG_MAG: domain, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: domain, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: domain, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: domain, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_GNSS                         0x0109   //!< CONFIG_GNSS: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_CONFIG_CAN                          0x010A   //!< CONFIG_CAN: domain, served by IMX-5, IMX-6
+#define CBOR_DID_STATE                               0x010B   //!< STATE: domain, served by IMX-5, IMX-6
+#define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PINS1                          0x3F04   //!< NMEA_PINS1: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PINS2                          0x3F05   //!< NMEA_PINS2: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PGPSP                          0x3F06   //!< NMEA_PGPSP: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGGA                          0x3F07   //!< NMEA_GNGGA: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGLL                          0x3F08   //!< NMEA_GNGLL: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGSA                          0x3F09   //!< NMEA_GNGSA: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNRMC                          0x3F0A   //!< NMEA_GNRMC: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNZDA                          0x3F0B   //!< NMEA_GNZDA: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PASHR                          0x3F0C   //!< NMEA_PASHR: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_PSTRB                          0x3F0D   //!< NMEA_PSTRB: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_INFO                           0x3F0E   //!< NMEA_INFO: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNGSV                          0x3F0F   //!< NMEA_GNGSV: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_GNVTG                          0x3F10   //!< NMEA_GNVTG: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_INTEL                          0x3F11   //!< NMEA_INTEL: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_POWGPS                         0x3F12   //!< NMEA_POWGPS: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_NMEA_POWTLV                         0x3F13   //!< NMEA_POWTLV: NMEA sentence pseudo-DID (an RMC subscription key)
+#define CBOR_DID_CAPABILITIES                        0x7FFC   //!< CAPABILITIES: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_RMC_STORED                          0x7FFD   //!< RMC_STORED: domain, served by IMX-5, IMX-6
+#define CBOR_DID_RMC                                 0x7FFE   //!< RMC: domain
+#define CBOR_DID_ROUTE_FILTER                        0x7FFF   //!< ROUTE_FILTER: domain, served by IMX-5, IMX-6
 /** @} */
 
 /** @name General message keys (MSG_*) */
@@ -335,13 +333,13 @@ typedef struct
 /**
  * @brief Looks up a DID's registry name (cbor_registry_names.c, SDK only).
  * @param did  root DID key
- * @return the name (e.g. "FLASH_CFG"), or NULL if the registry has no such DID
+ * @return the name (e.g. "CONFIG_SYSTEM"), or NULL if the registry has no such DID
  */
 const char *cbor_registry_did_name(uint16_t did);
 
 /**
  * @brief Looks up a DID's key by registry name (cbor_registry_names.c, SDK only).
- * @param name  registry name (e.g. "FLASH_CFG")
+ * @param name  registry name (e.g. "CONFIG_SYSTEM")
  * @return the root DID key, or -1 if the registry has no such DID
  */
 int cbor_registry_did_key(const char *name);
@@ -369,7 +367,7 @@ int cbor_registry_msg_key(const char *name);
 const cbor_registry_enum_t *cbor_registry_key_enum(uint16_t did, uint16_t key);
 
 /**
- * @brief Finds the schema of a DID: a legacy DID's struct, or a domain DID's view (cbor_registry_names.c, SDK only).
+ * @brief Finds the schema of a domain, over its view struct (cbor_registry_names.c, SDK only).
  * @param did  root DID key
  * @return the schema, or NULL if the DID has none
  */
@@ -476,22 +474,19 @@ typedef struct
     uint8_t         gsvBands[9];            //!< key 1: uint8[SAT_SV_GNSS_ID_COUNT], default set by the firmware
 } cbor_keyset_port_t;
 
-#include "cbor/dids/cbor_did_flash_cfg.h"
-#include "cbor/dids/cbor_did_can_config.h"
-#include "cbor/dids/cbor_did_gpx_flash_cfg.h"
-#include "cbor/dids/cbor_did_mag_cal_map.h"
-#include "cbor/dids/cbor_did_config_system.h"
-#include "cbor/dids/cbor_did_config_ins.h"
-#include "cbor/dids/cbor_did_config_mag.h"
-#include "cbor/dids/cbor_did_config_ground_vehicle.h"
-#include "cbor/dids/cbor_did_config_ports.h"
-#include "cbor/dids/cbor_did_config_sensors.h"
-#include "cbor/dids/cbor_did_config_io.h"
-#include "cbor/dids/cbor_did_config_gnss.h"
-#include "cbor/dids/cbor_did_config_can.h"
-#include "cbor/dids/cbor_did_state.h"
-#include "cbor/dids/cbor_did_rmc_stored.h"
-#include "cbor/dids/cbor_did_rmc.h"
-#include "cbor/dids/cbor_did_route_filter.h"
+#include "cbor/domain/mag_cal_map.h"
+#include "cbor/domain/config_system.h"
+#include "cbor/domain/config_ins.h"
+#include "cbor/domain/config_mag.h"
+#include "cbor/domain/config_ground_vehicle.h"
+#include "cbor/domain/config_ports.h"
+#include "cbor/domain/config_sensors.h"
+#include "cbor/domain/config_io.h"
+#include "cbor/domain/config_gnss.h"
+#include "cbor/domain/config_can.h"
+#include "cbor/domain/state.h"
+#include "cbor/domain/rmc_stored.h"
+#include "cbor/domain/rmc.h"
+#include "cbor/domain/route_filter.h"
 
 #endif /* CBOR_REGISTRY_H */

@@ -2,6 +2,7 @@
  * @file ISCborFormat.cpp
  * @brief CBOR messages as text: YAML requests and replies, and diagnostic notation. See ISCborFormat.h.
  *
+ * @author Kyle Mallory on 2026-10-23
  * @copyright Copyright (c) 2026 Inertial Sense, Inc. All rights reserved.
  */
 
@@ -98,7 +99,12 @@ int indexedDepth(int did)
     }
 }
 
-/** A root DID's name: the registry's, else the legacy DID's, else NULL */
+/**
+ * Names a DID used as a key inside a domain (an RMC subscription).
+ *
+ * @param did  the DID
+ * @return the registry's name (an NMEA pseudo-DID), else the legacy DID's, else NULL
+ */
 const char* didName(int did)
 {
     const char* n = cbor_registry_did_name((uint16_t)did);
@@ -107,11 +113,18 @@ const char* didName(int did)
     return n;
 }
 
-/** The registry name of key in scope, or NULL */
+/**
+ * Names a key in the scope it sits in: a message key or domain at the root, a field inside a domain, or a DID where
+ * DIDs are keys.
+ *
+ * @param sc   the scope: the domain, depth and enclosing map
+ * @param key  the key
+ * @return the registry name, or NULL for a key it has no name for (an index, or an unknown key)
+ */
 const char* keyName(const Scope& sc, int key)
 {
     if (sc.did < 0)
-        return key >= 0x8000 ? cbor_registry_msg_key_name((uint16_t)key) : didName(key);
+        return key >= 0x8000 ? cbor_registry_msg_key_name((uint16_t)key) : cbor_registry_did_name((uint16_t)key);
     if (key >= 0x9000)
         return cbor_registry_msg_key_name((uint16_t)key);
     if (key < 0x8000 && sc.depth == indexedDepth(sc.did))
@@ -160,7 +173,13 @@ bool parseDouble(const std::string& s, double& d)
     return end && *end == '\0';
 }
 
-/** Resolves a key written as text in scope: a number, a message key, a field name, or a DID where DIDs are keys */
+/**
+ * Resolves a key written as text in the scope it sits in.
+ *
+ * @param sc  the scope: the domain, depth and enclosing map
+ * @param s   the text: a number, a message key, a domain at the root, a field name, or a DID where DIDs are keys
+ * @return the key, or -1 if s names nothing in scope
+ */
 int keyFromString(const Scope& sc, const std::string& s)
 {
     int64_t v;
@@ -172,7 +191,7 @@ int keyFromString(const Scope& sc, const std::string& s)
     if (k >= 0)
         return k;
     if (sc.did < 0)
-        return cborDidFromString(s);
+        return cborDomainFromString(s);
     if (sc.parent == SCOPE_PARENT_UNKNOWN)
         k = cbor_registry_field_key((uint16_t)sc.did, s.c_str());
     else if (const cbor_registry_name_t* e = cbor_registry_field_at((uint16_t)sc.did,
@@ -993,6 +1012,31 @@ bool applyEnvelopeKey(CborRequest& req, int key, const YAML::Node& v, std::vecto
 
 }   // namespace
 
+/**
+ * Resolves a domain written as its registry name or a number (decimal or 0x hex): a message's root key.
+ *
+ * A legacy DID name is not a domain: its struct's fields are keys of the domains it maps to.
+ *
+ * @param s  the text
+ * @return the root key, or -1 if s names no domain
+ */
+int cborDomainFromString(const std::string& s)
+{
+    int64_t v;
+    uint64_t u;
+    bool isUnsigned;
+    if (parseInt(s, v, isUnsigned, u))
+        return (isUnsigned && u < 0x8000) ? (int)u : -1;
+    return cbor_registry_did_key(s.c_str());
+}
+
+/**
+ * Resolves a DID used as a key inside a domain (an RMC subscription).
+ *
+ * @param s  the text: the DID's legacy name (DID_INS_2), the registry name of an NMEA pseudo-DID, or a number (decimal
+ *           or 0x hex)
+ * @return the DID, or -1 if s names none
+ */
 int cborDidFromString(const std::string& s)
 {
     int64_t v;
@@ -1012,7 +1056,7 @@ bool cborRequestFromYaml(const YAML::Node& node, uint8_t op, CborRequest& req, s
 {
     if (!node.IsMap())
     {
-        error = "expected a map, e.g. {FLASH_CFG: {ser0BaudRate}}";
+        error = "expected a map, e.g. {CONFIG_SYSTEM: {navPeriodMs}}";
         return false;
     }
     Scope root;
