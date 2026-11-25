@@ -42,9 +42,10 @@ const std::vector<RenderExtendedWiringCase>& WiringCases()
         { DID_GPX_STATUS, "grmcNMEABitsSer0", (uint64_t)NMEA_RMC_BITS_GNGGA, "$GNGGA",     "DID_GPX_STATUS.grmcNMEABitsSer0" },
         { DID_RMC,     "bits", (uint64_t)RMC_BITS_GNSS1_POS, "GNSS1 position", "DID_RMC.bits" },
         { DID_GPX_RMC, "bits", (uint64_t)RMC_BITS_GPX_STATUS, "GPX status",    "DID_GPX_RMC.bits" },
-        { DID_FLASH_CONFIG, "ioConfig",  (uint32_t)IO_CONFIG_IMU_1_DISABLE, "IMU 1 disable", "DID_FLASH_CONFIG.ioConfig" },
+        { DID_FLASH_CONFIG, "ioConfig",  (uint32_t)IO_CONFIG_GNSS2_NO_INIT, "Skip GNSS2 initialization", "DID_FLASH_CONFIG.ioConfig" },
         { DID_FLASH_CONFIG, "ioConfig2", (uint8_t)IO_CFG2_USE_GNSS2_AS_SOURCE, "Use GNSS2", "DID_FLASH_CONFIG.ioConfig2" },
         { DID_FLASH_CONFIG, "sensorConfig", (uint32_t)SENSOR_CFG_DISABLE_MAGNETOMETER, "Disable magnetometer sensor", "DID_FLASH_CONFIG.sensorConfig" },
+        { DID_FLASH_CONFIG, "sensorConfig2", (uint32_t)SENSOR_CFG2_IMU_1_DISABLE, "IMU 1 disable", "DID_FLASH_CONFIG.sensorConfig2" },
         { DID_GPX_FLASH_CFG, "sysCfgBits", (uint32_t)GPX_SYS_CFG_BITS_DISABLE_VCC_RF, "VCC_RF", "DID_GPX_FLASH_CFG.sysCfgBits" },
         { DID_GPX_STATUS, "rtkMode", (uint32_t)RTK_CFG_BITS_BASE_OUTPUT_GNSS2_RTCM3_USB, "GNSS2 RTCM3 USB", "DID_GPX_STATUS.rtkMode" },
     };
@@ -357,7 +358,7 @@ TEST(ISDataMappingsRenderExtended, IoConfig_MatchesDecodeTableDirectly)
     const status_field_decode_t* dec = GetStatusDecodeByField("ioConfig");
     ASSERT_NE(dec, nullptr);
 
-    const uint32_t value = (uint32_t)IO_CONFIG_G15_STROBE_INPUT | (uint32_t)IO_CONFIG_IMU_3_DISABLE;
+    const uint32_t value = (uint32_t)IO_CONFIG_G15_STROBE_INPUT | (uint32_t)IO_CONFIG_GNSS2_NO_INIT;
     EXPECT_EQ(CallRenderExtended(*info, value), RenderStatusFromDecode(*dec, value));
 }
 

@@ -11,7 +11,7 @@
  * JSON calibration files.
  *
  * @author Inertial Sense, Inc.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include "ISDeviceCal.h"
@@ -760,6 +760,16 @@ sCalDeviceIdentity ISDeviceCal::makeIdentity(const dev_info_t& devInfo, const ma
     return id;
 }
 
+bool ISDeviceCal::calInfoToUnixMs(const sensor_cal_info_t& info, int64_t& unixMs) {
+    return utils::usMountainTimeToUnixMs(info.calDate[0] + 2000, info.calDate[1], info.calDate[2], info.calTime[0], info.calTime[1], info.calTime[2], unixMs);
+}
+
+/**
+ * The identity's manfUid as 32 lowercase hex digits, or empty for a device with no UID (see utils::manfUidIsSet()).
+ * @param identity the device identity
+ */
+static std::string identityManfUid(const sCalDeviceIdentity& identity) { return utils::manfUidIsSet(identity.manf.uid) ? utils::manfUidToString(identity.manf.uid) : std::string(); }
+
 /** Adds the identity and manufacturing keys shared by the calibration info stanza and the device registration body. */
 static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
 {
@@ -768,7 +778,8 @@ static void addIdentityKeys(json& j, const sCalDeviceIdentity& identity)
     j["devSerialNum"] = identity.serialNumber;
 
     const manufacturing_info_t& m = identity.manf;
-    j["manfUid"] = utils::manfUidToString(m.uid);
+    const std::string manfUid = identityManfUid(identity);
+    if (!manfUid.empty()) j["manfUid"] = manfUid;  // a device with no UID has no manfUid, as in the Manufacturing Database
     j["manfLot"] = (uint32_t)m.lotNumber;
     std::string manfDate;
     if (utils::manfDateToRfc3339(m.date, manfDate))
@@ -809,7 +820,8 @@ json ISDeviceCal::buildCalibrationJson(const std::string& filePath, sOrthoCal* c
             if (identity->calDateTimeMs > 0)
             {
                 jInf["calDateTime"] = utils::unixMsToRfc3339(identity->calDateTimeMs);
-                jInf["calUuid"] = identity->calUuid.empty() ? utils::generateUUIDv7((uint64_t)identity->calDateTimeMs) : identity->calUuid;
+                jInf["calUuid"] =
+                    identity->calUuid.empty() ? utils::deterministicCalUuid(identity->calDateTimeMs, identity->hwType, identity->serialNumber, identityManfUid(*identity)) : identity->calUuid;
             }
             else if (!identity->calUuid.empty())
             {
@@ -1350,6 +1362,7 @@ ISHttpRequest::Response ISDeviceCal::loadFromURL(const std::string& restBaseUrl,
         { ISHttpRequest::Response r; r.statusCode = -1; r.statusMessage = utils::string_format("[%s] Failed to parse calibration from DB", devId.c_str()); return r; }
     }
 
+    dbCalUuid_ = bestUuid;
     std::string msg = utils::string_format("[%s] Successfully parsed calibration from DB (UUID: %s)", devId.c_str(), bestUuid.c_str());
     log_info(IS_LOG_CALIBRATION, "%s", msg.c_str());
     { ISHttpRequest::Response r; r.statusCode = 200; r.statusMessage = msg; return r; }

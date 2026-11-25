@@ -9,12 +9,14 @@
  *
  * Also verifies round-trip: save → load → compare
  *
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #include <fstream>
+#include <cstdlib>
 #include <cstring>
 #include <cstdio>
+#include <ctime>
 #include <map>
 #include <mutex>
 #include <string>
@@ -622,11 +624,12 @@ TEST_F(test_ISDeviceCal, identityStanza_usesDbContractKeys)
     EXPECT_FALSE(i.contains("calType"));
 }
 
-TEST_F(test_ISDeviceCal, identityStanza_calUuidIsV7FromCalDateTime)
-{
+TEST_F(test_ISDeviceCal, identityStanza_calUuidIsDerivedFromCalDateTime) {
     sCalDeviceIdentity id = makeGpxIdentity();
     json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
     std::string u = j["info"]["calUuid"].get<std::string>();
+    EXPECT_EQ(u, utils::deterministicCalUuid(id.calDateTimeMs, id.hwType, id.serialNumber, utils::manfUidToString(id.manf.uid)));  // what the Manufacturing Database derives
+    EXPECT_EQ(u, ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id)["info"]["calUuid"].get<std::string>());
     ASSERT_EQ(u.size(), 36u);
     EXPECT_EQ(u[14], '7');
     char prefix[16];
@@ -642,6 +645,185 @@ TEST_F(test_ISDeviceCal, identityStanza_calUuidIsV7FromCalDateTime)
     j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
     EXPECT_FALSE(j["info"].contains("calUuid"));
     EXPECT_FALSE(j["info"].contains("calDateTime"));
+}
+
+/** Sets the process time zone for one test and restores the previous one afterwards. */
+class ScopedTimeZone {
+   public:
+    /**
+     * Sets TZ and applies it.
+     * @param tz a POSIX TZ string, e.g. "MST7MDT,M3.2.0,M11.1.0"
+     */
+    explicit ScopedTimeZone(const char* tz) {
+        const char* old = getenv("TZ");
+        hadOld_ = (old != nullptr);
+        if (hadOld_) old_ = old;
+        setTz(tz);
+    }
+    ~ScopedTimeZone() { setTz(hadOld_ ? old_.c_str() : nullptr); }
+    ScopedTimeZone(const ScopedTimeZone&) = delete;
+    ScopedTimeZone& operator=(const ScopedTimeZone&) = delete;
+
+   private:
+    /**
+     * Sets or unsets TZ and applies it.
+     * @param tz the TZ value, or nullptr to unset it
+     */
+    static void setTz(const char* tz) {
+#ifdef _WIN32
+        _putenv_s("TZ", tz ? tz : "");
+        _tzset();
+#else
+        if (tz)
+            setenv("TZ", tz, 1);
+        else
+            unsetenv("TZ");
+        tzset();
+#endif
+    }
+    bool hadOld_ = false;  //!< TZ was set before
+    std::string old_;      //!< its previous value
+};
+
+/** Host time zones the calibration time conversion must not depend on: UTC, US Mountain and Japan (no daylight time). */
+#ifdef _WIN32
+static const char* const HOST_TIME_ZONES[] = {"UTC0", "MST7MDT", "JST-9"};  // the MSVC runtime takes only zone names and applies US rules
+#else
+static const char* const HOST_TIME_ZONES[] = {"UTC0", "MST7MDT,M3.2.0,M11.1.0", "JST-9"};
+#endif
+
+// The vectors calibration-db checks (identity.rs, converter device.rs) and specifies for clients in CLIENT_API.md
+static const char* const SN522807_UID = "16002b0016504b533339312000000000";
+
+TEST(test_deterministicCalUuid, matchesManufacturingDatabase) {
+    const int64_t ms = 1786028482000ll;  // 2026-08-06T15:01:22Z
+    EXPECT_EQ(utils::deterministicCalUuid(ms, "IMX-5.0", 522807u, SN522807_UID), "019fd797-ddd0-7593-b168-58830a0216d6");
+    EXPECT_EQ(utils::deterministicCalUuid(ms, "IMX-5.0", 522807u, ""), "019fd797-ddd0-70e2-ad25-dea78befac37");  // legacy device, no UID
+    EXPECT_EQ(utils::deterministicCalUuid(ms, "IMX-6.0", 522807u, SN522807_UID), "019fd797-ddd0-7fdb-a0fc-573bb6284ed8");
+}
+
+TEST(test_deterministicCalUuid, sameInputsSameUuidAndEachInputMatters) {
+    const std::string u = utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779286u, SN522807_UID);
+    EXPECT_EQ(u, utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779286u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152137000ll, "IMX-5.0", 944779286u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779287u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, "IMX-6.0", 944779286u, SN522807_UID));
+    EXPECT_NE(u, utils::deterministicCalUuid(1795152136000ll, "IMX-5.0", 944779286u, "28001d00065046414138362000000000"));  // a serial collision
+    EXPECT_EQ(u.substr(0, 8) + u.substr(9, 4), "01a1f767c740");                                                             // 48-bit timestamp, big-endian
+    EXPECT_EQ(u[14], '7');                                                                                                  // version 7
+    EXPECT_NE(std::string("89ab").find(u[19]), std::string::npos);                                                          // variant 10xx
+}
+
+/**
+ * A sensor_cal_info_t holding a calibration date and local time.
+ * @param year four-digit year
+ * @param month 1 to 12
+ * @param day day of the month
+ * @param hour 0 to 23
+ * @param minute 0 to 59
+ * @param second 0 to 59
+ * @return the info
+ */
+static sensor_cal_info_t makeCalInfo(int year, int month, int day, int hour, int minute, int second) {
+    sensor_cal_info_t ci = {};
+    ci.calDate[0] = (uint8_t)(year - 2000);
+    ci.calDate[1] = (uint8_t)month;
+    ci.calDate[2] = (uint8_t)day;
+    ci.calTime[0] = (uint8_t)hour;
+    ci.calTime[1] = (uint8_t)minute;
+    ci.calTime[2] = (uint8_t)second;
+    return ci;
+}
+
+TEST_F(test_ISDeviceCal, calInfoToUnixMs_convertsStationLocalTimeToUtcOnAnyHost) {
+    // The station records US Mountain time. Every host must read it the same way, as the Manufacturing Database does, or one
+    // calibration would get a different calUuid on each workstation it is uploaded from.
+    for (const char* hostZone : HOST_TIME_ZONES) {
+        SCOPED_TRACE(hostZone);
+        ScopedTimeZone tz(hostZone);
+        int64_t ms = 0;
+
+        // SN944779286's calibration: calDate 2026-11-19, calTime 22:22:16 (MST) is 2026-11-20T05:22:16Z
+        ASSERT_TRUE(ISDeviceCal::calInfoToUnixMs(makeCalInfo(2026, 11, 19, 22, 22, 16), ms));
+        EXPECT_EQ(ms, 1795152136000ll);
+
+        ASSERT_TRUE(ISDeviceCal::calInfoToUnixMs(makeCalInfo(2026, 7, 4, 12, 0, 0), ms));  // MDT
+        EXPECT_EQ(utils::unixMsToRfc3339(ms), "2026-07-04T18:00:00.000Z");
+
+        ASSERT_TRUE(ISDeviceCal::calInfoToUnixMs(makeCalInfo(2026, 11, 1, 1, 30, 0), ms));  // repeated hour: the earlier, MDT
+        EXPECT_EQ(utils::unixMsToRfc3339(ms), "2026-11-01T07:30:00.000Z");
+
+        EXPECT_FALSE(ISDeviceCal::calInfoToUnixMs(makeCalInfo(2026, 3, 8, 2, 30, 0), ms));  // spring gap: never happened
+    }
+}
+
+TEST(test_usMountainTimeToUnixMs, daylightSavingBoundaries) {
+    // Each value is what America/Denver gives (the Manufacturing Database converter uses chrono-tz, earliest instant)
+    int64_t ms = 0;
+    ASSERT_TRUE(utils::usMountainTimeToUnixMs(2026, 3, 8, 1, 59, 59, ms));  // last second of MST
+    EXPECT_EQ(utils::unixMsToRfc3339(ms), "2026-03-08T08:59:59.000Z");
+    ASSERT_TRUE(utils::usMountainTimeToUnixMs(2026, 3, 8, 3, 0, 0, ms));  // first second of MDT
+    EXPECT_EQ(utils::unixMsToRfc3339(ms), "2026-03-08T09:00:00.000Z");
+    ASSERT_TRUE(utils::usMountainTimeToUnixMs(2026, 11, 1, 0, 59, 59, ms));
+    EXPECT_EQ(utils::unixMsToRfc3339(ms), "2026-11-01T06:59:59.000Z");
+    ASSERT_TRUE(utils::usMountainTimeToUnixMs(2026, 11, 1, 2, 0, 0, ms));  // MST again
+    EXPECT_EQ(utils::unixMsToRfc3339(ms), "2026-11-01T09:00:00.000Z");
+
+    // Before 2007: first Sunday of April to last Sunday of October
+    EXPECT_FALSE(utils::usMountainTimeToUnixMs(2006, 4, 2, 2, 30, 0, ms));
+    ASSERT_TRUE(utils::usMountainTimeToUnixMs(2006, 3, 12, 12, 0, 0, ms));  // the 2007 rule's start date, still MST in 2006
+    EXPECT_EQ(utils::unixMsToRfc3339(ms), "2006-03-12T19:00:00.000Z");
+    ASSERT_TRUE(utils::usMountainTimeToUnixMs(2006, 10, 29, 1, 30, 0, ms));
+    EXPECT_EQ(utils::unixMsToRfc3339(ms), "2006-10-29T07:30:00.000Z");
+
+    // Dates that do not exist
+    EXPECT_FALSE(utils::usMountainTimeToUnixMs(2026, 2, 29, 12, 0, 0, ms));
+    EXPECT_TRUE(utils::usMountainTimeToUnixMs(2024, 2, 29, 12, 0, 0, ms));
+    EXPECT_FALSE(utils::usMountainTimeToUnixMs(2026, 4, 31, 12, 0, 0, ms));
+}
+
+TEST_F(test_ISDeviceCal, calInfoToUnixMs_rejectsBlankCalibration) {
+    sensor_cal_info_t blank = {};
+    int64_t ms = 0;
+    EXPECT_FALSE(ISDeviceCal::calInfoToUnixMs(blank, ms));
+    EXPECT_FALSE(ISDeviceCal::calInfoToUnixMs(makeCalInfo(2026, 13, 1, 0, 0, 0), ms));
+    EXPECT_FALSE(ISDeviceCal::calInfoToUnixMs(makeCalInfo(2026, 1, 1, 24, 0, 0), ms));
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_sameCalibrationSameCalUuidWhenSavedOrUploadedAgain) {
+    // The station saves and uploads a calibration more than once, and a calibration loaded from the database onto the device is
+    // uploaded again: each time the identity comes from the calibration's own date and time, so the calUuid is the same.
+    sensor_cal_info_t ci = makeCalInfo(2026, 11, 19, 22, 22, 16);
+    ci.devSerialNum = 944779286u;
+    sCalDeviceIdentity id = makeGpxIdentity();
+    id.serialNumber = 944779286u;
+    ASSERT_TRUE(ISDeviceCal::calInfoToUnixMs(ci, id.calDateTimeMs));
+
+    json first = ISDeviceCal::buildCalibrationJson("", nullptr, &ci, nullptr, nullptr, -1, &id);
+    id.calBitStatus ^= 0x1;  // changes between uploads; not part of the identity
+    json second = ISDeviceCal::buildCalibrationJson("", nullptr, &ci, nullptr, nullptr, -1, &id);
+
+    EXPECT_EQ(first["info"]["calUuid"], second["info"]["calUuid"]);
+    EXPECT_EQ(first["info"]["calDateTime"], "2026-11-20T05:22:16.000Z");
+    EXPECT_EQ(first["info"]["calUuid"], "01a1f767-c740-7300-b84e-ebc91af5f15a");  // the calibration-db derivation for these inputs
+}
+
+TEST_F(test_ISDeviceCal, identityStanza_unsetUidIsNoUid) {
+    // A UID that reads all zeros or all ones was never programmed. The device is a legacy one: no manfUid is sent, and the calUuid
+    // uses the empty UID, as the Manufacturing Database derives it.
+    for (uint32_t fill : {0u, 0xFFFFFFFFu}) {
+        SCOPED_TRACE(fill);
+        sCalDeviceIdentity id = makeGpxIdentity();
+        for (uint32_t& w : id.manf.uid) w = fill;
+        id.hwType = "IMX-5.0";
+        id.serialNumber = 522807u;
+        id.calDateTimeMs = 1786028482000ll;
+
+        json j = ISDeviceCal::buildCalibrationJson("", nullptr, &info, nullptr, nullptr, -1, &id);
+        EXPECT_FALSE(j["info"].contains("manfUid"));
+        EXPECT_EQ(j["info"]["calUuid"], "019fd797-ddd0-70e2-ad25-dea78befac37");  // the no-UID vector
+        EXPECT_FALSE(ISDeviceCal::buildDeviceJson(id).contains("manfUid"));
+    }
 }
 
 TEST_F(test_ISDeviceCal, identityStanza_legacyZonelessDateIsOmitted)
