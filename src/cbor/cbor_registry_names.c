@@ -23,6 +23,7 @@ static const cbor_registry_did_names_t s_dids[] = {
     { CBOR_DID_CAN_CONFIG, g_cborNames_CAN_CONFIG, CBOR_CAN_CONFIG_NAME_COUNT },
     { CBOR_DID_GPX_FLASH_CFG, g_cborNames_GPX_FLASH_CFG, CBOR_GPX_FLASH_CFG_NAME_COUNT },
     { CBOR_DID_MAG_CAL_MAP, g_cborNames_MAG_CAL_MAP, CBOR_MAG_CAL_MAP_NAME_COUNT },
+    { CBOR_DID_CONFIG_SYSTEM, g_cborNames_CONFIG_SYSTEM, CBOR_CONFIG_SYSTEM_NAME_COUNT },
     { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
     { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
     { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
@@ -66,6 +67,7 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_GPX_FLASH_CFG, "GPX_FLASH_CFG" },
     { CBOR_DID_CALIBRATION, "CALIBRATION" },
     { CBOR_DID_MAG_CAL_MAP, "MAG_CAL_MAP" },
+    { CBOR_DID_CONFIG_SYSTEM, "CONFIG_SYSTEM" },
     { CBOR_DID_NMEA_PIMU, "NMEA_PIMU" },
     { CBOR_DID_NMEA_PPIMU, "NMEA_PPIMU" },
     { CBOR_DID_NMEA_PRIMU, "NMEA_PRIMU" },
@@ -191,7 +193,7 @@ static const key_enum_t s_keyEnums[] = {
     { CBOR_DID_ROUTE_FILTER, 0x0003, 4 },
 };
 
-/* DIDs bound to a legacy struct, and their schemas */
+/* DIDs with a schema: those bound to a legacy struct, and domain DIDs (over their view structs) */
 typedef struct
 {
     uint16_t                did;    //!< root DID key
@@ -202,6 +204,7 @@ static const did_schema_t s_schemas[] = {
     { CBOR_DID_FLASH_CFG, &g_cborSchema_FLASH_CFG },
     { CBOR_DID_CAN_CONFIG, &g_cborSchema_CAN_CONFIG },
     { CBOR_DID_GPX_FLASH_CFG, &g_cborSchema_GPX_FLASH_CFG },
+    { CBOR_DID_CONFIG_SYSTEM, &g_cborSchema_CONFIG_SYSTEM },
 };
 
 #define COUNT(a)    (sizeof(a) / sizeof((a)[0]))
