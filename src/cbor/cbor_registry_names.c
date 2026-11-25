@@ -20,7 +20,6 @@ typedef struct
 } cbor_registry_did_names_t;
 
 static const cbor_registry_did_names_t s_dids[] = {
-    { CBOR_DOMAIN_MAG_CAL_MAP, g_cborNames_MAG_CAL_MAP, g_cborNameParents_MAG_CAL_MAP, CBOR_MAG_CAL_MAP_NAME_COUNT },
     { CBOR_DOMAIN_CONFIG_SYSTEM, g_cborNames_CONFIG_SYSTEM, g_cborNameParents_CONFIG_SYSTEM, CBOR_CONFIG_SYSTEM_NAME_COUNT },
     { CBOR_DOMAIN_CONFIG_INS, g_cborNames_CONFIG_INS, g_cborNameParents_CONFIG_INS, CBOR_CONFIG_INS_NAME_COUNT },
     { CBOR_DOMAIN_CONFIG_MAG, g_cborNames_CONFIG_MAG, g_cborNameParents_CONFIG_MAG, CBOR_CONFIG_MAG_NAME_COUNT },
@@ -100,7 +99,6 @@ const cbor_registry_name_t *cbor_registry_field_at(uint16_t did, int index)
 /* Root DID keys and names */
 static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DOMAIN_CALIBRATION, "CALIBRATION" },
-    { CBOR_DOMAIN_MAG_CAL_MAP, "MAG_CAL_MAP" },
     { CBOR_DOMAIN_CONFIG_SYSTEM, "CONFIG_SYSTEM" },
     { CBOR_DOMAIN_CONFIG_INS, "CONFIG_INS" },
     { CBOR_DOMAIN_CONFIG_MAG, "CONFIG_MAG" },

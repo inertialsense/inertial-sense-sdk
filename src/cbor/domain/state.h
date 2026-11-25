@@ -26,7 +26,7 @@ extern "C" {
 #define CBOR_STATE__MAG_MAG1                         0        //!< MAG1: map
 #define CBOR_STATE__MAG_MAG1_COVERAGE                0        //!< coverage: map
 #define CBOR_STATE__MAG_MAG1_COVERAGE_GRID           0        //!< grid: uint8, default 0
-#define CBOR_STATE__MAG_MAG1_COVERAGE_COUNTS         1        //!< counts: uint8[64], default 0
+#define CBOR_STATE__MAG_MAG1_COVERAGE_COUNTS         1        //!< counts: bytes, default 0
 #define CBOR_STATE__MAG_MAG1_COVERAGE_SAMPLECOUNT    2        //!< sampleCount: uint32, default 0
 #define CBOR_STATE__MAG_MAG1_SOLVER                  1        //!< solver: map
 #define CBOR_STATE__MAG_MAG1_SOLVER_DTD              0        //!< dtd: float32[100], default 0

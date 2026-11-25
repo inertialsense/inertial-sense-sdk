@@ -28,7 +28,6 @@ extern "C" {
 /** @name Root keys: one per domain */
 /** @{ */
 #define CBOR_DOMAIN_CALIBRATION                      0x0100   //!< CALIBRATION: domain, reserved
-#define CBOR_DOMAIN_MAG_CAL_MAP                      0x0101   //!< MAG_CAL_MAP: domain
 #define CBOR_DOMAIN_CONFIG_SYSTEM                    0x0102   //!< CONFIG_SYSTEM: domain, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DOMAIN_CONFIG_INS                       0x0103   //!< CONFIG_INS: domain, served by IMX-5, IMX-6
 #define CBOR_DOMAIN_CONFIG_MAG                       0x0104   //!< CONFIG_MAG: domain, served by IMX-5, IMX-6
@@ -383,7 +382,7 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 typedef struct
 {
     uint8_t         grid;                   //!< key 0: uint8, default 0
-    uint8_t         counts[64];             //!< key 1: uint8[64], default 0
+    uint8_t         counts[64];             //!< key 1: bytes, default 0
     uint32_t        sampleCount;            //!< key 2: uint32, default 0
 } cbor_keyset_mag_state_coverage_t;
 
@@ -474,7 +473,6 @@ typedef struct
     uint8_t         gsvBands[9];            //!< key 1: uint8[SAT_SV_GNSS_ID_COUNT], default set by the firmware
 } cbor_keyset_port_t;
 
-#include "cbor/domain/mag_cal_map.h"
 #include "cbor/domain/config_system.h"
 #include "cbor/domain/config_ins.h"
 #include "cbor/domain/config_mag.h"

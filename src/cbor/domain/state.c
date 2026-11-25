@@ -19,7 +19,7 @@ static const cbor_schema_t s_schema_state_lastposition = { s_fields_state_lastpo
 
 static const cbor_field_t s_fields_state_mag_mag1_coverage[] = {
     { 0, CBOR_T_UINT, 1, 0, offsetof(cbor_keyset_mag_state_coverage_t, grid), NULL },
-    { 1, CBOR_T_UINT, 1, 64, offsetof(cbor_keyset_mag_state_coverage_t, counts), NULL },
+    { 1, CBOR_T_BYTES, 1, 64, offsetof(cbor_keyset_mag_state_coverage_t, counts), NULL },
     { 2, CBOR_T_UINT, 4, 0, offsetof(cbor_keyset_mag_state_coverage_t, sampleCount), NULL },
 };
 static const cbor_schema_t s_schema_state_mag_mag1_coverage = { s_fields_state_mag_mag1_coverage, sizeof(s_fields_state_mag_mag1_coverage) / sizeof(s_fields_state_mag_mag1_coverage[0]) };
@@ -54,7 +54,7 @@ static const cbor_field_t s_fields_state_imx_lastposition[] = {
 static const cbor_schema_t s_schema_state_imx_lastposition = { s_fields_state_imx_lastposition, sizeof(s_fields_state_imx_lastposition) / sizeof(s_fields_state_imx_lastposition[0]) };
 
 static const cbor_field_t s_fields_state_imx_mag_mag1_coverage[] = {
-    { 1, CBOR_T_UINT, 1, 64, offsetof(cbor_keyset_mag_state_coverage_t, counts), NULL },
+    { 1, CBOR_T_BYTES, 1, 64, offsetof(cbor_keyset_mag_state_coverage_t, counts), NULL },
     { 2, CBOR_T_UINT, 4, 0, offsetof(cbor_keyset_mag_state_coverage_t, sampleCount), NULL },
 };
 static const cbor_schema_t s_schema_state_imx_mag_mag1_coverage = { s_fields_state_imx_mag_mag1_coverage, sizeof(s_fields_state_imx_mag_mag1_coverage) / sizeof(s_fields_state_imx_mag_mag1_coverage[0]) };
