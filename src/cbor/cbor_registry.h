@@ -37,6 +37,7 @@ extern "C" {
 #define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -86,6 +87,19 @@ extern "C" {
 #define CBOR_SUB_PORTS                               0x9302   //!< SUBSCRIBE: array of uint8, up to 16, default set by the protocol, reserved
 #define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default false, reserved
 /** @} */
+
+/** Registry enum `pin_id` */
+typedef enum
+{
+    CBOR_PIN_ID_G1G2 = 0,
+    CBOR_PIN_ID_G5G8 = 1,
+    CBOR_PIN_ID_G6G7 = 2,
+    CBOR_PIN_ID_G9 = 3,
+    CBOR_PIN_ID_G11 = 4,
+    CBOR_PIN_ID_G12 = 5,
+    CBOR_PIN_ID_G13 = 6,
+    CBOR_PIN_ID_G15 = 7,
+} eCborPinId;
 
 /** Registry enum `imu_slot` */
 typedef enum
@@ -277,6 +291,12 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 
 /* Shared key sets: each domain DID that uses one holds members of these types */
 
+/** Shared key set `pin`: one member per key */
+typedef struct
+{
+    uint8_t         function;               //!< key 0: uint8, default set by the firmware
+} cbor_keyset_pin_t;
+
 /** Shared key set `channel`: one member per key */
 typedef struct
 {
@@ -315,6 +335,7 @@ typedef struct
 #include "cbor/dids/cbor_did_config_ground_vehicle.h"
 #include "cbor/dids/cbor_did_config_ports.h"
 #include "cbor/dids/cbor_did_config_sensors.h"
+#include "cbor/dids/cbor_did_config_io.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"
