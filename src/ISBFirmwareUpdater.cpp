@@ -9,6 +9,73 @@
 #include "ISBFirmwareUpdater.h"
 #include "InertialSense.h"
 
+#if PLATFORM_IS_LINUX
+#include <climits>
+#include <cstdlib>
+#endif
+
+/**
+ * The physical USB location of a serial port: the sysfs path of the USB device behind the tty, e.g.
+ * ".../usb5/5-1/5-1.6/5-1.6.1/5-1.6.1.3". It names the hub port the module is plugged into, so it is
+ * unchanged across the module's reset even when the tty is renamed. Empty for a port with no USB device
+ * behind it (a TCP port, a UART) and on platforms without sysfs.
+ */
+static std::string usbLocationOf(port_handle_t port) {
+#if PLATFORM_IS_LINUX
+    if (!portIsValid(port) || (portClass(port) != PORT_TYPE__UART))
+        return "";
+    std::string name = portName(port);
+    auto slash = name.rfind('/');
+    std::string link = "/sys/class/tty/" + ((slash == std::string::npos) ? name : name.substr(slash + 1)) + "/device";
+    char resolved[PATH_MAX];
+    if (!realpath(link.c_str(), resolved))
+        return "";
+    std::string path(resolved);             // ends in the USB interface, e.g. ".../5-1.6.1.3/5-1.6.1.3:1.0"
+    slash = path.rfind('/');
+    if ((slash == std::string::npos) || (path.find(':', slash) == std::string::npos))
+        return "";                          // not a USB interface node
+    return path.substr(0, slash);
+#else
+    (void)port;
+    return "";
+#endif
+}
+
+/**
+ * The device this update belongs to, found again after a reboot. Identity narrows the candidates, but
+ * cannot settle it: modules can share one (unserialized modules all report the same serial number), so
+ * when the update started on a USB port, only a candidate at that same USB location is accepted. Without
+ * a location, an identity shared by several devices is ambiguous and nothing is returned, rather than
+ * guessing -- guessing wrong flashes another module. Returns null while the device is not (yet) findable.
+ */
+device_handle_t ISBFirmwareUpdater::findTargetDevice(device_handle_t fallback) {
+    uint64_t targetId = ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo);
+    std::vector<device_handle_t> candidates;
+    for (auto& d : deviceManager.getDevicesAsVector()) {
+        if (d && (ENCODE_DEV_INFO_TO_UNIQUE_ID(d->devInfo) == targetId))
+            candidates.push_back(d);
+    }
+
+    if (!target_location.empty()) {
+        for (auto& d : candidates) {
+            if (usbLocationOf(d->port) == target_location)
+                return d;
+        }
+        return nullptr;
+    }
+
+    if (candidates.size() == 1)
+        return candidates.front();
+    for (auto& d : candidates) {
+        if (d == fallback)
+            return d;
+    }
+    if (candidates.size() > 1)
+        log_warn(IS_LOG_FWUPDATE, "ISBFirmwareUpdater: %zu devices share identity %s and the target has no physical location to tell them apart; not choosing one.",
+                 candidates.size(), ISDevice::getIdAsString(target_devInfo).c_str());
+    return nullptr;
+}
+
 // IMX-5 (STM32L4) flash geometry — mirrors the bootloader constants in
 // hw-libs/mcu/STM32L4/drivers/d_flash.h. Used to bound-check an image against the
 // target ISbl's writable flash window before erasing (SN-8314).
@@ -203,7 +270,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
         // for the next fwUpdate_step() to dereference.
         device_handle_t parentDevice = device;
         uint64_t targetId = ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo);
-        device = deviceManager.getDevice(targetId);
+        device = findTargetDevice(parentDevice);
         if (!device) {   // nothing to do without a valid device -- This is a bigger error and we should probably log the error
             device = parentDevice;
             // Report BOTH sides of the failed comparison. getDevice() recomputes each device's unique id
@@ -383,7 +450,7 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
                 // guard near the top -- silencing the keep-alive and letting the host's 20s watchdog fail
                 // an upload that had completed. Same as the lookup in the INITIALIZING block above.
                 device_handle_t priorDevice = device;
-                device = deviceManager.getDevice(ENCODE_DEV_INFO_TO_UNIQUE_ID(target_devInfo));
+                device = findTargetDevice(priorDevice);
                 if (!device) {
                     device = priorDevice;
                     // Device not yet rediscovered — keep waiting (heartbeat above)
@@ -525,6 +592,8 @@ fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdat
 
     if (device && device->hasDeviceInfo())
         target_devInfo = device->DeviceInfo();
+    if (device)
+        target_location = usbLocationOf(device->port);
 
     if (!imgBuffer) // don't leak memory
         imgBuffer = new ByteBuffer(session_image_size);
