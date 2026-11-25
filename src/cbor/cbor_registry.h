@@ -32,6 +32,9 @@ extern "C" {
 #define CBOR_DID_CALIBRATION                         0x0100   //!< CALIBRATION: CBOR-only DID, reserved
 #define CBOR_DID_MAG_CAL_MAP                         0x0101   //!< MAG_CAL_MAP: CBOR-only DID
 #define CBOR_DID_CONFIG_SYSTEM                       0x0102   //!< CONFIG_SYSTEM: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DID_CONFIG_INS                          0x0103   //!< CONFIG_INS: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_MAG                          0x0104   //!< CONFIG_MAG: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -236,6 +239,9 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 #include "cbor/dids/cbor_did_gpx_flash_cfg.h"
 #include "cbor/dids/cbor_did_mag_cal_map.h"
 #include "cbor/dids/cbor_did_config_system.h"
+#include "cbor/dids/cbor_did_config_ins.h"
+#include "cbor/dids/cbor_did_config_mag.h"
+#include "cbor/dids/cbor_did_config_ground_vehicle.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"
