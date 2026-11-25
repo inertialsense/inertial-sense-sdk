@@ -342,10 +342,10 @@ typedef struct
 /** Shared key set `base_output`: one member per key */
 typedef struct
 {
-    uint8_t         SER0;                   //!< key 0: bool, default false
-    uint8_t         SER1;                   //!< key 1: bool, default false
-    uint8_t         SER2;                   //!< key 2: bool, default false
-    uint8_t         USB;                    //!< key 3: bool, default false
+    uint8_t         ser0;                   //!< key 0: bool, default false
+    uint8_t         ser1;                   //!< key 1: bool, default false
+    uint8_t         ser2;                   //!< key 2: bool, default false
+    uint8_t         usb;                    //!< key 3: bool, default false
 } cbor_keyset_base_output_t;
 
 /** Shared key set `pin`: one member per key */

@@ -75,7 +75,7 @@ extern "C" {
 #define CBOR_CONFIG_GNSS__ANTENNA_ANT2_OFFSET        1        //!< offset: float32[3], default [0, 0, 0]
 #define CBOR_CONFIG_GNSS__ANTENNA_ANT2_OFFSETESTIMATION 2        //!< offsetEstimation: bool, default false
 #define CBOR_CONFIG_GNSS__ANTENNA_ANT2_POWERENABLED  3        //!< powerEnabled: bool, default true
-#define CBOR_CONFIG_GNSS__RTK                        8        //!< RTK: map
+#define CBOR_CONFIG_GNSS__RTK                        8        //!< Rtk: map
 #define CBOR_CONFIG_GNSS__RTK_MODE                   0        //!< mode: uint8, default 0
 #define CBOR_CONFIG_GNSS__RTK_BASEPOSITION           1        //!< basePosition: float64[3], default [0, 0, 0]
 #define CBOR_CONFIG_GNSS__RTK_BASEPOSITIONMOVING     2        //!< basePositionMoving: bool, default false
@@ -84,25 +84,25 @@ extern "C" {
 #define CBOR_CONFIG_GNSS__RTK_MULTIPATHMITIGATION    5        //!< multipathMitigation: bool, default false
 #define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT             6        //!< BaseOutput: map
 #define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX 0        //!< GNSS1_UBLOX: map
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_SER0 0        //!< SER0: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_SER1 1        //!< SER1: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_SER2 2        //!< SER2: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_USB 3        //!< USB: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_SER0 0        //!< ser0: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_SER1 1        //!< ser1: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_SER2 2        //!< ser2: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_UBLOX_USB 3        //!< usb: bool, default false
 #define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3 1        //!< GNSS1_RTCM3: map
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_SER0 0        //!< SER0: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_SER1 1        //!< SER1: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_SER2 2        //!< SER2: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_USB 3        //!< USB: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_SER0 0        //!< ser0: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_SER1 1        //!< ser1: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_SER2 2        //!< ser2: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS1_RTCM3_USB 3        //!< usb: bool, default false
 #define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX 2        //!< GNSS2_UBLOX: map
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_SER0 0        //!< SER0: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_SER1 1        //!< SER1: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_SER2 2        //!< SER2: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_USB 3        //!< USB: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_SER0 0        //!< ser0: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_SER1 1        //!< ser1: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_SER2 2        //!< ser2: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_UBLOX_USB 3        //!< usb: bool, default false
 #define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3 3        //!< GNSS2_RTCM3: map
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_SER0 0        //!< SER0: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_SER1 1        //!< SER1: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_SER2 2        //!< SER2: bool, default false
-#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_USB 3        //!< USB: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_SER0 0        //!< ser0: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_SER1 1        //!< ser1: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_SER2 2        //!< ser2: bool, default false
+#define CBOR_CONFIG_GNSS__RTK_BASEOUTPUT_GNSS2_RTCM3_USB 3        //!< usb: bool, default false
 /** @} */
 
 #define CBOR_CONFIG_GNSS_NAME_COUNT                  85       //!< entries in g_cborNames_CONFIG_GNSS
@@ -123,7 +123,7 @@ typedef struct
     uint8_t         fixedLatency;           //!< key 0: bool, default false
 } cbor_config_gnss_externalaiding_t;
 
-/** CONFIG_GNSS.RTK: one member per key, in registry types */
+/** CONFIG_GNSS.Rtk: one member per key, in registry types */
 typedef struct
 {
     uint8_t         mode;                   //!< key 0: uint8, default 0
@@ -146,7 +146,7 @@ typedef struct
     cbor_keyset_receiver_t Receiver[2];  //!< key 5: map of receiver by receiver_id
     cbor_keyset_antenna_t Antennas;  //!< key 6: antenna, common to every instance
     cbor_keyset_antenna_t Antenna[2];  //!< key 7: map of antenna by antenna_id
-    cbor_config_gnss_rtk_t RTK;  //!< key 8: map
+    cbor_config_gnss_rtk_t Rtk;  //!< key 8: map
 } cbor_config_gnss_t;
 
 /** Schema of every CONFIG_GNSS key, over cbor_config_gnss_t; a device stores and accepts a subset of them */
