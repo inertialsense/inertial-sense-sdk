@@ -385,7 +385,7 @@ typedef struct
     uint8_t         ppsPin;                 //!< key 2: uint8, default set by the firmware
     uint8_t         configure;              //!< key 3: bool, default set by the firmware
     uint8_t         fusionEnabled;          //!< key 4: bool, default true
-    uint16_t        signals;                //!< key 5: uint16, default 5119
+    uint16_t        satSignals;             //!< key 5: uint16, default 5119
     float           minElevation;           //!< key 6: float32, default 0.17453292
     uint8_t         cn0Min;                 //!< key 7: uint8, default 30
     uint8_t         cn0DynOffset;           //!< key 8: uint8, default 20

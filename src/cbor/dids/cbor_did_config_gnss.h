@@ -31,7 +31,7 @@ extern "C" {
 #define CBOR_CONFIG_GNSS__RECEIVERS_PPSPIN           2        //!< ppsPin: uint8, default set by the firmware
 #define CBOR_CONFIG_GNSS__RECEIVERS_CONFIGURE        3        //!< configure: bool, default set by the firmware
 #define CBOR_CONFIG_GNSS__RECEIVERS_FUSIONENABLED    4        //!< fusionEnabled: bool, default true
-#define CBOR_CONFIG_GNSS__RECEIVERS_SIGNALS          5        //!< signals: uint16, default 5119
+#define CBOR_CONFIG_GNSS__RECEIVERS_SATSIGNALS       5        //!< satSignals: uint16, default 5119
 #define CBOR_CONFIG_GNSS__RECEIVERS_MINELEVATION     6        //!< minElevation: float32, default 0.17453292
 #define CBOR_CONFIG_GNSS__RECEIVERS_CN0MIN           7        //!< cn0Min: uint8, default 30
 #define CBOR_CONFIG_GNSS__RECEIVERS_CN0DYNOFFSET     8        //!< cn0DynOffset: uint8, default 20
@@ -43,7 +43,7 @@ extern "C" {
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_PPSPIN      2        //!< ppsPin: uint8, default set by the firmware
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_CONFIGURE   3        //!< configure: bool, default set by the firmware
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_FUSIONENABLED 4        //!< fusionEnabled: bool, default true
-#define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_SIGNALS     5        //!< signals: uint16, default 5119
+#define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_SATSIGNALS  5        //!< satSignals: uint16, default 5119
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_MINELEVATION 6        //!< minElevation: float32, default 0.17453292
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_CN0MIN      7        //!< cn0Min: uint8, default 30
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS1_CN0DYNOFFSET 8        //!< cn0DynOffset: uint8, default 20
@@ -54,7 +54,7 @@ extern "C" {
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_PPSPIN      2        //!< ppsPin: uint8, default set by the firmware
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_CONFIGURE   3        //!< configure: bool, default set by the firmware
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_FUSIONENABLED 4        //!< fusionEnabled: bool, default true
-#define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_SIGNALS     5        //!< signals: uint16, default 5119
+#define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_SATSIGNALS  5        //!< satSignals: uint16, default 5119
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_MINELEVATION 6        //!< minElevation: float32, default 0.17453292
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_CN0MIN      7        //!< cn0Min: uint8, default 30
 #define CBOR_CONFIG_GNSS__RECEIVER_GNSS2_CN0DYNOFFSET 8        //!< cn0DynOffset: uint8, default 20
