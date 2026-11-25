@@ -4490,9 +4490,8 @@ std::string nmeaMsgIdToTalker(int msgId)
         case NMEA_MSG_ID_PRIMU: return "PRIMU";
         case NMEA_MSG_ID_PINS1: return "PINS1";
         case NMEA_MSG_ID_PINS2: return "PINS2";
+        case NMEA_MSG_ID_PGNSSP: return "PGNSSP";
         case NMEA_MSG_ID_PGPSP: return "PGPSP";
-        case NMEA_MSG_ID_PGNSSP:
-            return "PGNSSP";
         case NMEA_MSG_ID_GNGGA: return "GNGGA";
         case NMEA_MSG_ID_GNGLL: return "GNGLL";
         case NMEA_MSG_ID_GNGSA: return "GNGSA";
