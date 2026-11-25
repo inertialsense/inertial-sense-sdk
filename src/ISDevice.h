@@ -702,7 +702,7 @@ public:
     /**
      * @brief Reads a domain into its view struct (blocking), re-requesting any fields a reply marked RESP_TOO_LARGE until
      *        every field has been read or a round brings nothing new.
-     * @param did        root key of the domain (e.g. CBOR_DID_CONFIG_SYSTEM)
+     * @param did        root key of the domain (e.g. CBOR_DOMAIN_CONFIG_SYSTEM)
      * @param schema     schema of the view struct (e.g. g_cborSchema_CONFIG_SYSTEM, or a family's g_cborSchema_CONFIG_SYSTEM_imx)
      * @param data       the struct to fill
      * @param dst        MSG_DST_DEV_FILTER for a device behind this one (e.g. its GPX), or none for this device

@@ -63,7 +63,7 @@ TEST(CborFormat, GetNamesFieldsLikeMinusGet)
     CborRequest req = request("{CONFIG_INS: {dynamicModel, rotation}}", CBOR_MSG_TYPE_GET);
     EXPECT_EQ(req.type, CBOR_MSG_TYPE_GET);
     ASSERT_EQ(req.entries.size(), 1u);
-    EXPECT_EQ(req.entries[0].first, CBOR_DID_CONFIG_INS);
+    EXPECT_EQ(req.entries[0].first, CBOR_DOMAIN_CONFIG_INS);
     EXPECT_EQ(req.entries[0].second, Cbor().arr(2).u(CBOR_CONFIG_INS__DYNAMICMODEL).u(CBOR_CONFIG_INS__ROTATION).out());
 }
 
@@ -71,11 +71,11 @@ TEST(CborFormat, GetAcceptsDomainNamesNumbersAndWholeDomains)
 {
     CborRequest req = request("{CONFIG_INS: [dynamicModel], 0x0102, CONFIG_CAN}", CBOR_MSG_TYPE_GET);
     ASSERT_EQ(req.entries.size(), 3u);
-    EXPECT_EQ(req.entries[0].first, CBOR_DID_CONFIG_INS);
+    EXPECT_EQ(req.entries[0].first, CBOR_DOMAIN_CONFIG_INS);
     EXPECT_EQ(req.entries[0].second, Cbor().arr(1).u(CBOR_CONFIG_INS__DYNAMICMODEL).out());
-    EXPECT_EQ(req.entries[1].first, CBOR_DID_CONFIG_SYSTEM);
+    EXPECT_EQ(req.entries[1].first, CBOR_DOMAIN_CONFIG_SYSTEM);
     EXPECT_EQ(req.entries[1].second, Cbor().arr(0).out()) << "no fields = every field";
-    EXPECT_EQ(req.entries[2].first, CBOR_DID_CONFIG_CAN);
+    EXPECT_EQ(req.entries[2].first, CBOR_DOMAIN_CONFIG_CAN);
 }
 
 TEST(CborFormat, ALegacyDidNameIsNotADomain)
@@ -110,7 +110,7 @@ TEST(CborFormat, DataSetsOneElementFromTheCurrentValues)
     cur.rotation[1] = -0.25f;
     // An indexed key is quoted, as cltool's -set argument handling does, so YAML reads it as a key
     CborRequest req = request("{CONFIG_INS: {'rotation[2]': 1.5}}", CBOR_MSG_TYPE_DATA,
-                              [&](uint16_t did) -> const void * { return did == CBOR_DID_CONFIG_INS ? &cur : nullptr; });
+                              [&](uint16_t did) -> const void * { return did == CBOR_DOMAIN_CONFIG_INS ? &cur : nullptr; });
     ASSERT_EQ(req.entries.size(), 1u);
     EXPECT_EQ(req.entries[0].second,
               Cbor().map(1).u(CBOR_CONFIG_INS__ROTATION).arr(3).f(0.5f).f(-0.25f).f(1.5f).out());
@@ -164,7 +164,7 @@ TEST(CborFormat, NumericKeysWriteARawMessage)
     ASSERT_EQ(req.entries.size(), 2u);
     EXPECT_EQ(req.entries[0].first, CBOR_MSG_ROUTE);
     EXPECT_EQ(req.entries[0].second, Cbor().arr(1).u(3).out());
-    EXPECT_EQ(req.entries[1].first, CBOR_DID_CONFIG_SYSTEM);
+    EXPECT_EQ(req.entries[1].first, CBOR_DOMAIN_CONFIG_SYSTEM);
     EXPECT_EQ(req.entries[1].second, Cbor().map(1).u(0).u(921600).out());
 }
 
@@ -226,9 +226,9 @@ TEST(CborFormat, AValueTooLargeForOneMessageSaysSo)
 TEST(CborFormat, ReplyAsYamlInTheMinusGetShape)
 {
     Bytes msg = Cbor().map(3).u(CBOR_MSG_TYPE).u(cbor_msg_reply_type(CBOR_MSG_TYPE_GET))
-                    .u(CBOR_DID_CONFIG_INS).map(2).u(CBOR_CONFIG_INS__DYNAMICMODEL).u(4)
+                    .u(CBOR_DOMAIN_CONFIG_INS).map(2).u(CBOR_CONFIG_INS__DYNAMICMODEL).u(4)
                                               .u(CBOR_CONFIG_INS__ROTATION).arr(3).f(0.5f).f(0.0f).f(-1.0f)
-                    .u(CBOR_DID_RMC_STORED).map(1).u(CBOR_MSG_STATUS).u(CBOR_MSG_STATUS_RESP_TOO_LARGE).out();
+                    .u(CBOR_DOMAIN_RMC_STORED).map(1).u(CBOR_MSG_STATUS).u(CBOR_MSG_STATUS_RESP_TOO_LARGE).out();
     YAML::Node y = cborToYaml(msg.data(), msg.size());
     ASSERT_TRUE(y.IsMap());
     EXPECT_FALSE(y["MSG_TYPE"]) << "envelope left out by default";
@@ -256,10 +256,10 @@ TEST(CborFormat, NestedKeysAreNamedWithinTheirMap)
 {
     // Keys are scoped to their map: key 0 is navPeriodMs at the top of CONFIG_SYSTEM and type inside platform
     Bytes msg = Cbor().map(3).u(CBOR_MSG_TYPE).u(cbor_msg_reply_type(CBOR_MSG_TYPE_GET))
-                    .u(CBOR_DID_CONFIG_SYSTEM).map(2).u(CBOR_CONFIG_SYSTEM__NAVPERIODMS).u(5)
+                    .u(CBOR_DOMAIN_CONFIG_SYSTEM).map(2).u(CBOR_CONFIG_SYSTEM__NAVPERIODMS).u(5)
                                                  .u(CBOR_CONFIG_SYSTEM__PLATFORM).map(1)
                                                      .u(CBOR_CONFIG_SYSTEM__PLATFORM_TYPE).u(1)
-                    .u(CBOR_DID_CONFIG_PORTS).map(1).u(CBOR_CONFIG_PORTS__PORT).map(1)
+                    .u(CBOR_DOMAIN_CONFIG_PORTS).map(1).u(CBOR_CONFIG_PORTS__PORT).map(1)
                                                  .u(CBOR_PORT_ID_SER2).map(1).u(0).u(460800).out();
     YAML::Node y = cborToYaml(msg.data(), msg.size());
     EXPECT_EQ(y["CONFIG_SYSTEM"]["navPeriodMs"].as<uint32_t>(), 5u);
@@ -289,7 +289,7 @@ TEST(CborFormat, DiagnosticNotationWithNames)
     uint64_t imx;
     ASSERT_TRUE(cborDevFilterFromString("IMX-5.0::62797", imx));
     Bytes msg = Cbor().map(3).u(CBOR_MSG_TYPE).u(cbor_msg_reply_type(CBOR_MSG_TYPE_GET)).u(CBOR_MSG_SRC_DEV_ID).u(imx)
-                    .u(CBOR_DID_CONFIG_SYSTEM).map(1).u(CBOR_CONFIG_SYSTEM__NAVPERIODMS).u(16).out();
+                    .u(CBOR_DOMAIN_CONFIG_SYSTEM).map(1).u(CBOR_CONFIG_SYSTEM__NAVPERIODMS).u(16).out();
     EXPECT_EQ(cborToDiag(msg.data(), msg.size()),
               "{MSG_TYPE(0xC000): REPLY|GET, MSG_SRC_DEV_ID(0xC001): IMX-5.0::62797, CONFIG_SYSTEM(258): {navPeriodMs(0): 16}}");
     EXPECT_EQ(cborToDiag(msg.data(), msg.size(), false),
@@ -299,9 +299,9 @@ TEST(CborFormat, DiagnosticNotationWithNames)
 TEST(CborFormat, DiagnosticNotationNamesStatusErrKeysAndCapabilities)
 {
     Bytes msg = Cbor().map(2)
-                    .u(CBOR_DID_CONFIG_SYSTEM).map(2).u(CBOR_MSG_STATUS).u(CBOR_MSG_STATUS_BAD_VALUE)
+                    .u(CBOR_DOMAIN_CONFIG_SYSTEM).map(2).u(CBOR_MSG_STATUS).u(CBOR_MSG_STATUS_BAD_VALUE)
                                                  .u(CBOR_MSG_ERR_KEYS).arr(1).u(CBOR_CONFIG_SYSTEM__IMUODR)
-                    .u(CBOR_DID_CAPABILITIES).map(1).u(CBOR_DID_CONFIG_INS).arr(1).u(CBOR_CONFIG_INS__ROTATION)
+                    .u(CBOR_DOMAIN_CAPABILITIES).map(1).u(CBOR_DOMAIN_CONFIG_INS).arr(1).u(CBOR_CONFIG_INS__ROTATION)
                     .out();
     EXPECT_EQ(cborToDiag(msg.data(), msg.size()),
               "{CONFIG_SYSTEM(258): {MSG_STATUS(0xC008): BAD_VALUE, MSG_ERR_KEYS(0xC009): [imuOdr(1)]}, "
@@ -339,7 +339,7 @@ TEST(CborFormat, FloatsPrintAtTheirEncodedPrecision)
     msg.insert(msg.end(), dbl, (uint8_t *)enc.cur);
     EXPECT_EQ(cborToDiag(msg.data(), msg.size(), false), "[0.17453292, 0.1]");
 
-    Bytes reply = Cbor().map(1).u(CBOR_DID_CONFIG_INS).map(1).u(CBOR_CONFIG_INS__LASTPOSITIONUPDATEDISTANCEM)
+    Bytes reply = Cbor().map(1).u(CBOR_DOMAIN_CONFIG_INS).map(1).u(CBOR_CONFIG_INS__LASTPOSITIONUPDATEDISTANCEM)
                         .f(0.17453292f).out();
     YAML::Node y = cborToYaml(reply.data(), reply.size());
     EXPECT_EQ(y["CONFIG_INS"]["lastPositionUpdateDistanceM"].Scalar(), "0.17453292");
@@ -348,8 +348,8 @@ TEST(CborFormat, FloatsPrintAtTheirEncodedPrecision)
 TEST(CborFormat, IndicesAreNotNamedAsFields)
 {
     // ROUTE_FILTER rule 0 and RMC_STORED port 0 are indices; the fields inside them are named
-    Bytes msg = Cbor().map(2).u(CBOR_DID_ROUTE_FILTER).map(1).u(0).map(1).u(CBOR_ROUTE_FILTER__ACTION).u(CBOR_ROUTE_ACTION_DENY)
-                    .u(CBOR_DID_RMC_STORED).map(1).u(0).map(1).u(CBOR_RMC_STORED__RMC_PRESET).u(CBOR_RMC_PRESET_INS).out();
+    Bytes msg = Cbor().map(2).u(CBOR_DOMAIN_ROUTE_FILTER).map(1).u(0).map(1).u(CBOR_ROUTE_FILTER__ACTION).u(CBOR_ROUTE_ACTION_DENY)
+                    .u(CBOR_DOMAIN_RMC_STORED).map(1).u(0).map(1).u(CBOR_RMC_STORED__RMC_PRESET).u(CBOR_RMC_PRESET_INS).out();
     EXPECT_EQ(cborToDiag(msg.data(), msg.size()),
               "{ROUTE_FILTER(32767): {0: {ACTION(3): DENY}}, RMC_STORED(32765): {0: {RMC_PRESET(0x8001): INS}}}");
 }

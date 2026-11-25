@@ -21,16 +21,16 @@ TEST(CborRegistry, CborDidIsRegistered)
 
 TEST(CborRegistry, FieldNamesAndKeysRoundTrip)
 {
-    EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_CONFIG_INS, CBOR_CONFIG_INS__DYNAMICMODEL), "dynamicModel");
-    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_CONFIG_INS, "dynamicModel"), CBOR_CONFIG_INS__DYNAMICMODEL);
-    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_CONFIG_SYSTEM, "navPeriodMs"), CBOR_CONFIG_SYSTEM__NAVPERIODMS);
-    EXPECT_STREQ(cbor_registry_field_name(CBOR_DID_RMC_STORED, CBOR_RMC_STORED__RMC_PRESET), "RMC_PRESET");
+    EXPECT_STREQ(cbor_registry_field_name(CBOR_DOMAIN_CONFIG_INS, CBOR_CONFIG_INS__DYNAMICMODEL), "dynamicModel");
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DOMAIN_CONFIG_INS, "dynamicModel"), CBOR_CONFIG_INS__DYNAMICMODEL);
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DOMAIN_CONFIG_SYSTEM, "navPeriodMs"), CBOR_CONFIG_SYSTEM__NAVPERIODMS);
+    EXPECT_STREQ(cbor_registry_field_name(CBOR_DOMAIN_RMC_STORED, CBOR_RMC_STORED__RMC_PRESET), "RMC_PRESET");
 }
 
 TEST(CborRegistry, UnknownFieldsAreNotFound)
 {
-    EXPECT_EQ(cbor_registry_field_name(CBOR_DID_CONFIG_INS, 0x7FFF), nullptr);
-    EXPECT_EQ(cbor_registry_field_key(CBOR_DID_CONFIG_INS, "noSuchField"), -1);
+    EXPECT_EQ(cbor_registry_field_name(CBOR_DOMAIN_CONFIG_INS, 0x7FFF), nullptr);
+    EXPECT_EQ(cbor_registry_field_key(CBOR_DOMAIN_CONFIG_INS, "noSuchField"), -1);
     EXPECT_EQ(cbor_registry_did_key("FLASH_CFG"), -1) << "the flash block's schemas are not domains";
 }
 

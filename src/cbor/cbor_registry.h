@@ -27,18 +27,18 @@ extern "C" {
 
 /** @name Root keys: one per domain */
 /** @{ */
-#define CBOR_DID_CALIBRATION                         0x0100   //!< CALIBRATION: domain, reserved
-#define CBOR_DID_MAG_CAL_MAP                         0x0101   //!< MAG_CAL_MAP: domain
-#define CBOR_DID_CONFIG_SYSTEM                       0x0102   //!< CONFIG_SYSTEM: domain, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_CONFIG_INS                          0x0103   //!< CONFIG_INS: domain, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_MAG                          0x0104   //!< CONFIG_MAG: domain, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: domain, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: domain, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: domain, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: domain, served by IMX-5, IMX-6
-#define CBOR_DID_CONFIG_GNSS                         0x0109   //!< CONFIG_GNSS: domain, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_CONFIG_CAN                          0x010A   //!< CONFIG_CAN: domain, served by IMX-5, IMX-6
-#define CBOR_DID_STATE                               0x010B   //!< STATE: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CALIBRATION                      0x0100   //!< CALIBRATION: domain, reserved
+#define CBOR_DOMAIN_MAG_CAL_MAP                      0x0101   //!< MAG_CAL_MAP: domain
+#define CBOR_DOMAIN_CONFIG_SYSTEM                    0x0102   //!< CONFIG_SYSTEM: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_CONFIG_INS                       0x0103   //!< CONFIG_INS: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_MAG                       0x0104   //!< CONFIG_MAG: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_GROUND_VEHICLE            0x0105   //!< CONFIG_GROUND_VEHICLE: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_PORTS                     0x0106   //!< CONFIG_PORTS: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_CONFIG_SENSORS                   0x0107   //!< CONFIG_SENSORS: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_IO                        0x0108   //!< CONFIG_IO: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CONFIG_GNSS                      0x0109   //!< CONFIG_GNSS: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_CONFIG_CAN                       0x010A   //!< CONFIG_CAN: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_STATE                            0x010B   //!< STATE: domain, served by IMX-5, IMX-6
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID (an RMC subscription key)
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID (an RMC subscription key)
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID (an RMC subscription key)
@@ -58,10 +58,10 @@ extern "C" {
 #define CBOR_DID_NMEA_INTEL                          0x3F11   //!< NMEA_INTEL: NMEA sentence pseudo-DID (an RMC subscription key)
 #define CBOR_DID_NMEA_POWGPS                         0x3F12   //!< NMEA_POWGPS: NMEA sentence pseudo-DID (an RMC subscription key)
 #define CBOR_DID_NMEA_POWTLV                         0x3F13   //!< NMEA_POWTLV: NMEA sentence pseudo-DID (an RMC subscription key)
-#define CBOR_DID_CAPABILITIES                        0x7FFC   //!< CAPABILITIES: domain, served by IMX-5, IMX-6, GPX-1
-#define CBOR_DID_RMC_STORED                          0x7FFD   //!< RMC_STORED: domain, served by IMX-5, IMX-6
-#define CBOR_DID_RMC                                 0x7FFE   //!< RMC: domain
-#define CBOR_DID_ROUTE_FILTER                        0x7FFF   //!< ROUTE_FILTER: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_CAPABILITIES                     0x7FFC   //!< CAPABILITIES: domain, served by IMX-5, IMX-6, GPX-1
+#define CBOR_DOMAIN_RMC_STORED                       0x7FFD   //!< RMC_STORED: domain, served by IMX-5, IMX-6
+#define CBOR_DOMAIN_RMC                              0x7FFE   //!< RMC: domain
+#define CBOR_DOMAIN_ROUTE_FILTER                     0x7FFF   //!< ROUTE_FILTER: domain, served by IMX-5, IMX-6
 /** @} */
 
 /** @name General message keys (MSG_*) */

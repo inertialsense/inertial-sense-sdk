@@ -80,9 +80,9 @@ int didKeyedDepth(int did)
 {
     switch (did)
     {
-    case CBOR_DID_CAPABILITIES: return 1;
-    case CBOR_DID_RMC:
-    case CBOR_DID_RMC_STORED:   return 2;
+    case CBOR_DOMAIN_CAPABILITIES: return 1;
+    case CBOR_DOMAIN_RMC:
+    case CBOR_DOMAIN_RMC_STORED:   return 2;
     default:                    return 0;
     }
 }
@@ -92,9 +92,9 @@ int indexedDepth(int did)
 {
     switch (did)
     {
-    case CBOR_DID_ROUTE_FILTER:
-    case CBOR_DID_RMC:
-    case CBOR_DID_RMC_STORED:   return 1;
+    case CBOR_DOMAIN_ROUTE_FILTER:
+    case CBOR_DOMAIN_RMC:
+    case CBOR_DOMAIN_RMC_STORED:   return 1;
     default:                    return 0;
     }
 }
@@ -229,7 +229,7 @@ bool isDevIdKey(const Scope& sc, int key)
 {
     if (key == CBOR_MSG_SRC_DEV_ID || key == CBOR_MSG_DST_DEV_FILTER)
         return true;
-    return sc.did == CBOR_DID_ROUTE_FILTER && sc.depth == 3 && key == CBOR_ROUTE_FILTER__MATCH_DEV;   // in a rule's map
+    return sc.did == CBOR_DOMAIN_ROUTE_FILTER && sc.depth == 3 && key == CBOR_ROUTE_FILTER__MATCH_DEV;   // in a rule's map
 }
 
 /** The enum key's value takes in scope, or NULL */
@@ -353,7 +353,7 @@ bool diagContainer(nanocbor_value_t* it, std::string& out, const Scope& sc, int 
             int childList = -1;     // the DID whose field keys the value lists, to name them
             if (k == CBOR_MSG_ERR_KEYS || k == CBOR_MSG_FIELDS)
                 childList = sc.did;
-            else if (sc.did == CBOR_DID_CAPABILITIES && sc.depth == 1)
+            else if (sc.did == CBOR_DOMAIN_CAPABILITIES && sc.depth == 1)
                 childList = k;     // a DID's served field keys
             if (childList >= 0 && !cbor_registry_did_schema((uint16_t)childList))
                 childList = -1;    // keys of a DID without a flat schema are indices (rules, ports), not field names
