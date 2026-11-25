@@ -1,9 +1,9 @@
 /**
- * @file util.h 
+ * @file util.h
  * @brief General Utility functions. Most of these functions should be static, as we don't want/need a "Util" instance running around.
  *
  * @author Kyle Mallory on 3/14/24.
- * @copyright Copyright (c) 2025 Inertial Sense, Inc. All rights reserved.
+ * @copyright Copyright (c) 2025-2026 Inertial Sense, Inc. All rights reserved.
  */
 
 #ifndef IS_SDK__UTIL_H
@@ -771,11 +771,43 @@ namespace utils {
 
     /**
      * Generates a UUID v7 string (RFC 9562): a 48-bit Unix millisecond timestamp followed by random bits.
-     * Used for calibration UUIDs so the calibration-db key is time-ordered.
+     * Two calls never return the same UUID, so it suits records that are new each time, such as test runs. A calibration uses
+     * deterministicCalUuid() instead.
      * @param unixTimeMs time, in milliseconds since the Unix epoch (UTC), to embed in the UUID
      * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
      */
     std::string generateUUIDv7(uint64_t unixTimeMs);
+
+    /**
+     * Derives a calibration's UUID from the calibration itself: a UUID v7 carrying the calibration time, with its other bits from
+     * MD5 of "{hwType}:{serial}:{manfUid}:{unix ms}", the device's identity followed by the calibration time. The same calibration
+     * of the same device always gets the same UUID, so uploading it again is refused as a duplicate. The Manufacturing Database
+     * derives the same UUID for a calibration that arrives without one (`deterministic_cal_uuid` in calibration-db, specified in
+     * its CLIENT_API.md), and the two must stay identical.
+     * @param unixTimeMs calibration time, in milliseconds since the Unix epoch (UTC)
+     * @param hwType hardware type as recorded in the calibration, e.g. "IMX-5.0"
+     * @param serialNumber device serial number
+     * @param manfUid manufacturing UID as 32 lowercase hex digits (manfUidToString()), or empty if the device has none
+     * @return UUID string formatted as "xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx"
+     */
+    std::string deterministicCalUuid(int64_t unixTimeMs, const std::string& hwType, uint32_t serialNumber, const std::string& manfUid);
+
+    /**
+     * Converts a wall-clock time in US Mountain time (America/Denver), the zone of the calibration stations, to a Unix time. The
+     * result does not depend on this computer's time zone. US daylight saving rules apply: from 2007, 02:00 on the second Sunday of
+     * March to 02:00 on the first Sunday of November; before 2007, the first Sunday of April to the last Sunday of October. In the
+     * autumn repeated hour the earlier, daylight-time instant is returned; a time in the spring gap, which never happened, is
+     * rejected.
+     * @param year four-digit year
+     * @param month 1 to 12
+     * @param day 1 to the length of the month
+     * @param hour 0 to 23
+     * @param minute 0 to 59
+     * @param second 0 to 59
+     * @param[out] unixMs the time in milliseconds since the Unix epoch (UTC), on success
+     * @return false if the date or time is out of range, or does not exist in US Mountain time
+     */
+    bool usMountainTimeToUnixMs(int year, int month, int day, int hour, int minute, int second, int64_t& unixMs);
 
     /**
      * Formats a Unix time as RFC 3339 UTC with millisecond precision, e.g. "2026-10-20T15:02:11.000Z". Times before 1970 are
@@ -793,6 +825,14 @@ namespace utils {
      * @return 32 lowercase hex digits
      */
     std::string manfUidToString(const uint32_t uid[4]);
+
+    /**
+     * Whether a manufacturing UID is set. An unprogrammed or unreadable UID reads as all zeros or all ones, and is treated as no UID,
+     * as the Manufacturing Database does: such a device is a legacy device, identified by its hardware type and serial alone.
+     * @param uid the 4 words of manufacturing_info_t.uid
+     * @return false if every byte is 0x00, or every byte is 0xFF
+     */
+    bool manfUidIsSet(const uint32_t uid[4]);
 
     /**
      * Converts the manufacturing date written by EvalTool (manufacturing_info_t.date, "YYYYMMDDHHMMSSZ", UTC)
