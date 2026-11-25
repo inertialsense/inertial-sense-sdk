@@ -873,7 +873,7 @@ TEST(protocol_nmea, PGNSSP_satsUsed_independent_of_status) {
     EXPECT_EQ(52, resultPos.satsUsed);
 }
 
-TEST(protocol_nmea, PGNSSP_fields_1_to_17_match_PGPSP) {
+TEST(protocol_nmea, PGNSSP_matches_PGPSP_except_talker) {
     gnss_pos_t pos;
     gnss_vel_t vel;
     fillPgnsspTestData(pos, vel);
@@ -883,10 +883,26 @@ TEST(protocol_nmea, PGNSSP_fields_1_to_17_match_PGPSP) {
     nmea_pgpsp(pgpsp, ASCII_BUF_LEN, pos, vel);
     nmea_pgnssp(pgnssp, ASCII_BUF_LEN, pos, vel);
 
-    // Body of $PGPSP without its checksum, compared against the start of $PGNSSP's body.
+    // Fields after the talker, up to the checksum (which covers the talker, so it differs)
     std::string pgpspBody(pgpsp + strlen("$PGPSP"), strchr(pgpsp, '*'));
-    std::string pgnsspBody(pgnssp + strlen("$PGNSSP"));
-    EXPECT_EQ(0, pgnsspBody.compare(0, pgpspBody.size(), pgpspBody)) << "PGPSP: " << pgpsp << "PGNSSP: " << pgnssp;
+    std::string pgnsspBody(pgnssp + strlen("$PGNSSP"), strchr(pgnssp, '*'));
+    EXPECT_EQ(pgnsspBody, pgpspBody) << "PGPSP: " << pgpsp << "PGNSSP: " << pgnssp;
+}
+
+TEST(protocol_nmea, PGPSP_from_older_firmware) {
+    // Firmware before $PGNSSP sent $PGPSP with fields 1-17 only: satsUsed comes from status, and cnoMeanSigma and status2 are left unchanged.
+    const char old[] = "$PGPSP,1000,2309,813,40.00000000,0.00000000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.0,0.0000,18*48\r\n";
+    gnss_pos_t resultPos = {};
+    gnss_vel_t resultVel = {};
+    resultPos.cnoMeanSigma = 99;
+    resultPos.status2 = 99;
+    nmea_parse_pgpsp(resultPos, resultVel, old, (int)strlen(old));
+
+    EXPECT_EQ(813u, resultPos.status);
+    EXPECT_EQ(45, resultPos.satsUsed);  // 813 & 0xFF
+    EXPECT_EQ(18, resultPos.leapS);
+    EXPECT_EQ(99, resultPos.cnoMeanSigma);
+    EXPECT_EQ(99, resultPos.status2);
 }
 
 TEST(protocol_nmea, PGNSSP_sweep_operating_range) {

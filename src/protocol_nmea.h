@@ -354,7 +354,7 @@ int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe);
 int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t& pos, const gnss_vel_t& vel);
 
 /**
- * @brief Encode a $PGPSP proprietary GNSS position and velocity sentence.
+ * @brief Encode a $PGPSP proprietary GNSS position and velocity sentence. Identical to $PGNSSP except for the message ID.
  * @deprecated Use nmea_pgnssp().
  * @param a    Output buffer.
  * @param aSize Capacity of @p a.
@@ -547,7 +547,7 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 
 /**
  * @brief Parse a $PGPSP sentence into gnss_pos_t and gnss_vel_t structures.
- * @deprecated Use nmea_parse_pgnssp(). Kept so hosts can still read $PGPSP from older firmware.
+ * @deprecated Use nmea_parse_pgnssp(), which parses $PGPSP too. Kept so hosts can still read $PGPSP from older firmware.
  * @param gnssPos Output: GNSS position data.
  * @param gnssVel Output: GNSS velocity data.
  * @param a       Input NMEA sentence buffer.
@@ -557,7 +557,7 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gnss_pos_t &gnssPos, gnss_vel_t &gnssVel, const char a[], const int aSize);
 
 /**
- * @brief Parse a $PGNSSP sentence into gnss_pos_t and gnss_vel_t structures.
+ * @brief Parse a $PGNSSP or $PGPSP sentence into gnss_pos_t and gnss_vel_t structures. Fields 18-20, missing from $PGPSP sent by older firmware, are then left unchanged.
  * @param gnssPos Output: GNSS position data (every field except ecef).
  * @param gnssVel Output: GNSS velocity data.
  * @param a       Input NMEA sentence buffer.
