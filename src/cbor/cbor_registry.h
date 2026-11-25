@@ -38,6 +38,7 @@ extern "C" {
 #define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_CONFIG_SENSORS                      0x0107   //!< CONFIG_SENSORS: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_GNSS                         0x0109   //!< CONFIG_GNSS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -87,6 +88,29 @@ extern "C" {
 #define CBOR_SUB_PORTS                               0x9302   //!< SUBSCRIBE: array of uint8, up to 16, default set by the protocol, reserved
 #define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default false, reserved
 /** @} */
+
+/** Registry enum `receiver_id` */
+typedef enum
+{
+    CBOR_RECEIVER_ID_GNSS1 = 0,
+    CBOR_RECEIVER_ID_GNSS2 = 1,
+} eCborReceiverId;
+
+/** Registry enum `antenna_id` */
+typedef enum
+{
+    CBOR_ANTENNA_ID_ANT1 = 0,
+    CBOR_ANTENNA_ID_ANT2 = 1,
+} eCborAntennaId;
+
+/** Registry enum `base_stream` */
+typedef enum
+{
+    CBOR_BASE_STREAM_GNSS1_UBLOX = 0,
+    CBOR_BASE_STREAM_GNSS1_RTCM3 = 1,
+    CBOR_BASE_STREAM_GNSS2_UBLOX = 2,
+    CBOR_BASE_STREAM_GNSS2_RTCM3 = 3,
+} eCborBaseStream;
 
 /** Registry enum `pin_id` */
 typedef enum
@@ -291,6 +315,39 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 
 /* Shared key sets: each domain DID that uses one holds members of these types */
 
+/** Shared key set `receiver`: one member per key */
+typedef struct
+{
+    uint8_t         type;                   //!< key 0: uint8, default set by the firmware
+    uint8_t         port;                   //!< key 1: uint8, default set by the firmware
+    uint8_t         ppsPin;                 //!< key 2: uint8, default set by the firmware
+    uint8_t         configure;              //!< key 3: bool, default set by the firmware
+    uint8_t         fusionEnabled;          //!< key 4: bool, default true
+    uint16_t        signals;                //!< key 5: uint16, default 5119
+    float           minElevation;           //!< key 6: float32, default 0.17453292
+    uint8_t         cn0Min;                 //!< key 7: uint8, default 30
+    uint8_t         cn0DynOffset;           //!< key 8: uint8, default 20
+    uint8_t         dynamicModel;           //!< key 9: uint8, default 8
+} cbor_keyset_receiver_t;
+
+/** Shared key set `antenna`: one member per key */
+typedef struct
+{
+    uint8_t         receiver;               //!< key 0: uint8, default set by the firmware
+    float           offset[3];              //!< key 1: float32[3], default [0, 0, 0]
+    uint8_t         offsetEstimation;       //!< key 2: bool, default false
+    uint8_t         powerEnabled;           //!< key 3: bool, default true
+} cbor_keyset_antenna_t;
+
+/** Shared key set `base_output`: one member per key */
+typedef struct
+{
+    uint8_t         SER0;                   //!< key 0: bool, default false
+    uint8_t         SER1;                   //!< key 1: bool, default false
+    uint8_t         SER2;                   //!< key 2: bool, default false
+    uint8_t         USB;                    //!< key 3: bool, default false
+} cbor_keyset_base_output_t;
+
 /** Shared key set `pin`: one member per key */
 typedef struct
 {
@@ -336,6 +393,7 @@ typedef struct
 #include "cbor/dids/cbor_did_config_ports.h"
 #include "cbor/dids/cbor_did_config_sensors.h"
 #include "cbor/dids/cbor_did_config_io.h"
+#include "cbor/dids/cbor_did_config_gnss.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"

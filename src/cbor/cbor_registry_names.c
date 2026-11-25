@@ -30,6 +30,7 @@ static const cbor_registry_did_names_t s_dids[] = {
     { CBOR_DID_CONFIG_PORTS, g_cborNames_CONFIG_PORTS, CBOR_CONFIG_PORTS_NAME_COUNT },
     { CBOR_DID_CONFIG_SENSORS, g_cborNames_CONFIG_SENSORS, CBOR_CONFIG_SENSORS_NAME_COUNT },
     { CBOR_DID_CONFIG_IO, g_cborNames_CONFIG_IO, CBOR_CONFIG_IO_NAME_COUNT },
+    { CBOR_DID_CONFIG_GNSS, g_cborNames_CONFIG_GNSS, CBOR_CONFIG_GNSS_NAME_COUNT },
     { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
     { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
     { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
@@ -80,6 +81,7 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_CONFIG_PORTS, "CONFIG_PORTS" },
     { CBOR_DID_CONFIG_SENSORS, "CONFIG_SENSORS" },
     { CBOR_DID_CONFIG_IO, "CONFIG_IO" },
+    { CBOR_DID_CONFIG_GNSS, "CONFIG_GNSS" },
     { CBOR_DID_NMEA_PIMU, "NMEA_PIMU" },
     { CBOR_DID_NMEA_PPIMU, "NMEA_PPIMU" },
     { CBOR_DID_NMEA_PRIMU, "NMEA_PRIMU" },
@@ -126,6 +128,20 @@ static const cbor_registry_name_t s_msgKeyNames[] = {
     { 0x9303, "SUB_OPTION_PERSIST" },
 };
 
+static const cbor_registry_name_t s_enum_receiver_id[] = {
+    { 0, "GNSS1" },
+    { 1, "GNSS2" },
+};
+static const cbor_registry_name_t s_enum_antenna_id[] = {
+    { 0, "ANT1" },
+    { 1, "ANT2" },
+};
+static const cbor_registry_name_t s_enum_base_stream[] = {
+    { 0, "GNSS1_UBLOX" },
+    { 1, "GNSS1_RTCM3" },
+    { 2, "GNSS2_UBLOX" },
+    { 3, "GNSS2_RTCM3" },
+};
 static const cbor_registry_name_t s_enum_pin_id[] = {
     { 0, "G1G2" },
     { 1, "G5G8" },
@@ -211,6 +227,9 @@ static const cbor_registry_name_t s_enum_nmea_speed_filter[] = {
 
 /* Every registry enum */
 static const cbor_registry_enum_t s_enums[] = {
+    { "receiver_id", s_enum_receiver_id, sizeof(s_enum_receiver_id) / sizeof(s_enum_receiver_id[0]) },
+    { "antenna_id", s_enum_antenna_id, sizeof(s_enum_antenna_id) / sizeof(s_enum_antenna_id[0]) },
+    { "base_stream", s_enum_base_stream, sizeof(s_enum_base_stream) / sizeof(s_enum_base_stream[0]) },
     { "pin_id", s_enum_pin_id, sizeof(s_enum_pin_id) / sizeof(s_enum_pin_id[0]) },
     { "imu_slot", s_enum_imu_slot, sizeof(s_enum_imu_slot) / sizeof(s_enum_imu_slot[0]) },
     { "imu_channel", s_enum_imu_channel, sizeof(s_enum_imu_channel) / sizeof(s_enum_imu_channel[0]) },
@@ -235,14 +254,14 @@ typedef struct
 } key_enum_t;
 
 static const key_enum_t s_keyEnums[] = {
-    { 0xFFFF, 0xC000, 6 },
-    { 0xFFFF, 0xC004, 9 },
-    { 0xFFFF, 0xC008, 8 },
-    { CBOR_DID_RMC_STORED, 0x8001, 11 },
-    { CBOR_DID_RMC_STORED, 0x8002, 12 },
-    { CBOR_DID_RMC, 0x8001, 11 },
-    { CBOR_DID_RMC, 0x8002, 12 },
-    { CBOR_DID_ROUTE_FILTER, 0x0003, 10 },
+    { 0xFFFF, 0xC000, 9 },
+    { 0xFFFF, 0xC004, 12 },
+    { 0xFFFF, 0xC008, 11 },
+    { CBOR_DID_RMC_STORED, 0x8001, 14 },
+    { CBOR_DID_RMC_STORED, 0x8002, 15 },
+    { CBOR_DID_RMC, 0x8001, 14 },
+    { CBOR_DID_RMC, 0x8002, 15 },
+    { CBOR_DID_ROUTE_FILTER, 0x0003, 13 },
 };
 
 /* DIDs with a schema: those bound to a legacy struct, and domain DIDs (over their view structs) */
@@ -263,6 +282,7 @@ static const did_schema_t s_schemas[] = {
     { CBOR_DID_CONFIG_PORTS, &g_cborSchema_CONFIG_PORTS },
     { CBOR_DID_CONFIG_SENSORS, &g_cborSchema_CONFIG_SENSORS },
     { CBOR_DID_CONFIG_IO, &g_cborSchema_CONFIG_IO },
+    { CBOR_DID_CONFIG_GNSS, &g_cborSchema_CONFIG_GNSS },
 };
 
 #define COUNT(a)    (sizeof(a) / sizeof((a)[0]))
