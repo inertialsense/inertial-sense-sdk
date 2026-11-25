@@ -439,6 +439,7 @@ std::string renderGpxGrmcNmeaBits(const data_info_t& info, std::any value, int a
             { NMEA_RMC_BITS_PRIMU,  "$PRIMU" },
             { NMEA_RMC_BITS_PINS1,  "$PINS1" },
             { NMEA_RMC_BITS_PINS2,  "$PINS2" },
+            { NMEA_RMC_BITS_PGNSSP, "$PGNSSP" },
             { NMEA_RMC_BITS_PGPSP,  "$PGPSP" },
             { NMEA_RMC_BITS_GNGGA,  "$GNGGA" },
             { NMEA_RMC_BITS_GNGLL,  "$GNGLL" },
@@ -453,7 +454,6 @@ std::string renderGpxGrmcNmeaBits(const data_info_t& info, std::any value, int a
             { NMEA_RMC_BITS_INTEL,  "$INTEL" },
             { NMEA_RMC_BITS_POWGPS, "$POWGPS" },
             { NMEA_RMC_BITS_POWTLV, "$POWTLV" },
-            { NMEA_RMC_BITS_PGNSSP, "$PGNSSP" },
         });
     } catch (std::bad_any_cast& e) {
         (void)e;
