@@ -40,6 +40,7 @@ extern "C" {
 #define CBOR_DID_CONFIG_IO                           0x0108   //!< CONFIG_IO: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_GNSS                         0x0109   //!< CONFIG_GNSS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_CONFIG_CAN                          0x010A   //!< CONFIG_CAN: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_STATE                               0x010B   //!< STATE: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -348,6 +349,27 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 
 /* Shared key sets: each domain DID that uses one holds members of these types */
 
+/** Shared key set `mag_state.coverage`: one member per key */
+typedef struct
+{
+    uint8_t         grid;                   //!< key 0: uint8, default 0
+    uint8_t         counts[64];             //!< key 1: uint8[64], default 0
+    uint32_t        sampleCount;            //!< key 2: uint32, default 0
+} cbor_keyset_mag_state_coverage_t;
+
+/** Shared key set `mag_state.solver`: one member per key */
+typedef struct
+{
+    float           dtd[100];               //!< key 0: float32[100], default 0
+} cbor_keyset_mag_state_solver_t;
+
+/** Shared key set `mag_state`: one member per key */
+typedef struct
+{
+    cbor_keyset_mag_state_coverage_t coverage;  //!< key 0: map
+    cbor_keyset_mag_state_solver_t solver;  //!< key 1: map
+} cbor_keyset_mag_state_t;
+
 /** Shared key set `can_message`: one member per key */
 typedef struct
 {
@@ -435,6 +457,7 @@ typedef struct
 #include "cbor/dids/cbor_did_config_io.h"
 #include "cbor/dids/cbor_did_config_gnss.h"
 #include "cbor/dids/cbor_did_config_can.h"
+#include "cbor/dids/cbor_did_state.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"

@@ -32,6 +32,7 @@ static const cbor_registry_did_names_t s_dids[] = {
     { CBOR_DID_CONFIG_IO, g_cborNames_CONFIG_IO, CBOR_CONFIG_IO_NAME_COUNT },
     { CBOR_DID_CONFIG_GNSS, g_cborNames_CONFIG_GNSS, CBOR_CONFIG_GNSS_NAME_COUNT },
     { CBOR_DID_CONFIG_CAN, g_cborNames_CONFIG_CAN, CBOR_CONFIG_CAN_NAME_COUNT },
+    { CBOR_DID_STATE, g_cborNames_STATE, CBOR_STATE_NAME_COUNT },
     { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
     { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
     { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
@@ -84,6 +85,7 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_CONFIG_IO, "CONFIG_IO" },
     { CBOR_DID_CONFIG_GNSS, "CONFIG_GNSS" },
     { CBOR_DID_CONFIG_CAN, "CONFIG_CAN" },
+    { CBOR_DID_STATE, "STATE" },
     { CBOR_DID_NMEA_PIMU, "NMEA_PIMU" },
     { CBOR_DID_NMEA_PPIMU, "NMEA_PPIMU" },
     { CBOR_DID_NMEA_PRIMU, "NMEA_PRIMU" },
@@ -316,6 +318,7 @@ static const did_schema_t s_schemas[] = {
     { CBOR_DID_CONFIG_IO, &g_cborSchema_CONFIG_IO },
     { CBOR_DID_CONFIG_GNSS, &g_cborSchema_CONFIG_GNSS },
     { CBOR_DID_CONFIG_CAN, &g_cborSchema_CONFIG_CAN },
+    { CBOR_DID_STATE, &g_cborSchema_STATE },
 };
 
 #define COUNT(a)    (sizeof(a) / sizeof((a)[0]))
