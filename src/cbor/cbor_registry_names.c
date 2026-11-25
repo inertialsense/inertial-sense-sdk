@@ -27,6 +27,7 @@ static const cbor_registry_did_names_t s_dids[] = {
     { CBOR_DID_CONFIG_INS, g_cborNames_CONFIG_INS, CBOR_CONFIG_INS_NAME_COUNT },
     { CBOR_DID_CONFIG_MAG, g_cborNames_CONFIG_MAG, CBOR_CONFIG_MAG_NAME_COUNT },
     { CBOR_DID_CONFIG_GROUND_VEHICLE, g_cborNames_CONFIG_GROUND_VEHICLE, CBOR_CONFIG_GROUND_VEHICLE_NAME_COUNT },
+    { CBOR_DID_CONFIG_PORTS, g_cborNames_CONFIG_PORTS, CBOR_CONFIG_PORTS_NAME_COUNT },
     { CBOR_DID_RMC_STORED, g_cborNames_RMC_STORED, CBOR_RMC_STORED_NAME_COUNT },
     { CBOR_DID_RMC, g_cborNames_RMC, CBOR_RMC_NAME_COUNT },
     { CBOR_DID_ROUTE_FILTER, g_cborNames_ROUTE_FILTER, CBOR_ROUTE_FILTER_NAME_COUNT },
@@ -74,6 +75,7 @@ static const cbor_registry_name_t s_didNames[] = {
     { CBOR_DID_CONFIG_INS, "CONFIG_INS" },
     { CBOR_DID_CONFIG_MAG, "CONFIG_MAG" },
     { CBOR_DID_CONFIG_GROUND_VEHICLE, "CONFIG_GROUND_VEHICLE" },
+    { CBOR_DID_CONFIG_PORTS, "CONFIG_PORTS" },
     { CBOR_DID_NMEA_PIMU, "NMEA_PIMU" },
     { CBOR_DID_NMEA_PPIMU, "NMEA_PPIMU" },
     { CBOR_DID_NMEA_PRIMU, "NMEA_PRIMU" },
@@ -120,6 +122,13 @@ static const cbor_registry_name_t s_msgKeyNames[] = {
     { 0x9303, "SUB_OPTION_PERSIST" },
 };
 
+static const cbor_registry_name_t s_enum_port_id[] = {
+    { 0, "SER0" },
+    { 1, "SER1" },
+    { 2, "SER2" },
+    { 3, "USB" },
+    { 4, "SPI" },
+};
 static const cbor_registry_name_t s_enum_msg_type[] = {
     { 1, "DATA" },
     { 2, "GET" },
@@ -171,6 +180,7 @@ static const cbor_registry_name_t s_enum_nmea_speed_filter[] = {
 
 /* Every registry enum */
 static const cbor_registry_enum_t s_enums[] = {
+    { "port_id", s_enum_port_id, sizeof(s_enum_port_id) / sizeof(s_enum_port_id[0]) },
     { "msg_type", s_enum_msg_type, sizeof(s_enum_msg_type) / sizeof(s_enum_msg_type[0]) },
     { "msg_type_flag", s_enum_msg_type_flag, sizeof(s_enum_msg_type_flag) / sizeof(s_enum_msg_type_flag[0]) },
     { "msg_status", s_enum_msg_status, sizeof(s_enum_msg_status) / sizeof(s_enum_msg_status[0]) },
@@ -189,14 +199,14 @@ typedef struct
 } key_enum_t;
 
 static const key_enum_t s_keyEnums[] = {
-    { 0xFFFF, 0xC000, 0 },
-    { 0xFFFF, 0xC004, 3 },
-    { 0xFFFF, 0xC008, 2 },
-    { CBOR_DID_RMC_STORED, 0x8001, 5 },
-    { CBOR_DID_RMC_STORED, 0x8002, 6 },
-    { CBOR_DID_RMC, 0x8001, 5 },
-    { CBOR_DID_RMC, 0x8002, 6 },
-    { CBOR_DID_ROUTE_FILTER, 0x0003, 4 },
+    { 0xFFFF, 0xC000, 1 },
+    { 0xFFFF, 0xC004, 4 },
+    { 0xFFFF, 0xC008, 3 },
+    { CBOR_DID_RMC_STORED, 0x8001, 6 },
+    { CBOR_DID_RMC_STORED, 0x8002, 7 },
+    { CBOR_DID_RMC, 0x8001, 6 },
+    { CBOR_DID_RMC, 0x8002, 7 },
+    { CBOR_DID_ROUTE_FILTER, 0x0003, 5 },
 };
 
 /* DIDs with a schema: those bound to a legacy struct, and domain DIDs (over their view structs) */
@@ -214,6 +224,7 @@ static const did_schema_t s_schemas[] = {
     { CBOR_DID_CONFIG_INS, &g_cborSchema_CONFIG_INS },
     { CBOR_DID_CONFIG_MAG, &g_cborSchema_CONFIG_MAG },
     { CBOR_DID_CONFIG_GROUND_VEHICLE, &g_cborSchema_CONFIG_GROUND_VEHICLE },
+    { CBOR_DID_CONFIG_PORTS, &g_cborSchema_CONFIG_PORTS },
 };
 
 #define COUNT(a)    (sizeof(a) / sizeof((a)[0]))

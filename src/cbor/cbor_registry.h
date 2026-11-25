@@ -35,6 +35,7 @@ extern "C" {
 #define CBOR_DID_CONFIG_INS                          0x0103   //!< CONFIG_INS: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_MAG                          0x0104   //!< CONFIG_MAG: CBOR-only DID, served by IMX-5, IMX-6
 #define CBOR_DID_CONFIG_GROUND_VEHICLE               0x0105   //!< CONFIG_GROUND_VEHICLE: CBOR-only DID, served by IMX-5, IMX-6
+#define CBOR_DID_CONFIG_PORTS                        0x0106   //!< CONFIG_PORTS: CBOR-only DID, served by IMX-5, IMX-6, GPX-1
 #define CBOR_DID_NMEA_PIMU                           0x3F01   //!< NMEA_PIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PPIMU                          0x3F02   //!< NMEA_PPIMU: NMEA sentence pseudo-DID
 #define CBOR_DID_NMEA_PRIMU                          0x3F03   //!< NMEA_PRIMU: NMEA sentence pseudo-DID
@@ -84,6 +85,16 @@ extern "C" {
 #define CBOR_SUB_PORTS                               0x9302   //!< SUBSCRIBE: array of uint8, up to 16, default set by the protocol, reserved
 #define CBOR_SUB_OPTION_PERSIST                      0x9303   //!< SUBSCRIBE: bool, default false, reserved
 /** @} */
+
+/** Registry enum `port_id` */
+typedef enum
+{
+    CBOR_PORT_ID_SER0 = 0,
+    CBOR_PORT_ID_SER1 = 1,
+    CBOR_PORT_ID_SER2 = 2,
+    CBOR_PORT_ID_USB = 3,
+    CBOR_PORT_ID_SPI = 4,
+} eCborPortId;
 
 /** Registry enum `msg_type` */
 typedef enum
@@ -224,7 +235,7 @@ int cbor_registry_msg_key(const char *name);
 const cbor_registry_enum_t *cbor_registry_key_enum(uint16_t did, uint16_t key);
 
 /**
- * @brief Finds the schema of a DID bound to a legacy struct (cbor_registry_names.c, SDK only).
+ * @brief Finds the schema of a DID: a legacy DID's struct, or a domain DID's view (cbor_registry_names.c, SDK only).
  * @param did  root DID key
  * @return the schema, or NULL if the DID has none
  */
@@ -234,6 +245,15 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 }
 #endif
 
+/* Shared key sets: each domain DID that uses one holds members of these types */
+
+/** Shared key set `port`: one member per key */
+typedef struct
+{
+    uint32_t        baudRate;               //!< key 0: uint32, default 921600
+    uint8_t         gsvBands[9];            //!< key 1: uint8[SAT_SV_GNSS_ID_COUNT], default set by the firmware
+} cbor_keyset_port_t;
+
 #include "cbor/dids/cbor_did_flash_cfg.h"
 #include "cbor/dids/cbor_did_can_config.h"
 #include "cbor/dids/cbor_did_gpx_flash_cfg.h"
@@ -242,6 +262,7 @@ const cbor_schema_t *cbor_registry_did_schema(uint16_t did);
 #include "cbor/dids/cbor_did_config_ins.h"
 #include "cbor/dids/cbor_did_config_mag.h"
 #include "cbor/dids/cbor_did_config_ground_vehicle.h"
+#include "cbor/dids/cbor_did_config_ports.h"
 #include "cbor/dids/cbor_did_rmc_stored.h"
 #include "cbor/dids/cbor_did_rmc.h"
 #include "cbor/dids/cbor_did_route_filter.h"
