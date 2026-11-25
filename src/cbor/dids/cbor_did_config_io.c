@@ -68,8 +68,7 @@ static const cbor_field_t s_fields_config_io[] = {
 };
 const cbor_schema_t g_cborSchema_CONFIG_IO = { s_fields_config_io, sizeof(s_fields_config_io) / sizeof(s_fields_config_io[0]) };
 
-const cbor_config_io_t g_cborDefaults_CONFIG_IO = {
-};
+const cbor_config_io_t g_cborDefaults_CONFIG_IO = { 0 };
 
 const uint8_t g_cborDefaultFixed_CONFIG_IO[9] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0,
