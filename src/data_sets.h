@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -741,8 +741,8 @@ int getNmeaMsgId(const void* msg, int msgSize);
  *
  * @param msgId NMEA ID (eNmeaMsgId)
  * @param buf Talker id string output
- * @param bufSize Max size of buffer talker string will be written to.  Must be 5 or larger.
- * @return int 0 on success, -1 on failure.
+ * @param bufSize Size of buf. Must hold the talker and its null terminator: 7 bytes holds every talker.
+ * @return int 0 on success, -1 if msgId is unknown or buf is too small (buf is then not written).
  */
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize);
 
@@ -2032,7 +2032,7 @@ enum eNmeaMsgId
     NMEA_MSG_ID_PRIMU               = 3,   //!< $PRIMU proprietary raw/reference IMU (angular rate + acceleration) sentence
     NMEA_MSG_ID_PINS1               = 4,   //!< $PINS1 proprietary INS sentence (Euler angles, LLA, NED velocity)
     NMEA_MSG_ID_PINS2               = 5,   //!< $PINS2 proprietary INS sentence (quaternion, LLA)
-    NMEA_MSG_ID_PGPSP               = 6,   //!< $PGPSP proprietary GNSS position and velocity sentence
+    NMEA_MSG_ID_PGPSP               = 6,   //!< (Deprecated, use NMEA_MSG_ID_PGNSSP) $PGPSP proprietary GNSS position and velocity sentence
     NMEA_MSG_ID_GNGGA               = 7,   //!< $GNGGA standard NMEA GNSS fix data sentence
     NMEA_MSG_ID_GNGLL               = 8,   //!< $GNGLL standard NMEA geographic position (lat/lon) sentence
     NMEA_MSG_ID_GNGSA               = 9,   //!< $GNGSA standard NMEA GNSS DOP and active satellites sentence
@@ -2046,6 +2046,7 @@ enum eNmeaMsgId
     NMEA_MSG_ID_INTEL               = 17,  //!< $INTEL proprietary GNSS sentence (IS-internal extended device info + position + velocity format)
     NMEA_MSG_ID_POWGPS              = 18,  //!< $POWGPS proprietary GNSS position sentence
     NMEA_MSG_ID_POWTLV              = 19,  //!< $POWTLV proprietary GNSS position and velocity sentence
+    NMEA_MSG_ID_PGNSSP              = 20,  //!< $PGNSSP proprietary GNSS position and velocity sentence (all gnss_pos_t fields except ecef); replaces $PGPSP
     NMEA_MSG_ID_COUNT,                     //!< Number of base (non special-case) NMEA message IDs
 
     // IMX/GPX Input Commands
@@ -2164,6 +2165,7 @@ typedef struct {
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 #define NMEA_RMC_BITS_POWGPS        (1<<NMEA_MSG_ID_POWGPS)
 #define NMEA_RMC_BITS_POWTLV        (1<<NMEA_MSG_ID_POWTLV)
+#define NMEA_RMC_BITS_PGNSSP        (1 << NMEA_MSG_ID_PGNSSP)
 
 /** @brief NMEA sentence broadcast enable/period state, embedded inside @ref rmci_t and @ref grmci_t alongside the binary-DID rmc_t/periodMultiple fields. Tracks, per base NMEA message ID (see eNmeaMsgId), whether the sentence is enabled and at what period multiple. */
 typedef struct PACKED

@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2025 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2026 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -727,6 +727,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
         NMEA_RMC_BITS_POWTLV |
         NMEA_RMC_BITS_INTEL |
         NMEA_RMC_BITS_PGPSP |
+        NMEA_RMC_BITS_PGNSSP |
         NMEA_RMC_BITS_GNGGA |
         NMEA_RMC_BITS_GNGLL |
         NMEA_RMC_BITS_GNGSA |
@@ -739,6 +740,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
         NMEA_RMC_BITS_POWTLV |
         NMEA_RMC_BITS_INTEL |
         NMEA_RMC_BITS_PGPSP |
+        NMEA_RMC_BITS_PGNSSP |
         NMEA_RMC_BITS_GNGGA |
         NMEA_RMC_BITS_GNGLL |
         NMEA_RMC_BITS_GNGSA |
@@ -1033,6 +1035,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
         else if (UINT32_MATCH(talker,"PINS"))       { return (cptr[5]=='1' ? NMEA_MSG_ID_PINS1 : NMEA_MSG_ID_PINS2); }
         else if (UINT32_MATCH(talker,"PERS"))       { return NMEA_MSG_ID_PERS;  }
         else if (UINT32_MATCH(talker,"PGPS"))       { return NMEA_MSG_ID_PGPSP; }
+        else if (UINT32_MATCH(talker,"PGNS"))       { return NMEA_MSG_ID_PGNSSP; }
         else if (UINT32_MATCH(talker,"PPIM"))       { return NMEA_MSG_ID_PPIMU; }
         else if (UINT32_MATCH(talker,"PRIM"))       { return NMEA_MSG_ID_PRIMU; }
         else if (UINT32_MATCH(talker,"PASH"))       { return NMEA_MSG_ID_PASHR; }
@@ -1052,47 +1055,50 @@ int getNmeaMsgId(const void *msg, int msgSize)
 
 int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
 {
-    if (bufSize < 5)
-    {
-        return -1;
-    }
-
-    int n = 0;
+    const char* talker;
+    // clang-format off
     switch (msgId)
     {
     default: return -1;
-    case NMEA_MSG_ID_PIMU:      memcpy(buf, "PIMU",  n = 4);    break;
-    case NMEA_MSG_ID_PPIMU:     memcpy(buf, "PPIMU", n = 5);    break;
-    case NMEA_MSG_ID_PRIMU:     memcpy(buf, "PRIMU", n = 5);    break;
-    case NMEA_MSG_ID_PINS1:     memcpy(buf, "PINS1", n = 5);    break;
-    case NMEA_MSG_ID_PINS2:     memcpy(buf, "PINS2", n = 5);    break;
-    case NMEA_MSG_ID_PGPSP:     memcpy(buf, "PGPSP", n = 5);    break;
-    case NMEA_MSG_ID_GNGGA:     memcpy(buf, "GNGGA", n = 5);    break;
-    case NMEA_MSG_ID_GNGLL:     memcpy(buf, "GNGLL", n = 5);    break;
-    case NMEA_MSG_ID_GNGSA:     memcpy(buf, "GNGSA", n = 5);    break;
-    case NMEA_MSG_ID_GNRMC:     memcpy(buf, "GNRMC", n = 5);    break;
-    case NMEA_MSG_ID_GNZDA:     memcpy(buf, "GNZDA", n = 5);    break;
-    case NMEA_MSG_ID_PASHR:     memcpy(buf, "PASHR", n = 5);    break;
-    case NMEA_MSG_ID_PSTRB:     memcpy(buf, "PSTRB", n = 5);    break;
-    case NMEA_MSG_ID_INFO:      memcpy(buf, "INFO",  n = 4);    break;
-    case NMEA_MSG_ID_GNGSV:     memcpy(buf, "GNGSV", n = 5);    break;
-    case NMEA_MSG_ID_GNVTG:     memcpy(buf, "GNVTG", n = 5);    break;
-    case NMEA_MSG_ID_INTEL:     memcpy(buf, "INTEL", n = 5);    break;
-    case NMEA_MSG_ID_POWGPS:    memcpy(buf, "POWGPS", n = 6);   break;
-    case NMEA_MSG_ID_POWTLV:    memcpy(buf, "POWTLV", n = 6);   break;
+    case NMEA_MSG_ID_PIMU:    talker = "PIMU";    break;
+    case NMEA_MSG_ID_PPIMU:   talker = "PPIMU";   break;
+    case NMEA_MSG_ID_PRIMU:   talker = "PRIMU";   break;
+    case NMEA_MSG_ID_PINS1:   talker = "PINS1";   break;
+    case NMEA_MSG_ID_PINS2:   talker = "PINS2";   break;
+    case NMEA_MSG_ID_PGPSP:   talker = "PGPSP";   break;
+    case NMEA_MSG_ID_GNGGA:   talker = "GNGGA";   break;
+    case NMEA_MSG_ID_GNGLL:   talker = "GNGLL";   break;
+    case NMEA_MSG_ID_GNGSA:   talker = "GNGSA";   break;
+    case NMEA_MSG_ID_GNRMC:   talker = "GNRMC";   break;
+    case NMEA_MSG_ID_GNZDA:   talker = "GNZDA";   break;
+    case NMEA_MSG_ID_PASHR:   talker = "PASHR";   break;
+    case NMEA_MSG_ID_PSTRB:   talker = "PSTRB";   break;
+    case NMEA_MSG_ID_INFO:    talker = "INFO";    break;
+    case NMEA_MSG_ID_GNGSV:   talker = "GNGSV";   break;
+    case NMEA_MSG_ID_GNVTG:   talker = "GNVTG";   break;
+    case NMEA_MSG_ID_INTEL:   talker = "INTEL";   break;
+    case NMEA_MSG_ID_POWGPS:  talker = "POWGPS";  break;
+    case NMEA_MSG_ID_POWTLV:  talker = "POWTLV";  break;
+    case NMEA_MSG_ID_PGNSSP:  talker = "PGNSSP";  break;
 
-    case NMEA_MSG_ID_ASCE:      memcpy(buf, "ASCE", n = 4);     break;
-    case NMEA_MSG_ID_BLEN:      memcpy(buf, "BLEN", n = 4);     break;
-    case NMEA_MSG_ID_EBLE:      memcpy(buf, "EBLE", n = 4);     break;
-    case NMEA_MSG_ID_NELB:      memcpy(buf, "NELB", n = 4);     break;
-    case NMEA_MSG_ID_PERS:      memcpy(buf, "PERS", n = 4);     break;
-    case NMEA_MSG_ID_SRST:      memcpy(buf, "SRST", n = 4);     break;
-    case NMEA_MSG_ID_STPB:      memcpy(buf, "STPB", n = 4);     break;
-    case NMEA_MSG_ID_STPC:      memcpy(buf, "STPC", n = 4);     break;
+    case NMEA_MSG_ID_ASCE:    talker = "ASCE";    break;
+    case NMEA_MSG_ID_BLEN:    talker = "BLEN";    break;
+    case NMEA_MSG_ID_EBLE:    talker = "EBLE";    break;
+    case NMEA_MSG_ID_NELB:    talker = "NELB";    break;
+    case NMEA_MSG_ID_PERS:    talker = "PERS";    break;
+    case NMEA_MSG_ID_SRST:    talker = "SRST";    break;
+    case NMEA_MSG_ID_STPB:    talker = "STPB";    break;
+    case NMEA_MSG_ID_STPC:    talker = "STPC";    break;
     }
-    // Null terminate
-    ((uint8_t*)buf)[n] = 0;
+    // clang-format on
 
+    // The talker and its null terminator must fit
+    int n = (int)strlen(talker);
+    if (bufSize < n + 1) {
+        return -1;
+    }
+
+    memcpy(buf, talker, n + 1);
     return 0;
 }
 
