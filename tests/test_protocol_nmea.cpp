@@ -905,6 +905,48 @@ TEST(protocol_nmea, PGPSP_from_older_firmware) {
     EXPECT_EQ(99, resultPos.status2);
 }
 
+TEST(protocol_nmea, PGNSSP_trailing_fields_absent) {
+    // Each of fields 18-20 that is missing is left unchanged; the ones present are parsed.
+    const char only18[] = "$PGNSSP,1000,2309,813,40.00000000,0.00000000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.0,0.0000,18,45*00\r\n";
+    gnss_pos_t pos = {};
+    gnss_vel_t vel = {};
+    pos.cnoMeanSigma = 99;
+    pos.status2 = 98;
+    nmea_parse_pgnssp(pos, vel, only18, (int)strlen(only18));
+    EXPECT_EQ(45, pos.satsUsed);
+    EXPECT_EQ(99, pos.cnoMeanSigma);
+    EXPECT_EQ(98, pos.status2);
+
+    const char only18and19[] = "$PGNSSP,1000,2309,813,40.00000000,0.00000000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.0,0.0000,18,45,7*00\r\n";
+    nmea_parse_pgnssp(pos, vel, only18and19, (int)strlen(only18and19));
+    EXPECT_EQ(7, pos.cnoMeanSigma);
+    EXPECT_EQ(98, pos.status2);
+}
+
+TEST(protocol_nmea, PGNSSP_buffer_too_small) {
+    gnss_pos_t pos;
+    gnss_vel_t vel;
+    fillPgnsspTestData(pos, vel);
+
+    char full[ASCII_BUF_LEN] = {0};
+    const int len = nmea_pgnssp(full, ASCII_BUF_LEN, pos, vel);
+    ASSERT_GT(len, 0);
+
+    // Exactly enough room (the sentence and its null terminator), then every size down to 0. Bytes past aSize must not be written.
+    char buf[ASCII_BUF_LEN];
+    for (int size = len + 1; size >= 0; size--) {
+        memset(buf, 'x', sizeof(buf));
+        int n = nmea_pgnssp(buf, size, pos, vel);
+        if (size == len + 1) {
+            EXPECT_EQ(len, n);
+            EXPECT_STREQ(full, buf);
+        } else {
+            EXPECT_EQ(0, n) << "size " << size;  // 0, not negative: callers pass the length to portWrite() as unsigned
+        }
+        EXPECT_EQ('x', buf[size]) << "size " << size;
+    }
+}
+
 TEST(protocol_nmea, PGNSSP_sweep_operating_range) {
     double invTowMsMax = 1.0 / (double)C_MILLISECONDS_PER_WEEK;
 

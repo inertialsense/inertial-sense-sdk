@@ -349,7 +349,7 @@ int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe);
  * @param aSize Capacity of @p a.
  * @param pos  GNSS position data to encode.
  * @param vel  GNSS velocity data to encode.
- * @return Number of bytes written, or negative on failure.
+ * @return Number of bytes written, or 0 if the sentence does not fit in @p aSize.
  */
 int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t& pos, const gnss_vel_t& vel);
 
@@ -360,7 +360,7 @@ int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t& pos, const gnss_vel
  * @param aSize Capacity of @p a.
  * @param pos  GNSS position data to encode.
  * @param vel  GNSS velocity data to encode.
- * @return Number of bytes written, or negative on failure.
+ * @return Number of bytes written, or 0 if the sentence does not fit in @p aSize.
  */
 int nmea_pgpsp(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel);
 

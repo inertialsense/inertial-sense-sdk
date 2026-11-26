@@ -356,10 +356,18 @@ static int nmea_talker(char* a, int aSize, uint8_t gnssId=s_gnssId)
  * @param aSize - total size of the buffer in bytes
  * @param n - [in/out] current length of the sentence in a (excluding the leading '$' is NOT excluded from n, but IS excluded from the checksum); updated to include the appended trailer
  *
- * @return final sentence length n (including the appended trailer)
+ * @return final sentence length n (including the appended trailer), or 0 if the sentence and its trailer do not fit in a. 0 rather than negative,
+ * because callers pass the length straight to portWrite(), whose length is unsigned.
  */
 int nmea_sprint_footer(char* a, int aSize, int &n)
 {
+    // The fields' nmea_sprint() calls advance n by the length they needed, even past aSize, so check before the checksum reads a[0..n).
+    // The trailer "*XX\r\n" is 5 characters plus the null terminator.
+    if (n < 1 || n > aSize - 6) {
+        n = 0;
+        return 0;
+    }
+
     unsigned int checkSum = nmea_compute_checksum((uint8_t*)(a+1), n-1);
     n += ssnprintf(a+n, aSize-n, "*%.2X\r\n", checkSum);
     return n;
@@ -1292,7 +1300,7 @@ int nmea_gnss_pos_vel(char a[], const int aSize, const char *talker, const gnss_
  *        bits[7:4]   = unused
  *  21  Checksum, begins with *
  *
- * @return length of the generated NMEA sentence, including the checksum trailer
+ * @return length of the generated NMEA sentence, including the checksum trailer, or 0 if it does not fit in aSize
  */
 int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t &pos, const gnss_vel_t &vel) { return nmea_gnss_pos_vel(a, aSize, "$PGNSSP", pos, vel); }
 
@@ -1306,7 +1314,7 @@ int nmea_pgnssp(char a[], const int aSize, const gnss_pos_t &pos, const gnss_vel
  * @param pos - GNSS position data (gnss_pos_t) to encode
  * @param vel - GNSS velocity data (gnss_vel_t) to encode
  *
- * @return length of the generated NMEA sentence, including the checksum trailer
+ * @return length of the generated NMEA sentence, including the checksum trailer, or 0 if it does not fit in aSize
  */
 int nmea_pgpsp(char a[], const int aSize, gnss_pos_t &pos, gnss_vel_t &vel) { return nmea_gnss_pos_vel(a, aSize, "$PGPSP", pos, vel); }
 
@@ -3090,6 +3098,23 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize)
     return 0;
 }
 
+namespace {
+
+/**
+ * @brief Parses an optional trailing field as an 8-bit unsigned integer, leaving val unchanged if the sentence has already ended.
+ *
+ * @param val - [out] parsed value, unchanged if the field is absent
+ * @param ptr - pointer to the start of the field, or to the checksum's '*' or the string's end if the field is absent
+ *
+ * @return pointer to the start of the next field, or ptr unchanged if the field is absent
+ */
+char *ASCII_to_u8_if_present(uint8_t *val, char *ptr) {
+    if (*ptr == '\0' || *ptr == '*') return ptr;
+    return ASCII_to_u8(val, ptr);
+}
+
+}  // namespace
+
 /**
  * @brief Parses a $PGPSP proprietary NMEA message into a GNSS position/velocity solution. Same as nmea_parse_pgnssp().
  * @deprecated Use nmea_parse_pgnssp(), which parses $PGPSP too.
@@ -3151,12 +3176,10 @@ int nmea_parse_pgnssp(gnss_pos_t &gnssPos, gnss_vel_t &gnssVel, const char a[], 
     ptr = ASCII_to_f64(&(gnssPos.towOffset), ptr);
     ptr = ASCII_to_u8(&(gnssPos.leapS), ptr);
 
-    // satsUsed, cnoMeanSigma, status2. A $PGPSP from older firmware ends here, at the checksum.
-    if (*ptr != '\0' && *ptr != '*') {
-        ptr = ASCII_to_u8(&(gnssPos.satsUsed), ptr);
-        ptr = ASCII_to_u8(&(gnssPos.cnoMeanSigma), ptr);
-        ptr = ASCII_to_u8(&(gnssPos.status2), ptr);
-    }
+    // satsUsed, cnoMeanSigma, status2: each left unchanged if absent. A $PGPSP from older firmware ends at field 17, at the checksum.
+    ptr = ASCII_to_u8_if_present(&(gnssPos.satsUsed), ptr);
+    ptr = ASCII_to_u8_if_present(&(gnssPos.cnoMeanSigma), ptr);
+    ptr = ASCII_to_u8_if_present(&(gnssPos.status2), ptr);
 
     return 0;
 }
